@@ -6,6 +6,7 @@ interface Commission {
   total_price: number; payment_status: string; status: string; current_stage: string; is_external: number;
   usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
+  pending_changes?: string; // 新增：暫存的異動申請
 }
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
@@ -16,7 +17,6 @@ export function Notebook() {
   const navigate = useNavigate(); 
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
-  // 恢復 logs 分頁的讀取
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
   const [commissions, setCommissions] = useState<Commission[]>([]);
@@ -24,11 +24,11 @@ export function Notebook() {
   const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
 
   const [editData, setEditData] = useState<Partial<Commission>>({});
-  
+  const [isEditingRequest, setIsEditingRequest] = useState(false);
+
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [newPayment, setNewPayment] = useState({ record_date: '', item_name: '', amount: '' });
   
-  // 恢復 logs 狀態
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [uploadUrl, setUploadUrl] = useState('');
@@ -67,7 +67,7 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setSubmissions(data.data.submissions);
-      setLogs(data.data.logs); // 寫入歷程紀錄
+      setLogs(data.data.logs);
     }
   };
 
@@ -76,21 +76,80 @@ export function Notebook() {
   const handleSelect = (order: Commission) => {
     setSelectedId(order.id);
     setEditData(order);
+    setIsEditingRequest(false);
     fetchPayments(order.id);
     fetchDeliverables(order.id);
   };
 
-  const handleSaveBlueFields = async () => {
+  // 日常儲存 (項目名稱、交易方式、詳細設定)
+  const handleSaveDailyFields = async () => {
     if (!selectedId) return;
     await fetch(`/api/commissions/${selectedId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project_name: editData.project_name, detailed_settings: editData.detailed_settings })
+      body: JSON.stringify({ 
+        project_name: editData.project_name, 
+        payment_method: editData.payment_method, 
+        detailed_settings: editData.detailed_settings 
+      })
     });
-    alert('設定已儲存');
+    alert('日常設定已儲存');
     fetchCommissions();
   };
 
-  const handleRequestChange = () => alert('委託單異動申請已送出，待委託方確認後生效。');
+  // 開啟編輯模式時，如果有 pending 的資料，一併載入
+  const handleStartEditRequest = () => {
+    if (selectedOrder) {
+      let pendingObj = {};
+      if (selectedOrder.pending_changes) {
+        try { pendingObj = JSON.parse(selectedOrder.pending_changes); } catch(e) {}
+      }
+      setEditData({ ...selectedOrder, ...pendingObj });
+      setIsEditingRequest(true);
+    }
+  };
+
+  // 送出異動申請
+  const handleSubmitRequestFields = async () => {
+    if (!selectedId || !selectedOrder) return;
+    
+    const changes: Record<string, any> = {};
+    const requestFields = ['usage_type', 'is_rush', 'delivery_method', 'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price'];
+    
+    requestFields.forEach(field => {
+      const originalValue = selectedOrder[field as keyof Commission];
+      const newValue = editData[field as keyof Commission];
+      if (newValue !== undefined && newValue !== originalValue) {
+        changes[field] = newValue;
+      }
+    });
+
+    if (Object.keys(changes).length === 0) {
+      alert('尚未修改任何欄位。');
+      setIsEditingRequest(false);
+      return;
+    }
+
+    if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
+
+    const res = await fetch(`/api/commissions/${selectedId}/change-request`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ changes })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('異動申請已送出！請等待委託方確認。');
+      setIsEditingRequest(false);
+      fetchCommissions();
+      fetchDeliverables(selectedId);
+    } else {
+      alert('送出失敗：' + data.error);
+    }
+  };
+
+  const handleCancelEditRequest = () => {
+    if (selectedOrder) setEditData(selectedOrder);
+    setIsEditingRequest(false);
+  };
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
@@ -99,13 +158,10 @@ export function Notebook() {
   };
 
   const handleAddPayment = async () => {
-    if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整記帳資訊");
-    const res = await fetch(`/api/commissions/${selectedId}/payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) });
-    const data = await res.json();
-    if (data.success) {
-      setNewPayment({ record_date: '', item_name: '', amount: '' });
-      fetchPayments(selectedId);
-    }
+    if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整");
+    await fetch(`/api/commissions/${selectedId}/payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) });
+    setNewPayment({ record_date: '', item_name: '', amount: '' });
+    fetchPayments(selectedId);
   };
 
   const copyLink = (id: string) => {
@@ -123,6 +179,7 @@ export function Notebook() {
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
+  
   const isChatDisabled = selectedOrder?.is_external ? false : (!selectedOrder?.payment_status || selectedOrder?.payment_status === 'unpaid');
 
   const getOverallStatus = (status: string) => {
@@ -147,16 +204,15 @@ export function Notebook() {
   };
 
   const tabStyle = (isActive: boolean) => ({
-    padding: '12px 20px', cursor: 'pointer', borderBottom: isActive ? '3px solid #1976d2' : '3px solid transparent',
-    fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#1976d2' : '#555', backgroundColor: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none'
+    padding: '12px 20px', cursor: 'pointer', borderBottom: isActive ? '3px solid #333' : '3px solid transparent',
+    fontWeight: isActive ? 'bold' : 'normal', color: '#333', backgroundColor: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none'
   });
 
-  // 恢復：完整的防呆標籤渲染邏輯
   const renderStageBox = (title: string, stageKey: string, canUpload: boolean, isReviewingStatus: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
     const isCompleted = selectedOrder?.status === 'completed';
 
-    let headerBg = '#f5f5f5'; let headerColor = '#555'; let statusTag = '';
+    let headerBg = '#f5f5f5'; let headerColor = '#333'; let statusTag = '';
     
     if (isCompleted || isPassed) { 
       headerBg = '#e8f5e9'; headerColor = '#2e7d32'; statusTag = '[已確認] 委託人已同意，本階段已鎖定'; 
@@ -180,7 +236,6 @@ export function Notebook() {
         <div style={{ backgroundColor: headerBg, color: headerColor, padding: '12px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
           <span>{title}</span> <span>{statusTag}</span>
         </div>
-        
         <div style={{ padding: '20px', backgroundColor: '#fff' }}>
           {sub && (
             <div style={{ marginBottom: '15px' }}>
@@ -188,11 +243,10 @@ export function Notebook() {
               <img src={sub.file_url} alt="交稿預覽" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #eee' }} />
             </div>
           )}
-
           {canUpload && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
               <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '10px 20px', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '10px 20px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                 提交新版本
               </button>
             </div>
@@ -203,9 +257,49 @@ export function Notebook() {
     );
   };
 
+  // 渲染需申請異動的欄位元件
+  const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' = 'text', suffix: string = '') => {
+    if (!selectedOrder) return null;
+    
+    let pendingObj: Record<string, any> = {};
+    if (selectedOrder.pending_changes) {
+      try { pendingObj = JSON.parse(selectedOrder.pending_changes); } catch(e) {}
+    }
+
+    const originalValue = selectedOrder[fieldKey];
+    const pendingValue = pendingObj[fieldKey];
+    const hasPending = pendingValue !== undefined && pendingValue !== originalValue;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>{label}</span>
+        {isEditingRequest ? (
+          <input 
+            type={type} 
+            value={editData[fieldKey] || ''} 
+            onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} 
+            style={{ color: '#333', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} 
+          />
+        ) : (
+          <div style={{ padding: '6px', backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '4px', minHeight: '33px', display: 'flex', alignItems: 'center' }}>
+            {hasPending ? (
+              <div>
+                <span style={{ textDecoration: 'line-through', color: '#999', marginRight: '8px' }}>{originalValue}{suffix}</span>
+                <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>待異動：{pendingValue}{suffix}</span>
+              </div>
+            ) : (
+              <span style={{ color: '#333' }}>{originalValue || '-'}{suffix}</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 120px)', gap: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       
+      {/* 左側：委託單列表 */}
       <div style={{ width: '380px', backgroundColor: '#fff', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '15px', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>委託單列表</div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -218,7 +312,7 @@ export function Notebook() {
                   <span>{dateStr}</span>
                   <span>{order.client_name || order.project_name}</span>
                 </div>
-                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1976d2' }}>{order.project_name || '未命名項目'}</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>{order.project_name || '未命名項目'}</div>
                 <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                   <span style={{ border: '1px solid #ccc', padding: '2px 6px', borderRadius: '2px' }}>{getOverallStatus(order.status)}</span>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '2px 6px', borderRadius: '2px' }}>{payBadge.text}</span>
@@ -230,18 +324,19 @@ export function Notebook() {
         </div>
       </div>
 
+      {/* 右側：委託單詳細內容 */}
       <div style={{ flex: 1, backgroundColor: '#fff', border: '1px solid #ddd', overflowY: 'auto' }}>
         {!selectedOrder ? <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>請選擇委託單</div> : (
           <div>
             <div style={{ padding: '20px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ margin: '0 0 5px 0' }}>{selectedOrder.project_name || '未命名項目'}</h2>
+                <h2 style={{ margin: '0 0 5px 0', color: '#333' }}>{selectedOrder.project_name || '未命名項目'}</h2>
                 <div style={{ color: '#888', fontSize: '13px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 {!selectedOrder.is_external && (
                   <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '8px 15px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#333' }}>
-                    🔗 複製連結
+                    複製連結
                   </button>
                 )}
                 <button 
@@ -249,11 +344,10 @@ export function Notebook() {
                   disabled={isChatDisabled}
                   style={{ 
                     padding: '8px 15px', borderRadius: '6px', border: 'none', color: '#fff', fontWeight: 'bold',
-                    backgroundColor: isChatDisabled ? '#ccc' : '#1976d2', cursor: isChatDisabled ? 'not-allowed' : 'pointer'
+                    backgroundColor: isChatDisabled ? '#ccc' : '#333', cursor: isChatDisabled ? 'not-allowed' : 'pointer'
                   }}
-                  title={isChatDisabled ? "更改收款狀態為「訂金/已收」即可解鎖" : "進入工作區"}
                 >
-                  {isChatDisabled ? '🔒 等待收款解鎖' : '💬 進入工作區'}
+                  {isChatDisabled ? '[等待收款解鎖]' : '進入工作區'}
                 </button>
               </div>
             </div>
@@ -261,18 +355,18 @@ export function Notebook() {
             <div style={{ display: 'flex', borderBottom: '1px solid #ddd', padding: '0 20px' }}>
               <button onClick={() => setActiveTab('details')} style={tabStyle(activeTab === 'details')}>委託單細項</button>
               <button onClick={() => setActiveTab('delivery')} style={tabStyle(activeTab === 'delivery')}>檔案交付</button>
-              {/* 恢復：歷程紀錄分頁按鈕 */}
               <button onClick={() => setActiveTab('logs')} style={tabStyle(activeTab === 'logs')}>歷程紀錄</button>
             </div>
 
             {activeTab === 'details' && (
               <div style={{ padding: '20px' }}>
+                
                 <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e0e0e0', borderLeft: '4px solid #fbc02d', marginBottom: '25px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                    <h3 style={{ margin: 0, fontSize: '16px', color: '#f57f17' }}>💰 財務與收款狀態</h3>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>財務與收款狀態</h3>
                     <div>
-                      <span style={{ fontSize: '14px', marginRight: '10px' }}>調整狀態：</span>
-                      <select value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '14px', marginRight: '10px', color: '#333' }}>調整狀態：</span>
+                      <select value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontWeight: 'bold', color: '#333' }}>
                         <option value="unpaid">未收款 (聊天室鎖定)</option>
                         <option value="partial">已收訂金 (解鎖)</option>
                         <option value="paid">已收款 (解鎖)</option>
@@ -284,7 +378,7 @@ export function Notebook() {
                     <input type="date" value={newPayment.record_date} onChange={e => setNewPayment({...newPayment, record_date: e.target.value})} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
                     <input type="text" placeholder="項目 (如: 訂金)" value={newPayment.item_name} onChange={e => setNewPayment({...newPayment, item_name: e.target.value})} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }} />
                     <input type="number" placeholder="金額" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', width: '100px' }} />
-                    <button onClick={handleAddPayment} style={{ padding: '8px 15px', backgroundColor: '#f57f17', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>＋ 記帳</button>
+                    <button onClick={handleAddPayment} style={{ padding: '8px 15px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>＋ 記帳</button>
                   </div>
 
                   <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse', marginBottom: '15px' }}>
@@ -292,55 +386,73 @@ export function Notebook() {
                       {payments.map(p => (
                         <tr key={p.id} style={{ borderBottom: '1px dashed #eee' }}>
                           <td style={{ padding: '8px 0', color: '#666' }}>{p.record_date}</td>
-                          <td style={{ padding: '8px 0' }}>{p.item_name}</td>
-                          <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold' }}>+ NT$ {p.amount}</td>
+                          <td style={{ padding: '8px 0', color: '#333' }}>{p.item_name}</td>
+                          <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold', color: '#333' }}>+ NT$ {p.amount}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', fontSize: '15px', backgroundColor: '#fff8e1', padding: '10px', borderRadius: '6px' }}>
-                    <div>總金額：<span style={{ fontWeight: 'bold' }}>${selectedOrder.total_price}</span></div>
-                    <div>已收款總計：<span style={{ fontWeight: 'bold', color: 'green' }}>${totalPaid}</span></div>
-                    <div>尚未付款：<span style={{ fontWeight: 'bold', color: 'red' }}>${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', fontSize: '15px', backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '6px' }}>
+                    <div style={{ color: '#333' }}>總金額設定：<span style={{ fontWeight: 'bold' }}>${selectedOrder.total_price}</span></div>
+                    <div style={{ color: '#333' }}>已收款總計：<span style={{ fontWeight: 'bold', color: 'green' }}>${totalPaid}</span></div>
+                    <div style={{ color: '#333' }}>尚未付款：<span style={{ fontWeight: 'bold', color: 'red' }}>${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
                   </div>
                 </div>
 
                 <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', backgroundColor: '#fafafa' }}>
-                  <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>📋 委託單細項</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>委託單細項</h3>
+                    {isEditingRequest && (
+                      <span style={{ color: '#d32f2f', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#ffebee', padding: '4px 8px', borderRadius: '4px' }}>
+                        ✏️ 異動編輯模式
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* 日常免申請區域 (繪師自訂) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '14px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>項目名稱：(藍字)</span>
-                      <input type="text" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} style={{ color: '#1976d2', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} />
+                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>項目名稱：(繪師自訂)</span>
+                      <input type="text" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>委託用途：(紅字)</span>
-                      <input type="text" value={selectedOrder.usage_type} readOnly style={{ color: '#d32f2f', border: '1px solid #eee', padding: '6px', backgroundColor: '#fff', borderRadius: '4px' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>是否急件：</span>
-                      <span style={{ color: '#d32f2f', padding: '4px' }}>{selectedOrder.is_rush}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>交稿與交易方式：</span>
-                      <span style={{ color: '#d32f2f', padding: '4px' }}>{selectedOrder.delivery_method} / {selectedOrder.payment_method}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>繪畫範圍與人物：</span>
-                      <span style={{ color: '#d32f2f', padding: '4px' }}>{selectedOrder.draw_scope} / {selectedOrder.char_count} 人</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>背景與附加：</span>
-                      <span style={{ color: '#d32f2f', padding: '4px' }}>{selectedOrder.bg_type} / {selectedOrder.add_ons}</span>
+                      <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>交易方式：(繪師自訂)</span>
+                      <input type="text" value={editData.payment_method || ''} onChange={e => setEditData({...editData, payment_method: e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} />
                     </div>
                   </div>
+
+                  {/* 需申請異動的欄位 (已獨立拆分) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '14px' }}>
+                    {renderRequestField('委託用途：', 'usage_type')}
+                    {renderRequestField('是否急件：', 'is_rush')}
+                    {renderRequestField('交稿方式：', 'delivery_method')}
+                    {renderRequestField('總金額：', 'total_price', 'number')}
+                    {renderRequestField('繪畫範圍：', 'draw_scope')}
+                    {renderRequestField('人物數量：', 'char_count', 'number', ' 人')}
+                    {renderRequestField('背景設定：', 'bg_type')}
+                    {renderRequestField('附加選項：', 'add_ons')}
+                  </div>
+
+                  {/* 詳細設定 */}
                   <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                    <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>詳細設定：(藍字，委託方不可見)</span>
-                    <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#1976d2', border: '1px solid #ccc', padding: '8px', minHeight: '80px', borderRadius: '4px' }} />
+                    <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>詳細設定：(委託方不可見)</span>
+                    <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '8px', minHeight: '80px', borderRadius: '4px' }} />
                   </div>
+
+                  {/* 按鈕區 */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
-                    <button onClick={handleRequestChange} style={{ padding: '8px 16px', backgroundColor: '#fff', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>申請委託單異動 (紅字)</button>
-                    <button onClick={handleSaveBlueFields} style={{ padding: '8px 16px', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>日常儲存 (藍字)</button>
+                    {isEditingRequest ? (
+                      <>
+                        <button onClick={handleCancelEditRequest} style={{ padding: '8px 16px', backgroundColor: '#fff', color: '#666', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>取消編輯</button>
+                        <button onClick={handleSubmitRequestFields} style={{ padding: '8px 16px', backgroundColor: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>確認送出異動</button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={handleStartEditRequest} style={{ padding: '8px 16px', backgroundColor: '#fff', color: '#333', border: '1px solid #333', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>申請委託單異動</button>
+                        <button onClick={handleSaveDailyFields} style={{ padding: '8px 16px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>日常儲存</button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -349,7 +461,6 @@ export function Notebook() {
             {activeTab === 'delivery' && (
               <div style={{ padding: '20px' }}>
                 <p style={{ color: '#666', marginBottom: '20px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
-                {/* 恢復：導入完整的防呆標籤判斷機制 */}
                 {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', 
                   ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), 
                   selectedOrder.current_stage === 'sketch_reviewing', 
@@ -367,11 +478,10 @@ export function Notebook() {
               </div>
             )}
 
-            {/* 恢復：歷程紀錄 (Audit Trail) 分頁內容 */}
             {activeTab === 'logs' && (
               <div style={{ padding: '20px' }}>
                 <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                  <h3 style={{ margin: '0 0 15px 0', fontSize: '16px' }}>🕒 決策與操作追蹤紀錄</h3>
+                  <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>決策與操作追蹤紀錄</h3>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                     <tbody>
                       {logs.length === 0 ? <tr><td style={{ color: '#999', textAlign: 'center', padding: '20px' }}>尚未有任何操作紀錄</td></tr> : null}
@@ -379,7 +489,7 @@ export function Notebook() {
                         <tr key={log.id} style={{ borderBottom: '1px solid #eee' }}>
                           <td style={{ padding: '12px 10px', color: '#888', width: '160px' }}>{new Date(log.created_at).toLocaleString()}</td>
                           <td style={{ padding: '12px 10px', width: '80px' }}>
-                            <span style={{ backgroundColor: log.actor_role === 'artist' ? '#e3f2fd' : '#e8f5e9', color: log.actor_role === 'artist' ? '#1976d2' : '#2e7d32', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                            <span style={{ backgroundColor: log.actor_role === 'artist' ? '#eee' : '#e8f5e9', color: log.actor_role === 'artist' ? '#333' : '#2e7d32', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}>
                               {log.actor_role === 'artist' ? '繪師' : '委託人'}
                             </span>
                           </td>

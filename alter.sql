@@ -25,5 +25,6 @@ CREATE TABLE Commissions (
   bg_type TEXT DEFAULT '',
   add_ons TEXT DEFAULT '',
   detailed_settings TEXT DEFAULT '',
-  order_date DATETIME DEFAULT CURRENT_TIMESTAMP
+  order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  pending_changes TEXT
 );

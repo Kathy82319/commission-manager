@@ -23,10 +23,6 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
-    // ==========================================
-    // 📂 三階段交稿與審閱系統
-    // ==========================================
-
     // [GET] 讀取特定委託單的操作歷程與檔案
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
@@ -97,10 +93,22 @@ export default {
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
-    // ==========================================
-    // 💬 聊天室訊息系統 (已恢復)
-    // ==========================================
-    
+    // [POST] 繪師提出紅字異動申請 (新增路由)
+    if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/change-request")) {
+      try {
+        const id = pathParts[3];
+        const body: { changes: any } = await request.json();
+        
+        await env.commission_db.batch([
+          env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(body.changes), id),
+          env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提出委託單內容異動申請，請前往「委託單細項」查看並確認。`),
+          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', '提出委託單異動申請')").bind(crypto.randomUUID(), id)
+        ]);
+        return Response.json({ success: true });
+      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+    }
+
+    // 聊天室訊息系統
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/messages")) {
       try {
         const id = pathParts[3];
@@ -119,10 +127,7 @@ export default {
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
-    // ==========================================
-    // 💰 財務記帳系統
-    // ==========================================
-
+    // 財務記帳系統
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/payments")) {
       try {
         const id = pathParts[3];
@@ -141,11 +146,7 @@ export default {
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
-    // ==========================================
-    // 📄 委託單核心管理 (新增、讀取、更新)
-    // ==========================================
-
-    // [GET] 讀取「單一」委託單 (就是這個遺失導致畫面卡住！)
+    // [GET] 讀取單一委託單
     if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
       try {
         const id = pathParts[3];
