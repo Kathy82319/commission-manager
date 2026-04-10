@@ -6,7 +6,7 @@ interface Commission {
   total_price: number; payment_status: string; status: string; current_stage: string; is_external: number;
   usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
-  pending_changes?: string; // 新增：暫存的異動申請
+  pending_changes?: string;
 }
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
@@ -20,6 +20,7 @@ export function Notebook() {
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
   const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [filter, setFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
 
@@ -81,22 +82,16 @@ export function Notebook() {
     fetchDeliverables(order.id);
   };
 
-  // 日常儲存 (項目名稱、交易方式、詳細設定)
   const handleSaveDailyFields = async () => {
     if (!selectedId) return;
     await fetch(`/api/commissions/${selectedId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        project_name: editData.project_name, 
-        payment_method: editData.payment_method, 
-        detailed_settings: editData.detailed_settings 
-      })
+      body: JSON.stringify({ project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings })
     });
     alert('日常設定已儲存');
     fetchCommissions();
   };
 
-  // 開啟編輯模式時，如果有 pending 的資料，一併載入
   const handleStartEditRequest = () => {
     if (selectedOrder) {
       let pendingObj = {};
@@ -108,19 +103,15 @@ export function Notebook() {
     }
   };
 
-  // 送出異動申請
   const handleSubmitRequestFields = async () => {
     if (!selectedId || !selectedOrder) return;
-    
     const changes: Record<string, any> = {};
     const requestFields = ['usage_type', 'is_rush', 'delivery_method', 'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price'];
     
     requestFields.forEach(field => {
       const originalValue = selectedOrder[field as keyof Commission];
       const newValue = editData[field as keyof Commission];
-      if (newValue !== undefined && newValue !== originalValue) {
-        changes[field] = newValue;
-      }
+      if (newValue !== undefined && newValue !== originalValue) changes[field] = newValue;
     });
 
     if (Object.keys(changes).length === 0) {
@@ -141,14 +132,33 @@ export function Notebook() {
       setIsEditingRequest(false);
       fetchCommissions();
       fetchDeliverables(selectedId);
-    } else {
-      alert('送出失敗：' + data.error);
-    }
+    } else alert('送出失敗：' + data.error);
   };
 
   const handleCancelEditRequest = () => {
     if (selectedOrder) setEditData(selectedOrder);
     setIsEditingRequest(false);
+  };
+
+  // 雙向切換：作廢/恢復
+  const handleToggleArchive = async () => {
+    if (!selectedId || !selectedOrder) return;
+    
+    const isCancelled = selectedOrder.status === 'cancelled';
+    const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    // 若為恢復預訂，預設將狀態改回 'quote_created' (已建報價單)
+    const newStatus = isCancelled ? 'quote_created' : 'cancelled';
+
+    await fetch(`/api/commissions/${selectedId}`, {
+      method: 'PATCH', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    
+    fetchCommissions();
   };
 
   const handlePaymentStatusChange = async (newStatus: string) => {
@@ -164,6 +174,12 @@ export function Notebook() {
     fetchPayments(selectedId);
   };
 
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
+    await fetch(`/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE' });
+    fetchPayments(selectedId);
+  };
+
   const copyLink = (id: string) => {
     const link = `http://localhost:5173/quote/${id}`;
     navigator.clipboard.writeText(link).then(() => alert('專屬連結已複製！'));
@@ -173,17 +189,28 @@ export function Notebook() {
     if (!uploadUrl.trim() || !selectedId) return;
     const res = await fetch(`/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: uploadUrl }) });
     const data = await res.json();
-    if (data.success) { setUploadUrl(''); fetchCommissions(); fetchDeliverables(selectedId); }
+    if (data.success) { 
+      setUploadUrl(''); fetchCommissions(); fetchDeliverables(selectedId); 
+    } else {
+      alert(data.error || '提交失敗，可能該階段已鎖定。');
+      fetchDeliverables(selectedId); 
+    }
   };
+
+  const filteredCommissions = commissions.filter(c => {
+    if (filter === 'active') return c.status !== 'cancelled';
+    if (filter === 'archived') return c.status === 'cancelled';
+    return true;
+  });
 
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
-  
   const isChatDisabled = selectedOrder?.is_external ? false : (!selectedOrder?.payment_status || selectedOrder?.payment_status === 'unpaid');
 
   const getOverallStatus = (status: string) => {
     if (status === 'completed') return '結案';
+    if (status === 'cancelled') return '已作廢';
     if (status === 'quote_created') return '已建報價單';
     return '稿件製作中';
   };
@@ -216,18 +243,12 @@ export function Notebook() {
     
     if (isCompleted || isPassed) { 
       headerBg = '#e8f5e9'; headerColor = '#2e7d32'; statusTag = '[已確認] 委託人已同意，本階段已鎖定'; 
-    }
-    else if (isReviewingStatus) { 
+    } else if (isReviewingStatus) { 
       headerBg = '#fff3e0'; headerColor = '#e65100'; statusTag = '[待審閱] 委託人確認前仍可重複上傳'; 
-    }
-    else if (canUpload) { 
-      if (sub) {
-        headerBg = '#ffebee'; headerColor = '#c62828'; statusTag = '[請求修改] 委託人已退回，請重新上傳';
-      } else {
-        headerBg = '#e3f2fd'; headerColor = '#1976d2'; statusTag = '[繪製中] 請上傳檔案'; 
-      }
-    }
-    else { 
+    } else if (canUpload) { 
+      if (sub) { headerBg = '#ffebee'; headerColor = '#c62828'; statusTag = '[請求修改] 委託人已退回，請重新上傳'; } 
+      else { headerBg = '#e3f2fd'; headerColor = '#1976d2'; statusTag = '[繪製中] 請上傳檔案'; }
+    } else { 
       statusTag = '[鎖定] 尚未解鎖此階段'; 
     }
 
@@ -246,9 +267,7 @@ export function Notebook() {
           {canUpload && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
               <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-              <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '10px 20px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                提交新版本
-              </button>
+              <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '10px 20px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>提交新版本</button>
             </div>
           )}
           {(!canUpload && !sub) && <div style={{ color: '#aaa', textAlign: 'center' }}>尚無檔案</div>}
@@ -257,10 +276,8 @@ export function Notebook() {
     );
   };
 
-  // 渲染需申請異動的欄位元件
   const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' = 'text', suffix: string = '') => {
     if (!selectedOrder) return null;
-    
     let pendingObj: Record<string, any> = {};
     if (selectedOrder.pending_changes) {
       try { pendingObj = JSON.parse(selectedOrder.pending_changes); } catch(e) {}
@@ -274,12 +291,7 @@ export function Notebook() {
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>{label}</span>
         {isEditingRequest ? (
-          <input 
-            type={type} 
-            value={editData[fieldKey] || ''} 
-            onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} 
-            style={{ color: '#333', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} 
-          />
+          <input type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '6px', borderRadius: '4px' }} />
         ) : (
           <div style={{ padding: '6px', backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '4px', minHeight: '33px', display: 'flex', alignItems: 'center' }}>
             {hasPending ? (
@@ -299,20 +311,28 @@ export function Notebook() {
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 120px)', gap: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* 左側：委託單列表 */}
       <div style={{ width: '380px', backgroundColor: '#fff', border: '1px solid #ddd', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '15px', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', fontWeight: 'bold' }}>委託單列表</div>
+        <div style={{ padding: '15px', borderBottom: '1px solid #ddd', backgroundColor: '#f9f9f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 'bold' }}>委託單列表</span>
+          <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '4px', borderRadius: '4px', border: '1px solid #ccc' }}>
+            <option value="active">進行中</option>
+            <option value="archived">已作廢</option>
+            <option value="all">全部顯示</option>
+          </select>
+        </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {commissions.map(order => {
+          {filteredCommissions.map(order => {
             const payBadge = getPaymentBadge(order.payment_status);
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             return (
-              <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '15px', borderBottom: '1px solid #eee', cursor: 'pointer', backgroundColor: selectedId === order.id ? '#f0f8ff' : '#fff' }}>
+              <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '15px', borderBottom: '1px solid #eee', cursor: 'pointer', backgroundColor: selectedId === order.id ? '#f0f8ff' : '#fff', opacity: order.status === 'cancelled' ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
                   <span>{dateStr}</span>
-                  <span>{order.client_name || order.project_name}</span>
                 </div>
-                <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>{order.project_name || '未命名項目'}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span style={{ fontWeight: 'bold', color: '#333' }}>{order.project_name || '未命名項目'}</span>
+                  <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>NT$ {order.total_price}</span>
+                </div>
                 <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                   <span style={{ border: '1px solid #ccc', padding: '2px 6px', borderRadius: '2px' }}>{getOverallStatus(order.status)}</span>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '2px 6px', borderRadius: '2px' }}>{payBadge.text}</span>
@@ -324,7 +344,6 @@ export function Notebook() {
         </div>
       </div>
 
-      {/* 右側：委託單詳細內容 */}
       <div style={{ flex: 1, backgroundColor: '#fff', border: '1px solid #ddd', overflowY: 'auto' }}>
         {!selectedOrder ? <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>請選擇委託單</div> : (
           <div>
@@ -334,6 +353,22 @@ export function Notebook() {
                 <div style={{ color: '#888', fontSize: '13px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={handleToggleArchive} 
+                  style={{ 
+                    padding: '8px 15px', 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #ccc', 
+                    borderRadius: '6px', 
+                    cursor: 'pointer', 
+                    fontWeight: 'bold',
+                    // 如果已作廢，顯示為綠色；如果是正常狀態，顯示為紅色
+                    color: selectedOrder.status === 'cancelled' ? '#2e7d32' : '#d32f2f' 
+                  }}
+                >
+                  {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
+                </button>
+                
                 {!selectedOrder.is_external && (
                   <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '8px 15px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#333' }}>
                     複製連結
@@ -342,10 +377,7 @@ export function Notebook() {
                 <button 
                   onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}
                   disabled={isChatDisabled}
-                  style={{ 
-                    padding: '8px 15px', borderRadius: '6px', border: 'none', color: '#fff', fontWeight: 'bold',
-                    backgroundColor: isChatDisabled ? '#ccc' : '#333', cursor: isChatDisabled ? 'not-allowed' : 'pointer'
-                  }}
+                  style={{ padding: '8px 15px', borderRadius: '6px', border: 'none', color: '#fff', fontWeight: 'bold', backgroundColor: isChatDisabled ? '#ccc' : '#333', cursor: isChatDisabled ? 'not-allowed' : 'pointer' }}
                 >
                   {isChatDisabled ? '[等待收款解鎖]' : '進入工作區'}
                 </button>
@@ -360,7 +392,6 @@ export function Notebook() {
 
             {activeTab === 'details' && (
               <div style={{ padding: '20px' }}>
-                
                 <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e0e0e0', borderLeft: '4px solid #fbc02d', marginBottom: '25px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
                     <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>財務與收款狀態</h3>
@@ -388,6 +419,9 @@ export function Notebook() {
                           <td style={{ padding: '8px 0', color: '#666' }}>{p.record_date}</td>
                           <td style={{ padding: '8px 0', color: '#333' }}>{p.item_name}</td>
                           <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold', color: '#333' }}>+ NT$ {p.amount}</td>
+                          <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                            <button onClick={() => handleDeletePayment(p.id)} style={{ padding: '2px 6px', backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>刪除</button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -403,14 +437,9 @@ export function Notebook() {
                 <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', backgroundColor: '#fafafa' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>委託單細項</h3>
-                    {isEditingRequest && (
-                      <span style={{ color: '#d32f2f', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#ffebee', padding: '4px 8px', borderRadius: '4px' }}>
-                        ✏️ 異動編輯模式
-                      </span>
-                    )}
+                    {isEditingRequest && <span style={{ color: '#d32f2f', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#ffebee', padding: '4px 8px', borderRadius: '4px' }}>✏️ 異動編輯模式</span>}
                   </div>
                   
-                  {/* 日常免申請區域 (繪師自訂) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '14px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>項目名稱：(繪師自訂)</span>
@@ -422,7 +451,6 @@ export function Notebook() {
                     </div>
                   </div>
 
-                  {/* 需申請異動的欄位 (已獨立拆分) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', fontSize: '14px' }}>
                     {renderRequestField('委託用途：', 'usage_type')}
                     {renderRequestField('是否急件：', 'is_rush')}
@@ -434,13 +462,11 @@ export function Notebook() {
                     {renderRequestField('附加選項：', 'add_ons')}
                   </div>
 
-                  {/* 詳細設定 */}
                   <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
                     <span style={{ color: '#333', fontWeight: 'bold', marginBottom: '4px' }}>詳細設定：(委託方不可見)</span>
-                    <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '8px', minHeight: '80px', borderRadius: '4px' }} />
+                    <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#333', border: '1px solid #ccc', padding: '8px', minHeight: '80px', borderRadius: '4px', whiteSpace: 'pre-wrap' }} />
                   </div>
 
-                  {/* 按鈕區 */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
                     {isEditingRequest ? (
                       <>
@@ -461,20 +487,9 @@ export function Notebook() {
             {activeTab === 'delivery' && (
               <div style={{ padding: '20px' }}>
                 <p style={{ color: '#666', marginBottom: '20px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
-                {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', 
-                  ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), 
-                  selectedOrder.current_stage === 'sketch_reviewing', 
-                  ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                
-                {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', 
-                  ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), 
-                  selectedOrder.current_stage === 'lineart_reviewing', 
-                  ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                
-                {renderStageBox('階段 3：完稿 (Final)', 'final', 
-                  ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), 
-                  selectedOrder.current_stage === 'final_reviewing', 
-                  selectedOrder.status === 'completed')}
+                {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                {renderStageBox('階段 3：完稿 (Final)', 'final', ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
               </div>
             )}
 
@@ -493,7 +508,7 @@ export function Notebook() {
                               {log.actor_role === 'artist' ? '繪師' : '委託人'}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 10px', color: '#333' }}>{log.content}</td>
+                          <td style={{ padding: '12px 10px', color: '#333', whiteSpace: 'pre-wrap' }}>{log.content}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -501,7 +516,6 @@ export function Notebook() {
                 </div>
               </div>
             )}
-
           </div>
         )}
       </div>

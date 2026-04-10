@@ -28,7 +28,7 @@ export function Settings() {
     custom_1_content: '', custom_2_title: '', custom_2_content: '',
     custom_3_title: '', custom_3_content: ''
   });
-  
+  const [visibleCustomCount, setVisibleCustomCount] = useState(0);
   const [portfolioInput, setPortfolioInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -38,6 +38,14 @@ export function Settings() {
         const res = await fetch(`/api/artist-profile/${MOCK_ARTIST_ID}`);
         const data = await res.json();
         if (data.success) {
+
+
+          let activeCount = 0;
+          if (data.data.custom_1_title || data.data.custom_1_content) activeCount = 1;
+          if (data.data.custom_2_title || data.data.custom_2_content) activeCount = 2;
+          if (data.data.custom_3_title || data.data.custom_3_content) activeCount = 3;
+          setVisibleCustomCount(activeCount);
+
           const parsedUrls = typeof data.data.portfolio_urls === 'string' 
             ? JSON.parse(data.data.portfolio_urls) 
             : (data.data.portfolio_urls || []);
@@ -187,18 +195,18 @@ const copyLink = () => {
         <textarea value={portfolioInput} onChange={e => setPortfolioInput(e.target.value)} style={textareaStyle} placeholder="https://..." />
       </div>
 
-      <div style={sectionStyle}>
+<div style={sectionStyle}>
         <h3>自訂項目 (選填)</h3>
-        <div style={{ display: 'grid', gap: '20px' }}>
-          {[1, 2, 3].map(num => (
-            <div key={num} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '4px' }}>
+        <div style={{ display: 'grid', gap: '20px', marginBottom: '15px' }}>
+          {[1, 2, 3].slice(0, visibleCustomCount).map(num => (
+            <div key={num} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
               <div style={{ marginBottom: '10px' }}>
-                <label>自訂項目 {num} 標題</label>
+                <label>標題</label>
                 <input 
                   type="text" 
                   value={formData[`custom_${num}_title` as keyof ArtistProfile] as string} 
                   onChange={e => handleChange(`custom_${num}_title` as keyof ArtistProfile, e.target.value)} 
-                  style={inputStyle} 
+                  style={inputStyle} placeholder="例如：注意事項、其他聯絡方式..."
                 />
               </div>
               <div>
@@ -212,6 +220,16 @@ const copyLink = () => {
             </div>
           ))}
         </div>
+        
+        {/* 如果未滿3個，顯示增加按鈕 */}
+        {visibleCustomCount < 3 && (
+          <button 
+            onClick={() => setVisibleCustomCount(prev => prev + 1)}
+            style={{ padding: '8px 15px', backgroundColor: '#fff', border: '1px dashed #ccc', color: '#666', borderRadius: '4px', cursor: 'pointer', width: '100%' }}
+          >
+            + 增加分頁 ({visibleCustomCount}/3)
+          </button>
+        )}
       </div>
     </div>
   );

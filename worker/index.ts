@@ -116,6 +116,14 @@ export default {
       try {
         const id = pathParts[3];
         const body: { stage: string; file_url: string } = await request.json();
+
+        // 檢查狀態防呆：若委託單當前階段已不符合上傳階段，直接拒絕
+        const { results: comm } = await env.commission_db.prepare("SELECT current_stage FROM Commissions WHERE id = ?").bind(id).all();
+        if (comm.length === 0) return Response.json({ success: false, error: "找不到委託單" }, { status: 404 });
+        if (comm[0].current_stage !== `${body.stage}_drawing`) {
+          return Response.json({ success: false, error: "此階段已鎖定，無法再上傳新稿件。" }, { status: 400 });
+        }
+
         const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
         const version = (results[0]?.count as number) + 1;
         const subId = crypto.randomUUID();
@@ -129,6 +137,44 @@ export default {
           env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(newStageStatus, id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
         ]);
+        return Response.json({ success: true });
+      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+    }
+
+    // [POST] 委託人審閱回覆
+    if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/review")) {
+      try {
+        const id = pathParts[3];
+        const body: { stage: string; action: 'approve' | 'reject'; comment?: string } = await request.json();
+        const logId = crypto.randomUUID();
+        const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
+        let nextStageStatus = '';
+        let globalStatusUpdate = ''; 
+
+        if (body.action === 'reject') {
+          nextStageStatus = `${body.stage}_drawing`;
+        } else if (body.action === 'approve') {
+          if (body.stage === 'sketch') nextStageStatus = 'lineart_drawing';
+          else if (body.stage === 'lineart') nextStageStatus = 'final_drawing';
+          else if (body.stage === 'final') {
+            nextStageStatus = 'completed';
+            globalStatusUpdate = 'completed'; 
+          }
+        }
+
+        const logMsg = body.action === 'approve' ? `委託人已同意 ${stageNameCH}` : `委託人請求修改 ${stageNameCH}：${body.comment || '無備註'}`;
+
+        let batchOps = [
+          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', ?, ?)").bind(logId, id, 'review', logMsg),
+          env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(nextStageStatus, id),
+          env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] ${logMsg}`)
+        ];
+
+        if (globalStatusUpdate) {
+          batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
+        }
+
+        await env.commission_db.batch(batchOps);
         return Response.json({ success: true });
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
@@ -156,7 +202,7 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
       const values = fields.map(f => changes[f]);
       
       batchOps.push(env.commission_db.prepare(`UPDATE Commissions SET ${sets}, pending_changes = NULL WHERE id = ?`).bind(...values, id));
-      batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'approve_change', '委託人已同意委託單內容異동')").bind(crypto.randomUUID(), id));
+      batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'approve_change', '委託人已同意委託單內容')").bind(crypto.randomUUID(), id));
       batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', '[系統通知] 委託人已同意內容異動，規格已更新。')").bind(crypto.randomUUID(), id));
     } else {
       // 拒絕：直接清除 pending_changes
@@ -176,10 +222,27 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
         const id = pathParts[3];
         const body: { changes: any } = await request.json();
         
+        // 取得原始資料以比對差異
+        const { results: comms } = await env.commission_db.prepare("SELECT * FROM Commissions WHERE id = ?").bind(id).all();
+        const original = comms[0] as any;
+
+        const fieldMap: Record<string, string> = {
+          usage_type: '委託用途', is_rush: '急件', delivery_method: '交稿方式',
+          total_price: '總金額', draw_scope: '繪畫範圍', char_count: '人物數量',
+          bg_type: '背景設定', add_ons: '附加選項'
+        };
+
+        let logContent = "提出委託單異動申請：\n";
+        for (const key in body.changes) {
+          if (fieldMap[key]) {
+            logContent += `[${fieldMap[key]}] ${original[key] || '無'} -> ${body.changes[key]}\n`;
+          }
+        }
+        
         await env.commission_db.batch([
           env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(body.changes), id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提出委託單內容異動申請，請前往「委託單細項」查看並確認。`),
-          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', '提出委託單異動申請')").bind(crypto.randomUUID(), id, )
+          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', ?)").bind(crypto.randomUUID(), id, logContent)
         ]);
         return Response.json({ success: true });
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
@@ -211,6 +274,14 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM PaymentRecords WHERE commission_id = ? ORDER BY record_date ASC, created_at ASC").bind(id).all();
         return Response.json({ success: true, data: results });
+      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+    }
+    // [DELETE] 刪除單筆財務紀錄
+    if (request.method === "DELETE" && url.pathname.includes("/payments/")) {
+      try {
+        const paymentId = pathParts[5]; // 解析 /api/commissions/:id/payments/:paymentId
+        await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
+        return Response.json({ success: true });
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 

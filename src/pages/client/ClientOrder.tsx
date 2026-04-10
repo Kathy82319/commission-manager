@@ -94,20 +94,33 @@ export function ClientOrder() {
     }
 
     setIsProcessing(true);
-    const res = await fetch(`/api/commissions/${id}/review`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage: stageKey, action, comment })
-    });
-    const data = await res.json();
-    setIsProcessing(false);
+    try {
+      const res = await fetch(`/api/commissions/${id}/review`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: stageKey, action, comment })
+      });
+      
+      // 確保伺服器有正確回應
+      if (!res.ok) {
+        throw new Error(`伺服器錯誤狀態: ${res.status}`);
+      }
 
-    if (data.success) {
-      alert(action === 'approve' ? '已送出同意確認！' : '已送出修改請求！');
-      fetchAllData();
-    } else {
-      alert('處理失敗：' + data.error);
+      const data = await res.json();
+      if (data.success) {
+        alert(action === 'approve' ? '已送出同意確認！' : '已送出修改請求！');
+        fetchAllData();
+      } else {
+        alert('處理失敗：' + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('發生預期外的錯誤，請檢查網路連線或系統日誌。');
+    } finally {
+      setIsProcessing(false);
     }
   };
+
 
   // 輔助函數：渲染帶有異動對比的欄位
   const renderFieldWithPending = (label: string, fieldKey: string, currentValue: any, suffix: string = '') => {

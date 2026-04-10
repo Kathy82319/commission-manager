@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Commission {
   id: string;
@@ -31,9 +32,10 @@ const defaultStages = [
 ];
 
 export function Queue() {
+  const navigate = useNavigate();
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
-
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fetchQueue = async () => {
     try {
       const res = await fetch('/api/commissions');
@@ -88,58 +90,78 @@ export function Queue() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
             <tr style={{ backgroundColor: '#f5f5f5', borderBottom: '2px solid #ddd', textAlign: 'left' }}>
+              <th style={{ padding: '12px 15px', width: '30px' }}>≡</th> {/* 拖拉把手 */}
               <th style={{ padding: '12px 15px' }}>委託日期</th>
               <th style={{ padding: '12px 15px' }}>委託人與單號</th>
               <th style={{ padding: '12px 15px' }}>目前進度</th>
-              <th style={{ padding: '12px 15px' }}>付款狀態</th>
-              <th style={{ padding: '12px 15px' }}>預計完工日</th>
+              <th style={{ padding: '12px 15px' }}>預計完工日</th> {/* 與付款互換 */}
+              <th style={{ padding: '12px 15px' }}>付款狀態</th>   {/* 與完工互換 */}
               <th style={{ padding: '12px 15px' }}>備註</th>
+              <th style={{ padding: '12px 15px' }}>操作</th>       {/* 新增操作 */}
             </tr>
           </thead>
           <tbody>
             {commissions.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#999' }}>目前沒有進行中的排單</td>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: '#999' }}>目前沒有進行中的排單</td>
               </tr>
             ) : (
-              commissions.map((order) => {
+              commissions.map((order, index) => {
                 const dateStr = new Date(order.order_date).toLocaleDateString();
                 const shortId = order.id.split('-')[0];
                 const paymentInfo = paymentColors[order.payment_status] || paymentColors['unpaid'];
                 const isRush = order.is_rush === '是';
 
                 return (
-                  <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                    
-                    {/* 委託日期 */}
+                  <tr 
+                    key={order.id} 
+                    draggable
+                    onDragStart={() => setDraggedIndex(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggedIndex === null || draggedIndex === index) return;
+                      const newList = [...commissions];
+                      const draggedItem = newList[draggedIndex];
+                      newList.splice(draggedIndex, 1);
+                      newList.splice(index, 0, draggedItem);
+                      setCommissions(newList);
+                      setDraggedIndex(null);
+                      // 注意：此處拖拉僅改變前端顯示，若需永久記錄順序，未來需在資料庫新增順序欄位
+                    }}
+                    style={{ 
+                      borderBottom: '1px solid #eee', 
+                      backgroundColor: draggedIndex === index ? '#f0f8ff' : '#fff',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    <td style={{ padding: '12px 15px', cursor: 'grab', color: '#ccc' }}>⠿</td>
                     <td style={{ padding: '12px 15px', color: '#555' }}>{dateStr}</td>
                     
-                    {/* 委託人與單號 */}
                     <td style={{ padding: '12px 15px' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                        {order.client_name || '未命名客戶'}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#888' }}>
-                        #{shortId}
-                      </div>
+                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{order.client_name || '未命名客戶'}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>#{shortId}</div>
                     </td>
 
-                    {/* 目前進度 (Combobox) */}
                     <td style={{ padding: '12px 15px' }}>
                       <input 
-                        list="stage-options"
-                        defaultValue={order.current_stage || ''}
-                        onBlur={(e) => {
-                          if (e.target.value !== order.current_stage) {
-                            handleUpdateField(order.id, 'current_stage', e.target.value);
-                          }
-                        }}
-                        placeholder="輸入或選擇進度"
+                        list="stage-options" defaultValue={order.current_stage || ''}
+                        onBlur={(e) => { if (e.target.value !== order.current_stage) handleUpdateField(order.id, 'current_stage', e.target.value); }}
                         style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
                       />
                       <datalist id="stage-options">
-                        {defaultStages.map(stage => <option key={stage} value={stage} />)}
+                        {defaultStages.map(stage => (
+                          <option key={stage} value={stage} />
+                        ))}
                       </datalist>
+                    </td>
+
+                    {/* 預計完工日期 */}
+                    <td style={{ padding: '12px 15px' }}>
+                      <input 
+                        type="date" defaultValue={order.end_date || ''}
+                        onBlur={(e) => { if (e.target.value !== order.end_date) handleUpdateField(order.id, 'end_date', e.target.value); }}
+                        style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                      />
                     </td>
 
                     {/* 付款狀態 */}
@@ -147,15 +169,7 @@ export function Queue() {
                       <select 
                         value={order.payment_status || 'unpaid'}
                         onChange={(e) => handleUpdateField(order.id, 'payment_status', e.target.value)}
-                        style={{ 
-                          padding: '4px 8px', 
-                          borderRadius: '4px', 
-                          border: 'none', 
-                          backgroundColor: paymentInfo.bg, 
-                          color: paymentInfo.text,
-                          fontWeight: 'bold',
-                          cursor: 'pointer'
-                        }}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', backgroundColor: paymentInfo.bg, color: paymentInfo.text, fontWeight: 'bold', cursor: 'pointer' }}
                       >
                         <option value="unpaid">未付款</option>
                         <option value="partial">已付訂</option>
@@ -163,36 +177,25 @@ export function Queue() {
                       </select>
                     </td>
 
-                    {/* 預計完工日期 */}
-                    <td style={{ padding: '12px 15px' }}>
-                      <input 
-                        type="date"
-                        defaultValue={order.end_date || ''}
-                        onBlur={(e) => {
-                          if (e.target.value !== order.end_date) {
-                            handleUpdateField(order.id, 'end_date', e.target.value);
-                          }
-                        }}
-                        style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
-                      />
-                    </td>
-
-                    {/* 備註 (包含急件標示) */}
                     <td style={{ padding: '12px 15px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         {isRush && <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>[急件]</span>}
                         <input 
-                          type="text"
-                          defaultValue={order.artist_note || ''}
-                          onBlur={(e) => {
-                            if (e.target.value !== order.artist_note) {
-                              handleUpdateField(order.id, 'artist_note', e.target.value);
-                            }
-                          }}
-                          placeholder="輸入備註"
+                          type="text" defaultValue={order.artist_note || ''} placeholder="輸入備註"
+                          onBlur={(e) => { if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); }}
                           style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc', minWidth: '120px' }}
                         />
                       </div>
+                    </td>
+
+                    {/* 新增：編輯按鈕 */}
+                    <td style={{ padding: '12px 15px' }}>
+                      <button 
+                        onClick={() => navigate('/artist/notebook')}
+                        style={{ padding: '6px 12px', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}
+                        >
+                        管理
+                        </button>
                     </td>
 
                   </tr>
