@@ -14,6 +14,8 @@ import { ArtistHome } from './pages/artist/ArtistHome';
 import { QuoteBuilder } from './pages/artist/QuoteBuilder';
 import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
+import { Records } from './pages/artist/Records';
+import { Settings } from './pages/artist/Settings';
 
 // 引入委託人端與共用頁面
 import { ClientForm } from './pages/client/ClientForm'; 
@@ -43,6 +45,9 @@ function App() {
           <Route path="quote/new" element={<QuoteBuilder />} />
           <Route path="queue" element={<Queue />} />
           <Route path="notebook" element={<Notebook />} />
+          {/* 將結案紀錄與個人設定移入 ArtistLayout 內，使其共用頂端列 */}
+          <Route path="records" element={<Records />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* 委託單確認與共用工作區 */}

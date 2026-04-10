@@ -1,99 +1,135 @@
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+
+interface ArtistProfile {
+  display_name: string;
+  avatar_url: string;
+  bio: string;
+  about_me: string;
+  tos_content: string;
+  portfolio_urls: string[];
+  commission_process: string;
+  payment_info: string;
+  usage_rules: string;
+  custom_1_title?: string;
+  custom_1_content?: string;
+  custom_2_title?: string;
+  custom_2_content?: string;
+  custom_3_title?: string;
+  custom_3_content?: string;
+}
 
 export function ArtistHome() {
-  const location = useLocation();
-  const currentHash = location.hash || '#intro';
+  const { artistId } = useParams(); // 抓取網址上的 ID
+  const [profile, setProfile] = useState<ArtistProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 根據目前的 Hash，決定下方要渲染哪一個內容區塊
-  const renderContent = () => {
-    switch (currentHash) {
-      case '#portfolio':
-        return (
-          <div>
-            <h3 style={sectionTitleStyle}>🖼️ 作品展示區</h3>
-            <p>這裡未來會實作您的作品集瀑布流，或是依照插畫、Q版、場景等分類展示的網格。</p>
-          </div>
-        );
-      case '#process':
-        return (
-          <div>
-            <h3 style={sectionTitleStyle}>🔄 委託流程說明</h3>
-            <p>1. <b>私訊討論</b>：請先傳送設定集與需求進行估價。<br/><br/>
-               2. <b>建立報價單</b>：確認接單後，我會給您專屬委託連結。<br/><br/>
-               3. <b>草圖確認</b>：匯款後開始繪製草稿，可免費大改一次。<br/><br/>
-               4. <b>線稿與底色確認</b>：可微調細節。<br/><br/>
-               5. <b>完稿交付</b>：提供高解析度去背檔案與 JPG 檔。</p>
-          </div>
-        );
-      case '#payment':
-        return (
-          <div>
-            <h3 style={sectionTitleStyle}>💰 付款方式</h3>
-            <p>✔️ <b>銀行轉帳</b>：玉山銀行 (808)<br/><br/>
-               ✔️ <b>LINE Pay</b>：支援好友轉帳付款<br/><br/>
-               ⚠️ <b>注意事項</b>：請於收到專屬連結後 3 日內完成匯款，逾期將自動取消排單。</p>
-          </div>
-        );
-      case '#tos':
-        return (
-          <div>
-            <h3 style={sectionTitleStyle}>📜 委託範圍 (規範)</h3>
-            <p>🔴 <b>不接範圍</b>：R18G (血腥暴力)、機甲、爭議性題材、急件。<br/><br/>
-               🟢 <b>授權範圍</b>：非商業委託僅供個人收藏、頭貼、非營利粉專發布。禁止用於 AI 訓練。<br/><br/>
-               ⭕ <b>商用委託</b>：包含實體周邊販售、Vtuber 收益化直播等，價格為原報價之 2 ~ 3 倍，請事先告知。</p>
-          </div>
-        );
-      case '#intro':
-      default:
-        return (
-          <div>
-            <h3 style={sectionTitleStyle}>✨ 詳細介紹</h3>
-            <p style={{ lineHeight: '1.8' }}>
-              嗨！我是測試繪師，有三年以上的接案經驗，擅長日系全彩立繪、角色設計與輕小說封面風格。<br/><br/>
-              如果喜歡我的畫風，非常歡迎您透過下方的委託流程與我接洽！我會盡全力為您畫出心目中理想的角色。
-            </p>
-          </div>
-        );
-    }
-  };
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`/api/artist-profile/${artistId}`);
+        const data = await res.json();
+        if (data.success) {
+          const parsedUrls = typeof data.data.portfolio_urls === 'string' 
+            ? JSON.parse(data.data.portfolio_urls) 
+            : (data.data.portfolio_urls || []);
+          
+          setProfile({ ...data.data, portfolio_urls: parsedUrls });
+        }
+      } catch (error) {
+        console.error("讀取公開主頁失敗", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [artistId]);
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '50px' }}>載入中...</div>;
+  if (!profile) return <div style={{ textAlign: 'center', padding: '50px' }}>找不到該繪師資料</div>;
+
+  const sectionStyle = { marginBottom: '40px', padding: '20px', backgroundColor: '#fff', borderRadius: '12px' };
+  const titleStyle = { borderLeft: '5px solid #333', paddingLeft: '15px', marginBottom: '20px', fontSize: '20px' };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px', color: '#333', lineHeight: '1.8' }}>
       
-      {/* 上半部：固定顯示的繪師簡介與幻燈片 */}
-      <div style={{ display: 'flex', gap: '30px', marginBottom: '40px' }}>
-        <div style={{ flex: 1, backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
-            <div style={{ width: '90px', height: '90px', backgroundColor: '#e0e0e0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px' }}>🎨</div>
-            <div>
-              <h2 style={{ margin: '0 0 5px 0' }}>測試繪師</h2>
-              <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold' }}>目前開放排單中</span>
-            </div>
+      {/* 頂部個人資訊 */}
+      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div style={{ 
+          width: '120px', height: '120px', borderRadius: '50%', margin: '0 auto 20px', 
+          backgroundColor: '#eee', backgroundImage: `url(${profile.avatar_url})`, 
+          backgroundSize: 'cover', backgroundPosition: 'center' 
+        }} />
+        <h1 style={{ margin: '0 0 10px 0' }}>{profile.display_name}</h1>
+        <p style={{ color: '#666', maxWidth: '600px', margin: '0 auto' }}>{profile.bio}</p>
+      </div>
+
+      {/* 詳細介紹 */}
+      {profile.about_me && (
+        <div style={sectionStyle}>
+          <h2 style={titleStyle}>詳細介紹</h2>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{profile.about_me}</div>
+        </div>
+      )}
+
+      {/* 作品展示區 (格狀牆) */}
+      {profile.portfolio_urls.length > 0 && (
+        <div style={sectionStyle}>
+          <h2 style={titleStyle}>作品展示</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+            {profile.portfolio_urls.map((url, index) => (
+              <img key={index} src={url} alt="作品" style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', aspectRatio: '1/1' }} />
+            ))}
           </div>
-          <p style={{ color: '#555', lineHeight: '1.6' }}>
-            日系全彩立繪 / 角色設計 / Vtuber 元件拆分<br/>
-            📍 聯絡方式優先使用 X (Twitter) 或 LINE 官方帳號。
-          </p>
         </div>
+      )}
 
-        <div style={{ flex: 1, backgroundColor: '#e0e0e0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '250px', overflow: 'hidden', border: '1px dashed #aaa' }}>
-          <span style={{ color: '#666', fontWeight: 'bold' }}>[右側作品展示：自動幻燈片模組]</span>
+      {/* 委託流程 */}
+      {profile.commission_process && (
+        <div style={sectionStyle}>
+          <h2 style={titleStyle}>委託流程</h2>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{profile.commission_process}</div>
         </div>
-      </div>
+      )}
 
-      {/* 下半部：會根據副頂端列點擊而變化的內容區 */}
-      <div style={{ backgroundColor: '#fff', padding: '40px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', minHeight: '350px' }}>
-        {renderContent()}
-      </div>
+      {/* 付款方式 */}
+      {profile.payment_info && (
+        <div style={sectionStyle}>
+          <h2 style={titleStyle}>付款方式</h2>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{profile.payment_info}</div>
+        </div>
+      )}
+
+      {/* 委託規範 */}
+      {profile.usage_rules && (
+        <div style={sectionStyle}>
+          <h2 style={titleStyle}>委託規範</h2>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{profile.usage_rules}</div>
+        </div>
+      )}
+
+      {/* 自訂項目 1~3 */}
+      {[1, 2, 3].map(num => {
+        const t = profile[`custom_${num}_title` as keyof ArtistProfile];
+        const c = profile[`custom_${num}_content` as keyof ArtistProfile];
+        if (!t || !c) return null;
+        return (
+          <div key={num} style={sectionStyle}>
+            <h2 style={titleStyle}>{t as string}</h2>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{c as string}</div>
+          </div>
+        );
+      })}
+
+      {/* 條款內容 */}
+      {profile.tos_content && (
+        <div style={{ ...sectionStyle, backgroundColor: '#f9f9f9', fontSize: '14px' }}>
+          <h2 style={titleStyle}>委託條款 (TOS)</h2>
+          <div style={{ whiteSpace: 'pre-wrap', color: '#666' }}>{profile.tos_content}</div>
+        </div>
+      )}
 
     </div>
   );
 }
-
-// 輔助樣式：統一標題風格
-const sectionTitleStyle = {
-  borderBottom: '2px solid #eee',
-  paddingBottom: '10px',
-  marginTop: 0,
-  color: '#333'
-};
