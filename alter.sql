@@ -1,0 +1,29 @@
+DROP TABLE IF EXISTS Commissions;
+
+CREATE TABLE Commissions (
+  id TEXT PRIMARY KEY,
+  client_id TEXT,
+  artist_id TEXT NOT NULL,
+  type_id TEXT NOT NULL,
+  total_price INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'quote_created',
+  payment_status TEXT DEFAULT 'unpaid',
+  current_stage TEXT DEFAULT 'sketch_drawing',
+  artist_note TEXT DEFAULT '',
+  contact_memo TEXT DEFAULT '',
+  is_paid INTEGER DEFAULT 0,
+  is_external INTEGER DEFAULT 0,
+  start_date TEXT,
+  end_date TEXT,
+  project_name TEXT DEFAULT '',
+  usage_type TEXT DEFAULT '',
+  is_rush TEXT DEFAULT '否',
+  delivery_method TEXT DEFAULT '三階段審閱',
+  payment_method TEXT DEFAULT '',
+  draw_scope TEXT DEFAULT '',
+  char_count INTEGER DEFAULT 1,
+  bg_type TEXT DEFAULT '',
+  add_ons TEXT DEFAULT '',
+  detailed_settings TEXT DEFAULT '',
+  order_date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
