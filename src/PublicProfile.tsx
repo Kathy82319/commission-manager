@@ -1,24 +1,55 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import './styles/PublicProfile.css';
 
-// 定義與 Settings 相同的結構
 interface ProfileSettings {
   portfolio: string[];
+  detailed_intro: string;
   process: string;
   payment: string;
   rules: string;
   custom_sections: { id: string; title: string; content: string }[];
+  social_links: { platform: string; url: string }[];
+  hidden_sections: string[];
 }
+
+const platformStyles: Record<string, { bg: string; text: string }> = {
+  'Facebook': { bg: '#1877F2', text: '#fff' },
+  'Plurk': { bg: '#FF574D', text: '#fff' },
+  'Twitter / X': { bg: '#000000', text: '#fff' },
+  'Threads': { bg: '#000000', text: '#fff' },
+  'Instagram': { bg: '#E1306C', text: '#fff' },
+  '個人網站': { bg: '#4CAF50', text: '#fff' }
+};
+
+const getSocialIcon = (platform: string) => {
+  const props = { width: "18", height: "18", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
+  switch (platform) {
+    case 'Facebook':
+      return <svg {...props} fill="currentColor" stroke="none"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>;
+    case 'Twitter / X':
+      return <svg {...props}><line x1="4" y1="4" x2="20" y2="20" /><line x1="20" y1="4" x2="4" y2="20" /></svg>;
+    case 'Instagram':
+      return <svg {...props}><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>;
+    case 'Threads':
+      return <svg {...props}><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>;
+    case 'Plurk':
+      return <svg {...props}><path d="M9 4h3a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H9V4z" /><line x1="9" y1="12" x2="9" y2="20" /></svg>;
+    case '個人網站':
+    default:
+      return <svg {...props}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
+  }
+};
 
 export function PublicProfile() {
   const { id } = useParams();
-  
-  // 如果網址沒有帶 ID，預設拿測試帳號當作備用
   const artistId = id || 'u-artist-01';
 
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('');
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -44,114 +75,149 @@ export function PublicProfile() {
     fetchArtistData();
   }, [artistId]);
 
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>載入中...</div>;
+  // 控制滿版過場動畫的顯示時間
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 1500); // 停留 1.5 秒後淡出
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  const availableTabs = [];
+  if (settings) {
+    const isHidden = (id: string) => settings.hidden_sections?.includes(id);
+    if (!isHidden('portfolio') && settings.portfolio?.length > 0) availableTabs.push({ id: 'portfolio', label: '作品展示' });
+    if (!isHidden('detailed_intro') && settings.detailed_intro) availableTabs.push({ id: 'detailed_intro', label: '詳細介紹' });
+    if (!isHidden('process') && settings.process) availableTabs.push({ id: 'process', label: '委託流程' });
+    if (!isHidden('payment') && settings.payment) availableTabs.push({ id: 'payment', label: '付款方式' });
+    if (!isHidden('rules') && settings.rules) availableTabs.push({ id: 'rules', label: '委託規範' });
+    
+    if (settings.custom_sections) {
+      settings.custom_sections.forEach(sec => {
+        if (!isHidden(sec.id)) availableTabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
+      });
+    }
   }
 
-  if (!artist) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#c62828' }}>找不到該繪師的資料。</div>;
-  }
+  const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
+
+  if (loading) return <div className="loading-state">載入中...</div>;
+  if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+    <div className="public-profile-container">
       
-      {/* 左側：固定式個人簡介卡片 (Sticky Sidebar) */}
-      <div style={{ width: '300px', position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f0f0', border: '1px solid #ddd' }}>
-          {artist.avatar_url ? (
-            <img src={artist.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>無頭像</div>
-          )}
-        </div>
-        
-        <div>
-          <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', color: '#333' }}>
-            {artist.display_name || '未命名繪師'}
-          </h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-             <button style={{ flex: 1, padding: '12px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>
-               前往委託
-             </button>
-             {/* 未來可以加上複製連結或分享按鈕 */}
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px', border: '1px solid #eee' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#555', borderBottom: '1px solid #ddd', paddingBottom: '8px' }}>關於我</h3>
-          <p style={{ margin: 0, fontSize: '14px', color: '#555', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-            {artist.bio || '這位繪師還沒有寫任何簡介。'}
-          </p>
-        </div>
+      {/* 滿版過場動畫區塊 */}
+      <div className={`splash-screen ${!showSplash ? 'hide' : ''}`}>
+        {artist.avatar_url && <img src={artist.avatar_url} alt="Avatar" className="splash-avatar" />}
+        <h1 className="splash-name">{artist.display_name || '未命名繪師'}</h1>
+        {artist.bio && <p className="splash-bio">{artist.bio}</p>}
       </div>
 
-      {/* 右側：滾動式內容區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '40px' }}>
-        
-        {/* 作品展示區 (CSS Grid 瀑布流/格狀) */}
-        {settings?.portfolio && settings.portfolio.length > 0 && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '22px', color: '#333', borderBottom: '2px solid #333', paddingBottom: '10px', display: 'inline-block' }}>
-              作品展示區
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {settings.portfolio.map((img, idx) => (
-                <div key={idx} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f5f5f5', border: '1px solid #eee' }}>
-                  <img src={img} alt={`作品 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} 
-                       onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                       onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                </div>
-              ))}
+      <div className="content-wrapper">
+        <div className="sidebar">
+          <div className="avatar-container">
+            {artist.avatar_url ? (
+              <img src={artist.avatar_url} alt="Avatar" className="avatar-image" />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '18px' }}>無頭像</div>
+            )}
+          </div>
+          
+          <div>
+            <h1 className="artist-name">{artist.display_name || '未命名繪師'}</h1>
+            
+            {/* 修復了這裡的標籤閉合與結構問題 */}
+            <div className="social-links">
+              {settings?.social_links && settings.social_links.length > 0 && (
+                settings.social_links.map((link, idx) => {
+                  const style = platformStyles[link.platform] || { bg: '#eee', text: '#333' };
+                  const safeUrl = (url: string) => {
+                    const lowerUrl = (url || '').toLowerCase().trim();
+                    if (lowerUrl.startsWith('javascript:') || lowerUrl.startsWith('data:') || lowerUrl.startsWith('vbscript:')) return '#'; 
+                    return url;
+                  };
+                  return (
+                    <a 
+                      key={idx} 
+                      href={safeUrl(link.url)} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      title={link.platform}
+                      className="social-icon"
+                      style={{ backgroundColor: style.bg, color: style.text }}
+                    >
+                      {getSocialIcon(link.platform)}
+                    </a>
+                  );
+                })
+              )}
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* 委託流程說明 */}
-        {settings?.process && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託流程說明</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.process}
+          {!settings?.hidden_sections?.includes('profile_basic') && (
+            <div className="about-card">
+              <h3 className="about-title">關於我</h3>
+              <p className="about-text">{artist.bio || '這位繪師還沒有寫任何簡介。'}</p>
             </div>
-          </section>
-        )}
+          )}
+        </div>
 
-        {/* 付款方式 */}
-        {settings?.payment && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>付款方式</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.payment}
-            </div>
-          </section>
-        )}
+        <div className="main-content">
+          {availableTabs.length > 0 ? (
+            <>
+              <div className="tabs-container">
+                {availableTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-        {/* 委託範圍(使用規範) */}
-        {settings?.rules && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託範圍與使用規範</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.rules}
-            </div>
-          </section>
-        )}
+              <div style={{ minHeight: '500px' }}>
+                {currentTab === 'portfolio' && settings?.portfolio && (
+                  <div className="portfolio-grid">
+                    {settings.portfolio.map((img, idx) => (
+                      <div key={idx} className="portfolio-item">
+                        <img src={img} alt={`作品 ${idx + 1}`} />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-        {/* 自訂區塊 */}
-        {settings?.custom_sections && settings.custom_sections.length > 0 && (
-          <>
-            {settings.custom_sections.map((section) => (
-              <section key={section.id}>
-                <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                  {section.title || '未命名區塊'}
-                </h2>
-                <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-                  {section.content}
-                </div>
-              </section>
-            ))}
-          </>
-        )}
+                {currentTab === 'detailed_intro' && settings?.detailed_intro && (
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.detailed_intro }} />
+                )}
 
+                {currentTab === 'process' && settings?.process && (
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.process }} />
+                )}
+
+                {currentTab === 'payment' && settings?.payment && (
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.payment }} />
+                )}
+
+                {currentTab === 'rules' && settings?.rules && (
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.rules }} />
+                )}
+
+                {settings?.custom_sections?.map(sec => 
+                  currentTab === sec.id && (
+                    <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: sec.content }} />
+                  )
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">這位繪師的版塊皆為隱藏或尚未設定資訊。</div>
+          )}
+        </div>
       </div>
     </div>
   );

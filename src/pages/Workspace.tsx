@@ -25,10 +25,10 @@ export function Workspace() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [focusedField, setFocusedField] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. 讀取訂單基本資料 (只需讀取一次)
   const fetchOrderData = async () => {
     try {
       const res = await fetch(`/api/commissions/${id}`);
@@ -39,7 +39,6 @@ export function Workspace() {
     }
   };
 
-  // 2. 獨立的「讀取訊息」函數 (用來每 3 秒自動執行)
   const fetchMessages = async () => {
     try {
       const res = await fetch(`/api/commissions/${id}/messages`);
@@ -50,7 +49,6 @@ export function Workspace() {
     }
   };
 
-  // 初始載入與設定自動輪詢 (Polling)
   useEffect(() => {
     const initData = async () => {
       await fetchOrderData();
@@ -59,16 +57,13 @@ export function Workspace() {
     };
     initData();
 
-    // 🌟 核心升級：每 3 秒自動去後台抓最新訊息
     const intervalId = setInterval(() => {
       fetchMessages();
     }, 3000);
 
-    // 離開這個頁面時，關閉計時器
     return () => clearInterval(intervalId);
   }, [id]);
 
-  // 當訊息有更新時，畫面自動往下滾
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -86,7 +81,7 @@ export function Workspace() {
       
       if (data.success) {
         setInputText('');
-        fetchMessages(); // 自己發完馬上更新畫面
+        fetchMessages(); 
       } else {
         alert("發送失敗：" + data.error);
       }
@@ -95,72 +90,122 @@ export function Workspace() {
     }
   };
 
-  if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>載入工作區中...</div>;
-  if (!order) return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>找不到此委託空間</div>;
+  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#d5d9ed', color: '#5D4A3E', fontSize: '15px' }}>載入工作區中...</div>;
+  if (!order) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#d5d9ed', color: '#A05C5C', fontSize: '15px' }}>找不到此委託空間，或發生異常。</div>;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f0f2f5' }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#d5d9ed', fontFamily: 'sans-serif' }}>
       
-      <header style={{ backgroundColor: '#fff', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <button onClick={() => navigate(-1)} style={{ padding: '6px 12px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ddd' }}>
-            ← 返回
-          </button>
-          <div>
-            <h2 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>
-              專屬工作區：{order.client_name || '委託人'}
-            </h2>
-            <div style={{ fontSize: '13px', color: '#666' }}>
-              單號：{id?.split('-')[0]}... | 狀態：<span style={{ color: '#1976d2', fontWeight: 'bold' }}>{order.status}</span>
+      {/* 限制最大寬度，讓電腦版看起來像手機畫面 */}
+      <div style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', backgroundColor: '#FBFBF9', boxShadow: '0 0 40px rgba(0,0,0,0.05)', position: 'relative' }}>
+        
+        {/* Header 區塊 */}
+        <header style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, position: 'sticky', top: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button 
+              onClick={() => navigate(-1)} 
+              style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', padding: 0, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              ← 返回
+            </button>
+            <div>
+              <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#5D4A3E' }}>
+                {order.client_name || '未命名委託人'} 的工作區
+              </h2>
+              <div style={{ fontSize: '12px', color: '#A0978D', fontFamily: 'monospace' }}>
+                單號：{id?.split('-')[0]}... | 狀態：<span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>{order.status}</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div style={{ backgroundColor: role === 'artist' ? '#333' : '#1976d2', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontSize: '12px' }}>
-          目前身分：{role === 'artist' ? '🎨 繪師' : '👤 委託人'}
-        </div>
-      </header>
+          <div style={{ backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7', color: role === 'artist' ? '#5D4A3E' : '#4A7294', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+            {role === 'artist' ? '🎨 繪師' : '👤 委託人'}
+          </div>
+        </header>
 
-      <main style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ textAlign: 'center', color: '#888', fontSize: '12px', marginBottom: '20px' }}>
-          -- 雙方已確認委託，專屬工作區已建立 --
-        </div>
-        
-        {messages.map(msg => {
-          const isMe = msg.sender_role === role;
-          return (
-            <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-                {msg.sender_role === 'artist' ? '🎨 繪師' : '👤 委託人'}
-              </div>
-              <div style={{ 
-                maxWidth: '70%', padding: '12px 16px', borderRadius: '12px', lineHeight: '1.5',
-                backgroundColor: isMe ? '#dcf8c6' : '#fff',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                wordBreak: 'break-word'
-              }}>
-                {msg.content}
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} /> 
-      </main>
+        {/* 聊天對話區 */}
+        <main style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#FBFBF9' }}>
+          
+          <div style={{ textAlign: 'center', margin: '10px 0 20px 0' }}>
+            <span style={{ backgroundColor: '#EAE6E1', color: '#7A7269', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
+              雙方已確認委託，專屬工作區已建立
+            </span>
+          </div>
+          
+          {messages.map(msg => {
+            const isMe = msg.sender_role === role;
+            
+            return (
+              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', animation: 'fadeIn 0.3s ease' }}>
+                
+                {/* 傳送者名稱與頭貼佔位 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: msg.sender_role === 'artist' ? '#EAE6E1' : '#EBF2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: msg.sender_role === 'artist' ? '#5D4A3E' : '#4A7294', fontWeight: 'bold' }}>
+                    {msg.sender_role === 'artist' ? '繪' : '客'}
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>
+                    {msg.sender_role === 'artist' ? '繪師' : '委託人'}
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#C4BDB5' }}>
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
 
-      <footer style={{ backgroundColor: '#fff', padding: '15px', borderTop: '1px solid #ddd', display: 'flex', gap: '10px' }}>
-        <textarea 
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="輸入訊息..."
-          style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #ccc', resize: 'none', height: '50px', fontFamily: 'inherit' }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-        />
-        <button 
-          onClick={handleSendMessage}
-          style={{ padding: '0 25px', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          發送
-        </button>
-      </footer>
+                {/* 對話泡泡 */}
+                <div style={{ 
+                  maxWidth: '75%', padding: '12px 16px', lineHeight: '1.6', fontSize: '15px',
+                  backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
+                  color: isMe ? '#FFFFFF' : '#4A4A4A',
+                  borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                  wordBreak: 'break-word', whiteSpace: 'pre-wrap',
+                  border: isMe ? 'none' : '1px solid #EAE6E1'
+                }}>
+                  {msg.content}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} style={{ height: '10px' }} /> 
+        </main>
+
+        {/* 底部輸入區 */}
+        <footer style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '12px', alignItems: 'flex-end', position: 'sticky', bottom: 0 }}>
+          <textarea 
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onFocus={() => setFocusedField(true)}
+            onBlur={() => setFocusedField(false)}
+            placeholder="請輸入訊息..."
+            style={{ 
+              flex: 1, padding: '12px 16px', borderRadius: '12px', resize: 'none', 
+              minHeight: '24px', maxHeight: '120px', fontFamily: 'inherit', fontSize: '15px',
+              border: focusedField ? '2px solid #5D4A3E' : '1px solid #DED9D3',
+              backgroundColor: '#FBFBF9', color: '#5D4A3E', outline: 'none',
+              transition: 'border-color 0.2s ease', lineHeight: '1.5'
+            }}
+            onKeyDown={(e) => { 
+              if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                handleSendMessage(); 
+              } 
+            }}
+          />
+          <button 
+            onClick={handleSendMessage}
+            disabled={!inputText.trim()}
+            style={{ 
+              padding: '14px 24px', backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3', 
+              color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', 
+              cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
+              boxShadow: inputText.trim() ? '0 4px 12px rgba(93,74,62,0.2)' : 'none',
+              height: '48px', display: 'flex', alignItems: 'center'
+            }}
+          >
+            傳送
+          </button>
+        </footer>
+
+      </div>
     </div>
   );
 }

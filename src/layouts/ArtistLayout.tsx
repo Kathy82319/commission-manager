@@ -1,52 +1,98 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 
-// 定義目前的測試繪師 ID
 const MOCK_ARTIST_ID = 'u-artist-01';
 
 export function ArtistLayout() {
-  
-  // 複製網址的功能
+  const location = useLocation();
+
   const copyLink = () => {
     const publicUrl = `${window.location.origin}/u/${MOCK_ARTIST_ID}`;
     navigator.clipboard.writeText(publicUrl);
     alert('公開主頁連結已複製！');
   };
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f0f2f5' }}>
-      
-      {/* 後台專屬黑底頂端列 */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 1000, backgroundColor: '#1a1a1a', color: 'white', display: 'flex', justifyContent: 'space-between', padding: '10px 20px', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-        <nav style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <span style={{ fontWeight: 'bold', color: '#4caf50', marginRight: '20px' }}>⚡ 後台管理</span>
-          <Link to="/artist/quote/new" style={linkStyle}>產出委託單</Link>
-          <Link to="/artist/queue" style={linkStyle}>排單表</Link>
-          <Link to="/artist/notebook" style={linkStyle}>委託單管理</Link>
-          <Link to="/artist/records" style={linkStyle}>結案紀錄</Link>
-          <Link to="/artist/settings" style={linkStyle}>個人設定</Link>
-        </nav>
-        
-        <nav style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          {/* 新增：複製連結按鈕 */}
-          <button 
-            onClick={copyLink} 
-            style={{ background: 'none', border: '1px solid #555', color: '#ccc', cursor: 'pointer', padding: '4px 10px', borderRadius: '4px', fontSize: '13px' }}
-          >
-            🔗 複製連結
-          </button>
-          
-          {/* 修正：將 demo-artist 改為動態載入 MOCK_ARTIST_ID */}
-          <Link to={`/u/${MOCK_ARTIST_ID}`} target="_blank" style={{ color: '#fff', textDecoration: 'none', fontSize: '13px', backgroundColor: '#333', padding: '4px 10px', borderRadius: '4px' }}>
-            👁️ 預覽公開主頁
-          </Link>
-        </nav>
-      </header>
+  // 判斷目前是否在該路由，用以標示所在頁面
+  const isActive = (path: string) => location.pathname.includes(path);
 
-      <main style={{ flex: 1, padding: '20px' }}>
+  const navItems = [
+    { path: '/artist/quote/new', label: '產出委託單' },
+    { path: '/artist/queue', label: '排單表' },
+    { path: '/artist/notebook', label: '委託單管理' },
+    { path: '/artist/records', label: '結案紀錄' },
+    { path: '/artist/settings', label: '個人設定' }
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
+      
+      {/* 左側固定式側邊欄 */}
+      <aside style={{ width: '240px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', borderRight: '1px solid #EAE6E1', boxShadow: '4px 0 20px rgba(0,0,0,0.02)', position: 'sticky', top: 0, height: '100vh' }}>
+        
+        {/* 平台 Logo / 標題區 */}
+        <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E', letterSpacing: '0.5px' }}>Commission</div>
+          <div style={{ fontSize: '13px', color: '#A0978D', marginTop: '4px' }}>Artist Dashboard</div>
+        </div>
+
+        {/* 導覽選單 */}
+        <nav style={{ flex: 1, padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {navItems.map(item => {
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  textDecoration: 'none',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: active ? '#F4F0EB' : 'transparent',
+                  color: active ? '#5D4A3E' : '#7A7269',
+                  fontWeight: active ? 'bold' : 'normal',
+                  transition: 'all 0.2s ease',
+                  fontSize: '15px'
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = '#FAFAFA'; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* 底部操作區 */}
+        <div style={{ padding: '20px', borderTop: '1px solid #F0ECE7', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button
+            onClick={copyLink}
+            style={{
+              width: '100%', padding: '10px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px',
+              color: '#7A7269', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s ease', fontWeight: 'bold'
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAFAFA'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+          >
+            複製專屬連結
+          </button>
+          <Link
+            to={`/u/${MOCK_ARTIST_ID}`}
+            target="_blank"
+            style={{
+              width: '100%', padding: '10px', backgroundColor: '#5D4A3E', color: '#FFFFFF', textDecoration: 'none',
+              borderRadius: '8px', fontSize: '14px', textAlign: 'center', fontWeight: 'bold', transition: 'background-color 0.2s ease', boxSizing: 'border-box'
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4A3A30'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#5D4A3E'}
+          >
+            預覽公開主頁
+          </Link>
+        </div>
+      </aside>
+
+      {/* 右側主內容區 */}
+      <main style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
         <Outlet />
       </main>
     </div>
   );
 }
-
-const linkStyle = { color: '#ccc', textDecoration: 'none', fontSize: '14px' };

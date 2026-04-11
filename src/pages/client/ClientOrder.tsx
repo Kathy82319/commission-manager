@@ -8,24 +8,23 @@ interface OrderData {
   current_stage: string;
   total_price: number;
   payment_status: string;
-  // 新增欄位以支援異動顯示
   scope?: string;
   character_count?: number;
   format?: string;
   usage?: string;
   deadline?: string;
-  pending_changes?: string; // 儲存 JSON 字串
+  pending_changes?: string; 
 }
 
 interface ActionLog { id: string; created_at: string; actor_role: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 
-const paymentStatusMap: Record<string, string> = { unpaid: '未付款', partial: '已付訂金', paid: '已付清' };
+const paymentStatusMap: Record<string, string> = { unpaid: '尚未付款', partial: '已付訂金', paid: '已付清' };
 
 export function ClientOrder() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>('delivery');
+  const [activeTab, setActiveTab] = useState<'delivery' | 'details' | 'logs'>('delivery');
   
   const [order, setOrder] = useState<OrderData | null>(null);
   const [logs, setLogs] = useState<ActionLog[]>([]);
@@ -51,7 +50,6 @@ export function ClientOrder() {
 
   useEffect(() => { fetchAllData(); }, [id]);
 
-  // 回應紅字異動申請 (同意/拒絕)
   const handleResponseChange = async (action: 'approve' | 'reject') => {
     const msg = action === 'approve' 
       ? "同意變更後，委託規格將立即更新，確定嗎？" 
@@ -80,7 +78,6 @@ export function ClientOrder() {
     }
   };
 
-  // 稿件審閱邏輯 (同意/要求修改)
   const handleReview = async (stageKey: string, action: 'approve' | 'reject') => {
     let comment = '';
     if (action === 'approve') {
@@ -101,10 +98,7 @@ export function ClientOrder() {
         body: JSON.stringify({ stage: stageKey, action, comment })
       });
       
-      // 確保伺服器有正確回應
-      if (!res.ok) {
-        throw new Error(`伺服器錯誤狀態: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`伺服器錯誤狀態: ${res.status}`);
 
       const data = await res.json();
       if (data.success) {
@@ -121,8 +115,6 @@ export function ClientOrder() {
     }
   };
 
-
-  // 輔助函數：渲染帶有異動對比的欄位
   const renderFieldWithPending = (label: string, fieldKey: string, currentValue: any, suffix: string = '') => {
     let pendingValue = null;
     if (order?.pending_changes) {
@@ -135,15 +127,15 @@ export function ClientOrder() {
     const isChanged = pendingValue !== undefined && pendingValue !== null && pendingValue !== currentValue;
 
     return (
-      <div style={{ marginBottom: '15px' }}>
-        <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>{label}</div>
-        <div style={{ fontSize: '15px', color: '#333' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '6px', fontWeight: 'bold' }}>{label}</div>
+        <div style={{ fontSize: '15px', color: '#5D4A3E', fontWeight: '500' }}>
           {isChanged ? (
             <>
-              <span style={{ textDecoration: 'line-through', color: '#999', marginRight: '8px' }}>
+              <span style={{ textDecoration: 'line-through', color: '#C4BDB5', marginRight: '8px' }}>
                 {currentValue}{suffix}
               </span>
-              <span style={{ color: '#d32f2f', fontWeight: 'bold' }}>
+              <span style={{ color: '#A05C5C', fontWeight: 'bold', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px' }}>
                 變更為：{pendingValue}{suffix}
               </span>
             </>
@@ -155,14 +147,15 @@ export function ClientOrder() {
     );
   };
 
-  if (!order) return <div style={{ padding: '20px', textAlign: 'center' }}>載入中...</div>;
+  if (!order) return <div style={{ backgroundColor: '#FBFBF9', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>載入委託單資料中...</div>;
 
   const isChatDisabled = !order.payment_status || order.payment_status === 'unpaid';
 
   const tabBtnStyle = (isActive: boolean) => ({
-    flex: 1, padding: '12px 0', border: 'none', backgroundColor: 'transparent',
-    borderBottom: isActive ? '3px solid #1976d2' : '3px solid #ddd',
-    color: isActive ? '#1976d2' : '#666', fontWeight: isActive ? 'bold' : 'normal', cursor: 'pointer'
+    flex: 1, padding: '14px 0', border: 'none', backgroundColor: 'transparent',
+    borderBottom: isActive ? '3px solid #5D4A3E' : '3px solid transparent',
+    color: isActive ? '#5D4A3E' : '#A0978D', fontWeight: isActive ? 'bold' : 'normal', 
+    cursor: 'pointer', fontSize: '15px', transition: 'all 0.2s ease'
   });
 
   const renderClientStageBox = (title: string, stageKey: string, isReviewingStatus: boolean, isPassed: boolean) => {
@@ -170,21 +163,25 @@ export function ClientOrder() {
     const isCompleted = order.status === 'completed';
 
     return (
-      <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #ddd', overflow: 'hidden', marginBottom: '20px' }}>
-        <div style={{ backgroundColor: isPassed || isCompleted ? '#e8f5e9' : '#f5f5f5', padding: '12px', fontWeight: 'bold', borderBottom: '1px solid #ddd', color: isPassed || isCompleted ? '#2e7d32' : '#333' }}>
-          {title} {isPassed || isCompleted ? '(已確認)' : ''}
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: isPassed || isCompleted ? '#E8F3EB' : '#FBFBF9', padding: '16px 20px', fontWeight: 'bold', borderBottom: '1px solid #EAE6E1', color: isPassed || isCompleted ? '#4E7A5A' : '#5D4A3E', fontSize: '15px' }}>
+          {title} {isPassed || isCompleted ? ' (已確認)' : ''}
         </div>
-        <div style={{ padding: '15px' }}>
+        <div style={{ padding: '20px' }}>
           {!sub ? (
-            <div style={{ color: '#888', textAlign: 'center', padding: '20px 0' }}>繪師尚未提交檔案或正在繪製中</div>
+            <div style={{ color: '#A0978D', textAlign: 'center', padding: '30px 0', fontSize: '14px', backgroundColor: '#FDFDFB', borderRadius: '8px', border: '1px dashed #DED9D3' }}>繪師尚未提交檔案或正在繪製中</div>
           ) : (
             <div>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '10px' }}>最新版本 (v{sub.version})</div>
-              <img src={sub.file_url} alt="稿件預覽" style={{ width: '100%', borderRadius: '4px', border: '1px solid #eee' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '12px', color: '#7A7269', fontWeight: 'bold', backgroundColor: '#F4F0EB', padding: '4px 10px', borderRadius: '12px' }}>最新版本 (v{sub.version})</span>
+                <span style={{ fontSize: '12px', color: '#A0978D' }}>{new Date(sub.created_at).toLocaleDateString()}</span>
+              </div>
+              <img src={sub.file_url} alt="稿件預覽" style={{ width: '100%', borderRadius: '8px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }} />
+              
               {isReviewingStatus && !isCompleted && (
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ flex: 1, padding: '12px', backgroundColor: '#fff', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>要求修改</button>
-                  <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ flex: 1, padding: '12px', backgroundColor: '#1976d2', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>同意稿件</button>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ flex: 1, padding: '14px', backgroundColor: '#FFFFFF', color: '#A05C5C', border: '1px solid #DED9D3', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }} onMouseEnter={e => e.currentTarget.style.borderColor='#A05C5C'} onMouseLeave={e => e.currentTarget.style.borderColor='#DED9D3'}>要求修改</button>
+                  <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ flex: 1, padding: '14px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(74,114,148,0.2)' }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>同意稿件</button>
                 </div>
               )}
             </div>
@@ -195,116 +192,124 @@ export function ClientOrder() {
   };
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', backgroundColor: '#f5f5f5', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* 頁首 */}
-      <div style={{ backgroundColor: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#1976d2', fontSize: '16px', padding: 0 }}>返回</button>
-        <span style={{ fontWeight: 'bold' }}>委託單詳情</span>
-        <div style={{ width: '32px' }}></div>
-      </div>
-
-      {/* 標題區 */}
-      <div style={{ padding: '15px', backgroundColor: '#fff', borderBottom: '1px solid #ddd' }}>
-        <h2 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>{order.type_name}</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px', color: '#666' }}>單號：{order.id.split('-')[0]}...</span>
-          <button 
-            onClick={() => navigate(`/workspace/${order.id}?role=client`)} disabled={isChatDisabled}
-            style={{ padding: '8px 15px', backgroundColor: isChatDisabled ? '#ccc' : '#333', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '13px', cursor: isChatDisabled ? 'not-allowed' : 'pointer' }}
-          >
-            進入聊天室
-          </button>
-        </div>
-      </div>
-
-      {/* 紅字異動審核區 (僅在有 pending_changes 時顯示) */}
-      {order.pending_changes && (
-        <div style={{ backgroundColor: '#fffde7', borderBottom: '2px solid #fbc02d', padding: '15px' }}>
-          <div style={{ color: '#827717', fontWeight: 'bold', marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-            ⚠️ 繪師提出了內容異動申請
-          </div>
-          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#555' }}>
-            請查看「內容與付款」分頁中的紅字標示。是否同意以此新規格繼續委託？
-          </p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={() => handleResponseChange('reject')} 
-              disabled={isProcessing}
-              style={{ flex: 1, padding: '10px', backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              拒絕變更
-            </button>
-            <button 
-              onClick={() => handleResponseChange('approve')} 
-              disabled={isProcessing}
-              style={{ flex: 1, padding: '10px', backgroundColor: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              同意變更
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 分頁標籤 */}
-      <div style={{ display: 'flex', backgroundColor: '#fff' }}>
-        <button style={tabBtnStyle(activeTab === 'delivery')} onClick={() => setActiveTab('delivery')}>收件與審閱</button>
-        <button style={tabBtnStyle(activeTab === 'details')} onClick={() => setActiveTab('details')}>內容與付款</button>
-        <button style={tabBtnStyle(activeTab === 'logs')} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
-      </div>
-
-      {/* 分頁內容 */}
-      <div style={{ padding: '15px', flex: 1 }}>
+    <div style={{ backgroundColor: '#d5d9ed', minHeight: '100vh', display: 'flex', justifyContent: 'center', fontFamily: 'sans-serif' }}>
+      <div style={{ width: '100%', maxWidth: '500px', backgroundColor: '#FBFBF9', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(0,0,0,0.05)', minHeight: '100vh' }}>
         
-        {activeTab === 'delivery' && (
-          <div>
-            {renderClientStageBox('草圖階段', 'sketch', order.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(order.current_stage))}
-            {renderClientStageBox('線稿階段', 'lineart', order.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(order.current_stage))}
-            {renderClientStageBox('完稿階段', 'final', order.current_stage === 'final_reviewing', order.status === 'completed')}
-          </div>
-        )}
+        {/* 頁首 */}
+        <div style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', padding: 0, fontWeight: 'bold', cursor: 'pointer' }}>← 返回</button>
+          <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單管理區</span>
+          <div style={{ width: '40px' }}></div>
+        </div>
 
-        {activeTab === 'details' && (
-          <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd' }}>
-            <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', borderLeft: '4px solid #1976d2', paddingLeft: '10px' }}>付款資訊</h3>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: order.payment_status === 'paid' ? '#2e7d32' : '#e65100', marginBottom: '20px' }}>
-              {renderFieldWithPending('總金額', 'total_price', order.total_price, ' 元')}
-              <div style={{ fontSize: '14px', fontWeight: 'normal' }}>狀態：{paymentStatusMap[order.payment_status] || '未付款'}</div>
+        {/* 標題區 */}
+        <div style={{ padding: '24px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1' }}>
+          <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', color: '#5D4A3E' }}>{order.type_name || '未命名項目'}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: '#A0978D', fontFamily: 'monospace' }}>單號：{order.id.split('-')[0]}...</span>
+            <button 
+              onClick={() => navigate(`/workspace/${order.id}?role=client`)} disabled={isChatDisabled}
+              style={{ padding: '10px 16px', backgroundColor: isChatDisabled ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: isChatDisabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: isChatDisabled ? 'none' : '0 4px 12px rgba(93,74,62,0.2)' }}
+            >
+              💬 進入聊天室
+            </button>
+          </div>
+        </div>
+
+        {/* 內容區 */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          
+          {/* 紅字異動審核區 */}
+          {order.pending_changes && (
+            <div style={{ backgroundColor: '#FDF4E6', borderBottom: '2px solid #A67B3E', padding: '20px' }}>
+              <div style={{ color: '#A67B3E', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', fontSize: '15px' }}>
+                ⚠️ 繪師提出了規格異動申請
+              </div>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#7A7269', lineHeight: '1.6' }}>
+                請查看「內容與付款」分頁中的紅字標示。是否同意以此新規格繼續委託？
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => handleResponseChange('reject')} disabled={isProcessing} style={{ flex: 1, padding: '12px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', color: '#7A7269', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>拒絕變更</button>
+                <button onClick={() => handleResponseChange('approve')} disabled={isProcessing} style={{ flex: 1, padding: '12px', backgroundColor: '#A05C5C', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(160,92,92,0.2)' }}>同意變更</button>
+              </div>
             </div>
+          )}
+
+          {/* 分頁標籤 */}
+          <div style={{ display: 'flex', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: '56px', zIndex: 9 }}>
+            <button style={tabBtnStyle(activeTab === 'delivery')} onClick={() => setActiveTab('delivery')}>收件與審閱</button>
+            <button style={tabBtnStyle(activeTab === 'details')} onClick={() => setActiveTab('details')}>內容與付款</button>
+            <button style={tabBtnStyle(activeTab === 'logs')} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
+          </div>
+
+          {/* 分頁內容 */}
+          <div style={{ padding: '20px' }}>
             
-            <h3 style={{ margin: '25px 0 15px 0', fontSize: '16px', borderLeft: '4px solid #1976d2', paddingLeft: '10px' }}>委託規格</h3>
-            {renderFieldWithPending('繪畫範圍', 'scope', order.scope)}
-            {renderFieldWithPending('人物數量', 'character_count', order.character_count, ' 人')}
-            {renderFieldWithPending('交稿格式', 'format', order.format)}
-            {renderFieldWithPending('用途說明', 'usage', order.usage)}
-            {renderFieldWithPending('預計截稿日', 'deadline', order.deadline)}
+            {activeTab === 'delivery' && (
+              <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                {renderClientStageBox('草圖階段', 'sketch', order.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(order.current_stage))}
+                {renderClientStageBox('線稿階段', 'lineart', order.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(order.current_stage))}
+                {renderClientStageBox('完稿階段', 'final', order.current_stage === 'final_reviewing', order.status === 'completed')}
+              </div>
+            )}
 
-            <h3 style={{ margin: '25px 0 10px 0', fontSize: '16px', color: '#666' }}>委託協議</h3>
-            <div style={{ fontSize: '12px', color: '#999', lineHeight: '1.6', backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '4px' }}>
-              1. 本委託為客製化商品，不適用七天鑑賞期。<br/>
-              2. 完稿後若非繪師方失誤，僅提供兩次微調修改。<br/>
-              (您已於送出表單時勾選同意此版本協議)
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'logs' && (
-          <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
-            {logs.length === 0 ? <div style={{ color: '#999', textAlign: 'center' }}>尚無紀錄</div> : (
-              logs.map(log => (
-                <div key={log.id} style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', color: '#bbb', marginBottom: '4px' }}>{new Date(log.created_at).toLocaleString()}</div>
-                  <div style={{ fontSize: '14px', color: '#333' }}>
-                    <span style={{ fontWeight: 'bold', color: log.actor_role === 'artist' ? '#1976d2' : '#2e7d32' }}>
-                      [{log.actor_role === 'artist' ? '繪師' : '您'}]
-                    </span> {log.content}
+            {activeTab === 'details' && (
+              <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', animation: 'fadeIn 0.2s ease' }}>
+                
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>財務資訊</h3>
+                <div style={{ backgroundColor: '#FBFBF9', padding: '16px', borderRadius: '12px', border: '1px dashed #DED9D3', marginBottom: '24px' }}>
+                  {renderFieldWithPending('總金額', 'total_price', order.total_price, ' 元')}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #EAE6E1' }}>
+                    <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>付款狀態</span>
+                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: order.payment_status === 'paid' ? '#4E7A5A' : '#A05C5C', backgroundColor: order.payment_status === 'paid' ? '#E8F3EB' : '#F5EBEB', padding: '4px 10px', borderRadius: '6px' }}>
+                      {paymentStatusMap[order.payment_status] || '未付款'}
+                    </span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        )}
+                
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>委託規格</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
+                  {renderFieldWithPending('繪畫範圍', 'scope', order.scope)}
+                  {renderFieldWithPending('人物數量', 'character_count', order.character_count, ' 人')}
+                  {renderFieldWithPending('交稿格式', 'format', order.format)}
+                  {renderFieldWithPending('用途說明', 'usage', order.usage)}
+                  {renderFieldWithPending('預計截稿日', 'deadline', order.deadline)}
+                </div>
 
+                <h3 style={{ margin: '24px 0 16px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>委託協議</h3>
+                <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.8', backgroundColor: '#FDFDFB', padding: '16px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+                  1. 本委託為客製化商品，不適用七天鑑賞期。<br/>
+                  2. 完稿後若非繪師方失誤，僅提供兩次微調修改。<br/>
+                  <div style={{ color: '#A0978D', marginTop: '8px', fontSize: '12px', fontWeight: 'bold' }}>(您已於送出表單時同意此版本協議)</div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'logs' && (
+              <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', animation: 'fadeIn 0.2s ease' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>操作與決策紀錄</h3>
+                {logs.length === 0 ? <div style={{ color: '#A0978D', textAlign: 'center', padding: '30px 0', fontSize: '14px' }}>尚無任何歷程紀錄</div> : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {logs.map((log, index) => (
+                      <div key={log.id} style={{ display: 'flex', gap: '12px', paddingBottom: index !== logs.length - 1 ? '16px' : '0', borderBottom: index !== logs.length - 1 ? '1px dashed #EAE6E1' : 'none' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: log.actor_role === 'artist' ? '#EBF2F7' : '#E8F3EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', color: log.actor_role === 'artist' ? '#4A7294' : '#4E7A5A', flexShrink: 0 }}>
+                          {log.actor_role === 'artist' ? '繪師' : '您'}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '11px', color: '#A0978D', marginBottom: '4px', fontFamily: 'monospace' }}>{new Date(log.created_at).toLocaleString()}</div>
+                          <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}>
+                            {log.content}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );

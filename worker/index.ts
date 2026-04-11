@@ -24,7 +24,61 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
-    
+ // [GET] 臨時路由：大量生成 50 筆測試委託單
+    if (request.method === "GET" && url.pathname === "/api/temp-seed-50") {
+      try {
+        const artistId = 'u-artist-01';
+        // 預設的委託項目 ID (對應 schema.sql 的預設資料)
+        const typeId = 'type-01'; 
+        
+        // 隨機選用的訂單狀態與付款狀態
+        const statuses = ['quote_created', 'sketch_drawing', 'completed', 'cancelled'];
+        const paymentStatuses = ['unpaid', 'deposit', 'paid'];
+        
+        const statements = [];
+        
+        for (let i = 1; i <= 50; i++) {
+          const id = 'mock-order-' + Date.now() + '-' + i;
+          
+          // 隨機分配狀態
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          const paymentStatus = paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)];
+          
+          // 隨機總價 (1000 ~ 5000)
+          const amount = Math.floor(Math.random() * 40 + 10) * 100; 
+          // 判斷是否全額付清 (對應 is_paid 欄位)
+          const is_paid = paymentStatus === 'paid' ? 1 : 0;
+
+          // 隨機產生 1 ~ 4 月的日期 (2024年)
+          const month = Math.floor(Math.random() * 4) + 1;
+          const day = Math.floor(Math.random() * 28) + 1;
+          const order_date = `2024-0${month}-${day < 10 ? '0'+day : day}T10:00:00Z`;
+
+          // 配合 schema.sql 的正確欄位名稱寫入資料
+          statements.push(
+            env.commission_db.prepare(`
+              INSERT INTO Commissions (
+                id, artist_id, type_id, project_name, contact_memo, 
+                status, payment_status, total_price, is_paid, order_date
+              )
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              id, artistId, typeId, `大量測試委託單 #${i}`, `測試客 ${i} (test${i}@example.com)`, 
+              status, paymentStatus, amount, is_paid, order_date
+            )
+          );
+        }
+
+        // 批次執行 50 筆寫入
+        await env.commission_db.batch(statements);
+        
+        return Response.json({ success: true, message: "成功插入 50 筆測試委託單！請回前端確認畫面。" });
+      } catch (error) {
+        return Response.json({ success: false, error: String(error) }, { status: 500 });
+      }
+    }
+
+
     // [GET] 讀取特定委託單的操作歷程與檔案
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
