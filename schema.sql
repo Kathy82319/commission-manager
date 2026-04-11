@@ -26,12 +26,14 @@ PRAGMA foreign_keys = ON;
 -- 1. 系統使用者表
 CREATE TABLE Users (
     id TEXT PRIMARY KEY,
+    public_id TEXT UNIQUE,
     line_id TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     avatar_url TEXT DEFAULT '',
-    bio TEXT DEFAULT ''
+    bio TEXT DEFAULT '',
+    profile_settings TEXT DEFAULT '{}' -- 新增：用於儲存作品集與自訂版塊的 JSON
 );
 
 -- 2. 繪師專屬設定表

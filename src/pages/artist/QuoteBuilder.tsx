@@ -5,8 +5,6 @@ const baseAddOnsList = ['驚喜包', '可接受二創', '無償', '可液化', '
 
 export function QuoteBuilder() {
   const navigate = useNavigate();
-  // 固定生成一次流水號
-  const [orderNo] = useState(() => String(Date.now()).slice(-5));
 
   const [formData, setFormData] = useState({
     project_name: '',
@@ -101,7 +99,7 @@ export function QuoteBuilder() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <div>
           <label style={labelStyle}>
-            項目名稱 <span style={{ color: '#999', fontSize: '12px', fontWeight: 'normal' }}>(訂單編號：#{orderNo})</span>
+            項目名稱 <span style={{ color: '#999', fontSize: '12px', fontWeight: 'normal' }}></span>
           </label>
           <input type="text" name="project_name" value={formData.project_name} onChange={handleChange} style={inputStyle} />
         </div>

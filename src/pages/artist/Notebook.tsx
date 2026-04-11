@@ -140,7 +140,6 @@ export function Notebook() {
     setIsEditingRequest(false);
   };
 
-  // 雙向切換：作廢/恢復
   const handleToggleArchive = async () => {
     if (!selectedId || !selectedOrder) return;
     
@@ -149,7 +148,6 @@ export function Notebook() {
     
     if (!window.confirm(confirmMsg)) return;
 
-    // 若為恢復預訂，預設將狀態改回 'quote_created' (已建報價單)
     const newStatus = isCancelled ? 'quote_created' : 'cancelled';
 
     await fetch(`/api/commissions/${selectedId}`, {
@@ -208,26 +206,12 @@ export function Notebook() {
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
   const isChatDisabled = selectedOrder?.is_external ? false : (!selectedOrder?.payment_status || selectedOrder?.payment_status === 'unpaid');
 
-  const getOverallStatus = (status: string) => {
-    if (status === 'completed') return '結案';
-    if (status === 'cancelled') return '已作廢';
-    if (status === 'quote_created') return '已建報價單';
-    return '稿件製作中';
-  };
+
 
   const getPaymentBadge = (payment_status: string) => {
     if (payment_status === 'paid') return { text: '已收全額', color: '#fff', bg: '#1976d2' };
     if (payment_status === 'partial') return { text: '已收訂', color: '#333', bg: '#fbc02d' };
     return { text: '未付款', color: '#fff', bg: '#333' };
-  };
-
-  const getDraftStatus = (current_stage: string) => {
-    switch(current_stage) {
-      case 'sketch_drawing': return '待上傳草稿'; case 'sketch_reviewing': return '已完成草稿';
-      case 'lineart_drawing': return '待上傳線稿'; case 'lineart_reviewing': return '已完成線稿';
-      case 'final_drawing': return '待上傳完稿'; case 'final_reviewing': return '已完成完稿';
-      case 'completed': return '已完稿'; default: return '未上傳';
-    }
   };
 
   const tabStyle = (isActive: boolean) => ({
@@ -328,16 +312,20 @@ export function Notebook() {
               <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '15px', borderBottom: '1px solid #eee', cursor: 'pointer', backgroundColor: selectedId === order.id ? '#f0f8ff' : '#fff', opacity: order.status === 'cancelled' ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
                   <span>{dateStr}</span>
+                  {/* 新增委託人名稱 */}
+                  <span style={{ fontWeight: '500' }}>{order.client_name || '外部委託'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                   <span style={{ fontWeight: 'bold', color: '#333' }}>{order.project_name || '未命名項目'}</span>
                   <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>NT$ {order.total_price}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
-                  <span style={{ border: '1px solid #ccc', padding: '2px 6px', borderRadius: '2px' }}>{getOverallStatus(order.status)}</span>
-                  <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '2px 6px', borderRadius: '2px' }}>{payBadge.text}</span>
-                  <span style={{ border: '1px solid #ccc', padding: '2px 6px', borderRadius: '2px' }}>{getDraftStatus(order.current_stage)}</span>
-                </div>
+<div style={{ display: 'flex', gap: '6px', fontSize: '11px', flexWrap: 'wrap' }}>
+  <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '2px 6px', borderRadius: '2px' }}>{payBadge.text}</span>
+  {/* 動態顯示目前進度 */}
+  <span style={{ border: '1px solid #1976d2', color: '#1976d2', padding: '2px 6px', borderRadius: '2px', fontWeight: 'bold' }}>
+    {order.current_stage || '尚未開始'}
+  </span>
+</div>
               </div>
             );
           })}
@@ -362,7 +350,6 @@ export function Notebook() {
                     borderRadius: '6px', 
                     cursor: 'pointer', 
                     fontWeight: 'bold',
-                    // 如果已作廢，顯示為綠色；如果是正常狀態，顯示為紅色
                     color: selectedOrder.status === 'cancelled' ? '#2e7d32' : '#d32f2f' 
                   }}
                 >

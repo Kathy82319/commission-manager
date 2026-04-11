@@ -1,5 +1,6 @@
 export interface Env {
   commission_db: D1Database;
+  ID_SALT: string; // 於 wrangler.jsonc 或 Cloudflare Dashboard 設定
 }
 
 interface CreateCommissionBody {
@@ -23,84 +24,7 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
-
-    // [GET] 讀取繪師設定資料
-    if (request.method === "GET" && url.pathname.startsWith("/api/artist-profile/")) {
-      try {
-        const userId = pathParts[3];
-        const { results } = await env.commission_db.prepare(`
-          SELECT p.*, u.display_name, u.avatar_url, u.bio
-          FROM ArtistProfiles p
-          JOIN Users u ON p.user_id = u.id
-          WHERE p.user_id = ?
-        `).bind(userId).all();
-
-        if (results.length === 0) return Response.json({ success: false, message: "找不到資料" }, { status: 404 });
-        return Response.json({ success: true, data: results[0] });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
-    }
-
-    // [PATCH] 更新繪師設定資料
-    if (request.method === "PATCH" && url.pathname.startsWith("/api/artist-profile/")) {
-      try {
-        const userId = pathParts[3];
-        const body: {
-          display_name?: string;
-          avatar_url?: string;
-          bio?: string;
-          tos_content?: string;
-          about_me?: string;
-          portfolio_urls?: string[];
-          commission_process?: string;
-          payment_info?: string;
-          usage_rules?: string;
-          custom_1_title?: string;
-          custom_1_content?: string;
-          custom_2_title?: string;
-          custom_2_content?: string;
-          custom_3_title?: string;
-          custom_3_content?: string;
-        } = await request.json();
-
-        await env.commission_db.batch([
-          env.commission_db.prepare(`
-            UPDATE Users SET display_name = ?, avatar_url = ?, bio = ? WHERE id = ?
-          `).bind(body.display_name || '', body.avatar_url || '', body.bio || '', userId),
-
-          env.commission_db.prepare(`
-            INSERT INTO ArtistProfiles (
-              user_id, tos_content, about_me, portfolio_urls,
-              commission_process, payment_info, usage_rules,
-              custom_1_title, custom_1_content,
-              custom_2_title, custom_2_content,
-              custom_3_title, custom_3_content
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(user_id) DO UPDATE SET
-              tos_content = excluded.tos_content,
-              about_me = excluded.about_me,
-              portfolio_urls = excluded.portfolio_urls,
-              commission_process = excluded.commission_process,
-              payment_info = excluded.payment_info,
-              usage_rules = excluded.usage_rules,
-              custom_1_title = excluded.custom_1_title,
-              custom_1_content = excluded.custom_1_content,
-              custom_2_title = excluded.custom_2_title,
-              custom_2_content = excluded.custom_2_content,
-              custom_3_title = excluded.custom_3_title,
-              custom_3_content = excluded.custom_3_content
-          `).bind(
-            userId, body.tos_content || '', body.about_me || '', JSON.stringify(body.portfolio_urls || []),
-            body.commission_process || '', body.payment_info || '', body.usage_rules || '',
-            body.custom_1_title || '', body.custom_1_content || '',
-            body.custom_2_title || '', body.custom_2_content || '',
-            body.custom_3_title || '', body.custom_3_content || ''
-          )
-        ]);
-
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
-    }
-
+    
     // [GET] 讀取特定委託單的操作歷程與檔案
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
@@ -286,44 +210,71 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
     }
 
 
-    // [GET] 讀取使用者個人資料
-    if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
-      try {
-        const userId = pathParts[3];
-        const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ?").bind(userId).all();
-        if (results.length === 0) return Response.json({ success: false, message: "找不到使用者" }, { status: 404 });
-        return Response.json({ success: true, data: results[0] });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
-    }
-
-    // [PATCH] 更新使用者個人資料
+    // [PATCH] 更新/創建使用者個人資料
     if (request.method === "PATCH" && url.pathname.startsWith("/api/users/")) {
       try {
+        const pathParts = url.pathname.split('/');
         const userId = pathParts[3];
-        const body: { display_name: string; avatar_url: string; bio: string } = await request.json();
+        const body: { display_name: string; avatar_url: string; bio: string; line_id: string; profile_settings: string } = await request.json();
         
-        // 使用 UPSERT 語法：若帳號不存在則自動建立，若存在則更新欄位
+        const actualLineId = body.line_id || `test_line_${userId}`;
+        
+        // 取得或生成 public_id
+        const { results: existing } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(userId).all();
+        let publicId = existing.length > 0 && existing[0].public_id ? existing[0].public_id : '';
+        if (!publicId) {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(actualLineId + env.ID_SALT);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+          publicId = `CM-${hashHex.substring(0, 7)}`;
+        }
+
         await env.commission_db.prepare(`
-          INSERT INTO Users (id, line_id, display_name, role, avatar_url, bio) 
-          VALUES (?, ?, ?, 'client', ?, ?)
+          INSERT INTO Users (id, public_id, line_id, display_name, role, avatar_url, bio, profile_settings) 
+          VALUES (?, ?, ?, ?, 'artist', ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET 
             display_name = excluded.display_name,
             avatar_url = excluded.avatar_url,
-            bio = excluded.bio
+            bio = excluded.bio,
+            profile_settings = excluded.profile_settings
         `).bind(
           userId, 
-          `test_line_${userId}`, // 測試用的假 LINE ID
+          publicId,
+          actualLineId,
           body.display_name || '', 
           body.avatar_url || '', 
-          body.bio || ''
+          body.bio || '',
+          body.profile_settings || '{}'
         ).run();
         
-        return Response.json({ success: true });
+        return Response.json({ success: true, public_id: publicId });
       } catch (error) { 
         return Response.json({ success: false, error: String(error) }, { status: 500 }); 
       }
     }
 
+    // [GET] 取得單一使用者資料 (支援內部 ID 與 Public ID 雙重搜尋)
+    if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
+      try {
+        const pathParts = url.pathname.split('/');
+        const userId = pathParts[3];
+        
+        // 同時允許使用 u-artist-01 或 CM-XXXXXXX 來查詢繪師資料
+        const { results } = await env.commission_db.prepare(
+          "SELECT * FROM Users WHERE id = ? OR public_id = ?"
+        ).bind(userId, userId).all();
+        
+        if (results.length === 0) {
+          return Response.json({ success: false, error: "找不到使用者" }, { status: 404 });
+        }
+        return Response.json({ success: true, data: results[0] });
+      } catch (error) {
+        return Response.json({ success: false, error: String(error) }, { status: 500 });
+      }
+    }
+    
     // [POST] 財務記帳系統
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/payments")) {
       try {
@@ -371,7 +322,36 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
     if (request.method === "POST" && url.pathname === "/api/commissions") {
       try {
         const body: CreateCommissionBody = await request.json();
-        const newOrderId = crypto.randomUUID(); 
+        let newOrderId = '';
+        const clientId = (body as any).client_id || '';
+
+        if (body.is_external) {
+          // 外部私接邏輯：使用 EX 加時間戳避免碰撞
+          newOrderId = `EX-${Date.now().toString().slice(-6)}`;
+        } else {
+          // 1. 取得 Client 的 public_id
+          const { results: userRes } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).all();
+          if (userRes.length === 0) return Response.json({ success: false, error: "無效的委託人" }, { status: 400 });
+          const clientPublicId = userRes[0].public_id;
+
+          // 2. 更嚴謹的流水號生成：抓取該使用者最新的一筆訂單，將尾數 +1
+          const { results: lastOrderRes } = await env.commission_db.prepare(
+            "SELECT id FROM Commissions WHERE client_id = ? ORDER BY id DESC LIMIT 1"
+          ).bind(clientId).all();
+
+          let nextSeq = 1;
+          if (lastOrderRes.length > 0) {
+            const lastId = lastOrderRes[0].id as string; // 例如 CM-XXXXXXX-001
+            const parts = lastId.split('-');
+            if (parts.length === 3) {
+              nextSeq = parseInt(parts[2], 10) + 1;
+            }
+          }
+          const seqNumber = String(nextSeq).padStart(3, '0'); // 生成 001, 002...
+          
+          // 3. 組合訂單編號
+          newOrderId = `${clientPublicId}-${seqNumber}`; 
+        }
         
         const insertQuery = `
           INSERT INTO Commissions (
@@ -382,9 +362,10 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
+        // 寫入資料庫
         await env.commission_db.prepare(insertQuery).bind(
-          newOrderId, 'u-artist-01', 'type-01', '', 0,
-          body.is_external ? `[外部私接] 客戶名稱: ${body.client_name}\n` : '', '',
+          newOrderId, 'u-artist-01', 'type-01', clientId, 0,
+          body.is_external ? `[外部私接] 客戶名稱: ${(body as any).client_name || '未知'}\n` : '', '',
           body.total_price || 0, 
           body.is_external ? 'paid' : 'quote_created',
           body.is_external ? 'paid' : 'unpaid', 
@@ -397,7 +378,9 @@ if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") &&
         ).run();
         
         return Response.json({ success: true, id: newOrderId });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+      } catch (error) { 
+        return Response.json({ success: false, error: String(error) }, { status: 500 }); 
+      }
     }
 
     // [PATCH] 更新單一委託單

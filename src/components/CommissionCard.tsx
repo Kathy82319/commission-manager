@@ -48,3 +48,4 @@ export const CommissionCard: React.FC<CommissionCardProps> = ({
     </div>
   );
 };
+
