@@ -25,57 +25,7 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
-// [GET] 臨時路由：新增 queue_status 欄位
-    if (request.method === "GET" && url.pathname === "/api/add-queue-status") {
-      try {
-        await env.commission_db.prepare(
-          "ALTER TABLE Commissions ADD COLUMN queue_status TEXT DEFAULT '';"
-        ).run();
-        return Response.json({ success: true, message: "成功在 Commissions 表新增 queue_status 欄位！" });
-      } catch (error) {
-        return Response.json({ success: false, message: "執行失敗 (可能欄位已存在)", error: String(error) });
-      }
-    }
 
-
-
-
-
-    if (request.method === "GET" && url.pathname === "/api/temp-seed-50") {
-      try {
-        const artistId = 'u-artist-01';
-        const typeId = 'type-01'; 
-        const statuses = ['quote_created', 'sketch_drawing', 'completed', 'cancelled'];
-        const paymentStatuses = ['unpaid', 'deposit', 'paid'];
-        const statements = [];
-        
-        for (let i = 1; i <= 50; i++) {
-          const id = 'mock-order-' + Date.now() + '-' + i;
-          const status = statuses[Math.floor(Math.random() * statuses.length)];
-          const paymentStatus = paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)];
-          const amount = Math.floor(Math.random() * 40 + 10) * 100; 
-          const is_paid = paymentStatus === 'paid' ? 1 : 0;
-          const month = Math.floor(Math.random() * 4) + 1;
-          const day = Math.floor(Math.random() * 28) + 1;
-          const order_date = `2024-0${month}-${day < 10 ? '0'+day : day}T10:00:00Z`;
-
-          statements.push(
-            env.commission_db.prepare(`
-              INSERT INTO Commissions (
-                id, artist_id, type_id, project_name, contact_memo, 
-                status, payment_status, total_price, is_paid, order_date
-              )
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
-              id, artistId, typeId, `大量測試委託單 #${i}`, `測試客 ${i} (test${i}@example.com)`, 
-              status, paymentStatus, amount, is_paid, order_date
-            )
-          );
-        }
-        await env.commission_db.batch(statements);
-        return Response.json({ success: true, message: "成功插入 50 筆測試委託單！請回前端確認畫面。" });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
-    }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
@@ -86,6 +36,36 @@ export default {
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
+// [GET] 取得特定委託單的所有稿件 (Submissions)
+if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/submissions")) {
+  try {
+    const id = pathParts[3];
+    // 依據版本號從新到舊排序
+    const { results } = await env.commission_db.prepare(
+      "SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC"
+    ).bind(id).all();
+    
+    return Response.json({ success: true, data: results });
+  } catch (error) {
+    return Response.json({ success: false, error: String(error) }, { status: 500 });
+  }
+}
+
+// [GET] 取得特定委託單的歷程紀錄 (ActionLogs)
+    if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/logs")) {
+      try {
+        const id = pathParts[3];
+        // 依據時間由新到舊排序
+        const { results } = await env.commission_db.prepare(
+          "SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC"
+        ).bind(id).all();
+        
+        return Response.json({ success: true, data: results });
+      } catch (error) {
+        return Response.json({ success: false, error: String(error) }, { status: 500 });
+      }
+    }
+
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/submit")) {
       try {
         const id = pathParts[3];
@@ -94,16 +74,16 @@ export default {
         const { results: comm } = await env.commission_db.prepare("SELECT current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
         if (comm.length === 0) return Response.json({ success: false, error: "找不到委託單" }, { status: 404 });
         
-        // 🌟 自由模式下不鎖定階段，直接放行
-        if (comm[0].workflow_mode !== 'free' && comm[0].current_stage !== `${body.stage}_drawing`) {
-          return Response.json({ success: false, error: "此階段已鎖定，無法再上傳新稿件。" }, { status: 400 });
-        }
+        // 🌟 【修改核心】：已移除原先的「此階段已鎖定」擋人邏輯。
+        // 現在不論是自由模式還是標準模式，繪師都可以無限制地隨時上傳草稿、線稿或完稿。
 
         const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
         const version = (results[0]?.count as number) + 1;
         const subId = crypto.randomUUID();
         const logId = crypto.randomUUID();
-        const newStageStatus = comm[0].workflow_mode === 'free' ? comm[0].current_stage : `${body.stage}_reviewing`; // 自由模式不改變狀態
+        
+        // 依然會更新狀態為 reviewing，這樣委託人端才會跳出「同意/請求修正」的按鈕，但此狀態不再限制繪師。
+        const newStageStatus = comm[0].workflow_mode === 'free' ? comm[0].current_stage : `${body.stage}_reviewing`; 
         const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
         await env.commission_db.batch([

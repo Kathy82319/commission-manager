@@ -11,6 +11,11 @@ interface ProfileSettings {
   custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
+  // 🌟 新增：開場名片的設定欄位
+  splash_enabled?: boolean;
+  splash_image?: string;
+  splash_duration?: number;
+  splash_text?: string;
 }
 
 const platformStyles: Record<string, { bg: string; text: string }> = {
@@ -51,6 +56,9 @@ export function PublicProfile() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
 
+  // 🌟 新增：Lightbox 燈箱狀態
+  const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
+
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
@@ -75,15 +83,40 @@ export function PublicProfile() {
     fetchArtistData();
   }, [artistId]);
 
-  // 控制滿版過場動畫的顯示時間
+  // 🌟 修改：根據繪師設定來決定動畫的顯示與時長
   useEffect(() => {
     if (!loading) {
+      // 若繪師明確關閉了開場動畫，直接隱藏並返回
+      if (settings && settings.splash_enabled === false) {
+        setShowSplash(false);
+        return;
+      }
+      
+      // 若有設定則取設定值(秒轉毫秒)，否則預設 1.5 秒
+      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 1500;
+      
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 1500); // 停留 1.5 秒後淡出
+      }, duration);
+      
       return () => clearTimeout(timer);
     }
-  }, [loading]);
+  }, [loading, settings]);
+
+  // 🌟 新增：Lightbox 切換函數邏輯
+  const handlePrevImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length);
+    }
+  };
+
+  const handleNextImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length);
+    }
+  };
 
   const availableTabs = [];
   if (settings) {
@@ -109,11 +142,54 @@ export function PublicProfile() {
   return (
     <div className="public-profile-container">
       
-      {/* 滿版過場動畫區塊 */}
-      <div className={`splash-screen ${!showSplash ? 'hide' : ''}`}>
-        {artist.avatar_url && <img src={artist.avatar_url} alt="Avatar" className="splash-avatar" />}
-        <h1 className="splash-name">{artist.display_name || '未命名繪師'}</h1>
-        {artist.bio && <p className="splash-bio">{artist.bio}</p>}
+{/* 修正後的開場名片區塊 */}
+      <div 
+        className={`splash-screen ${!showSplash ? 'hide' : ''}`}
+        style={{
+          // 背景邏輯：只有當繪師有上傳圖片時才顯示背景圖
+          backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
+          // 若無圖片，背景色改為與網頁主色調一致
+          backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'fixed',
+          top: 0, left: 0, width: '100vw', height: '100vh',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.8s ease-in-out'
+        }}
+      >
+        {/* 🌟 關鍵修正：只有在「有圖片」或「有填寫文字內容」時，才顯示中間的裝飾框 */}
+        {(settings?.splash_image || settings?.splash_text) ? (
+          <div style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.45)', 
+            padding: '40px 60px',
+            borderRadius: '16px',
+            backdropFilter: 'blur(8px)', 
+            WebkitBackdropFilter: 'blur(8px)',
+            textAlign: 'center',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            maxWidth: '80%'
+          }}>
+            <h1 style={{ color: '#FFF', fontSize: '36px', margin: 0, letterSpacing: '2px', fontWeight: 'bold' }}>
+              {settings?.splash_text || artist.display_name}
+            </h1>
+            {settings?.splash_text && (
+              <div style={{ width: '40px', height: '2px', background: '#A67B3E', margin: '20px auto' }} />
+            )}
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', margin: 0 }}>
+              {settings?.splash_text ? artist.display_name : ''}
+            </p>
+          </div>
+        ) : (
+          // 🌟 若完全沒設定內容，中央僅顯示乾淨的文字，不加黑色裝飾框
+          <div style={{ color: '#5D4A3E', fontSize: '20px', fontWeight: 'bold', letterSpacing: '4px' }}>
+          </div>
+        )}
       </div>
 
       <div className="content-wrapper">
@@ -129,7 +205,6 @@ export function PublicProfile() {
           <div>
             <h1 className="artist-name">{artist.display_name || '未命名繪師'}</h1>
             
-            {/* 修復了這裡的標籤閉合與結構問題 */}
             <div className="social-links">
               {settings?.social_links && settings.social_links.length > 0 && (
                 settings.social_links.map((link, idx) => {
@@ -184,7 +259,12 @@ export function PublicProfile() {
                 {currentTab === 'portfolio' && settings?.portfolio && (
                   <div className="portfolio-grid">
                     {settings.portfolio.map((img, idx) => (
-                      <div key={idx} className="portfolio-item">
+                      <div 
+                        key={idx} 
+                        className="portfolio-item"
+                        onClick={() => setSelectedImgIndex(idx)} // 🌟 點擊圖片觸發放大
+                        style={{ cursor: 'zoom-in' }}
+                      >
                         <img src={img} alt={`作品 ${idx + 1}`} />
                       </div>
                     ))}
@@ -194,19 +274,15 @@ export function PublicProfile() {
                 {currentTab === 'detailed_intro' && settings?.detailed_intro && (
                   <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.detailed_intro }} />
                 )}
-
                 {currentTab === 'process' && settings?.process && (
                   <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.process }} />
                 )}
-
                 {currentTab === 'payment' && settings?.payment && (
                   <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.payment }} />
                 )}
-
                 {currentTab === 'rules' && settings?.rules && (
                   <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.rules }} />
                 )}
-
                 {settings?.custom_sections?.map(sec => 
                   currentTab === sec.id && (
                     <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: sec.content }} />
@@ -219,6 +295,28 @@ export function PublicProfile() {
           )}
         </div>
       </div>
+
+      {/* 🌟 燈箱元件 Lightbox */}
+      {selectedImgIndex !== null && settings?.portfolio && (
+        <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
+          <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}>✕</button>
+          
+          <button className="lightbox-nav prev" onClick={handlePrevImg}>❮</button>
+          
+          <div className="lightbox-content">
+            <img 
+              src={settings.portfolio[selectedImgIndex]} 
+              alt="放大預覽" 
+              onClick={(e) => e.stopPropagation()} 
+            />
+            <div className="lightbox-counter">
+              {selectedImgIndex + 1} / {settings.portfolio.length}
+            </div>
+          </div>
+          
+          <button className="lightbox-nav next" onClick={handleNextImg}>❯</button>
+        </div>
+      )}
     </div>
   );
 }

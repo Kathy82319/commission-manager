@@ -93,6 +93,7 @@ CREATE TABLE Commissions (
     add_ons TEXT DEFAULT '',
     detailed_settings TEXT DEFAULT '',
     order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    client_custom_title TEXT DEFAULT '',
     pending_changes TEXT,
     agreed_tos_snapshot TEXT,
     workflow_mode TEXT DEFAULT 'standard', 

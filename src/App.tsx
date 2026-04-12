@@ -21,7 +21,9 @@ import { Settings } from './pages/artist/Settings';
 import { ClientForm } from './pages/client/ClientForm'; 
 import { Workspace } from './pages/Workspace';
 import { ClientHome } from './pages/client/ClientHome';
-import { ClientOrder } from './pages/client/ClientOrder';
+import { ClientProfileEdit } from './pages/client/ClientProfileEdit'; 
+import { ClientOrderList } from './pages/client/ClientOrderList'; 
+import { ClientOrderDetail } from './pages/client/ClientOrderDetail'; // 引入新的詳細頁元件
 
 export function App() {
   return (
@@ -56,7 +58,9 @@ export function App() {
         {/* 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
           <Route index element={<ClientHome />} />
-          <Route path="order/:id" element={<ClientOrder />} />
+          <Route path="profile/edit" element={<ClientProfileEdit />} />
+          <Route path="orders" element={<ClientOrderList />} />
+          <Route path="order/:id" element={<ClientOrderDetail />} /> {/* 替換為新的詳細頁元件 */}
         </Route>
 
         {/* 預設路由 */}

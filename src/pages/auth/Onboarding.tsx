@@ -18,7 +18,7 @@ export function Onboarding() {
           <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>請設定您的預設顯示暱稱</label>
           <input 
             type="text" 
-            placeholder="例如：叉子 Foku" 
+            placeholder="例如： 沙漠駱駝" 
             onFocus={() => setFocusedField('nickname')}
             onBlur={() => setFocusedField(null)}
             style={{ 

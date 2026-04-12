@@ -141,7 +141,7 @@ export function Queue() {
               <th style={{ padding: '12px 10px', width: '160px', fontWeight: 'bold' }}>委託人</th>
               <th style={{ padding: '12px 10px', width: '170px', fontWeight: 'bold' }}>進度狀態</th>
               <th style={{ padding: '12px 10px', width: '140px', fontWeight: 'bold' }}>預計完工</th>
-              <th style={{ padding: '12px 10px', width: '110px', fontWeight: 'bold' }}>付款狀態</th>
+              <th style={{ padding: '12px 10px', width: '120px', fontWeight: 'bold' }}>付款狀態</th>
               <th style={{ padding: '12px 10px', fontWeight: 'bold' }}>備註</th>
               <th style={{ padding: '12px 10px', width: '80px', fontWeight: 'bold', textAlign: 'center' }}>操作</th>
             </tr>
@@ -207,7 +207,7 @@ export function Queue() {
                     </td>
                     <td style={tdStyle}><input type="date" defaultValue={order.end_date || ''} onBlur={(e) => { if (e.target.value !== order.end_date) handleUpdateField(order.id, 'end_date', e.target.value); }} style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #EAE6E1', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', width: '100%', transition: 'border-color 0.2s' }} onFocus={e => e.currentTarget.style.borderColor = '#A67B3E'} /></td>
                     <td style={tdStyle}>
-                      <select value={order.payment_status || 'unpaid'} onChange={(e) => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ padding: '6px 8px', borderRadius: '6px', border: 'none', backgroundColor: paymentInfo.bg, color: paymentInfo.text, fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px', width: '100%' }}>
+                      <select value={order.payment_status || 'unpaid'} onChange={(e) => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ padding: '6px 6px', borderRadius: '6px', border: 'none', backgroundColor: paymentInfo.bg, color: paymentInfo.text, fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px', width: '100%' }}>
                         <option value="unpaid">尚未付款</option><option value="partial">已收訂金</option><option value="paid">已收全額</option>
                       </select>
                     </td>

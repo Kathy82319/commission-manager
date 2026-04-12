@@ -7,6 +7,7 @@ interface Commission {
   usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
   pending_changes?: string; workflow_mode: string; queue_status: string;
+  type_name?: string;
 }
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
@@ -262,14 +263,14 @@ export function Notebook() {
     if (isFreeMode) {
       headerBg = '#FDFDFB'; headerColor = '#5D4A3E'; statusTag = '[自由模式] 隨時可上傳覆蓋';
     } else if (isCompleted || isPassed) { 
-      headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = '[已確認] 委託人已同意，本階段已鎖定'; 
+      headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = ''; 
     } else if (isReviewingStatus) { 
       headerBg = '#FDF4E6'; headerColor = '#A67B3E'; statusTag = '[待審閱] 委託人確認前仍可重複上傳'; 
     } else if (canUpload) { 
       if (sub) { headerBg = '#F5EBEB'; headerColor = '#A05C5C'; statusTag = '[請求修改] 委託人已退回，請重新上傳'; } 
-      else { headerBg = '#EBF2F7'; headerColor = '#4A7294'; statusTag = '[繪製中] 請上傳檔案'; }
+      else { headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '[繪製中] 請上傳檔案'; }
     } else { 
-      statusTag = '[鎖定] 尚未解鎖此階段'; 
+      headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '[繪製中] 請上傳檔案'; 
     }
 
     return (
@@ -284,13 +285,11 @@ export function Notebook() {
               <img src={sub.file_url} alt="交稿預覽" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #EAE6E1', objectFit: 'cover' }} />
             </div>
           )}
-          {canUpload && (
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrls[stageKey] || ''} onChange={e => setUploadUrls(prev => ({...prev, [stageKey]: e.target.value}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FBFBF9' }} />
-              <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>提交新版本</button>
-            </div>
-          )}
-          {(!canUpload && !sub) && <div style={{ color: '#C4BDB5', textAlign: 'center', padding: '10px 0' }}>尚無檔案</div>}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrls[stageKey] || ''} onChange={e => setUploadUrls(prev => ({...prev, [stageKey]: e.target.value}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FBFBF9' }} />
+            <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>提交新版本</button>
+          </div>
+          {!sub && <div style={{ color: '#C4BDB5', textAlign: 'center', padding: '10px 0' }}>尚無檔案</div>}
         </div>
       </div>
     );

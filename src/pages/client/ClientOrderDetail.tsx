@@ -1,0 +1,304 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+
+interface CommissionDetail {
+  id: string;
+  status: string;
+  type_name: string;
+  project_name: string;
+  client_custom_title: string;
+  total_price: number;
+  draw_scope: string;
+  char_count: number;
+  bg_type: string;
+  add_ons: string;
+  detailed_settings: string;
+  agreed_tos_snapshot: string;
+  delivery_method: string; 
+}
+
+interface Submission {
+  id: string;
+  stage: string;
+  file_url: string;
+  version: number;
+  created_at: string;
+}
+
+interface ActionLog {
+  id: string;
+  actor_role: string;
+  content: string;
+  created_at: string;
+}
+
+export function ClientOrderDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  
+  const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
+  const [orderData, setOrderData] = useState<CommissionDetail | null>(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [logs, setLogs] = useState<ActionLog[]>([]);
+  
+  const [customTitle, setCustomTitle] = useState('');
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetailData = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        // 假設您的 API 路由配置，若有不同請依實際狀況調整
+        const [orderRes, subRes, logRes] = await Promise.all([
+          fetch(`/api/commissions/${id}`),
+          fetch(`/api/commissions/${id}/submissions`),
+          fetch(`/api/commissions/${id}/logs`)
+        ]);
+
+        const orderJson = await orderRes.json();
+        if (orderJson.success) {
+          setOrderData(orderJson.data);
+          setCustomTitle(orderJson.data.client_custom_title || '');
+        }
+
+        const subJson = await subRes.json();
+        if (subJson.success) setSubmissions(subJson.data);
+
+        const logJson = await logRes.json();
+        if (logJson.success) setLogs(logJson.data);
+
+      } catch (error) {
+        console.error('取得委託單詳細資料失敗:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDetailData();
+  }, [id]);
+
+  const handleSaveTitle = async () => {
+    if (!id) return;
+    setIsSavingTitle(true);
+    try {
+      const res = await fetch(`/api/commissions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_custom_title: customTitle })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert('儲存名稱失敗：' + data.error);
+      }
+    } catch (error) {
+      console.error('更新名稱發生錯誤:', error);
+    } finally {
+      setIsSavingTitle(false);
+    }
+  };
+
+  const getLatestSubmissions = () => {
+    const latest: Record<string, Submission> = {};
+    submissions.forEach(sub => {
+      if (!latest[sub.stage] || sub.version > latest[sub.stage].version) {
+        latest[sub.stage] = sub;
+      }
+    });
+    return latest;
+  };
+
+  const renderReviewBlocks = () => {
+    const latestSubs = getLatestSubmissions();
+    const stages = orderData?.delivery_method === '一鍵出圖'
+      ? [{ id: 'final', label: '完稿/成品' }]
+      : [
+          { id: 'sketch', label: '草稿階段' },
+          { id: 'lineart', label: '線稿階段' },
+          { id: 'final', label: '完稿階段' }
+        ];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {stages.map(stage => {
+          const sub = latestSubs[stage.id];
+          return (
+            <div key={stage.id} style={{ ...sectionBoxStyle, marginBottom: '0', borderLeft: sub ? '4px solid #4A7294' : '4px solid #d0d8e4' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: sub ? '12px' : '0' }}>
+                <h4 style={{ margin: 0, color: '#475569', fontSize: '16px' }}>{stage.label}</h4>
+                {sub ? (
+                  <span style={{ fontSize: '12px', color: '#8a95a8' }}>
+                    最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>尚未交付</span>
+                )}
+              </div>
+
+              {sub ? (
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{ flex: 1, padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', fontSize: '14px', color: '#556577', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {sub.file_url}
+                  </div>
+                  <a 
+                    href={sub.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ padding: '8px 16px', backgroundColor: '#4A7294', color: '#FFF', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px' }}
+                  >
+                    檢視
+                  </a>
+                </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px', backgroundColor: '#f1f5f9', borderRadius: '8px', marginTop: '8px' }}>
+                  繪師尚未上傳此階段稿件
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#778ca4', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF' }}>載入中...</div>;
+  }
+
+  if (!orderData) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#778ca4', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF' }}>找不到此委託單</div>;
+  }
+
+  // 共用樣式
+  const tabStyle = (tabName: string) => ({
+    flex: 1,
+    padding: '12px',
+    textAlign: 'center' as const,
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    borderBottom: activeTab === tabName ? '3px solid #4A7294' : '3px solid transparent',
+    color: activeTab === tabName ? '#4A7294' : '#556577',
+    backgroundColor: activeTab === tabName ? '#FFFFFF' : '#e8ecf3',
+    transition: 'all 0.2s'
+  });
+
+  const sectionBoxStyle = {
+    backgroundColor: '#FFFFFF',
+    padding: '20px',
+    borderRadius: '12px',
+    marginBottom: '16px',
+    border: '1px solid #d0d8e4'
+  };
+
+  return (
+    <div style={{ backgroundColor: '#778ca4', minHeight: '100vh', display: 'flex', justifyContent: 'center', padding: '20px 16px', fontFamily: 'sans-serif' }}>
+      <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        
+        {/* 分頁導覽列 */}
+        <div style={{ display: 'flex', backgroundColor: '#e8ecf3', borderRadius: '16px 16px 0 0', overflow: 'hidden', marginTop: '20px' }}>
+          <div style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</div>
+          <div style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</div>
+          <div style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</div>
+        </div>
+
+        {/* 分頁內容區 */}
+        <div style={{ backgroundColor: '#e8ecf3', padding: '20px', borderRadius: '0 0 16px 16px', minHeight: '400px' }}>
+          
+          {/* 第 1 頁：詳細內容 */}
+          {activeTab === 'main' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* 板塊 1：項目名稱與訂單編號 */}
+              <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>項目名稱</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      value={customTitle} 
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                      placeholder="請輸入您的委託名稱..."
+                      style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #c5cfd9', outline: 'none', backgroundColor: '#f8fafc' }}
+                    />
+                    <button 
+                      onClick={handleSaveTitle}
+                      disabled={isSavingTitle}
+                      style={{ padding: '10px 20px', backgroundColor: '#556577', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      {isSavingTitle ? '儲存中...' : '儲存'}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '14px', color: '#556577', fontWeight: 'bold' }}>訂單編號：</span>
+                  {/* 修正：顯示完整 ID */}
+                  <span style={{ fontSize: '16px', color: '#475569', fontFamily: 'monospace', fontWeight: 'bold' }}>{orderData.id}</span>
+                </div>
+              </div>
+
+              {/* 板塊 2：委託規格 */}
+              <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8ecf3', paddingBottom: '12px', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '16px', color: '#475569', margin: 0 }}>委託規格</h3>
+                  <button 
+                    onClick={() => navigate(`/workspace/${id}`)}
+                    style={{ padding: '8px 16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    進入聊天室
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '14px', color: '#556577' }}>
+                  <div><strong>繪製範圍：</strong>{orderData.draw_scope || '未提供'}</div>
+                  <div><strong>人數：</strong>{orderData.char_count || 1} 人</div>
+                  <div><strong>背景：</strong>{orderData.bg_type || '未提供'}</div>
+                  <div><strong>備註：</strong>{orderData.add_ons || '無'}</div>
+                  {/* 新增：總金額 */}
+                  <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dashed #d0d8e4', paddingTop: '12px', fontSize: '16px', color: '#4A7294' }}>
+                    <strong>總金額：</strong>NT$ {orderData.total_price.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {/* 板塊 3：委託協議 */}
+              <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
+                <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
+                <div style={{ fontSize: '14px', color: '#556577', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
+                  {orderData.agreed_tos_snapshot || '無協議紀錄'}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* 第 2 頁：稿件審閱 */}
+          {activeTab === 'review' && (
+            <div>
+              {renderReviewBlocks()}
+            </div>
+          )}
+
+          {/* 第 3 頁：歷程紀錄 */}
+          {activeTab === 'history' && (
+             // (保持原本歷程紀錄的內容不變)
+             <div>
+               {logs.length === 0 ? (
+                 <div style={{ textAlign: 'center', color: '#556577', padding: '40px' }}>無歷程紀錄</div>
+               ) : (
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                   {logs.map(log => (
+                     <div key={log.id} style={{ padding: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294' }}>
+                       <div style={{ fontSize: '12px', color: '#8a95a8', marginBottom: '4px' }}>{new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '委託人'}</div>
+                       <div style={{ fontSize: '14px', color: '#475569' }}>{log.content}</div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -11,6 +11,11 @@ interface ProfileSettings {
   custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[]; 
   hidden_sections: string[]; 
+  // 🌟 新增開場名片相關欄位
+  splash_enabled: boolean;
+  splash_image: string;
+  splash_duration: number;
+  splash_text: string;
 }
 
 const customQuillModules = {
@@ -24,11 +29,13 @@ const customQuillModules = {
 };
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState<'profile_basic' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
+  const [activeTab, setActiveTab] = useState<'profile_basic' | 'splash' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
   const [formData, setFormData] = useState({ display_name: '', avatar_url: '', bio: '' });
   
   const [settings, setSettings] = useState<ProfileSettings>({
-    portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: []
+    portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
+    // 🌟 預設開啟，展示 2 秒
+    splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: ''
   });
 
   const [newImageUrl, setNewImageUrl] = useState('');
@@ -62,7 +69,12 @@ export function Settings() {
                 rules: parsed.rules || '',
                 custom_sections: parsed.custom_sections || [],
                 social_links: parsed.social_links || [],
-                hidden_sections: parsed.hidden_sections || []
+                hidden_sections: parsed.hidden_sections || [],
+                // 🌟 解析新的設定值，如果沒有則使用預設值
+                splash_enabled: parsed.splash_enabled !== false, 
+                splash_image: parsed.splash_image || '',
+                splash_duration: parsed.splash_duration || 2,
+                splash_text: parsed.splash_text || ''
               });
             } catch (e) {
               console.error("解析 profile_settings 失敗");
@@ -124,7 +136,8 @@ export function Settings() {
             return { valid: false, msg: '網址與 Twitter / X 平台不符' };
           break;
         case 'Threads':
-          if (!hostname.includes('threads.net')) return { valid: false, msg: '網址與 Threads 平台不符' };
+          if (!hostname.includes('threads.net') && !hostname.includes('thread.net') && !hostname.includes('threads.com')) 
+            return { valid: false, msg: '網址與 Threads 平台不符' };
           break;
         case 'Instagram':
           if (!hostname.includes('instagram.com') && !hostname.includes('ig.me')) 
@@ -140,8 +153,12 @@ export function Settings() {
 
   const handleAddImage = () => {
     if (newImageUrl.trim()) {
-      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, newImageUrl.trim()] }));
-      setNewImageUrl('');
+      setSettings(prev => ({ 
+        ...prev, 
+        portfolio: [...prev.portfolio, newImageUrl.trim()] 
+      }));
+      // 🌟 修正：使用 set 函數來清空字串
+      setNewImageUrl(''); 
     }
   };
   const handleRemoveImage = (index: number) => {
@@ -179,6 +196,7 @@ export function Settings() {
 
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
+    { id: 'splash', label: '開場名片設定' }, // 🌟 新增的選單項目
     { id: 'portfolio', label: '作品展示區' },
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'process', label: '委託流程說明' },
@@ -309,6 +327,86 @@ export function Settings() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 🌟 1.5 新增開場名片設定區塊 */}
+          {activeTab === 'splash' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+                <input 
+                  type="checkbox" 
+                  id="splash_enabled"
+                  checked={settings.splash_enabled} 
+                  onChange={(e) => setSettings({...settings, splash_enabled: e.target.checked})}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <label htmlFor="splash_enabled" style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
+                  啟用滿版開場動畫
+                </label>
+              </div>
+
+              {settings.splash_enabled && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
+                      背景圖片網址 (URL) <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用 1920x1080 橫式高品質作品，若留空將使用頭像)</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={settings.splash_image} 
+                      onChange={e => setSettings({...settings, splash_image: e.target.value})} 
+                      onFocus={() => setFocusedField('splash_image')} 
+                      onBlur={() => setFocusedField(null)} 
+                      placeholder="https://..." 
+                      style={getInputStyle('splash_image')} 
+                    />
+                    {settings.splash_image && (
+                      <div style={{ marginTop: '10px', width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                        <img src={settings.splash_image} alt="背景預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
+                      開場展示時間：<span style={{ color: '#A67B3E' }}>{settings.splash_duration} 秒</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="5" 
+                      step="0.5"
+                      value={settings.splash_duration}
+                      onChange={(e) => setSettings({...settings, splash_duration: parseFloat(e.target.value)})}
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D' }}>
+                      <span>1 秒 (快速)</span>
+                      <span>3 秒 (適中)</span>
+                      <span>5 秒 (緩慢)</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
+                      中央文字框內容 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(留空則預設顯示您的顯示名稱)</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={settings.splash_text} 
+                      onChange={e => setSettings({...settings, splash_text: e.target.value})} 
+                      onFocus={() => setFocusedField('splash_text')} 
+                      onBlur={() => setFocusedField(null)} 
+                      placeholder="例如：Welcome to my Studio" 
+                      style={getInputStyle('splash_text')} 
+                    />
+                  </div>
+
+                </div>
+              )}
             </div>
           )}
 

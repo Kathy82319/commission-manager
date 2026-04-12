@@ -90,15 +90,46 @@ export function Workspace() {
     }
   };
 
-  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#d5d9ed', color: '#5D4A3E', fontSize: '15px' }}>載入工作區中...</div>;
-  if (!order) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#d5d9ed', color: '#A05C5C', fontSize: '15px' }}>找不到此委託空間，或發生異常。</div>;
+// --- 載入中狀態 ---
+if (loading) return (
+  <div style={{ 
+    height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
+    backgroundColor: '#FBFBF9', // 🌟 統一背景色
+    color: '#5D4A3E', fontSize: '15px' 
+  }}>
+    載入工作區中...
+  </div>
+);
 
-  return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#d5d9ed', fontFamily: 'sans-serif' }}>
+// --- 錯誤狀態 ---
+if (!order) return (
+  <div style={{ 
+    height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
+    backgroundColor: '#FBFBF9', // 🌟 統一背景色
+    color: '#A05C5C', fontSize: '15px' 
+  }}>
+    找不到此委託空間，或發生異常。
+  </div>
+);
+
+
+// --- 正常渲染狀態 ---
+return (
+  <div style={{ 
+    height: '100vh', display: 'flex', justifyContent: 'center', 
+    backgroundColor: '#FBFBF9', // 🌟 關鍵修正：將原本的 #d5d9ed 改為 #FBFBF9
+    fontFamily: 'sans-serif' 
+  }}>
+    
+    {/* 限制最大寬度區塊 */}
+    <div style={{ 
+      width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', 
+      backgroundColor: '#FBFBF9', // 🌟 這裡保持不變，這樣內外顏色就一致了
+      boxShadow: 'none', // 🌟 選項：因為內外顏色一致了，你可以考慮把 boxShadow 設為 none 讓邊界消失
+      position: 'relative' 
+    }}>
+
       
-      {/* 限制最大寬度，讓電腦版看起來像手機畫面 */}
-      <div style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', backgroundColor: '#FBFBF9', boxShadow: '0 0 40px rgba(0,0,0,0.05)', position: 'relative' }}>
-        
         {/* Header 區塊 */}
         <header style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, position: 'sticky', top: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -113,7 +144,7 @@ export function Workspace() {
                 {order.client_name || '未命名委託人'} 的工作區
               </h2>
               <div style={{ fontSize: '12px', color: '#A0978D', fontFamily: 'monospace' }}>
-                單號：{id?.split('-')[0]}... | 狀態：<span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>{order.status}</span>
+                訂單編號：{order.id}
               </div>
             </div>
           </div>
