@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Commission {
-  id: string; client_name: string; project_name: string; order_date: string;
+  id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
   total_price: number; payment_status: string; status: string; current_stage: string; is_external: number;
   usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
-  pending_changes?: string;
+  pending_changes?: string; workflow_mode: string; queue_status: string;
 }
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
@@ -38,7 +38,7 @@ export function Notebook() {
   
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [uploadUrl, setUploadUrl] = useState('');
+  const [uploadUrls, setUploadUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -89,12 +89,16 @@ export function Notebook() {
   };
 
   const handleSaveDailyFields = async () => {
-    if (!selectedId) return;
+    if (!selectedId || !selectedOrder) return;
+    const bodyData = selectedOrder.workflow_mode === 'free' 
+      ? { ...editData } 
+      : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
+
     await fetch(`/api/commissions/${selectedId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings })
+      body: JSON.stringify(bodyData)
     });
-    alert('日常設定已儲存');
+    alert('設定已儲存');
     fetchCommissions();
   };
 
@@ -148,12 +152,10 @@ export function Notebook() {
 
   const handleToggleArchive = async () => {
     if (!selectedId || !selectedOrder) return;
-    
     const isCancelled = selectedOrder.status === 'cancelled';
     const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
     
     if (!window.confirm(confirmMsg)) return;
-
     const newStatus = isCancelled ? 'quote_created' : 'cancelled';
 
     await fetch(`/api/commissions/${selectedId}`, {
@@ -161,7 +163,18 @@ export function Notebook() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
+    fetchCommissions();
+  };
+
+  const handleForceComplete = async () => {
+    if (!selectedId || !selectedOrder) return;
+    if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
+    await fetch(`/api/commissions/${selectedId}`, {
+      method: 'PATCH', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed' })
+    });
     fetchCommissions();
   };
 
@@ -190,11 +203,13 @@ export function Notebook() {
   };
 
   const handleSubmitStage = async (stageKey: string) => {
-    if (!uploadUrl.trim() || !selectedId) return;
-    const res = await fetch(`/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: uploadUrl }) });
+    const url = uploadUrls[stageKey];
+    if (!url || !url.trim() || !selectedId) return;
+    const res = await fetch(`/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: url }) });
     const data = await res.json();
     if (data.success) { 
-      setUploadUrl(''); fetchCommissions(); fetchDeliverables(selectedId); 
+      setUploadUrls(prev => ({ ...prev, [stageKey]: '' }));
+      fetchCommissions(); fetchDeliverables(selectedId); 
     } else {
       alert(data.error || '提交失敗，可能該階段已鎖定。');
       fetchDeliverables(selectedId); 
@@ -211,12 +226,24 @@ export function Notebook() {
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
-  const isChatDisabled = selectedOrder?.is_external ? false : (!selectedOrder?.payment_status || selectedOrder?.payment_status === 'unpaid');
+  
+  const getDualName = (order: Commission) => {
+    const memo = order.contact_memo || '未知';
+    const client = order.client_name ? `暱稱: ${order.client_name}` : '未綁定';
+    return `${memo} (${client})`;
+  };
 
   const getPaymentBadge = (payment_status: string) => {
     if (payment_status === 'paid') return { text: '已收全額', color: '#4E7A5A', bg: '#E8F3EB' };
     if (payment_status === 'partial') return { text: '已收訂金', color: '#A67B3E', bg: '#FDF4E6' };
     return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
+  };
+
+  // 🌟 新增：取得訂單主狀態標籤 (結案或作廢)
+  const getStatusBadge = (status: string) => {
+    if (status === 'completed') return { text: '已結案', color: '#4E7A5A', bg: '#E8F3EB' };
+    if (status === 'cancelled') return { text: '已作廢', color: '#A05C5C', bg: '#F5EBEB' };
+    return null;
   };
 
   const tabStyle = (isActive: boolean) => ({
@@ -228,10 +255,13 @@ export function Notebook() {
   const renderStageBox = (title: string, stageKey: string, canUpload: boolean, isReviewingStatus: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
     const isCompleted = selectedOrder?.status === 'completed';
+    const isFreeMode = selectedOrder?.workflow_mode === 'free';
 
     let headerBg = '#FCFAF8'; let headerColor = '#7A7269'; let statusTag = '';
     
-    if (isCompleted || isPassed) { 
+    if (isFreeMode) {
+      headerBg = '#FDFDFB'; headerColor = '#5D4A3E'; statusTag = '[自由模式] 隨時可上傳覆蓋';
+    } else if (isCompleted || isPassed) { 
       headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = '[已確認] 委託人已同意，本階段已鎖定'; 
     } else if (isReviewingStatus) { 
       headerBg = '#FDF4E6'; headerColor = '#A67B3E'; statusTag = '[待審閱] 委託人確認前仍可重複上傳'; 
@@ -256,7 +286,7 @@ export function Notebook() {
           )}
           {canUpload && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FBFBF9' }} />
+              <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrls[stageKey] || ''} onChange={e => setUploadUrls(prev => ({...prev, [stageKey]: e.target.value}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FBFBF9' }} />
               <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>提交新版本</button>
             </div>
           )}
@@ -268,8 +298,11 @@ export function Notebook() {
 
   const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' = 'text', suffix: string = '') => {
     if (!selectedOrder) return null;
+    const isFreeMode = selectedOrder.workflow_mode === 'free';
+    const canDirectEdit = isEditingRequest || isFreeMode;
+
     let pendingObj: Record<string, any> = {};
-    if (selectedOrder.pending_changes) {
+    if (selectedOrder.pending_changes && !isFreeMode) {
       try { pendingObj = JSON.parse(selectedOrder.pending_changes); } catch(e) {}
     }
 
@@ -280,7 +313,7 @@ export function Notebook() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{label}</span>
-        {isEditingRequest ? (
+        {canDirectEdit ? (
           <input type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none' }} />
         ) : (
           <div style={{ padding: '10px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '8px', minHeight: '19px', display: 'flex', alignItems: 'center' }}>
@@ -314,24 +347,40 @@ export function Notebook() {
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
           {filteredOrders.map(order => {
             const payBadge = getPaymentBadge(order.payment_status);
+            const statusBadge = getStatusBadge(order.status); // 🌟 取得主狀態標籤
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             const isSelected = selectedId === order.id;
             
             return (
               <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>
                   <span>{dateStr}</span>
-                  <span style={{ fontWeight: 'bold', color: '#7A7269' }}>{order.client_name || '外部委託'}</span>
+                  <span style={{ 
+                    fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px',
+                    backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
+                    color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
+                  }}>
+                    {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                  </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{order.project_name || '未命名項目'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={getDualName(order)}>{getDualName(order)}</span>
                   <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '15px' }}>NT$ {order.total_price}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  項目：{order.project_name || order.type_name || '未命名項目'}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
-                  {order.current_stage && order.current_stage !== 'sketch_drawing' && (
+                  
+                  {/* 🌟 在付款狀態旁邊顯示結案或作廢標籤 */}
+                  {statusBadge && (
+                    <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>
+                  )}
+                  
+                  {order.queue_status && (
                     <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
-                      {order.current_stage}
+                      {order.queue_status}
                     </span>
                   )}
                 </div>
@@ -350,10 +399,31 @@ export function Notebook() {
             {/* 標題與操作列 */}
             <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
               <div>
-                <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{selectedOrder.project_name || '未命名項目'}</h2>
-                <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
+                <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
+                <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
+                <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px' }}>單號：{selectedOrder.id}</div>
+                
+                {/* 🌟 在名稱、項目、單號下方顯示狀態標籤 */}
+                {getStatusBadge(selectedOrder.status) && (
+                  <div style={{ marginTop: '8px' }}>
+                    <span style={{ 
+                      backgroundColor: getStatusBadge(selectedOrder.status)!.bg, 
+                      color: getStatusBadge(selectedOrder.status)!.color, 
+                      padding: '4px 12px', 
+                      borderRadius: '20px', 
+                      fontSize: '12px', 
+                      fontWeight: 'bold',
+                      border: `1px solid ${getStatusBadge(selectedOrder.status)!.color}20`
+                    }}>
+                      {getStatusBadge(selectedOrder.status)!.text}
+                    </span>
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
+                {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
+                  <button onClick={handleForceComplete} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', transition: 'all 0.2s ease' }}>強制結案</button>
+                )}
                 <button 
                   onClick={handleToggleArchive} 
                   style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', transition: 'all 0.2s ease' }}
@@ -368,10 +438,9 @@ export function Notebook() {
                 )}
                 <button 
                   onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}
-                  disabled={isChatDisabled}
-                  style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: isChatDisabled ? '#C4BDB5' : '#5D4A3E', cursor: isChatDisabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease' }}
+                  style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease' }}
                 >
-                  {isChatDisabled ? '[等待收款解鎖]' : '進入工作區'}
+                  進入工作區
                 </button>
               </div>
             </div>
@@ -394,11 +463,11 @@ export function Notebook() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
                       <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>財務與收款狀態</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>手動調整狀態：</span>
+                        <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>帳務狀態：</span>
                         <select value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', fontWeight: 'bold', color: '#5D4A3E', backgroundColor: '#FFFFFF', outline: 'none' }}>
-                          <option value="unpaid">未收款 (聊天室鎖定)</option>
-                          <option value="partial">已收訂金 (解鎖)</option>
-                          <option value="paid">已收款 (解鎖)</option>
+                          <option value="unpaid">未收款</option>
+                          <option value="partial">已收訂金</option>
+                          <option value="paid">已收款</option>
                         </select>
                       </div>
                     </div>
@@ -438,6 +507,7 @@ export function Notebook() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                       <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>委託單細項</h3>
                       {isEditingRequest && <span style={{ color: '#A05C5C', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#F5EBEB', padding: '6px 12px', borderRadius: '6px' }}>[異動編輯模式]</span>}
+                      {selectedOrder.workflow_mode === 'free' && <span style={{ color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '6px 12px', borderRadius: '6px' }}>[自由紀錄全解鎖]</span>}
                     </div>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px', fontSize: '14px' }}>
@@ -468,7 +538,9 @@ export function Notebook() {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>
-                      {isEditingRequest ? (
+                      {selectedOrder.workflow_mode === 'free' ? (
+                        <button onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>儲存所有設定</button>
+                      ) : isEditingRequest ? (
                         <>
                           <button onClick={handleCancelEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>取消編輯</button>
                           <button onClick={handleSubmitRequestFields} style={{ padding: '10px 20px', backgroundColor: '#A05C5C', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>確認送出異動</button>
@@ -486,10 +558,15 @@ export function Notebook() {
 
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
-                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 3：完稿 (Final)', 'final', ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
+                  {selectedOrder.workflow_mode === 'free' ? (
+                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
+                  ) : (
+                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
+                  )}
+                  
+                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.workflow_mode === 'free' || ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'sketch_reviewing', selectedOrder.workflow_mode !== 'free' && ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.workflow_mode === 'free' || ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'lineart_reviewing', selectedOrder.workflow_mode !== 'free' && ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 3：完稿 (Final)', 'final', selectedOrder.workflow_mode === 'free' || ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
                 </div>
               )}
 

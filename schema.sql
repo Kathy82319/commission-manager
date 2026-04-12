@@ -95,6 +95,8 @@ CREATE TABLE Commissions (
     order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     pending_changes TEXT,
     agreed_tos_snapshot TEXT,
+    workflow_mode TEXT DEFAULT 'standard', 
+    queue_status TEXT DEFAULT '',
     FOREIGN KEY (artist_id) REFERENCES Users(id),
     FOREIGN KEY (type_id) REFERENCES CommissionTypes(id)
 );

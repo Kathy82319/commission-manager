@@ -208,10 +208,10 @@ export function ClientOrder() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: '#A0978D', fontFamily: 'monospace' }}>單號：{order.id.split('-')[0]}...</span>
             <button 
-              onClick={() => navigate(`/workspace/${order.id}?role=client`)} disabled={isChatDisabled}
-              style={{ padding: '10px 16px', backgroundColor: isChatDisabled ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: isChatDisabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: isChatDisabled ? 'none' : '0 4px 12px rgba(93,74,62,0.2)' }}
+              onClick={() => navigate(`/workspace/${order.id}?role=client`)} 
+              style={{ padding: '10px 16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }}
             >
-              💬 進入聊天室
+              進入聊天室
             </button>
           </div>
         </div>
