@@ -2,53 +2,34 @@ import { Outlet, Link } from 'react-router-dom';
 
 export function PublicLayout() {
   
-  // 🌟 按鈕樣式：實心文字、圓潤外框、微陰影
-  const buttonStyle = {
-    padding: '8px 18px',
-    backgroundColor: 'transparent',
-    color: '#5D4A3E', // 實心不透明的深色字體
-    border: '2px solid #5D4A3E', // 明顯的圓潤外框
-    borderRadius: '24px', // 圓角膠囊設計
-    textDecoration: 'none',
-    fontSize: '14px',
-    fontWeight: 'bold',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(93, 74, 62, 0.15)' // 增加立體陰影凸顯位置
-  };
-
   return (
     // 外層容器完全透明，讓內部 PublicProfile 的背景色能無縫延伸
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
       
-      {/* 🌟 頂端列：使用 absolute 讓他懸浮在畫面上方，完全不佔用排版空間 */}
+      {/* 🌟 頂端列：合併後的登入/註冊按鈕 */}
       <header style={{ 
-        position: 'absolute', 
-        top: 0, 
-        right: 0, 
-        padding: '20px 24px', 
-        display: 'flex', 
-        gap: '16px',
-        zIndex: 1000, // 確保浮在所有內容最上層
-        background: 'transparent' 
+        position: 'absolute', top: 0, right: 0, padding: '20px 24px', 
+        display: 'flex', gap: '16px', zIndex: 1000, background: 'transparent' 
       }}>
-        <Link 
-          to="/login" 
-          style={buttonStyle}
-          // 滑鼠移入時：背景填滿深色，文字反白
+        <button 
+          onClick={() => window.location.href = '/api/auth/line/login'} // 直接觸發 LINE 登入
+          style={{
+            padding: '8px 20px',
+            backgroundColor: 'transparent',
+            color: '#5D4A3E',
+            border: '2px solid #5D4A3E',
+            borderRadius: '24px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 12px rgba(93, 74, 62, 0.15)'
+          }}
           onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#5D4A3E'; e.currentTarget.style.color = '#FFF'; }}
           onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#5D4A3E'; }}
         >
-          登入
-        </Link>
-        <Link 
-          to="/onboarding" 
-          style={buttonStyle}
-          // 滑鼠移入時：背景填滿深色，文字反白
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#5D4A3E'; e.currentTarget.style.color = '#FFF'; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#5D4A3E'; }}
-        >
-          創建帳號
-        </Link>
+          登入 / 註冊
+        </button>
       </header>
 
       {/* 內容插槽：讓繪師頁面佔滿整個畫面 */}

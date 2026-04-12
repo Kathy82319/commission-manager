@@ -1,79 +1,143 @@
+// src/pages/auth/Onboarding.tsx
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 
 export function Onboarding() {
   const navigate = useNavigate();
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  
+  const [displayName, setDisplayName] = useState('');
+  const [role, setRole] = useState<'artist' | 'client' | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // 1. 讀取 Cookie 檢查身分
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+    return null;
+  };
+
+  useEffect(() => {
+    const id = getCookie('user_id');
+    if (!id) {
+      navigate('/login');
+      return;
+    }
+    setUserId(id);
+
+    // 撈取剛註冊的資料 (取得 LINE 預設名稱)
+    fetch(`/api/users/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          // 如果已經不是 pending，就不該出現在這裡，把他踢回正確的地方
+          if (data.data.role === 'artist') navigate('/artist/queue');
+          if (data.data.role === 'client') navigate('/client/home');
+          
+          setDisplayName(data.data.display_name || '');
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [navigate]);
+
+  // 2. 送出表單
+  const handleSubmit = async () => {
+    if (!displayName.trim() || !role) {
+      alert('請填寫暱稱並選擇一個身分！');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // 呼叫我們即將在後端寫的 API 來更新身分
+      const res = await fetch(`/api/users/${userId}/complete-onboarding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ display_name: displayName, role })
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        // 依照選擇的身分跳轉
+        if (role === 'artist') window.location.href = '/artist/queue';
+        if (role === 'client') window.location.href = '/client/home';
+      } else {
+        alert('設定失敗：' + result.error);
+      }
+    } catch (error) {
+      alert('網路連線錯誤');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>載入中...</div>;
+
+  // 🌟 UI 樣式定義
+  const containerStyle = {
+    backgroundColor: '#FBFBF9', minHeight: '100vh', display: 'flex', flexDirection: 'column' as const,
+    alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', color: '#5D4A3E'
+  };
+
+  const cardStyle = (isSelected: boolean) => ({
+    flex: 1, padding: '24px', borderRadius: '16px', border: `2px solid ${isSelected ? '#5D4A3E' : '#EAE6E1'}`,
+    backgroundColor: isSelected ? '#F4F0EB' : '#FFFFFF', cursor: 'pointer', transition: 'all 0.2s ease',
+    display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '12px'
+  });
 
   return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', fontFamily: 'sans-serif' }}>
-      <div style={{ padding: '50px 40px', backgroundColor: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 8px 30px rgba(93,74,62,0.06)', border: '1px solid #EAE6E1' }}>
-        
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '24px' }}>歡迎來到 Commission</h2>
-          <p style={{ margin: 0, color: '#A0978D', fontSize: '14px' }}>只需兩步，完成初次設定</p>
-        </div>
+    <div style={containerStyle}>
+      <div style={{ maxWidth: '500px', width: '100%', padding: '40px', backgroundColor: '#FFFFFF', borderRadius: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' }}>
+        <h2 style={{ margin: '0 0 8px 0', textAlign: 'center' }}>歡迎來到 Commission！</h2>
+        <p style={{ margin: '0 0 32px 0', textAlign: 'center', color: '#A0978D', fontSize: '14px' }}>
+          花一分鐘設定您的個人檔案，開始您的旅程。
+        </p>
 
-        <div style={{ marginBottom: '30px' }}>
-          <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>請設定您的預設顯示暱稱</label>
+        {/* 暱稱輸入 */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>您在平台上的暱稱</label>
           <input 
             type="text" 
-            placeholder="例如： 沙漠駱駝" 
-            onFocus={() => setFocusedField('nickname')}
-            onBlur={() => setFocusedField(null)}
-            style={{ 
-              width: '100%', padding: '14px 16px', boxSizing: 'border-box',
-              borderRadius: '10px', border: focusedField === 'nickname' ? '2px solid #A67B3E' : '1px solid #DED9D3',
-              backgroundColor: '#FBFBF9', color: '#5D4A3E', fontSize: '15px', outline: 'none',
-              transition: 'all 0.2s ease', boxShadow: focusedField === 'nickname' ? '0 0 0 3px rgba(166,123,62,0.1)' : 'none'
-            }} 
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="請輸入暱稱..."
+            style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #DED9D3', fontSize: '15px', boxSizing: 'border-box' }}
           />
         </div>
-        
-        <div style={{ borderTop: '1px dashed #EAE6E1', paddingTop: '30px' }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#5D4A3E', fontSize: '15px', textAlign: 'center' }}>您在此平台的主要身分是？</h3>
+
+        {/* 身分選擇 */}
+        <div style={{ marginBottom: '32px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold', fontSize: '14px' }}>您主要想使用什麼功能？</label>
           <div style={{ display: 'flex', gap: '16px' }}>
-            <button 
-              onClick={() => navigate('/artist')} 
-              style={btnStyle('#5D4A3E', '#FFFFFF', '0 4px 12px rgba(93,74,62,0.2)')}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              我是繪師<br/>
-              <span style={{ fontSize: '12px', fontWeight: 'normal', opacity: 0.8, marginTop: '4px', display: 'inline-block' }}>開啟接案管理後台</span>
-            </button>
-            <button 
-              onClick={() => navigate('/client')} 
-              style={btnStyle('#FFFFFF', '#5D4A3E', '0 2px 8px rgba(0,0,0,0.05)', '1px solid #DED9D3')}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#A67B3E'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#DED9D3'; }}
-            >
-              我是委託方<br/>
-              <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#A0978D', marginTop: '4px', display: 'inline-block' }}>檢視與管理我的訂單</span>
-            </button>
+            <div style={cardStyle(role === 'artist')} onClick={() => setRole('artist')}>
+              <span style={{ fontSize: '32px' }}>🎨</span>
+              <div style={{ fontWeight: 'bold' }}>我是繪師</div>
+              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想管理委託、上傳作品並設定報價</div>
+            </div>
+            
+            <div style={cardStyle(role === 'client')} onClick={() => setRole('client')}>
+              <span style={{ fontSize: '32px' }}>👀</span>
+              <div style={{ fontWeight: 'bold' }}>我是委託方</div>
+              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想尋找繪師、發起委託並追蹤進度</div>
+            </div>
           </div>
         </div>
 
+        {/* 送出按鈕 */}
+        <button 
+          onClick={handleSubmit}
+          disabled={submitting || !displayName || !role}
+          style={{
+            width: '100%', padding: '14px', backgroundColor: submitting || !displayName || !role ? '#DED9D3' : '#5D4A3E',
+            color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold',
+            cursor: submitting || !displayName || !role ? 'not-allowed' : 'pointer', transition: 'background-color 0.2s'
+          }}
+        >
+          {submitting ? '設定中...' : '完成設定，進入平台'}
+        </button>
       </div>
     </div>
   );
 }
-
-const btnStyle = (bg: string, text: string, shadow: string, border: string = 'none') => ({
-  flex: 1, 
-  padding: '16px', 
-  backgroundColor: bg, 
-  color: text, 
-  border: border, 
-  borderRadius: '12px', 
-  fontSize: '16px', 
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  boxShadow: shadow,
-  display: 'flex',
-  flexDirection: 'column' as const,
-  alignItems: 'center',
-  justifyContent: 'center',
-  lineHeight: '1.2'
-});

@@ -30,10 +30,12 @@ CREATE TABLE Users (
     line_id TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 帳號創建日 (試用開始日)
     avatar_url TEXT DEFAULT '',
     bio TEXT DEFAULT '',
-    profile_settings TEXT DEFAULT '{}' -- 新增：用於儲存作品集與自訂版塊的 JSON
+    profile_settings TEXT DEFAULT '{}',
+    subscription_type TEXT DEFAULT 'free',         -- 新增：'free' (試用/免費) 或 'pro' (專業版)
+    pro_expires_at DATETIME                        -- 新增：專業版到期時間
 );
 
 -- 2. 繪師專屬設定表
@@ -164,8 +166,7 @@ CREATE TABLE PaymentRecords (
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
 
-INSERT OR IGNORE INTO Users (id, line_id, display_name, role) 
-VALUES ('u-artist-01', 'test_line_id_01', '預設繪師', 'artist');
+
 
 INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
