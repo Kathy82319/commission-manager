@@ -7,56 +7,60 @@ interface UserProfile {
   avatar_url: string; 
   bio: string;
   profile_settings?: string;
+  role?: string; // 🌟 新增 role 以判斷身分
 }
-
-const TEST_CLIENT_ID = 'u-client-test';
 
 export function ClientHome() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [socialLinks, setSocialLinks] = useState<{ platform: string, url: string }[]>([]);
-  
-  // 🌟 新增跑馬燈文字狀態
   const [marqueeText, setMarqueeText] = useState<string>('');
 
+  // 1. 取得真實 Cookie 中的 user_id (取代原本寫死的 TEST_CLIENT_ID)
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+    return null;
+  };
+
   useEffect(() => {
+    const userId = getCookie('user_id');
+
     const fetchProfile = async () => {
-      const res = await fetch(`/api/users/${TEST_CLIENT_ID}`);
+      if (!userId) return; // 如果沒登入就不抓
+      const res = await fetch(`/api/users/${userId}`);
       const data = await res.json();
-      if (data.success) {
+      
+      if (data.success && data.data) {
         setProfile(data.data);
         if (data.data.profile_settings) {
           try {
             const settings = JSON.parse(data.data.profile_settings);
-            if (settings.socials) {
-              setSocialLinks(settings.socials);
-            }
+            if (settings.socials) setSocialLinks(settings.socials);
           } catch (e) {
             console.error("解析 profile_settings 失敗", e);
           }
         }
+      } else if (data.id) {
+        // 兼容 API 回傳格式
+        setProfile(data);
       } else {
-        setProfile({ id: TEST_CLIENT_ID, display_name: '測試委託人', avatar_url: '', bio: '尚未填寫自我介紹' });
+        setProfile({ id: userId, display_name: '測試委託人', avatar_url: '', bio: '尚未填寫自我介紹' });
       }
     };
 
-    // 🌟 撈取通知資料以產生跑馬燈
     const fetchNotifications = async () => {
       try {
         const res = await fetch('/api/commissions');
         const data = await res.json();
         if (data.success) {
-          // 過濾出屬於該委託人且未作廢的內部單
-          // (注意：如果您有實際的 Auth 機制，這裡應該只會回傳該使用者的單)
-          //這是因為我在程式碼中加了一個「過於嚴格的過濾條件」。原本我設定必須符合 client_id === TEST_CLIENT_ID 才會顯示通知，但在您的測試資料庫中，訂單可能沒有成功綁定這個特定的 ID，導致系統以為「這個委託人沒有訂單」。
           const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
-          
           let pendingMsg = '';
           let chatMsg = '';
 
           validOrders.forEach((order: any) => {
              const name = order.client_custom_title || order.project_name || '';
-             // 若未設定項目名稱，則隱藏項目名稱的文字
              const displayName = name ? `項目名稱：${name}   訂單編號：${order.id}` : `訂單編號：${order.id}`;
              
              if (order.pending_changes) {
@@ -64,29 +68,62 @@ export function ClientHome() {
              } else {
                const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
                const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
-               if (latestMsgTime > lastReadTime) {
-                 chatMsg += `${displayName}有新訊息。 `;
-               }
+               if (latestMsgTime > lastReadTime) chatMsg += `${displayName}有新訊息。 `;
              }
           });
 
-          // 異動優先顯示
           if (pendingMsg) setMarqueeText(pendingMsg);
           else if (chatMsg) setMarqueeText(chatMsg);
         }
-      } catch(e) { 
-        console.error("讀取通知失敗", e); 
-      }
+      } catch(e) { console.error("讀取通知失敗", e); }
     };
 
     fetchProfile();
     fetchNotifications();
   }, []);
 
+  // 🌟 新增：處理切換或創建繪師帳號
+  const handleSwitchToArtist = async () => {
+    if (!profile) return;
+
+    if (profile.role === 'artist') {
+      // 已經是繪師，直接切換
+      window.location.href = '/artist/queue';
+    } else {
+      // 不是繪師，跳出確認視窗
+      const confirmCreate = window.confirm(
+        "您目前沒有繪師帳號。\n\n確定要創建繪師管理頁嗎？\n創建後將直接開始 7 天試用期。"
+      );
+
+      if (confirmCreate) {
+        try {
+          // 呼叫 API 將身分升級為 artist
+          const res = await fetch(`/api/users/${profile.id}/complete-onboarding`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              display_name: profile.display_name, 
+              role: 'artist' 
+            })
+          });
+
+          const result = await res.json();
+          if (result.success) {
+            alert("創建成功！為您導向繪師後台。");
+            window.location.href = '/artist/queue';
+          } else {
+            alert('創建失敗：' + result.error);
+          }
+        } catch (error) {
+          alert('網路連線錯誤，請稍後再試。');
+        }
+      }
+    }
+  };
+
   return (
     <div style={{ backgroundColor: '#778ca4', minHeight: '100vh', display: 'flex', justifyContent: 'center', padding: '40px 16px', fontFamily: 'sans-serif' }}>
       
-      {/* 🌟 跑馬燈動畫定義 */}
       <style>{`
         @keyframes scroll-left {
           0% { transform: translateX(100%); }
@@ -96,17 +133,26 @@ export function ClientHome() {
 
       <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        {/* 🌟 跑馬燈區塊 (沒訊息提醒時預設隱藏，顏色同背景底色但多黃色虛線的上下邊框) */}
+        {/* 🌟 新增：切換/創建 繪師管理頁 按鈕 (靠右對齊) */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
+          <button 
+            onClick={handleSwitchToArtist}
+            style={{ 
+              background: 'none', border: 'none', color: '#e8ecf3', fontSize: '13px', 
+              cursor: 'pointer', textDecoration: 'underline', padding: 0, opacity: 0.9
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.9'}
+          >
+            切換/創建繪師管理頁
+          </button>
+        </div>
+
+        {/* 跑馬燈區塊 */}
         {marqueeText && (
           <div style={{ 
-            backgroundColor: '#778ca4', 
-            borderTop: '2px dashed #facc15', 
-            borderBottom: '2px dashed #facc15', 
-            padding: '10px 0', 
-            overflow: 'hidden', 
-            whiteSpace: 'nowrap', 
-            display: 'flex', 
-            alignItems: 'center'
+            backgroundColor: '#778ca4', borderTop: '2px dashed #facc15', borderBottom: '2px dashed #facc15', 
+            padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center'
           }}>
             <div style={{ display: 'inline-block', animation: 'scroll-left 15s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '15px' }}>
               📢 {marqueeText}
@@ -135,10 +181,7 @@ export function ClientHome() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
               {socialLinks.map((social, idx) => (
                 <a 
-                  key={idx} 
-                  href={social.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                  key={idx} href={social.url} target="_blank" rel="noopener noreferrer"
                   style={{ 
                     padding: '6px 16px', backgroundColor: '#d9dfe9', color: '#4A7294', 
                     borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none',

@@ -119,14 +119,14 @@ export default {
           targetPath = "/onboarding"; 
         } else {
           // 🌟 情況二：老朋友回來了 -> 根據身分分流
-          const user: any = results[0];
-          if (user.role === 'pending') {
-            targetPath = "/onboarding";
-          } else if (user.role === 'client') {
-            targetPath = "/client/home"; 
-          } else {
-            targetPath = "/artist/queue"; 
-          }
+const user: any = results[0];
+if (user.role === 'pending') {
+  targetPath = "/onboarding";
+} else if (user.role === 'client') {
+  targetPath = "/client/home"; // 🌟 確保這裡是 /client/home
+} else {
+  targetPath = "/artist/queue"; 
+}
         }
 
         const frontendUrl = new URL(env.LINE_REDIRECT_URI).origin; 

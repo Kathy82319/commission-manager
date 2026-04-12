@@ -155,9 +155,7 @@ export function ArtistLayout() {
           {/* 🌟 新增：身分切換按鈕 */}
           <button
             onClick={() => {
-              // 這裡未來會接切換身分的邏輯 (修改資料庫的 current_role)
-              // 目前我們先簡單讓他跳轉到委託方首頁 (假設你的委託方首頁是 /client/home)
-              window.location.href = '/client/ClientHome'; 
+              navigate('/client/home');
             }}
             style={{
               width: '100%', padding: '10px', backgroundColor: '#F4F0EB', border: '1px dashed #DED9D3', borderRadius: '8px',
@@ -167,7 +165,7 @@ export function ArtistLayout() {
             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#EAE6E1'}
             onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F4F0EB'}
           >
-            <span>👀</span> 切換為委託方模式
+            <span></span> 切換為委託方模式
           </button>
 
           <button

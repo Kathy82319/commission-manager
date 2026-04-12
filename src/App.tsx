@@ -10,22 +10,22 @@ import { Login } from './pages/auth/Login';
 import { Onboarding } from './pages/auth/Onboarding';
 
 // 引入繪師端頁面
-import { PublicProfile } from './PublicProfile'; // 引入公開主頁元件
+import { PublicProfile } from './PublicProfile';
 import { QuoteBuilder } from './pages/artist/QuoteBuilder';
 import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 
-// 引入委託人端與共用頁面
-import { ClientForm } from './pages/client/ClientForm'; 
-import { Workspace } from './pages/Workspace';
+// 引入委託人端頁面
 import { ClientHome } from './pages/client/ClientHome';
 import { ClientProfileEdit } from './pages/client/ClientProfileEdit'; 
 import { ClientOrderList } from './pages/client/ClientOrderList'; 
 import { ClientOrderDetail } from './pages/client/ClientOrderDetail';
+import { ClientForm } from './pages/client/ClientForm'; 
 
-// 🌟 引入新的法律頁面
+// 引入共用頁面
+import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 
@@ -40,38 +40,36 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* 🌟 修正：公開頁面路由 (套用 Shared Layout) */}
+        {/* 公開頁面路由 */}
         <Route element={<PublicLayout />}>
-          {/* 匹配 yourtool.com/@Artist_XXXXX */}
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/:artistId" element={<PublicProfile />} />
-          {/* 法律聲明頁面 */}
-
         </Route>
 
         {/* 繪師私密後台區 */}
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
-          <Route path="quote/new" element={<QuoteBuilder />} />
           <Route path="queue" element={<Queue />} />
+          <Route path="quote/new" element={<QuoteBuilder />} />
           <Route path="notebook" element={<Notebook />} />
           <Route path="records" element={<Records />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* 委託單確認與共用工作區 */}
-        <Route path="/quote/:id" element={<ClientForm />} />
-        <Route path="/workspace/:id" element={<Workspace />} />
-
-        {/* 委託方後台區 */}
+        {/* 委託方後台區 (手機容器化) */}
         <Route path="/client" element={<ClientLayout />}>
-          <Route index element={<ClientHome />} />
+          {/* 🌟 確保 /client 與 /client/home 都能連到首頁 */}
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<ClientHome />} /> 
           <Route path="profile/edit" element={<ClientProfileEdit />} />
           <Route path="orders" element={<ClientOrderList />} />
           <Route path="order/:id" element={<ClientOrderDetail />} />
         </Route>
 
+        {/* 委託單確認與共用工作區 */}
+        <Route path="/quote/:id" element={<ClientForm />} />
+        <Route path="/workspace/:id" element={<Workspace />} />
         
       </Routes>
     </BrowserRouter>

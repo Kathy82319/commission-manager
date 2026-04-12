@@ -59,13 +59,14 @@ export function Onboarding() {
       });
       const result = await res.json();
 
-      if (result.success) {
-        // 依照選擇的身分跳轉
-        if (role === 'artist') window.location.href = '/artist/queue';
-        if (role === 'client') window.location.href = '/client/home';
-      } else {
-        alert('設定失敗：' + result.error);
-      }
+if (result.success) {
+  // 🌟 修正：確保路徑與 App.tsx 的 Route 定義完全一致
+  if (role === 'artist') {
+    navigate('/artist/queue');
+  } else if (role === 'client') {
+    navigate('/client/home'); // 修正為 /client/home
+  }
+}
     } catch (error) {
       alert('網路連線錯誤');
     } finally {
