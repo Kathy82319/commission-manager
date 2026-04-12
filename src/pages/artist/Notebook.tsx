@@ -310,7 +310,8 @@ export function Notebook() {
     );
   };
 
-  const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' = 'text', suffix: string = '') => {
+// 🌟 修改：加入 type 支援 'select'，並接收 options 陣列
+  const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' | 'select' = 'text', suffix: string = '', options: string[] = []) => {
     if (!selectedOrder) return null;
     const isFreeMode = selectedOrder.workflow_mode === 'free';
     const canDirectEdit = isEditingRequest || isFreeMode;
@@ -328,7 +329,18 @@ export function Notebook() {
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{label}</span>
         {canDirectEdit ? (
-          <input type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none' }} />
+          type === 'select' ? (
+            <select 
+              value={(editData[fieldKey] as string) || ''} 
+              onChange={e => setEditData({...editData, [fieldKey]: e.target.value})} 
+              style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none' }}
+            >
+              <option value="">請選擇</option>
+              {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          ) : (
+            <input type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none' }} />
+          )
         ) : (
           <div style={{ padding: '10px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '8px', minHeight: '19px', display: 'flex', alignItems: 'center' }}>
             {hasPending ? (
@@ -463,7 +475,7 @@ export function Notebook() {
                   onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}
                   style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease' }}
                 >
-                  進入工作區
+                  進入聊天室
                 </button>
               </div>
             </div>
@@ -542,7 +554,7 @@ export function Notebook() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px', fontSize: '14px' }}>
                       {renderRequestField('委託用途：', 'usage_type')}
-                      {renderRequestField('是否急件：', 'is_rush')}
+                      {renderRequestField('是否急件：', 'is_rush', 'select', '', ['否', '是'])}
                       {renderRequestField('交稿方式：', 'delivery_method')}
                       {renderRequestField('總金額：', 'total_price', 'number')}
                       {renderRequestField('繪畫範圍：', 'draw_scope')}

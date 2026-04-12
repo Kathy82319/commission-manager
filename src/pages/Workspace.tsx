@@ -122,7 +122,7 @@ if (loading) return (
     backgroundColor: '#FBFBF9', 
     color: '#5D4A3E', fontSize: '15px' 
   }}>
-    載入工作區中...
+    載入聊天室中...
   </div>
 );
 
@@ -160,7 +160,7 @@ return (
             </button>
             <div>
               <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#5D4A3E' }}>
-                {order.client_name || '未命名委託人'} 的工作區
+                {order.client_name || '未命名委託人'} 的聊天室
               </h2>
               <div style={{ fontSize: '12px', color: '#A0978D', fontFamily: 'monospace' }}>
                 訂單編號：{order.id}
@@ -175,7 +175,7 @@ return (
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#FBFBF9' }}>
           <div style={{ textAlign: 'center', margin: '10px 0 20px 0' }}>
             <span style={{ backgroundColor: '#EAE6E1', color: '#7A7269', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
-              雙方已確認委託，專屬工作區已建立
+              雙方已確認委託，專屬聊天室已建立
             </span>
           </div>
           

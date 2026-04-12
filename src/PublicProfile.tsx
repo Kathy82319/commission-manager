@@ -47,8 +47,18 @@ const getSocialIcon = (platform: string) => {
 };
 
 export function PublicProfile() {
-  const { id } = useParams();
-  const artistId = id || 'u-artist-01';
+  
+  // 🌟 關鍵修改：同時接收 artistId (給 /@Artist_XXX 網址用) 或 id (給其他舊版網址用)
+  const { artistId, id } = useParams();
+
+
+  // 🌟 關鍵修正：處理帶有 @ 的網址
+  let rawId = artistId || id || 'u-artist-01';
+  // 如果網址抓到的字串開頭有 '@'，我們就把它切掉 (變成純 ID)
+  if (rawId.startsWith('@')) {
+    rawId = rawId.substring(1); 
+  }
+  const currentArtistId = rawId;
 
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
@@ -62,7 +72,8 @@ export function PublicProfile() {
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
-        const res = await fetch(`/api/users/${artistId}`);
+        // 使用抓取到的 currentArtistId 去要資料
+        const res = await fetch(`/api/users/${currentArtistId}`);
         const data = await res.json();
         if (data.success && data.data) {
           setArtist(data.data);
@@ -81,7 +92,7 @@ export function PublicProfile() {
       }
     };
     fetchArtistData();
-  }, [artistId]);
+  }, [currentArtistId]);
 
   // 🌟 修改：根據繪師設定來決定動畫的顯示與時長
   useEffect(() => {
@@ -142,7 +153,7 @@ export function PublicProfile() {
   return (
     <div className="public-profile-container">
       
-{/* 修正後的開場名片區塊 */}
+      {/* 修正後的開場名片區塊 */}
       <div 
         className={`splash-screen ${!showSplash ? 'hide' : ''}`}
         style={{
@@ -262,7 +273,7 @@ export function PublicProfile() {
                       <div 
                         key={idx} 
                         className="portfolio-item"
-                        onClick={() => setSelectedImgIndex(idx)} // 🌟 點擊圖片觸發放大
+                        onClick={() => setSelectedImgIndex(idx)} 
                         style={{ cursor: 'zoom-in' }}
                       >
                         <img src={img} alt={`作品 ${idx + 1}`} />

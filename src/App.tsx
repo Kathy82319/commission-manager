@@ -23,7 +23,11 @@ import { Workspace } from './pages/Workspace';
 import { ClientHome } from './pages/client/ClientHome';
 import { ClientProfileEdit } from './pages/client/ClientProfileEdit'; 
 import { ClientOrderList } from './pages/client/ClientOrderList'; 
-import { ClientOrderDetail } from './pages/client/ClientOrderDetail'; // 引入新的詳細頁元件
+import { ClientOrderDetail } from './pages/client/ClientOrderDetail';
+
+// 🌟 引入新的法律頁面
+import { Terms } from './pages/Terms';
+import { Privacy } from './pages/Privacy';
 
 export function App() {
   return (
@@ -36,9 +40,14 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* 公開頁面路由：將 /u/:id 導向 PublicProfile 元件 */}
-        <Route path="/u" element={<PublicLayout />}>
-          <Route path=":id" element={<PublicProfile />} />
+        {/* 🌟 修正：公開頁面路由 (套用 Shared Layout) */}
+        <Route element={<PublicLayout />}>
+          {/* 匹配 yourtool.com/@Artist_XXXXX */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/:artistId" element={<PublicProfile />} />
+          {/* 法律聲明頁面 */}
+
         </Route>
 
         {/* 繪師私密後台區 */}
@@ -60,11 +69,10 @@ export function App() {
           <Route index element={<ClientHome />} />
           <Route path="profile/edit" element={<ClientProfileEdit />} />
           <Route path="orders" element={<ClientOrderList />} />
-          <Route path="order/:id" element={<ClientOrderDetail />} /> {/* 替換為新的詳細頁元件 */}
+          <Route path="order/:id" element={<ClientOrderDetail />} />
         </Route>
 
-        {/* 預設路由 */}
-        <Route path="*" element={<Navigate to="/artist/queue" replace />} />
+        
       </Routes>
     </BrowserRouter>
   );

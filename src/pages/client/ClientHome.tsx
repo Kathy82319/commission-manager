@@ -48,7 +48,8 @@ export function ClientHome() {
         if (data.success) {
           // 過濾出屬於該委託人且未作廢的內部單
           // (注意：如果您有實際的 Auth 機制，這裡應該只會回傳該使用者的單)
-          const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0 && c.client_id === TEST_CLIENT_ID);
+          //這是因為我在程式碼中加了一個「過於嚴格的過濾條件」。原本我設定必須符合 client_id === TEST_CLIENT_ID 才會顯示通知，但在您的測試資料庫中，訂單可能沒有成功綁定這個特定的 ID，導致系統以為「這個委託人沒有訂單」。
+          const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
           
           let pendingMsg = '';
           let chatMsg = '';

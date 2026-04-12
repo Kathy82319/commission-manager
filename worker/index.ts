@@ -25,9 +25,26 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
+// [GET] 臨時修復：為 Vite 的本地資料庫補上缺少的讀取時間欄位 (修正版)
+    if (request.method === "GET" && url.pathname === "/api/fix-commissions-read-time") {
+      let messages = [];
+      try {
+        // 修正：SQLite ALTER TABLE 不支援 DEFAULT CURRENT_TIMESTAMP，改為 TEXT
+        await env.commission_db.prepare("ALTER TABLE Commissions ADD COLUMN last_read_at_artist TEXT").run();
+        messages.push("已成功新增 last_read_at_artist 欄位");
+      } catch (e: any) {
+        messages.push("last_read_at_artist 結果: " + e.message);
+      }
+      
+      try {
+        await env.commission_db.prepare("ALTER TABLE Commissions ADD COLUMN last_read_at_client TEXT").run();
+        messages.push("已成功新增 last_read_at_client 欄位");
+      } catch (e: any) {
+        messages.push("last_read_at_client 結果: " + e.message);
+      }
 
-
-
+      return Response.json({ success: true, messages });
+    }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
@@ -287,7 +304,7 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
     }
 
 // [GET] 單一委託單
-    if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
+if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare(`
@@ -305,7 +322,7 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
     }
 
 // [GET] 委託單列表
-    if (request.method === "GET" && url.pathname === "/api/commissions") {
+if (request.method === "GET" && url.pathname === "/api/commissions") {
       try {
         const query = `
           SELECT c.*, u.display_name AS client_name, t.name AS type_name,
@@ -319,6 +336,8 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
         return Response.json({ success: true, data: results });
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
+
+
 
     if (request.method === "POST" && url.pathname === "/api/commissions") {
       try {
@@ -387,7 +406,15 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
         const params = [];
         
 // 新增 last_read_at_artist 與 last_read_at_client
-        const allowedFields = ['status', 'payment_status', 'project_name', 'detailed_settings', 'usage_type', 'is_rush', 'delivery_method', 'payment_method', 'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 'current_stage', 'end_date', 'artist_note', 'workflow_mode', 'queue_status', 'last_read_at_artist', 'last_read_at_client'];        
+// 🌟 補上 last_read_at_artist, last_read_at_client 以及 client_custom_title
+        const allowedFields = [
+          'status', 'payment_status', 'project_name', 'detailed_settings', 
+          'usage_type', 'is_rush', 'delivery_method', 'payment_method', 
+          'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 
+          'current_stage', 'end_date', 'artist_note', 'workflow_mode', 
+          'queue_status', 'last_read_at_artist', 'last_read_at_client', 
+          'client_custom_title'
+        ];
         for (const key of allowedFields) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);
