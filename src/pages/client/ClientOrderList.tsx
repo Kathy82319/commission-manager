@@ -11,6 +11,9 @@ interface Commission {
   is_rush: string;
   status: string;
   is_external: number;
+  pending_changes?: string;
+  latest_message_at?: string;
+  last_read_at_client?: string;
 }
 
 export function ClientOrderList() {
@@ -59,6 +62,12 @@ export function ClientOrderList() {
         ) : (
           commissions.map(order => {
             const isRush = order.is_rush === '是' || order.is_rush === 'true'; 
+            // 🌟 判斷是否有通知
+            const hasPending = !!order.pending_changes;
+            const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
+            const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
+            const hasNewMsg = latestMsgTime > lastReadTime;
+            const hasNotification = hasPending || hasNewMsg;
 
             return (
               <div 
@@ -67,12 +76,22 @@ export function ClientOrderList() {
                 style={{ 
                   backgroundColor: '#e8ecf3', padding: '16px', borderRadius: '12px', 
                   boxShadow: '0 4px 12px rgba(100,120,140,0.08)', 
-                  borderLeft: '4px solid #4A7294', cursor: 'pointer', transition: 'transform 0.2s',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  // 有通知時邊框變黃色
+                  borderLeft: hasNotification ? '4px solid #facc15' : '4px solid #4A7294', 
+                  cursor: 'pointer', transition: 'transform 0.2s',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  position: 'relative' // 🌟 為了放鈴鐺
                 }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
+                {/* 🌟 鈴鐺圖示 */}
+                {hasNotification && (
+                  <div style={{ position: 'absolute', top: '-10px', right: '-10px', backgroundColor: '#e11d48', color: '#FFF', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '14px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                    🔔
+                  </div>
+                )}
+                
                 <div style={{ fontSize: '15px', color: '#475569', lineHeight: '1.8' }}>
                   <div><span style={{ fontWeight: 'bold' }}>訂單日期：</span>{formatDate(order.order_date)}</div>
                   {/* 修正：顯示完整訂單編號 */}

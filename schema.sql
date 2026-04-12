@@ -76,6 +76,8 @@ CREATE TABLE Commissions (
     status TEXT NOT NULL DEFAULT 'quote_created',
     payment_status TEXT DEFAULT 'unpaid',
     current_stage TEXT DEFAULT 'sketch_drawing',
+    last_read_at_artist DATETIME DEFAULT CURRENT_TIMESTAMP, -- 新增：繪師最後讀取時間
+    last_read_at_client DATETIME DEFAULT CURRENT_TIMESTAMP, -- 新增：委託人最後讀取時間
     artist_note TEXT DEFAULT '',
     contact_memo TEXT DEFAULT '',
     is_paid INTEGER DEFAULT 0,

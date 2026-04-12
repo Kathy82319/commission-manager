@@ -15,6 +15,9 @@ export function ClientHome() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [socialLinks, setSocialLinks] = useState<{ platform: string, url: string }[]>([]);
+  
+  // 🌟 新增跑馬燈文字狀態
+  const [marqueeText, setMarqueeText] = useState<string>('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,13 +39,80 @@ export function ClientHome() {
         setProfile({ id: TEST_CLIENT_ID, display_name: '測試委託人', avatar_url: '', bio: '尚未填寫自我介紹' });
       }
     };
+
+    // 🌟 撈取通知資料以產生跑馬燈
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/commissions');
+        const data = await res.json();
+        if (data.success) {
+          // 過濾出屬於該委託人且未作廢的內部單
+          // (注意：如果您有實際的 Auth 機制，這裡應該只會回傳該使用者的單)
+          const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0 && c.client_id === TEST_CLIENT_ID);
+          
+          let pendingMsg = '';
+          let chatMsg = '';
+
+          validOrders.forEach((order: any) => {
+             const name = order.client_custom_title || order.project_name || '';
+             // 若未設定項目名稱，則隱藏項目名稱的文字
+             const displayName = name ? `項目名稱：${name}   訂單編號：${order.id}` : `訂單編號：${order.id}`;
+             
+             if (order.pending_changes) {
+               pendingMsg += `合約有異動需求，請進入${displayName}。 `;
+             } else {
+               const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
+               const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
+               if (latestMsgTime > lastReadTime) {
+                 chatMsg += `${displayName}有新訊息。 `;
+               }
+             }
+          });
+
+          // 異動優先顯示
+          if (pendingMsg) setMarqueeText(pendingMsg);
+          else if (chatMsg) setMarqueeText(chatMsg);
+        }
+      } catch(e) { 
+        console.error("讀取通知失敗", e); 
+      }
+    };
+
     fetchProfile();
+    fetchNotifications();
   }, []);
 
   return (
     <div style={{ backgroundColor: '#778ca4', minHeight: '100vh', display: 'flex', justifyContent: 'center', padding: '40px 16px', fontFamily: 'sans-serif' }}>
+      
+      {/* 🌟 跑馬燈動畫定義 */}
+      <style>{`
+        @keyframes scroll-left {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
+
       <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
+        {/* 🌟 跑馬燈區塊 (沒訊息提醒時預設隱藏，顏色同背景底色但多黃色虛線的上下邊框) */}
+        {marqueeText && (
+          <div style={{ 
+            backgroundColor: '#778ca4', 
+            borderTop: '2px dashed #facc15', 
+            borderBottom: '2px dashed #facc15', 
+            padding: '10px 0', 
+            overflow: 'hidden', 
+            whiteSpace: 'nowrap', 
+            display: 'flex', 
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'inline-block', animation: 'scroll-left 15s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '15px' }}>
+              📢 {marqueeText}
+            </div>
+          </div>
+        )}
+
         {/* 上板塊：個人檔案與社群 */}
         <div style={{ backgroundColor: '#e8ecf3', padding: '40px 24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(100,120,140,0.08)', border: '1px solid #d0d8e4' }}>
           <div style={{ 

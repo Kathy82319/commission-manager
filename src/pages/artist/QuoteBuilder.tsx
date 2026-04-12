@@ -221,10 +221,14 @@ export function QuoteBuilder() {
               </div>
               <div>
                 <label style={labelStyle}>是否急件{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                <select name="is_rush" value={formData.is_rush} onChange={handleChange} 
-                  onFocus={() => setFocusedField('is_rush')} onBlur={() => setFocusedField(null)} style={getInputStyle('is_rush')}>
-                  <option value="否">否</option><option value="是">是</option>
-                </select>
+<select 
+  value={formData.is_rush} 
+  onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
+  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' /*套用您原本的樣式*/ }}
+>
+  <option value="否">否</option>
+  <option value="是">是</option>
+</select>
               </div>
               
               <div>

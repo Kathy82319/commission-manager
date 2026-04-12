@@ -27,6 +27,8 @@ export default {
 
 
 
+
+
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/deliverables")) {
       try {
         const id = pathParts[3];
@@ -284,11 +286,13 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
+// [GET] 單一委託單
     if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare(`
-          SELECT c.*, u.display_name AS client_name, t.name AS type_name
+          SELECT c.*, u.display_name AS client_name, t.name AS type_name,
+          (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
           FROM Commissions c
           LEFT JOIN Users u ON c.client_id = u.id
           LEFT JOIN CommissionTypes t ON c.type_id = t.id
@@ -300,10 +304,12 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
       } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
     }
 
+// [GET] 委託單列表
     if (request.method === "GET" && url.pathname === "/api/commissions") {
       try {
         const query = `
-          SELECT c.*, u.display_name AS client_name, t.name AS type_name
+          SELECT c.*, u.display_name AS client_name, t.name AS type_name,
+          (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
           FROM Commissions c
           LEFT JOIN Users u ON c.client_id = u.id
           LEFT JOIN CommissionTypes t ON c.type_id = t.id
@@ -380,8 +386,8 @@ if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && 
         const updates = [];
         const params = [];
         
-        const allowedFields = ['status', 'payment_status', 'project_name', 'detailed_settings', 'usage_type', 'is_rush', 'delivery_method', 'payment_method', 'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 'current_stage', 'end_date', 'artist_note', 'workflow_mode', 'queue_status'];        
-        
+// 新增 last_read_at_artist 與 last_read_at_client
+        const allowedFields = ['status', 'payment_status', 'project_name', 'detailed_settings', 'usage_type', 'is_rush', 'delivery_method', 'payment_method', 'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 'current_stage', 'end_date', 'artist_note', 'workflow_mode', 'queue_status', 'last_read_at_artist', 'last_read_at_client'];        
         for (const key of allowedFields) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);

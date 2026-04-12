@@ -28,6 +28,22 @@ export function Workspace() {
   const [focusedField, setFocusedField] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesLengthRef = useRef<number>(0); // 🌟 用來追蹤訊息數量，判斷是否來了新訊息
+
+  // 🌟 新增：更新目前角色的已讀時間
+  const updateReadTime = async () => {
+    if (!id) return;
+    const field = role === 'artist' ? 'last_read_at_artist' : 'last_read_at_client';
+    try {
+      await fetch(`/api/commissions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: new Date().toISOString() })
+      });
+    } catch (error) {
+      console.error("更新已讀時間失敗", error);
+    }
+  };
 
   const fetchOrderData = async () => {
     try {
@@ -43,7 +59,14 @@ export function Workspace() {
     try {
       const res = await fetch(`/api/commissions/${id}/messages`);
       const data = await res.json();
-      if (data.success) setMessages(data.data);
+      if (data.success) {
+        // 🌟 如果偵測到新訊息，就觸發已讀更新
+        if (data.data.length > messagesLengthRef.current) {
+          updateReadTime();
+          messagesLengthRef.current = data.data.length;
+        }
+        setMessages(data.data);
+      }
     } catch (error) {
       console.error("無法讀取訊息", error);
     }
@@ -53,16 +76,18 @@ export function Workspace() {
     const initData = async () => {
       await fetchOrderData();
       await fetchMessages();
+      await updateReadTime(); // 🌟 第一次進入頁面時強制更新已讀
       setLoading(false);
     };
     initData();
 
+    // 每 3 秒拉取一次最新訊息
     const intervalId = setInterval(() => {
       fetchMessages();
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [id]);
+  }, [id, role]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -94,7 +119,7 @@ export function Workspace() {
 if (loading) return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
-    backgroundColor: '#FBFBF9', // 🌟 統一背景色
+    backgroundColor: '#FBFBF9', 
     color: '#5D4A3E', fontSize: '15px' 
   }}>
     載入工作區中...
@@ -105,32 +130,26 @@ if (loading) return (
 if (!order) return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
-    backgroundColor: '#FBFBF9', // 🌟 統一背景色
+    backgroundColor: '#FBFBF9', 
     color: '#A05C5C', fontSize: '15px' 
   }}>
     找不到此委託空間，或發生異常。
   </div>
 );
 
-
 // --- 正常渲染狀態 ---
 return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', 
-    backgroundColor: '#FBFBF9', // 🌟 關鍵修正：將原本的 #d5d9ed 改為 #FBFBF9
+    backgroundColor: '#FBFBF9', 
     fontFamily: 'sans-serif' 
   }}>
-    
-    {/* 限制最大寬度區塊 */}
     <div style={{ 
       width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', 
-      backgroundColor: '#FBFBF9', // 🌟 這裡保持不變，這樣內外顏色就一致了
-      boxShadow: 'none', // 🌟 選項：因為內外顏色一致了，你可以考慮把 boxShadow 設為 none 讓邊界消失
+      backgroundColor: '#FBFBF9', 
+      boxShadow: 'none', 
       position: 'relative' 
     }}>
-
-      
-        {/* Header 區塊 */}
         <header style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, position: 'sticky', top: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button 
@@ -153,9 +172,7 @@ return (
           </div>
         </header>
 
-        {/* 聊天對話區 */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#FBFBF9' }}>
-          
           <div style={{ textAlign: 'center', margin: '10px 0 20px 0' }}>
             <span style={{ backgroundColor: '#EAE6E1', color: '#7A7269', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
               雙方已確認委託，專屬工作區已建立
@@ -167,8 +184,6 @@ return (
             
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', animation: 'fadeIn 0.3s ease' }}>
-                
-                {/* 傳送者名稱與頭貼佔位 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: msg.sender_role === 'artist' ? '#EAE6E1' : '#EBF2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: msg.sender_role === 'artist' ? '#5D4A3E' : '#4A7294', fontWeight: 'bold' }}>
                     {msg.sender_role === 'artist' ? '繪' : '客'}
@@ -181,7 +196,6 @@ return (
                   </span>
                 </div>
 
-                {/* 對話泡泡 */}
                 <div style={{ 
                   maxWidth: '75%', padding: '12px 16px', lineHeight: '1.6', fontSize: '15px',
                   backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
@@ -199,7 +213,6 @@ return (
           <div ref={messagesEndRef} style={{ height: '10px' }} /> 
         </main>
 
-        {/* 底部輸入區 */}
         <footer style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '12px', alignItems: 'flex-end', position: 'sticky', bottom: 0 }}>
           <textarea 
             value={inputText}
@@ -235,7 +248,6 @@ return (
             傳送
           </button>
         </footer>
-
       </div>
     </div>
   );

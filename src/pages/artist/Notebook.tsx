@@ -8,6 +8,9 @@ interface Commission {
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
   pending_changes?: string; workflow_mode: string; queue_status: string;
   type_name?: string;
+  // 🌟 新增
+  latest_message_at?: string;
+  last_read_at_artist?: string;
 }
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
@@ -81,12 +84,25 @@ export function Notebook() {
 
   useEffect(() => { fetchCommissions(); }, []);
 
-  const handleSelect = (order: Commission) => {
+  const handleSelect = async (order: Commission) => {
     setSelectedId(order.id);
     setEditData(order);
     setIsEditingRequest(false);
     fetchPayments(order.id);
     fetchDeliverables(order.id);
+
+    // 🌟 關鍵修正：點擊查看委託單時，自動更新繪師的已讀時間
+    try {
+      await fetch(`/api/commissions/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
+      });
+      // 更新完已讀時間後，重抓一次列表資料消除紅點通知
+      fetchCommissions();
+    } catch (e) {
+      console.error("更新已讀時間失敗", e);
+    }
   };
 
   const handleSaveDailyFields = async () => {
@@ -240,7 +256,6 @@ export function Notebook() {
     return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
   };
 
-  // 🌟 新增：取得訂單主狀態標籤 (結案或作廢)
   const getStatusBadge = (status: string) => {
     if (status === 'completed') return { text: '已結案', color: '#4E7A5A', bg: '#E8F3EB' };
     if (status === 'cancelled') return { text: '已作廢', color: '#A05C5C', bg: '#F5EBEB' };
@@ -346,9 +361,14 @@ export function Notebook() {
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
           {filteredOrders.map(order => {
             const payBadge = getPaymentBadge(order.payment_status);
-            const statusBadge = getStatusBadge(order.status); // 🌟 取得主狀態標籤
+            const statusBadge = getStatusBadge(order.status);
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             const isSelected = selectedId === order.id;
+
+            // 🌟 判斷左側列表是否要顯示新訊息標籤
+            const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
+            const lastReadTime = order.last_read_at_artist ? new Date(order.last_read_at_artist).getTime() : 0;
+            const hasNewMsg = latestMsgTime > lastReadTime;
             
             return (
               <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
@@ -372,7 +392,6 @@ export function Notebook() {
                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
                   
-                  {/* 🌟 在付款狀態旁邊顯示結案或作廢標籤 */}
                   {statusBadge && (
                     <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>
                   )}
@@ -380,6 +399,13 @@ export function Notebook() {
                   {order.queue_status && (
                     <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
                       {order.queue_status}
+                    </span>
+                  )}
+
+                  {/* 🌟 列表新增：新訊息小紅點標籤 */}
+                  {hasNewMsg && (
+                    <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                      新訊息
                     </span>
                   )}
                 </div>
@@ -395,14 +421,12 @@ export function Notebook() {
         {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由左側選擇委託單以檢視詳情</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             
-            {/* 標題與操作列 */}
             <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
               <div>
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
                 <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
                 <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px' }}>單號：{selectedOrder.id}</div>
                 
-                {/* 🌟 在名稱、項目、單號下方顯示狀態標籤 */}
                 {getStatusBadge(selectedOrder.status) && (
                   <div style={{ marginTop: '8px' }}>
                     <span style={{ 
@@ -444,20 +468,17 @@ export function Notebook() {
               </div>
             </div>
 
-            {/* 頁籤列 */}
             <div style={{ display: 'flex', borderBottom: '1px solid #EAE6E1', padding: '0 20px', backgroundColor: '#FAFAFA' }}>
               <button onClick={() => setActiveTab('details')} style={tabStyle(activeTab === 'details')}>委託單細項</button>
               <button onClick={() => setActiveTab('delivery')} style={tabStyle(activeTab === 'delivery')}>檔案交付</button>
               <button onClick={() => setActiveTab('logs')} style={tabStyle(activeTab === 'logs')}>歷程紀錄</button>
             </div>
 
-            {/* 內容區塊 */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '30px', backgroundColor: '#FFFFFF' }}>
               
               {activeTab === 'details' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   
-                  {/* 財務區塊 */}
                   <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
                       <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>財務與收款狀態</h3>
@@ -501,7 +522,6 @@ export function Notebook() {
                     </div>
                   </div>
 
-                  {/* 細項編輯區塊 */}
                   <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', backgroundColor: '#FFFFFF' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                       <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>委託單細項</h3>
