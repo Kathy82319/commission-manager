@@ -105,8 +105,12 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
+    // 🌟 核心修正：動態抓取請求來源 (Origin)，解決 localhost 與不同網域的 CORS 阻擋
+    const requestOrigin = request.headers.get("Origin") || "";
+    
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://commission-app.pages.dev", 
+      // 如果有 Origin 就回傳該 Origin，沒有的話預設為前端網址或 * (配合 credentials 必須明確指定)
+      "Access-Control-Allow-Origin": requestOrigin || env.FRONTEND_URL || "*", 
       "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
