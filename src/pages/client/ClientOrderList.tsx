@@ -26,7 +26,6 @@ export function ClientOrderList() {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-        // 🔒 安全修正：移除 localStorage 與 Authorization header，僅依賴 credentials 帶入 Cookie
         const res = await fetch(`${API_BASE}/api/commissions`, {
           credentials: 'include',
           headers: {
@@ -43,7 +42,10 @@ export function ClientOrderList() {
         const data = await res.json();
         if (data.success) {
           const validOrders = data.data.filter(
-            (c: Commission) => c.status !== 'cancelled' && c.is_external === 0
+            (c: Commission) => 
+              c.status !== 'cancelled' && 
+              c.status !== 'quote_created' && // 🌟 關鍵修正：過濾掉尚未同意合約的報價單
+              c.is_external === 0
           );
           setCommissions(validOrders);
         }

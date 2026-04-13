@@ -31,7 +31,6 @@ interface CreateCommissionBody {
 // 🛡️ 安全性輔助函式 (Security Helpers)
 // ==========================================
 
-// 1. 生成 HMAC-SHA256 簽名
 async function generateSignature(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
@@ -42,7 +41,6 @@ async function generateSignature(message: string, secret: string): Promise<strin
   return btoa(String.fromCharCode(...new Uint8Array(signature)));
 }
 
-// 2. 生成帶有時效性的 Token
 async function generateToken(userId: string, secret: string, expiresInDays = 30): Promise<string> {
   const expires = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
   const payload = `${userId}|${expires}`;
@@ -50,21 +48,18 @@ async function generateToken(userId: string, secret: string, expiresInDays = 30)
   return `${payload}|${signature}`;
 }
 
-// 3. 驗證 Token 並檢查過期
 async function verifyToken(token: string | undefined, secret: string): Promise<string | null> {
   if (!token) return null;
   const parts = token.split('|');
   if (parts.length !== 3) return null;
 
   const [userId, expires, signature] = parts;
-  
   if (Date.now() > parseInt(expires, 10)) return null;
 
   const expectedSig = await generateSignature(`${userId}|${expires}`, secret);
   return signature === expectedSig ? userId : null;
 }
 
-// 4. 基本 XSS 過濾
 function sanitize(str: string): string {
   if (!str) return '';
   return str.replace(/&/g, '&amp;')
@@ -74,7 +69,6 @@ function sanitize(str: string): string {
             .replace(/'/g, '&#039;');
 }
 
-// 5. 驗證 URL 的安全性
 function isValidSafeUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
@@ -84,7 +78,6 @@ function isValidSafeUrl(urlString: string): boolean {
   }
 }
 
-// 6. 從 Cookie 安全提取 user_id (🌟 已修正 Base64 Padding 切斷問題)
 async function getUserIdFromRequest(request: Request, env: Env): Promise<string | null> {
   const cookieHeader = request.headers.get("Cookie");
   if (!cookieHeader) return null;
@@ -94,7 +87,7 @@ async function getUserIdFromRequest(request: Request, env: Env): Promise<string 
     const splitIndex = trimmedCookie.indexOf("=");
     if (splitIndex > -1) {
       const name = trimmedCookie.substring(0, splitIndex);
-      const value = trimmedCookie.substring(splitIndex + 1); // 這樣就不會切掉尾巴的 = 號了
+      const value = trimmedCookie.substring(splitIndex + 1);
       acc[name] = value;
     }
     return acc;
@@ -107,7 +100,6 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
-
     const requestOrigin = request.headers.get("Origin") || "";
     
     const corsHeaders = {
@@ -230,13 +222,13 @@ export default {
       try {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
-
         const targetId = pathParts[3] === "me" ? currentUser : pathParts[3];
+        
+        // 🔒 嚴格權限檢查
         if (currentUser !== targetId) return jsonRes({ success: false, error: "權限不足" }, 403);
 
         const body: { display_name: string; role: 'artist' | 'client' } = await request.json();
-        if (!['artist', 'client'].includes(body.role)) return jsonRes({ success: false, error: "無效身分" }, 400);
-
+        
         await env.commission_db.prepare("UPDATE Users SET display_name = ?, role = ? WHERE id = ?")
           .bind(sanitize(body.display_name), body.role, targetId).run();
         return jsonRes({ success: true });
@@ -247,18 +239,15 @@ export default {
       try {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
-
         const targetId = pathParts[3] === "me" ? currentUser : pathParts[3];
+
+        // 🔒 嚴格權限檢查
         if (currentUser !== targetId) return jsonRes({ success: false, error: "權限不足" }, 403);
 
         const body: any = await request.json();
         await env.commission_db.prepare(`
-          UPDATE Users SET 
-            display_name = ?, avatar_url = ?, bio = ?, profile_settings = ?
-          WHERE id = ?
-        `).bind(
-          sanitize(body.display_name), body.avatar_url || '', sanitize(body.bio), body.profile_settings || '{}', targetId
-        ).run();
+          UPDATE Users SET display_name = ?, avatar_url = ?, bio = ?, profile_settings = ? WHERE id = ?
+        `).bind(sanitize(body.display_name), body.avatar_url || '', sanitize(body.bio), body.profile_settings || '{}', targetId).run();
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
@@ -304,6 +293,7 @@ export default {
         if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
         const commission = results[0] as any;
 
+        // 🔒 報價單可供任何登入者瀏覽（為了確認合約），但如果已經綁定委託人，就只能是當事人存取
         if (commission.client_id && currentUser !== commission.client_id && currentUser !== commission.artist_id) {
           return jsonRes({ success: false, error: "無權存取" }, 403);
         }
@@ -319,6 +309,7 @@ export default {
 
         const body: CreateCommissionBody = await request.json();
 
+        // 🔒 財務安全檢查
         if (typeof body.total_price !== 'number' || body.total_price < 0) {
           return jsonRes({ success: false, error: "金額格式不正確" }, 400);
         }
@@ -359,16 +350,24 @@ export default {
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
         const id = pathParts[3];
-
-        const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
-        const comm = check[0] as any;
-        if (currentUser !== comm.artist_id && currentUser !== comm.client_id) {
-          return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
-        }
-
         const body: Record<string, any> = await request.json();
 
+        const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
+        if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
+        const comm = check[0] as any;
+
+        // 🌟 核心：自動綁定委託人 ID
+        // 判斷條件：如果單據還沒有主人 + 目前是報價狀態 + 請求要將狀態改為未付款 (代表同意合約)
+        if (!comm.client_id && comm.status === 'quote_created' && body.status === 'unpaid') {
+          body.client_id = currentUser; // 認領這張單！
+        } else {
+          // 🔒 嚴格權限檢查：如果不是在認領合約，就必須是這張單的主人或繪師才能修改
+          if (currentUser !== comm.artist_id && currentUser !== comm.client_id) {
+            return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
+          }
+        }
+
+        // 🔒 資安防護：委託人不可自行竄改訂單總金額
         if (currentUser === comm.client_id && body.total_price !== undefined) {
           return jsonRes({ success: false, error: "委託人無權修改金額" }, 403);
         }
@@ -382,6 +381,7 @@ export default {
           'current_stage', 'end_date', 'artist_note', 'workflow_mode', 
           'queue_status', 'last_read_at_artist', 'last_read_at_client', 'client_custom_title'
         ];
+        
         for (const key of allowedFields) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);
@@ -396,7 +396,6 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-
     // ============================================================================
     // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs)
     // ============================================================================
@@ -406,6 +405,12 @@ export default {
         const id = pathParts[3];
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "權限不足" }, 401);
+
+        // 🔒 嚴格權限檢查
+        const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
+        if (currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) {
+          return jsonRes({ success: false, error: "無權限查看進度" }, 403);
+        }
 
         if (url.pathname.endsWith("/deliverables")) {
           const { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
@@ -427,12 +432,12 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         const body: { stage: string; file_url: string } = await request.json();
 
-        if (!isValidSafeUrl(body.file_url)) {
-          return jsonRes({ success: false, error: "不安全的檔案網址" }, 400);
-        }
+        if (!isValidSafeUrl(body.file_url)) return jsonRes({ success: false, error: "不安全的檔案網址" }, 400);
 
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id, current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
         if (comm.length === 0) return jsonRes({ success: false, error: "找不到委託單" }, 404);
+        
+        // 🔒 嚴格權限檢查：只有繪師可以上傳檔案
         if (currentUser !== comm[0].artist_id) return jsonRes({ success: false, error: "非本人繪師無法上傳" }, 403);
         
         const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
@@ -457,6 +462,8 @@ export default {
         const body: { stage: string; action: 'approve' | 'reject'; comment?: string } = await request.json();
 
         const { results: comm } = await env.commission_db.prepare("SELECT client_id FROM Commissions WHERE id = ?").bind(id).all();
+        
+        // 🔒 嚴格權限檢查：只有委託人可以審閱退件
         if (currentUser !== comm[0].client_id) return jsonRes({ success: false, error: "非綁定委託人無法審閱" }, 403);
 
         const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
@@ -479,8 +486,9 @@ export default {
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/change-request")) {
       try {
         const id = pathParts[3];
-        
         const currentUser = await getUserIdFromRequest(request, env);
+        
+        // 🔒 嚴格權限檢查：只有繪師可以提出異動
         const { results: check } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== check[0]?.artist_id) return jsonRes({ success: false, error: "權限不足，僅限繪師提出" }, 403);
 
@@ -510,8 +518,9 @@ export default {
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/change-response")) {
       try {
         const id = pathParts[3];
-
         const currentUser = await getUserIdFromRequest(request, env);
+
+        // 🔒 嚴格權限檢查：只有委託人可以回覆異動
         const { results: check } = await env.commission_db.prepare("SELECT client_id, pending_changes FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== check[0]?.client_id) return jsonRes({ success: false, error: "權限不足，僅限委託人回覆" }, 403);
 
@@ -545,8 +554,9 @@ export default {
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/messages")) {
       try {
         const id = pathParts[3];
-
         const currentUser = await getUserIdFromRequest(request, env);
+
+        // 🔒 嚴格權限檢查
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) return jsonRes({ success: false, error: "無權限查看" }, 403);
 
@@ -561,22 +571,24 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
+        // 🔒 嚴格權限檢查
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) return jsonRes({ success: false, error: "無權限發送" }, 403);
 
         const body: { sender_role: string; content: string } = await request.json();
-        const msgId = crypto.randomUUID();
+        
         await env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)")
-          .bind(msgId, id, body.sender_role, sanitize(body.content)).run();
-        return jsonRes({ success: true, id: msgId });
+          .bind(crypto.randomUUID(), id, body.sender_role, sanitize(body.content)).run();
+        return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/payments")) {
       try {
         const id = pathParts[3];
-        
         const currentUser = await getUserIdFromRequest(request, env);
+
+        // 🔒 嚴格權限檢查
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) return jsonRes({ success: false, error: "無權限查看" }, 403);
 
@@ -589,27 +601,31 @@ export default {
       try {
         const id = pathParts[3];
         const currentUser = await getUserIdFromRequest(request, env);
+
+        // 🔒 嚴格權限檢查：只有繪師可以記帳
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
         if (currentUser !== comm[0]?.artist_id) return jsonRes({ success: false, error: "僅限繪師可記錄財務" }, 403);
 
         const body: { record_date: string; item_name: string; amount: number } = await request.json();
-        const recordId = crypto.randomUUID();
+        
         await env.commission_db.prepare("INSERT INTO PaymentRecords (id, commission_id, record_date, item_name, amount) VALUES (?, ?, ?, ?, ?)")
-          .bind(recordId, id, body.record_date, sanitize(body.item_name), body.amount).run();
-        return jsonRes({ success: true, id: recordId });
+          .bind(crypto.randomUUID(), id, body.record_date, sanitize(body.item_name), body.amount).run();
+        return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "DELETE" && url.pathname.includes("/payments/")) {
       try {
         const paymentId = pathParts[5]; 
-        
         const currentUser = await getUserIdFromRequest(request, env);
+
+        // 🔒 嚴格權限檢查
         const { results: check } = await env.commission_db.prepare(`
           SELECT c.artist_id FROM PaymentRecords p
           JOIN Commissions c ON p.commission_id = c.id
           WHERE p.id = ?
         `).bind(paymentId).all();
+        
         if (currentUser !== check[0]?.artist_id) return jsonRes({ success: false, error: "無權限刪除" }, 403);
 
         await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
