@@ -30,15 +30,21 @@ export function ClientForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
+useEffect(() => {
     const fetchOrder = async () => {
       try {
-        // 🌟 修改：加入 credentials: 'include'
+        // 🌟 從瀏覽器保險箱取得身分證
+        const currentUserId = localStorage.getItem('user_id') || ''; 
+
         const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-          credentials: 'include'
+          // 雙重保險：同時使用 Cookie 和 Header
+          credentials: 'include', 
+          headers: {
+            'Authorization': `Bearer ${currentUserId}`,
+            'Content-Type': 'application/json'
+          }
         });
 
-        // 🌟 新增：若未登入 (401)，自動導向登入頁面
         if (res.status === 401) {
           alert('請先登入 LINE 以確認委託內容');
           window.location.href = `${API_BASE}/api/auth/line/login`;
@@ -49,7 +55,6 @@ export function ClientForm() {
         if (data.success) {
           setOrder(data.data);
         } else {
-          // 如果是 403 (已綁定他人) 或 404，顯示後端傳回的錯誤訊息
           setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
       } catch (err) {
@@ -65,11 +70,14 @@ export function ClientForm() {
     
     try {
       // 🌟 修改：PATCH 請求也要帶上 credentials: 'include'
+      const currentUserId = localStorage.getItem('user_id') || '';
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUserId}` },
         credentials: 'include',
         body: JSON.stringify({ status: 'unpaid' })
+        
       });
       const data = await res.json();
       

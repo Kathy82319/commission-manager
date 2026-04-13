@@ -50,6 +50,18 @@ function GlobalAuthSync() {
 export function App() {
   const MY_ARTIST_ID = "User_48676";
   
+useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get('u');
+    if (userId) {
+      localStorage.setItem('user_id', userId);
+      // (可選) 捕捉完後把網址上的 ?u= 清除，讓網址列保持乾淨
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+
+  
   return (
     <BrowserRouter>
       {/* 🌟 放置隱形的全局身分同步器 */}
