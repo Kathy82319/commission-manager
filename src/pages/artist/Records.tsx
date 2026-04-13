@@ -13,7 +13,11 @@ export function Records() {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const res = await fetch('/api/commissions'); 
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        // 🔒 安全修正：補上 API_BASE 與 credentials: 'include' 確保攜帶 Cookie
+        const res = await fetch(`${API_BASE}/api/commissions`, {
+          credentials: 'include'
+        }); 
         const data = await res.json();
         
         if (data.success || data.data) {
@@ -180,7 +184,7 @@ export function Records() {
             currentMonthRecords.map(record => (
               <Link
                 key={record.id}
-                to={`/artist/notebook?id=${record.id}&tab=details`} // 【修正】直接將訂單 ID 寫入網址
+                to={`/artist/notebook?id=${record.id}&tab=details`}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',

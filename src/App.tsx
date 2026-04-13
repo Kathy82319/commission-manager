@@ -1,5 +1,4 @@
 // src/App.tsx
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // 引入 Layouts
@@ -31,42 +30,11 @@ import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 
-// 🌟 全局身分同步器：只要網址有帶 ?u=，不管在哪個頁面都立刻存下來！
-function GlobalAuthSync() {
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const uParam = urlParams.get('u');
-    
-    if (uParam) {
-      localStorage.setItem('user_id', uParam);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
-  return null;
-}
-
-
 export function App() {
   const MY_ARTIST_ID = "User_48676";
   
-useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const userId = params.get('u');
-    if (userId) {
-      localStorage.setItem('user_id', userId);
-      // (可選) 捕捉完後把網址上的 ?u= 清除，讓網址列保持乾淨
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
-
-  
   return (
     <BrowserRouter>
-      {/* 🌟 放置隱形的全局身分同步器 */}
-      <GlobalAuthSync />
-      
       <Routes>
         {/* 1. 首頁直接導向您的個人繪師頁面 */}
         <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />

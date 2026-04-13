@@ -1,4 +1,3 @@
-// src/layouts/ArtistLayout.tsx
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -9,44 +8,47 @@ export function ArtistLayout() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🌟 核心修正：全能型身分檢查
-    const urlParams = new URLSearchParams(window.location.search);
-    const uParam = urlParams.get('u');
-    const localId = localStorage.getItem('user_id');
-    const cookieId = document.cookie.match(new RegExp('(^| )user_id=([^;]+)'))?.[2];
+    const checkAuthAndFetchProfile = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        
+        // 🔒 安全修正：不依賴 LocalStorage，直接向後端要 /me 驗證 Cookie
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          credentials: 'include'
+        });
 
-    const userId = uParam || localId || cookieId;
-    
-    if (!userId) {
-      navigate('/login');
-      return;
-    }
+        // 如果未登入或 Cookie 失效，踢回登入頁
+        if (res.status === 401 || res.status === 403) {
+          navigate('/login');
+          return;
+        }
 
-    // 確保 ID 被妥善存儲
-    if (userId && !localStorage.getItem('user_id')) {
-      localStorage.setItem('user_id', userId);
-    }
-
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-    
-    // 🌟 修正：使用絕對網址連向後端
-    fetch(`${API_BASE}/api/users/${userId}`)
-      .then(res => res.json())
-      .then(data => {
+        const data = await res.json();
+        
         if (data.success && data.data) {
           // 檢查身分，如果不是繪師卻誤闖，導向正確位置
-          if (data.data.role === 'pending') navigate('/onboarding');
-          else if (data.data.role === 'client') navigate('/client/home');
-          else setArtist(data.data);
+          if (data.data.role === 'pending') {
+            navigate('/onboarding');
+          } else if (data.data.role === 'client') {
+            navigate('/client/home');
+          } else {
+            // 確認是繪師，放行並存入資料
+            setArtist(data.data);
+          }
         } else {
           navigate('/login');
         }
-      })
-      .catch(err => console.error("撈取繪師資料失敗", err))
-      .finally(() => setLoading(false));
+      } catch (error) {
+        console.error("驗證繪師身分失敗", error);
+        navigate('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 其餘 UI 邏輯保持不變...
   const copyLink = () => {
     if (!artist) return;
     const publicUrl = `${window.location.origin}/@${artist.public_id}`;

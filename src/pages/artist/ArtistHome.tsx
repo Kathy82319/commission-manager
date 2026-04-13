@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 防範 XSS
 
 interface ProfileSettings {
   portfolio: string[];
@@ -21,8 +22,9 @@ export function ArtistHome() {
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
-        // 使用更新後的統一使用者 API
-        const res = await fetch(`/api/users/${artistId}`);
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        // 🔒 安全修正：補上 API_BASE
+        const res = await fetch(`${API_BASE}/api/users/${artistId}`);
         
         if (!res.ok) {
           throw new Error('伺服器找不到該路徑或頁面');
@@ -113,30 +115,34 @@ export function ArtistHome() {
           </section>
         )}
 
+        {/* 🌟 安全修正：以下富文本渲染全部改用 dangerouslySetInnerHTML + DOMPurify.sanitize */}
         {settings?.process && (
           <section>
             <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託流程說明</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.process}
-            </div>
+            <div 
+              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.process) }}
+            />
           </section>
         )}
 
         {settings?.payment && (
           <section>
             <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>付款方式</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.payment}
-            </div>
+            <div 
+              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.payment) }}
+            />
           </section>
         )}
 
         {settings?.rules && (
           <section>
             <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託範圍與使用規範</h2>
-            <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-              {settings.rules}
-            </div>
+            <div 
+              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.rules) }}
+            />
           </section>
         )}
 
@@ -147,9 +153,10 @@ export function ArtistHome() {
                 <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
                   {section.title || '未命名區塊'}
                 </h2>
-                <div style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', whiteSpace: 'pre-wrap', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}>
-                  {section.content}
-                </div>
+                <div 
+                  style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.content) }}
+                />
               </section>
             ))}
           </>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
 import './styles/PublicProfile.css';
 
 interface ProfileSettings {
@@ -11,7 +12,6 @@ interface ProfileSettings {
   custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
-  // 🌟 新增：開場名片的設定欄位
   splash_enabled?: boolean;
   splash_image?: string;
   splash_duration?: number;
@@ -47,14 +47,9 @@ const getSocialIcon = (platform: string) => {
 };
 
 export function PublicProfile() {
-  
-  // 🌟 關鍵修改：同時接收 artistId (給 /@Artist_XXX 網址用) 或 id (給其他舊版網址用)
   const { artistId, id } = useParams();
 
-
-  // 🌟 關鍵修正：處理帶有 @ 的網址
   let rawId = artistId || id || 'u-artist-01';
-  // 如果網址抓到的字串開頭有 '@'，我們就把它切掉 (變成純 ID)
   if (rawId.startsWith('@')) {
     rawId = rawId.substring(1); 
   }
@@ -66,15 +61,13 @@ export function PublicProfile() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
 
-  // 🌟 新增：Lightbox 燈箱狀態
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
-        // 使用抓取到的 currentArtistId 去要資料
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
+        const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
         const data = await res.json();
         if (data.success && data.data) {
           setArtist(data.data);
@@ -95,16 +88,13 @@ const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 🌟 修改：根據繪師設定來決定動畫的顯示與時長
   useEffect(() => {
     if (!loading) {
-      // 若繪師明確關閉了開場動畫，直接隱藏並返回
       if (settings && settings.splash_enabled === false) {
         setShowSplash(false);
         return;
       }
       
-      // 若有設定則取設定值(秒轉毫秒)，否則預設 1.5 秒
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 1500;
       
       const timer = setTimeout(() => {
@@ -115,7 +105,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
     }
   }, [loading, settings]);
 
-  // 🌟 新增：Lightbox 切換函數邏輯
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (selectedImgIndex !== null && settings?.portfolio) {
@@ -130,11 +119,10 @@ const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
     }
   };
 
-const availableTabs = [];
+  const availableTabs = [];
   if (settings) {
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
-    // 🌟 新增防呆：去除富文本的空段落標籤，判斷是否真的有打字或插入圖片
     const hasContent = (html: string) => {
       if (!html) return false;
       const stripped = html.replace(/<[^>]*>?/gm, '').trim();
@@ -143,7 +131,6 @@ const availableTabs = [];
 
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) availableTabs.push({ id: 'portfolio', label: '作品展示' });
     
-    // 只有當「未隱藏」且「真的有內容」時，才會產生分頁標籤
     if (!isHidden('detailed_intro') && hasContent(settings.detailed_intro)) availableTabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && hasContent(settings.process)) availableTabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && hasContent(settings.payment)) availableTabs.push({ id: 'payment', label: '付款方式' });
@@ -164,13 +151,10 @@ const availableTabs = [];
   return (
     <div className="public-profile-container">
       
-      {/* 修正後的開場名片區塊 */}
       <div 
         className={`splash-screen ${!showSplash ? 'hide' : ''}`}
         style={{
-          // 背景邏輯：只有當繪師有上傳圖片時才顯示背景圖
           backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
-          // 若無圖片，背景色改為與網頁主色調一致
           backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -184,7 +168,6 @@ const availableTabs = [];
           transition: 'all 0.8s ease-in-out'
         }}
       >
-        {/* 🌟 關鍵修正：只有在「有圖片」或「有填寫文字內容」時，才顯示中間的裝飾框 */}
         {(settings?.splash_image || settings?.splash_text) ? (
           <div style={{
             backgroundColor: 'rgba(0, 0, 0, 0.45)', 
@@ -208,7 +191,6 @@ const availableTabs = [];
             </p>
           </div>
         ) : (
-          // 🌟 若完全沒設定內容，中央僅顯示乾淨的文字，不加黑色裝飾框
           <div style={{ color: '#5D4A3E', fontSize: '20px', fontWeight: 'bold', letterSpacing: '4px' }}>
           </div>
         )}
@@ -293,21 +275,22 @@ const availableTabs = [];
                   </div>
                 )}
 
+                {/* 🌟 核心修正：使用 DOMPurify 清洗所有的富文本內容，防止 XSS 攻擊 */}
                 {currentTab === 'detailed_intro' && settings?.detailed_intro && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.detailed_intro }} />
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.detailed_intro) }} />
                 )}
                 {currentTab === 'process' && settings?.process && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.process }} />
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.process) }} />
                 )}
                 {currentTab === 'payment' && settings?.payment && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.payment }} />
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.payment) }} />
                 )}
                 {currentTab === 'rules' && settings?.rules && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: settings.rules }} />
+                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.rules) }} />
                 )}
                 {settings?.custom_sections?.map(sec => 
                   currentTab === sec.id && (
-                    <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: sec.content }} />
+                    <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sec.content) }} />
                   )
                 )}
               </div>
@@ -318,7 +301,6 @@ const availableTabs = [];
         </div>
       </div>
 
-      {/* 🌟 燈箱元件 Lightbox */}
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}>✕</button>

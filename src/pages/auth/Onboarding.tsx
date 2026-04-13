@@ -9,42 +9,41 @@ export function Onboarding() {
   const [role, setRole] = useState<'artist' | 'client' | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
-// src/pages/auth/Onboarding.tsx (節錄修改部分)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    let id = urlParams.get('u');
+    const fetchCurrentUser = async () => {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+      try {
+        // 🔒 安全修正：不再依賴 localStorage 或 URL 參數
+        // 呼叫 /api/users/me，讓後端依據 HttpOnly Cookie 判斷身分
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
-    if (id) {
-      localStorage.setItem('user_id', id); 
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else {
-      id = localStorage.getItem('user_id');
-    }
+        if (res.status === 401 || res.status === 403) {
+          navigate('/login');
+          return;
+        }
 
-    if (!id) {
-      navigate('/login');
-      return;
-    }
-
-    setUserId(id);
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-
-    fetch(`${API_BASE}/api/users/${id}`)
-      .then(res => res.json())
-      .then(data => {
+        const data = await res.json();
         if (data.success && data.data) {
+          // 如果已經設定過角色，直接導向對應頁面
           if (data.data.role === 'artist') navigate('/artist/queue');
           else if (data.data.role === 'client') navigate('/client/home');
+          
           setDisplayName(data.data.display_name || '');
         }
-      })
-      .catch(() => {}) // 移除 console.error
-      .finally(() => setLoading(false));
+      } catch (error) {
+        navigate('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
   }, [navigate]);
   
-  // 送出表單
   const handleSubmit = async () => {
     if (!displayName.trim() || !role) {
       alert('請填寫暱稱並選擇一個身分！');
@@ -55,9 +54,11 @@ export function Onboarding() {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
 
     try {
-      const res = await fetch(`${API_BASE}/api/users/${userId}/complete-onboarding`, {
+      // 🔒 安全修正：將請求發送到 /me，不再夾帶容易被竄改的 userId
+      const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ display_name: displayName, role })
       });
       const result = await res.json();

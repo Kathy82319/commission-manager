@@ -6,7 +6,6 @@ interface Commission {
   type_name: string; payment_status: string; end_date: string; artist_note: string; is_rush: string;
   status: string; workflow_mode: string; 
   queue_status: string;
-  // 🌟 新增通知相關欄位
   latest_message_at?: string;
   last_read_at_artist?: string;
 }
@@ -83,9 +82,9 @@ export function Queue() {
   const fetchQueue = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/commissions`, {
-  credentials: 'include' 
-});
+      const res = await fetch(`${API_BASE}/api/commissions`, {
+        credentials: 'include' 
+      });
       const data = await res.json();
       if (data.success) {
         const activeOrders = data.data
@@ -102,8 +101,11 @@ const res = await fetch(`${API_BASE}/api/commissions`, {
     setIsUpdating(true);
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value })
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+        method: 'PATCH', 
+        credentials: 'include', // 🔒 安全修正：補上 Cookie 傳遞
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ [field]: value })
       });
       const data = await res.json();
       if (data.success) setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
@@ -163,7 +165,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
                 const dateStr = new Date(order.order_date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' }); 
                 const paymentInfo = paymentColors[order.payment_status] || paymentColors['unpaid'];
 
-                // 🌟 判斷繪師是否有新訊息
                 const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
                 const lastReadTime = order.last_read_at_artist ? new Date(order.last_read_at_artist).getTime() : 0;
                 const hasNewMsg = latestMsgTime > lastReadTime;
@@ -227,7 +228,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
                           {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>急件</span>}
                           <input type="text" defaultValue={order.artist_note || ''} placeholder="輸入備註..." onBlur={(e) => { if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); }} style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid transparent', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', transition: 'all 0.2s' }} onFocus={e => {e.currentTarget.style.border = '1px solid #DED9D3'; e.currentTarget.style.backgroundColor = '#FBFBF9'; }} onMouseLeave={e => e.currentTarget.blur()} />
                         </div>
-                        {/* 🌟 新增：黃色提示小字 (在備註輸入框的下方) */}
                         {hasNewMsg && (
                           <div style={{ color: '#A67B3E', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start' }}>
                             ★此單有新訊息哦~

@@ -1,6 +1,7 @@
 // src/pages/client/ClientForm.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
 
 interface Commission {
   id: string;
@@ -18,7 +19,7 @@ interface Commission {
   bg_type: string;
   add_ons: string;
   order_date: string;
-  artist_settings?: string; // 🌟 新增此欄位接收後端的繪師設定
+  artist_settings?: string; 
 }
 
 export function ClientForm() {
@@ -34,12 +35,11 @@ export function ClientForm() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const currentUserId = localStorage.getItem('user_id') || ''; 
-
+        // 🔒 安全修正：移除從 localStorage 讀取 user_id。
+        // 身分驗證已由瀏覽器自動攜帶 HttpOnly Cookie (credentials: 'include') 處理，更加安全。
         const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
           credentials: 'include', 
           headers: {
-            'Authorization': `Bearer ${currentUserId}`,
             'Content-Type': 'application/json'
           }
         });
@@ -68,17 +68,16 @@ export function ClientForm() {
     setIsSubmitting(true);
     
     try {
-      const currentUserId = localStorage.getItem('user_id') || '';
+      // 🔒 安全修正：不依賴前端偽造的 user_id，後端會自動從 Cookie 識別目前登入者
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUserId}` 
+          'Content-Type': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({ 
-          status: 'unpaid',
-          client_id: currentUserId 
+          status: 'unpaid'
+          // 注意：此處移除了 client_id: currentUserId，因為交由後端 Cookie 判斷才是絕對安全的
         })
       });
       const data = await res.json();
@@ -159,14 +158,15 @@ export function ClientForm() {
             </div>
           )}
 
-          {/* 🌟 核心修正：使用 dangerouslySetInnerHTML 來渲染富文本 */}
+          {/* 🌟 核心修正：使用 DOMPurify 來清洗惡意腳本，避免 XSS 攻擊 */}
           <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', fontSize: '14px', color: '#7A7269', lineHeight: '1.9', height: '180px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
             {order.artist_settings ? (
               <div 
                 dangerouslySetInnerHTML={{ 
                   __html: (() => {
                     try {
-                      return JSON.parse(order.artist_settings).rules || '繪師尚未設定使用規範。';
+                      const rawHtml = JSON.parse(order.artist_settings).rules;
+                      return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
                     } catch(e) {
                       return '繪師尚未設定使用規範。';
                     }

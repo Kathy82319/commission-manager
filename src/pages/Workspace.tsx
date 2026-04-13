@@ -28,15 +28,17 @@ export function Workspace() {
   const [focusedField, setFocusedField] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesLengthRef = useRef<number>(0); // 🌟 用來追蹤訊息數量，判斷是否來了新訊息
+  const messagesLengthRef = useRef<number>(0); 
 
   // 🌟 新增：更新目前角色的已讀時間
   const updateReadTime = async () => {
     if (!id) return;
     const field = role === 'artist' ? 'last_read_at_artist' : 'last_read_at_client';
     try {
+      // 🔒 安全修正：補上 credentials: 'include'
       await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: new Date().toISOString() })
       });
@@ -47,7 +49,10 @@ export function Workspace() {
 
   const fetchOrderData = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}`);
+      // 🔒 安全修正：補上 credentials: 'include'
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+        credentials: 'include'
+      });
       const data = await res.json();
       if (data.success) setOrder(data.data);
     } catch (error) {
@@ -57,10 +62,12 @@ export function Workspace() {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`);
+      // 🔒 安全修正：補上 credentials: 'include'
+      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
+        credentials: 'include'
+      });
       const data = await res.json();
       if (data.success) {
-        // 🌟 如果偵測到新訊息，就觸發已讀更新
         if (data.data.length > messagesLengthRef.current) {
           updateReadTime();
           messagesLengthRef.current = data.data.length;
@@ -76,12 +83,11 @@ export function Workspace() {
     const initData = async () => {
       await fetchOrderData();
       await fetchMessages();
-      await updateReadTime(); // 🌟 第一次進入頁面時強制更新已讀
+      await updateReadTime(); 
       setLoading(false);
     };
     initData();
 
-    // 每 3 秒拉取一次最新訊息
     const intervalId = setInterval(() => {
       fetchMessages();
     }, 3000);
@@ -97,8 +103,10 @@ export function Workspace() {
     if (!inputText.trim()) return;
 
     try {
+      // 🔒 安全修正：補上 credentials: 'include'
       const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_role: role, content: inputText })
       });
@@ -115,7 +123,6 @@ export function Workspace() {
     }
   };
 
-// --- 載入中狀態 ---
 if (loading) return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
@@ -126,7 +133,6 @@ if (loading) return (
   </div>
 );
 
-// --- 錯誤狀態 ---
 if (!order) return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
@@ -137,7 +143,6 @@ if (!order) return (
   </div>
 );
 
-// --- 正常渲染狀態 ---
 return (
   <div style={{ 
     height: '100vh', display: 'flex', justifyContent: 'center', 

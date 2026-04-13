@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@icons-pack/react-simple-icons": "^13.13.0",
+    "@types/dompurify": "^3.0.5",
+    "dompurify": "^3.3.3",
     "lucide-react": "^1.8.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

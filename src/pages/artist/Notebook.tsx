@@ -8,7 +8,6 @@ interface Commission {
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
   pending_changes?: string; workflow_mode: string; queue_status: string;
   type_name?: string;
-  // 🌟 新增
   latest_message_at?: string;
   last_read_at_artist?: string;
 }
@@ -54,8 +53,8 @@ export function Notebook() {
 
   const fetchCommissions = async () => {
     const res = await fetch(`${API_BASE}/api/commissions`, {
-  credentials: 'include' 
-});
+      credentials: 'include' 
+    });
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
@@ -71,13 +70,15 @@ export function Notebook() {
   };
 
   const fetchPayments = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`);
+    // 🔒 安全修正
+    const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) setPayments(data.data);
   };
 
   const fetchDeliverables = async (id: string) => {
-    const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`);
+    // 🔒 安全修正
+    const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
       setSubmissions(data.data.submissions);
@@ -94,14 +95,14 @@ export function Notebook() {
     fetchPayments(order.id);
     fetchDeliverables(order.id);
 
-    // 🌟 關鍵修正：點擊查看委託單時，自動更新繪師的已讀時間
     try {
-      await fetch(`${API_BASE}/api/commissions/{order.id}`, {
+      // 🔒 安全修正
+      await fetch(`${API_BASE}/api/commissions/${order.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
       });
-      // 更新完已讀時間後，重抓一次列表資料消除紅點通知
       fetchCommissions();
     } catch (e) {
       console.error("更新已讀時間失敗", e);
@@ -114,8 +115,11 @@ export function Notebook() {
       ? { ...editData } 
       : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
 
+    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', 
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bodyData)
     });
     alert('設定已儲存');
@@ -152,8 +156,11 @@ export function Notebook() {
 
     if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
 
+    // 🔒 安全修正
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', 
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changes })
     });
     const data = await res.json();
@@ -178,8 +185,10 @@ export function Notebook() {
     if (!window.confirm(confirmMsg)) return;
     const newStatus = isCancelled ? 'quote_created' : 'cancelled';
 
+    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
@@ -190,8 +199,10 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
+    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed' })
     });
@@ -200,27 +211,41 @@ export function Notebook() {
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
-    await fetch(`${API_BASE}/api/commissions/${selectedId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payment_status: newStatus }) });
+    // 🔒 安全修正
+    await fetch(`${API_BASE}/api/commissions/${selectedId}`, { 
+      method: 'PATCH', 
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ payment_status: newStatus }) 
+    });
     fetchCommissions();
   };
 
   const handleAddPayment = async () => {
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整");
-    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) });
+    // 🔒 安全修正
+    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
+      method: 'POST', 
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) 
+    });
     setNewPayment({ record_date: '', item_name: '', amount: '' });
     fetchPayments(selectedId);
   };
 
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
-    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE' });
+    // 🔒 安全修正
+    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { 
+      method: 'DELETE',
+      credentials: 'include' 
+    });
     fetchPayments(selectedId);
   };
 
   const copyLink = (id: string) => {
-    // 🌟 需求 1：跳出提醒
     const msg = "⚠️ 注意：此連結具備「綁定」特性。\n\n當委託人點擊並登入後，此訂單將永久綁定該帳號。若綁定錯誤，您將需要刪除並重新建單。\n\n確定要複製連結嗎？";
-    
     if (window.confirm(msg)) {
       const link = `${window.location.origin}/quote/${id}`;
       navigator.clipboard.writeText(link).then(() => {
@@ -232,7 +257,13 @@ export function Notebook() {
   const handleSubmitStage = async (stageKey: string) => {
     const url = uploadUrls[stageKey];
     if (!url || !url.trim() || !selectedId) return;
-    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: url }) });
+    // 🔒 安全修正
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, { 
+      method: 'POST', 
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ stage: stageKey, file_url: url }) 
+    });
     const data = await res.json();
     if (data.success) { 
       setUploadUrls(prev => ({ ...prev, [stageKey]: '' }));
@@ -320,7 +351,6 @@ export function Notebook() {
     );
   };
 
-// 🌟 修改：加入 type 支援 'select'，並接收 options 陣列
   const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' | 'select' = 'text', suffix: string = '', options: string[] = []) => {
     if (!selectedOrder) return null;
     const isFreeMode = selectedOrder.workflow_mode === 'free';
@@ -387,7 +417,6 @@ export function Notebook() {
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             const isSelected = selectedId === order.id;
 
-            // 🌟 判斷左側列表是否要顯示新訊息標籤
             const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
             const lastReadTime = order.last_read_at_artist ? new Date(order.last_read_at_artist).getTime() : 0;
             const hasNewMsg = latestMsgTime > lastReadTime;
@@ -424,7 +453,6 @@ export function Notebook() {
                     </span>
                   )}
 
-                  {/* 🌟 列表新增：新訊息小紅點標籤 */}
                   {hasNewMsg && (
                     <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
                       新訊息

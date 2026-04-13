@@ -89,7 +89,11 @@ export function QuoteBuilder() {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalSubmitData)
+        // 🔒 安全修正：確保傳給後端的 total_price 是數字格式
+        body: JSON.stringify({
+          ...finalSubmitData,
+          total_price: Number(finalSubmitData.total_price)
+        })
       });
       
       const data = await res.json();
@@ -178,7 +182,9 @@ export function QuoteBuilder() {
                 <label style={labelStyle}>總金額設定</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D', fontWeight: 'bold' }}>$</span>
+                  {/* 🔒 安全修正：加入 min="0" 禁止前端輸入負數 */}
                   <input type="number" name="total_price" value={formData.total_price} onChange={handleChange} 
+                    min="0"
                     onFocus={() => setFocusedField('total_price')} onBlur={() => setFocusedField(null)} style={{...getInputStyle('total_price'), paddingLeft: '28px'}} />
                 </div>
               </div>
@@ -222,14 +228,15 @@ export function QuoteBuilder() {
               </div>
               <div>
                 <label style={labelStyle}>是否急件{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-<select 
-  value={formData.is_rush} 
-  onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
-  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc' /*套用您原本的樣式*/ }}
->
-  <option value="否">否</option>
-  <option value="是">是</option>
-</select>
+                <select 
+                  value={formData.is_rush} 
+                  onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
+                  style={getInputStyle('is_rush')}
+                  onFocus={() => setFocusedField('is_rush')} onBlur={() => setFocusedField(null)}
+                >
+                  <option value="否">否</option>
+                  <option value="是">是</option>
+                </select>
               </div>
               
               <div>
@@ -265,6 +272,7 @@ export function QuoteBuilder() {
 
               <div>
                 <label style={labelStyle}>人物數量{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
+                {/* 🔒 安全修正：確保人物數量也不能小於 1 */}
                 <input type="number" name="char_count" value={formData.char_count} onChange={handleChange} min="1" 
                   onFocus={() => setFocusedField('char_count')} onBlur={() => setFocusedField(null)} style={getInputStyle('char_count')} />
               </div>

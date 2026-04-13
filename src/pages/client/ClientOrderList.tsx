@@ -24,20 +24,16 @@ export function ClientOrderList() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // 🌟 修正 1：取得 API_BASE 與儲存在保險箱的 user_id
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        const currentUserId = localStorage.getItem('user_id') || '';
 
-        // 🌟 修正 2：補上絕對路徑與身分驗證 (Authorization)
+        // 🔒 安全修正：移除 localStorage 與 Authorization header，僅依賴 credentials 帶入 Cookie
         const res = await fetch(`${API_BASE}/api/commissions`, {
           credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${currentUserId}`,
             'Content-Type': 'application/json'
           }
         });
 
-        // 🌟 修正 3：若驗證失敗 (401)，自動導向登入頁面
         if (res.status === 401) {
           alert('請先登入以查看您的委託單列表');
           window.location.href = `${API_BASE}/api/auth/line/login`;
@@ -46,7 +42,6 @@ export function ClientOrderList() {
 
         const data = await res.json();
         if (data.success) {
-          // 過濾出屬於該委託人且未作廢的內部單
           const validOrders = data.data.filter(
             (c: Commission) => c.status !== 'cancelled' && c.is_external === 0
           );
@@ -81,7 +76,6 @@ export function ClientOrderList() {
         ) : (
           commissions.map(order => {
             const isRush = order.is_rush === '是' || order.is_rush === 'true'; 
-            // 🌟 判斷是否有通知
             const hasPending = !!order.pending_changes;
             const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
             const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
@@ -95,16 +89,14 @@ export function ClientOrderList() {
                 style={{ 
                   backgroundColor: '#e8ecf3', padding: '16px', borderRadius: '12px', 
                   boxShadow: '0 4px 12px rgba(100,120,140,0.08)', 
-                  // 有通知時邊框變黃色
                   borderLeft: hasNotification ? '4px solid #facc15' : '4px solid #4A7294', 
                   cursor: 'pointer', transition: 'transform 0.2s',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  position: 'relative' // 🌟 為了放鈴鐺
+                  position: 'relative' 
                 }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                {/* 🌟 鈴鐺圖示 */}
                 {hasNotification && (
                   <div style={{ position: 'absolute', top: '-10px', right: '-10px', backgroundColor: '#e11d48', color: '#FFF', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '14px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                     🔔
@@ -113,7 +105,6 @@ export function ClientOrderList() {
                 
                 <div style={{ fontSize: '15px', color: '#475569', lineHeight: '1.8' }}>
                   <div><span style={{ fontWeight: 'bold' }}>訂單日期：</span>{formatDate(order.order_date)}</div>
-                  {/* 修正：顯示完整訂單編號 */}
                   <div><span style={{ fontWeight: 'bold' }}>訂單編號：</span>{order.id}</div>
                   <div><span style={{ fontWeight: 'bold' }}>項目名稱：</span>{order.client_custom_title || ''}</div>
                 </div>

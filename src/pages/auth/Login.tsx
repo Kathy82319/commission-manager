@@ -1,9 +1,9 @@
 import React from 'react';
 
-// 🌟 樣式定義 (保持你原本的設計風格)
+// 🌟 樣式定義
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
-  backgroundColor: '#778ca4', // 沿用你最喜歡的深藍灰
+  backgroundColor: '#778ca4', 
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -13,7 +13,7 @@ const containerStyle: React.CSSProperties = {
 };
 
 const loginButtonStyle: React.CSSProperties = {
-  backgroundColor: '#06C755', // LINE 綠色
+  backgroundColor: '#06C755', 
   color: 'white',
   border: 'none',
   padding: '12px 24px',
@@ -30,9 +30,7 @@ const loginButtonStyle: React.CSSProperties = {
 
 export function Login() {
   const handleLineLogin = () => {
-    // 🌟 核心修改：使用絕對網址，並優先讀取變數，保底寫死正式 Worker 網址
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-    console.log("跳轉至後端登入:", `${API_BASE}/api/auth/line/login`);
     window.location.href = `${API_BASE}/api/auth/line/login`;
   };
 

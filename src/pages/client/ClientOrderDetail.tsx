@@ -1,6 +1,7 @@
 // src/pages/client/ClientOrderDetail.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
 
 interface CommissionDetail {
   id: string;
@@ -19,7 +20,7 @@ interface CommissionDetail {
   pending_changes?: string;
   latest_message_at?: string;
   last_read_at_client?: string;
-  artist_settings?: string; // 🌟 新增此欄位
+  artist_settings?: string; 
 }
 
 interface Submission {
@@ -116,6 +117,7 @@ export function ClientOrderDetail() {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
       });
@@ -138,6 +140,7 @@ export function ClientOrderDetail() {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_custom_title: customTitle })
       });
@@ -368,7 +371,7 @@ export function ClientOrderDetail() {
                 </div>
               </div>
 
-              {/* 🌟 核心修正：使用 dangerouslySetInnerHTML 來渲染富文本 */}
+              {/* 🌟 核心修正：使用 DOMPurify 清洗惡意腳本 (XSS 防護) */}
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
                 <div style={{ fontSize: '14px', color: '#556577', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
@@ -377,10 +380,10 @@ export function ClientOrderDetail() {
                       dangerouslySetInnerHTML={{ 
                         __html: (() => {
                           try {
-                            return JSON.parse(orderData.artist_settings).rules || '繪師尚未設定使用規範。';
+                            const rawHtml = JSON.parse(orderData.artist_settings).rules;
+                            return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
                           } catch(e) {
-                            // 若解析失敗，退回顯示原有的 snapshot
-                            return orderData.agreed_tos_snapshot || '無協議紀錄';
+                            return orderData.agreed_tos_snapshot ? DOMPurify.sanitize(orderData.agreed_tos_snapshot) : '無協議紀錄';
                           }
                         })()
                       }} 

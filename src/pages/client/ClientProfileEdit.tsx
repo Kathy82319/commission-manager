@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const TEST_CLIENT_ID = 'u-client-test';
-
 const SOCIAL_PLATFORMS = [
   { id: 'FB', label: 'Facebook', pattern: /^https:\/\/(www\.)?facebook\.com\/.+/ },
   { id: 'Threads', label: 'Threads', pattern: /^https:\/\/(www\.)?threads\.net\/.+/ },
@@ -16,16 +14,26 @@ export function ClientProfileEdit() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({ display_name: '', avatar_url: '', bio: '' });
   
-  // 改為陣列結構，預設提供一列空白的 FB
   const [socials, setSocials] = useState<{ platform: string, url: string }[]>([
     { platform: 'FB', url: '' }
   ]);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const res = await fetch(`/api/users/${TEST_CLIENT_ID}`);
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+      // 🔒 安全修正：移除硬編碼的 TEST_CLIENT_ID，改用 /me
+      const res = await fetch(`${API_BASE}/api/users/me`, {
+        credentials: 'include'
+      });
+      
+      if (res.status === 401 || res.status === 403) {
+        alert("請先登入");
+        navigate('/login');
+        return;
+      }
+
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setFormData({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
@@ -45,10 +53,9 @@ export function ClientProfileEdit() {
       }
     };
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   const handleSave = async () => {
-    // 驗證每一筆有填寫網址的社群
     for (const social of socials) {
       if (social.url.trim() === '') continue;
       const platformConfig = SOCIAL_PLATFORMS.find(p => p.id === social.platform);
@@ -64,8 +71,11 @@ export function ClientProfileEdit() {
       socials: socials.filter(s => s.url.trim() !== '')
     });
 
-    const res = await fetch(`/api/users/${TEST_CLIENT_ID}`, {
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+    // 🔒 安全修正：改用 /me 進行更新
+    const res = await fetch(`${API_BASE}/api/users/me`, {
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...formData, profile_settings })
     });
@@ -74,7 +84,7 @@ export function ClientProfileEdit() {
     setIsProcessing(false);
 
     if (data.success) {
-      navigate('/client');
+      navigate('/client/home');
     } else {
       alert('儲存失敗：' + data.error);
     }
@@ -109,7 +119,6 @@ export function ClientProfileEdit() {
         <hr style={{ border: 'none', borderTop: '1px solid #d0d8e4', margin: '20px 0' }} />
         <h3 style={{ fontSize: '16px', color: '#475569', marginBottom: '16px' }}>常用社群連結</h3>
 
-        {/* 動態社群列表 */}
         {socials.map((social, index) => (
           <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <select 
@@ -149,7 +158,7 @@ export function ClientProfileEdit() {
         </button>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-          <button onClick={() => navigate('/client')} style={{ flex: 1, padding: '14px', backgroundColor: '#FFF', color: '#556577', border: '1px solid #d0d8e4', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>取消返回</button>
+          <button onClick={() => navigate('/client/home')} style={{ flex: 1, padding: '14px', backgroundColor: '#FFF', color: '#556577', border: '1px solid #d0d8e4', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>取消返回</button>
           <button onClick={handleSave} disabled={isProcessing} style={{ flex: 1, padding: '14px', backgroundColor: '#4A7294', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer' }}>{isProcessing ? '儲存中...' : '確認儲存'}</button>
         </div>
       </div>

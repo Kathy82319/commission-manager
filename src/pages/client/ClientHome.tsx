@@ -17,50 +17,45 @@ export function ClientHome() {
   const [marqueeText, setMarqueeText] = useState<string>('');
 
   useEffect(() => {
-    // 🌟 核心修正：與 Onboarding 一樣，優先讀取網址或 localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    let userId = urlParams.get('u');
-
-    if (userId) {
-      localStorage.setItem('user_id', userId);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else {
-      userId = localStorage.getItem('user_id');
-      if (!userId) {
-        const match = document.cookie.match(new RegExp('(^| )user_id=([^;]+)'));
-        if (match) userId = match[2];
-      }
-    }
-
     const fetchProfile = async () => {
-      if (!userId) return;
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-      const res = await fetch(`${API_BASE}/api/users/${userId}`);
-      const data = await res.json();
-      
-      if (data.success && data.data) {
-        setProfile(data.data);
-        if (data.data.profile_settings) {
-          try {
-            const settings = JSON.parse(data.data.profile_settings);
-            if (settings.socials) setSocialLinks(settings.socials);
-          } catch (e) {
-            console.error("解析 profile_settings 失敗", e);
-          }
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+      try {
+        // 🔒 安全修正：移除手動解析 URL 或 localStorage 的邏輯，直接向後端要 /me
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          credentials: 'include'
+        });
+        
+        if (res.status === 401 || res.status === 403) {
+          navigate('/login');
+          return;
         }
-      } else if (data.id) {
-        setProfile(data);
-      } else {
-        setProfile({ id: userId, display_name: '測試委託人', avatar_url: '', bio: '尚未填寫自我介紹' });
+
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          setProfile(data.data);
+          if (data.data.profile_settings) {
+            try {
+              const settings = JSON.parse(data.data.profile_settings);
+              if (settings.socials) setSocialLinks(settings.socials);
+            } catch (e) {
+              console.error("解析 profile_settings 失敗", e);
+            }
+          }
+        } else {
+          setProfile({ id: 'unknown', display_name: '未知用戶', avatar_url: '', bio: '無法取得資料' });
+        }
+      } catch (error) {
+        console.error("取得個人資料失敗", error);
       }
     };
 
     const fetchNotifications = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/commissions`, {
-  credentials: 'include' 
-});
+          credentials: 'include' 
+        });
         const data = await res.json();
         if (data.success) {
           const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
@@ -88,7 +83,7 @@ export function ClientHome() {
 
     fetchProfile();
     fetchNotifications();
-  }, []);
+  }, [navigate]);
 
   const handleSwitchToArtist = async () => {
     if (!profile) return;
@@ -100,9 +95,11 @@ export function ClientHome() {
 
       if (confirmCreate) {
         try {
-          const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-          const res = await fetch(`${API_BASE}/api/users/${profile.id}/complete-onboarding`, {
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+          // 🔒 安全修正：改用 /me
+          const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
           });

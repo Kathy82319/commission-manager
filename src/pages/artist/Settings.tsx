@@ -11,7 +11,6 @@ interface ProfileSettings {
   custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[]; 
   hidden_sections: string[]; 
-  // 🌟 新增開場名片相關欄位
   splash_enabled: boolean;
   splash_image: string;
   splash_duration: number;
@@ -34,7 +33,6 @@ export function Settings() {
   
   const [settings, setSettings] = useState<ProfileSettings>({
     portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
-    // 🌟 預設開啟，展示 2 秒
     splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: ''
   });
 
@@ -45,13 +43,14 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const currentUserId = localStorage.getItem('user_id') || '';
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/users/${currentUserId}`);
+        // 🔒 安全修正：改用 /me 並帶上 credentials
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          credentials: 'include'
+        });
         const data = await res.json();
         if (data.success && data.data) {
           setFormData({
@@ -71,7 +70,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`);
                 custom_sections: parsed.custom_sections || [],
                 social_links: parsed.social_links || [],
                 hidden_sections: parsed.hidden_sections || [],
-                // 🌟 解析新的設定值，如果沒有則使用預設值
                 splash_enabled: parsed.splash_enabled !== false, 
                 splash_image: parsed.splash_image || '',
                 splash_duration: parsed.splash_duration || 2,
@@ -93,8 +91,10 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`);
     setIsSaving(true); setMessage('');
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
+      // 🔒 安全修正：改用 /me 並帶上 credentials
+      const res = await fetch(`${API_BASE}/api/users/me`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: formData.display_name,
@@ -159,7 +159,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
         ...prev, 
         portfolio: [...prev.portfolio, newImageUrl.trim()] 
       }));
-      // 🌟 修正：使用 set 函數來清空字串
       setNewImageUrl(''); 
     }
   };
@@ -252,7 +251,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
               {menuItems.find(m => m.id === activeTab)?.label}
             </h3>
             
-            {/* 🌟 修正：只有當不在「頭像與簡介」與「開場名片設定」時，才顯示公開/隱藏切換按鈕 */}
             {activeTab !== 'profile_basic' && activeTab !== 'splash' && (
               <button 
                 onClick={() => toggleVisibility(activeTab)}
@@ -304,7 +302,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
                 <textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} onFocus={() => setFocusedField('bio')} onBlur={() => setFocusedField(null)} placeholder="介紹您的繪畫風格或經歷..." style={{...getInputStyle('bio'), minHeight: '120px', resize: 'vertical'}} />
               </div>
 
-              {/* 社群連結設定區塊 */}
               <div style={{ borderTop: '1px solid #F0ECE7', paddingTop: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <label style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E' }}>社群平台連結</label>
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -336,7 +333,7 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
             </div>
           )}
 
-          {/* 🌟 1.5 新增開場名片設定區塊 */}
+          {/* 1.5 新增開場名片設定區塊 */}
           {activeTab === 'splash' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               
@@ -439,7 +436,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
           {(activeTab === 'detailed_intro' || activeTab === 'process' || activeTab === 'payment' || activeTab === 'rules') && (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '40px' }}>
               
-              {/* 🌟 新增：針對「協議書內容」專屬的說明提示框 */}
               {activeTab === 'rules' && (
                 <div style={{ 
                   marginBottom: '12px', 
@@ -458,7 +454,6 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
                 </div>
               )}
 
-              {/* ReactQuill 的外框包裝，用於套用圓角與邊框 */}
               <div style={{ border: '1px solid #DED9D3', borderRadius: '12px', overflow: 'hidden' }}>
                 <ReactQuill 
                   theme="snow" 
