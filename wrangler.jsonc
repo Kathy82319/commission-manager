@@ -1,25 +1,30 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "commission-manager",
-  "main": "worker/index.ts",
-  "compatibility_date": "2026-04-09",
-  "assets": {
-    "directory": "dist",
-    "not_found_handling": "single-page-application"
-  },
-  "observability": {
-    "enabled": true
-  },
-  "upload_source_maps": true,
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
-  "d1_databases": [
-    {
-      "binding": "commission_db",
-      "database_name": "commission-db",
-      "database_id": "7d286ecf-cafe-4123-8516-79f51779b1ca",
-      "remote": true
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "commission-manager",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-04-09",
+	"assets": {
+		"directory": "dist",
+		"not_found_handling": "single-page-application"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "commission_db",
+			"database_name": "commission-db",
+			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c",
+			"remote": true
+		},
+		{
+			"binding": "_commission_db_prod",
+			"database_name": "commission_db_prod",
+			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
+		}
+	]
 }

@@ -1,39 +1,39 @@
+import React from 'react';
 
+// 🌟 樣式定義 (保持你原本的設計風格)
+const containerStyle: React.CSSProperties = {
+  minHeight: '100vh',
+  backgroundColor: '#778ca4', // 沿用你最喜歡的深藍灰
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontFamily: 'sans-serif',
+  color: '#FFFFFF'
+};
 
+const loginButtonStyle: React.CSSProperties = {
+  backgroundColor: '#06C755', // LINE 綠色
+  color: 'white',
+  border: 'none',
+  padding: '12px 24px',
+  borderRadius: '12px',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  transition: 'transform 0.2s',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+};
 
 export function Login() {
   
-
-const handleLineLogin = () => {
-  // ✅ 這是正確的：強制瀏覽器離開 React，前往後端 API
-  window.location.href = '/api/auth/line/login';
-};
-
-  const containerStyle = {
-    backgroundColor: '#FBFBF9',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'sans-serif',
-    color: '#5D4A3E'
-  };
-
-  const loginButtonStyle = {
-    padding: '12px 32px',
-    backgroundColor: '#06C755', // LINE 品牌綠色
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '24px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(6, 199, 85, 0.3)',
-    transition: 'transform 0.2s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px'
+  // 🌟 核心修改：將導向邏輯改為實體網址跳轉
+  const handleLineLogin = () => {
+    // 透過 window.location.href 觸發 _redirects 轉向 Worker 後端
+    window.location.href = '/api/auth/line/login';
   };
 
   return (
@@ -47,12 +47,17 @@ const handleLineLogin = () => {
         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
       >
         {/* LINE 圖示 (簡化版) */}
-        <span style={{ fontSize: '20px' }}>L</span>
+        <div style={{ 
+          width: '30px', height: '30px', backgroundColor: '#FFFFFF', color: '#06C755', 
+          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' 
+        }}>
+          L
+        </div>
         使用 LINE 帳號登入
       </button>
 
-      <p style={{ marginTop: '24px', fontSize: '13px', color: '#A0978D' }}>
-        登入即代表您同意我們的 <a href="/terms" style={{ color: 'inherit' }}>服務條款</a>
+      <p style={{ marginTop: '24px', fontSize: '13px', color: '#E0E6ED' }}>
+        登入即代表您同意我們的 <a href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>服務條款</a>
       </p>
     </div>
   );
