@@ -29,13 +29,10 @@ const loginButtonStyle: React.CSSProperties = {
 };
 
 export function Login() {
-  
-  // 🌟 核心修改：使用環境變數組合出絕對網址
   const handleLineLogin = () => {
-    // 🌟 修改這裡：給它一個絕對不會出錯的保底正式網址
+    // 🌟 核心修改：使用絕對網址，並優先讀取變數，保底寫死正式 Worker 網址
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-    
-    // 透過 window.location.href 直接導向後端 Worker
+    console.log("跳轉至後端登入:", `${API_BASE}/api/auth/line/login`);
     window.location.href = `${API_BASE}/api/auth/line/login`;
   };
 

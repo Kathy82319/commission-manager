@@ -32,7 +32,7 @@ export default {
 
     // 🌟 [CORS 標頭設定]
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://commission-app.pages.dev", // 建議在正式環境中可透過 env 傳入
+      "Access-Control-Allow-Origin": "https://commission-app.pages.dev", 
       "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
@@ -159,10 +159,18 @@ export default {
           }
         }
 
+        // 🌟 防呆機制：確保 baseUrl 結尾沒有斜線，避免產生雙斜線 (//) 破壞前端路由
+        let baseUrl = env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin; 
+        if (baseUrl.endsWith('/')) {
+          baseUrl = baseUrl.slice(0, -1);
+        }
+        
         // 整合 FRONTEND_URL 跳轉並附加參數 ?u=userId (同時保留 Cookie 雙重保險)
-        const baseUrl = env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin; 
         const redirectUrl = `${baseUrl}${targetPath}?u=${userId}`;
         
+        // 加上後端日誌，方便未來追蹤
+        console.log("LINE 授權成功，準備導向至:", redirectUrl);
+
         return new Response(null, {
           status: 302,
           headers: {

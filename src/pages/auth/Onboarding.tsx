@@ -12,26 +12,24 @@ export function Onboarding() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // 🌟 核心修正：優先從網址抓 ID，避開 Cookie 被擋的問題
+    // 🌟 打破迴圈的核心邏輯：
+    // 1. 先看網址有沒有帶 ID (?u=...)
     const urlParams = new URLSearchParams(window.location.search);
     let id = urlParams.get('u');
 
     if (id) {
-      // 如果網址有，就馬上存進瀏覽器的 localStorage 裡永久保存
-      localStorage.setItem('user_id', id);
-      // 順便把網址清乾淨 (把 ?u=... 隱藏起來比較美觀)
+      console.log("從網址取得 ID:", id);
+      localStorage.setItem('user_id', id); // 存入 LocalStorage，比 Cookie 穩定
+      // 清除網址參數，保持乾淨
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
-      // 如果網址沒有，才試著從 localStorage 或 Cookie 找
+      // 2. 如果網址沒有，看 LocalStorage
       id = localStorage.getItem('user_id');
-      if (!id) {
-        const match = document.cookie.match(new RegExp('(^| )user_id=([^;]+)'));
-        if (match) id = match[2];
-      }
+      console.log("從 LocalStorage 取得 ID:", id);
     }
 
-    // 如果真的都找不到，才踢回登入頁
     if (!id) {
+      console.error("找不到使用者 ID，導向登入頁");
       navigate('/login');
       return;
     }
@@ -39,21 +37,20 @@ export function Onboarding() {
     setUserId(id);
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
 
-    // 撈取剛註冊的資料
     fetch(`${API_BASE}/api/users/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
-          // 如果已經不是 pending，就踢回正確的地方
           if (data.data.role === 'artist') navigate('/artist/queue');
-          if (data.data.role === 'client') navigate('/client/home');
-          
+          else if (data.data.role === 'client') navigate('/client/home');
           setDisplayName(data.data.display_name || '');
         }
       })
+      .catch(err => console.error("抓取資料失敗:", err))
       .finally(() => setLoading(false));
   }, [navigate]);
 
+  
   // 送出表單
   const handleSubmit = async () => {
     if (!displayName.trim() || !role) {
@@ -130,7 +127,7 @@ export function Onboarding() {
             </div>
             
             <div style={cardStyle(role === 'client')} onClick={() => setRole('client')}>
-              <span style={{ fontSize: '32px' }}>👀</span>
+              <span style={{ fontSize: '32px' }}>🌟</span>
               <div style={{ fontWeight: 'bold' }}>我是委託方</div>
               <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想尋找繪師、發起委託並追蹤進度</div>
             </div>

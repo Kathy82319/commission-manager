@@ -1,3 +1,5 @@
+// src/App.tsx
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // 引入 Layouts
@@ -29,46 +31,39 @@ import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 
+// 🌟 全局身分同步器：只要網址有帶 ?u=，不管在哪個頁面都立刻存下來！
+function GlobalAuthSync() {
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const uParam = urlParams.get('u');
+    
+    if (uParam) {
+      localStorage.setItem('user_id', uParam);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  return null;
+}
+
+
 export function App() {
   const MY_ARTIST_ID = "Ue29d02da79b805e9df46bdf6442aa24c";
+  
   return (
     <BrowserRouter>
+      {/* 🌟 放置隱形的全局身分同步器 */}
+      <GlobalAuthSync />
       
       <Routes>
-        {/* 🌟 1. 首頁直接導向您的個人繪師頁面 */}
+        {/* 1. 首頁直接導向您的個人繪師頁面 */}
         <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />
         
-        {/* 2. 身分驗證 */}
+        {/* 2. 身分驗證區 */}
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
-
-        {/* 3. 公開頁面 (套用 PublicLayout) */}
-        <Route element={<PublicLayout />}>
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          
-          {/* 這是您的繪師主頁內容 */}
-          <Route path="/:artistId" element={<PublicProfile />} />
-        </Route>
-
-
-
-        {/* 預設首頁 */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
         
-        {/* 身分驗證區 */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/workspace" element={<Workspace />} />
-
-        {/* 公開頁面路由 */}
-        <Route element={<PublicLayout />}>
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/:artistId" element={<PublicProfile />} />
-        </Route>
-
-        {/* 繪師私密後台區 */}
+        {/* 3. 繪師私密後台區 */}
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
@@ -78,9 +73,8 @@ export function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* 委託方後台區 (手機容器化) */}
+        {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
-          {/* 🌟 確保 /client 與 /client/home 都能連到首頁 */}
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<ClientHome />} /> 
           <Route path="profile/edit" element={<ClientProfileEdit />} />
@@ -88,9 +82,17 @@ export function App() {
           <Route path="order/:id" element={<ClientOrderDetail />} />
         </Route>
 
-        {/* 委託單確認與共用工作區 */}
+        {/* 5. 委託單確認與共用工作區 */}
         <Route path="/quote/:id" element={<ClientForm />} />
+        <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
+
+        {/* 6. 公開頁面 (套用 PublicLayout) - 必須放最後面，因為 /:artistId 會攔截所有東西 */}
+        <Route element={<PublicLayout />}>
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/:artistId" element={<PublicProfile />} />
+        </Route>
         
       </Routes>
     </BrowserRouter>
