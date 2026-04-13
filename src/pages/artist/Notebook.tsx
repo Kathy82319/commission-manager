@@ -53,7 +53,9 @@ export function Notebook() {
   }, [selectedId, activeTab, navigate]);
 
   const fetchCommissions = async () => {
-    const res = await fetch(`${API_BASE}/api/commissions`);
+    const res = await fetch(`${API_BASE}/api/commissions`, {
+  credentials: 'include' 
+});
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);

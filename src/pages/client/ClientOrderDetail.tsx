@@ -53,17 +53,27 @@ export function ClientOrderDetail() {
   // 新增：是否有新訊息的狀態
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchDetailData = async () => {
       if (!id) return;
       setIsLoading(true);
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const [orderRes, subRes, logRes] = await Promise.all([
-  fetch(`${API_BASE}/api/commissions/${id}`),
-  fetch(`${API_BASE}/api/commissions/${id}/submissions`),
-  fetch(`${API_BASE}/api/commissions/${id}/logs`)
-]);
+
+        // 🌟 修改：為所有 fetch 加上 credentials: 'include' 以便發送登入 Cookie
+        const [orderRes, subRes, logRes] = await Promise.all([
+          fetch(`${API_BASE}/api/commissions/${id}`, { credentials: 'include' }),
+          fetch(`${API_BASE}/api/commissions/${id}/submissions`, { credentials: 'include' }),
+          fetch(`${API_BASE}/api/commissions/${id}/logs`, { credentials: 'include' })
+        ]);
+
+        // 🌟 新增：檢查是否未登入 (401)
+        if (orderRes.status === 401) {
+          alert("登入逾時或尚未登入，請先登入 LINE 以查看委託單內容");
+          // 導向後端登入路由
+          window.location.href = `${API_BASE}/api/auth/line/login`;
+          return;
+        }
 
         const orderJson = await orderRes.json();
         if (orderJson.success) {
@@ -71,7 +81,7 @@ const [orderRes, subRes, logRes] = await Promise.all([
           setOrderData(data);
           setCustomTitle(data.client_custom_title || '');
 
-          // 🌟 判斷邏輯：比對最新訊息時間與最後讀取時間
+          // 🌟 你的原本邏輯：判斷新訊息時間
           if (data.latest_message_at) {
             const latestMsgTime = new Date(data.latest_message_at).getTime();
             const lastReadTime = data.last_read_at_client 
@@ -82,11 +92,12 @@ const [orderRes, subRes, logRes] = await Promise.all([
             }
           }
 
-          // 🌟 進入頁面後，自動更新「最後讀取時間」為現在
-          const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-fetch(`${API_BASE}/api/commissions/${id}`, {
+          // 🌟 你的原本邏輯：進入頁面後自動更新「最後讀取時間」
+          // 同樣需要加上 credentials: 'include'
+          fetch(`${API_BASE}/api/commissions/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
           });
         }

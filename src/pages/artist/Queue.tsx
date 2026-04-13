@@ -83,7 +83,9 @@ export function Queue() {
   const fetchQueue = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/commissions`);
+const res = await fetch(`${API_BASE}/api/commissions`, {
+  credentials: 'include' 
+});
       const data = await res.json();
       if (data.success) {
         const activeOrders = data.data

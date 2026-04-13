@@ -58,7 +58,9 @@ export function ClientHome() {
     const fetchNotifications = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-        const res = await fetch(`${API_BASE}/api/commissions`);
+        const res = await fetch(`${API_BASE}/api/commissions`, {
+  credentials: 'include' 
+});
         const data = await res.json();
         if (data.success) {
           const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
