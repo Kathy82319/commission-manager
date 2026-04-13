@@ -169,5 +169,10 @@ CREATE TABLE PaymentRecords (
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
 
+-- 1. 先建立一個預設的繪師帳號，這樣底下的服務項目才有主人可以綁定
+INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role, subscription_type) 
+VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 'artist', 'pro');
+
+-- 2. 再建立服務項目
 INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
