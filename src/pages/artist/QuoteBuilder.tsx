@@ -126,8 +126,8 @@ export function QuoteBuilder() {
           <h2 style={{ color: '#5D4A3E', fontSize: '24px', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>產出新委託單</h2>
           <div style={{ color: '#A0978D', fontSize: '14px' }}>
             {workflowMode === 'standard' 
-              ? '填寫完畢後，系統將自動產生專屬連結供委託人檢視、同意合約與確認規格。' 
-              : '此模式僅供您個人進行進度與檔案紀錄，將關閉客戶審閱鎖定機制與合約功能。'}
+              ? '填寫完畢後，可到委託單管理複製專屬連結供委託人檢視、同意合約與確認規格，請注意，該連結僅供綁定一個客戶。' 
+              : '此模式可供您個人進行進度與檔案紀錄，關閉客戶審閱機制。'}
           </div>
         </div>
 
@@ -243,7 +243,7 @@ export function QuoteBuilder() {
                           <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowDeliveryHelp(false)} />
                           <div style={{ position: 'absolute', bottom: '100%', left: '0', width: '260px', padding: '16px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 100, marginBottom: '8px', color: '#5D4A3E' }}>
                             <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '13px' }}>三階段審閱：</div>
-                            <div style={{ marginBottom: '8px', fontSize: '12px', lineHeight: '1.5', color: '#7A7269' }}>需上傳草稿、線稿、完稿，且皆須經委託人同意後方可繼續。</div>
+                            <div style={{ marginBottom: '8px', fontSize: '12px', lineHeight: '1.5', color: '#7A7269' }}>需上傳草稿、線稿、完稿</div>
                             <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '13px' }}>一鍵出稿：</div>
                             <div style={{ fontSize: '12px', color: '#7A7269' }}>僅需上傳一次最終稿件。</div>
                           </div>

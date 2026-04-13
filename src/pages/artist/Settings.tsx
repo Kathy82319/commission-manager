@@ -203,7 +203,7 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'process', label: '委託流程說明' },
     { id: 'payment', label: '付款方式' },
-    { id: 'rules', label: '協議書內容(委託人簽約前必閱內容)' },
+    { id: 'rules', label: '協議書內容' },
     { id: 'custom', label: '其他 (自訂標題)' }
   ];
 
@@ -434,6 +434,26 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
           {/* 3. 富文本編輯區 */}
           {(activeTab === 'detailed_intro' || activeTab === 'process' || activeTab === 'payment' || activeTab === 'rules') && (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '40px' }}>
+              
+              {/* 🌟 新增：針對「協議書內容」專屬的說明提示框 */}
+              {activeTab === 'rules' && (
+                <div style={{ 
+                  marginBottom: '12px', 
+                  color: '#8A602B', 
+                  fontSize: '14px', 
+                  fontWeight: 'bold', 
+                  backgroundColor: '#FDF4E6', 
+                  padding: '12px 16px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #E8D3B9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  💡 說明：此部分內容將會出現在每次委託書下方必須閱覽的區域
+                </div>
+              )}
+
               {/* ReactQuill 的外框包裝，用於套用圓角與邊框 */}
               <div style={{ border: '1px solid #DED9D3', borderRadius: '12px', overflow: 'hidden' }}>
                 <ReactQuill 
