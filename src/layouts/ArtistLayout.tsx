@@ -84,7 +84,7 @@ export function ArtistLayout() {
             切換為委託方模式
           </button>
           <button onClick={copyLink} style={{ width: '100%', padding: '10px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', color: '#7A7269', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
-            複製專屬連結
+            複製個人公開首頁連結
           </button>
         </div>
       </aside>
