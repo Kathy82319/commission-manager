@@ -1,3 +1,4 @@
+// src/pages/client/ClientForm.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -32,34 +33,51 @@ export function ClientForm() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/commissions/${id}`);
+        // 🌟 修改：加入 credentials: 'include'
+        const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+          credentials: 'include'
+        });
+
+        // 🌟 新增：若未登入 (401)，自動導向登入頁面
+        if (res.status === 401) {
+          alert('請先登入 LINE 以確認委託內容');
+          window.location.href = `${API_BASE}/api/auth/line/login`;
+          return;
+        }
+
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
         } else {
-          setErrorMsg('找不到這筆委託單，或連結已失效。');
+          // 如果是 403 (已綁定他人) 或 404，顯示後端傳回的錯誤訊息
+          setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
       } catch (err) {
         setErrorMsg('系統連線異常，請稍後再試。');
       }
     };
     if (id) fetchOrder();
-  }, [id]);
+  }, [id, API_BASE]);
 
   const handleSubmit = async () => {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
     
     try {
+      // 🌟 修改：PATCH 請求也要帶上 credentials: 'include'
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: 'unpaid' })
       });
       const data = await res.json();
       
       if (data.success) {
-        const updatedRes = await fetch(`${API_BASE}/api/commissions/${id}`);
+        // 🌟 修改：重新獲取資料也要帶上 credentials: 'include'
+        const updatedRes = await fetch(`${API_BASE}/api/commissions/${id}`, {
+          credentials: 'include'
+        });
         const updatedData = await updatedRes.json();
         if (updatedData.success) setOrder(updatedData.data);
       } else {
@@ -72,10 +90,10 @@ export function ClientForm() {
     }
   };
 
+  // 下方 UI 部分保持不變...
   if (errorMsg) return <div style={centerStyle}>{errorMsg}</div>;
   if (!order) return <div style={centerStyle}>載入委託單資料中...</div>;
 
-  // 阻擋已作廢的單
   if (order.status === 'cancelled') {
     return (
       <div style={{ backgroundColor: '#FBFBF9', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
@@ -88,8 +106,6 @@ export function ClientForm() {
   }
 
   const hasAlreadyAgreed = order.status !== 'quote_created';
-  
-  // 計算是否超過 14 天
   const orderDate = new Date(order.order_date);
   const now = new Date();
   const diffDays = Math.ceil(Math.abs(now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -129,7 +145,6 @@ export function ClientForm() {
         <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
           <h2 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>委託協議書</h2>
           
-          {/* 14天過期警告 */}
           {isExpiredWarning && (
             <div style={{ backgroundColor: '#FDF4E6', border: '1px solid #A67B3E', color: '#8A602B', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', marginBottom: '16px', lineHeight: '1.5' }}>
               此報價單已建立超過 14 天，同意前請先向繪師確認此報價與排程是否仍然有效。
