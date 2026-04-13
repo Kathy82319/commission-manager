@@ -3,10 +3,6 @@
 	"name": "commission-manager",
 	"main": "worker/index.ts",
 	"compatibility_date": "2026-04-09",
-	"assets": {
-		"directory": "dist",
-		"not_found_handling": "single-page-application"
-	},
 	"observability": {
 		"enabled": true
 	},
@@ -14,6 +10,11 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"vars": {
+		"LINE_REDIRECT_URI": "https://commission-manager.cath82319.workers.dev/api/auth/line/callback",
+		"FRONTEND_URL": "https://commission-app.pages.dev",
+		"LINE_CHANNEL_ID": "2009777002"
+	},
 	"d1_databases": [
 		{
 			"binding": "commission_db",

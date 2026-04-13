@@ -82,7 +82,8 @@ export function Queue() {
 
   const fetchQueue = async () => {
     try {
-      const res = await fetch('/api/commissions');
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/commissions`);
       const data = await res.json();
       if (data.success) {
         const activeOrders = data.data
@@ -98,7 +99,8 @@ export function Queue() {
   const handleUpdateField = async (id: string, field: keyof Commission, value: string) => {
     setIsUpdating(true);
     try {
-      const res = await fetch(`/api/commissions/${id}`, {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value })
       });
       const data = await res.json();

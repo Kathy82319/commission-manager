@@ -11,28 +11,40 @@ export function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // 1. 讀取 Cookie 檢查身分
-  const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-    return null;
-  };
-
   useEffect(() => {
-    const id = getCookie('user_id');
+    // 🌟 核心修正：優先從網址抓 ID，避開 Cookie 被擋的問題
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get('u');
+
+    if (id) {
+      // 如果網址有，就馬上存進瀏覽器的 localStorage 裡永久保存
+      localStorage.setItem('user_id', id);
+      // 順便把網址清乾淨 (把 ?u=... 隱藏起來比較美觀)
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      // 如果網址沒有，才試著從 localStorage 或 Cookie 找
+      id = localStorage.getItem('user_id');
+      if (!id) {
+        const match = document.cookie.match(new RegExp('(^| )user_id=([^;]+)'));
+        if (match) id = match[2];
+      }
+    }
+
+    // 如果真的都找不到，才踢回登入頁
     if (!id) {
       navigate('/login');
       return;
     }
-    setUserId(id);
 
-    // 撈取剛註冊的資料 (取得 LINE 預設名稱)
-    fetch(`/api/users/${id}`)
+    setUserId(id);
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+
+    // 撈取剛註冊的資料
+    fetch(`${API_BASE}/api/users/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
-          // 如果已經不是 pending，就不該出現在這裡，把他踢回正確的地方
+          // 如果已經不是 pending，就踢回正確的地方
           if (data.data.role === 'artist') navigate('/artist/queue');
           if (data.data.role === 'client') navigate('/client/home');
           
@@ -42,7 +54,7 @@ export function Onboarding() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  // 2. 送出表單
+  // 送出表單
   const handleSubmit = async () => {
     if (!displayName.trim() || !role) {
       alert('請填寫暱稱並選擇一個身分！');
@@ -50,23 +62,25 @@ export function Onboarding() {
     }
 
     setSubmitting(true);
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+
     try {
-      // 呼叫我們即將在後端寫的 API 來更新身分
-      const res = await fetch(`/api/users/${userId}/complete-onboarding`, {
+      const res = await fetch(`${API_BASE}/api/users/${userId}/complete-onboarding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ display_name: displayName, role })
       });
       const result = await res.json();
 
-if (result.success) {
-  // 🌟 修正：確保路徑與 App.tsx 的 Route 定義完全一致
-  if (role === 'artist') {
-    navigate('/artist/queue');
-  } else if (role === 'client') {
-    navigate('/client/home'); // 修正為 /client/home
-  }
-}
+      if (result.success) {
+        if (role === 'artist') {
+          navigate('/artist/queue');
+        } else if (role === 'client') {
+          navigate('/client/home');
+        }
+      } else {
+        alert('設定失敗：' + result.error);
+      }
     } catch (error) {
       alert('網路連線錯誤');
     } finally {
@@ -76,7 +90,6 @@ if (result.success) {
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>載入中...</div>;
 
-  // 🌟 UI 樣式定義
   const containerStyle = {
     backgroundColor: '#FBFBF9', minHeight: '100vh', display: 'flex', flexDirection: 'column' as const,
     alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', color: '#5D4A3E'
@@ -96,7 +109,6 @@ if (result.success) {
           花一分鐘設定您的個人檔案，開始您的旅程。
         </p>
 
-        {/* 暱稱輸入 */}
         <div style={{ marginBottom: '24px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px' }}>您在平台上的暱稱</label>
           <input 
@@ -108,7 +120,6 @@ if (result.success) {
           />
         </div>
 
-        {/* 身分選擇 */}
         <div style={{ marginBottom: '32px' }}>
           <label style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold', fontSize: '14px' }}>您主要想使用什麼功能？</label>
           <div style={{ display: 'flex', gap: '16px' }}>
@@ -126,7 +137,6 @@ if (result.success) {
           </div>
         </div>
 
-        {/* 送出按鈕 */}
         <button 
           onClick={handleSubmit}
           disabled={submitting || !displayName || !role}

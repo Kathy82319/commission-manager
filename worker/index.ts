@@ -5,6 +5,7 @@ export interface Env {
   LINE_CHANNEL_ID: string;
   LINE_CHANNEL_SECRET: string;
   LINE_REDIRECT_URI: string;
+  FRONTEND_URL: string; // 🌟 新增的環境變數
 }
 
 interface CreateCommissionBody {
@@ -29,37 +30,66 @@ export default {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/");
 
+    // 🌟 [CORS 標頭設定]
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "https://commission-app.pages.dev", // 建議在正式環境中可透過 env 傳入
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    };
 
-// 🚨 臨時路由：把所有使用者「打回原形」，強制降級回新手村 (pending)
+    // 🌟 [處理 OPTIONS]
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // 🌟 [回傳工具] 確保每個回傳都有標頭
+    const jsonRes = (data: any, status = 200) => {
+      return new Response(JSON.stringify(data), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    };
+
+    // 🚨 臨時路由：把所有使用者「打回原形」，強制降級回新手村 (pending)
     if (request.method === "GET" && url.pathname === "/api/force-reset-pending") {
       try {
         await env.commission_db.prepare("UPDATE Users SET role = 'pending'").run();
-        return Response.json({ success: true, message: "太棒了！所有帳號都已降級為 pending，可以去新手村了！" });
+        return jsonRes({ success: true, message: "太棒了！所有帳號都已降級為 pending，可以去新手村了！" });
       } catch (error: any) {
-        return Response.json({ success: false, error: String(error) }, { status: 500 });
+        return jsonRes({ success: false, error: String(error) }, 500);
       }
     }
 
-    // 🚨 臨時路由：如果你想更暴力一點，直接「刪除所有使用者」重新來過
+    // 🚨 臨時路由：直接「刪除所有使用者」重新來過
     if (request.method === "GET" && url.pathname === "/api/delete-all-users") {
       try {
         await env.commission_db.prepare("DELETE FROM Users").run();
-        return Response.json({ success: true, message: "資料庫已完全清空！" });
+        return jsonRes({ success: true, message: "資料庫已完全清空！" });
       } catch (error: any) {
-        return Response.json({ success: false, error: String(error) }, { status: 500 });
+        return jsonRes({ success: false, error: String(error) }, 500);
       }
     }
 
+    // [GET] 臨時修復：為 Vite 的本地資料庫補上缺少的欄位
+    if (request.method === "GET" && url.pathname === "/api/fix-users") {
+      let messages = [];
+      try {
+        await env.commission_db.prepare("ALTER TABLE Users ADD COLUMN avatar_url TEXT DEFAULT ''").run();
+        messages.push("已成功新增 avatar_url 欄位");
+      } catch (e) {
+        messages.push("avatar_url 欄位可能已存在");
+      }
+      
+      try {
+        await env.commission_db.prepare("ALTER TABLE Users ADD COLUMN bio TEXT DEFAULT ''").run();
+        messages.push("已成功新增 bio 欄位");
+      } catch (e) {
+        messages.push("bio 欄位可能已存在");
+      }
 
-
-
-
-
-
-
-
-
-
+      return jsonRes({ success: true, messages });
+    }
 
 
     // ============================================================================
@@ -69,17 +99,17 @@ export default {
     // [GET] 發起 LINE 登入
     if (request.method === "GET" && url.pathname === "/api/auth/line/login") {
       if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
-        return Response.json({ success: false, error: "環境變數未設定" }, { status: 500 });
+        return jsonRes({ success: false, error: "環境變數未設定" }, 500);
       }
       const state = crypto.randomUUID();
       const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${env.LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(env.LINE_REDIRECT_URI)}&state=${state}&scope=profile%20openid`;
-      return Response.redirect(loginUrl);
+      return Response.redirect(loginUrl, 302);
     }
 
-    // [GET] LINE 登入回調 (Callback) - 🌟 包含最新的新手村分流邏輯
+    // [GET] LINE 登入回調 (Callback)
     if (request.method === "GET" && url.pathname === "/api/auth/line/callback") {
       const code = url.searchParams.get("code");
-      if (!code) return Response.json({ success: false, error: "未取得授權碼" });
+      if (!code) return jsonRes({ success: false, error: "未取得授權碼" }, 400);
 
       try {
         const tokenRes = await fetch("https://api.line.me/oauth2/v2.1/token", {
@@ -94,11 +124,11 @@ export default {
           }),
         });
         const tokenData: any = await tokenRes.json();
-        if (tokenData.error) return Response.json({ success: false, error: "LINE Token 取得失敗", details: tokenData });
+        if (tokenData.error) return jsonRes({ success: false, error: "LINE Token 取得失敗", details: tokenData }, 400);
 
         const profileRes = await fetch("https://api.line.me/v2/profile", { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
         const profile: any = await profileRes.json();
-        if (profile.message || !profile.userId) return Response.json({ success: false, error: "LINE Profile 取得失敗", details: profile });
+        if (profile.message || !profile.userId) return jsonRes({ success: false, error: "LINE Profile 取得失敗", details: profile }, 400);
 
         const userId = profile.userId || 'unknown_id';
         const displayName = profile.displayName || '未命名用戶';
@@ -119,27 +149,31 @@ export default {
           targetPath = "/onboarding"; 
         } else {
           // 🌟 情況二：老朋友回來了 -> 根據身分分流
-const user: any = results[0];
-if (user.role === 'pending') {
-  targetPath = "/onboarding";
-} else if (user.role === 'client') {
-  targetPath = "/client/home"; // 🌟 確保這裡是 /client/home
-} else {
-  targetPath = "/artist/queue"; 
-}
+          const user: any = results[0];
+          if (user.role === 'pending') {
+            targetPath = "/onboarding";
+          } else if (user.role === 'client') {
+            targetPath = "/client/home";
+          } else {
+            targetPath = "/artist/queue"; 
+          }
         }
 
-        const frontendUrl = new URL(env.LINE_REDIRECT_URI).origin; 
+        // 整合 FRONTEND_URL 跳轉並附加參數 ?u=userId (同時保留 Cookie 雙重保險)
+        const baseUrl = env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin; 
+        const redirectUrl = `${baseUrl}${targetPath}?u=${userId}`;
+        
         return new Response(null, {
           status: 302,
           headers: {
-            'Location': `${frontendUrl}${targetPath}`,
-            'Set-Cookie': `user_id=${userId}; Path=/; Max-Age=2592000; SameSite=Lax` 
+            'Location': redirectUrl,
+            'Set-Cookie': `user_id=${userId}; Path=/; Max-Age=2592000; SameSite=None; Secure`,
+            ...corsHeaders
           }
         });
 
       } catch (e: any) {
-        return Response.json({ success: false, error: "系統錯誤: " + e.message }, { status: 500 });
+        return jsonRes({ success: false, error: "系統錯誤: " + e.message }, 500);
       }
     }
 
@@ -154,9 +188,8 @@ if (user.role === 'pending') {
         const userId = pathParts[3];
         const body: { display_name: string; role: 'artist' | 'client' } = await request.json();
         
-        // 確保只能選擇這兩種身分，避免惡意竄改
         if (!['artist', 'client'].includes(body.role)) {
-          return Response.json({ success: false, error: "無效的身分" }, { status: 400 });
+          return jsonRes({ success: false, error: "無效的身分" }, 400);
         }
 
         await env.commission_db.prepare(`
@@ -165,17 +198,17 @@ if (user.role === 'pending') {
           WHERE id = ?
         `).bind(body.display_name, body.role, userId).run();
         
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
     
     if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
       try {
         const userId = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ? OR public_id = ?").bind(userId, userId).all();
-        if (results.length === 0) return Response.json({ success: false, error: "找不到使用者" }, { status: 404 });
-        return Response.json({ success: true, data: results[0] });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
+        return jsonRes({ success: true, data: results[0] });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "PATCH" && url.pathname.startsWith("/api/users/")) {
@@ -206,8 +239,8 @@ if (user.role === 'pending') {
           userId, publicId, actualLineId, body.display_name || '', body.avatar_url || '', body.bio || '', body.profile_settings || '{}'
         ).run();
         
-        return Response.json({ success: true, public_id: publicId });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, public_id: publicId });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
 
@@ -227,8 +260,8 @@ if (user.role === 'pending') {
           ORDER BY c.order_date DESC
         `;
         const { results } = await env.commission_db.prepare(query).all();
-        return Response.json({ success: true, data: results });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: results });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [GET] 單一委託單
@@ -243,9 +276,9 @@ if (user.role === 'pending') {
           LEFT JOIN CommissionTypes t ON c.type_id = t.id
           WHERE c.id = ?
         `).bind(id).all();
-        if (results.length === 0) return Response.json({ success: false, message: "找不到此委託單" }, { status: 404 });
-        return Response.json({ success: true, data: results[0] });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
+        return jsonRes({ success: true, data: results[0] });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [POST] 新增委託單
@@ -259,7 +292,7 @@ if (user.role === 'pending') {
           newOrderId = `EX-${Date.now().toString().slice(-6)}`;
         } else if (clientId) {
           const { results: userRes } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).all();
-          if (userRes.length === 0) return Response.json({ success: false, error: "無效的委託人" }, { status: 400 });
+          if (userRes.length === 0) return jsonRes({ success: false, error: "無效的委託人" }, 400);
           
           const { results: lastOrderRes } = await env.commission_db.prepare("SELECT id FROM Commissions WHERE client_id = ? ORDER BY id DESC LIMIT 1").bind(clientId).all();
           let nextSeq = 1;
@@ -291,8 +324,8 @@ if (user.role === 'pending') {
           body.add_ons || '', body.detailed_settings || '', body.workflow_mode || 'standard'
         ).run();
         
-        return Response.json({ success: true, id: newOrderId });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, id: newOrderId });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [PATCH] 更新委託單狀態
@@ -319,8 +352,8 @@ if (user.role === 'pending') {
           params.push(id);
           await env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
         }
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
 
@@ -334,24 +367,24 @@ if (user.role === 'pending') {
         const id = pathParts[3];
         const { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
         const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
-        return Response.json({ success: true, data: { logs, submissions } });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: { logs, submissions } });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/submissions")) {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
-        return Response.json({ success: true, data: results });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: results });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/logs")) {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
-        return Response.json({ success: true, data: results });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: results });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [POST] 上傳稿件
@@ -360,7 +393,7 @@ if (user.role === 'pending') {
         const id = pathParts[3];
         const body: { stage: string; file_url: string } = await request.json();
         const { results: comm } = await env.commission_db.prepare("SELECT current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
-        if (comm.length === 0) return Response.json({ success: false, error: "找不到委託單" }, { status: 404 });
+        if (comm.length === 0) return jsonRes({ success: false, error: "找不到委託單" }, 404);
         
         const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
         const version = (results[0]?.count as number) + 1;
@@ -373,8 +406,8 @@ if (user.role === 'pending') {
           env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(newStageStatus, id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
         ]);
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [POST] 審閱稿件
@@ -406,8 +439,8 @@ if (user.role === 'pending') {
         if (globalStatusUpdate) batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
         
         await env.commission_db.batch(batchOps);
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [POST] 提出異動申請
@@ -433,8 +466,8 @@ if (user.role === 'pending') {
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提出委託單內容異動申請，請前往「委託單細項」查看並確認。`),
           env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', ?)").bind(crypto.randomUUID(), id, logContent)
         ]);
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [POST] 回覆異動申請
@@ -443,10 +476,10 @@ if (user.role === 'pending') {
         const id = pathParts[3];
         const body: { action: 'approve' | 'reject' } = await request.json();
         const { results } = await env.commission_db.prepare("SELECT pending_changes FROM Commissions WHERE id = ?").bind(id).all();
-        if (results.length === 0) return Response.json({ success: false, error: "找不到委託單" }, { status: 404 });
+        if (results.length === 0) return jsonRes({ success: false, error: "找不到委託單" }, 404);
         
         const pendingJson = results[0].pending_changes as string;
-        if (!pendingJson) return Response.json({ success: false, error: "目前沒有待處理的異動申請" }, { status: 400 });
+        if (!pendingJson) return jsonRes({ success: false, error: "目前沒有待處理的異動申請" }, 400);
 
         const changes = JSON.parse(pendingJson);
         let batchOps = [];
@@ -464,8 +497,8 @@ if (user.role === 'pending') {
           batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', '[系統通知] 委託人拒絕了內容異動申請。')").bind(crypto.randomUUID(), id));
         }
         await env.commission_db.batch(batchOps);
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [GET/POST] 訊息
@@ -473,8 +506,8 @@ if (user.role === 'pending') {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM Messages WHERE commission_id = ? ORDER BY created_at ASC").bind(id).all();
-        return Response.json({ success: true, data: results });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: results });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/messages")) {
@@ -483,8 +516,8 @@ if (user.role === 'pending') {
         const body: { sender_role: string; content: string } = await request.json();
         const msgId = crypto.randomUUID();
         await env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(msgId, id, body.sender_role, body.content).run();
-        return Response.json({ success: true, id: msgId });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, id: msgId });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // [GET/POST/DELETE] 付款紀錄
@@ -492,8 +525,8 @@ if (user.role === 'pending') {
       try {
         const id = pathParts[3];
         const { results } = await env.commission_db.prepare("SELECT * FROM PaymentRecords WHERE commission_id = ? ORDER BY record_date ASC, created_at ASC").bind(id).all();
-        return Response.json({ success: true, data: results });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, data: results });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/payments")) {
@@ -502,21 +535,21 @@ if (user.role === 'pending') {
         const body: { record_date: string; item_name: string; amount: number } = await request.json();
         const recordId = crypto.randomUUID();
         await env.commission_db.prepare("INSERT INTO PaymentRecords (id, commission_id, record_date, item_name, amount) VALUES (?, ?, ?, ?, ?)").bind(recordId, id, body.record_date, body.item_name, body.amount).run();
-        return Response.json({ success: true, id: recordId });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true, id: recordId });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     if (request.method === "DELETE" && url.pathname.includes("/payments/")) {
       try {
         const paymentId = pathParts[5]; 
         await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
-        return Response.json({ success: true });
-      } catch (error) { return Response.json({ success: false, error: String(error) }, { status: 500 }); }
+        return jsonRes({ success: true });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
     // ============================================================================
     // 預設 404 (若所有路由都沒命中)
     // ============================================================================
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 };

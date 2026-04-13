@@ -73,7 +73,8 @@ export function PublicProfile() {
     const fetchArtistData = async () => {
       try {
         // 使用抓取到的 currentArtistId 去要資料
-        const res = await fetch(`/api/users/${currentArtistId}`);
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
         const data = await res.json();
         if (data.success && data.data) {
           setArtist(data.data);

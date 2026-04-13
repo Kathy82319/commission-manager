@@ -30,15 +30,36 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 
 export function App() {
+  const MY_ARTIST_ID = "Ue29d02da79b805e9df46bdf6442aa24c";
   return (
     <BrowserRouter>
+      
       <Routes>
+        {/* 🌟 1. 首頁直接導向您的個人繪師頁面 */}
+        <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />
+        
+        {/* 2. 身分驗證 */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+
+        {/* 3. 公開頁面 (套用 PublicLayout) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          
+          {/* 這是您的繪師主頁內容 */}
+          <Route path="/:artistId" element={<PublicProfile />} />
+        </Route>
+
+
+
         {/* 預設首頁 */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         
         {/* 身分驗證區 */}
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/workspace" element={<Workspace />} />
 
         {/* 公開頁面路由 */}
         <Route element={<PublicLayout />}>

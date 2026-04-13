@@ -58,11 +58,12 @@ export function ClientOrderDetail() {
       if (!id) return;
       setIsLoading(true);
       try {
-        const [orderRes, subRes, logRes] = await Promise.all([
-          fetch(`/api/commissions/${id}`),
-          fetch(`/api/commissions/${id}/submissions`),
-          fetch(`/api/commissions/${id}/logs`)
-        ]);
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const [orderRes, subRes, logRes] = await Promise.all([
+  fetch(`${API_BASE}/api/commissions/${id}`),
+  fetch(`${API_BASE}/api/commissions/${id}/submissions`),
+  fetch(`${API_BASE}/api/commissions/${id}/logs`)
+]);
 
         const orderJson = await orderRes.json();
         if (orderJson.success) {
@@ -82,7 +83,8 @@ export function ClientOrderDetail() {
           }
 
           // 🌟 進入頁面後，自動更新「最後讀取時間」為現在
-          fetch(`/api/commissions/${id}`, {
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+fetch(`${API_BASE}/api/commissions/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
@@ -109,7 +111,8 @@ export function ClientOrderDetail() {
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!id) return;
     try {
-      const res = await fetch(`/api/commissions/${id}/change-response`, {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -130,7 +133,8 @@ export function ClientOrderDetail() {
     if (!id) return;
     setIsSavingTitle(true);
     try {
-      const res = await fetch(`/api/commissions/${id}`, {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_custom_title: customTitle })

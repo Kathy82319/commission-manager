@@ -2,6 +2,13 @@ import { Outlet, Link } from 'react-router-dom';
 
 export function PublicLayout() {
   
+  // 🌟 新增：處理登入點擊的函式 (加入絕對網址與保底機制)
+  const handleLoginClick = () => {
+  // 直接寫死 Worker 的網址，排除環境變數失效的可能性
+  const WORKER_URL = 'https://commission-manager.cath82319.workers.dev';
+  window.location.href = `${WORKER_URL}/api/auth/line/login`;
+};
+
   return (
     // 外層容器完全透明，讓內部 PublicProfile 的背景色能無縫延伸
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
@@ -12,7 +19,7 @@ export function PublicLayout() {
         display: 'flex', gap: '16px', zIndex: 1000, background: 'transparent' 
       }}>
         <button 
-          onClick={() => window.location.href = '/api/auth/line/login'} // 直接觸發 LINE 登入
+          onClick={handleLoginClick} // 🌟 改為觸發我們寫好的絕對網址函式
           style={{
             padding: '8px 20px',
             backgroundColor: 'transparent',

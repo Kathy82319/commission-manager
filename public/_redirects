@@ -1,5 +1,0 @@
-# 1. API 傳送門：所有 /api 開頭的請求，轉發給你的 Worker
-/api/* https://commission-manager.cath82319.workers.dev/api/:splat 200
-
-# 2. SPA 救星：所有其他網址，都指向 index.html 讓 React 處理
-/* /index.html 200

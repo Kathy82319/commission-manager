@@ -7,7 +7,7 @@ interface UserProfile {
   avatar_url: string; 
   bio: string;
   profile_settings?: string;
-  role?: string; // 🌟 新增 role 以判斷身分
+  role?: string;
 }
 
 export function ClientHome() {
@@ -16,20 +16,26 @@ export function ClientHome() {
   const [socialLinks, setSocialLinks] = useState<{ platform: string, url: string }[]>([]);
   const [marqueeText, setMarqueeText] = useState<string>('');
 
-  // 1. 取得真實 Cookie 中的 user_id (取代原本寫死的 TEST_CLIENT_ID)
-  const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-    return null;
-  };
-
   useEffect(() => {
-    const userId = getCookie('user_id');
+    // 🌟 核心修正：與 Onboarding 一樣，優先讀取網址或 localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get('u');
+
+    if (userId) {
+      localStorage.setItem('user_id', userId);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      userId = localStorage.getItem('user_id');
+      if (!userId) {
+        const match = document.cookie.match(new RegExp('(^| )user_id=([^;]+)'));
+        if (match) userId = match[2];
+      }
+    }
 
     const fetchProfile = async () => {
-      if (!userId) return; // 如果沒登入就不抓
-      const res = await fetch(`/api/users/${userId}`);
+      if (!userId) return;
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+      const res = await fetch(`${API_BASE}/api/users/${userId}`);
       const data = await res.json();
       
       if (data.success && data.data) {
@@ -43,7 +49,6 @@ export function ClientHome() {
           }
         }
       } else if (data.id) {
-        // 兼容 API 回傳格式
         setProfile(data);
       } else {
         setProfile({ id: userId, display_name: '測試委託人', avatar_url: '', bio: '尚未填寫自我介紹' });
@@ -52,7 +57,8 @@ export function ClientHome() {
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/commissions');
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+        const res = await fetch(`${API_BASE}/api/commissions`);
         const data = await res.json();
         if (data.success) {
           const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
@@ -82,29 +88,21 @@ export function ClientHome() {
     fetchNotifications();
   }, []);
 
-  // 🌟 新增：處理切換或創建繪師帳號
   const handleSwitchToArtist = async () => {
     if (!profile) return;
 
     if (profile.role === 'artist') {
-      // 已經是繪師，直接切換
       window.location.href = '/artist/queue';
     } else {
-      // 不是繪師，跳出確認視窗
-      const confirmCreate = window.confirm(
-        "您目前沒有繪師帳號。\n\n確定要創建繪師管理頁嗎？\n創建後將直接開始 7 天試用期。"
-      );
+      const confirmCreate = window.confirm("確定要創建繪師管理頁嗎？\n創建後將直接開始 7 天試用期。");
 
       if (confirmCreate) {
         try {
-          // 呼叫 API 將身分升級為 artist
-          const res = await fetch(`/api/users/${profile.id}/complete-onboarding`, {
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+          const res = await fetch(`${API_BASE}/api/users/${profile.id}/complete-onboarding`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              display_name: profile.display_name, 
-              role: 'artist' 
-            })
+            body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
           });
 
           const result = await res.json();
@@ -133,7 +131,6 @@ export function ClientHome() {
 
       <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        {/* 🌟 新增：切換/創建 繪師管理頁 按鈕 (靠右對齊) */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
           <button 
             onClick={handleSwitchToArtist}
@@ -148,7 +145,6 @@ export function ClientHome() {
           </button>
         </div>
 
-        {/* 跑馬燈區塊 */}
         {marqueeText && (
           <div style={{ 
             backgroundColor: '#778ca4', borderTop: '2px dashed #facc15', borderBottom: '2px dashed #facc15', 
@@ -160,7 +156,6 @@ export function ClientHome() {
           </div>
         )}
 
-        {/* 上板塊：個人檔案與社群 */}
         <div style={{ backgroundColor: '#e8ecf3', padding: '40px 24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(100,120,140,0.08)', border: '1px solid #d0d8e4' }}>
           <div style={{ 
             width: '100px', height: '100px', backgroundColor: '#d9dfe9', borderRadius: '50%', margin: '0 auto 20px auto', 
@@ -176,7 +171,6 @@ export function ClientHome() {
             {profile?.bio || '尚未填寫自我介紹'}
           </p>
           
-          {/* 社群 Icon 區塊 */}
           {socialLinks.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
               {socialLinks.map((social, idx) => (
@@ -197,7 +191,6 @@ export function ClientHome() {
           )}
         </div>
 
-        {/* 下板塊：操作按鈕 */}
         <div style={{ display: 'flex', flexDirection: 'row', gap: '16px' }}>
           <button 
             onClick={() => navigate('/client/profile/edit')}
@@ -206,8 +199,6 @@ export function ClientHome() {
               borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
               boxShadow: '0 4px 12px rgba(74,114,148,0.3)'
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
           >
             編輯個人資料
           </button>
@@ -218,8 +209,6 @@ export function ClientHome() {
               borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
               boxShadow: '0 4px 12px rgba(74,114,148,0.3)'
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
           >
             查看委託
           </button>

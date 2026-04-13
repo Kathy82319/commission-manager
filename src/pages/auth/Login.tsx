@@ -30,10 +30,13 @@ const loginButtonStyle: React.CSSProperties = {
 
 export function Login() {
   
-  // 🌟 核心修改：將導向邏輯改為實體網址跳轉
+  // 🌟 核心修改：使用環境變數組合出絕對網址
   const handleLineLogin = () => {
-    // 透過 window.location.href 觸發 _redirects 轉向 Worker 後端
-    window.location.href = '/api/auth/line/login';
+    // 🌟 修改這裡：給它一個絕對不會出錯的保底正式網址
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
+    
+    // 透過 window.location.href 直接導向後端 Worker
+    window.location.href = `${API_BASE}/api/auth/line/login`;
   };
 
   return (
@@ -46,7 +49,6 @@ export function Login() {
         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
       >
-        {/* LINE 圖示 (簡化版) */}
         <div style={{ 
           width: '30px', height: '30px', backgroundColor: '#FFFFFF', color: '#06C755', 
           borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' 

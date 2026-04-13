@@ -50,7 +50,8 @@ export function Settings() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await fetch(`/api/users/${currentUserId}`);
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/users/${currentUserId}`);
         const data = await res.json();
         if (data.success && data.data) {
           setFormData({
@@ -91,7 +92,8 @@ export function Settings() {
   const handleSave = async () => {
     setIsSaving(true); setMessage('');
     try {
-      const res = await fetch(`/api/users/${currentUserId}`, {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
