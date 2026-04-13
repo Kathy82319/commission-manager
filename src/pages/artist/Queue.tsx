@@ -8,6 +8,7 @@ interface Commission {
   queue_status: string;
   latest_message_at?: string;
   last_read_at_artist?: string;
+  client_public_id?: string; // 🌟 接收後端新增的欄位
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -71,6 +72,7 @@ export function Queue() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); 
+  const [searchTerm, setSearchTerm] = useState(''); // 🌟 新增搜尋狀態
 
   const [stages, setStages] = useState<string[]>(() => {
     const saved = localStorage.getItem('artist_all_stages');
@@ -82,9 +84,7 @@ export function Queue() {
   const fetchQueue = async () => {
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-      const res = await fetch(`${API_BASE}/api/commissions`, {
-        credentials: 'include' 
-      });
+      const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         const activeOrders = data.data
@@ -103,7 +103,7 @@ export function Queue() {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH', 
-        credentials: 'include', // 🔒 安全修正：補上 Cookie 傳遞
+        credentials: 'include', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ [field]: value })
       });
@@ -116,9 +116,27 @@ export function Queue() {
   const handleDeleteStage = (stage: string) => { setStages(prev => prev.filter(s => s !== stage)); };
 
   const availableMonths = Array.from(new Set(commissions.map(c => new Date(c.order_date).toISOString().substring(0, 7)))).sort().reverse();
+  
+  // 🌟 搜尋與過濾邏輯
   const filteredCommissions = commissions.filter(c => {
-    if (selectedMonth === 'all') return true;
-    return new Date(c.order_date).toISOString().substring(0, 7) === selectedMonth;
+    // 1. 月份過濾
+    if (selectedMonth !== 'all' && new Date(c.order_date).toISOString().substring(0, 7) !== selectedMonth) {
+      return false;
+    }
+    // 2. 關鍵字過濾 (輸入大於等於 2 字元才搜尋)
+    if (searchTerm.trim().length >= 2) {
+      const term = searchTerm.toLowerCase();
+      const paymentLabel = paymentColors[c.payment_status]?.label || '尚未付款';
+      return (
+        (c.client_name && c.client_name.toLowerCase().includes(term)) ||
+        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) ||
+        (c.project_name && c.project_name.toLowerCase().includes(term)) ||
+        (c.id.toLowerCase().includes(term)) ||
+        (c.client_public_id && c.client_public_id.toLowerCase().includes(term)) ||
+        (paymentLabel.includes(term))
+      );
+    }
+    return true;
   });
 
   const tdStyle = { padding: '12px 10px', fontSize: '15px', color: '#5D4A3E', verticalAlign: 'middle' as const }; 
@@ -130,7 +148,17 @@ export function Queue() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {isUpdating && <span style={{ backgroundColor: '#FDF4E6', color: '#A67B3E', padding: '4px 10px', borderRadius: '16px', fontSize: '14px', fontWeight: 'bold' }}>儲存中...</span>}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '15px', color: '#7A7269', fontWeight: 'bold' }}>篩選月份：</span>
+            
+            {/* 🌟 新增搜尋框 */}
+            <input
+              type="text"
+              placeholder="🔍 搜尋暱稱/單號/狀態..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #DED9D3', outline: 'none', fontSize: '14px', width: '200px' }}
+            />
+
+            <span style={{ fontSize: '15px', color: '#7A7269', fontWeight: 'bold', marginLeft: '10px' }}>篩選月份：</span>
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #DED9D3', backgroundColor: '#FFFFFF', color: '#5D4A3E', fontSize: '15px', outline: 'none', cursor: 'pointer' }}>
               <option value="all">顯示全部未結案</option>
               {availableMonths.map(month => <option key={month} value={month}>{month.replace('-', '年 ')}月</option>)}
@@ -145,7 +173,7 @@ export function Queue() {
             <tr style={{ backgroundColor: '#FBFBF9', borderBottom: '2px solid #EAE6E1', textAlign: 'left', color: '#7A7269', fontSize: '15px' }}>
               <th style={{ padding: '12px 10px', width: '30px', textAlign: 'center' }}>≡</th>
               <th style={{ padding: '12px 10px', width: '90px', fontWeight: 'bold' }}>委託日期</th>
-              <th style={{ padding: '12px 10px', width: '160px', fontWeight: 'bold' }}>委託人</th>
+              <th style={{ padding: '12px 10px', width: '180px', fontWeight: 'bold' }}>委託人資訊</th>
               <th style={{ padding: '12px 10px', width: '170px', fontWeight: 'bold' }}>進度狀態</th>
               <th style={{ padding: '12px 10px', width: '140px', fontWeight: 'bold' }}>預計完工</th>
               <th style={{ padding: '12px 10px', width: '120px', fontWeight: 'bold' }}>付款狀態</th>
@@ -193,12 +221,13 @@ export function Queue() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px', color: '#5D4A3E', fontSize: '15px' }} title={order.contact_memo || '未知'}>
                           {order.contact_memo || '未知'}
-                          <span style={{ fontSize: '13px', color: '#A0978D', fontWeight: 'normal', marginLeft: '4px' }}>
-                            ({order.client_name ? order.client_name : '未綁定'})
-                          </span>
                         </div>
-                        <div style={{ fontSize: '13px', color: '#7A7269', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
-                          {order.project_name || order.type_name || '未命名項目'}
+                        {/* 🌟 列表新增委託人編號 */}
+                        <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>
+                          編號：{order.client_public_id || '未綁定'}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#7A7269', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px', marginTop: '2px' }}>
+                          項目：{order.project_name || order.type_name || '未命名項目'}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                           <span style={{ 
@@ -208,7 +237,7 @@ export function Queue() {
                           }}>
                             {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                           </span>
-                          <span style={{ fontSize: '11px', color: '#C4BDB5', fontFamily: 'monospace' }}>{order.id.split('-')[1] || order.id}</span>
+                          <span style={{ fontSize: '11px', color: '#C4BDB5', fontFamily: 'monospace' }}>單號：{order.id.split('-')[1] || order.id}</span>
                         </div>
                       </div>
                     </td>

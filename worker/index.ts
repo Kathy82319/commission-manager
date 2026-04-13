@@ -259,8 +259,9 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "請先登入" }, 401);
 
+        // 🌟 核心修改：加入了 u.public_id AS client_public_id，撈取委託人公開編號
         const query = `
-          SELECT c.*, u.display_name AS client_name, t.name AS type_name,
+          SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name,
           (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
           FROM Commissions c
           LEFT JOIN Users u ON c.client_id = u.id
@@ -279,8 +280,9 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "請先登入" }, 401);
 
+        // 🌟 核心修改：加入了 u.public_id AS client_public_id
         const { results } = await env.commission_db.prepare(`
-          SELECT c.*, u.display_name AS client_name, t.name AS type_name, a.profile_settings AS artist_settings
+          SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings
           FROM Commissions c
           LEFT JOIN Users u ON c.client_id = u.id
           LEFT JOIN Users a ON c.artist_id = a.id
@@ -389,7 +391,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs)
+    // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs) 略...
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && (url.pathname.endsWith("/deliverables") || url.pathname.endsWith("/submissions") || url.pathname.endsWith("/logs"))) {
@@ -399,7 +401,6 @@ export default {
         if (!currentUser) return jsonRes({ success: false, error: "權限不足" }, 401);
 
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        // 🔒 容錯機制：如果單據已經有主人，才嚴格限制只能是主人看；如果還沒有主人，允許持有連結的人檢視
         if (check[0]?.client_id && currentUser !== check[0]?.client_id && currentUser !== check[0]?.artist_id) {
           return jsonRes({ success: false, error: "無權限查看進度" }, 403);
         }
@@ -455,7 +456,6 @@ export default {
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
         if (comm.length === 0) return jsonRes({ success: false, error: "找不到單據" }, 404);
         
-        // 🔒 容錯機制：如果單子已經綁定委託人，只有委託人或繪師(測試用)可審閱
         if (comm[0].client_id && currentUser !== comm[0].client_id && currentUser !== comm[0].artist_id) {
           return jsonRes({ success: false, error: "非綁定委託人無法審閱" }, 403);
         }
@@ -517,7 +517,6 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到單據" }, 404);
         const comm = check[0] as any;
 
-        // 🔒 容錯機制：如果已經綁定委託人了，只能是委託人操作；如果還沒綁定，或者是繪師自己測試，就放行。
         if (comm.client_id && currentUser !== comm.client_id && currentUser !== comm.artist_id) {
           return jsonRes({ success: false, error: "權限不足，僅限委託人回覆" }, 403);
         }
@@ -555,7 +554,6 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
 
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        // 🔒 容錯機制
         if (check[0]?.client_id && currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) {
           return jsonRes({ success: false, error: "無權限查看" }, 403);
         }
@@ -572,7 +570,6 @@ export default {
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        // 🔒 容錯機制
         if (check[0]?.client_id && currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) {
           return jsonRes({ success: false, error: "無權限發送" }, 403);
         }
@@ -591,7 +588,6 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
 
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        // 🔒 容錯機制
         if (check[0]?.client_id && currentUser !== check[0]?.artist_id && currentUser !== check[0]?.client_id) {
           return jsonRes({ success: false, error: "無權限查看" }, 403);
         }

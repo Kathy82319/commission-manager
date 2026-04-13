@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Commission {
@@ -10,7 +10,9 @@ interface Commission {
   type_name?: string;
   latest_message_at?: string;
   last_read_at_artist?: string;
+  client_public_id?: string; // 🌟 接收後端新增的欄位
 }
+
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -31,6 +33,8 @@ export function Notebook() {
     { id: 'completed', label: '已結單' }
   ];
   const [filter, setFilter] = useState<'all' | 'pending' | 'working' | 'completed'>('all');
+  const [searchTerm, setSearchTerm] = useState(''); // 🌟 新增搜尋狀態
+  
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
 
@@ -52,9 +56,7 @@ export function Notebook() {
   }, [selectedId, activeTab, navigate]);
 
   const fetchCommissions = async () => {
-    const res = await fetch(`${API_BASE}/api/commissions`, {
-      credentials: 'include' 
-    });
+    const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
@@ -70,14 +72,12 @@ export function Notebook() {
   };
 
   const fetchPayments = async (id: string) => {
-    // 🔒 安全修正
     const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) setPayments(data.data);
   };
 
   const fetchDeliverables = async (id: string) => {
-    // 🔒 安全修正
     const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
@@ -96,7 +96,6 @@ export function Notebook() {
     fetchDeliverables(order.id);
 
     try {
-      // 🔒 安全修正
       await fetch(`${API_BASE}/api/commissions/${order.id}`, {
         method: 'PATCH',
         credentials: 'include',
@@ -104,9 +103,7 @@ export function Notebook() {
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
       });
       fetchCommissions();
-    } catch (e) {
-      console.error("更新已讀時間失敗", e);
-    }
+    } catch (e) {}
   };
 
   const handleSaveDailyFields = async () => {
@@ -115,7 +112,6 @@ export function Notebook() {
       ? { ...editData } 
       : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
 
-    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
       credentials: 'include',
@@ -149,14 +145,13 @@ export function Notebook() {
     });
 
     if (Object.keys(changes).length === 0) {
-      alert('尚未修改任何欄位。');
+      alert('尚未修改任何欄位，請先修改後再申請。');
       setIsEditingRequest(false);
       return;
     }
 
     if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
 
-    // 🔒 安全修正
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
       method: 'POST', 
       credentials: 'include',
@@ -185,7 +180,6 @@ export function Notebook() {
     if (!window.confirm(confirmMsg)) return;
     const newStatus = isCancelled ? 'quote_created' : 'cancelled';
 
-    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
       credentials: 'include',
@@ -199,7 +193,6 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
-    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
       credentials: 'include',
@@ -211,7 +204,6 @@ export function Notebook() {
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
-    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, { 
       method: 'PATCH', 
       credentials: 'include',
@@ -222,21 +214,26 @@ export function Notebook() {
   };
 
   const handleAddPayment = async () => {
-    if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整");
-    // 🔒 安全修正
-    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
+    if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) {
+      return alert("請填寫完整的記帳資訊喔！");
+    }
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
       method: 'POST', 
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) 
     });
-    setNewPayment({ record_date: '', item_name: '', amount: '' });
-    fetchPayments(selectedId);
+    const data = await res.json();
+    if (data.success) {
+      setNewPayment({ record_date: '', item_name: '', amount: '' });
+      fetchPayments(selectedId);
+    } else {
+      alert('記帳失敗：' + data.error);
+    }
   };
 
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
-    // 🔒 安全修正
     await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { 
       method: 'DELETE',
       credentials: 'include' 
@@ -248,16 +245,18 @@ export function Notebook() {
     const msg = "⚠️ 注意：此連結具備「綁定」特性。\n\n當委託人點擊並登入後，此訂單將永久綁定該帳號。若綁定錯誤，您將需要刪除並重新建單。\n\n確定要複製連結嗎？";
     if (window.confirm(msg)) {
       const link = `${window.location.origin}/quote/${id}`;
-      navigator.clipboard.writeText(link).then(() => {
-        alert('專屬連結已複製！請私下傳送給對應的委託人。');
-      });
+      navigator.clipboard.writeText(link).then(() => alert('專屬連結已複製！請私下傳送給對應的委託人。'));
     }
   };
 
   const handleSubmitStage = async (stageKey: string) => {
     const url = uploadUrls[stageKey];
-    if (!url || !url.trim() || !selectedId) return;
-    // 🔒 安全修正
+    
+    if (!url || !url.trim()) {
+      return alert('您尚未輸入圖片網址！請貼上網址後再點擊提交。'); 
+    }
+    if (!selectedId) return;
+
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, { 
       method: 'POST', 
       credentials: 'include',
@@ -267,28 +266,12 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) { 
       setUploadUrls(prev => ({ ...prev, [stageKey]: '' }));
+      alert('上傳成功！');
       fetchCommissions(); fetchDeliverables(selectedId); 
     } else {
-      alert(data.error || '提交失敗，可能該階段已鎖定。');
+      alert('提交失敗：' + (data.error || '該階段可能已鎖定。'));
       fetchDeliverables(selectedId); 
     }
-  };
-
-  const filteredOrders = commissions.filter(order => {
-    if (filter === 'completed') return order.status === 'completed';
-    if (filter === 'working') return order.status !== 'completed' && order.status !== 'cancelled';
-    if (filter === 'pending') return order.status === 'quote_created' || order.status === 'pending';
-    return true;
-  });
-
-  const selectedOrder = commissions.find(c => c.id === selectedId);
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
-  
-  const getDualName = (order: Commission) => {
-    const memo = order.contact_memo || '未知';
-    const client = order.client_name ? `暱稱: ${order.client_name}` : '未綁定';
-    return `${memo} (${client})`;
   };
 
   const getPaymentBadge = (payment_status: string) => {
@@ -296,6 +279,41 @@ export function Notebook() {
     if (payment_status === 'partial') return { text: '已收訂金', color: '#A67B3E', bg: '#FDF4E6' };
     return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
   };
+
+  // 🌟 搜尋與過濾邏輯
+  const filteredOrders = commissions.filter(order => {
+    // 1. 分頁狀態過濾
+    let tabMatch = true;
+    if (filter === 'completed') tabMatch = order.status === 'completed';
+    else if (filter === 'working') tabMatch = order.status !== 'completed' && order.status !== 'cancelled';
+    else if (filter === 'pending') tabMatch = order.status === 'quote_created' || order.status === 'pending';
+
+    if (!tabMatch) return false;
+
+    // 2. 關鍵字過濾 (輸入大於等於 2 字元才搜尋)
+    if (searchTerm.trim().length >= 2) {
+      const term = searchTerm.toLowerCase();
+      const paymentLabel = getPaymentBadge(order.payment_status).text;
+      
+      const match = (
+        (order.client_name && order.client_name.toLowerCase().includes(term)) ||
+        (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) ||
+        (order.project_name && order.project_name.toLowerCase().includes(term)) ||
+        (order.id.toLowerCase().includes(term)) ||
+        (order.client_public_id && order.client_public_id.toLowerCase().includes(term)) ||
+        (paymentLabel.includes(term))
+      );
+      return match;
+    }
+
+    return true;
+  });
+
+  const selectedOrder = commissions.find(c => c.id === selectedId);
+  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
+  
+  const getDualName = (order: Commission) => `${order.contact_memo || '未知'} (${order.client_name ? `暱稱: ${order.client_name}` : '未綁定'})`;
 
   const getStatusBadge = (status: string) => {
     if (status === 'completed') return { text: '已結案', color: '#4E7A5A', bg: '#E8F3EB' };
@@ -399,17 +417,25 @@ export function Notebook() {
 
   return (
     <div style={{ display: 'flex', height: '100%', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      
-      {/* 左側列表區 */}
       <div style={{ width: '380px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
           <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', backgroundColor: '#FBFBF9', color: '#5D4A3E', outline: 'none' }}>
-            {tabs.map(tab => (
-              <option key={tab.id} value={tab.id}>{tab.label}</option>
-            ))}
+            {tabs.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
           </select>
         </div>
+
+        {/* 🌟 搜尋列 */}
+        <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
+          <input
+            type="text"
+            placeholder="🔍 搜尋暱稱/單號/狀態... (輸入2字元以上)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }}
+          />
+        </div>
+
         <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
           {filteredOrders.map(order => {
             const payBadge = getPaymentBadge(order.payment_status);
@@ -425,11 +451,7 @@ export function Notebook() {
               <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>
                   <span>{dateStr}</span>
-                  <span style={{ 
-                    fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px',
-                    backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
-                    color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
-                  }}>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB', color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A' }}>
                     {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                   </span>
                 </div>
@@ -437,27 +459,16 @@ export function Notebook() {
                   <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={getDualName(order)}>{getDualName(order)}</span>
                   <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '15px' }}>NT$ {order.total_price}</span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  項目：{order.project_name || order.type_name || '未命名項目'}
+                <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>項目：{order.project_name || order.type_name || '未命名項目'}</span>
+                  {/* 🌟 列表新增委託人編號 */}
+                  <span style={{ color: '#A0978D' }}>委託人編號：{order.client_public_id || '未綁定'}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
-                  
-                  {statusBadge && (
-                    <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>
-                  )}
-                  
-                  {order.queue_status && (
-                    <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
-                      {order.queue_status}
-                    </span>
-                  )}
-
-                  {hasNewMsg && (
-                    <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
-                      新訊息
-                    </span>
-                  )}
+                  {statusBadge && <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>}
+                  {order.queue_status && <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{order.queue_status}</span>}
+                  {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>新訊息</span>}
                 </div>
               </div>
             );
@@ -466,28 +477,21 @@ export function Notebook() {
         </div>
       </div>
 
-      {/* 右側內容區 */}
       <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由左側選擇委託單以檢視詳情</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            
             <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
               <div>
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
                 <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
-                <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px' }}>單號：{selectedOrder.id}</div>
-                
+                {/* 🌟 單號旁邊新增委託人編號 */}
+                <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', gap: '16px' }}>
+                  <span>單號：{selectedOrder.id}</span>
+                  <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
+                </div>
                 {getStatusBadge(selectedOrder.status) && (
                   <div style={{ marginTop: '8px' }}>
-                    <span style={{ 
-                      backgroundColor: getStatusBadge(selectedOrder.status)!.bg, 
-                      color: getStatusBadge(selectedOrder.status)!.color, 
-                      padding: '4px 12px', 
-                      borderRadius: '20px', 
-                      fontSize: '12px', 
-                      fontWeight: 'bold',
-                      border: `1px solid ${getStatusBadge(selectedOrder.status)!.color}20`
-                    }}>
+                    <span style={{ backgroundColor: getStatusBadge(selectedOrder.status)!.bg, color: getStatusBadge(selectedOrder.status)!.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: `1px solid ${getStatusBadge(selectedOrder.status)!.color}20` }}>
                       {getStatusBadge(selectedOrder.status)!.text}
                     </span>
                   </div>
@@ -497,24 +501,13 @@ export function Notebook() {
                 {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
                   <button onClick={handleForceComplete} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', transition: 'all 0.2s ease' }}>強制結案</button>
                 )}
-                <button 
-                  onClick={handleToggleArchive} 
-                  style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', transition: 'all 0.2s ease' }}
-                >
+                <button onClick={handleToggleArchive} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', transition: 'all 0.2s ease' }}>
                   {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
                 </button>
-                
                 {!selectedOrder.is_external && (
-                  <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'all 0.2s ease' }}>
-                    複製連結
-                  </button>
+                  <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'all 0.2s ease' }}>複製連結</button>
                 )}
-                <button 
-                  onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}
-                  style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                >
-                  進入聊天室
-                </button>
+                <button onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease' }}>進入聊天室</button>
               </div>
             </div>
 
@@ -528,16 +521,13 @@ export function Notebook() {
               
               {activeTab === 'details' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  
                   <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
                       <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>財務與收款狀態</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>帳務狀態：</span>
                         <select value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', fontWeight: 'bold', color: '#5D4A3E', backgroundColor: '#FFFFFF', outline: 'none' }}>
-                          <option value="unpaid">未收款</option>
-                          <option value="partial">已收訂金</option>
-                          <option value="paid">已收款</option>
+                          <option value="unpaid">未收款</option><option value="partial">已收訂金</option><option value="paid">已收款</option>
                         </select>
                       </div>
                     </div>
@@ -557,9 +547,7 @@ export function Notebook() {
                             <td style={{ padding: '12px 8px', color: '#A0978D' }}>{p.record_date}</td>
                             <td style={{ padding: '12px 8px', color: '#5D4A3E', fontWeight: '500' }}>{p.item_name}</td>
                             <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4E7A5A' }}>+ NT$ {p.amount}</td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                              <button onClick={() => handleDeletePayment(p.id)} style={{ padding: '4px 10px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>刪除</button>
-                            </td>
+                            <td style={{ padding: '12px 8px', textAlign: 'right' }}><button onClick={() => handleDeletePayment(p.id)} style={{ padding: '4px 10px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>刪除</button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -632,7 +620,6 @@ export function Notebook() {
                   ) : (
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
                   )}
-                  
                   {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.workflow_mode === 'free' || ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'sketch_reviewing', selectedOrder.workflow_mode !== 'free' && ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
                   {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.workflow_mode === 'free' || ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'lineart_reviewing', selectedOrder.workflow_mode !== 'free' && ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
                   {renderStageBox('階段 3：完稿 (Final)', 'final', selectedOrder.workflow_mode === 'free' || ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
