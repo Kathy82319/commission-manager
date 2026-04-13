@@ -86,7 +86,8 @@ export function QuoteBuilder() {
     };
 
     try {
-      const res = await fetch('/api/commissions', {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${API_BASE}/api/commissions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalSubmitData)
       });

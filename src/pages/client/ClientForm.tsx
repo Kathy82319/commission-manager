@@ -20,6 +20,7 @@ interface Commission {
 }
 
 export function ClientForm() {
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -31,7 +32,7 @@ export function ClientForm() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`/api/commissions/${id}`);
+        const res = await fetch(`${API_BASE}/api/commissions/${id}`);
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
@@ -50,7 +51,7 @@ export function ClientForm() {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch(`/api/commissions/${id}`, {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'unpaid' })
@@ -58,7 +59,7 @@ export function ClientForm() {
       const data = await res.json();
       
       if (data.success) {
-        const updatedRes = await fetch(`/api/commissions/${id}`);
+        const updatedRes = await fetch(`${API_BASE}/api/commissions/${id}`);
         const updatedData = await updatedRes.json();
         if (updatedData.success) setOrder(updatedData.data);
       } else {

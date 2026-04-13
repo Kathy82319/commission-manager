@@ -48,7 +48,7 @@ function GlobalAuthSync() {
 
 
 export function App() {
-  const MY_ARTIST_ID = "Ue29d02da79b805e9df46bdf6442aa24c";
+  const MY_ARTIST_ID = "User_48676";
   
   return (
     <BrowserRouter>

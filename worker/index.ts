@@ -51,45 +51,6 @@ export default {
       });
     };
 
-    // 🚨 臨時路由：把所有使用者「打回原形」，強制降級回新手村 (pending)
-    if (request.method === "GET" && url.pathname === "/api/force-reset-pending") {
-      try {
-        await env.commission_db.prepare("UPDATE Users SET role = 'pending'").run();
-        return jsonRes({ success: true, message: "太棒了！所有帳號都已降級為 pending，可以去新手村了！" });
-      } catch (error: any) {
-        return jsonRes({ success: false, error: String(error) }, 500);
-      }
-    }
-
-    // 🚨 臨時路由：直接「刪除所有使用者」重新來過
-    if (request.method === "GET" && url.pathname === "/api/delete-all-users") {
-      try {
-        await env.commission_db.prepare("DELETE FROM Users").run();
-        return jsonRes({ success: true, message: "資料庫已完全清空！" });
-      } catch (error: any) {
-        return jsonRes({ success: false, error: String(error) }, 500);
-      }
-    }
-
-    // [GET] 臨時修復：為 Vite 的本地資料庫補上缺少的欄位
-    if (request.method === "GET" && url.pathname === "/api/fix-users") {
-      let messages = [];
-      try {
-        await env.commission_db.prepare("ALTER TABLE Users ADD COLUMN avatar_url TEXT DEFAULT ''").run();
-        messages.push("已成功新增 avatar_url 欄位");
-      } catch (e) {
-        messages.push("avatar_url 欄位可能已存在");
-      }
-      
-      try {
-        await env.commission_db.prepare("ALTER TABLE Users ADD COLUMN bio TEXT DEFAULT ''").run();
-        messages.push("已成功新增 bio 欄位");
-      } catch (e) {
-        messages.push("bio 欄位可能已存在");
-      }
-
-      return jsonRes({ success: true, messages });
-    }
 
 
     // ============================================================================

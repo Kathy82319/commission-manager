@@ -20,7 +20,7 @@ export function Workspace() {
   const [searchParams] = useSearchParams();
   const role = searchParams.get('role') || 'client'; 
   const navigate = useNavigate();
-
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const [order, setOrder] = useState<OrderData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -35,7 +35,7 @@ export function Workspace() {
     if (!id) return;
     const field = role === 'artist' ? 'last_read_at_artist' : 'last_read_at_client';
     try {
-      await fetch(`/api/commissions/${id}`, {
+      await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: new Date().toISOString() })
@@ -47,7 +47,7 @@ export function Workspace() {
 
   const fetchOrderData = async () => {
     try {
-      const res = await fetch(`/api/commissions/${id}`);
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`);
       const data = await res.json();
       if (data.success) setOrder(data.data);
     } catch (error) {
@@ -57,7 +57,7 @@ export function Workspace() {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch(`/api/commissions/${id}/messages`);
+      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`);
       const data = await res.json();
       if (data.success) {
         // 🌟 如果偵測到新訊息，就觸發已讀更新
@@ -97,7 +97,7 @@ export function Workspace() {
     if (!inputText.trim()) return;
 
     try {
-      const res = await fetch(`/api/commissions/${id}/messages`, {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_role: role, content: inputText })

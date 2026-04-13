@@ -11,25 +11,19 @@ export function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
+// src/pages/auth/Onboarding.tsx (節錄修改部分)
   useEffect(() => {
-    // 🌟 打破迴圈的核心邏輯：
-    // 1. 先看網址有沒有帶 ID (?u=...)
     const urlParams = new URLSearchParams(window.location.search);
     let id = urlParams.get('u');
 
     if (id) {
-      console.log("從網址取得 ID:", id);
-      localStorage.setItem('user_id', id); // 存入 LocalStorage，比 Cookie 穩定
-      // 清除網址參數，保持乾淨
+      localStorage.setItem('user_id', id); 
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
-      // 2. 如果網址沒有，看 LocalStorage
       id = localStorage.getItem('user_id');
-      console.log("從 LocalStorage 取得 ID:", id);
     }
 
     if (!id) {
-      console.error("找不到使用者 ID，導向登入頁");
       navigate('/login');
       return;
     }
@@ -46,10 +40,9 @@ export function Onboarding() {
           setDisplayName(data.data.display_name || '');
         }
       })
-      .catch(err => console.error("抓取資料失敗:", err))
+      .catch(() => {}) // 移除 console.error
       .finally(() => setLoading(false));
   }, [navigate]);
-
   
   // 送出表單
   const handleSubmit = async () => {

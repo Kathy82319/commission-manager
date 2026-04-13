@@ -19,6 +19,7 @@ interface Submission { id: string; stage: string; file_url: string; version: num
 export function Notebook() {
   const location = useLocation();
   const navigate = useNavigate(); 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
@@ -52,7 +53,7 @@ export function Notebook() {
   }, [selectedId, activeTab, navigate]);
 
   const fetchCommissions = async () => {
-    const res = await fetch('/api/commissions');
+    const res = await fetch(`${API_BASE}/api/commissions`);
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
@@ -68,13 +69,13 @@ export function Notebook() {
   };
 
   const fetchPayments = async (id: string) => {
-    const res = await fetch(`/api/commissions/${id}/payments`);
+    const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`);
     const data = await res.json();
     if (data.success) setPayments(data.data);
   };
 
   const fetchDeliverables = async (id: string) => {
-    const res = await fetch(`/api/commissions/${id}/deliverables`);
+    const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`);
     const data = await res.json();
     if (data.success) {
       setSubmissions(data.data.submissions);
@@ -93,7 +94,7 @@ export function Notebook() {
 
     // 🌟 關鍵修正：點擊查看委託單時，自動更新繪師的已讀時間
     try {
-      await fetch(`/api/commissions/${order.id}`, {
+      await fetch(`${API_BASE}/api/commissions/{order.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
@@ -111,7 +112,7 @@ export function Notebook() {
       ? { ...editData } 
       : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
 
-    await fetch(`/api/commissions/${selectedId}`, {
+    await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bodyData)
     });
@@ -149,7 +150,7 @@ export function Notebook() {
 
     if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
 
-    const res = await fetch(`/api/commissions/${selectedId}/change-request`, {
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changes })
     });
@@ -175,7 +176,7 @@ export function Notebook() {
     if (!window.confirm(confirmMsg)) return;
     const newStatus = isCancelled ? 'quote_created' : 'cancelled';
 
-    await fetch(`/api/commissions/${selectedId}`, {
+    await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
@@ -187,7 +188,7 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
-    await fetch(`/api/commissions/${selectedId}`, {
+    await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed' })
@@ -197,20 +198,20 @@ export function Notebook() {
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
-    await fetch(`/api/commissions/${selectedId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payment_status: newStatus }) });
+    await fetch(`${API_BASE}/api/commissions/${selectedId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payment_status: newStatus }) });
     fetchCommissions();
   };
 
   const handleAddPayment = async () => {
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整");
-    await fetch(`/api/commissions/${selectedId}/payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) });
+    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) });
     setNewPayment({ record_date: '', item_name: '', amount: '' });
     fetchPayments(selectedId);
   };
 
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
-    await fetch(`/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE' });
     fetchPayments(selectedId);
   };
 
@@ -222,7 +223,7 @@ export function Notebook() {
   const handleSubmitStage = async (stageKey: string) => {
     const url = uploadUrls[stageKey];
     if (!url || !url.trim() || !selectedId) return;
-    const res = await fetch(`/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: url }) });
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: stageKey, file_url: url }) });
     const data = await res.json();
     if (data.success) { 
       setUploadUrls(prev => ({ ...prev, [stageKey]: '' }));
