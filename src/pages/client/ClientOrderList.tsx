@@ -24,7 +24,26 @@ export function ClientOrderList() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch('/api/commissions');
+        // 🌟 修正 1：取得 API_BASE 與儲存在保險箱的 user_id
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const currentUserId = localStorage.getItem('user_id') || '';
+
+        // 🌟 修正 2：補上絕對路徑與身分驗證 (Authorization)
+        const res = await fetch(`${API_BASE}/api/commissions`, {
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${currentUserId}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // 🌟 修正 3：若驗證失敗 (401)，自動導向登入頁面
+        if (res.status === 401) {
+          alert('請先登入以查看您的委託單列表');
+          window.location.href = `${API_BASE}/api/auth/line/login`;
+          return;
+        }
+
         const data = await res.json();
         if (data.success) {
           // 過濾出屬於該委託人且未作廢的內部單
