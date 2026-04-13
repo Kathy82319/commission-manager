@@ -1,3 +1,4 @@
+// src/pages/client/ClientHome.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,30 +21,21 @@ export function ClientHome() {
     const fetchProfile = async () => {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       try {
-        // 🔒 安全修正：移除手動解析 URL 或 localStorage 的邏輯，直接向後端要 /me
-        const res = await fetch(`${API_BASE}/api/users/me`, {
-          credentials: 'include'
-        });
-        
+        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
         if (res.status === 401 || res.status === 403) {
           navigate('/login');
           return;
         }
 
         const data = await res.json();
-        
         if (data.success && data.data) {
           setProfile(data.data);
           if (data.data.profile_settings) {
             try {
               const settings = JSON.parse(data.data.profile_settings);
               if (settings.socials) setSocialLinks(settings.socials);
-            } catch (e) {
-              console.error("解析 profile_settings 失敗", e);
-            }
+            } catch (e) {}
           }
-        } else {
-          setProfile({ id: 'unknown', display_name: '未知用戶', avatar_url: '', bio: '無法取得資料' });
         }
       } catch (error) {
         console.error("取得個人資料失敗", error);
@@ -53,9 +45,7 @@ export function ClientHome() {
     const fetchNotifications = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        const res = await fetch(`${API_BASE}/api/commissions`, {
-          credentials: 'include' 
-        });
+        const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) {
           const validOrders = data.data.filter((c: any) => c.status !== 'cancelled' && c.is_external === 0);
@@ -78,48 +68,15 @@ export function ClientHome() {
           if (pendingMsg) setMarqueeText(pendingMsg);
           else if (chatMsg) setMarqueeText(chatMsg);
         }
-      } catch(e) { console.error("讀取通知失敗", e); }
+      } catch(e) {}
     };
 
     fetchProfile();
     fetchNotifications();
   }, [navigate]);
 
-  const handleSwitchToArtist = async () => {
-    if (!profile) return;
-
-    if (profile.role === 'artist') {
-      window.location.href = '/artist/queue';
-    } else {
-      const confirmCreate = window.confirm("確定要創建繪師管理頁嗎？\n創建後將直接開始 7 天試用期。");
-
-      if (confirmCreate) {
-        try {
-          const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-          // 🔒 安全修正：改用 /me
-          const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
-          });
-
-          const result = await res.json();
-          if (result.success) {
-            alert("創建成功！為您導向繪師後台。");
-            window.location.href = '/artist/queue';
-          } else {
-            alert('創建失敗：' + result.error);
-          }
-        } catch (error) {
-          alert('網路連線錯誤，請稍後再試。');
-        }
-      }
-    }
-  };
-
   return (
-    <div style={{ backgroundColor: '#778ca4', minHeight: '100vh', display: 'flex', justifyContent: 'center', padding: '40px 16px', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 16px', flex: 1 }}>
       
       <style>{`
         @keyframes scroll-left {
@@ -128,34 +85,20 @@ export function ClientHome() {
         }
       `}</style>
 
-      <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-10px' }}>
-          <button 
-            onClick={handleSwitchToArtist}
-            style={{ 
-              background: 'none', border: 'none', color: '#e8ecf3', fontSize: '13px', 
-              cursor: 'pointer', textDecoration: 'underline', padding: 0, opacity: 0.9
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '0.9'}
-          >
-            切換/創建繪師管理頁
-          </button>
-        </div>
-
         {marqueeText && (
           <div style={{ 
-            backgroundColor: '#778ca4', borderTop: '2px dashed #facc15', borderBottom: '2px dashed #facc15', 
-            padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center'
+            backgroundColor: 'rgba(255,255,255,0.1)', borderTop: '1px solid rgba(250, 204, 21, 0.5)', borderBottom: '1px solid rgba(250, 204, 21, 0.5)', 
+            padding: '10px 0', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', borderRadius: '8px'
           }}>
-            <div style={{ display: 'inline-block', animation: 'scroll-left 15s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '15px' }}>
+            <div style={{ display: 'inline-block', animation: 'scroll-left 15s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '14px' }}>
               📢 {marqueeText}
             </div>
           </div>
         )}
 
-        <div style={{ backgroundColor: '#e8ecf3', padding: '40px 24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 8px 24px rgba(100,120,140,0.08)', border: '1px solid #d0d8e4' }}>
+        <div style={{ backgroundColor: '#e8ecf3', padding: '40px 24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
           <div style={{ 
             width: '100px', height: '100px', backgroundColor: '#d9dfe9', borderRadius: '50%', margin: '0 auto 20px auto', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: '#556577',
@@ -190,28 +133,18 @@ export function ClientHome() {
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '16px' }}>
-          <button 
-            onClick={() => navigate('/client/profile/edit')}
-            style={{ 
-              flex: 1, padding: '16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: '2px solid #3b5a75', 
-              borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: '0 4px 12px rgba(74,114,148,0.3)'
-            }}
-          >
-            編輯個人資料
-          </button>
-          <button 
-            onClick={() => navigate('/client/orders')}
-            style={{ 
-              flex: 1, padding: '16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: '2px solid #3b5a75', 
-              borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: '0 4px 12px rgba(74,114,148,0.3)'
-            }}
-          >
-            查看委託
-          </button>
-        </div>
+        <button 
+          onClick={() => navigate('/client/profile/edit')}
+          style={{ 
+            width: '100%', padding: '16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', 
+            borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          編輯個人資料
+        </button>
 
       </div>
     </div>
