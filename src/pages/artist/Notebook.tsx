@@ -216,8 +216,15 @@ export function Notebook() {
   };
 
   const copyLink = (id: string) => {
-    const link = `http://localhost:5173/quote/${id}`;
-    navigator.clipboard.writeText(link).then(() => alert('專屬連結已複製！'));
+    // 🌟 需求 1：跳出提醒
+    const msg = "⚠️ 注意：此連結具備「綁定」特性。\n\n當委託人點擊並登入後，此訂單將永久綁定該帳號。若綁定錯誤，您將需要刪除並重新建單。\n\n確定要複製連結嗎？";
+    
+    if (window.confirm(msg)) {
+      const link = `${window.location.origin}/quote/${id}`;
+      navigator.clipboard.writeText(link).then(() => {
+        alert('專屬連結已複製！請私下傳送給對應的委託人。');
+      });
+    }
   };
 
   const handleSubmitStage = async (stageKey: string) => {

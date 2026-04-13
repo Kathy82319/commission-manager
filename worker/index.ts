@@ -25,6 +25,21 @@ interface CreateCommissionBody {
   workflow_mode?: string;
 }
 
+// 🌟 新增：從 Cookie 中提取 user_id 的輔助函式
+function getUserIdFromRequest(request: Request): string | null {
+  const cookieHeader = request.headers.get("Cookie");
+  if (!cookieHeader) return null;
+  
+  // 解析 Cookie 字串
+  const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+    const [name, value] = cookie.trim().split("=");
+    acc[name] = value;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  return cookies["user_id"] || null;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -51,6 +66,44 @@ export default {
       });
     };
 
+// [GET] 單一委託單
+    if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
+      try {
+        const id = pathParts[3];
+        const currentUser = getUserIdFromRequest(request); // 取得當前使用者 ID
+
+        const { results } = await env.commission_db.prepare(`
+          SELECT c.*, u.display_name AS client_name 
+          FROM Commissions c
+          LEFT JOIN Users u ON c.client_id = u.id
+          WHERE c.id = ?
+        `).bind(id).all();
+
+        if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
+        const commission = results[0] as any;
+
+        // 🌟 安全邏輯實作：
+        // 1. 如果完全沒登入 -> 不給看 (防止爬蟲與路人)
+        if (!currentUser) {
+          return jsonRes({ success: false, error: "請先登入後再查看委託內容。" }, 401);
+        }
+
+        // 2. 如果已經綁定了委託人
+        if (commission.client_id) {
+          // 檢查：如果「不是綁定的委託人」且「不是繪師本人」 -> 擋掉
+          if (currentUser !== commission.client_id && currentUser !== commission.artist_id) {
+            return jsonRes({ success: false, error: "此委託單已有專屬對象，您無法存取。" }, 403);
+          }
+        } 
+        // 3. 如果尚未綁定 (client_id 為空)
+        else {
+          // 只有繪師本人，或是「準備要綁定的新用戶」可以看
+          // 這裡不擋 currentUser，因為第一個點進來的新用戶需要看到內容才能「接受/確認」綁定
+        }
+
+        return jsonRes({ success: true, data: commission });
+      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
+    }
 
 
     // ============================================================================
