@@ -198,12 +198,12 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
 
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
-    { id: 'splash', label: '開場名片設定' }, // 🌟 新增的選單項目
+    { id: 'splash', label: '開場名片設定' },
     { id: 'portfolio', label: '作品展示區' },
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'process', label: '委託流程說明' },
     { id: 'payment', label: '付款方式' },
-    { id: 'rules', label: '委託範圍(使用規範)' },
+    { id: 'rules', label: '協議書內容(委託人簽約前必閱內容)' },
     { id: 'custom', label: '其他 (自訂標題)' }
   ];
 

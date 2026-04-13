@@ -72,12 +72,16 @@ export default {
         const id = pathParts[3];
         const currentUser = getUserIdFromRequest(request); // 取得當前使用者 ID
 
-        const { results } = await env.commission_db.prepare(`
-          SELECT c.*, u.display_name AS client_name 
-          FROM Commissions c
-          LEFT JOIN Users u ON c.client_id = u.id
-          WHERE c.id = ?
-        `).bind(id).all();
+const { results } = await env.commission_db.prepare(`
+  SELECT 
+    c.*, 
+    u.display_name AS client_name,
+    a.profile_settings AS artist_settings -- 🌟 抓取繪師的設定
+  FROM Commissions c
+  LEFT JOIN Users u ON c.client_id = u.id
+  LEFT JOIN Users a ON c.artist_id = a.id -- 🌟 關聯繪師表格
+  WHERE c.id = ?
+`).bind(id).all();
 
         if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
         const commission = results[0] as any;
@@ -358,7 +362,7 @@ export default {
         const updates = [];
         const params = [];
         const allowedFields = [
-          'status', 'payment_status', 'project_name', 'detailed_settings', 
+          'status', 'payment_status','client_id', 'project_name', 'detailed_settings', 
           'usage_type', 'is_rush', 'delivery_method', 'payment_method', 
           'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 
           'current_stage', 'end_date', 'artist_note', 'workflow_mode', 

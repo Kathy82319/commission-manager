@@ -1,7 +1,7 @@
+// src/pages/client/ClientOrderDetail.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-// 擴充 Interface 以包含新欄位
 interface CommissionDetail {
   id: string;
   status: string;
@@ -16,10 +16,10 @@ interface CommissionDetail {
   detailed_settings: string;
   agreed_tos_snapshot: string;
   delivery_method: string; 
-  // 新增通知相關欄位
   pending_changes?: string;
   latest_message_at?: string;
   last_read_at_client?: string;
+  artist_settings?: string; // 🌟 新增此欄位
 }
 
 interface Submission {
@@ -49,28 +49,23 @@ export function ClientOrderDetail() {
   const [customTitle, setCustomTitle] = useState('');
   const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  // 新增：是否有新訊息的狀態
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
-useEffect(() => {
+  useEffect(() => {
     const fetchDetailData = async () => {
       if (!id) return;
       setIsLoading(true);
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-        // 🌟 修改：為所有 fetch 加上 credentials: 'include' 以便發送登入 Cookie
         const [orderRes, subRes, logRes] = await Promise.all([
           fetch(`${API_BASE}/api/commissions/${id}`, { credentials: 'include' }),
           fetch(`${API_BASE}/api/commissions/${id}/submissions`, { credentials: 'include' }),
           fetch(`${API_BASE}/api/commissions/${id}/logs`, { credentials: 'include' })
         ]);
 
-        // 🌟 新增：檢查是否未登入 (401)
         if (orderRes.status === 401) {
           alert("登入逾時或尚未登入，請先登入 LINE 以查看委託單內容");
-          // 導向後端登入路由
           window.location.href = `${API_BASE}/api/auth/line/login`;
           return;
         }
@@ -81,7 +76,6 @@ useEffect(() => {
           setOrderData(data);
           setCustomTitle(data.client_custom_title || '');
 
-          // 🌟 你的原本邏輯：判斷新訊息時間
           if (data.latest_message_at) {
             const latestMsgTime = new Date(data.latest_message_at).getTime();
             const lastReadTime = data.last_read_at_client 
@@ -92,8 +86,6 @@ useEffect(() => {
             }
           }
 
-          // 🌟 你的原本邏輯：進入頁面後自動更新「最後讀取時間」
-          // 同樣需要加上 credentials: 'include'
           fetch(`${API_BASE}/api/commissions/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -118,12 +110,11 @@ useEffect(() => {
     fetchDetailData();
   }, [id]);
 
-  // 新增：處理異動申請的同意或拒絕
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!id) return;
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -131,7 +122,7 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
       const data = await res.json();
       if (data.success) {
         alert(action === 'approve' ? '已同意內容異動' : '已拒絕內容異動');
-        window.location.reload(); // 成功後重整以獲取最新狀態
+        window.location.reload(); 
       } else {
         alert('操作失敗：' + data.error);
       }
@@ -145,7 +136,7 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}/change-response`, {
     setIsSavingTitle(true);
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_custom_title: customTitle })
@@ -232,7 +223,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
     return <div style={{ minHeight: '100vh', backgroundColor: '#778ca4', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF' }}>找不到此委託單</div>;
   }
 
-  // 共用樣式
   const tabStyle = (tabName: string) => ({
     flex: 1,
     padding: '12px',
@@ -256,7 +246,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
   return (
     <div style={{ backgroundColor: '#778ca4', minHeight: '100vh', display: 'flex', justifyContent: 'center', padding: '20px 16px', fontFamily: 'sans-serif' }}>
       
-      {/* 🌟 注入閃爍動畫樣式 */}
       <style>{`
         @keyframes pulse-yellow {
           0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); border: 2px solid rgba(250, 204, 21, 1); }
@@ -265,7 +254,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         }
       `}</style>
 
-      {/* 🌟 異動申請彈窗：當有待處理異動時顯示 */}
       {orderData.pending_changes && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
@@ -311,21 +299,17 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
 
       <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* 分頁導覽列 */}
         <div style={{ display: 'flex', backgroundColor: '#e8ecf3', borderRadius: '16px 16px 0 0', overflow: 'hidden', marginTop: '20px' }}>
           <div style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</div>
           <div style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</div>
           <div style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</div>
         </div>
 
-        {/* 分頁內容區 */}
         <div style={{ backgroundColor: '#e8ecf3', padding: '20px', borderRadius: '0 0 16px 16px', minHeight: '400px' }}>
           
-          {/* 第 1 頁：詳細內容 */}
           {activeTab === 'main' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              {/* 板塊 1：項目名稱與訂單編號 */}
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>項目名稱</label>
@@ -352,7 +336,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
                 </div>
               </div>
 
-              {/* 板塊 2：委託規格 */}
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8ecf3', paddingBottom: '12px', marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '16px', color: '#475569', margin: 0 }}>委託規格</h3>
@@ -367,7 +350,6 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
                       fontWeight: 'bold', 
                       cursor: 'pointer', 
                       fontSize: '13px',
-                      // 🌟 當有新訊息時啟動閃爍動畫
                       animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none',
                       transition: 'all 0.3s'
                     }}
@@ -386,25 +368,40 @@ const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
                 </div>
               </div>
 
-              {/* 板塊 3：委託協議 */}
+              {/* 🌟 核心修正：使用 dangerouslySetInnerHTML 來渲染富文本 */}
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
-                <div style={{ fontSize: '14px', color: '#556577', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
-                  {orderData.agreed_tos_snapshot || '無協議紀錄'}
+                <div style={{ fontSize: '14px', color: '#556577', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
+                  {orderData.artist_settings ? (
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: (() => {
+                          try {
+                            return JSON.parse(orderData.artist_settings).rules || '繪師尚未設定使用規範。';
+                          } catch(e) {
+                            // 若解析失敗，退回顯示原有的 snapshot
+                            return orderData.agreed_tos_snapshot || '無協議紀錄';
+                          }
+                        })()
+                      }} 
+                    />
+                  ) : (
+                    <div style={{ whiteSpace: 'pre-wrap' }}>
+                      {orderData.agreed_tos_snapshot || '無協議紀錄'}
+                    </div>
+                  )}
                 </div>
               </div>
 
             </div>
           )}
 
-          {/* 第 2 頁：稿件審閱 */}
           {activeTab === 'review' && (
             <div>
               {renderReviewBlocks()}
             </div>
           )}
 
-          {/* 第 3 頁：歷程紀錄 */}
           {activeTab === 'history' && (
              <div>
                {logs.length === 0 ? (

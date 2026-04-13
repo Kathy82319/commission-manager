@@ -18,6 +18,7 @@ interface Commission {
   bg_type: string;
   add_ons: string;
   order_date: string;
+  artist_settings?: string; // 🌟 新增此欄位接收後端的繪師設定
 }
 
 export function ClientForm() {
@@ -30,14 +31,12 @@ export function ClientForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-useEffect(() => {
+  useEffect(() => {
     const fetchOrder = async () => {
       try {
-        // 🌟 從瀏覽器保險箱取得身分證
         const currentUserId = localStorage.getItem('user_id') || ''; 
 
         const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-          // 雙重保險：同時使用 Cookie 和 Header
           credentials: 'include', 
           headers: {
             'Authorization': `Bearer ${currentUserId}`,
@@ -69,20 +68,22 @@ useEffect(() => {
     setIsSubmitting(true);
     
     try {
-      // 🌟 修改：PATCH 請求也要帶上 credentials: 'include'
       const currentUserId = localStorage.getItem('user_id') || '';
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUserId}` },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUserId}` 
+        },
         credentials: 'include',
-        body: JSON.stringify({ status: 'unpaid' })
-        
+        body: JSON.stringify({ 
+          status: 'unpaid',
+          client_id: currentUserId 
+        })
       });
       const data = await res.json();
       
       if (data.success) {
-        // 🌟 修改：重新獲取資料也要帶上 credentials: 'include'
         const updatedRes = await fetch(`${API_BASE}/api/commissions/${id}`, {
           credentials: 'include'
         });
@@ -98,7 +99,6 @@ useEffect(() => {
     }
   };
 
-  // 下方 UI 部分保持不變...
   if (errorMsg) return <div style={centerStyle}>{errorMsg}</div>;
   if (!order) return <div style={centerStyle}>載入委託單資料中...</div>;
 
@@ -121,14 +121,14 @@ useEffect(() => {
 
   return (
     <div style={{ backgroundColor: '#FBFBF9', minHeight: '100vh', padding: '40px 16px', fontFamily: 'sans-serif', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
         <div style={{ backgroundColor: '#FFFFFF', padding: '30px 24px', borderRadius: '16px', textAlign: 'center', border: '1px solid #EAE6E1', boxShadow: '0 8px 24px rgba(93,74,62,0.04)' }}>
           <h1 style={{ margin: '0 0 12px 0', fontSize: '22px', color: '#5D4A3E', letterSpacing: '0.5px' }}>委託確認與協議書</h1>
           <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4A7294', marginBottom: '8px' }}>
             {order.project_name || '未命名委託項目'}
           </div>
-          <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace' }}>單號：{order.id.split('-')[0]}</div>
+          <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace' }}>訂單編號：{order.id}</div>
         </div>
 
         <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
@@ -159,13 +159,30 @@ useEffect(() => {
             </div>
           )}
 
+          {/* 🌟 核心修正：使用 dangerouslySetInnerHTML 來渲染富文本 */}
           <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', fontSize: '14px', color: '#7A7269', lineHeight: '1.9', height: '180px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
-            1. 本委託為客製化商品，確認送出後即代表雙方成立合作關係，不適用七天鑑賞期。<br/>
-            2. 繪師保有展示作品作為作品集之權利，若需買斷或延遲公開請於事前提出。<br/>
-            3. 完稿後若非繪師方失誤，僅提供協議內約定之微調修改次數。<br/>
-            4. 若有延遲交稿情形，繪師將主動告知並依雙方協議處理。<br/>
-            5. 確認委託後，請依約定時間內完成款項支付，逾期視同放棄委託。<br/>
-            6. 草稿階段退件重畫以三次為限，超出次數需視情況增加費用。<br/>
+            {order.artist_settings ? (
+              <div 
+                dangerouslySetInnerHTML={{ 
+                  __html: (() => {
+                    try {
+                      return JSON.parse(order.artist_settings).rules || '繪師尚未設定使用規範。';
+                    } catch(e) {
+                      return '繪師尚未設定使用規範。';
+                    }
+                  })()
+                }} 
+              />
+            ) : (
+              <>
+                1. 本委託為客製化商品，確認送出後即代表雙方成立合作關係，不適用七天鑑賞期。<br/>
+                2. 繪師保有展示作品作為作品集之權利，若需買斷或延遲公開請於事前提出。<br/>
+                3. 完稿後若非繪師方失誤，僅提供協議內約定之微調修改次數。<br/>
+                4. 若有延遲交稿情形，繪師將主動告知並依雙方協議處理。<br/>
+                5. 確認委託後，請依約定時間內完成款項支付，逾期視同放棄委託。<br/>
+                6. 草稿階段退件重畫以三次為限，超出次數需視情況增加費用。<br/>
+              </>
+            )}
           </div>
 
           {!hasAlreadyAgreed ? (
