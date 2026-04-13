@@ -31,7 +31,7 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 
 export function App() {
-  const MY_ARTIST_ID = "User_48676";
+  const MY_ARTIST_ID = "@User_98703";
   
   return (
     <BrowserRouter>
