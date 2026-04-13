@@ -45,7 +45,7 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const currentUserId = 'u-artist-01';
+  const currentUserId = localStorage.getItem('user_id') || '';
 
   useEffect(() => {
     const fetchUserData = async () => {
