@@ -201,7 +201,7 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
     { id: 'splash', label: '開場名片設定' },
     { id: 'portfolio', label: '作品展示區' },
     { id: 'detailed_intro', label: '詳細介紹' },
-    { id: 'process', label: '委託流程說明' },
+    { id: 'process', label: '委託流程' },
     { id: 'payment', label: '付款方式' },
     { id: 'rules', label: '協議書內容' },
     { id: 'custom', label: '其他 (自訂標題)' }
@@ -251,19 +251,23 @@ const res = await fetch(`${API_BASE}/api/users/${currentUserId}`, {
             <h3 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>
               {menuItems.find(m => m.id === activeTab)?.label}
             </h3>
-            <button 
-              onClick={() => toggleVisibility(activeTab)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', 
-                fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px',
-                color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#7A7269',
-                padding: '6px 12px', borderRadius: '20px', 
-                backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#FBFBF9',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 狀態：公開顯示'}
-            </button>
+            
+            {/* 🌟 修正：只有當不在「頭像與簡介」與「開場名片設定」時，才顯示公開/隱藏切換按鈕 */}
+            {activeTab !== 'profile_basic' && activeTab !== 'splash' && (
+              <button 
+                onClick={() => toggleVisibility(activeTab)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', 
+                  fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px',
+                  color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#7A7269',
+                  padding: '6px 12px', borderRadius: '20px', 
+                  backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#FBFBF9',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 狀態：公開顯示'}
+              </button>
+            )}
           </div>
           
           {message && (

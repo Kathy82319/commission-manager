@@ -130,18 +130,28 @@ const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
     }
   };
 
-  const availableTabs = [];
+const availableTabs = [];
   if (settings) {
-    const isHidden = (id: string) => settings.hidden_sections?.includes(id);
+    const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
+    
+    // 🌟 新增防呆：去除富文本的空段落標籤，判斷是否真的有打字或插入圖片
+    const hasContent = (html: string) => {
+      if (!html) return false;
+      const stripped = html.replace(/<[^>]*>?/gm, '').trim();
+      return stripped.length > 0 || html.includes('<img'); 
+    };
+
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) availableTabs.push({ id: 'portfolio', label: '作品展示' });
-    if (!isHidden('detailed_intro') && settings.detailed_intro) availableTabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-    if (!isHidden('process') && settings.process) availableTabs.push({ id: 'process', label: '委託流程' });
-    if (!isHidden('payment') && settings.payment) availableTabs.push({ id: 'payment', label: '付款方式' });
-    if (!isHidden('rules') && settings.rules) availableTabs.push({ id: 'rules', label: '委託規範' });
+    
+    // 只有當「未隱藏」且「真的有內容」時，才會產生分頁標籤
+    if (!isHidden('detailed_intro') && hasContent(settings.detailed_intro)) availableTabs.push({ id: 'detailed_intro', label: '詳細介紹' });
+    if (!isHidden('process') && hasContent(settings.process)) availableTabs.push({ id: 'process', label: '委託流程' });
+    if (!isHidden('payment') && hasContent(settings.payment)) availableTabs.push({ id: 'payment', label: '付款方式' });
+    if (!isHidden('rules') && hasContent(settings.rules)) availableTabs.push({ id: 'rules', label: '委託規範' });
     
     if (settings.custom_sections) {
       settings.custom_sections.forEach(sec => {
-        if (!isHidden(sec.id)) availableTabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
+        if (!isHidden(sec.id) && hasContent(sec.content)) availableTabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
       });
     }
   }
