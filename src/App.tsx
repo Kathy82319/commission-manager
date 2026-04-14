@@ -19,9 +19,8 @@ import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 
 // 引入委託人端頁面
-import { ClientOrderList } from './pages/client/ClientOrderList'; 
 import { ClientForm } from './pages/client/ClientForm'; 
-import { ClientOrders } from './pages/client/ClientOrders'; 
+import { ClientOrders } from './pages/client/ClientOrders';
  
 
 // 引入共用頁面
@@ -55,9 +54,12 @@ export function App() {
 
         {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="orders" element={<ClientOrderList />} />
-          <Route path="/client/orders" element={<ClientOrders />} />
+          {/* 🌟 將 home 直接導向新的融合版頁面 */}
+          <Route path="home" element={<Navigate to="/client/orders" replace />} />
+          <Route path="orders" element={<ClientOrders />} />
+          {/* 🌟 舊的 order/:id 已經融合進 orders，可以直接移除或也做重導向 */}
+          <Route path="order/:id" element={<Navigate to="/client/orders" replace />} />
+          <Route path="form/:id" element={<ClientForm />} />
         </Route>
 
         {/* 5. 委託單確認與共用工作區 */}

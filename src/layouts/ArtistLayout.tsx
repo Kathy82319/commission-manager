@@ -30,7 +30,7 @@ export function ArtistLayout() {
           if (data.data.role === 'pending') {
             navigate('/onboarding');
           } else if (data.data.role === 'client') {
-            navigate('/client/orders');
+            navigate('client/ClientOrders');
           } else {
             // 確認是繪師，放行並存入資料
             setArtist(data.data);
@@ -82,7 +82,7 @@ export function ArtistLayout() {
           ))}
         </nav>
         <div style={{ padding: '20px', borderTop: '1px solid #F0ECE7', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button onClick={() => navigate('/client/orders')} style={{ width: '100%', padding: '10px', backgroundColor: '#F4F0EB', border: '1px dashed #DED9D3', borderRadius: '8px', color: '#5D4A3E', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+          <button onClick={() => navigate('client/ClientOrders')} style={{ width: '100%', padding: '10px', backgroundColor: '#F4F0EB', border: '1px dashed #DED9D3', borderRadius: '8px', color: '#5D4A3E', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
             切換為委託方模式
           </button>
           <button onClick={copyLink} style={{ width: '100%', padding: '10px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', color: '#7A7269', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
