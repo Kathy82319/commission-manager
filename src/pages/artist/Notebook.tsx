@@ -666,12 +666,11 @@ export function Notebook() {
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   {selectedOrder.workflow_mode === 'free' ? (
-                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
+                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
                   ) : (
-                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。委託人同意前皆可重複上傳新版本覆蓋。</p>
+                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</p>
                   )}
                   
-// 🌟 呼叫修正：配合定義刪除多餘參數
 {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
 {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
 {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}                </div>

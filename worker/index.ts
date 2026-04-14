@@ -1,5 +1,3 @@
-// worker/index.ts
-
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -35,7 +33,7 @@ interface CreateCommissionBody {
 }
 
 // ==========================================
-// 🛡️ 安全性輔助函式 (Security Helpers)
+// 安全性輔助函式 (Security Helpers)
 // ==========================================
 
 async function generateSignature(message: string, secret: string): Promise<string> {
@@ -127,7 +125,6 @@ export default {
       });
     };
 
-    // 🌟 輔助函式：建立與 R2 通訊的客戶端 (拉到外面獨立出來)
     const getS3Client = (env: Env) => {
       return new S3Client({
         region: "auto",
@@ -140,7 +137,7 @@ export default {
     };
 
     // ============================================================================
-    // 🌟 1. 身分認證與登入 (Auth API)
+    // 1. 身分認證與登入 (Auth API)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname === "/api/auth/line/login") {
@@ -219,7 +216,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 2. 使用者管理 (Users API)
+    // 2. 使用者管理 (Users API)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
@@ -270,7 +267,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 3. 委託單核心 API (Commissions)
+    // 3. 委託單核心 API (Commissions)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname === "/api/commissions") {
@@ -408,7 +405,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs)
+    // 4. 進度、稿件與異動系統 (Submissions & Logs)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && (url.pathname.endsWith("/deliverables") || url.pathname.endsWith("/submissions") || url.pathname.endsWith("/logs"))) {
@@ -464,11 +461,13 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
+    // 核心修正：審閱 API 支援「已閱覽」與「同意」
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/review")) {
       try {
         const id = pathParts[3];
         const currentUser = await getUserIdFromRequest(request, env);
-        const body: { stage: string; action: 'approve' | 'reject'; comment?: string } = await request.json();
+        // action 支援 'approve' (同意), 'read_only' (已閱覽), 'reject' (退回修改)
+        const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
 
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
         if (comm.length === 0) return jsonRes({ success: false, error: "找不到單據" }, 404);
@@ -478,10 +477,21 @@ export default {
         }
 
         const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
-        let nextStageStatus = body.action === 'reject' ? `${body.stage}_drawing` : (body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed'));
-        let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
+        let nextStageStatus = '';
+        let logMsg = '';
 
-        const logMsg = body.action === 'approve' ? `委託人已同意 ${stageNameCH}` : `委託人請求修改 ${stageNameCH}：${sanitize(body.comment || '無備註')}`;
+        if (body.action === 'reject') {
+          nextStageStatus = `${body.stage}_drawing`;
+          logMsg = `委託人請求修改 ${stageNameCH}：${sanitize(body.comment || '無備註')}`;
+        } else if (body.action === 'read_only') {
+          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
+          logMsg = `委託人已閱覽 ${stageNameCH}`;
+        } else {
+          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
+          logMsg = `委託人已同意 ${stageNameCH}`;
+        }
+
+        let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
         let batchOps = [
           env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', ?, ?)").bind(crypto.randomUUID(), id, 'review', logMsg),
           env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(nextStageStatus, id),
@@ -562,7 +572,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 5. 訊息與財務系統 (Messages & Payments)
+    // 5. 訊息與財務系統 (Messages & Payments)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/messages")) {
@@ -649,7 +659,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 6. R2 儲存管理 API (Presigned URL)
+    // 6. R2 儲存管理 API (Presigned URL)
     // ============================================================================
 
     // A. 取得上傳門票
@@ -669,7 +679,6 @@ export default {
           ContentType: contentType,
         });
 
-        // 🌟 核發 10 分鐘上傳門票 (600秒)
         const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
         
         return jsonRes({ success: true, uploadUrl });
@@ -685,7 +694,6 @@ export default {
 
       const { commissionId, fileName } = await request.json() as any;
 
-      // 🔒 嚴格權限檢查
       const { results } = await env.commission_db.prepare(
         "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
       ).bind(commissionId).all();
@@ -708,7 +716,6 @@ export default {
           Key: fileName,
         });
 
-        // 🌟 核發 10 分鐘下載門票 (600秒)
         const downloadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
         return jsonRes({ success: true, downloadUrl });
       } catch (err: any) {
