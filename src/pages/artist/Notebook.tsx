@@ -367,47 +367,59 @@ export function Notebook() {
     borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease'
   });
 
-  const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
-  const sub = submissions.find(s => s.stage === stageKey);
-  const isFinal = stageKey === 'final';
+const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
+    const sub = submissions.find(s => s.stage === stageKey);
+    const isFinal = stageKey === 'final';
 
-    let headerBg = '#FCFAF8'; let statusTag = '';
+    let headerBg = '#FCFAF8'; 
+    let statusTag = '';
+    let statusColor = '#A0978D';
     
+    // 🌟 狀態判斷邏輯升級：加入「被退回」的判斷
     if (isPassed) {
       headerBg = '#E8F3EB';
       statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
+      statusColor = '#4E7A5A';
     } else if (isReviewing) {
       headerBg = '#FDF4E6';
       statusTag = '⏳ 待委託人確認';
+      statusColor = '#A67B3E';
+    } else if (sub) {
+      // 💡 關鍵：有上傳紀錄，但既不是審核中也沒通過，代表被委託人「退回」了！
+      headerBg = '#Fce8e6';
+      statusTag = '⚠️ 委託人已退回，需重新上傳';
+      statusColor = '#d93025';
+    } else {
+      statusTag = '等待繪製上傳...';
     }
 
     return (
-    <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
-      <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px' }}>
-        <span>{title}</span> <span style={{ color: isPassed ? '#4E7A5A' : '#A67B3E' }}>{statusTag}</span>
-      </div>
-      <div style={{ padding: '20px' }}>
-        {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
-          💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
-        </div>}
+      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s' }}>
+          <span>{title}</span> <span style={{ color: statusColor }}>{statusTag}</span>
+        </div>
+        <div style={{ padding: '20px' }}>
+          {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+            💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
+          </div>}
 
-        {isUploading === stageKey ? (
-          <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
-        ) : (
-          <ImageUploader 
-            onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-            withWatermark={true}
-            watermarkText="SAMPLE"
-            existingUrl={sub?.file_url}
-            isFinal={isFinal} 
-            aspectRatio={undefined} 
-            metadata={sub ? { 
-              version: sub.version, 
-              date: new Date(sub.created_at).toLocaleDateString() 
-            } : undefined}
-            buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
-          />
-        )}
+          {isUploading === stageKey ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
+          ) : (
+            <ImageUploader 
+              onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
+              withWatermark={true}
+              watermarkText="SAMPLE"
+              existingUrl={sub?.file_url}
+              isFinal={isFinal} 
+              aspectRatio={undefined} 
+              metadata={sub ? { 
+                version: sub.version, 
+                date: new Date(sub.created_at).toLocaleDateString() 
+              } : undefined}
+              buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
+            />
+          )}
         </div>
       </div>
     );

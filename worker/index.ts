@@ -234,18 +234,48 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-    if (request.method === "POST" && url.pathname.startsWith("/api/users/") && url.pathname.endsWith("/complete-onboarding")) {
+// 🌟 核心：審閱 API (支援同意、退回與閱覽，並強制寫入 Log)
+    if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/review")) {
       try {
+        const id = pathParts[3];
         const currentUser = await getUserIdFromRequest(request, env);
-        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
-        const targetId = pathParts[3] === "me" ? currentUser : pathParts[3];
-        
-        if (currentUser !== targetId) return jsonRes({ success: false, error: "權限不足" }, 403);
+        // action 支援 'approve' (同意), 'read_only' (已閱覽), 'reject' (退回修改)
+        const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
 
-        const body: { display_name: string; role: 'artist' | 'client' } = await request.json();
+        const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
+        if (comm.length === 0) return jsonRes({ success: false, error: "找不到單據" }, 404);
+        if (comm[0].client_id && currentUser !== comm[0].client_id && currentUser !== comm[0].artist_id) return jsonRes({ success: false, error: "權限不足" }, 403);
+
+        const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
+        let nextStageStatus = '';
+        let logMsg = '';
+
+        // 判斷不同動作，並產生對應的歷史紀錄文字
+        if (body.action === 'reject') {
+          nextStageStatus = `${body.stage}_drawing`;
+          logMsg = `委託人請求修改 ${stageNameCH}：${sanitize(body.comment || '無備註')}`;
+        } else if (body.action === 'read_only') {
+          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
+          logMsg = `委託人已閱覽 ${stageNameCH}`; // 🌟 這裡負責產生已閱覽的 Log
+        } else {
+          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
+          logMsg = `委託人已同意 ${stageNameCH} (合約結案解鎖)`;
+        }
+
+        let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
         
-        await env.commission_db.prepare("UPDATE Users SET display_name = ?, role = ? WHERE id = ?")
-          .bind(sanitize(body.display_name), body.role, targetId).run();
+        // 將狀態推進與 Log 寫入打包執行
+        let batchOps = [
+          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', ?, ?)").bind(crypto.randomUUID(), id, 'review', logMsg),
+          env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(nextStageStatus, id),
+          env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] ${logMsg}`)
+        ];
+        
+        if (globalStatusUpdate) {
+          batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
+        }
+        
+        await env.commission_db.batch(batchOps);
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
