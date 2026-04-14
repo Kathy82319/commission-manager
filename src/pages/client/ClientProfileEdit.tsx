@@ -1,6 +1,7 @@
+// src/pages/client/ClientProfileEdit.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入兵工廠
+import { ImageUploader } from '../../components/ImageUploader';
 
 export function ClientProfileEdit() {
   const navigate = useNavigate();
@@ -14,7 +15,6 @@ export function ClientProfileEdit() {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 初始化讀取資料
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -34,12 +34,15 @@ export function ClientProfileEdit() {
     fetchProfile();
   }, []);
 
-  // 🌟 核心：處理大頭貼上傳
-  const handleAvatarUpload = async (processedBlob: Blob) => {
+  // 🌟 核心修正：接收 processedBlob 與 previewUrl (暫時網址)
+  const handleAvatarUpload = async (processedBlob: Blob, previewUrl: string) => {
+    // 1. 立刻讓框框顯示圖片 (UX 優化)
+    setProfile(prev => ({ ...prev, avatar_url: previewUrl }));
     setUploading(true);
+
     try {
       // Step A: 跟後端要門票
-      const fileName = `avatars/${crypto.randomUUID()}.jpg`; // 產出隨機檔名
+      const fileName = `avatars/${crypto.randomUUID()}.jpg`;
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST',
         credentials: 'include',
@@ -53,7 +56,7 @@ export function ClientProfileEdit() {
       const { uploadUrl, success, error } = await ticketRes.json();
       if (!success) throw new Error(error);
 
-      // Step B: 直傳 R2 (不經過 Worker，效能最快)
+      // Step B: 直傳 R2
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         body: processedBlob,
@@ -62,21 +65,21 @@ export function ClientProfileEdit() {
 
       if (!uploadRes.ok) throw new Error("上傳 R2 失敗");
 
-      // Step C: 組合圖片網址 (請將下面的 URL 換成您 R2 的公開存取網址)
-      // 提示：可以在 Cloudflare R2 設定中開啟 r2.dev 網域或綁定自訂網域
-      const publicUrl = `https://f72c79d82828e2419ab5fb0e1d323ce5.r2.cloudflarestorage.com/commission-public/${fileName}`;
+      // Step C: 組合圖片最終 R2 網址
+      // ⚠️ 請確保此網址與您在 Cloudflare R2 設定的網址一致
+      const finalR2Url = `https://f72c79d82828e2419ab5fb0e1d323ce5.r2.cloudflarestorage.com/commission-public/${fileName}`;
       
-      // 更新畫面的預覽
-      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
-      alert("頭像處理成功！記得按下方的儲存才會正式生效。");
+      // 正式將狀態更新為 R2 網址
+      setProfile(prev => ({ ...prev, avatar_url: finalR2Url }));
+      
     } catch (err: any) {
-      alert("上傳失敗: " + err.message);
+      alert("圖片上傳雲端失敗: " + err.message);
+      // 如果失敗，可以考慮把圖片還原或保留預覽
     } finally {
       setUploading(false);
     }
   };
 
-  // 2. 儲存個人資料
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -88,7 +91,7 @@ export function ClientProfileEdit() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('資料已更新！');
+        alert('個人資料已儲存！');
         navigate('/client/home');
       }
     } catch (e) {
@@ -106,18 +109,20 @@ export function ClientProfileEdit() {
 
         <div style={{ backgroundColor: '#e8ecf3', padding: '30px', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
           
-          {/* 大頭貼上傳區 */}
           <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+             {/* 🌟 大頭貼顯示框 */}
              <div style={{ 
                width: '120px', height: '120px', borderRadius: '50%', backgroundColor: '#d9dfe9', 
                margin: '0 auto 20px auto', border: '4px solid #FFFFFF', overflow: 'hidden',
-               backgroundImage: `url(${profile.avatar_url})`, backgroundSize: 'cover', backgroundPosition: 'center'
+               backgroundImage: profile.avatar_url ? `url(${profile.avatar_url})` : 'none', 
+               backgroundSize: 'cover', backgroundPosition: 'center',
+               display: 'flex', alignItems: 'center', justifyContent: 'center'
              }}>
-               {!profile.avatar_url && <div style={{ paddingTop: '45px', color: '#556577', fontSize: '14px' }}>無頭像</div>}
+               {!profile.avatar_url && <span style={{ color: '#556577', fontSize: '14px' }}>無頭像</span>}
              </div>
              
              {uploading ? (
-               <div style={{ color: '#4A7294', fontWeight: 'bold' }}>⏳ 檔案上傳中...</div>
+               <div style={{ color: '#4A7294', fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' }}>⏳ 圖片上傳中...</div>
              ) : (
                <ImageUploader 
                  onUpload={handleAvatarUpload}
