@@ -399,18 +399,18 @@ export function Notebook() {
           <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
         ) : (
           <ImageUploader 
-            onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-            withWatermark={true}
-            watermarkText="SAMPLE"
-            existingUrl={sub?.file_url}
-            isFinal={isFinal} 
-            // 🌟 傳入中繼資料，讓 Uploader 自己決定怎麼整合顯示
-            metadata={sub ? {
-              version: sub.version,
-              date: new Date(sub.created_at).toLocaleDateString()
-            } : undefined}
-            buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
-            />
+  onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
+  withWatermark={true}
+  watermarkText="SAMPLE"
+  existingUrl={sub?.file_url}
+  isFinal={isFinal} // 🌟 如果是完稿，會多產生一份 original Blob
+  aspectRatio={undefined} // 🌟 允許繪師自由裁切比例
+  metadata={sub ? { 
+    version: sub.version, 
+    date: new Date(sub.created_at).toLocaleDateString() 
+  } : undefined}
+  buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
+/>
           )}
         </div>
       </div>

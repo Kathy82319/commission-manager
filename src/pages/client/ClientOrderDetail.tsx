@@ -44,7 +44,7 @@ export function ClientOrderDetail() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [isLoading, setIsLoading] = useState(true);
   const [hasNewMessage, setHasNewMessage] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // 🌟 新增：審閱與下載的處理狀態
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // 1. 載入資料
   const fetchDetailData = async () => {
@@ -66,8 +66,6 @@ export function ClientOrderDetail() {
       if (orderJson.success) {
         const data = orderJson.data;
         setOrderData(data);
-        
-        // 初始化自訂名稱字串
         const initialTitle = data.client_custom_title || '';
         setCustomTitle(initialTitle);
         setSavedTitle(initialTitle);
@@ -103,7 +101,6 @@ export function ClientOrderDetail() {
     fetchDetailData();
   }, [id]);
 
-  // 🌟 處理委託單規格異動 (來自繪師的修改申請)
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!id) return;
     try {
@@ -122,7 +119,6 @@ export function ClientOrderDetail() {
     } catch (error) {}
   };
 
-  // 🌟 處理儲存自訂名稱
   const handleSaveTitle = async () => {
     if (!id || saveStatus === 'saving') return;
     setSaveStatus('saving');
@@ -146,7 +142,6 @@ export function ClientOrderDetail() {
     }
   };
 
-  // 🌟 核心：處理階段稿件審閱 (已閱覽 / 同意 / 退回)
   const handleReview = async (stageKey: string, action: 'approve' | 'reject' | 'read_only') => {
     if (!id) return;
     let comment = '';
@@ -166,7 +161,7 @@ export function ClientOrderDetail() {
       });
       if ((await res.json()).success) {
         alert("已送出回覆！");
-        fetchDetailData(); // 重新載入最新狀態
+        fetchDetailData();
       } else {
         alert("操作失敗，請稍後再試。");
       }
@@ -177,15 +172,13 @@ export function ClientOrderDetail() {
     }
   };
 
-  // 🌟 核心：從 R2 私有桶安全下載無浮水印原檔
   const handleDownloadOriginal = async (publicUrl: string) => {
     if (!id) return;
     setIsProcessing(true);
     try {
-      // 將預覽網址對應到原始檔案路徑
       const urlObj = new URL(publicUrl);
       const publicPath = urlObj.pathname.substring(1); 
-      const privatePath = publicPath.replace('_preview_', '_original_'); // 如果您上傳時有綴字，確保與這裡一致
+      const privatePath = publicPath.replace('_preview_', '_original_');
 
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -194,7 +187,7 @@ export function ClientOrderDetail() {
       const data = await res.json();
       
       if (data.success) {
-        window.location.href = data.downloadUrl; // 取得限時門票並觸發下載
+        window.location.href = data.downloadUrl;
       } else {
         alert('無法下載：' + data.error);
       }
@@ -205,7 +198,6 @@ export function ClientOrderDetail() {
     }
   };
 
-  // 取得各階段最新版本的稿件
   const getLatestSubmissions = () => {
     const latest: Record<string, Submission> = {};
     submissions.forEach(sub => {
@@ -216,7 +208,7 @@ export function ClientOrderDetail() {
     return latest;
   };
 
-  // 🌟 渲染單一階段的審閱區塊
+  // 🌟 整合修正：縮小預覽尺寸與長圖顯示支援
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
@@ -227,39 +219,52 @@ export function ClientOrderDetail() {
         <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#f8fafc'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#475569', borderBottom: '1px solid #d0d8e4' }}>
           <span>{title}</span> <span style={{ color: isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#94a3b8') }}>{statusText}</span>
         </div>
-        <div style={{ padding: '20px' }}>
+        <div style={{ padding: '20px', textAlign: 'center' }}>
           {!sub ? (
-            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>繪師尚未上傳此階段稿件</div>
+            <div style={{ color: '#94a3b8', padding: '20px' }}>繪師尚未上傳此階段稿件</div>
           ) : (
             <div>
-               <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+               <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px', textAlign: 'left' }}>
                  最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})
                </div>
-               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
-                 <img src={sub.file_url} alt="稿件預覽" style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} />
+               <div style={{ 
+                 border: '1px solid #e2e8f0', 
+                 borderRadius: '8px', 
+                 overflow: 'hidden', 
+                 backgroundColor: '#f1f5f9',
+                 maxWidth: '350px', // 🌟 委託人端預覽縮小
+                 margin: '0 auto' 
+               }}>
+                 <img 
+                   src={sub.file_url} 
+                   alt="稿件預覽" 
+                   style={{ 
+                     width: '100%', 
+                     maxHeight: '400px', // 🌟 支援長圖顯示
+                     objectFit: 'contain', 
+                     display: 'block' 
+                   }} 
+                 />
                </div>
                
-               {/* 互動操作區 */}
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 
                  {isReviewing && !isFinal && (
                    <>
-                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>退回修改</button>
-                     <button onClick={() => handleReview(stageKey, 'read_only')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#4A7294', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>✓ 標記為已閱覽</button>
+                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
+                     <button onClick={() => handleReview(stageKey, 'read_only')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#4A7294', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✓ 標記為已閱覽</button>
                    </>
                  )}
 
                  {isReviewing && isFinal && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
-                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>退回修改</button>
-                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}>✓ 同意完稿</button>
+                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
+                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✓ 同意完稿</button>
                    </>
                  )}
 
-                 {/* 🌟 保險箱下載按鈕 */}
                  {isPassed && isFinal && orderData?.status === 'completed' && (
-                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}>
+                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
@@ -331,8 +336,6 @@ export function ClientOrderDetail() {
       )}
 
       <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column' }}>
-        
-        {/* 返回按鈕 */}
         <button 
           onClick={() => navigate('/client/orders')} 
           style={{ 
@@ -346,16 +349,13 @@ export function ClientOrderDetail() {
           ← 返回列表
         </button>
 
-        {/* 頁籤 */}
         <div style={{ display: 'flex', backgroundColor: '#e8ecf3', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
           <div style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</div>
           <div style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</div>
           <div style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</div>
         </div>
 
-        {/* 主要內容區塊 */}
         <div style={{ backgroundColor: '#e8ecf3', padding: '20px', borderRadius: '0 0 16px 16px', minHeight: '400px' }}>
-          
           {activeTab === 'main' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
@@ -438,20 +438,17 @@ export function ClientOrderDetail() {
                   )}
                 </div>
               </div>
-
             </div>
           )}
 
           {activeTab === 'review' && (
             <div>
-              {/* 如果非一鍵出圖，才顯示草稿和線稿 */}
               {orderData.delivery_method !== '一鍵出圖' && (
                 <>
                   {renderClientStageBox('階段 1：草稿', 'sketch', orderData.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
                   {renderClientStageBox('階段 2：線稿', 'lineart', orderData.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
                 </>
               )}
-              {/* 完稿階段永遠顯示 */}
               {renderClientStageBox('階段 3：完稿交付', 'final', orderData.current_stage === 'final_reviewing', orderData.status === 'completed')}
             </div>
           )}
@@ -472,7 +469,6 @@ export function ClientOrderDetail() {
                )}
              </div>
           )}
-
         </div>
       </div>
     </div>

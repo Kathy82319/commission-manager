@@ -1,4 +1,4 @@
-// src/components/ImageUploader.tsx (V3 - Smart Uploader)
+// src/components/ImageUploader.tsx
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/imageProcessor';
@@ -13,7 +13,7 @@ interface ImageUploaderProps {
   buttonText?: string;
   existingUrl?: string;
   isFinal?: boolean;
-  // 🌟 新增：metadata 屬性 (用於顯示版本與日期)
+  // 🌟 metadata 屬性：用於顯示版本與日期
   metadata?: {
     version: number;
     date: string;
@@ -29,7 +29,7 @@ export function ImageUploader({
   buttonText = "點擊上傳",
   existingUrl,
   isFinal = false,
-  metadata // 🌟
+  metadata
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -82,11 +82,16 @@ export function ImageUploader({
     }
   };
 
-  // 🌟 核心：如果已經有圖片 (融合 metadata 與 Hover 模式)
+  // 🌟 核心：如果已經有圖片 (整合縮小預覽與防止長圖爆框邏輯)
   if (existingUrl && !imageSrc) {
     return (
-      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden' }}>
-        {/* 🌟 整合原本的手動渲染 metadata 資料 */}
+      <div style={{ 
+        border: '1px solid #EAE6E1', 
+        borderRadius: '12px', 
+        overflow: 'hidden', 
+        maxWidth: '400px', // 🌟 限制最大寬度，讓預覽圖縮小
+        margin: '0 auto'    // 🌟 居中顯示
+      }}>
         {metadata && (
           <div style={{
             fontSize: '11px', color: '#A0978D', padding: '10px 15px',
@@ -98,16 +103,30 @@ export function ImageUploader({
         <div
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
-          style={{ position: 'relative', width: '100%' }}
+          style={{ position: 'relative', width: '100%', backgroundColor: '#F9F9F9' }}
         >
-          <img src={existingUrl} alt="已交付稿件" style={{ width: '100%', display: 'block' }} />
+          <img 
+            src={existingUrl} 
+            alt="已交付稿件" 
+            style={{ 
+              width: '100%', 
+              maxHeight: '400px',   // 🌟 限制最大高度，避免長圖爆框
+              objectFit: 'contain', // 🌟 確保整張圖完整顯示不被裁切
+              display: 'block' 
+            }} 
+          />
           {isHovering && (
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
               backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', color: '#FFF'
             }}>
-              <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={onFileChange} 
+                style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} 
+              />
               <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{buttonText}</span>
             </div>
           )}
@@ -118,7 +137,15 @@ export function ImageUploader({
 
   return (
     <>
-      <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#FBFBF9', cursor: 'pointer', position: 'relative' }}>
+      <div style={{ 
+        border: '2px dashed #DED9D3', 
+        borderRadius: '12px', 
+        padding: '20px', 
+        textAlign: 'center', 
+        backgroundColor: '#FBFBF9', 
+        cursor: 'pointer', 
+        position: 'relative' 
+      }}>
         <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
         <span style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold' }}>{buttonText}</span>
       </div>

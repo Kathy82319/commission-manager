@@ -47,7 +47,7 @@ export default async function getCroppedImg(
     throw new Error('無法建立 Canvas 內容');
   }
 
-  // 設定 Canvas 尺寸為使用者裁切的尺寸
+  // 設定 Canvas 尺寸為使用者裁切的尺寸 (支援自由比例)
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
@@ -64,7 +64,7 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // 2. 如果需要浮水印，在這裡加上去
+  // 2. 如果需要浮水印，加上半透明傾斜文字
   if (withWatermark) {
     ctx.save();
     // 設定浮水印樣式
@@ -85,7 +85,7 @@ export default async function getCroppedImg(
     ctx.restore();
   }
 
-  // 3. 將 Canvas 輸出為 Blob (壓縮過的圖片檔案)
+  // 3. 將 Canvas 輸出為 Blob
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
