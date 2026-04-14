@@ -283,7 +283,7 @@ export function Notebook() {
       await fetch(uploadUrl, { method: 'PUT', body: processedBlob, headers: { 'Content-Type': 'image/jpeg' } });
 
       // Step 3: 更新後端資料庫
-      const publicUrl = `https://pub-f050b181e18d45ba8489814467d581be.r2.dev/${fileName}`; // 🌟 請確認這是您正確的 pub 網址
+      const publicUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`; // 🌟 請確認這是您正確的 pub 網址
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
