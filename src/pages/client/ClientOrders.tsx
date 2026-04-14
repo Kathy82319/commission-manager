@@ -65,9 +65,20 @@ export function ClientOrders() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  const fetchDetailData = async (targetId: string, currentOrders: CommissionDetail[] = orders) => {
+const fetchDetailData = async (targetId: string, currentOrders: CommissionDetail[] = orders) => {
     try {
-      const orderData = currentOrders.find(o => o.id === targetId);
+      // 🌟 關鍵修正：額外呼叫單一訂單 API，取得完整的 artist_settings 與快照
+      const detailRes = await fetch(`${API_BASE}/api/commissions/${targetId}`, { credentials: 'include' });
+      const detailData = await detailRes.json();
+      
+      let orderData = currentOrders.find(o => o.id === targetId);
+      
+      if (detailData.success) {
+        orderData = detailData.data; // 使用含有完整欄位的資料
+        // 同步更新 orders 陣列，讓畫面能吃到新資料
+        setOrders(prev => prev.map(o => o.id === targetId ? detailData.data : o));
+      }
+
       if (!orderData) return;
 
       setCustomTitle(orderData.client_custom_title || '');

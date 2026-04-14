@@ -67,17 +67,25 @@ export function ClientForm() {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
     
+// 🌟 新增：取得當下的協議書內容準備當作快照
+    let currentTosSnapshot = '';
+    if (order?.artist_settings) {
+      try {
+        currentTosSnapshot = JSON.parse(order.artist_settings).rules || '';
+      } catch(e) {}
+    }
+
+
+
     try {
       // 🔒 安全修正：不依賴前端偽造的 user_id，後端會自動從 Cookie 識別目前登入者
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          status: 'unpaid'
-          // 注意：此處移除了 client_id: currentUserId，因為交由後端 Cookie 判斷才是絕對安全的
+          status: 'unpaid',
+          agreed_tos_snapshot: currentTosSnapshot // 🌟 關鍵修正：把快照寫入資料庫！
         })
       });
       const data = await res.json();
