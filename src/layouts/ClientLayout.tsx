@@ -122,10 +122,10 @@ export function ClientLayout() {
       </main>
 
       <footer style={{ padding: '24px', textAlign: 'center', marginTop: 'auto' }}>
-        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '1px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>服務條款</Link>
+        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '1px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'}>服務條款</Link>
           <span>|</span>
-          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>隱私權政策</Link>
+          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'}>隱私權政策</Link>
           <span>|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>
