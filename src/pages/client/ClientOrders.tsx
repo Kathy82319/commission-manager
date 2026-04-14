@@ -15,6 +15,12 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
+// 🌟 核心修正：加入共用時間解析函數，避免時區錯亂
+const parseTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+};
+
 export function ClientOrders() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,13 +80,14 @@ export function ClientOrders() {
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
 
+      // 🌟 使用 parseTime 來比對時間
       if (orderData.latest_message_at) {
-        const latestMsgTime = new Date(orderData.latest_message_at).getTime();
-        const lastReadTime = orderData.last_read_at_client ? new Date(orderData.last_read_at_client).getTime() : 0;
+        const latestMsgTime = parseTime(orderData.latest_message_at);
+        const lastReadTime = parseTime(orderData.last_read_at_client);
         setHasNewMessage(latestMsgTime > lastReadTime);
+      } else {
+        setHasNewMessage(false);
       }
-
-      // 🌟 核心修正：移除這裡原本存在的自動已讀 PATCH 請求，讓通知得以保留。
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -276,7 +283,6 @@ export function ClientOrders() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif', backgroundColor: '#FBFBF9' }}>
       
-      {/* 🌟 核心修正：加入黃底閃爍動畫 CSS */}
       <style>{`
         @keyframes pulse-yellow {
           0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
@@ -327,9 +333,9 @@ export function ClientOrders() {
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
                 
-                // 🌟 核心修正：在列表項右上角也補上紅色小鈴鐺提醒
-                const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
-                const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
+                // 🌟 使用 parseTime 來處理
+                const latestMsgTime = parseTime(order.latest_message_at);
+                const lastReadTime = parseTime(order.last_read_at_client);
                 const hasUnread = latestMsgTime > lastReadTime;
                 const hasPending = !!order.pending_changes;
                 const showDot = hasUnread || hasPending;
@@ -367,7 +373,6 @@ export function ClientOrders() {
                 
                 <button 
                   onClick={() => {
-                    // 🌟 核心修正：真正點擊進入聊天室時，才把訊息標記為已讀
                     fetch(`${API_BASE}/api/commissions/${selectedOrder.id}`, {
                       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                       body: JSON.stringify({ last_read_at_client: new Date().toISOString() })

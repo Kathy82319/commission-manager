@@ -38,6 +38,13 @@ export function ClientLayout() {
       
       if (data.success) {
         const notifs: string[] = [];
+        
+        // 🌟 核心修正：強制正規化時間格式，解決 UTC+8 時區 8 小時誤差問題
+        const parseTime = (dateStr?: string) => {
+          if (!dateStr) return 0;
+          return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+        };
+
         data.data.forEach((order: any) => {
           if (order.status === 'cancelled') return;
           const title = order.client_custom_title || order.project_name;
@@ -47,8 +54,8 @@ export function ClientLayout() {
             notifs.push(`訂單編號：${order.id}${titleStr} 已傳來合約內容異動申請，請盡速前往`);
           }
           if (order.latest_message_at) {
-            const latestMsgTime = new Date(order.latest_message_at).getTime();
-            const lastReadTime = order.last_read_at_client ? new Date(order.last_read_at_client).getTime() : 0;
+            const latestMsgTime = parseTime(order.latest_message_at);
+            const lastReadTime = parseTime(order.last_read_at_client);
             if (latestMsgTime > lastReadTime) {
               notifs.push(`訂單編號：${order.id}${titleStr} 聊天室有新訊息，請盡速前往`);
             }
@@ -87,7 +94,6 @@ export function ClientLayout() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif' }}>
       
-      {/* 🌟 核心修正：強制跑馬燈從最右側滾進來的動畫 */}
       <style>{`
         @keyframes layout-marquee {
           0% { transform: translateX(0); }
@@ -106,7 +112,7 @@ export function ClientLayout() {
         </nav>
       </header>
 
-      {/* 🌟 跑馬燈通知區塊 */}
+      {/* 跑馬燈通知區塊 */}
       {notifications.length > 0 && (
         <div style={{ width: '100%', backgroundColor: 'rgba(250, 204, 21, 0.15)', borderBottom: '1px solid rgba(250, 204, 21, 0.3)', overflow: 'hidden', whiteSpace: 'nowrap', padding: '10px 0', display: 'block', position: 'relative', zIndex: 40 }}>
           <div style={{ display: 'inline-block', paddingLeft: '100%', animation: 'layout-marquee 20s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.5px' }}>

@@ -317,6 +317,7 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
+    // 請取代 worker/index.ts 約 208~226 行的 GET 單筆 API 區段
     if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
       try {
         const id = pathParts[3];
@@ -324,7 +325,8 @@ export default {
         if (!currentUser) return jsonRes({ success: false, error: "請先登入" }, 401);
 
         const { results } = await env.commission_db.prepare(`
-          SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings
+          SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings,
+          (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
           FROM Commissions c
           LEFT JOIN Users u ON c.client_id = u.id
           LEFT JOIN Users a ON c.artist_id = a.id
