@@ -260,48 +260,56 @@ export function Notebook() {
     }
   };
 
-  // 🌟 核心：處理 R2 上傳邏輯
-  const handleR2FileUpload = async (stageKey: string, processedBlob: Blob) => {
+  // 🌟 核心修正：雙重上傳與保險箱邏輯
+  const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
       const timestamp = Date.now();
-      const fileName = `commissions/${selectedId}/${stageKey}_${timestamp}.jpg`;
+      const publicPath = `commissions/${selectedId}/${stageKey}_preview_${timestamp}.jpg`;
+      const privatePath = `commissions/${selectedId}/${stageKey}_original_${timestamp}.jpg`;
 
-      // Step 1: 拿門票 (Public)
+      // 1. 上傳預覽圖到 Public Bucket (草稿/線稿/完稿預覽 通用)
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: publicPath, contentType: 'image/jpeg', bucketType: 'public' })
       });
-      const { uploadUrl, success } = await ticketRes.json();
-      if (!success) throw new Error("門票取得失敗");
+      const { uploadUrl: publicUploadUrl } = await ticketRes.json();
+      await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
 
-      // Step 2: 直傳 R2
-      await fetch(uploadUrl, { method: 'PUT', body: processedBlob, headers: { 'Content-Type': 'image/jpeg' } });
+      const publicFinalUrl = `https://pub-f050b181e18d45ba8489814467d581be.r2.dev/${publicPath}`;
 
-      // Step 3: 更新後端資料庫
-      const publicUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`; // 🌟 請確認這是您正確的 pub 網址
+      // 2. 如果是完稿，額外上傳原圖到 Private Bucket
+      let privateKey = null;
+      if (stageKey === 'final' && resultBlobs.original) {
+        const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: privatePath, contentType: 'image/jpeg', bucketType: 'private' })
+        });
+        const { uploadUrl: privateUploadUrl } = await privateTicketRes.json();
+        await fetch(privateUploadUrl, { method: 'PUT', body: resultBlobs.original, headers: { 'Content-Type': 'image/jpeg' } });
+        privateKey = privatePath;
+      }
+
+      // 3. 更新資料庫
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage: stageKey, file_url: publicUrl })
+        body: JSON.stringify({ 
+          stage: stageKey, 
+          file_url: publicFinalUrl,
+          private_file_key: privateKey // 🌟 傳入保險箱路徑
+        })
       });
 
-      const submitData = await submitRes.json();
-      if (submitData.success) {
-        alert(`${stageKey} 階段檔案提交成功！`);
-        fetchCommissions();
-        fetchDeliverables(selectedId);
-      } else {
-        alert('提交失敗：' + (submitData.error || '該階段可能已鎖定。'));
+      if ((await submitRes.json()).success) {
+        alert(`${stageKey === 'final' ? '完稿預覽與原檔' : '稿件'}已成功交付！`);
+        fetchCommissions(); fetchDeliverables(selectedId);
       }
     } catch (err) {
-      console.error(err);
-      alert("上傳失敗，請檢查網路設定");
+      alert("上傳過程中發生錯誤");
     } finally {
       setIsUploading(null);
     }
@@ -359,55 +367,43 @@ export function Notebook() {
     borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease'
   });
 
-  const renderStageBox = (title: string, stageKey: string, canUpload: boolean, isReviewingStatus: boolean, isPassed: boolean) => {
+  const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
-    const isCompleted = selectedOrder?.status === 'completed';
-    const isFreeMode = selectedOrder?.workflow_mode === 'free';
+    const isFinal = stageKey === 'final';
 
-    let headerBg = '#FCFAF8'; let headerColor = '#7A7269'; let statusTag = '';
+    let headerBg = '#FCFAF8'; let statusTag = '';
     
-    // 樣式保留原本精細的狀態判斷
-    if (isFreeMode) {
-      headerBg = '#FDFDFB'; headerColor = '#5D4A3E'; statusTag = '[自由模式] 隨時可上傳覆蓋';
-    } else if (isCompleted || isPassed) { 
-      headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = '✓ 已核可'; 
-    } else if (isReviewingStatus) { 
-      headerBg = '#FDF4E6'; headerColor = '#A67B3E'; statusTag = '⏳ 待審閱 (委託人確認前仍可重複上傳)'; 
-    } else if (canUpload) { 
-      if (sub) { headerBg = '#F5EBEB'; headerColor = '#A05C5C'; statusTag = '✍️ 請求修改 (委託人已退回，請重新上傳)'; } 
-      else { headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '✍️ 繪製中'; }
-    } else { 
-      headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '✍️ 繪製中'; 
+    // 🌟 修改狀態顯示文字
+    if (isPassed) {
+      headerBg = '#E8F3EB';
+      statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
+    } else if (isReviewing) {
+      headerBg = '#FDF4E6';
+      statusTag = '⏳ 待委託人確認';
     }
 
     return (
-      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.01)' }}>
-        <div style={{ backgroundColor: headerBg, color: headerColor, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px' }}>
-          <span>{title}</span> <span>{statusTag}</span>
+      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px' }}>
+          <span>{title}</span> <span style={{ color: isPassed ? '#4E7A5A' : '#A67B3E' }}>{statusTag}</span>
         </div>
-        <div style={{ padding: '20px', backgroundColor: '#FFFFFF' }}>
-          {sub && (
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>目前最新版本 (v{sub.version}) - {new Date(sub.created_at).toLocaleString()}</div>
-              <img src={sub.file_url} alt="交稿預覽" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #EAE6E1', objectFit: 'cover' }} />
-            </div>
-          )}
-          
-          {isUploading === stageKey ? (
-            <div style={{ textAlign: 'center', padding: '20px', color: '#4A7294', fontWeight: 'bold' }}>⏳ 影像處理與上傳中...</div>
-          ) : (
-            <div style={{ marginTop: '10px' }}>
-              <ImageUploader 
-                onUpload={(blob) => handleR2FileUpload(stageKey, blob)}
-                withWatermark={true}
-                watermarkText="SAMPLE"
-                aspectRatio={undefined}
-                buttonText={sub ? "上傳新版本覆蓋" : "開始交付檔案"}
-              />
-            </div>
-          )}
+        <div style={{ padding: '20px' }}>
+          {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+            💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
+          </div>}
 
-          {!sub && <div style={{ color: '#C4BDB5', textAlign: 'center', padding: '10px 0' }}>尚無檔案</div>}
+          {isUploading === stageKey ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
+          ) : (
+            <ImageUploader 
+              onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
+              withWatermark={true}
+              watermarkText="SAMPLE"
+              existingUrl={sub?.file_url}
+              isFinal={isFinal} // 🌟 完稿階段開啟雙重產出
+              buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
+            />
+          )}
         </div>
       </div>
     );
@@ -667,9 +663,9 @@ export function Notebook() {
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。委託人同意前皆可重複上傳新版本覆蓋。</p>
                   )}
                   
-                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.workflow_mode === 'free' || ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'sketch_reviewing', selectedOrder.workflow_mode !== 'free' && ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.workflow_mode === 'free' || ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'lineart_reviewing', selectedOrder.workflow_mode !== 'free' && ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.workflow_mode === 'free' || ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
+                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
                 </div>
               )}
 
