@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入兵工廠
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -7,15 +8,13 @@ interface Commission {
   usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
   draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
   pending_changes?: string; workflow_mode: string; queue_status: string;
-  type_name?: string;
-  latest_message_at?: string;
-  last_read_at_artist?: string;
-  client_public_id?: string; // 🌟 接收後端新增的欄位
+  type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
+  client_public_id?: string;
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
-interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
+interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
 export function Notebook() {
   const location = useLocation();
@@ -33,7 +32,7 @@ export function Notebook() {
     { id: 'completed', label: '已結單' }
   ];
   const [filter, setFilter] = useState<'all' | 'pending' | 'working' | 'completed'>('all');
-  const [searchTerm, setSearchTerm] = useState(''); // 🌟 新增搜尋狀態
+  const [searchTerm, setSearchTerm] = useState(''); // 🌟 搜尋狀態
   
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
@@ -46,7 +45,9 @@ export function Notebook() {
   
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [uploadUrls, setUploadUrls] = useState<Record<string, string>>({});
+  
+  // 🌟 上傳狀態追蹤
+  const [isUploading, setIsUploading] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -103,7 +104,9 @@ export function Notebook() {
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
       });
       fetchCommissions();
-    } catch (e) {}
+    } catch (e) {
+      console.error("更新已讀時間失敗", e); // 💡 安全性建議：避免靜默錯誤
+    }
   };
 
   const handleSaveDailyFields = async () => {
@@ -214,14 +217,22 @@ export function Notebook() {
   };
 
   const handleAddPayment = async () => {
+    const amountNum = Number(newPayment.amount);
+    
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) {
       return alert("請填寫完整的記帳資訊喔！");
     }
+
+    // 💡 安全性建議：防範輸入空白、非數字字串導致 NaN
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return alert("請輸入有效的金額！");
+    }
+
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
       method: 'POST', 
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ ...newPayment, amount: Number(newPayment.amount) }) 
+      body: JSON.stringify({ ...newPayment, amount: amountNum }) 
     });
     const data = await res.json();
     if (data.success) {
@@ -249,28 +260,50 @@ export function Notebook() {
     }
   };
 
-  const handleSubmitStage = async (stageKey: string) => {
-    const url = uploadUrls[stageKey];
-    
-    if (!url || !url.trim()) {
-      return alert('您尚未輸入圖片網址！請貼上網址後再點擊提交。'); 
-    }
+  // 🌟 核心：處理 R2 上傳邏輯
+  const handleR2FileUpload = async (stageKey: string, processedBlob: Blob) => {
     if (!selectedId) return;
+    setIsUploading(stageKey);
 
-    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, { 
-      method: 'POST', 
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ stage: stageKey, file_url: url }) 
-    });
-    const data = await res.json();
-    if (data.success) { 
-      setUploadUrls(prev => ({ ...prev, [stageKey]: '' }));
-      alert('上傳成功！');
-      fetchCommissions(); fetchDeliverables(selectedId); 
-    } else {
-      alert('提交失敗：' + (data.error || '該階段可能已鎖定。'));
-      fetchDeliverables(selectedId); 
+    try {
+      const timestamp = Date.now();
+      const fileName = `commissions/${selectedId}/${stageKey}_${timestamp}.jpg`;
+
+      // Step 1: 拿門票 (Public)
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+      });
+      const { uploadUrl, success } = await ticketRes.json();
+      if (!success) throw new Error("門票取得失敗");
+
+      // Step 2: 直傳 R2
+      await fetch(uploadUrl, { method: 'PUT', body: processedBlob, headers: { 'Content-Type': 'image/jpeg' } });
+
+      // Step 3: 更新後端資料庫
+      const publicUrl = `https://pub-f050b181e18d45ba8489814467d581be.r2.dev/${fileName}`; // 🌟 請確認這是您正確的 pub 網址
+      const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: stageKey, file_url: publicUrl })
+      });
+
+      const submitData = await submitRes.json();
+      if (submitData.success) {
+        alert(`${stageKey} 階段檔案提交成功！`);
+        fetchCommissions();
+        fetchDeliverables(selectedId);
+      } else {
+        alert('提交失敗：' + (submitData.error || '該階段可能已鎖定。'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("上傳失敗，請檢查網路設定");
+    } finally {
+      setIsUploading(null);
     }
   };
 
@@ -280,34 +313,33 @@ export function Notebook() {
     return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
   };
 
-  // 🌟 搜尋與過濾邏輯
-  const filteredOrders = commissions.filter(order => {
-    // 1. 分頁狀態過濾
-    let tabMatch = true;
-    if (filter === 'completed') tabMatch = order.status === 'completed';
-    else if (filter === 'working') tabMatch = order.status !== 'completed' && order.status !== 'cancelled';
-    else if (filter === 'pending') tabMatch = order.status === 'quote_created' || order.status === 'pending';
+  // 💡 效能優化建議：使用 useMemo 緩存搜尋過濾結果，減少不必要的重新計算
+  const filteredOrders = useMemo(() => {
+    return commissions.filter(order => {
+      let tabMatch = true;
+      if (filter === 'completed') tabMatch = order.status === 'completed';
+      else if (filter === 'working') tabMatch = order.status !== 'completed' && order.status !== 'cancelled';
+      else if (filter === 'pending') tabMatch = order.status === 'quote_created' || order.status === 'pending';
 
-    if (!tabMatch) return false;
+      if (!tabMatch) return false;
 
-    // 2. 關鍵字過濾 (輸入大於等於 2 字元才搜尋)
-    if (searchTerm.trim().length >= 2) {
-      const term = searchTerm.toLowerCase();
-      const paymentLabel = getPaymentBadge(order.payment_status).text;
-      
-      const match = (
-        (order.client_name && order.client_name.toLowerCase().includes(term)) ||
-        (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) ||
-        (order.project_name && order.project_name.toLowerCase().includes(term)) ||
-        (order.id.toLowerCase().includes(term)) ||
-        (order.client_public_id && order.client_public_id.toLowerCase().includes(term)) ||
-        (paymentLabel.includes(term))
-      );
-      return match;
-    }
+      if (searchTerm.trim().length >= 2) {
+        const term = searchTerm.toLowerCase();
+        const paymentLabel = getPaymentBadge(order.payment_status).text;
+        
+        return (
+          (order.client_name && order.client_name.toLowerCase().includes(term)) ||
+          (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) ||
+          (order.project_name && order.project_name.toLowerCase().includes(term)) ||
+          (order.id.toLowerCase().includes(term)) ||
+          (order.client_public_id && order.client_public_id.toLowerCase().includes(term)) ||
+          (paymentLabel.includes(term))
+        );
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [commissions, filter, searchTerm]);
 
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -334,17 +366,18 @@ export function Notebook() {
 
     let headerBg = '#FCFAF8'; let headerColor = '#7A7269'; let statusTag = '';
     
+    // 樣式保留原本精細的狀態判斷
     if (isFreeMode) {
       headerBg = '#FDFDFB'; headerColor = '#5D4A3E'; statusTag = '[自由模式] 隨時可上傳覆蓋';
     } else if (isCompleted || isPassed) { 
-      headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = ''; 
+      headerBg = '#E8F3EB'; headerColor = '#4E7A5A'; statusTag = '✓ 已核可'; 
     } else if (isReviewingStatus) { 
-      headerBg = '#FDF4E6'; headerColor = '#A67B3E'; statusTag = '[待審閱] 委託人確認前仍可重複上傳'; 
+      headerBg = '#FDF4E6'; headerColor = '#A67B3E'; statusTag = '⏳ 待審閱 (委託人確認前仍可重複上傳)'; 
     } else if (canUpload) { 
-      if (sub) { headerBg = '#F5EBEB'; headerColor = '#A05C5C'; statusTag = '[請求修改] 委託人已退回，請重新上傳'; } 
-      else { headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '[繪製中] 請上傳檔案'; }
+      if (sub) { headerBg = '#F5EBEB'; headerColor = '#A05C5C'; statusTag = '✍️ 請求修改 (委託人已退回，請重新上傳)'; } 
+      else { headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '✍️ 繪製中'; }
     } else { 
-      headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '[繪製中] 請上傳檔案'; 
+      headerBg = '#EBF2F7'; headerColor = '#4E7294'; statusTag = '✍️ 繪製中'; 
     }
 
     return (
@@ -359,10 +392,21 @@ export function Notebook() {
               <img src={sub.file_url} alt="交稿預覽" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #EAE6E1', objectFit: 'cover' }} />
             </div>
           )}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <input type="text" placeholder="請貼上圖片網址 (模擬檔案上傳)..." value={uploadUrls[stageKey] || ''} onChange={e => setUploadUrls(prev => ({...prev, [stageKey]: e.target.value}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FBFBF9' }} />
-            <button onClick={() => handleSubmitStage(stageKey)} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>提交新版本</button>
-          </div>
+          
+          {isUploading === stageKey ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#4A7294', fontWeight: 'bold' }}>⏳ 影像處理與上傳中...</div>
+          ) : (
+            <div style={{ marginTop: '10px' }}>
+              <ImageUploader 
+                onUpload={(blob) => handleR2FileUpload(stageKey, blob)}
+                withWatermark={true}
+                watermarkText="SAMPLE"
+                aspectRatio={undefined}
+                buttonText={sub ? "上傳新版本覆蓋" : "開始交付檔案"}
+              />
+            </div>
+          )}
+
           {!sub && <div style={{ color: '#C4BDB5', textAlign: 'center', padding: '10px 0' }}>尚無檔案</div>}
         </div>
       </div>
@@ -417,6 +461,8 @@ export function Notebook() {
 
   return (
     <div style={{ display: 'flex', height: '100%', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* 左側列表區 */}
       <div style={{ width: '380px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
@@ -461,7 +507,6 @@ export function Notebook() {
                 </div>
                 <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', justifyContent: 'space-between' }}>
                   <span>項目：{order.project_name || order.type_name || '未命名項目'}</span>
-                  {/* 🌟 列表新增委託人編號 */}
                   <span style={{ color: '#A0978D' }}>委託人編號：{order.client_public_id || '未綁定'}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -477,14 +522,15 @@ export function Notebook() {
         </div>
       </div>
 
+      {/* 右側內容區 */}
       <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由左側選擇委託單以檢視詳情</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            
             <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
               <div>
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
                 <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
-                {/* 🌟 單號旁邊新增委託人編號 */}
                 <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', gap: '16px' }}>
                   <span>單號：{selectedOrder.id}</span>
                   <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
@@ -618,11 +664,12 @@ export function Notebook() {
                   {selectedOrder.workflow_mode === 'free' ? (
                     <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
                   ) : (
-                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>在此區塊提交各階段的檔案。委託人同意前皆可重複上傳新版本覆蓋。</p>
+                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。委託人同意前皆可重複上傳新版本覆蓋。</p>
                   )}
+                  
                   {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.workflow_mode === 'free' || ['sketch_drawing', 'sketch_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'sketch_reviewing', selectedOrder.workflow_mode !== 'free' && ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
                   {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.workflow_mode === 'free' || ['lineart_drawing', 'lineart_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'lineart_reviewing', selectedOrder.workflow_mode !== 'free' && ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 3：完稿 (Final)', 'final', selectedOrder.workflow_mode === 'free' || ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
+                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.workflow_mode === 'free' || ['final_drawing', 'final_reviewing'].includes(selectedOrder.current_stage), selectedOrder.workflow_mode !== 'free' && selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
                 </div>
               )}
 
