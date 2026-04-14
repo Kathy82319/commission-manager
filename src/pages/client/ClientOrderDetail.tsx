@@ -31,7 +31,7 @@ interface ActionLog { id: string; actor_role: string; content: string; created_a
 export function ClientOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+  const API_BASE = (import.meta as any).VITE_API_BASE_URL || '';
   
   const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
   const [orderData, setOrderData] = useState<CommissionDetail | null>(null);

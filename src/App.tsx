@@ -19,9 +19,7 @@ import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 
 // 引入委託人端頁面
-import { ClientProfileEdit } from './pages/client/ClientProfileEdit'; 
 import { ClientOrderList } from './pages/client/ClientOrderList'; 
-import { ClientOrderDetail } from './pages/client/ClientOrderDetail';
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders'; 
  
@@ -58,9 +56,7 @@ export function App() {
         {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="profile/edit" element={<ClientProfileEdit />} />
           <Route path="orders" element={<ClientOrderList />} />
-          <Route path="order/:id" element={<ClientOrderDetail />} />       
           <Route path="/client/orders" element={<ClientOrders />} />
         </Route>
 

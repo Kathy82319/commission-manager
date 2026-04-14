@@ -76,12 +76,9 @@ export function ClientLayout() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)', position: 'sticky', top: 0, zIndex: 50 
       }}>
         <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px', letterSpacing: '1px' }}>
-          Commission
+          Arti
         </div>
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <Link to="/client/home" style={{ color: location.pathname === '/client/home' ? '#FFF' : 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px', transition: 'color 0.2s' }}>
-            我的主頁
-          </Link>
           <Link to="/client/orders" style={{ color: location.pathname.includes('/client/order') ? '#FFF' : 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px', transition: 'color 0.2s' }}>
             委託單列表
           </Link>
