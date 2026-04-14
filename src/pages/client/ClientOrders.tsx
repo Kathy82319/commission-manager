@@ -268,15 +268,7 @@ export function ClientOrders() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif' }}>
-      
-      {/* 頂部導覽列 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-        <h1 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>🎨 我的發包委託管理</h1>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => navigate('/portal')} style={{ padding: '8px 16px', backgroundColor: '#F5EBEB', color: '#5D4A3E', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>切換身分</button>
-          <button onClick={() => navigate('/artist/notebook')} style={{ padding: '8px 16px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>進入繪師後台 →</button>
-        </div>
-      </div>
+
 
       {/* 異動申請彈窗 */}
       {selectedOrder?.pending_changes && (
