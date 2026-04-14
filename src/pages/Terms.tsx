@@ -5,12 +5,12 @@ export function Terms() {
       <h1 style={{ fontSize: '24px', marginBottom: '24px', borderBottom: '2px solid #F4F0EB' }}>服務條款與收費規則</h1>
 
       <section>
-        <h3 style={{ color: '#A67B3E' }}>一、服務內容</h3>
+        <h3 style={{ color: '#ecb05c' }}>一、服務內容</h3>
         <p>本平台（以下簡稱「本工具」）提供委託進度追蹤、合約數位存證與個人化排單表之軟體工具服務。本工具僅作為溝通與紀錄之輔助手段，並非繪師與委託人間交易之當事人。</p>
       </section>
 
       <section>
-        <h3 style={{ color: '#A67B3E' }}>二、訂閱費用與收費規則</h3>
+        <h3 style={{ color: '#ecb05c' }}>二、訂閱費用與收費規則</h3>
         <ul>
           <li><strong>試用/免費版：</strong> 每月提供 3 筆委託單建立額度。</li>
           <li><strong>專業版 (Pro)：</strong> 開啟無限建單與網頁自訂功能。費用採預付訂閱制。</li>
@@ -19,17 +19,17 @@ export function Terms() {
       </section>
 
       <section>
-        <h3 style={{ color: '#A67B3E' }}>三、權利與責任</h3>
+        <h3 style={{ color: '#ecb05c' }}>三、權利與責任</h3>
         <p>繪師與委託人間的畫作版權歸屬、酬金給付及糾紛處理，應依據雙方於建單時簽署之「協議書內容」為準。本平台對委託人間之溝通落差、跑單或畫作品質爭議不負法律賠償責任，但提供完整歷程紀錄作為舉證參考。</p>
       </section>
 
       <section>
-        <h3 style={{ color: '#A67B3E' }}>四、違規與法律責任</h3>
+        <h3 style={{ color: '#ecb05c' }}>四、違規與法律責任</h3>
         <p>用戶不得利用本服務散佈違法、色情或侵權內容。若有虛假陳述致他人名譽受損，使用者須自負相關法律責任。</p>
       </section>
 
 <section>
-  <h3 style={{ color: '#A67B3E' }}>五、黑單管理功能之使用規範</h3>
+  <h3 style={{ color: '#ecb05c' }}>五、黑單管理功能之使用規範</h3>
   <p>
     1. 本平台提供之黑單功能僅供繪師作為個人委託管理之參考紀錄，<strong>非公開之信用評等系統</strong>。
   </p>
@@ -43,7 +43,7 @@ export function Terms() {
 
 // 建議加入 src/pages/Terms.tsx
 <section>
-  <h3 style={{ color: '#A67B3E' }}>六、使用者行為規範</h3>
+  <h3 style={{ color: '#ecb05c' }}>六、使用者行為規範</h3>
   <ul>
     <li>
       <strong>識別碼用途限制：</strong> 系統顯示之委託人識別碼（如 User-XXXXX）僅供繪師於本平台內辨識委託對象、管理委託進度使用。

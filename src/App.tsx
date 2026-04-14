@@ -19,16 +19,18 @@ import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 
 // 引入委託人端頁面
-import { ClientHome } from './pages/client/ClientHome';
 import { ClientProfileEdit } from './pages/client/ClientProfileEdit'; 
 import { ClientOrderList } from './pages/client/ClientOrderList'; 
 import { ClientOrderDetail } from './pages/client/ClientOrderDetail';
 import { ClientForm } from './pages/client/ClientForm'; 
+import { ClientOrders } from './pages/client/ClientOrders'; 
+ 
 
 // 引入共用頁面
 import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
+import { Portal } from './pages/Portal';
 
 export function App() {
   const MY_ARTIST_ID = "@User_98703";
@@ -56,10 +58,10 @@ export function App() {
         {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<ClientHome />} /> 
           <Route path="profile/edit" element={<ClientProfileEdit />} />
           <Route path="orders" element={<ClientOrderList />} />
-          <Route path="order/:id" element={<ClientOrderDetail />} />
+          <Route path="order/:id" element={<ClientOrderDetail />} />       
+          <Route path="/client/orders" element={<ClientOrders />} />
         </Route>
 
         {/* 5. 委託單確認與共用工作區 */}
@@ -70,6 +72,7 @@ export function App() {
         {/* 6. 公開頁面 (套用 PublicLayout) - 必須放最後面，因為 /:artistId 會攔截所有東西 */}
         <Route element={<PublicLayout />}>
           <Route path="/terms" element={<Terms />} />
+          <Route path="/portal" element={<Portal />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/:artistId" element={<PublicProfile />} />
         </Route>

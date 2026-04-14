@@ -192,14 +192,12 @@ export default {
 
         if (results.length === 0) {
           const publicId = `User_${Math.floor(10000 + Math.random() * 90000)}`;
-          await env.commission_db.prepare(`
-            INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, subscription_type, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)
-          `).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
+          await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, subscription_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
-          targetPath = user.role === 'pending' ? "/onboarding" : (user.role === 'client' ? "/client/home" : "/artist/queue");
+          // 🌟 核心修改：只要不是 pending，老手一律導向 /portal 入口大廳
+          targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
         }
 
         let baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
