@@ -1,10 +1,9 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 
 export function ClientLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
