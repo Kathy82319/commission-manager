@@ -11,10 +11,7 @@ export function ArtistLayout() {
     const checkAuthAndFetchProfile = async () => {
       try {
         const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
-        
-        const res = await fetch(`${API_BASE}/api/users/me`, {
-          credentials: 'include'
-        });
+        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
 
         if (res.status === 401 || res.status === 403) {
           navigate('/login');
@@ -22,18 +19,11 @@ export function ArtistLayout() {
         }
 
         const data = await res.json();
-        
         if (data.success && data.data) {
-          if (data.data.role === 'pending') {
-            navigate('/onboarding');
-          } else if (data.data.role === 'client') {
-            navigate('/client/orders');
-          } else {
-            setArtist(data.data);
-          }
-        } else {
-          navigate('/login');
-        }
+          if (data.data.role === 'pending') navigate('/onboarding');
+          else if (data.data.role === 'client') navigate('/client/orders');
+          else setArtist(data.data);
+        } else navigate('/login');
       } catch (error) {
         console.error("驗證繪師身分失敗", error);
         navigate('/login');
@@ -41,21 +31,13 @@ export function ArtistLayout() {
         setLoading(false);
       }
     };
-
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 🌟 修改項目：同時執行「複製」與「新開分頁」
   const handlePreviewAndCopy = () => {
     if (!artist) return;
     const publicUrl = `${window.location.origin}/${artist.public_id}`; 
-    
-    // 1. 複製到剪貼簿
-    navigator.clipboard.writeText(publicUrl).catch(err => {
-      console.error("複製失敗", err);
-    });
-    
-    // 2. 另開新分頁跳轉
+    navigator.clipboard.writeText(publicUrl);
     window.open(publicUrl, '_blank');
   };
 
@@ -118,6 +100,20 @@ export function ArtistLayout() {
           >
             預覽/複製個人首頁
           </button>
+
+          {/* 🌟 修改項目 3：按鈕下方的條款與聯繫資訊 */}
+          <div style={{ 
+            marginTop: '10px', 
+            fontSize: '12px', 
+            color: 'black', 
+            textAlign: 'center',
+            lineHeight: '1.6'
+          }}>
+            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+            <span style={{ margin: '0 4px' }}>|</span>
+            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+            <div style={{ marginTop: '2px' }}>客服信箱：cath40286@gmail.com</div>
+          </div>
         </div>
       </aside>
 

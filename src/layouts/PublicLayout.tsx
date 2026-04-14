@@ -1,12 +1,16 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 
 export function PublicLayout() {
+  const location = useLocation();
+  const navigate = useNavigate();
   
   const handleLoginClick = () => {
-    // 🌟 微調：改為使用環境變數，保持與其他元件一致
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     window.location.href = `${API_BASE}/api/auth/line/login`;
   };
+
+  // 判斷是否為條款頁面
+  const isLegalPage = location.pathname === '/terms' || location.pathname === '/privacy';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
@@ -38,6 +42,30 @@ export function PublicLayout() {
 
       <main style={{ flex: 1, width: '100%' }}>
         <Outlet />
+        
+        {/* 🌟 修改項目 1：在條款頁面下方增加「回上一頁」按鈕 */}
+        {isLegalPage && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '60px' }}>
+            <button 
+              onClick={() => navigate(-1)}
+              style={{
+                padding: '8px 30px',
+                backgroundColor: 'transparent',
+                color: '#5D4A3E',
+                border: '2px solid #5D4A3E',
+                borderRadius: '24px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#5D4A3E'; e.currentTarget.style.color = '#FFF'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#5D4A3E'; }}
+            >
+              回上一頁
+            </button>
+          </div>
+        )}
       </main>
 
       <footer style={{ 
@@ -50,24 +78,25 @@ export function PublicLayout() {
           width: '100%', 
           maxWidth: '300px', 
           margin: '0 auto 12px auto', 
-          borderTop: '1px solid rgba(93, 74, 62, 0.15)' 
+          borderTop: '1px solid rgba(255, 255, 255, 0.2)' 
         }} />
 
-        <div style={{ fontSize: '11px', color: 'rgba(93, 74, 62, 0.4)', letterSpacing: '1px' }}>
+        {/* 🌟 修改項目 2：調整頁尾文字顏色與清晰度 */}
+        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '1px' }}>
           <Link 
             to="/terms" 
-            style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'rgba(93, 74, 62, 0.8)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(93, 74, 62, 0.4)'}
+            style={{ color: 'inherit', textDecoration: 'none', transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
             服務條款
           </Link>
           <span style={{ margin: '0 12px', opacity: 0.5 }}>|</span>
           <Link 
             to="/privacy" 
-            style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'rgba(93, 74, 62, 0.8)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(93, 74, 62, 0.4)'}
+            style={{ color: 'inherit', textDecoration: 'none', transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
             隱私權政策
           </Link>
