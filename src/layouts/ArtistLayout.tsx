@@ -49,9 +49,10 @@ export function ArtistLayout() {
 
   const copyLink = () => {
     if (!artist) return;
-    const publicUrl = `${window.location.origin}/u/${artist.public_id}`; // 🌟 配合 App.tsx 的路由
+    // 🌟 修正導向網址：移除中間的 /u/，直接使用 public_id
+    const publicUrl = `${window.location.origin}/${artist.public_id}`; 
     navigator.clipboard.writeText(publicUrl);
-    alert('公開主頁連結已複製！');
+    alert('個人首頁連結已複製！');
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -70,8 +71,9 @@ export function ArtistLayout() {
     <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
       <aside style={{ width: '240px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', borderRight: '1px solid #EAE6E1', position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Commission</div>
-          <div style={{ fontSize: '13px', color: '#A0978D' }}>Artist Dashboard</div>
+          {/* 🌟 專案名稱更新 */}
+          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+          <div style={{ fontSize: '13px', color: '#A0978D' }}>繪師管理後台</div>
         </div>
         
         <nav style={{ flex: 1, padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -92,7 +94,6 @@ export function ArtistLayout() {
         </nav>
 
         <div style={{ padding: '20px', borderTop: '1px solid #F0ECE7', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {/* 🌟 核心修正：按鈕跳轉路徑改為絕對路徑 '/client/orders' */}
           <button 
             onClick={() => navigate('/client/orders')} 
             style={{ 
@@ -112,7 +113,8 @@ export function ArtistLayout() {
               cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' 
             }}
           >
-            複製個人公開首頁連結
+            {/* 🌟 按鈕文字更新 */}
+            預覽/複製個人首頁
           </button>
         </div>
       </aside>

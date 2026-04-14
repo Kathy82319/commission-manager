@@ -17,13 +17,15 @@ interface ProfileSettings {
   splash_text: string;
 }
 
+// 🌟 修改項目：強化富文本編輯器的工具列
 const customQuillModules = {
   toolbar: [
     [{ 'header': [1, 2, 3, false] }], 
-    ['bold', 'italic', 'underline', 'strike'], 
+    [{ 'size': ['small', false, 'large', 'huge'] }], // 新增字體大小
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'], // 新增引言
     [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-    ['clean'] 
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], // 新增對齊方式
+    ['link', 'clean'] // 新增插入連結
   ]
 };
 
@@ -460,7 +462,6 @@ export function Settings() {
                   value={settings[activeTab as keyof ProfileSettings] as string || ''} 
                   onChange={value => setSettings({...settings, [activeTab]: value})}
                   modules={customQuillModules}
-                  placeholder={`開始編寫${menuItems.find(m => m.id === activeTab)?.label}細節...`}
                   style={{ height: '380px', backgroundColor: '#FFFFFF', border: 'none' }}
                 />
               </div>
@@ -480,7 +481,7 @@ export function Settings() {
                         <ReactQuill 
                           theme="snow" value={section.content || ''} 
                           onChange={value => handleUpdateCustomSection(section.id, 'content', value)}
-                          modules={customQuillModules} placeholder="內容說明..." style={{ height: '200px', backgroundColor: '#FFFFFF', border: 'none' }}
+                          modules={customQuillModules} style={{ height: '200px', backgroundColor: '#FFFFFF', border: 'none' }}
                         />
                       </div>
                     </div>

@@ -175,7 +175,7 @@ export function Records() {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {currentMonthRecords.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px', color: '#999', backgroundColor: '#fafafa', borderRadius: '12px', border: '1px dashed #ddd' }}>
               這個月沒有結案的委託單喔！
@@ -189,7 +189,7 @@ export function Records() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '24px',
+                  padding: '16px 20px', // 🌟 縮小 Padding
                   backgroundColor: '#fff',
                   borderRadius: '12px',
                   border: '1px solid #eee',
@@ -197,27 +197,35 @@ export function Records() {
                   color: 'inherit',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)'; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}> {/* 🌟 縮小 gap */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
                       已結案
                     </span>
-                    <span style={{ fontSize: '14px', color: '#888', fontWeight: '500' }}>
+                    <span style={{ fontSize: '13px', color: '#888', fontWeight: '500' }}>
                       {new Date(record.order_date).toLocaleDateString()}
                     </span>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#222' }}>
+                  
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#222' }}>
                     {record.project_name || '未命名委託'}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>
+                  
+                  <div style={{ fontSize: '13px', color: '#666' }}>
                     委託人：{record.client_name || '未知'}
+                  </div>
+
+                  {/* 🌟 新增：訂單單號與委託人編號 */}
+                  <div style={{ fontSize: '12px', color: '#999', display: 'flex', gap: '16px', marginTop: '2px' }}>
+                    <span>單號：{record.id ? (record.id.includes('-') ? record.id.split('-')[1] : record.id) : '未知'}</span>
+                    <span>委託人編號：{record.client_public_id || '未綁定'}</span>
                   </div>
                 </div>
                 
-                <div style={{ fontSize: '22px', fontWeight: '900', color: '#1976d2' }}>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1976d2' }}> {/* 🌟 字體微調 */}
                   NT$ {(record.total_price || 0).toLocaleString()}
                 </div>
               </Link>

@@ -222,7 +222,6 @@ export function Queue() {
                         <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px', color: '#5D4A3E', fontSize: '15px' }} title={order.contact_memo || '未知'}>
                           {order.contact_memo || '未知'}
                         </div>
-                        {/* 🌟 列表新增委託人編號 */}
                         <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>
                           編號：{order.client_public_id || '未綁定'}
                         </div>
@@ -232,7 +231,7 @@ export function Queue() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                           <span style={{ 
                             fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px',
-                            backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
+                            backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#A67B3E',
                             color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
                           }}>
                             {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
@@ -255,7 +254,29 @@ export function Queue() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>急件</span>}
-                          <input type="text" defaultValue={order.artist_note || ''} placeholder="輸入備註..." onBlur={(e) => { if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); }} style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid transparent', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', transition: 'all 0.2s' }} onFocus={e => {e.currentTarget.style.border = '1px solid #DED9D3'; e.currentTarget.style.backgroundColor = '#FBFBF9'; }} onMouseLeave={e => e.currentTarget.blur()} />
+                          
+                          {/* 🌟 修改項目：備註輸入框修復中英文選字與失去焦點問題 */}
+                          <input 
+                            type="text" 
+                            defaultValue={order.artist_note || ''} 
+                            placeholder="輸入備註..." 
+                            onBlur={(e) => { 
+                              if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); 
+                              e.currentTarget.style.border = '1px solid transparent'; 
+                              e.currentTarget.style.backgroundColor = 'transparent'; 
+                            }} 
+                            onKeyDown={(e) => {
+                              // 確認按下 Enter 且不是正在拼字/選字狀態才觸發儲存（失焦）
+                              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid transparent', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', transition: 'all 0.2s' }} 
+                            onFocus={e => {
+                              e.currentTarget.style.border = '1px solid #DED9D3'; 
+                              e.currentTarget.style.backgroundColor = '#FBFBF9'; 
+                            }} 
+                          />
                         </div>
                         {hasNewMsg && (
                           <div style={{ color: '#A67B3E', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start' }}>

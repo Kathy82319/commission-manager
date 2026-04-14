@@ -259,8 +259,6 @@ export function Notebook() {
     }
   };
 
-  // 🌟 核心：確保採用正確的 R2 公開網址
-// 🌟 替換這一段即可
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
@@ -270,7 +268,6 @@ export function Notebook() {
       const publicPath = `commissions/${selectedId}/${stageKey}_preview_${timestamp}.jpg`;
       const privatePath = `commissions/${selectedId}/${stageKey}_original_${timestamp}.jpg`;
 
-      // 1. 上傳預覽圖到 Public Bucket
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName: publicPath, contentType: 'image/jpeg', bucketType: 'public' })
@@ -278,10 +275,8 @@ export function Notebook() {
       const { uploadUrl: publicUploadUrl } = await ticketRes.json();
       await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
 
-      // 🌟 已寫入您專屬的 R2 公開網址
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicPath}`;
 
-      // 2. 如果是完稿，額外上傳原圖到 Private Bucket
       let privateKey = null;
       if (stageKey === 'final' && resultBlobs.original) {
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
@@ -293,7 +288,6 @@ export function Notebook() {
         privateKey = privatePath;
       }
 
-      // 3. 更新資料庫
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
@@ -371,8 +365,6 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
     const sub = submissions.find(s => s.stage === stageKey);
     const isFinal = stageKey === 'final';
 
-    // 🌟 核心修正：精準判斷「被退回」的狀態
-    // 條件：委託單當前狀態剛好卡在該階段的「繪製中」，且該階段已經有上傳過檔案
     const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
 
     let headerBg = '#FCFAF8'; 
@@ -387,7 +379,7 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
       headerBg = '#FDF4E6';
       statusTag = '⏳ 待委託人確認';
       statusColor = '#A67B3E';
-    } else if (isRejected) { // 🌟 這裡不再使用粗暴的 else if (sub)
+    } else if (isRejected) { 
       headerBg = '#fce8e6';
       statusTag = '⚠️ 委託人已退回修改';
       statusColor = '#d93025';
@@ -518,10 +510,16 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
                   <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={getDualName(order)}>{getDualName(order)}</span>
                   <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '15px' }}>NT$ {order.total_price}</span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>項目：{order.project_name || order.type_name || '未命名項目'}</span>
-                  <span style={{ color: '#A0978D' }}>委託人編號：{order.client_public_id || '未綁定'}</span>
+                
+                {/* 🌟 修改項目：將單一列改為兩列，清楚顯示「訂單單號」與「委託人編號」 */}
+                <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>項目：{order.project_name || order.type_name || '未命名項目'}</span>
                 </div>
+                <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>訂單單號：{order.id.split('-')[1] || order.id}</span>
+                  <span>委託人編號：{order.client_public_id || '未綁定'}</span>
+                </div>
+
                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
                   {statusBadge && <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>}
