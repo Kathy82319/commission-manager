@@ -46,7 +46,6 @@ export function ClientOrderDetail() {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. 載入資料
   const fetchDetailData = async () => {
     if (!id) return;
     try {
@@ -142,14 +141,14 @@ export function ClientOrderDetail() {
     }
   };
 
-  const handleReview = async (stageKey: string, action: 'approve' | 'reject' | 'read_only') => {
+  const handleReview = async (stageKey: string, action: 'approve' | 'reject') => {
     if (!id) return;
     let comment = '';
     if (action === 'reject') {
       comment = window.prompt("請輸入需要修改的意見：") || '';
       if (!comment.trim()) return alert("必須輸入意見才能退回。");
     } else {
-      const msg = action === 'read_only' ? '確認標記此階段為已閱覽？' : '⚠️ 注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？';
+      const msg = '⚠️ 注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？';
       if (!window.confirm(msg)) return;
     }
 
@@ -208,11 +207,19 @@ export function ClientOrderDetail() {
     return latest;
   };
 
-  // 🌟 整合修正：縮小預覽尺寸與長圖顯示支援
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
-    let statusText = isPassed ? (isFinal ? '✓ 已同意，合約結案' : '✓ 已閱覽') : (isReviewing ? '👀 繪師已交付，請確認' : '⏳ 繪製中...');
+    
+    // 🌟 狀態文字優化
+    let statusText = '';
+    if (isPassed) {
+      statusText = isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段';
+    } else if (isReviewing) {
+      statusText = isFinal ? '👀 繪師已交付，待您確認' : '👀 繪師已交付，請過目';
+    } else {
+      statusText = '⏳ 尚未交付';
+    }
     
     return (
       <div style={{ border: '1px solid #d0d8e4', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
@@ -232,7 +239,7 @@ export function ClientOrderDetail() {
                  borderRadius: '8px', 
                  overflow: 'hidden', 
                  backgroundColor: '#f1f5f9',
-                 maxWidth: '350px', // 🌟 委託人端預覽縮小
+                 maxWidth: '350px', 
                  margin: '0 auto' 
                }}>
                  <img 
@@ -240,7 +247,7 @@ export function ClientOrderDetail() {
                    alt="稿件預覽" 
                    style={{ 
                      width: '100%', 
-                     maxHeight: '400px', // 🌟 支援長圖顯示
+                     maxHeight: '400px', 
                      objectFit: 'contain', 
                      display: 'block' 
                    }} 
@@ -248,13 +255,14 @@ export function ClientOrderDetail() {
                </div>
                
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                 {/* 🌟 草稿與線稿不顯示按鈕，只給提示 */}
                  {isReviewing && !isFinal && (
-                   <>
-                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
-                     <button onClick={() => handleReview(stageKey, 'read_only')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#4A7294', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✓ 標記為已閱覽</button>
-                   </>
+                   <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#64748b', fontWeight: 'bold', textAlign: 'right' }}>
+                     👀 本階段請過目即可，繪師後續將會直接推進至下一階段。
+                   </div>
                  )}
 
+                 {/* 🌟 完稿才顯示同意與退回按鈕 */}
                  {isReviewing && isFinal && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
