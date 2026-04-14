@@ -67,7 +67,7 @@ export function ClientProfileEdit() {
 
       // Step C: 組合圖片最終 R2 網址
       // ⚠️ 請確保此網址與您在 Cloudflare R2 設定的網址一致
-      const finalR2Url = `https://f72c79d82828e2419ab5fb0e1d323ce5.r2.cloudflarestorage.com/commission-public/${fileName}`;
+      const finalR2Url = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
       
       // 正式將狀態更新為 R2 網址
       setProfile(prev => ({ ...prev, avatar_url: finalR2Url }));
