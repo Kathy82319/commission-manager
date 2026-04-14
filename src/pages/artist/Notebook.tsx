@@ -1,6 +1,7 @@
+// src/pages/artist/Notebook.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入兵工廠
+import { ImageUploader } from '../../components/ImageUploader'; 
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -32,7 +33,7 @@ export function Notebook() {
     { id: 'completed', label: '已結單' }
   ];
   const [filter, setFilter] = useState<'all' | 'pending' | 'working' | 'completed'>('all');
-  const [searchTerm, setSearchTerm] = useState(''); // 🌟 搜尋狀態
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
@@ -46,7 +47,6 @@ export function Notebook() {
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   
-  // 🌟 上傳狀態追蹤
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export function Notebook() {
       });
       fetchCommissions();
     } catch (e) {
-      console.error("更新已讀時間失敗", e); // 💡 安全性建議：避免靜默錯誤
+      console.error("更新已讀時間失敗", e);
     }
   };
 
@@ -223,7 +223,6 @@ export function Notebook() {
       return alert("請填寫完整的記帳資訊喔！");
     }
 
-    // 💡 安全性建議：防範輸入空白、非數字字串導致 NaN
     if (isNaN(amountNum) || amountNum <= 0) {
       return alert("請輸入有效的金額！");
     }
@@ -260,7 +259,8 @@ export function Notebook() {
     }
   };
 
-  // 🌟 核心修正：雙重上傳與保險箱邏輯
+  // 🌟 核心：確保採用正確的 R2 公開網址
+// 🌟 替換這一段即可
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
@@ -270,7 +270,7 @@ export function Notebook() {
       const publicPath = `commissions/${selectedId}/${stageKey}_preview_${timestamp}.jpg`;
       const privatePath = `commissions/${selectedId}/${stageKey}_original_${timestamp}.jpg`;
 
-      // 1. 上傳預覽圖到 Public Bucket (草稿/線稿/完稿預覽 通用)
+      // 1. 上傳預覽圖到 Public Bucket
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName: publicPath, contentType: 'image/jpeg', bucketType: 'public' })
@@ -278,7 +278,8 @@ export function Notebook() {
       const { uploadUrl: publicUploadUrl } = await ticketRes.json();
       await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
 
-      const publicFinalUrl = `https://pub-f050b181e18d45ba8489814467d581be.r2.dev/${publicPath}`;
+      // 🌟 已寫入您專屬的 R2 公開網址
+      const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicPath}`;
 
       // 2. 如果是完稿，額外上傳原圖到 Private Bucket
       let privateKey = null;
@@ -300,7 +301,7 @@ export function Notebook() {
         body: JSON.stringify({ 
           stage: stageKey, 
           file_url: publicFinalUrl,
-          private_file_key: privateKey // 🌟 傳入保險箱路徑
+          private_file_key: privateKey 
         })
       });
 
@@ -321,7 +322,6 @@ export function Notebook() {
     return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
   };
 
-  // 💡 效能優化建議：使用 useMemo 緩存搜尋過濾結果，減少不必要的重新計算
   const filteredOrders = useMemo(() => {
     return commissions.filter(order => {
       let tabMatch = true;
@@ -373,7 +373,6 @@ export function Notebook() {
 
     let headerBg = '#FCFAF8'; let statusTag = '';
     
-    // 🌟 修改狀態顯示文字
     if (isPassed) {
       headerBg = '#E8F3EB';
       statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
@@ -392,26 +391,23 @@ export function Notebook() {
           💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
         </div>}
 
-        {/* 🌟 核心修正：徹底刪除原本的手動渲染圖片塊 {sub && (...)} */}
-        {/* 只保留 Uploader 呼叫，並將所有邏輯交給它 */}
-
         {isUploading === stageKey ? (
           <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
         ) : (
           <ImageUploader 
-  onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-  withWatermark={true}
-  watermarkText="SAMPLE"
-  existingUrl={sub?.file_url}
-  isFinal={isFinal} // 🌟 如果是完稿，會多產生一份 original Blob
-  aspectRatio={undefined} // 🌟 允許繪師自由裁切比例
-  metadata={sub ? { 
-    version: sub.version, 
-    date: new Date(sub.created_at).toLocaleDateString() 
-  } : undefined}
-  buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
-/>
-          )}
+            onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
+            withWatermark={true}
+            watermarkText="SAMPLE"
+            existingUrl={sub?.file_url}
+            isFinal={isFinal} 
+            aspectRatio={undefined} 
+            metadata={sub ? { 
+              version: sub.version, 
+              date: new Date(sub.created_at).toLocaleDateString() 
+            } : undefined}
+            buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
+          />
+        )}
         </div>
       </div>
     );
@@ -475,7 +471,6 @@ export function Notebook() {
           </select>
         </div>
 
-        {/* 🌟 搜尋列 */}
         <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
           <input
             type="text"
@@ -671,9 +666,10 @@ export function Notebook() {
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</p>
                   )}
                   
-{renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-{renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-{renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}                </div>
+                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
+                </div>
               )}
 
               {activeTab === 'logs' && (
