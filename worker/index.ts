@@ -1,5 +1,8 @@
 // worker/index.ts
 
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
 export interface Env {
   commission_db: D1Database;
   ID_SALT: string; 
@@ -7,6 +10,10 @@ export interface Env {
   LINE_CHANNEL_SECRET: string;
   LINE_REDIRECT_URI: string;
   FRONTEND_URL: string;
+  PUBLIC_BUCKET: R2Bucket;
+  PRIVATE_BUCKET: R2Bucket;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
 }
 
 interface CreateCommissionBody {
@@ -117,6 +124,18 @@ export default {
       return new Response(JSON.stringify(data), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    };
+
+    // 🌟 輔助函式：建立與 R2 通訊的客戶端 (拉到外面獨立出來)
+    const getS3Client = (env: Env) => {
+      return new S3Client({
+        region: "auto",
+        endpoint: `https://f72c79d82828e2419ab5fb0e1d323ce5.r2.cloudflarestorage.com`, 
+        credentials: {
+          accessKeyId: env.R2_ACCESS_KEY_ID,
+          secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+        },
       });
     };
 
@@ -259,7 +278,6 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "請先登入" }, 401);
 
-        // 🌟 核心修改：加入了 u.public_id AS client_public_id，撈取委託人公開編號
         const query = `
           SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name,
           (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
@@ -280,7 +298,6 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "請先登入" }, 401);
 
-        // 🌟 核心修改：加入了 u.public_id AS client_public_id
         const { results } = await env.commission_db.prepare(`
           SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings
           FROM Commissions c
@@ -391,7 +408,7 @@ export default {
     }
 
     // ============================================================================
-    // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs) 略...
+    // 🌟 4. 進度、稿件與異動系統 (Submissions & Logs)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/commissions/") && (url.pathname.endsWith("/deliverables") || url.pathname.endsWith("/submissions") || url.pathname.endsWith("/logs"))) {
@@ -631,6 +648,74 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
+    // ============================================================================
+    // 🌟 6. R2 儲存管理 API (Presigned URL)
+    // ============================================================================
+
+    // A. 取得上傳門票
+    if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
+      const currentUser = await getUserIdFromRequest(request, env);
+      if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+      const { fileName, contentType, bucketType } = await request.json() as any;
+      
+      const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
+      
+      try {
+        const s3 = getS3Client(env);
+        const command = new PutObjectCommand({
+          Bucket: bucketName,
+          Key: fileName,
+          ContentType: contentType,
+        });
+
+        // 🌟 核發 10 分鐘上傳門票 (600秒)
+        const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
+        
+        return jsonRes({ success: true, uploadUrl });
+      } catch (err: any) {
+        return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
+      }
+    }
+
+    // B. 取得下載門票 (針對私有儲存桶)
+    if (request.method === "POST" && url.pathname === "/api/r2/download-url") {
+      const currentUser = await getUserIdFromRequest(request, env);
+      if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+      const { commissionId, fileName } = await request.json() as any;
+
+      // 🔒 嚴格權限檢查
+      const { results } = await env.commission_db.prepare(
+        "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
+      ).bind(commissionId).all();
+
+      if (results.length === 0) return jsonRes({ success: false, error: "單據不存在" }, 404);
+      const comm = results[0] as any;
+
+      const isArtist = currentUser === comm.artist_id;
+      const isClient = currentUser === comm.client_id;
+      const isCompleted = comm.status === 'completed';
+
+      if (!isArtist && !(isClient && isCompleted)) {
+        return jsonRes({ success: false, error: "權限不足，完稿尚未解鎖或您非當事人" }, 403);
+      }
+
+      try {
+        const s3 = getS3Client(env);
+        const command = new GetObjectCommand({
+          Bucket: "commission-private",
+          Key: fileName,
+        });
+
+        // 🌟 核發 10 分鐘下載門票 (600秒)
+        const downloadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
+        return jsonRes({ success: true, downloadUrl });
+      } catch (err: any) {
+        return jsonRes({ success: false, error: "無法生成下載通行證" }, 500);
+      }
+    }
+
     return new Response("Not Found", { status: 404, headers: corsHeaders });
-  }
+  }  
 };

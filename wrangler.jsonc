@@ -27,5 +27,15 @@
 			"database_name": "commission_db_prod",
 			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
 		}
-	]
+	],
+	"r2_buckets": [
+    {
+      "binding": "PUBLIC_BUCKET",
+      "bucket_name": "commission-public"
+    },
+    {
+      "binding": "PRIVATE_BUCKET",
+      "bucket_name": "commission-private"
+    }
+  ]
 }
