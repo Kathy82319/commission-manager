@@ -10,7 +10,6 @@ export function ArtistLayout() {
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
-        // 🌟 修正 TypeScript 報錯：加上 (import.meta as any)
         const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
         
         const res = await fetch(`${API_BASE}/api/users/me`, {
@@ -28,7 +27,6 @@ export function ArtistLayout() {
           if (data.data.role === 'pending') {
             navigate('/onboarding');
           } else if (data.data.role === 'client') {
-            // 🌟 核心修正：改為絕對路徑 /client/orders
             navigate('/client/orders');
           } else {
             setArtist(data.data);
@@ -47,12 +45,18 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  const copyLink = () => {
+  // 🌟 修改項目：同時執行「複製」與「新開分頁」
+  const handlePreviewAndCopy = () => {
     if (!artist) return;
-    // 🌟 修正導向網址：移除中間的 /u/，直接使用 public_id
     const publicUrl = `${window.location.origin}/${artist.public_id}`; 
-    navigator.clipboard.writeText(publicUrl);
-    alert('個人首頁連結已複製！');
+    
+    // 1. 複製到剪貼簿
+    navigator.clipboard.writeText(publicUrl).catch(err => {
+      console.error("複製失敗", err);
+    });
+    
+    // 2. 另開新分頁跳轉
+    window.open(publicUrl, '_blank');
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -71,7 +75,6 @@ export function ArtistLayout() {
     <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
       <aside style={{ width: '240px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', borderRight: '1px solid #EAE6E1', position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }}>
-          {/* 🌟 專案名稱更新 */}
           <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
           <div style={{ fontSize: '13px', color: '#A0978D' }}>繪師管理後台</div>
         </div>
@@ -106,14 +109,13 @@ export function ArtistLayout() {
           </button>
           
           <button 
-            onClick={copyLink} 
+            onClick={handlePreviewAndCopy} 
             style={{ 
               width: '100%', padding: '10px', backgroundColor: '#FFFFFF', 
               border: '1px solid #DED9D3', borderRadius: '8px', color: '#7A7269', 
               cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' 
             }}
           >
-            {/* 🌟 按鈕文字更新 */}
             預覽/複製個人首頁
           </button>
         </div>

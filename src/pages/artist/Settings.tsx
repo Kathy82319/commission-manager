@@ -17,15 +17,14 @@ interface ProfileSettings {
   splash_text: string;
 }
 
-// 🌟 修改項目：強化富文本編輯器的工具列
 const customQuillModules = {
   toolbar: [
     [{ 'header': [1, 2, 3, false] }], 
-    [{ 'size': ['small', false, 'large', 'huge'] }], // 新增字體大小
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'], // 新增引言
+    [{ 'size': ['small', false, 'large', 'huge'] }], 
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'], 
     [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], // 新增對齊方式
-    ['link', 'clean'] // 新增插入連結
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], 
+    ['link', 'clean'] 
   ]
 };
 
@@ -49,7 +48,6 @@ export function Settings() {
     const fetchUserData = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        // 🔒 安全修正：改用 /me 並帶上 credentials
         const res = await fetch(`${API_BASE}/api/users/me`, {
           credentials: 'include'
         });
@@ -93,7 +91,6 @@ export function Settings() {
     setIsSaving(true); setMessage('');
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-      // 🔒 安全修正：改用 /me 並帶上 credentials
       const res = await fetch(`${API_BASE}/api/users/me`, {
         method: 'PATCH',
         credentials: 'include',
@@ -218,6 +215,52 @@ export function Settings() {
   return (
     <div style={{ display: 'flex', gap: '30px', padding: '10px 20px', maxWidth: '1100px', margin: '0 auto', height: '100%' }}>
       
+      {/* 🌟 修改項目 3：加入全局 CSS 精準控制編輯器滾動軸與高度 */}
+      <style>{`
+        .custom-quill-wrapper {
+          border: 1px solid #DED9D3;
+          border-radius: 12px;
+          overflow: hidden;
+          background-color: #FFFFFF;
+        }
+        .custom-quill-wrapper .ql-toolbar.ql-snow {
+          border: none;
+          border-bottom: 1px solid #EAE6E1;
+          background-color: #FBFBF9;
+          padding: 12px;
+        }
+        .custom-quill-wrapper .ql-container.ql-snow {
+          border: none;
+        }
+        /* 核心修復：設定最大高度，並將滾動軸鎖定在內部 */
+        .custom-quill-wrapper .ql-editor {
+          min-height: 300px;
+          max-height: 500px;
+          overflow-y: auto;
+          font-size: 15px;
+          line-height: 1.6;
+          color: #5D4A3E;
+        }
+        .custom-quill-wrapper.small .ql-editor {
+          min-height: 150px;
+          max-height: 300px;
+        }
+        /* 美化編輯器內部的滾動條 */
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb {
+          background: #DED9D3;
+          border-radius: 4px;
+        }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb:hover {
+          background: #C4BDB5;
+        }
+      `}</style>
+
       {/* 左側選單 */}
       <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h2 style={{ margin: '0 0 20px 10px', color: '#5D4A3E', fontSize: '24px', letterSpacing: '0.5px' }}>個人頁編輯</h2>
@@ -456,13 +499,13 @@ export function Settings() {
                 </div>
               )}
 
-              <div style={{ border: '1px solid #DED9D3', borderRadius: '12px', overflow: 'hidden' }}>
+              {/* 🌟 替換為 className 控制高度 */}
+              <div className="custom-quill-wrapper">
                 <ReactQuill 
                   theme="snow" 
                   value={settings[activeTab as keyof ProfileSettings] as string || ''} 
                   onChange={value => setSettings({...settings, [activeTab]: value})}
                   modules={customQuillModules}
-                  style={{ height: '380px', backgroundColor: '#FFFFFF', border: 'none' }}
                 />
               </div>
             </div>
@@ -477,11 +520,12 @@ export function Settings() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <input type="text" value={section.title} onChange={e => handleUpdateCustomSection(section.id, 'title', e.target.value)} onFocus={() => setFocusedField(`custom_title_${section.id}`)} onBlur={() => setFocusedField(null)} placeholder={`自訂標題 ${index + 1}`} style={{...getInputStyle(`custom_title_${section.id}`), width: '60%', backgroundColor: '#FFFFFF', fontWeight: 'bold'}} />
                     <div style={{ paddingBottom: '40px' }}>
-                      <div style={{ border: '1px solid #DED9D3', borderRadius: '12px', overflow: 'hidden' }}>
+                      {/* 🌟 替換為 className 控制高度 */}
+                      <div className="custom-quill-wrapper small">
                         <ReactQuill 
                           theme="snow" value={section.content || ''} 
                           onChange={value => handleUpdateCustomSection(section.id, 'content', value)}
-                          modules={customQuillModules} style={{ height: '200px', backgroundColor: '#FFFFFF', border: 'none' }}
+                          modules={customQuillModules}
                         />
                       </div>
                     </div>

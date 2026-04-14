@@ -8,7 +8,7 @@ interface Commission {
   queue_status: string;
   latest_message_at?: string;
   last_read_at_artist?: string;
-  client_public_id?: string; // 🌟 接收後端新增的欄位
+  client_public_id?: string;
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -72,7 +72,7 @@ export function Queue() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); 
-  const [searchTerm, setSearchTerm] = useState(''); // 🌟 新增搜尋狀態
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [stages, setStages] = useState<string[]>(() => {
     const saved = localStorage.getItem('artist_all_stages');
@@ -117,13 +117,8 @@ export function Queue() {
 
   const availableMonths = Array.from(new Set(commissions.map(c => new Date(c.order_date).toISOString().substring(0, 7)))).sort().reverse();
   
-  // 🌟 搜尋與過濾邏輯
   const filteredCommissions = commissions.filter(c => {
-    // 1. 月份過濾
-    if (selectedMonth !== 'all' && new Date(c.order_date).toISOString().substring(0, 7) !== selectedMonth) {
-      return false;
-    }
-    // 2. 關鍵字過濾 (輸入大於等於 2 字元才搜尋)
+    if (selectedMonth !== 'all' && new Date(c.order_date).toISOString().substring(0, 7) !== selectedMonth) return false;
     if (searchTerm.trim().length >= 2) {
       const term = searchTerm.toLowerCase();
       const paymentLabel = paymentColors[c.payment_status]?.label || '尚未付款';
@@ -148,8 +143,6 @@ export function Queue() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {isUpdating && <span style={{ backgroundColor: '#FDF4E6', color: '#A67B3E', padding: '4px 10px', borderRadius: '16px', fontSize: '14px', fontWeight: 'bold' }}>儲存中...</span>}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            
-            {/* 🌟 新增搜尋框 */}
             <input
               type="text"
               placeholder="🔍 搜尋暱稱/單號/狀態..."
@@ -157,7 +150,6 @@ export function Queue() {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #DED9D3', outline: 'none', fontSize: '14px', width: '200px' }}
             />
-
             <span style={{ fontSize: '15px', color: '#7A7269', fontWeight: 'bold', marginLeft: '10px' }}>篩選月份：</span>
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #DED9D3', backgroundColor: '#FFFFFF', color: '#5D4A3E', fontSize: '15px', outline: 'none', cursor: 'pointer' }}>
               <option value="all">顯示全部未結案</option>
@@ -229,9 +221,10 @@ export function Queue() {
                           項目：{order.project_name || order.type_name || '未命名項目'}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                          {/* 🌟 修改項目 2：標籤顏色修正為 #E8F3EB */}
                           <span style={{ 
                             fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px',
-                            backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#A67B3E',
+                            backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
                             color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
                           }}>
                             {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
@@ -255,7 +248,6 @@ export function Queue() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>急件</span>}
                           
-                          {/* 🌟 修改項目：備註輸入框修復中英文選字與失去焦點問題 */}
                           <input 
                             type="text" 
                             defaultValue={order.artist_note || ''} 
@@ -266,7 +258,6 @@ export function Queue() {
                               e.currentTarget.style.backgroundColor = 'transparent'; 
                             }} 
                             onKeyDown={(e) => {
-                              // 確認按下 Enter 且不是正在拼字/選字狀態才觸發儲存（失焦）
                               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                                 e.currentTarget.blur();
                               }

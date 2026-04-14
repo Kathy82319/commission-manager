@@ -101,7 +101,9 @@ export function ClientLayout() {
       `}</style>
 
       <header style={{ padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', zIndex: 50 }}>
-        <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px', letterSpacing: '1px' }}>Arti</div>
+        <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px', letterSpacing: '1px' }}>Arti 繪師小幫手
+          <div style={{ fontSize: '13px', color: '#A0978D' }}>委託方列表</div>
+        </div>
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <div style={{ width: '1px', height: '14px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
           <button onClick={handleSwitchToArtist} style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', padding: 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
