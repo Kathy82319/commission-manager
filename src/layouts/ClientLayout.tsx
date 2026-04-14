@@ -1,10 +1,9 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 
 export function ClientLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -79,9 +78,6 @@ export function ClientLayout() {
           Arti
         </div>
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <Link to="/client/orders" style={{ color: location.pathname.includes('/client/order') ? '#FFF' : 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px', transition: 'color 0.2s' }}>
-            委託單列表
-          </Link>
           <div style={{ width: '1px', height: '14px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
           <button 
             onClick={handleSwitchToArtist} 

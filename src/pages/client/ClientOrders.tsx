@@ -7,6 +7,7 @@ interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
   total_price: number; draw_scope: string; char_count: number; bg_type: string; add_ons: string;
   detailed_settings: string; agreed_tos_snapshot: string; delivery_method: string; 
+  usage_type?: string; is_rush?: string | number;
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
 }
@@ -17,17 +18,15 @@ interface ActionLog { id: string; actor_role: string; content: string; created_a
 export function ClientOrders() {
   const navigate = useNavigate();
   const location = useLocation();
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+  const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
 
-  // 列表狀態
   const [orders, setOrders] = useState<CommissionDetail[]>([]);
   const [filter, setFilter] = useState<'all' | 'working' | 'completed'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isListLoading, setIsListLoading] = useState(true);
 
-  // 詳情狀態
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -39,23 +38,23 @@ export function ClientOrders() {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. 同步網址
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedId) params.set('id', selectedId);
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedId, navigate]);
 
-  // 2. 撈取所有委託單列表
   const fetchOrders = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
-        setOrders(data.data);
-        if (initialSelectedId) {
-          fetchDetailData(initialSelectedId, data.data);
-        }
+        // 嚴格過濾：未簽約(草稿單/等待中)的單子不顯示
+        const validOrders = data.data.filter((o: CommissionDetail) => 
+          o.status !== 'quote_created' && o.status !== 'pending'
+        );
+        setOrders(validOrders);
+        if (initialSelectedId) fetchDetailData(initialSelectedId, validOrders);
       }
     } catch (e) {
       console.error("載入失敗", e);
@@ -66,15 +65,13 @@ export function ClientOrders() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  // 3. 撈取特定委託單的附屬資料 (稿件、紀錄)
   const fetchDetailData = async (targetId: string, currentOrders: CommissionDetail[] = orders) => {
     try {
       const orderData = currentOrders.find(o => o.id === targetId);
       if (!orderData) return;
 
-      const initialTitle = orderData.client_custom_title || '';
-      setCustomTitle(initialTitle);
-      setSavedTitle(initialTitle);
+      setCustomTitle(orderData.client_custom_title || '');
+      setSavedTitle(orderData.client_custom_title || '');
 
       if (orderData.latest_message_at) {
         const latestMsgTime = new Date(orderData.latest_message_at).getTime();
@@ -82,19 +79,69 @@ export function ClientOrders() {
         setHasNewMessage(latestMsgTime > lastReadTime);
       }
 
-      // 觸發已讀
       fetch(`${API_BASE}/api/commissions/${targetId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
       });
 
+      // 1. 先抓取目前的稿件與歷程
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
         fetch(`${API_BASE}/api/commissions/${targetId}/logs`, { credentials: 'include' })
       ]);
 
-      if ((await subRes.clone().json()).success) setSubmissions((await subRes.json()).data);
-      if ((await logRes.clone().json()).success) setLogs((await logRes.json()).data);
+      const fetchedSubmissions: Submission[] = (await subRes.json()).data || [];
+      let fetchedLogs: ActionLog[] = (await logRes.json()).data || [];
+
+      // 🌟 核心修正 4：智慧打卡機制 (同時檢查草稿與線稿)
+      const subStages = fetchedSubmissions.map(s => s.stage);
+      const logContents = fetchedLogs.map(l => l.content).join(' | ');
+      let needRefetchLogs = false;
+
+      const stagesToCheck = [
+        { key: 'sketch', name: '草稿' },
+        { key: 'lineart', name: '線稿' }
+      ];
+
+      for (const stage of stagesToCheck) {
+        // 如果有上傳該階段的檔案，且歷史紀錄「沒有」出現過已閱覽
+        if (subStages.includes(stage.key) && !logContents.includes(`已閱覽 ${stage.name}`)) {
+          needRefetchLogs = true;
+          try {
+            await fetch(`${API_BASE}/api/commissions/${targetId}/review`, {
+              method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stage: stage.key, action: 'read_only' }) 
+            });
+          } catch(e) {}
+        }
+      }
+
+      // 如果有補打卡，重新抓取一次最新的歷史紀錄
+      if (needRefetchLogs) {
+        const logRes2 = await fetch(`${API_BASE}/api/commissions/${targetId}/logs`, { credentials: 'include' });
+        fetchedLogs = (await logRes2.json()).data || [];
+        fetchOrders(); 
+      }
+
+      // 🌟 核心修正 1：手動合成源頭的「建單」與「簽署」紀錄
+      const syntheticLogs: ActionLog[] = [];
+      if (orderData.order_date) {
+        syntheticLogs.push({
+          id: 'sys-init', actor_role: 'artist', content: '建立委託單', created_at: orderData.order_date
+        });
+        if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
+          const agreeTime = new Date(new Date(orderData.order_date).getTime() + 1000).toISOString();
+          syntheticLogs.push({
+            id: 'sys-agree', actor_role: 'client', content: '同意委託協議並簽署合約', created_at: agreeTime
+          });
+        }
+      }
+
+      // 合併紀錄並照時間排序 (新 -> 舊)
+      const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setSubmissions(fetchedSubmissions);
+      setLogs(allLogs);
 
     } catch (error) {
       console.error('取得詳細資料失敗:', error);
@@ -106,7 +153,6 @@ export function ClientOrders() {
     fetchDetailData(orderId);
   };
 
-  // 4. 委託單明細操作邏輯
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!selectedId) return;
     try {
@@ -117,6 +163,7 @@ export function ClientOrders() {
       if ((await res.json()).success) {
         alert(action === 'approve' ? '已同意內容異動' : '已拒絕內容異動');
         fetchOrders(); 
+        fetchDetailData(selectedId);
       }
     } catch (error) {}
   };
@@ -179,7 +226,6 @@ export function ClientOrders() {
     } catch (e) { alert("網路連線錯誤"); } finally { setIsProcessing(false); }
   };
 
-  // 5. 畫面渲染輔助函式
   const getLatestSubmissions = () => {
     const latest: Record<string, Submission> = {};
     submissions.forEach(sub => {
@@ -220,31 +266,31 @@ export function ClientOrders() {
     let statusText = isPassed ? (isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段') : (isReviewing ? '👀 繪師已交付，請確認' : '⏳ 尚未交付');
     
     return (
-      <div style={{ border: '1px solid #d0d8e4', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
-        <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#f8fafc'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#475569', borderBottom: '1px solid #d0d8e4' }}>
-          <span>{title}</span> <span style={{ color: isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#94a3b8') }}>{statusText}</span>
+      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
+        <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#FBFBF9'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E', borderBottom: '1px solid #EAE6E1' }}>
+          <span>{title}</span> <span style={{ color: isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#A0978D') }}>{statusText}</span>
         </div>
         <div style={{ padding: '20px', textAlign: 'center' }}>
-          {!sub ? <div style={{ color: '#94a3b8', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
+          {!sub ? <div style={{ color: '#A0978D', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
             <div>
-               <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px', textAlign: 'left' }}>最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})</div>
-               <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f1f5f9', maxWidth: '350px', margin: '0 auto' }}>
+               <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})</div>
+               <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '350px', margin: '0 auto' }}>
                  <img src={sub.file_url} alt="稿件預覽" style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
                </div>
                
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                  {isReviewing && !isFinal && (
-                   <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#64748b', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，繪師後續將會直接推進至下一階段。</div>
+                   <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統已自動為您標記閱覽，繪師後續將推進至下一階段。</div>
                  )}
                  {isReviewing && isFinal && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
-                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
+                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #EAE6E1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
                      <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✓ 同意完稿</button>
                    </>
                  )}
                  {isPassed && isFinal && selectedOrder?.status === 'completed' && (
-                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
@@ -256,35 +302,74 @@ export function ClientOrders() {
     );
   };
 
-  const tabStyle = (tabName: string) => ({
-    flex: 1, padding: '12px', textAlign: 'center' as const, fontWeight: 'bold', cursor: 'pointer',
-    borderBottom: activeTab === tabName ? '3px solid #4A7294' : '3px solid transparent',
-    color: activeTab === tabName ? '#4A7294' : '#556577',
-    backgroundColor: activeTab === tabName ? '#FFFFFF' : '#e8ecf3',
-    transition: 'all 0.2s'
+  const tabStyle = (isActive: boolean) => ({
+    padding: '16px 24px', cursor: 'pointer', 
+    borderBottom: isActive ? '3px solid #5D4A3E' : '3px solid transparent',
+    fontWeight: isActive ? 'bold' : 'normal', 
+    color: isActive ? '#5D4A3E' : '#A0978D', 
+    backgroundColor: 'transparent', 
+    borderTop: 'none', borderLeft: 'none', borderRight: 'none', 
+    fontSize: '15px', transition: 'all 0.2s ease', outline: 'none'
   });
 
-  const sectionBoxStyle = { backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #d0d8e4' };
+  const sectionBoxStyle = { backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' };
+
+  // 🌟 核心修正 5：解析異動申請內容的防錯機制
+  let parsedChanges: Record<string, string> | null = null;
+  if (selectedOrder?.pending_changes) {
+    try {
+      const parsed = typeof selectedOrder.pending_changes === 'string' ? JSON.parse(selectedOrder.pending_changes) : selectedOrder.pending_changes;
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+        parsedChanges = parsed;
+      }
+    } catch (e) {}
+  }
+
+  // 建立異動申請中文對照表
+  const fieldMap: Record<string, string> = {
+    usage_type: '委託用途',
+    is_rush: '急件',
+    delivery_method: '交稿方式',
+    total_price: '總金額',
+    draw_scope: '繪畫範圍',
+    char_count: '人物數量',
+    bg_type: '背景設定',
+    add_ons: '附加選項'
+  };
+
+  // 🌟 核心修正 3：決定協議書的最終顯示內容
+  let finalTosHtml = '';
+  if (selectedOrder?.agreed_tos_snapshot) {
+    finalTosHtml = selectedOrder.agreed_tos_snapshot;
+  } else if (selectedOrder?.artist_settings) {
+    try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {}
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif', backgroundColor: '#FBFBF9' }}>
+      
+      <style>{`
+        @keyframes pulse-yellow {
+          0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+        }
+      `}</style>
 
-
-      {/* 異動申請彈窗 */}
-      {selectedOrder?.pending_changes && (
+      {/* 異動申請彈窗 (確保有實質內容才跳出) */}
+      {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
             <h3 style={{ color: '#e11d48', marginTop: 0 }}>⚠️ 繪師提出了規格異動申請</h3>
-            <p style={{ color: '#556577', fontSize: '14px', marginBottom: '12px' }}>繪師希望調整委託單內容，請確認以下項目：</p>
-            <div style={{ backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '12px', fontSize: '14px', color: '#475569', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto' }}>
-              {(() => {
-                try {
-                  const changes = JSON.parse(selectedOrder.pending_changes!);
-                  return Object.keys(changes).map(key => (
-                    <div key={key} style={{ marginBottom: '4px' }}><span style={{ fontWeight: 'bold' }}>• {key}：</span><span>{changes[key]}</span></div>
-                  ));
-                } catch (e) { return '解析異動資料錯誤'; }
-              })()}
+            <p style={{ color: '#7A7269', fontSize: '14px', marginBottom: '12px' }}>繪師希望調整委託單內容，請確認以下項目：</p>
+            <div style={{ backgroundColor: '#FAFAFA', padding: '16px', borderRadius: '12px', fontSize: '14px', color: '#5D4A3E', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
+              {/* 顯示中文項目名稱對應 */}
+              {Object.keys(parsedChanges).map(key => (
+                <div key={key} style={{ marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 'bold' }}>• {fieldMap[key] || key}：</span>
+                  <span>{parsedChanges![key]}</span>
+                </div>
+              ))}
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => handleReviewChange('approve')} style={{ flex: 1, padding: '14px', backgroundColor: '#1e8e3e', color: '#FFF', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>同意並更新合約</button>
@@ -301,7 +386,7 @@ export function ClientOrders() {
         <div style={{ width: '380px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', flexShrink: 0 }}>
           <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-            <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none' }}>
+            <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', color: '#5D4A3E', backgroundColor: '#FBFBF9' }}>
               <option value="all">全部</option><option value="working">進行中</option><option value="completed">已結單</option>
             </select>
           </div>
@@ -316,7 +401,13 @@ export function ClientOrders() {
                   <div key={order.id} onClick={() => handleSelect(order.id)} style={{ padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
                       <span>{new Date(order.order_date).toLocaleDateString()}</span>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f1f5f9', color: '#475569' }}>{order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}</span>
+                      
+                      {/* 🌟 核心修正 1：移除自由紀錄，改判斷是否為急件 */}
+                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>
+                          🔥 急件
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.client_custom_title || order.project_name || '未命名項目'}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -337,35 +428,43 @@ export function ClientOrders() {
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               
               {/* 右側 Header */}
-              <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
                 <div>
                   <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '24px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
-                  <div style={{ color: '#7A7269', fontSize: '14px', marginBottom: '4px' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
+                  <div style={{ color: '#7A7269', fontSize: '14px', marginBottom: '4px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
                   <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
                 </div>
-                <button onClick={() => navigate(`/workspace/${selectedOrder.id}`)} style={{ padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: 'all 0.3s', animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none' }}>
+                
+                <button 
+                  onClick={() => navigate(`/workspace/${selectedOrder.id}`)} 
+                  style={{ 
+                    padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', 
+                    fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: 'all 0.3s', 
+                    animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none' 
+                  }}
+                >
                   {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
                 </button>
               </div>
 
-              {/* 右側 Tabs */}
-<div style={{ display: 'flex', backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1', padding: '0 20px' }}>
-  <button onClick={() => setActiveTab('main')} style={tabStyle('main')}>詳細內容</button>
-  <button onClick={() => setActiveTab('review')} style={tabStyle('review')}>稿件審閱</button>
-  <button onClick={() => setActiveTab('history')} style={tabStyle('history')}>歷程紀錄</button>
-</div>
+              {/* 右側 Tabs - 重新設計的精緻樣式 */}
+              <div style={{ display: 'flex', backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1', padding: '0 24px', gap: '8px' }}>
+                <button onClick={() => setActiveTab('main')} style={tabStyle(activeTab === 'main')}>詳細內容</button>
+                <button onClick={() => setActiveTab('review')} style={tabStyle(activeTab === 'review')}>稿件審閱</button>
+                <button onClick={() => setActiveTab('history')} style={tabStyle(activeTab === 'history')}>歷程紀錄</button>
+              </div>
 
               {/* 右側內容區 */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '30px', backgroundColor: '#f8fafc' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '30px', backgroundColor: '#FBFBF9' }}>
                 
                 {activeTab === 'main' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '700px', margin: '0 auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
                     <div style={sectionBoxStyle}>
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, padding: '10px', borderRadius: '8px', outline: 'none', border: customTitle === savedTitle && customTitle ? '1px solid #e2e8f0' : '1px solid #94a3b8', backgroundColor: customTitle === savedTitle && customTitle ? '#f1f5f9' : '#FFFFFF' }} />
-                          <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#1e8e3e' : '#556577', minWidth: '90px' }}>
+                          <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, padding: '10px', borderRadius: '8px', outline: 'none', border: customTitle === savedTitle && customTitle ? '1px solid #EAE6E1' : '1px solid #DED9D3', backgroundColor: customTitle === savedTitle && customTitle ? '#FAFAFA' : '#FFFFFF' }} />
+                          <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#4E7A5A' : '#5D4A3E', minWidth: '90px' }}>
                             {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
                           </button>
                         </div>
@@ -373,36 +472,37 @@ export function ClientOrders() {
                     </div>
 
                     <div style={sectionBoxStyle}>
-                      <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 16px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '12px' }}>委託規格</h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '14px', color: '#556577' }}>
-                        <div><strong>繪製範圍：</strong>{selectedOrder.draw_scope || '未提供'}</div>
-                        <div><strong>人數：</strong>{selectedOrder.char_count || 1} 人</div>
-                        <div><strong>背景：</strong>{selectedOrder.bg_type || '未提供'}</div>
-                        <div><strong>備註：</strong>{selectedOrder.add_ons || '無'}</div>
-                        <div style={{ gridColumn: 'span 2', marginTop: '8px', borderTop: '1px dashed #d0d8e4', paddingTop: '16px', fontSize: '18px', color: '#4A7294' }}>
+                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 16px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '14px', color: '#5D4A3E' }}>
+                        <div><strong style={{ color: '#7A7269' }}>委託用途：</strong>{selectedOrder.usage_type || '未提供'}</div>
+                        <div><strong style={{ color: '#7A7269' }}>是否急件：</strong>{selectedOrder.is_rush === '是' || selectedOrder.is_rush === '1' || selectedOrder.is_rush === 1 ? '是' : '否'}</div>
+                        <div><strong style={{ color: '#7A7269' }}>交稿方式：</strong>{selectedOrder.delivery_method || '未提供'}</div>
+                        <div><strong style={{ color: '#7A7269' }}>繪製範圍：</strong>{selectedOrder.draw_scope || '未提供'}</div>
+                        <div><strong style={{ color: '#7A7269' }}>人數：</strong>{selectedOrder.char_count || 1} 人</div>
+                        <div><strong style={{ color: '#7A7269' }}>背景：</strong>{selectedOrder.bg_type || '未提供'}</div>
+                        <div style={{ gridColumn: 'span 2' }}><strong style={{ color: '#7A7269' }}>備註：</strong>{selectedOrder.add_ons || '無'}</div>
+                        <div style={{ gridColumn: 'span 2', marginTop: '8px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px', fontSize: '18px', color: '#4E7A5A' }}>
                           <strong>總金額：</strong>NT$ {selectedOrder.total_price.toLocaleString()}
                         </div>
                       </div>
                     </div>
 
                     <div style={sectionBoxStyle}>
-                      <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
-                      <div style={{ fontSize: '14px', color: '#556577', maxHeight: '200px', overflowY: 'auto', padding: '16px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
-                        {selectedOrder.artist_settings ? (
-                          <div dangerouslySetInnerHTML={{ 
-                            __html: (() => {
-                              try { return DOMPurify.sanitize(JSON.parse(selectedOrder.artist_settings).rules || ''); }
-                              catch(e) { return selectedOrder.agreed_tos_snapshot ? DOMPurify.sanitize(selectedOrder.agreed_tos_snapshot) : '無協議紀錄'; }
-                            })()
-                          }} />
-                        ) : <div style={{ whiteSpace: 'pre-wrap' }}>{selectedOrder.agreed_tos_snapshot || '無協議紀錄'}</div>}
+                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 12px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>委託協議</h3>
+                      {/* 加入 white-space: pre-wrap 確保快照換行能正常顯示 */}
+                      <div style={{ fontSize: '14px', color: '#5D4A3E', maxHeight: '300px', overflowY: 'auto', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #EAE6E1', whiteSpace: 'pre-wrap' }}>
+                        {finalTosHtml ? (
+                          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalTosHtml) }} />
+                        ) : (
+                          <div style={{ color: '#A0978D' }}>無協議紀錄</div>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'review' && (
-                  <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+                  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {selectedOrder.delivery_method !== '一鍵出圖' && (
                       <>
                         {renderClientStageBox('階段 1：草稿', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
@@ -414,13 +514,13 @@ export function ClientOrders() {
                 )}
 
                 {activeTab === 'history' && (
-                   <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-                     {logs.length === 0 ? <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>無歷程紀錄</div> : (
+                   <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                     {logs.length === 0 ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '40px' }}>無歷程紀錄</div> : (
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                          {logs.map(log => (
-                           <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                             <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>{new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
-                             <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>{log.content}</div>
+                           <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
+                             <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>{new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
+                             <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}>{log.content}</div>
                            </div>
                          ))}
                        </div>
