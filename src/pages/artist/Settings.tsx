@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; 
+import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入上傳組件
 
 interface ProfileSettings {
   portfolio: string[];
@@ -31,6 +32,7 @@ const customQuillModules = {
 export function Settings() {
   const [activeTab, setActiveTab] = useState<'profile_basic' | 'splash' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
   const [formData, setFormData] = useState({ display_name: '', avatar_url: '', bio: '' });
+  const [isUploading, setIsUploading] = useState(false); // 🌟 新增上傳狀態控制
   
   const [settings, setSettings] = useState<ProfileSettings>({
     portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
@@ -44,10 +46,11 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; // 🌟 提取 API 基礎路徑
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/users/me`, {
           credentials: 'include'
         });
@@ -85,12 +88,39 @@ export function Settings() {
       }
     };
     fetchUserData();
-  }, []);
+  }, [API_BASE]);
+
+  // 🌟 核心修改：處理頭像上傳到 R2
+  const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
+    setIsUploading(true);
+    try {
+      const timestamp = Date.now();
+      const fileName = `avatars/user_${timestamp}.jpg`;
+
+      // 1. 取得 R2 上傳憑證
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+      });
+      const { uploadUrl } = await ticketRes.json();
+
+      // 2. 執行上傳
+      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+
+      // 3. 設定公開網址
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
+      alert("頭像上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
+    } catch (err) {
+      alert("頭像上傳失敗");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true); setMessage('');
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/users/me`, {
         method: 'PATCH',
         credentials: 'include',
@@ -215,7 +245,6 @@ export function Settings() {
   return (
     <div style={{ display: 'flex', gap: '30px', padding: '10px 20px', maxWidth: '1100px', margin: '0 auto', height: '100%' }}>
       
-      {/* 🌟 修改項目 3：加入全局 CSS 精準控制編輯器滾動軸與高度 */}
       <style>{`
         .custom-quill-wrapper {
           border: 1px solid #DED9D3;
@@ -232,7 +261,6 @@ export function Settings() {
         .custom-quill-wrapper .ql-container.ql-snow {
           border: none;
         }
-        /* 核心修復：設定最大高度，並將滾動軸鎖定在內部 */
         .custom-quill-wrapper .ql-editor {
           min-height: 300px;
           max-height: 500px;
@@ -245,7 +273,6 @@ export function Settings() {
           min-height: 150px;
           max-height: 300px;
         }
-        /* 美化編輯器內部的滾動條 */
         .custom-quill-wrapper .ql-editor::-webkit-scrollbar {
           width: 8px;
         }
@@ -289,7 +316,6 @@ export function Settings() {
       {/* 右側編輯區 */}
       <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '30px 40px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
         
-        {/* 頂部標題與顯示切換 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0ECE7', paddingBottom: '15px', marginBottom: '30px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <h3 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>
@@ -322,7 +348,6 @@ export function Settings() {
 
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
           
-          {/* 1. 頭像與簡介 */}
           {activeTab === 'profile_basic' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               <div style={{ display: 'flex', gap: '30px' }}>
@@ -336,9 +361,21 @@ export function Settings() {
                     <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>顯示名稱</label>
                     <input type="text" value={formData.display_name} onChange={e => setFormData({...formData, display_name: e.target.value})} onFocus={() => setFocusedField('display_name')} onBlur={() => setFocusedField(null)} placeholder="對外展示的暱稱" style={getInputStyle('display_name')} />
                   </div>
+                  
+                  {/* 🌟 核心修改：替換原本的頭像網址輸入框為 ImageUploader */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>頭像網址 (URL)</label>
-                    <input type="text" value={formData.avatar_url} onChange={e => setFormData({...formData, avatar_url: e.target.value})} onFocus={() => setFocusedField('avatar_url')} onBlur={() => setFocusedField(null)} placeholder="https://..." style={getInputStyle('avatar_url')} />
+                    <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>上傳個人頭像</label>
+                    {isUploading ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#A0978D', fontSize: '14px' }}>圖片處理中...</div>
+                    ) : (
+                      <ImageUploader 
+                        onUpload={handleAvatarUpload}
+                        aspectRatio={1} // 🌟 強制 1:1 正方形裁切框
+                        withWatermark={false} // 頭像不需浮水印
+                        buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
+                      />
+                    )}
+                    <span style={{ fontSize: '12px', color: '#A0978D' }}>目前的網址：{formData.avatar_url || '尚未上傳'}</span>
                   </div>
                 </div>
               </div>
@@ -378,10 +415,8 @@ export function Settings() {
             </div>
           )}
 
-          {/* 1.5 新增開場名片設定區塊 */}
           {activeTab === 'splash' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-              
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                 <input 
                   type="checkbox" 
@@ -397,7 +432,6 @@ export function Settings() {
 
               {settings.splash_enabled && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
-                  
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
                       背景圖片網址 (URL) <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用 1920x1080 橫式高品質作品，若留空將使用頭像)</span>
@@ -452,13 +486,11 @@ export function Settings() {
                       style={getInputStyle('splash_text')} 
                     />
                   </div>
-
                 </div>
               )}
             </div>
           )}
 
-          {/* 2. 作品展示區 */}
           {activeTab === 'portfolio' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -477,29 +509,16 @@ export function Settings() {
             </div>
           )}
 
-          {/* 3. 富文本編輯區 */}
           {(activeTab === 'detailed_intro' || activeTab === 'process' || activeTab === 'payment' || activeTab === 'rules') && (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '40px' }}>
-              
               {activeTab === 'rules' && (
                 <div style={{ 
-                  marginBottom: '12px', 
-                  color: '#8A602B', 
-                  fontSize: '14px', 
-                  fontWeight: 'bold', 
-                  backgroundColor: '#FDF4E6', 
-                  padding: '12px 16px', 
-                  borderRadius: '8px', 
-                  border: '1px solid #E8D3B9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  marginBottom: '12px', color: '#8A602B', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#FDF4E6', 
+                  padding: '12px 16px', borderRadius: '8px', border: '1px solid #E8D3B9', display: 'flex', alignItems: 'center', gap: '8px'
                 }}>
                   💡 說明：此部分內容將會出現在每次委託書下方必須閱覽的區域
                 </div>
               )}
-
-              {/* 🌟 替換為 className 控制高度 */}
               <div className="custom-quill-wrapper">
                 <ReactQuill 
                   theme="snow" 
@@ -511,7 +530,6 @@ export function Settings() {
             </div>
           )}
 
-          {/* 4. 其他 (自訂標題) */}
           {activeTab === 'custom' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               {settings.custom_sections.map((section, index) => (
@@ -520,7 +538,6 @@ export function Settings() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <input type="text" value={section.title} onChange={e => handleUpdateCustomSection(section.id, 'title', e.target.value)} onFocus={() => setFocusedField(`custom_title_${section.id}`)} onBlur={() => setFocusedField(null)} placeholder={`自訂標題 ${index + 1}`} style={{...getInputStyle(`custom_title_${section.id}`), width: '60%', backgroundColor: '#FFFFFF', fontWeight: 'bold'}} />
                     <div style={{ paddingBottom: '40px' }}>
-                      {/* 🌟 替換為 className 控制高度 */}
                       <div className="custom-quill-wrapper small">
                         <ReactQuill 
                           theme="snow" value={section.content || ''} 
@@ -532,7 +549,6 @@ export function Settings() {
                   </div>
                 </div>
               ))}
-              
               {settings.custom_sections.length < 3 ? (
                 <button onClick={handleAddCustomSection} style={{ padding: '16px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '2px dashed #DED9D3', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#A67B3E'; e.currentTarget.style.backgroundColor = '#FBFBF9'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#DED9D3'; e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>
                   + 新增自訂區塊 ({settings.custom_sections.length}/3)
@@ -542,16 +558,13 @@ export function Settings() {
               )}
             </div>
           )}
-
         </div>
 
-        {/* 右下角儲存按鈕 */}
         <div style={{ marginTop: '20px', borderTop: '1px solid #F0ECE7', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={handleSave} disabled={isSaving} style={{ padding: '14px 40px', backgroundColor: isSaving ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '16px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => !isSaving && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => !isSaving && (e.currentTarget.style.transform = 'translateY(0)')}>
             {isSaving ? '儲存中...' : '儲存全部內容'}
           </button>
         </div>
-
       </div>
     </div>
   );
