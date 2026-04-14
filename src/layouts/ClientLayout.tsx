@@ -104,7 +104,6 @@ export function ClientLayout() {
       <header style={{ padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', zIndex: 50 }}>
         <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px', letterSpacing: '1px' }}>Arti</div>
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <Link to="/client/orders" style={{ color: location.pathname.includes('/client/order') ? '#FFF' : 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px', transition: 'color 0.2s' }}>委託單列表</Link>
           <div style={{ width: '1px', height: '14px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
           <button onClick={handleSwitchToArtist} style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', padding: 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
             {profile?.role === 'artist' ? '切換至繪師後台' : '開通繪師管理頁'}

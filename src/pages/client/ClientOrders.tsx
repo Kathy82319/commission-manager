@@ -291,13 +291,6 @@ export function ClientOrders() {
         }
       `}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1', flexShrink: 0 }}>
-        <h1 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>🎨 我的發包委託管理</h1>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => navigate('/portal')} style={{ padding: '8px 16px', backgroundColor: '#F5EBEB', color: '#5D4A3E', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>切換身分</button>
-          <button onClick={() => navigate('/artist/notebook')} style={{ padding: '8px 16px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>進入繪師後台 →</button>
-        </div>
-      </div>
 
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
