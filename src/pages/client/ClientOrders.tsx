@@ -357,11 +357,11 @@ export function ClientOrders() {
               </div>
 
               {/* 右側 Tabs */}
-              <div style={{ display: 'flex', backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1', padding: '0 20px' }}>
-                <button onClick={() => setActiveTab('main')} style={tabStyle(activeTab === 'main')}>詳細內容</button>
-                <button onClick={() => setActiveTab('review')} style={tabStyle(activeTab === 'review')}>稿件審閱</button>
-                <button onClick={() => setActiveTab('history')} style={tabStyle(activeTab === 'history')}>歷程紀錄</button>
-              </div>
+<div style={{ display: 'flex', backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1', padding: '0 20px' }}>
+  <button onClick={() => setActiveTab('main')} style={tabStyle('main')}>詳細內容</button>
+  <button onClick={() => setActiveTab('review')} style={tabStyle('review')}>稿件審閱</button>
+  <button onClick={() => setActiveTab('history')} style={tabStyle('history')}>歷程紀錄</button>
+</div>
 
               {/* 右側內容區 */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '30px', backgroundColor: '#f8fafc' }}>
