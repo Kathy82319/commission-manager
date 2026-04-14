@@ -371,11 +371,14 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
     const sub = submissions.find(s => s.stage === stageKey);
     const isFinal = stageKey === 'final';
 
+    // 🌟 核心修正：精準判斷「被退回」的狀態
+    // 條件：委託單當前狀態剛好卡在該階段的「繪製中」，且該階段已經有上傳過檔案
+    const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
+
     let headerBg = '#FCFAF8'; 
     let statusTag = '';
     let statusColor = '#A0978D';
     
-    // 🌟 狀態判斷邏輯升級：加入「被退回」的判斷
     if (isPassed) {
       headerBg = '#E8F3EB';
       statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
@@ -384,10 +387,9 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
       headerBg = '#FDF4E6';
       statusTag = '⏳ 待委託人確認';
       statusColor = '#A67B3E';
-    } else if (sub) {
-      // 💡 關鍵：有上傳紀錄，但既不是審核中也沒通過，代表被委託人「退回」了！
-      headerBg = '#Fce8e6';
-      statusTag = '⚠️ 委託人已退回，需重新上傳';
+    } else if (isRejected) { // 🌟 這裡不再使用粗暴的 else if (sub)
+      headerBg = '#fce8e6';
+      statusTag = '⚠️ 委託人已退回修改';
       statusColor = '#d93025';
     } else {
       statusTag = '等待繪製上傳...';

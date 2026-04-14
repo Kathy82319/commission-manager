@@ -52,7 +52,7 @@ export function PublicLayout() {
           margin: '0 auto 12px auto', 
           borderTop: '1px solid rgba(93, 74, 62, 0.15)' 
         }} />
-        
+
         <div style={{ fontSize: '11px', color: 'rgba(93, 74, 62, 0.4)', letterSpacing: '1px' }}>
           <Link 
             to="/terms" 
@@ -71,6 +71,8 @@ export function PublicLayout() {
           >
             隱私權政策
           </Link>
+          <span style={{ margin: '0 12px', opacity: 0.5 }}>|</span>
+          <span>客服信箱：cath40286@gmail.com</span>
         </div>
       </footer>
     </div>
