@@ -368,8 +368,8 @@ export function Notebook() {
   });
 
   const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
-    const sub = submissions.find(s => s.stage === stageKey);
-    const isFinal = stageKey === 'final';
+  const sub = submissions.find(s => s.stage === stageKey);
+  const isFinal = stageKey === 'final';
 
     let headerBg = '#FCFAF8'; let statusTag = '';
     
@@ -383,25 +383,33 @@ export function Notebook() {
     }
 
     return (
-      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px' }}>
-          <span>{title}</span> <span style={{ color: isPassed ? '#4E7A5A' : '#A67B3E' }}>{statusTag}</span>
-        </div>
-        <div style={{ padding: '20px' }}>
-          {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
-            💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
-          </div>}
+    <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+      <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px' }}>
+        <span>{title}</span> <span style={{ color: isPassed ? '#4E7A5A' : '#A67B3E' }}>{statusTag}</span>
+      </div>
+      <div style={{ padding: '20px' }}>
+        {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+          💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
+        </div>}
 
-          {isUploading === stageKey ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
-          ) : (
-            <ImageUploader 
-              onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-              withWatermark={true}
-              watermarkText="SAMPLE"
-              existingUrl={sub?.file_url}
-              isFinal={isFinal} // 🌟 完稿階段開啟雙重產出
-              buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
+        {/* 🌟 核心修正：徹底刪除原本的手動渲染圖片塊 {sub && (...)} */}
+        {/* 只保留 Uploader 呼叫，並將所有邏輯交給它 */}
+
+        {isUploading === stageKey ? (
+          <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
+        ) : (
+          <ImageUploader 
+            onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
+            withWatermark={true}
+            watermarkText="SAMPLE"
+            existingUrl={sub?.file_url}
+            isFinal={isFinal} 
+            // 🌟 傳入中繼資料，讓 Uploader 自己決定怎麼整合顯示
+            metadata={sub ? {
+              version: sub.version,
+              date: new Date(sub.created_at).toLocaleDateString()
+            } : undefined}
+            buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
             />
           )}
         </div>
@@ -663,10 +671,10 @@ export function Notebook() {
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。委託人同意前皆可重複上傳新版本覆蓋。</p>
                   )}
                   
-                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
-                </div>
+// 🌟 呼叫修正：配合定義刪除多餘參數
+{renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+{renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
+{renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}                </div>
               )}
 
               {activeTab === 'logs' && (

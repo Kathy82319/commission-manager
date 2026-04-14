@@ -1,4 +1,4 @@
-// src/components/ImageUploader.tsx
+// src/components/ImageUploader.tsx (V3 - Smart Uploader)
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/imageProcessor';
@@ -11,8 +11,13 @@ interface ImageUploaderProps {
   watermarkText?: string;
   shape?: 'rect' | 'round';
   buttonText?: string;
-  existingUrl?: string; // 🌟 新增：現有的圖片網址
-  isFinal?: boolean;    // 🌟 新增：是否為完稿模式（開啟雙重產出）
+  existingUrl?: string;
+  isFinal?: boolean;
+  // 🌟 新增：metadata 屬性 (用於顯示版本與日期)
+  metadata?: {
+    version: number;
+    date: string;
+  };
 }
 
 export function ImageUploader({
@@ -23,7 +28,8 @@ export function ImageUploader({
   shape = 'rect',
   buttonText = "點擊上傳",
   existingUrl,
-  isFinal = false
+  isFinal = false,
+  metadata // 🌟
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -50,7 +56,6 @@ export function ImageUploader({
     if (!imageSrc || !croppedAreaPixels) return;
     setIsProcessing(true);
     try {
-      // 1. 產生預覽圖 (一定有浮水印)
       const previewBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
         withWatermark,
         watermarkText
@@ -60,11 +65,10 @@ export function ImageUploader({
       
       let resultBlobs: { preview: Blob; original?: Blob } = { preview: previewBlob };
 
-      // 2. 如果是完稿，額外產生一張乾淨的圖
       if (isFinal) {
         const originalBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
           withWatermark: false, // 完稿原件不壓水印
-          quality: 0.95 // 原稿品質設高
+          quality: 0.95
         });
         resultBlobs.original = originalBlob;
       }
@@ -78,25 +82,36 @@ export function ImageUploader({
     }
   };
 
-  // UI: 如果已經有圖片，顯示 Hover 覆蓋層
+  // 🌟 核心：如果已經有圖片 (融合 metadata 與 Hover 模式)
   if (existingUrl && !imageSrc) {
     return (
-      <div 
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-        style={{ position: 'relative', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}
-      >
-        <img src={existingUrl} alt="已上傳" style={{ width: '100%', display: 'block' }} />
-        {isHovering && (
+      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* 🌟 整合原本的手動渲染 metadata 資料 */}
+        {metadata && (
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', 
-            alignItems: 'center', justifyContent: 'center', color: '#FFF'
+            fontSize: '11px', color: '#A0978D', padding: '10px 15px',
+            backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1'
           }}>
-            <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
-            <span style={{ fontWeight: 'bold' }}>{buttonText}</span>
+            目前最新版本 v{metadata.version} ({metadata.date})
           </div>
         )}
+        <div
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+          style={{ position: 'relative', width: '100%' }}
+        >
+          <img src={existingUrl} alt="已交付稿件" style={{ width: '100%', display: 'block' }} />
+          {isHovering && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', color: '#FFF'
+            }}>
+              <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+              <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{buttonText}</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
