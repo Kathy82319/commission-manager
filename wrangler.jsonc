@@ -1,25 +1,25 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "cath-commission-manager",
-	"pages_build_output_dir": "dist",
-	"compatibility_date": "2026-04-09",
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	"vars": {
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "cath-commission-manager",
+    "pages_build_output_dir": "dist", // 🌟 必須加上這一行，讓 Pages 知道前端檔案在哪
+    "main": "worker/index.ts",        // 🌟 這一行必須保留，否則 API 會失效
+    "compatibility_date": "2026-04-09",
+    "observability": {
+        "enabled": true
+    },
+    "upload_source_maps": true,
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "vars": {
         "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback",
         "FRONTEND_URL": "https://cath-commission-manager.pages.dev",
         "LINE_CHANNEL_ID": "2009777002"
     },
-	"d1_databases": [
-		{
-			// 這是我們開發和測試專案用的綁定
-			"binding": "commission_db",
-			"database_name": "commission-db-test",
+    "d1_databases": [
+        {
+            "binding": "commission_db",
+            "database_name": "commission-db-test",
 			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683", // <-- 填入新的 ID
 			"remote": true
 		},
@@ -33,17 +33,17 @@
 			"binding": "commission_db_test",
 			"database_name": "commission-db-test",
 			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683",
-			"remote": true
-		}
-	],
-	"r2_buckets": [
-		{
-			"binding": "PUBLIC_BUCKET",
-			"bucket_name": "commission-public"
-		},
-		{
-			"binding": "PRIVATE_BUCKET",
-			"bucket_name": "commission-private"
-		}
-	]
+            "remote": true
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "PUBLIC_BUCKET",
+            "bucket_name": "commission-public"
+        },
+        {
+            "binding": "PRIVATE_BUCKET",
+            "bucket_name": "commission-private"
+        }
+    ]
 }
