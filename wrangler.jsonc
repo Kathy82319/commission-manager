@@ -1,6 +1,6 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "cath-commission-manager",
+    "name": "commission-app",
     "pages_build_output_dir": "dist", 
     "compatibility_date": "2026-04-09",
     "observability": {
@@ -11,29 +11,19 @@
         "nodejs_compat"
     ],
     "vars": {
-        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback",
-        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",
+        "LINE_REDIRECT_URI": "https://commission-app.pages.dev/api/auth/line/callback",
+        "FRONTEND_URL": "https://commission-app.pages.dev",
         "LINE_CHANNEL_ID": "2009777002"
     },
     "d1_databases": [
-        {
-            "binding": "commission_db",
-            "database_name": "commission-db-test",
-			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683", // <-- 填入新的 ID
-			"remote": true
-		},
+
 		{
 			// 這是您原本正式機的資料庫，我們留著備用（如果需要存取正式資料的話）
-			"binding": "commission_db_prod",
+			"binding": "commission_db",
 			"database_name": "commission-db",
 			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
 		},
-		{
-			"binding": "commission_db_test",
-			"database_name": "commission-db-test",
-			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683",
-            "remote": true
-        }
+
     ],
     "r2_buckets": [
         {
