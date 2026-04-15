@@ -73,7 +73,15 @@ export function PublicProfile() {
           setArtist(data.data);
           if (data.data.profile_settings) {
             try {
-              setSettings(JSON.parse(data.data.profile_settings));
+              const parsedSettings = JSON.parse(data.data.profile_settings);
+              
+              // 🌟 核心修正：安靜地執行「僅傳送前 6 張圖片」功能
+              // 如果是基礎免費版 (free)，或者沒有方案資料，強制只切出前 6 張作品展示
+              if ((data.data.plan_type === 'free' || !data.data.plan_type) && parsedSettings.portfolio) {
+                parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
+              }
+              
+              setSettings(parsedSettings);
             } catch (e) {
               console.error("解析 profile_settings 失敗");
             }
