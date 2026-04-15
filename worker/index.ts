@@ -822,11 +822,19 @@ export default {
     }
 
     if (!url.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
+      // 1. 先嘗試找真實的靜態檔案 (例如 .js, .css, 圖片)
+      let assetResponse = await env.ASSETS.fetch(request);
+      
+      // 2. 如果找不到檔案 (404)，代表這是 React 的虛擬路由 (例如 /artist/queue)
+      // 這時我們強制讀取首頁 (index.html)，讓前端的 React Router 接手畫面切換！
+      if (assetResponse.status === 404) {
+        const indexUrl = new URL("/", request.url);
+        return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+      }
+      
+      return assetResponse;
     }
 
-    // 如果真的是 /api/ 開頭但找不到對應的路徑，才回傳 404 API Not Found
     return new Response("API Route Not Found", { status: 404, headers: corsHeaders });
-  
   }  
 };
