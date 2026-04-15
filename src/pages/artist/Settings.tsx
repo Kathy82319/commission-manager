@@ -35,6 +35,7 @@ export function Settings() {
   
   const [isUploading, setIsUploading] = useState(false); 
   const [isPortfolioUploading, setIsPortfolioUploading] = useState(false); 
+  const [isSplashUploading, setIsSplashUploading] = useState(false); // 🌟 新增：Splash 背景上傳狀態
   
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number; trial_start_at?: string; trial_end_at?: string; pro_expires_at?: string } | null>(null);
 
@@ -49,7 +50,6 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   
-  // 🌟 新增：用於拖曳排序的作品索引狀態
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
@@ -147,6 +147,28 @@ export function Settings() {
       alert("作品上傳失敗");
     } finally {
       setIsPortfolioUploading(false);
+    }
+  };
+
+  // 🌟 新增：Splash 背景圖上傳邏輯
+  const handleSplashUpload = async (resultBlobs: { preview: Blob }) => {
+    setIsSplashUploading(true);
+    try {
+      const timestamp = Date.now();
+      const fileName = `splash/bg_${timestamp}.jpg`;
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+      });
+      const { uploadUrl } = await ticketRes.json();
+      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      setSettings(prev => ({ ...prev, splash_image: finalUrl }));
+      alert("開場背景圖上傳成功！請記得點擊下方的「儲存全部內容」。");
+    } catch (err) {
+      alert("背景圖上傳失敗");
+    } finally {
+      setIsSplashUploading(false);
     }
   };
 
@@ -267,12 +289,11 @@ export function Settings() {
     });
   };
 
-  // 🌟 修改 3：將選單重新排序，訂閱放最後
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
     { id: 'portfolio', label: '作品展示區' },
     { id: 'detailed_intro', label: '詳細介紹' },
-    { id: 'splash', label: '開場名片設定' },
+    { id: 'splash', label: '開場動畫設定' },
     { id: 'process', label: '委託流程' },
     { id: 'payment', label: '付款方式' },
     { id: 'rules', label: '協議書內容' },
@@ -280,7 +301,6 @@ export function Settings() {
     { id: 'subscription', label: '💎 方案與訂閱' }
   ];
 
-  // 🌟 修改 2：免費版權限鎖定邏輯
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
@@ -312,7 +332,6 @@ export function Settings() {
         <h2 style={{ margin: '0 0 20px 10px', color: '#5D4A3E', fontSize: '24px', letterSpacing: '0.5px' }}>個人頁編輯</h2>
         {menuItems.map(item => {
           const isActive = activeTab === item.id;
-          // 🌟 側邊欄鎖頭邏輯
           const isLockedMenu = isFreePlan && !freeAllowedTabs.includes(item.id);
           
           return (
@@ -372,7 +391,7 @@ export function Settings() {
 
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px', position: 'relative' }}>
           
-          {/* 🌟 修改 2：免費版毛玻璃鎖定遮罩 */}
+          {/* 免費版毛玻璃鎖定遮罩 */}
           {isCurrentTabLocked && (
              <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)' }}>
                <div style={{ padding: '30px 40px', backgroundColor: '#FFF', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px', border: '1px solid #EAE6E1' }}>
@@ -394,7 +413,6 @@ export function Settings() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                   
-                  {/* 🌟 修改 4：更新方案說明文案 */}
                   <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
                     <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
@@ -536,22 +554,31 @@ export function Settings() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                        背景圖片網址 (URL) <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用 1920x1080 橫式高品質作品，若留空將使用頭像)</span>
+                        背景圖片設定 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用橫式美圖。若留空，將預設使用頭像)</span>
                       </label>
-                      <input 
-                        type="text" 
-                        value={settings.splash_image} 
-                        onChange={e => setSettings({...settings, splash_image: e.target.value})} 
-                        onFocus={() => setFocusedField('splash_image')} 
-                        onBlur={() => setFocusedField(null)} 
-                        placeholder="https://..." 
-                        style={getInputStyle('splash_image')} 
-                      />
-                      {settings.splash_image && (
-                        <div style={{ marginTop: '10px', width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
-                          <img src={settings.splash_image} alt="背景預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      
+                      {/* 🌟 核心修改：Splash 背景圖改為 R2 上傳模式 */}
+                      {settings.splash_image ? (
+                        <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                          <img src={settings.splash_image} alt="背景預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button 
+                            onClick={() => setSettings({...settings, splash_image: ''})} 
+                            style={{ position: 'absolute', top: '10px', right: '10px', padding: '6px 12px', backgroundColor: 'rgba(160, 92, 92, 0.9)', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                          >
+                            移除圖片
+                          </button>
                         </div>
+                      ) : (
+                        isSplashUploading ? (
+                          <div style={{ padding: '30px', textAlign: 'center', border: '2px dashed #DED9D3', borderRadius: '12px', color: '#A0978D', backgroundColor: '#FBFBF9' }}>圖片上傳中...</div>
+                        ) : (
+                          <ImageUploader 
+                            onUpload={handleSplashUpload}
+                            buttonText="點此選擇要上傳的開場背景圖檔"
+                          />
+                        )
                       )}
+                      <span style={{ fontSize: '11px', color: '#A0978D' }}>目前的圖片網址：{settings.splash_image || '使用預設頭像'}</span>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -628,7 +655,6 @@ export function Settings() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', marginTop: '10px' }}>
                   {settings.portfolio.length === 0 && <div style={{ color: '#C4BDB5', fontSize: '14px', gridColumn: '1 / -1', padding: '20px 0' }}>目前尚無作品，請在上方上傳圖片。</div>}
                   
-                  {/* 🌟 修改 1：實作 Drag & Drop 拖曳排序 */}
                   {settings.portfolio.map((img, index) => (
                     <div 
                       key={index} 
@@ -664,7 +690,6 @@ export function Settings() {
                       
                       <button onClick={(e) => { e.stopPropagation(); handleRemoveImage(index); }} style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', backgroundColor: 'rgba(255,255,255,0.95)', color: '#A05C5C', border: 'none', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>×</button>
                       
-                      {/* 左上角顯示順序號碼 */}
                       <div style={{ position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFF', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', pointerEvents: 'none' }}>
                         {index + 1}
                       </div>
