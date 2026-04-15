@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; 
-import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入上傳組件
+import { ImageUploader } from '../../components/ImageUploader';
 
 interface ProfileSettings {
   portfolio: string[];
@@ -30,10 +30,14 @@ const customQuillModules = {
 };
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState<'profile_basic' | 'splash' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
+  // 🌟 新增 'subscription' 分頁
+  const [activeTab, setActiveTab] = useState<'profile_basic' | 'subscription' | 'splash' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
   const [formData, setFormData] = useState({ display_name: '', avatar_url: '', bio: '' });
-  const [isUploading, setIsUploading] = useState(false); // 🌟 新增上傳狀態控制
+  const [isUploading, setIsUploading] = useState(false); 
   
+  // 🌟 新增：存放使用者的方案與額度資訊，用於訂閱卡片判斷
+  const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number; trial_start_at?: string; trial_end_at?: string; pro_expires_at?: string } | null>(null);
+
   const [settings, setSettings] = useState<ProfileSettings>({
     portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
     splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: ''
@@ -46,14 +50,12 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; // 🌟 提取 API 基礎路徑
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/users/me`, {
-          credentials: 'include'
-        });
+        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
         const data = await res.json();
         if (data.success && data.data) {
           setFormData({
@@ -61,6 +63,17 @@ export function Settings() {
             avatar_url: data.data.avatar_url || '',
             bio: data.data.bio || '',
           });
+          
+          // 🌟 記錄方案資訊
+          setQuotaInfo({
+            plan_type: data.data.plan_type || 'free',
+            used_quota: data.data.used_quota || 0,
+            max_quota: data.data.max_quota || 3,
+            trial_start_at: data.data.trial_start_at,
+            trial_end_at: data.data.trial_end_at,
+            pro_expires_at: data.data.pro_expires_at,
+          });
+
           if (data.data.profile_settings) {
             try {
               const parsed = JSON.parse(data.data.profile_settings);
@@ -90,24 +103,17 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
-  // 🌟 核心修改：處理頭像上傳到 R2
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
       const timestamp = Date.now();
       const fileName = `avatars/user_${timestamp}.jpg`;
-
-      // 1. 取得 R2 上傳憑證
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
       });
       const { uploadUrl } = await ticketRes.json();
-
-      // 2. 執行上傳
       await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
-
-      // 3. 設定公開網址
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
       setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
       alert("頭像上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
@@ -122,9 +128,7 @@ export function Settings() {
     setIsSaving(true); setMessage('');
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
@@ -140,6 +144,30 @@ export function Settings() {
     } finally {
       setIsSaving(false); setTimeout(() => setMessage(''), 3000);
     }
+  };
+
+  // 🌟 模擬金流 API：開啟試用
+  const handleStartTrial = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        window.location.reload(); // 重新整理以更新全站狀態
+      } else alert(data.error);
+    } catch(e) { alert('連線失敗'); }
+  };
+
+  // 🌟 模擬金流 API：開通專業版
+  const handleMockUpgrade = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/test/mock-upgrade`, { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        window.location.reload(); // 重新整理以更新全站狀態
+      } else alert(data.error);
+    } catch(e) { alert('連線失敗'); }
   };
 
   const validateSocialUrl = (platform: string, url: string) => {
@@ -184,10 +212,7 @@ export function Settings() {
 
   const handleAddImage = () => {
     if (newImageUrl.trim()) {
-      setSettings(prev => ({ 
-        ...prev, 
-        portfolio: [...prev.portfolio, newImageUrl.trim()] 
-      }));
+      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, newImageUrl.trim()] }));
       setNewImageUrl(''); 
     }
   };
@@ -224,8 +249,10 @@ export function Settings() {
     });
   };
 
+  // 🌟 修改：加入「方案與訂閱」選單
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
+    { id: 'subscription', label: '💎 方案與訂閱' },
     { id: 'splash', label: '開場名片設定' },
     { id: 'portfolio', label: '作品展示區' },
     { id: 'detailed_intro', label: '詳細介紹' },
@@ -246,46 +273,15 @@ export function Settings() {
     <div style={{ display: 'flex', gap: '30px', padding: '10px 20px', maxWidth: '1100px', margin: '0 auto', height: '100%' }}>
       
       <style>{`
-        .custom-quill-wrapper {
-          border: 1px solid #DED9D3;
-          border-radius: 12px;
-          overflow: hidden;
-          background-color: #FFFFFF;
-        }
-        .custom-quill-wrapper .ql-toolbar.ql-snow {
-          border: none;
-          border-bottom: 1px solid #EAE6E1;
-          background-color: #FBFBF9;
-          padding: 12px;
-        }
-        .custom-quill-wrapper .ql-container.ql-snow {
-          border: none;
-        }
-        .custom-quill-wrapper .ql-editor {
-          min-height: 300px;
-          max-height: 500px;
-          overflow-y: auto;
-          font-size: 15px;
-          line-height: 1.6;
-          color: #5D4A3E;
-        }
-        .custom-quill-wrapper.small .ql-editor {
-          min-height: 150px;
-          max-height: 300px;
-        }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb {
-          background: #DED9D3;
-          border-radius: 4px;
-        }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb:hover {
-          background: #C4BDB5;
-        }
+        .custom-quill-wrapper { border: 1px solid #DED9D3; border-radius: 12px; overflow: hidden; background-color: #FFFFFF; }
+        .custom-quill-wrapper .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid #EAE6E1; background-color: #FBFBF9; padding: 12px; }
+        .custom-quill-wrapper .ql-container.ql-snow { border: none; }
+        .custom-quill-wrapper .ql-editor { min-height: 300px; max-height: 500px; overflow-y: auto; font-size: 15px; line-height: 1.6; color: #5D4A3E; }
+        .custom-quill-wrapper.small .ql-editor { min-height: 150px; max-height: 300px; }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar { width: 8px; }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-track { background: transparent; }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb { background: #DED9D3; border-radius: 4px; }
+        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb:hover { background: #C4BDB5; }
       `}</style>
 
       {/* 左側選單 */}
@@ -300,7 +296,7 @@ export function Settings() {
               style={{
                 padding: '12px 16px', border: 'none', borderRadius: '12px',
                 backgroundColor: isActive ? '#F4F0EB' : 'transparent',
-                color: isActive ? '#5D4A3E' : '#7A7269',
+                color: isActive ? (item.id === 'subscription' ? '#A67B3E' : '#5D4A3E') : '#7A7269',
                 fontWeight: isActive ? 'bold' : 'normal',
                 cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease', fontSize: '15px'
               }}
@@ -322,7 +318,7 @@ export function Settings() {
               {menuItems.find(m => m.id === activeTab)?.label}
             </h3>
             
-            {activeTab !== 'profile_basic' && activeTab !== 'splash' && (
+            {activeTab !== 'profile_basic' && activeTab !== 'splash' && activeTab !== 'subscription' && (
               <button 
                 onClick={() => toggleVisibility(activeTab)}
                 style={{
@@ -348,6 +344,69 @@ export function Settings() {
 
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
           
+          {/* 🌟 新增：方案與訂閱介面 */}
+          {activeTab === 'subscription' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ padding: '16px', backgroundColor: '#F4F0EB', borderRadius: '12px', color: '#5D4A3E', fontSize: '14px', lineHeight: '1.6' }}>
+                <strong>💡 開發測試專區：</strong> 這裡已經串接了後端的「模擬金流 API」。您可以直接點擊下方按鈕測試切換方案，測試完畢後回到「產出委託單」即可看到毛玻璃被解鎖的真實效果！
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                
+                {/* 1. 基礎免費版卡片 */}
+                <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                  <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                    <li>每月最高建立 3 筆委託單</li>
+                    <li>公開頁面展示前 6 張作品</li>
+                    <li>基礎接單與排單管理功能</li>
+                  </ul>
+                  {quotaInfo?.plan_type === 'free' ? (
+                    <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontWeight: 'bold', backgroundColor: '#F0ECE7', borderRadius: '8px' }}>目前方案</div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>到期後將自動降級至此方案</div>
+                  )}
+                </div>
+
+                {/* 2. 試用版卡片 */}
+                <div style={{ border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'trial' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                  <h4 style={{ margin: 0, fontSize: '18px', color: '#A67B3E' }}>專業版 (15天試用)</h4>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                    <li>試用期間可建立 20 筆委託單</li>
+                    <li>解鎖公開頁面無上限作品展示</li>
+                    <li>體驗所有專業版進階功能</li>
+                  </ul>
+                  {quotaInfo?.plan_type === 'trial' ? (
+                     <div style={{ textAlign: 'center', padding: '12px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '8px' }}>試用中</div>
+                  ) : quotaInfo?.trial_start_at ? (
+                     <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
+                  ) : (
+                    <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>開啟 15 天試用</button>
+                  )}
+                </div>
+
+                {/* 3. 專業版卡片 */}
+                <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                  <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 299 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                    <li>無限量建立委託單</li>
+                    <li>無上限作品展示數量</li>
+                    <li>享有未來所有進階功能更新</li>
+                  </ul>
+                  {quotaInfo?.plan_type === 'pro' ? (
+                     <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
+                  ) : (
+                    <button onClick={handleMockUpgrade} style={{ padding: '12px', backgroundColor: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>模擬付費 (開通 30 天)</button>
+                  )}
+                </div>
+
+              </div>
+            </div>
+          )}
+
           {activeTab === 'profile_basic' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               <div style={{ display: 'flex', gap: '30px' }}>
@@ -362,7 +421,6 @@ export function Settings() {
                     <input type="text" value={formData.display_name} onChange={e => setFormData({...formData, display_name: e.target.value})} onFocus={() => setFocusedField('display_name')} onBlur={() => setFocusedField(null)} placeholder="對外展示的暱稱" style={getInputStyle('display_name')} />
                   </div>
                   
-                  {/* 🌟 核心修改：替換原本的頭像網址輸入框為 ImageUploader */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>上傳個人頭像</label>
                     {isUploading ? (
@@ -370,8 +428,8 @@ export function Settings() {
                     ) : (
                       <ImageUploader 
                         onUpload={handleAvatarUpload}
-                        aspectRatio={1} // 🌟 強制 1:1 正方形裁切框
-                        withWatermark={false} // 頭像不需浮水印
+                        aspectRatio={1} 
+                        withWatermark={false} 
                         buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
                       />
                     )}
@@ -493,6 +551,14 @@ export function Settings() {
 
           {activeTab === 'portfolio' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* 🌟 新增：免費版降級警告提示 */}
+              {quotaInfo?.plan_type === 'free' && (
+                <div style={{ padding: '12px 16px', backgroundColor: '#FDF4E6', color: '#A67B3E', borderRadius: '8px', border: '1px solid #E8D3B9', fontSize: '14px', fontWeight: 'bold', lineHeight: '1.6' }}>
+                  ⚠️ 您目前為「基礎免費版」，此處上傳的圖片資料會全數被保留，但在對外公開的個人專屬首頁中，<span style={{ color: '#A05C5C' }}>僅會展示前 6 張作品</span>。升級專業版即可解鎖無上限展示！
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: '12px' }}>
                 <input type="text" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} onFocus={() => setFocusedField('portfolio_url')} onBlur={() => setFocusedField(null)} onKeyDown={e => { if (e.key === 'Enter') handleAddImage(); }} placeholder="輸入圖片網址 (URL)..." style={{...getInputStyle('portfolio_url'), flex: 1}} />
                 <button onClick={handleAddImage} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>新增圖片</button>
@@ -502,6 +568,12 @@ export function Settings() {
                 {settings.portfolio.map((img, index) => (
                   <div key={index} style={{ position: 'relative', aspectRatio: '1', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', backgroundColor: '#FBFBF9', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                     <img src={img} alt={`作品 ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {/* 🌟 給免費版用戶的視覺提示 */}
+                    {quotaInfo?.plan_type === 'free' && index >= 6 && (
+                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backdropFilter: 'blur(2px)' }}>
+                        前台已隱藏
+                      </div>
+                    )}
                     <button onClick={() => handleRemoveImage(index)} style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', backgroundColor: 'rgba(255,255,255,0.95)', color: '#A05C5C', border: 'none', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>×</button>
                   </div>
                 ))}
@@ -560,11 +632,14 @@ export function Settings() {
           )}
         </div>
 
-        <div style={{ marginTop: '20px', borderTop: '1px solid #F0ECE7', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={handleSave} disabled={isSaving} style={{ padding: '14px 40px', backgroundColor: isSaving ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '16px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => !isSaving && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => !isSaving && (e.currentTarget.style.transform = 'translateY(0)')}>
-            {isSaving ? '儲存中...' : '儲存全部內容'}
-          </button>
-        </div>
+        {/* 只有在非訂閱頁面時才顯示儲存按鈕 */}
+        {activeTab !== 'subscription' && (
+          <div style={{ marginTop: '20px', borderTop: '1px solid #F0ECE7', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={handleSave} disabled={isSaving} style={{ padding: '14px 40px', backgroundColor: isSaving ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '16px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => !isSaving && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => !isSaving && (e.currentTarget.style.transform = 'translateY(0)')}>
+              {isSaving ? '儲存中...' : '儲存全部內容'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
