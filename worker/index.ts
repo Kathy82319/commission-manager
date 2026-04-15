@@ -30,7 +30,7 @@ interface CreateCommissionBody {
   detailed_settings: string;
   workflow_mode?: string;
   client_id?: string;
-  agreed_tos_snapshot?: string; // 🌟 1. 新增：讓型別支援此欄位
+  agreed_tos_snapshot?: string;
 }
 
 // ==========================================
@@ -193,7 +193,8 @@ export default {
 
         if (results.length === 0) {
           const publicId = `User_${Math.floor(10000 + Math.random() * 90000)}`;
-          await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, subscription_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
+          // 預設給予 free 方案
+          await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, plan_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
@@ -214,21 +215,72 @@ export default {
     }
 
     // ============================================================================
-    // 2. 使用者管理 (Users API)
+    // 2. 使用者管理 (Users API) - 🌟 包含方案檢查與計算額度
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
       try {
         let userId = pathParts[3];
-        if (userId === "me") {
-          const currentUser = await getUserIdFromRequest(request, env);
-          if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
-          userId = currentUser;
+        const currentUser = await getUserIdFromRequest(request, env);
+        const isMe = userId === "me" || userId === currentUser;
+        const targetId = userId === "me" ? currentUser : userId;
+
+        if (userId === "me" && !currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+        const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ? OR public_id = ?").bind(targetId, targetId).all();
+        if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
+        const user: any = results[0];
+
+        // 🌟 1. 懶人過期檢查 (Lazy Expiry Evaluation)
+        const now = new Date();
+        let planChanged = false;
+
+        if (user.plan_type === 'trial' && user.trial_end_at && now > new Date(user.trial_end_at)) {
+            user.plan_type = 'free';
+            planChanged = true;
+        } else if (user.plan_type === 'pro' && user.pro_expires_at && now > new Date(user.pro_expires_at)) {
+            user.plan_type = 'free';
+            planChanged = true;
         }
 
-        const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ? OR public_id = ?").bind(userId, userId).all();
-        if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
-        return jsonRes({ success: true, data: results[0] });
+        if (planChanged) {
+            await env.commission_db.prepare("UPDATE Users SET plan_type = 'free' WHERE id = ?").bind(user.id).run();
+        }
+
+        // 🌟 2. 針對登入者 (me)：計算剩餘額度
+        if (isMe) {
+            let usedQuota = 0;
+            let maxQuota = 3;
+
+            if (user.plan_type === 'trial') {
+                maxQuota = 20; // 試用期 20 筆
+                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ? AND order_date <= ?").bind(user.id, user.trial_start_at, user.trial_end_at).all();
+                usedQuota = countRes[0].count as number;
+            } else if (user.plan_type === 'pro') {
+                maxQuota = -1; // -1 代表無限
+            } else {
+                maxQuota = 3; // 免費版每月 3 筆
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(user.id, startOfMonth).all();
+                usedQuota = countRes[0].count as number;
+            }
+
+            user.used_quota = usedQuota;
+            user.max_quota = maxQuota;
+        } else {
+            // 🌟 3. 針對公開頁面 (Public Profile)：免費版直接砍掉多餘的作品圖片
+            if (user.plan_type === 'free' && user.profile_settings) {
+                try {
+                    const settings = JSON.parse(user.profile_settings);
+                    if (settings.portfolio && settings.portfolio.length > 6) {
+                        settings.portfolio = settings.portfolio.slice(0, 6); // 強制只保留前 6 張
+                    }
+                    user.profile_settings = JSON.stringify(settings);
+                } catch (e) {}
+            }
+        }
+
+        return jsonRes({ success: true, data: user });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
@@ -249,7 +301,7 @@ export default {
     }
 
     // ============================================================================
-    // 3. 委託單核心 API (Commissions)
+    // 3. 委託單核心 API (Commissions) - 🌟 包含攔截防護機制
     // ============================================================================
 
     if (request.method === "GET" && url.pathname === "/api/commissions") {
@@ -303,6 +355,31 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "權限不足" }, 401);
 
+        // 🌟 1. 建單前攔截與額度檢查 (Quota Check)
+        const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, trial_start_at, trial_end_at, pro_expires_at FROM Users WHERE id = ?").bind(currentUser).all();
+        const userPlan = userRes[0] as any;
+        let currentPlan = userPlan.plan_type || 'free';
+        const now = new Date();
+
+        // 懶人過期檢查
+        if (currentPlan === 'trial' && userPlan.trial_end_at && now > new Date(userPlan.trial_end_at)) currentPlan = 'free';
+        if (currentPlan === 'pro' && userPlan.pro_expires_at && now > new Date(userPlan.pro_expires_at)) currentPlan = 'free';
+
+        // 額度判斷
+        if (currentPlan === 'free') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(currentUser, startOfMonth).all();
+            if ((countRes[0].count as number) >= 3) {
+                return jsonRes({ success: false, error: "免費版每月 3 筆額度已用盡，請升級專業版或開啟試用。" }, 403);
+            }
+        } else if (currentPlan === 'trial') {
+            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ? AND order_date <= ?").bind(currentUser, userPlan.trial_start_at, userPlan.trial_end_at).all();
+            if ((countRes[0].count as number) >= 20) {
+                return jsonRes({ success: false, error: "專業版試用 20 筆額度已用盡，請升級專業版。" }, 403);
+            }
+        }
+
+        // --- 以下為正常的建單邏輯 ---
         const body: CreateCommissionBody = await request.json();
 
         if (typeof body.total_price !== 'number' || body.total_price < 0) {
@@ -313,11 +390,10 @@ export default {
         const clientId = body.client_id || '';
 
         if (!body.is_external && clientId) {
-          const { results: userRes } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).all();
-          if (userRes.length > 0) newOrderId = `${userRes[0].public_id}-${Date.now().toString().slice(-3)}`;
+          const { results: publicRes } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).all();
+          if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id}-${Date.now().toString().slice(-3)}`;
         }
         
-        // 🌟 2. 核心修正：將 agreed_tos_snapshot 寫入資料庫
         await env.commission_db.prepare(`
           INSERT INTO Commissions (
             id, artist_id, type_id, client_id, is_paid, artist_note, contact_memo,
@@ -334,7 +410,7 @@ export default {
           body.delivery_method, sanitize(body.payment_method),
           sanitize(body.draw_scope), body.char_count, sanitize(body.bg_type),
           sanitize(body.add_ons), sanitize(body.detailed_settings), body.workflow_mode || 'standard',
-          body.agreed_tos_snapshot || '' // ⚠️ 備註：因為這是 HTML 格式，所以不套用後端的 sanitize，交由前端 DOMPurify 處理防護
+          body.agreed_tos_snapshot || '' 
         ).run();
         
         return jsonRes({ success: true, id: newOrderId });
@@ -368,7 +444,6 @@ export default {
         const updates = [];
         const params = [];
         
-        // 🌟 3. 核心修正：將 'agreed_tos_snapshot' 加入允許更新的白名單中
         const allowedFields = [
           'status', 'payment_status','client_id', 'project_name', 'detailed_settings', 
           'usage_type', 'is_rush', 'delivery_method', 'payment_method', 
@@ -381,7 +456,6 @@ export default {
         for (const key of allowedFields) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);
-            // HTML 欄位不走 sanitize()，其餘純文字進行 sanitize()
             if (key === 'agreed_tos_snapshot') {
               params.push(body[key]);
             } else {
@@ -458,7 +532,6 @@ export default {
       try {
         const id = pathParts[3];
         const currentUser = await getUserIdFromRequest(request, env);
-        // action 支援 'approve' (同意), 'read_only' (已閱覽), 'reject' (退回修改)
         const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
 
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
@@ -654,13 +727,11 @@ export default {
     // 6. R2 儲存管理 API (Presigned URL)
     // ============================================================================
 
-    // A. 取得上傳門票
     if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
       const { fileName, contentType, bucketType } = await request.json() as any;
-      
       const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
       
       try {
@@ -670,22 +741,18 @@ export default {
           Key: fileName,
           ContentType: contentType,
         });
-
         const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
-        
         return jsonRes({ success: true, uploadUrl });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
       }
     }
 
-    // B. 取得下載門票 (針對私有儲存桶)
     if (request.method === "POST" && url.pathname === "/api/r2/download-url") {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
       const { commissionId, fileName } = await request.json() as any;
-
       const { results } = await env.commission_db.prepare(
         "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
       ).bind(commissionId).all();
@@ -703,16 +770,54 @@ export default {
 
       try {
         const s3 = getS3Client(env);
-        const command = new GetObjectCommand({
-          Bucket: "commission-private",
-          Key: fileName,
-        });
-
+        const command = new GetObjectCommand({ Bucket: "commission-private", Key: fileName });
         const downloadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
         return jsonRes({ success: true, downloadUrl });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成下載通行證" }, 500);
       }
+    }
+
+    // ============================================================================
+    // 7. 模擬金流與訂閱測試 API (Mock Payment & Subscription) - 🌟 新增區塊
+    // ============================================================================
+
+    // A. 模擬開啟 15 天試用期
+    if (request.method === "POST" && url.pathname === "/api/test/start-trial") {
+      try {
+        const currentUser = await getUserIdFromRequest(request, env);
+        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+        const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, trial_start_at FROM Users WHERE id = ?").bind(currentUser).all();
+        const user = userRes[0] as any;
+
+        if (user.plan_type !== 'free') return jsonRes({ success: false, error: "目前狀態無法開啟試用" }, 400);
+        if (user.trial_start_at) return jsonRes({ success: false, error: "您已經使用過免費試用囉！" }, 403); // 僅限試用一次
+
+        const now = new Date();
+        const end = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
+        
+        await env.commission_db.prepare(`UPDATE Users SET plan_type = 'trial', trial_start_at = ?, trial_end_at = ? WHERE id = ?`)
+          .bind(now.toISOString(), end.toISOString(), currentUser).run();
+        
+        return jsonRes({ success: true, message: "15 天專業版試用已開啟！" });
+      } catch (e) { return jsonRes({ success: false, error: String(e) }, 500); }
+    }
+
+    // B. 模擬付款開通專業版 30 天
+    if (request.method === "POST" && url.pathname === "/api/test/mock-upgrade") {
+      try {
+        const currentUser = await getUserIdFromRequest(request, env);
+        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+        const now = new Date();
+        const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        await env.commission_db.prepare(`UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?`)
+          .bind(end.toISOString(), currentUser).run();
+        
+        return jsonRes({ success: true, message: "模擬付款成功！專業版已開通 30 天。" });
+      } catch (e) { return jsonRes({ success: false, error: String(e) }, 500); }
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders });

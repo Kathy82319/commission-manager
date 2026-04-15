@@ -11,31 +11,39 @@
 		"nodejs_compat"
 	],
 	"vars": {
-		"LINE_REDIRECT_URI": "https://commission-manager.cath82319.workers.dev/api/auth/line/callback",
-		"FRONTEND_URL": "https://commission-app.pages.dev",
-		"LINE_CHANNEL_ID": "2009777002"
-	},
+        "LINE_REDIRECT_URI": "https://commission-manager.pages.dev/api/auth/line/callback",
+        "FRONTEND_URL": "https://commission-manager.pages.dev",
+        "LINE_CHANNEL_ID": "2009777002"
+    },
 	"d1_databases": [
 		{
+			// 這是我們開發和測試專案用的綁定
 			"binding": "commission_db",
-			"database_name": "commission-db",
-			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c",
+			"database_name": "commission-db-test",
+			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683", // <-- 填入新的 ID
 			"remote": true
 		},
 		{
-			"binding": "_commission_db_prod",
-			"database_name": "commission_db_prod",
+			// 這是您原本正式機的資料庫，我們留著備用（如果需要存取正式資料的話）
+			"binding": "commission_db_prod",
+			"database_name": "commission-db",
 			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
+		},
+		{
+			"binding": "commission_db_test",
+			"database_name": "commission-db-test",
+			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683",
+			"remote": true
 		}
 	],
 	"r2_buckets": [
-    {
-      "binding": "PUBLIC_BUCKET",
-      "bucket_name": "commission-public"
-    },
-    {
-      "binding": "PRIVATE_BUCKET",
-      "bucket_name": "commission-private"
-    }
-  ]
+		{
+			"binding": "PUBLIC_BUCKET",
+			"bucket_name": "commission-public"
+		},
+		{
+			"binding": "PRIVATE_BUCKET",
+			"bucket_name": "commission-private"
+		}
+	]
 }

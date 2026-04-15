@@ -23,7 +23,7 @@ PRAGMA foreign_keys = ON;
 -- 建立資料表結構
 -- ==========================================
 
--- 1. 系統使用者表
+-- 1. 系統使用者表 (🌟 修改重點：新增訂閱相關欄位)
 CREATE TABLE Users (
     id TEXT PRIMARY KEY,
     public_id TEXT UNIQUE,
@@ -34,8 +34,11 @@ CREATE TABLE Users (
     avatar_url TEXT DEFAULT '',
     bio TEXT DEFAULT '',
     profile_settings TEXT DEFAULT '{}',
-    subscription_type TEXT DEFAULT 'free',         
-    pro_expires_at DATETIME                        
+    -- 🌟 訂閱制核心欄位
+    plan_type TEXT DEFAULT 'free', -- 'free', 'trial', 'pro'
+    trial_start_at DATETIME,       -- 試用開始時間
+    trial_end_at DATETIME,         -- 試用結束時間
+    pro_expires_at DATETIME        -- Pro版到期時間
 );
 
 -- 2. 繪師專屬設定表
@@ -68,15 +71,13 @@ CREATE TABLE CommissionTypes (
     FOREIGN KEY (artist_id) REFERENCES Users(id)
 );
 
--- 4. 委託單主表 (包含所有異動與細項欄位)
+-- 4. 委託單主表
 CREATE TABLE Commissions (
     id TEXT PRIMARY KEY,
     client_id TEXT,
     artist_id TEXT NOT NULL,
     type_id TEXT NOT NULL,
-    -- 🔒 資安修正：加上 CHECK (total_price >= 0) 確保資料庫絕不會存入負數金額
     total_price INTEGER NOT NULL DEFAULT 0 CHECK (total_price >= 0),
-    -- 🔒 資安修正：限制 status 只能是系統允許的狀態字串
     status TEXT NOT NULL DEFAULT 'quote_created' 
         CHECK (status IN ('quote_created', 'unpaid', 'paid', 'completed', 'cancelled')),
     payment_status TEXT DEFAULT 'unpaid',
@@ -169,10 +170,8 @@ CREATE TABLE PaymentRecords (
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
 
--- 1. 先建立一個預設的繪師帳號，這樣底下的服務項目才有主人可以綁定
-INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role, subscription_type) 
+INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role, plan_type) 
 VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 'artist', 'pro');
 
--- 2. 再建立服務項目
 INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
