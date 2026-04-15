@@ -37,12 +37,21 @@ export function ImageUploader({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   
-  // 🌟 新增：用來記住圖片「最原始的比例」，解決全身圖被裁切的問題
+  // 用來記住圖片「最原始的比例」，解決全身圖被裁切的問題
   const [dynamicAspect, setDynamicAspect] = useState<number>(1); 
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+
+      // 🌟 核心修改：5MB 檔案大小攔截網
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_FILE_SIZE) {
+        alert(`檔案太大囉！您選擇的圖片為 ${(file.size / 1024 / 1024).toFixed(2)} MB，請上傳小於 5MB 的圖片。`);
+        e.target.value = ''; // 清空 input，讓使用者可以重新選擇同一張圖
+        return; // 直接中斷，不上傳
+      }
+
       const reader = new FileReader();
       reader.addEventListener('load', () => setImageSrc(reader.result?.toString() || null));
       reader.readAsDataURL(file);

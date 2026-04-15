@@ -194,12 +194,19 @@ export default {
 
         if (results.length === 0) {
           const publicId = `User_${Math.floor(10000 + Math.random() * 90000)}`;
-          // 預設給予 free 方案
           await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, plan_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
-          targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
+          
+          // 🌟 登入時檢查是否為已被軟刪除的帳號
+          if (user.role === 'deleted') {
+            // 如果不想讓他們登入，可以在這裡直接 return jsonRes({...}, 403);
+            // 但為了一般使用體驗，我們先導向 onboarding 讓他們以為帳號重置了
+            targetPath = "/onboarding";
+          } else {
+            targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
+          }
         }
 
         let baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
@@ -232,7 +239,11 @@ export default {
         if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
         const user: any = results[0];
 
-        // 🌟 1. 懶人過期檢查 (Lazy Expiry Evaluation)
+        // 🌟 防護網：被軟刪除的帳號對外隱藏
+        if (!isMe && user.role === 'deleted') {
+             return jsonRes({ success: false, error: "此帳號已停用或刪除" }, 404);
+        }
+
         const now = new Date();
         let planChanged = false;
 
@@ -248,19 +259,18 @@ export default {
             await env.commission_db.prepare("UPDATE Users SET plan_type = 'free' WHERE id = ?").bind(user.id).run();
         }
 
-        // 🌟 2. 針對登入者 (me)：計算剩餘額度
         if (isMe) {
             let usedQuota = 0;
             let maxQuota = 3;
 
             if (user.plan_type === 'trial') {
-                maxQuota = 20; // 試用期 20 筆
+                maxQuota = 20; 
                 const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ? AND order_date <= ?").bind(user.id, user.trial_start_at, user.trial_end_at).all();
                 usedQuota = countRes[0].count as number;
             } else if (user.plan_type === 'pro') {
-                maxQuota = -1; // -1 代表無限
+                maxQuota = -1; 
             } else {
-                maxQuota = 3; // 免費版每月 3 筆
+                maxQuota = 3; 
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(user.id, startOfMonth).all();
                 usedQuota = countRes[0].count as number;
@@ -269,12 +279,11 @@ export default {
             user.used_quota = usedQuota;
             user.max_quota = maxQuota;
         } else {
-            // 🌟 3. 針對公開頁面 (Public Profile)：免費版直接砍掉多餘的作品圖片
             if (user.plan_type === 'free' && user.profile_settings) {
                 try {
                     const settings = JSON.parse(user.profile_settings);
                     if (settings.portfolio && settings.portfolio.length > 6) {
-                        settings.portfolio = settings.portfolio.slice(0, 6); // 強制只保留前 6 張
+                        settings.portfolio = settings.portfolio.slice(0, 6); 
                     }
                     user.profile_settings = JSON.stringify(settings);
                 } catch (e) {}
@@ -301,8 +310,50 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
+    // 🌟 新增：帳號軟刪除 API (Soft Delete)
+    if (request.method === "DELETE" && url.pathname === "/api/users/me") {
+        try {
+          const currentUser = await getUserIdFromRequest(request, env);
+          if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+  
+          // 將角色設為 deleted，並徹底清空個資與設定 (去識別化)
+          await env.commission_db.prepare(`
+            UPDATE Users 
+            SET role = 'deleted', 
+                display_name = '已停用帳號', 
+                avatar_url = '', 
+                bio = '', 
+                profile_settings = '{}'
+            WHERE id = ?
+          `).bind(currentUser).run();
+  
+          return jsonRes({ success: true, message: "帳號已成功刪除" });
+        } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/users/me/complete-onboarding") {
+      try {
+        const currentUser = await getUserIdFromRequest(request, env);
+        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+        const body: { display_name: string; role: string } = await request.json();
+        
+        const newRole = body.role === 'artist' ? 'artist' : 'client';
+        const newName = sanitize(body.display_name || '未命名');
+
+        await env.commission_db.prepare(`
+          UPDATE Users SET display_name = ?, role = ? WHERE id = ?
+        `).bind(newName, newRole, currentUser).run();
+
+        return jsonRes({ success: true });
+      } catch (error) { 
+        return jsonRes({ success: false, error: String(error) }, 500); 
+      }
+    }
+
+
     // ============================================================================
-    // 3. 委託單核心 API (Commissions) - 🌟 包含攔截防護機制
+    // 3. 委託單核心 API (Commissions)
     // ============================================================================
 
     if (request.method === "GET" && url.pathname === "/api/commissions") {
@@ -356,17 +407,18 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "權限不足" }, 401);
 
-        // 🌟 1. 建單前攔截與額度檢查 (Quota Check)
-        const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, trial_start_at, trial_end_at, pro_expires_at FROM Users WHERE id = ?").bind(currentUser).all();
+        const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role, trial_start_at, trial_end_at, pro_expires_at FROM Users WHERE id = ?").bind(currentUser).all();
         const userPlan = userRes[0] as any;
+        
+        // 如果是已刪除帳號，不准建單
+        if (userPlan.role === 'deleted') return jsonRes({ success: false, error: "帳號已停用" }, 403);
+
         let currentPlan = userPlan.plan_type || 'free';
         const now = new Date();
 
-        // 懶人過期檢查
         if (currentPlan === 'trial' && userPlan.trial_end_at && now > new Date(userPlan.trial_end_at)) currentPlan = 'free';
         if (currentPlan === 'pro' && userPlan.pro_expires_at && now > new Date(userPlan.pro_expires_at)) currentPlan = 'free';
 
-        // 額度判斷
         if (currentPlan === 'free') {
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(currentUser, startOfMonth).all();
@@ -380,7 +432,6 @@ export default {
             }
         }
 
-        // --- 以下為正常的建單邏輯 ---
         const body: CreateCommissionBody = await request.json();
 
         if (typeof body.total_price !== 'number' || body.total_price < 0) {
@@ -470,28 +521,6 @@ export default {
         }
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
-    }
-
-// 🌟 補回：新手引導註冊完成 API
-    if (request.method === "POST" && url.pathname === "/api/users/me/complete-onboarding") {
-      try {
-        const currentUser = await getUserIdFromRequest(request, env);
-        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
-
-        const body: { display_name: string; role: string } = await request.json();
-        
-        // 確保角色只能是 artist 或 client
-        const newRole = body.role === 'artist' ? 'artist' : 'client';
-        const newName = sanitize(body.display_name || '未命名');
-
-        await env.commission_db.prepare(`
-          UPDATE Users SET display_name = ?, role = ? WHERE id = ?
-        `).bind(newName, newRole, currentUser).run();
-
-        return jsonRes({ success: true });
-      } catch (error) { 
-        return jsonRes({ success: false, error: String(error) }, 500); 
-      }
     }
 
 
@@ -803,7 +832,7 @@ export default {
     }
 
     // ============================================================================
-    // 7. 模擬金流與訂閱測試 API (Mock Payment & Subscription) - 🌟 新增區塊
+    // 7. 模擬金流與訂閱測試 API (Mock Payment & Subscription)
     // ============================================================================
 
     // A. 模擬開啟 15 天試用期
@@ -812,11 +841,14 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-        const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, trial_start_at FROM Users WHERE id = ?").bind(currentUser).all();
+        const { results: userRes } = await env.commission_db.prepare("SELECT role, plan_type, trial_start_at FROM Users WHERE id = ?").bind(currentUser).all();
         const user = userRes[0] as any;
 
+        // 🌟 防護網：拒絕已被停用的帳號開啟試用
+        if (user.role === 'deleted') return jsonRes({ success: false, error: "此帳號已停用，請聯絡客服恢復權限。" }, 403);
+        
         if (user.plan_type !== 'free') return jsonRes({ success: false, error: "目前狀態無法開啟試用" }, 400);
-        if (user.trial_start_at) return jsonRes({ success: false, error: "您已經使用過免費試用囉！" }, 403); // 僅限試用一次
+        if (user.trial_start_at) return jsonRes({ success: false, error: "您已經使用過免費試用囉！" }, 403); 
 
         const now = new Date();
         const end = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
@@ -834,6 +866,10 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
+        const { results: userRes } = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUser).all();
+        // 🌟 防護網：拒絕已被停用的帳號付費升級
+        if (userRes[0]?.role === 'deleted') return jsonRes({ success: false, error: "此帳號已停用，無法進行付款操作。" }, 403);
+
         const now = new Date();
         const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         
@@ -845,11 +881,8 @@ export default {
     }
 
     if (!url.pathname.startsWith("/api/")) {
-      // 1. 先嘗試找真實的靜態檔案 (例如 .js, .css, 圖片)
       let assetResponse = await env.ASSETS.fetch(request);
       
-      // 2. 如果找不到檔案 (404)，代表這是 React 的虛擬路由 (例如 /artist/queue)
-      // 這時我們強制讀取首頁 (index.html)，讓前端的 React Router 接手畫面切換！
       if (assetResponse.status === 404) {
         const indexUrl = new URL("/", request.url);
         return env.ASSETS.fetch(new Request(indexUrl.toString(), request));

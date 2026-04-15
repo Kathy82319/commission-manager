@@ -30,12 +30,13 @@ const customQuillModules = {
 };
 
 export function Settings() {
-  // 🌟 新增 'subscription' 分頁
   const [activeTab, setActiveTab] = useState<'profile_basic' | 'subscription' | 'splash' | 'portfolio' | 'detailed_intro' | 'process' | 'payment' | 'rules' | 'custom'>('profile_basic');
   const [formData, setFormData] = useState({ display_name: '', avatar_url: '', bio: '' });
-  const [isUploading, setIsUploading] = useState(false); 
   
-  // 🌟 新增：存放使用者的方案與額度資訊，用於訂閱卡片判斷
+  // 🌟 上傳狀態
+  const [isUploading, setIsUploading] = useState(false); 
+  const [isPortfolioUploading, setIsPortfolioUploading] = useState(false); 
+  
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number; trial_start_at?: string; trial_end_at?: string; pro_expires_at?: string } | null>(null);
 
   const [settings, setSettings] = useState<ProfileSettings>({
@@ -43,7 +44,6 @@ export function Settings() {
     splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: ''
   });
 
-  const [newImageUrl, setNewImageUrl] = useState('');
   const [socialPlatform, setSocialPlatform] = useState('Facebook');
   const [socialUrl, setSocialUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -64,7 +64,6 @@ export function Settings() {
             bio: data.data.bio || '',
           });
           
-          // 🌟 記錄方案資訊
           setQuotaInfo({
             plan_type: data.data.plan_type || 'free',
             used_quota: data.data.used_quota || 0,
@@ -103,6 +102,7 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
+  // 🌟 頭像上傳邏輯
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -121,6 +121,32 @@ export function Settings() {
       alert("頭像上傳失敗");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // 🌟 新增：作品集上傳邏輯 (至 R2)
+  const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
+    setIsPortfolioUploading(true);
+    try {
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7); // 避免同時上傳檔名衝突
+      const fileName = `portfolio/img_${timestamp}_${randomStr}.jpg`;
+      
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+      });
+      const { uploadUrl } = await ticketRes.json();
+      
+      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      
+      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
+      alert("作品上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
+    } catch (err) {
+      alert("作品上傳失敗");
+    } finally {
+      setIsPortfolioUploading(false);
     }
   };
 
@@ -146,26 +172,24 @@ export function Settings() {
     }
   };
 
-  // 🌟 模擬金流 API：開啟試用
   const handleStartTrial = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         alert(data.message);
-        window.location.reload(); // 重新整理以更新全站狀態
+        window.location.reload(); 
       } else alert(data.error);
     } catch(e) { alert('連線失敗'); }
   };
 
-  // 🌟 模擬金流 API：開通專業版
   const handleMockUpgrade = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/test/mock-upgrade`, { method: 'POST', credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         alert(data.message);
-        window.location.reload(); // 重新整理以更新全站狀態
+        window.location.reload(); 
       } else alert(data.error);
     } catch(e) { alert('連線失敗'); }
   };
@@ -210,12 +234,6 @@ export function Settings() {
     }
   };
 
-  const handleAddImage = () => {
-    if (newImageUrl.trim()) {
-      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, newImageUrl.trim()] }));
-      setNewImageUrl(''); 
-    }
-  };
   const handleRemoveImage = (index: number) => {
     setSettings(prev => ({ ...prev, portfolio: prev.portfolio.filter((_, i) => i !== index) }));
   };
@@ -249,7 +267,6 @@ export function Settings() {
     });
   };
 
-  // 🌟 修改：加入「方案與訂閱」選單
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
     { id: 'subscription', label: '💎 方案與訂閱' },
@@ -344,7 +361,6 @@ export function Settings() {
 
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
           
-          {/* 🌟 新增：方案與訂閱介面 */}
           {activeTab === 'subscription' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ padding: '16px', backgroundColor: '#F4F0EB', borderRadius: '12px', color: '#5D4A3E', fontSize: '14px', lineHeight: '1.6' }}>
@@ -552,23 +568,41 @@ export function Settings() {
           {activeTab === 'portfolio' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* 🌟 新增：免費版降級警告提示 */}
               {quotaInfo?.plan_type === 'free' && (
                 <div style={{ padding: '12px 16px', backgroundColor: '#FDF4E6', color: '#A67B3E', borderRadius: '8px', border: '1px solid #E8D3B9', fontSize: '14px', fontWeight: 'bold', lineHeight: '1.6' }}>
                   ⚠️ 您目前為「基礎免費版」，此處上傳的圖片資料會全數被保留，但在對外公開的個人專屬首頁中，<span style={{ color: '#A05C5C' }}>僅會展示前 6 張作品</span>。升級專業版即可解鎖無上限展示！
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <input type="text" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} onFocus={() => setFocusedField('portfolio_url')} onBlur={() => setFocusedField(null)} onKeyDown={e => { if (e.key === 'Enter') handleAddImage(); }} placeholder="輸入圖片網址 (URL)..." style={{...getInputStyle('portfolio_url'), flex: 1}} />
-                <button onClick={handleAddImage} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>新增圖片</button>
+              {/* 🌟 核心修改：30 張上限與 R2 上傳綁定 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
+                  上傳展示作品 <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'normal' }}>(已使用: {settings.portfolio.length} / 30 張)</span>
+                </label>
+                
+                {settings.portfolio.length < 30 ? (
+                  isPortfolioUploading ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#A0978D', fontSize: '14px', border: '2px dashed #DED9D3', borderRadius: '12px' }}>
+                      圖片處理與上傳中，請稍候...
+                    </div>
+                  ) : (
+                    <ImageUploader 
+                      onUpload={handlePortfolioUpload}
+                      buttonText="點此選擇要上傳的作品圖檔"
+                    />
+                  )
+                ) : (
+                  <div style={{ padding: '16px', backgroundColor: '#F5EBEB', color: '#A05C5C', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #E5CACA' }}>
+                    已達 30 張作品上限！若需新增，請先刪除部分舊作品。
+                  </div>
+                )}
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', marginTop: '10px' }}>
-                {settings.portfolio.length === 0 && <div style={{ color: '#C4BDB5', fontSize: '14px', gridColumn: '1 / -1', padding: '20px 0' }}>目前尚無作品，請在上方新增圖片網址。</div>}
+                {settings.portfolio.length === 0 && <div style={{ color: '#C4BDB5', fontSize: '14px', gridColumn: '1 / -1', padding: '20px 0' }}>目前尚無作品，請在上方上傳圖片。</div>}
                 {settings.portfolio.map((img, index) => (
                   <div key={index} style={{ position: 'relative', aspectRatio: '1', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', backgroundColor: '#FBFBF9', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                     <img src={img} alt={`作品 ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {/* 🌟 給免費版用戶的視覺提示 */}
                     {quotaInfo?.plan_type === 'free' && index >= 6 && (
                       <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backdropFilter: 'blur(2px)' }}>
                         前台已隱藏
@@ -632,7 +666,6 @@ export function Settings() {
           )}
         </div>
 
-        {/* 只有在非訂閱頁面時才顯示儲存按鈕 */}
         {activeTab !== 'subscription' && (
           <div style={{ marginTop: '20px', borderTop: '1px solid #F0ECE7', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
             <button onClick={handleSave} disabled={isSaving} style={{ padding: '14px 40px', backgroundColor: isSaving ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '16px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => !isSaving && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => !isSaving && (e.currentTarget.style.transform = 'translateY(0)')}>
