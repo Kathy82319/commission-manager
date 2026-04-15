@@ -472,6 +472,29 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
+// 🌟 補回：新手引導註冊完成 API
+    if (request.method === "POST" && url.pathname === "/api/users/me/complete-onboarding") {
+      try {
+        const currentUser = await getUserIdFromRequest(request, env);
+        if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
+
+        const body: { display_name: string; role: string } = await request.json();
+        
+        // 確保角色只能是 artist 或 client
+        const newRole = body.role === 'artist' ? 'artist' : 'client';
+        const newName = sanitize(body.display_name || '未命名');
+
+        await env.commission_db.prepare(`
+          UPDATE Users SET display_name = ?, role = ? WHERE id = ?
+        `).bind(newName, newRole, currentUser).run();
+
+        return jsonRes({ success: true });
+      } catch (error) { 
+        return jsonRes({ success: false, error: String(error) }, 500); 
+      }
+    }
+
+
     // ============================================================================
     // 4. 進度、稿件與異動系統 (Submissions & Logs)
     // ============================================================================
