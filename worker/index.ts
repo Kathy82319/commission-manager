@@ -881,13 +881,13 @@ export default {
     }
 
     if (!url.pathname.startsWith("/api/")) {
-      let assetResponse = await env.ASSETS.fetch(request);
+      const assetResponse = await env.ASSETS.fetch(request);
       
-      if (assetResponse.status === 404) {
-        const indexUrl = new URL("/", request.url);
-        return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+      // 如果是靜態檔案找不到 (或是像 /@User 這種虛擬路徑)
+      if (assetResponse.status === 404 || url.pathname.includes("@")) {
+        const indexRequest = new Request(new URL("/", request.url).toString(), request);
+        return env.ASSETS.fetch(indexRequest);
       }
-      
       return assetResponse;
     }
 
