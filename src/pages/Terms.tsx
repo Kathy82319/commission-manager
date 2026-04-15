@@ -1,58 +1,126 @@
 // src/pages/Terms.tsx
-export function Terms() {
-  return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '60px 20px', lineHeight: '1.8', color: '#5D4A3E' }}>
-      <h1 style={{ fontSize: '24px', marginBottom: '24px', borderBottom: '2px solid #F4F0EB' }}>服務條款與收費規則</h1>
+import React from 'react';
 
-      <section>
-        <h3 style={{ color: '#f8bb66' }}>一、服務內容</h3>
-        <p>本平台（以下簡稱「本工具」）提供委託進度追蹤、合約數位存證與個人化排單表之軟體工具服務。本工具僅作為溝通與紀錄之輔助手段，並非繪師與委託人間交易之當事人。</p>
+export function Terms() {
+  const containerStyle: React.CSSProperties = {
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: '80px 24px 60px 24px',
+    lineHeight: '1.8',
+    color: '#F8F9FA', // 近純白的淺灰色，確保暗色背景下的閱讀舒適度
+    fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    marginBottom: '40px',
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '28px',
+    fontWeight: 'bold',
+    marginBottom: '32px',
+    borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
+    paddingBottom: '12px',
+    color: '#FFFFFF', // 純白標題
+  };
+
+  const subTitleStyle: React.CSSProperties = {
+    fontSize: '20px',
+    fontWeight: 'bold',
+    marginBottom: '16px',
+    color: '#E8D5C4', // 奶油金/淺膚色，與標題區隔
+    display: 'flex',
+    alignItems: 'center',
+  };
+
+  const listStyle: React.CSSProperties = {
+    paddingLeft: '20px',
+    marginTop: '8px',
+  };
+
+  const itemStyle: React.CSSProperties = {
+    marginBottom: '12px',
+  };
+
+  const highlightStyle: React.CSSProperties = {
+    fontWeight: 'bold',
+    color: '#FFFFFF', // 重點文字使用純白
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(232, 213, 196, 0.5)',
+  };
+
+  const nestedListStyle: React.CSSProperties = {
+    paddingLeft: '20px',
+    marginTop: '4px',
+    color: 'rgba(248, 249, 250, 0.9)', // 嵌套列表稍微降一點亮度增加層次感
+  };
+
+  return (
+    <div style={containerStyle}>
+      <h1 style={titleStyle}>服務條款與收費規則</h1>
+
+      <section style={sectionStyle}>
+        <h2 style={subTitleStyle}>一、 服務內容</h2>
+        <p>
+          本平台（以下簡稱「本工具」）提供委託進度追蹤、合約數位存證與個人化排單表之軟體工具服務。
+          <span style={highlightStyle}>本工具僅作為溝通與紀錄之輔助手段，並非繪師與委託人間交易之當事人。</span>
+        </p>
       </section>
 
-      <section>
-        <h3 style={{ color: '#f8bb66' }}>二、訂閱費用與額度說明</h3>
-        <p>本服務依據使用者身份提供不同額度之管理服務：</p>
-        <ul>
-          <li><strong>專業版試用期：</strong> 新註冊用戶享 15 天試用，試用期間享有專業版全功能，並提供 20 筆委託建單額度。</li>
-          <li><strong>額度扣抵順序：</strong> 若用戶擁有試用額度，系統將優先扣抵該 20 筆額度，用罄後方開始使用當月之免費額度。</li>
-          <li><strong>免費版：</strong> 
-            <ul>
+      <section style={sectionStyle}>
+        <h2 style={subTitleStyle}>二、 訂閱費用與額度說明</h2>
+        <p style={{ marginBottom: '16px' }}>本服務依據使用者身份提供不同額度之管理服務：</p>
+        <ul style={listStyle}>
+          <li style={itemStyle}>
+            <span style={highlightStyle}>專業版試用期：</span> 新註冊用戶享 15 天試用，試用期間享有專業版全功能，並提供 20 筆委託建單額度。
+          </li>
+          <li style={itemStyle}>
+            <span style={highlightStyle}>額度扣抵順序：</span> 若用戶擁有試用額度，系統將優先扣抵該 20 筆額度，用罄後方開始使用當月之免費額度。
+          </li>
+          <li style={itemStyle}>
+            <span style={highlightStyle}>免費版：</span>
+            <ul style={nestedListStyle}>
               <li>每月提供 3 筆委託單建立額度。</li>
               <li>個人展示頁面：作品區限制上傳 6 張圖片。</li>
               <li>開放「頭像、簡介、詳細介紹」區塊之編輯權限。</li>
             </ul>
           </li>
-          <li><strong>專業版 (Pro)：</strong> 
-            <ul>
-              <li>費用：NT$ 150 / 月 (無自動訂閱，每月視需求購買，截止日前提醒)。</li>
+          <li style={itemStyle}>
+            <span style={highlightStyle}>專業版 (Pro)：</span>
+            <ul style={nestedListStyle}>
+              <li><span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買，截止日前提醒)。</li>
               <li>無接單數量限制。</li>
               <li>可自訂最多 7 個分頁區塊，作品區上傳限制提高至 20 張。</li>
-              <li>費用採預付訂閱制，用戶可隨時停止續訂。</li>
+              <li>費用採預付制，用戶可隨時停止續訂。</li>
             </ul>
           </li>
         </ul>
-        <p><strong>退款原則：</strong> 依據「通訊交易解除權合理例外情事適用準則」，本服務提供之數位內容一經啟用（升級 Pro 版）即完成履約，恕不接受當月退款。</p>
+        <p style={{ marginTop: '20px' }}>
+          <span style={highlightStyle}>退款原則：</span> 依據「通訊交易解除權合理例外情事適用準則」，本服務提供之數位內容一經啟用（升級 Pro 版）即完成履約，恕不接受當月退款。
+        </p>
       </section>
 
-      <section>
-        <h3 style={{ color: '#f8bb66' }}>三、權利與責任免責聲明</h3>
-        <p>1. 繪師與委託人間的畫作版權歸屬（包含但不限於授權範圍、著作權轉讓等協議）、酬金給付及糾紛處理，應依據雙方於建單時簽署之「協議書內容」為準。</p>
-        <p>2. <strong>本平台不介入亦不代為定義任何法律條文之實質效力。</strong> 系統提供之預設授權類別僅供分類參考，實際契約義務由雙方自行議定。</p>
-        <p>3. 本平台對委託人間之溝通落差、跑單或畫作品質爭議不負法律賠償責任，但提供完整歷程紀錄（ActionLogs）作為舉證參考。</p>
+      <section style={sectionStyle}>
+        <h2 style={subTitleStyle}>三、 權利與責任免責聲明</h2>
+        <p style={itemStyle}>1. 繪師與委託人間的畫作版權歸屬（包含但不限於授權範圍、著作權轉讓等協議）、酬金給付及糾紛處理，應依據雙方於建單時簽署之「協議書內容」為準。</p>
+        <p style={itemStyle}>2. <span style={highlightStyle}>本平台不介入亦不代為定義任何法律條文之實質效力。</span> 系統提供之預設授權類別僅供分類參考，實際契約義務由雙方自行議定。</p>
+        <p style={itemStyle}>3. 本平台對委託人間之溝通落差、跑單或畫作品質爭議不負法律賠償責任，但提供完整歷程紀錄（ActionLogs）作為舉證參考。</p>
       </section>
 
-      <section>
-        <h3 style={{ color: '#f8bb66' }}>四、違規與法律責任</h3>
-        <p>1. 禁止行為：用戶不得利用本服務儲存、發布或傳送任何非法、具威脅性、誹謗、猥褻、色情、侵權或違反公共秩序之內容。若上傳之畫作涉及版權爭議，由上傳用戶自行承擔所有法律責任。</p>
-        <p>2. 紀錄之真實性義務：繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任（如妨害名譽罪等）須由該用戶百分之百自負，本平台僅提供原始操作歷程（Log）作為第三方證據供司法單位調閱。</p>
-        <p>3. 平台處置權：若用戶違反上述規定，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」或「永久刪除帳號」等措施，且不負退費或補償義務。</p>
-        <p>4. 損害賠償：若因用戶之違規行為（如：惡意攻擊伺服器、非法爬取個資等）導致本平台受有損害或面臨法律訴訟，該用戶應負擔本平台之所有損失（包含律師費與商譽損失）。</p>
+      <section style={sectionStyle}>
+        <h2 style={subTitleStyle}>四、 違規與法律責任</h2>
+        <p style={itemStyle}>1. <span style={highlightStyle}>禁止行為：</span>用戶不得利用本服務儲存、發布或傳送任何非法、具威脅性、誹謗、猥褻、色情、侵權或違反公共秩序之內容。若上傳之畫作涉及版權爭議，由上傳用戶自行承擔所有法律責任。</p>
+        <p style={itemStyle}>2. <span style={highlightStyle}>紀錄之真實性義務：</span>繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任須由該用戶百分之百自負。</p>
+        <p style={itemStyle}>3. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」或「永久刪除帳號」等措施。</p>
+        <p style={itemStyle}>4. <span style={highlightStyle}>損害賠償：</span>若因用戶之違規行為導致本平台受有損害或面臨法律訴訟，該用戶應負擔本平台之所有損失（包含律師費與商譽損失）。</p>
       </section>
 
-      <section>
-        <h3 style={{ color: '#f8bb66' }}>五、使用者行為規範</h3>
-        <p><strong>識別碼用途限制：</strong> 
-        系統顯示之委託人識別碼（如 User-XXXXX）係基於 LINE 帳號產生之唯一編號，僅供繪師於本平台內辨識委託對象及信用參考使用，不得將此資料用於非法騷擾或洩露個資之行為。</p>
+      <section style={sectionStyle}>
+        <h2 style={subTitleStyle}>五、 使用者行為規範</h2>
+        <p>
+          <span style={highlightStyle}>識別碼用途限制：</span>
+          系統顯示之委託人識別碼（如 User-XXXXX）係基於 LINE 帳號產生之唯一編號，僅供繪師於本平台內辨識委託對象及信用參考使用，不得將此資料用於非法騷擾或洩露個資之行為。
+        </p>
       </section>
     </div>
   );

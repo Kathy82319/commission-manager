@@ -7,7 +7,7 @@ export function Privacy() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#5D4A3E',
+    color: '#F8F9FA', // 近純白的淺灰色，確保暗色背景下的閱讀舒適度
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 
@@ -19,16 +19,16 @@ export function Privacy() {
     fontSize: '28px',
     fontWeight: 'bold',
     marginBottom: '32px',
-    borderBottom: '2px solid #F4F0EB',
+    borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#5D4A3E',
+    color: '#FFFFFF', // 純白標題
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#f8bb66',
+    color: '#E8D5C4', // 奶油金/淺膚色，在深藍背景上非常顯眼且優雅
     display: 'flex',
     alignItems: 'center',
   };
@@ -39,18 +39,20 @@ export function Privacy() {
   };
 
   const itemStyle: React.CSSProperties = {
-    marginBottom: '8px',
+    marginBottom: '12px',
   };
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#bd9d8a',
+    color: '#FFFFFF', // 重點文字使用純白
+    textDecoration: 'underline',
+    textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };
 
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>隱私權政策 (Privacy Policy)</h1>
-      <p style={{ marginBottom: '32px', opacity: 0.8 }}>
+      <p style={{ marginBottom: '32px', color: 'rgba(248, 249, 250, 0.8)' }}>
         本平台（以下簡稱「本工具」）致力於保障用戶的隱私與資安。請詳細閱讀以下隱私權保護政策：
       </p>
 
@@ -86,7 +88,8 @@ export function Privacy() {
         <h2 style={subTitleStyle}>三、 帳號刪除機制</h2>
         <p>
           您可隨時透過聯繫開發者（Email: cath40286@gmail.com）申請刪除帳號。
-          <span style={highlightStyle}> 帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
+          <br />
+          <span style={{ ...highlightStyle, color: '#FFD7D7' }}> 帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
         </p>
       </section>
 
@@ -107,20 +110,9 @@ export function Privacy() {
         <p>
           您可以隨時透過 LINE 登入後修改您的個人資料。若對本政策或資料處理有任何疑問，請聯繫開發者：
           <br />
-          <span style={highlightStyle}>客服信箱：cath40286@gmail.com</span>
+          <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#FFFFFF' }}>客服信箱：cath40286@gmail.com</span>
         </p>
       </section>
-
-      <div style={{ 
-        marginTop: '60px', 
-        fontSize: '12px', 
-        color: 'rgba(93, 74, 62, 0.5)', 
-        textAlign: 'center',
-        borderTop: '1px solid #F4F0EB',
-        paddingTop: '20px'
-      }}>
-
-      </div>
     </div>
   );
 }
