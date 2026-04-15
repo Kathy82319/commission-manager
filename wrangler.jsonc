@@ -2,7 +2,6 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cath-commission-manager",
 	"pages_build_output_dir": "dist",
-	"main": "worker/index.ts",
 	"compatibility_date": "2026-04-09",
 	"observability": {
 		"enabled": true
