@@ -51,6 +51,38 @@ export function ArtistLayout() {
     { path: '/artist/settings', label: '個人設定' }
   ];
 
+  // 🌟 計算方案狀態與到期天數
+  let planName = '基礎免費版';
+  let planBadgeColor = '#A0978D';
+  let planBadgeBg = '#F0ECE7';
+  let daysRemaining: number | null = null;
+  let showWarningBanner = false;
+
+  if (artist) {
+    const now = new Date();
+    if (artist.plan_type === 'pro') {
+      planName = '專業版';
+      planBadgeColor = '#4E7A5A';
+      planBadgeBg = '#E8F3EB';
+      if (artist.pro_expires_at) {
+        const exp = new Date(artist.pro_expires_at);
+        daysRemaining = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 7 && daysRemaining > 0) showWarningBanner = true;
+        if (daysRemaining > 0) planName += ` (剩餘 ${daysRemaining} 天)`;
+      }
+    } else if (artist.plan_type === 'trial') {
+      planName = 'Pro 試用中';
+      planBadgeColor = '#A67B3E';
+      planBadgeBg = '#FDF4E6';
+      if (artist.trial_end_at) {
+        const exp = new Date(artist.trial_end_at);
+        daysRemaining = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 7 && daysRemaining > 0) showWarningBanner = true;
+        if (daysRemaining > 0) planName += ` (剩餘 ${daysRemaining} 天)`;
+      }
+    }
+  }
+
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
 
   return (
@@ -58,7 +90,17 @@ export function ArtistLayout() {
       <aside style={{ width: '240px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', borderRight: '1px solid #EAE6E1', position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }}>
           <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-          <div style={{ fontSize: '13px', color: '#A0978D' }}>繪師管理後台</div>
+          <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px' }}>繪師管理後台</div>
+          
+          {/* 🌟 新增：側邊欄方案標籤 */}
+          {artist && (
+            <div style={{ 
+              padding: '6px 10px', backgroundColor: planBadgeBg, color: planBadgeColor, 
+              borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block' 
+            }}>
+              {planName}
+            </div>
+          )}
         </div>
         
         <nav style={{ flex: 1, padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -101,7 +143,6 @@ export function ArtistLayout() {
             預覽/複製個人首頁
           </button>
 
-          {/* 🌟 修改項目 3：按鈕下方的條款與聯繫資訊 */}
           <div style={{ 
             marginTop: '10px', 
             fontSize: '12px', 
@@ -118,6 +159,33 @@ export function ArtistLayout() {
       </aside>
 
       <main style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        {/* 🌟 新增：到期警告橫幅 */}
+        {showWarningBanner && (
+          <div style={{ 
+            backgroundColor: '#FFF3CD', color: '#856404', padding: '16px 20px', 
+            borderRadius: '12px', marginBottom: '24px', display: 'flex', 
+            justifyContent: 'space-between', alignItems: 'center', border: '1px solid #FFEEBA',
+            boxShadow: '0 4px 12px rgba(133, 100, 4, 0.05)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>⚠️</span>
+              您的 {artist.plan_type === 'trial' ? '專業版試用' : '專業版訂閱'} 將在 {daysRemaining} 天後到期！
+            </div>
+            <button 
+              onClick={() => navigate('/artist/settings')} 
+              style={{ 
+                backgroundColor: '#856404', color: '#FFFFFF', border: 'none', 
+                padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', 
+                fontSize: '13px', fontWeight: 'bold', transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#664d03'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#856404'}
+            >
+              立即查看升級方案
+            </button>
+          </div>
+        )}
+
         <Outlet />
       </main>
     </div>
