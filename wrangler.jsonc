@@ -1,8 +1,7 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "cath-commission-manager",
-    "pages_build_output_dir": "dist", // 🌟 必須加上這一行，讓 Pages 知道前端檔案在哪
-    "main": "worker/index.ts",        // 🌟 這一行必須保留，否則 API 會失效
+    "pages_build_output_dir": "dist", 
     "compatibility_date": "2026-04-09",
     "observability": {
         "enabled": true
