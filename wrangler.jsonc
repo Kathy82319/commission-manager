@@ -11,8 +11,8 @@
 		"nodejs_compat"
 	],
 	"vars": {
-        "LINE_REDIRECT_URI": "https://commission-manager.pages.dev/api/auth/line/callback",
-        "FRONTEND_URL": "https://commission-manager.pages.dev",
+        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback",
+        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",
         "LINE_CHANNEL_ID": "2009777002"
     },
 	"d1_databases": [
