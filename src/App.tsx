@@ -30,7 +30,7 @@ import { Privacy } from './pages/Privacy';
 import { Portal } from './pages/Portal';
 
 export function App() {
-  const MY_ARTIST_ID = "@User_98703";
+  const MY_ARTIST_ID = "@User_84448";
   
   return (
     <BrowserRouter>
