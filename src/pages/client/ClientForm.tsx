@@ -20,6 +20,7 @@ interface Commission {
   add_ons: string;
   order_date: string;
   artist_settings?: string; 
+  agreed_tos_snapshot?: string; // 🌟 確保介面有這屬性
 }
 
 export function ClientForm() {
@@ -35,8 +36,6 @@ export function ClientForm() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        // 🔒 安全修正：移除從 localStorage 讀取 user_id。
-        // 身分驗證已由瀏覽器自動攜帶 HttpOnly Cookie (credentials: 'include') 處理，更加安全。
         const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
           credentials: 'include', 
           headers: {
@@ -67,25 +66,23 @@ export function ClientForm() {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
     
-// 🌟 新增：取得當下的協議書內容準備當作快照
-    let currentTosSnapshot = '';
-    if (order?.artist_settings) {
+    // 🌟 修正：因為協議書在建立時就存進 agreed_tos_snapshot 了，
+    // 這邊主要是再確認一次要送回後端（或是後端單純靠 PATCH status 即可）。
+    let currentTosSnapshot = order?.agreed_tos_snapshot || '';
+    if (!currentTosSnapshot && order?.artist_settings) {
       try {
         currentTosSnapshot = JSON.parse(order.artist_settings).rules || '';
       } catch(e) {}
     }
 
-
-
     try {
-      // 🔒 安全修正：不依賴前端偽造的 user_id，後端會自動從 Cookie 識別目前登入者
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
           status: 'unpaid',
-          agreed_tos_snapshot: currentTosSnapshot // 🌟 關鍵修正：把快照寫入資料庫！
+          agreed_tos_snapshot: currentTosSnapshot 
         })
       });
       const data = await res.json();
@@ -166,13 +163,16 @@ export function ClientForm() {
             </div>
           )}
 
-          {/* 🌟 核心修正：使用 DOMPurify 來清洗惡意腳本，避免 XSS 攻擊 */}
+          {/* 🌟 核心修正：優先讀取建立這張單時存下的專屬 agreed_tos_snapshot */}
           <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', fontSize: '14px', color: '#7A7269', lineHeight: '1.9', height: '180px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
-            {order.artist_settings ? (
+            {order.agreed_tos_snapshot ? (
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(order.agreed_tos_snapshot) }} />
+            ) : order.artist_settings ? (
               <div 
                 dangerouslySetInnerHTML={{ 
                   __html: (() => {
                     try {
+                      // 這是為了相容舊資料 (原本沒存快照的舊訂單)
                       const rawHtml = JSON.parse(order.artist_settings).rules;
                       return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
                     } catch(e) {

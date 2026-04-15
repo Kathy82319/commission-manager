@@ -1,7 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactQuill from 'react-quill-new'; // 🌟 引入 ReactQuill
+import 'react-quill-new/dist/quill.snow.css'; // 🌟 引入 Quill 樣式
 
-const baseAddOnsList = ['驚喜包', '可接受二創', '無償', '可液化', '嚴禁AI修圖'];
+const baseAddOnsList = ['驚喜包',  '無償'];
+
+// 🌟 自訂 Quill 工具列 (稍微精簡版，適合協議書)
+const customQuillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }], 
+    ['bold', 'italic', 'underline', 'strike'], 
+    [{ 'color': [] }, { 'background': [] }], 
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+    ['clean'] 
+  ]
+};
 
 export function QuoteBuilder() {
   const navigate = useNavigate();
@@ -29,12 +42,35 @@ export function QuoteBuilder() {
     bg_type: '',
   });
 
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>(['嚴禁AI修圖']); 
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]); 
   const [customAddOns, setCustomAddOns] = useState<string[]>([]);
   const [newCustomAddOn, setNewCustomAddOn] = useState('');
+  
+  // 🌟 新增：存放這張單專屬的協議書內容
+  const [tosContent, setTosContent] = useState('');
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
+
+  // 🌟 新增：載入繪師個人設定中的協議書當作預設範本
+  useEffect(() => {
+    const fetchArtistSettings = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.data && data.data.profile_settings) {
+          const parsed = JSON.parse(data.data.profile_settings);
+          if (parsed.rules) {
+            setTosContent(parsed.rules);
+          }
+        }
+      } catch (err) {
+        console.error("無法讀取預設協議書範本", err);
+      }
+    };
+    fetchArtistSettings();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -83,13 +119,14 @@ export function QuoteBuilder() {
       payment_method: formData.payment_method === '其他' ? customFields.payment_method : formData.payment_method,
       draw_scope: formData.draw_scope === '其他' ? customFields.draw_scope : formData.draw_scope,
       bg_type: formData.bg_type === '其他' ? customFields.bg_type : formData.bg_type,
+      agreed_tos_snapshot: tosContent // 🌟 關鍵：將編輯過後的協議書直接做為該單的初始快照送出
     };
 
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions`, {
         method: 'POST', 
-        credentials: 'include', // 🌟 關鍵修正：補上這行，讓瀏覽器夾帶您的登入 Cookie！
+        credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...finalSubmitData,
@@ -126,6 +163,37 @@ export function QuoteBuilder() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
       
+      {/* 🌟 新增 Quill 樣式 */}
+      <style>{`
+        .quote-quill-wrapper {
+          border: 1px solid #DED9D3;
+          border-radius: 8px;
+          overflow: hidden;
+          background-color: #FBFBF9;
+          transition: border-color 0.2s ease;
+        }
+        .quote-quill-wrapper:focus-within {
+          border-color: #A67B3E;
+          box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
+        }
+        .quote-quill-wrapper .ql-toolbar.ql-snow {
+          border: none;
+          border-bottom: 1px solid #EAE6E1;
+          background-color: #FFFFFF;
+          padding: 8px;
+        }
+        .quote-quill-wrapper .ql-container.ql-snow {
+          border: none;
+        }
+        .quote-quill-wrapper .ql-editor {
+          min-height: 120px;
+          max-height: 250px;
+          overflow-y: auto;
+          font-size: 14px;
+          color: #5D4A3E;
+        }
+      `}</style>
+
       <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h2 style={{ color: '#5D4A3E', fontSize: '24px', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>產出新委託單</h2>
@@ -367,8 +435,28 @@ export function QuoteBuilder() {
               </label>
               <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
                 onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
-                style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '120px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
+                style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
             </div>
+
+            {/* 🌟 新增：專屬協議書編輯區塊 */}
+            {workflowMode === 'standard' && (
+              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column' }}>
+                <label style={{...labelStyle, marginBottom: '8px'}}>
+                  協議書內容 (自訂)
+                  <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
+                    *此為專屬於這筆委託的合約，已預先載入您的預設範本，可自行增刪修改。
+                  </span>
+                </label>
+                <div className="quote-quill-wrapper">
+                  <ReactQuill 
+                    theme="snow" 
+                    value={tosContent} 
+                    onChange={setTosContent}
+                    modules={customQuillModules}
+                  />
+                </div>
+              </div>
+            )}
 
             <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #F0ECE7' }}>
               <button onClick={handleSubmit} style={{ width: '100%', padding: '16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.2s, transform 0.1s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'} onMouseDown={e => e.currentTarget.style.transform = 'translateY(0)'}>

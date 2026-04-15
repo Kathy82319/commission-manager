@@ -30,6 +30,7 @@ interface CreateCommissionBody {
   detailed_settings: string;
   workflow_mode?: string;
   client_id?: string;
+  agreed_tos_snapshot?: string; // 🌟 1. 新增：讓型別支援此欄位
 }
 
 // ==========================================
@@ -196,7 +197,6 @@ export default {
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
-          // 🌟 核心修改：只要不是 pending，老手一律導向 /portal 入口大廳
           targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
         }
 
@@ -229,52 +229,6 @@ export default {
         const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ? OR public_id = ?").bind(userId, userId).all();
         if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
         return jsonRes({ success: true, data: results[0] });
-      } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
-    }
-
-// 🌟 核心：審閱 API (支援同意、退回與閱覽，並強制寫入 Log)
-    if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/review")) {
-      try {
-        const id = pathParts[3];
-        const currentUser = await getUserIdFromRequest(request, env);
-        // action 支援 'approve' (同意), 'read_only' (已閱覽), 'reject' (退回修改)
-        const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
-
-        const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-        if (comm.length === 0) return jsonRes({ success: false, error: "找不到單據" }, 404);
-        if (comm[0].client_id && currentUser !== comm[0].client_id && currentUser !== comm[0].artist_id) return jsonRes({ success: false, error: "權限不足" }, 403);
-
-        const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
-        let nextStageStatus = '';
-        let logMsg = '';
-
-        // 判斷不同動作，並產生對應的歷史紀錄文字
-        if (body.action === 'reject') {
-          nextStageStatus = `${body.stage}_drawing`;
-          logMsg = `委託人請求修改 ${stageNameCH}：${sanitize(body.comment || '無備註')}`;
-        } else if (body.action === 'read_only') {
-          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
-          logMsg = `委託人已閱覽 ${stageNameCH}`; // 🌟 這裡負責產生已閱覽的 Log
-        } else {
-          nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
-          logMsg = `委託人已同意 ${stageNameCH} (合約結案解鎖)`;
-        }
-
-        let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
-        
-        // 將狀態推進與 Log 寫入打包執行
-        let batchOps = [
-          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', ?, ?)").bind(crypto.randomUUID(), id, 'review', logMsg),
-          env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(nextStageStatus, id),
-          env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] ${logMsg}`)
-        ];
-        
-        if (globalStatusUpdate) {
-          batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
-        }
-        
-        await env.commission_db.batch(batchOps);
-        return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
@@ -317,7 +271,6 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-    // 請取代 worker/index.ts 約 208~226 行的 GET 單筆 API 區段
     if (request.method === "GET" && pathParts.length === 4 && pathParts[1] === "api" && pathParts[2] === "commissions") {
       try {
         const id = pathParts[3];
@@ -364,13 +317,14 @@ export default {
           if (userRes.length > 0) newOrderId = `${userRes[0].public_id}-${Date.now().toString().slice(-3)}`;
         }
         
+        // 🌟 2. 核心修正：將 agreed_tos_snapshot 寫入資料庫
         await env.commission_db.prepare(`
           INSERT INTO Commissions (
             id, artist_id, type_id, client_id, is_paid, artist_note, contact_memo,
             total_price, status, payment_status, current_stage, is_external,
             project_name, usage_type, is_rush, delivery_method, payment_method,
-            draw_scope, char_count, bg_type, add_ons, detailed_settings, workflow_mode
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            draw_scope, char_count, bg_type, add_ons, detailed_settings, workflow_mode, agreed_tos_snapshot
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           newOrderId, currentUser, 'type-01', clientId || null, 0,
           '', sanitize(body.client_name || '未知'), body.total_price || 0,
@@ -379,7 +333,8 @@ export default {
           sanitize(body.project_name), sanitize(body.usage_type), body.is_rush,
           body.delivery_method, sanitize(body.payment_method),
           sanitize(body.draw_scope), body.char_count, sanitize(body.bg_type),
-          sanitize(body.add_ons), sanitize(body.detailed_settings), body.workflow_mode || 'standard'
+          sanitize(body.add_ons), sanitize(body.detailed_settings), body.workflow_mode || 'standard',
+          body.agreed_tos_snapshot || '' // ⚠️ 備註：因為這是 HTML 格式，所以不套用後端的 sanitize，交由前端 DOMPurify 處理防護
         ).run();
         
         return jsonRes({ success: true, id: newOrderId });
@@ -412,18 +367,26 @@ export default {
 
         const updates = [];
         const params = [];
+        
+        // 🌟 3. 核心修正：將 'agreed_tos_snapshot' 加入允許更新的白名單中
         const allowedFields = [
           'status', 'payment_status','client_id', 'project_name', 'detailed_settings', 
           'usage_type', 'is_rush', 'delivery_method', 'payment_method', 
           'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 
           'current_stage', 'end_date', 'artist_note', 'workflow_mode', 
-          'queue_status', 'last_read_at_artist', 'last_read_at_client', 'client_custom_title'
+          'queue_status', 'last_read_at_artist', 'last_read_at_client', 'client_custom_title',
+          'agreed_tos_snapshot' 
         ];
         
         for (const key of allowedFields) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);
-            params.push(typeof body[key] === 'string' ? sanitize(body[key]) : body[key]);
+            // HTML 欄位不走 sanitize()，其餘純文字進行 sanitize()
+            if (key === 'agreed_tos_snapshot') {
+              params.push(body[key]);
+            } else {
+              params.push(typeof body[key] === 'string' ? sanitize(body[key]) : body[key]);
+            }
           }
         }
         if (updates.length > 0) {
@@ -491,7 +454,6 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-    // 核心修正：審閱 API 支援「已閱覽」與「同意」
     if (request.method === "POST" && url.pathname.startsWith("/api/commissions/") && url.pathname.endsWith("/review")) {
       try {
         const id = pathParts[3];
