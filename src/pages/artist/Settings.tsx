@@ -416,6 +416,7 @@ export function Settings() {
                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
                     <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
                       <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
+                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
                       <li>解鎖編輯「所有」進階區塊編輯權限</li>
                       <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
                       <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>💡 降級保障：方案過期後，已設定的進階區塊與超過 6 張的圖片不會刪除且持續展示，僅鎖定後台編輯權限。</li>
@@ -431,10 +432,11 @@ export function Settings() {
 
                   <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
                     <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 299 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
                     <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-                      <li><strong>無限量</strong>建立委託單</li>
+                      <li><strong>無限制建立委託單數量</strong></li>
                       <li>解鎖編輯「所有」進階區塊編輯權限</li>
+                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
                       <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
                       <li>享有未來所有進階功能更新</li>
                     </ul>
