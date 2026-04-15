@@ -2,6 +2,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export interface Env {
+  ASSETS: Fetcher;
   commission_db: D1Database;
   ID_SALT: string; 
   LINE_CHANNEL_ID: string;
@@ -820,6 +821,12 @@ export default {
       } catch (e) { return jsonRes({ success: false, error: String(e) }, 500); }
     }
 
-    return new Response("Not Found", { status: 404, headers: corsHeaders });
+    if (!url.pathname.startsWith("/api/")) {
+      return env.ASSETS.fetch(request);
+    }
+
+    // 如果真的是 /api/ 開頭但找不到對應的路徑，才回傳 404 API Not Found
+    return new Response("API Route Not Found", { status: 404, headers: corsHeaders });
+  
   }  
 };
