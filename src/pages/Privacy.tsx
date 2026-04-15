@@ -28,7 +28,7 @@ export function Privacy() {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#A67B3E',
+    color: '#f8bb66',
     display: 'flex',
     alignItems: 'center',
   };
@@ -44,7 +44,7 @@ export function Privacy() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#5D4A3E',
+    color: '#bd9d8a',
   };
 
   return (
@@ -119,7 +119,7 @@ export function Privacy() {
         borderTop: '1px solid #F4F0EB',
         paddingTop: '20px'
       }}>
-        最後更新日期：2024年3月21日
+
       </div>
     </div>
   );

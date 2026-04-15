@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ImageUploader } from '../../components/ImageUploader'; 
+import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -11,6 +12,7 @@ interface Commission {
   pending_changes?: string; workflow_mode: string; queue_status: string;
   type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
   client_public_id?: string;
+  agreed_tos_snapshot?: string; // 🌟 確保介面包含此欄位
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
@@ -511,7 +513,6 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
                   <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '15px' }}>NT$ {order.total_price}</span>
                 </div>
                 
-                {/* 🌟 修改項目：將單一列改為兩列，清楚顯示「訂單單號」與「委託人編號」 */}
                 <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>項目：{order.project_name || order.type_name || '未命名項目'}</span>
                 </div>
@@ -649,6 +650,22 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
                     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px' }}>
                       <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>詳細設定：(委託方不可見)</span>
                       <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '12px', minHeight: '100px', borderRadius: '8px', whiteSpace: 'pre-wrap', outline: 'none', backgroundColor: '#FBFBF9', resize: 'vertical' }} />
+                    </div>
+
+                    {/* 🌟 新增：專屬協議書快照 (唯讀展示) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px dashed #DED9D3' }}>
+                      <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px' }}>
+                        專屬協議書快照 (建單時綁定)：
+                        <span style={{ fontWeight: 'normal', color: '#A0978D', marginLeft: '6px' }}>(此為雙方合約依據，不可修改)</span>
+                      </span>
+                      <div 
+                        style={{ color: '#5D4A3E', fontSize: '13px', lineHeight: '1.6', maxHeight: '150px', overflowY: 'auto' }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: selectedOrder.agreed_tos_snapshot 
+                            ? DOMPurify.sanitize(selectedOrder.agreed_tos_snapshot) 
+                            : '<span style="color:#A0978D">未設定協議書或為舊版訂單</span>'
+                        }} 
+                      />
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>

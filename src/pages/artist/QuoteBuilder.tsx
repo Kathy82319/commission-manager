@@ -444,7 +444,8 @@ export function QuoteBuilder() {
                 <label style={{...labelStyle, marginBottom: '8px'}}>
                   協議書內容 (自訂)
                   <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
-                    *此為專屬於這筆委託的合約，已預先載入您的預設範本，可自行增刪修改。
+                    *協議書內容可至個人設定那填寫範本，代入後可在此微調*
+                    *最終內容將做為該單的初始協議書快照，送出後委託人同意合約時即視為同意此內容*
                   </span>
                 </label>
                 <div className="quote-quill-wrapper">
