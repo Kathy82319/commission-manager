@@ -88,9 +88,6 @@ export function Notebook() {
   };
 
   const fetchDeliverables = async (id: string) => {
-    if (loadedDeliverablesId.current !== id) {
-      loadedDeliverablesId.current = id;
-    }
     const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
@@ -170,7 +167,7 @@ export function Notebook() {
 
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
       method: 'POST', 
-      credentials: 'include',
+      credentials: 'include', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changes })
     });
@@ -272,14 +269,13 @@ export function Notebook() {
     }
   };
 
-  // 🌟 核心防護機制升級：改成 POST FormData 格式，以對應後端 createPresignedPost
-// 🌟 修改：Notebook.tsx 的 handleR2FileUpload
+  // 🌟【核心修復】：R2 上傳邏輯優化
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
-      // 1️⃣ 上傳公開預覽圖 (動態抓取真實 type)
+      // 1️⃣ 上傳公開預覽圖
       const previewType = resultBlobs.preview.type || 'image/jpeg';
       const previewExt = previewType.split('/')[1] || 'jpg';
       
@@ -287,11 +283,18 @@ export function Notebook() {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview.${previewExt}` })
       });
-      const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = await ticketRes.json();
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error || "無法取得預覽圖上傳通行證");
       
-      // 🌟 退回原本最單純的 PUT，直接塞 body
-      const pubRes = await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': previewType } });
-      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (可能是檔案過大)");
+      const { uploadUrl: publicUploadUrl, fields: publicFields, fileName: publicSafeFileName } = ticketData;
+      
+      // 🌟 修正：使用 FormData POST (R2 規範：file 必須在最後一個 append)
+      const publicFormData = new FormData();
+      Object.entries(publicFields).forEach(([k, v]) => publicFormData.append(k, v as string));
+      publicFormData.append('file', resultBlobs.preview);
+
+      const pubRes = await fetch(publicUploadUrl, { method: 'POST', body: publicFormData });
+      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (請檢查檔案大小)");
 
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
       let finalUrlToSave = publicFinalUrl; 
@@ -305,19 +308,22 @@ export function Notebook() {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contentType: origType, bucketType: 'private', originalName: origName })
         });
-        const { uploadUrl: privateUploadUrl, fields: privateFields, fileName: privateSafeFileName } = await privateTicketRes.json();
+        const privateTicketData = await privateTicketRes.json();
+        if (!privateTicketData.success) throw new Error(privateTicketData.error || "無法取得原檔上傳通行證");
+
+        const { uploadUrl: privateUploadUrl, fields: privateFields, fileName: privateSafeFileName } = privateTicketData;
         
         const privateFormData = new FormData();
         Object.entries(privateFields).forEach(([k, v]) => privateFormData.append(k, v as string));
         privateFormData.append('file', resultBlobs.original);
 
         const privRes = await fetch(privateUploadUrl, { method: 'POST', body: privateFormData });
-        if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕 (請確認檔案是否超過限制)");
+        if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕");
         
         finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;
       }
 
-      // 3️⃣ 通知後端
+      // 3️⃣ 通知後端更新資料庫紀錄
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
@@ -330,6 +336,7 @@ export function Notebook() {
         fetchCommissions(); fetchDeliverables(selectedId);
       }
     } catch (err: any) {
+      console.error("Upload Error:", err);
       alert(err.message || "上傳過程中發生錯誤");
     } finally {
       setIsUploading(null);
@@ -454,7 +461,6 @@ export function Notebook() {
               watermarkText="SAMPLE"
               existingUrl={sub?.file_url?.split('|')[0]}
               isFinal={isFinal} 
-              aspectRatio={undefined} 
               metadata={sub ? { 
                 version: sub.version, 
                 date: new Date(sub.created_at).toLocaleDateString() 
@@ -528,7 +534,7 @@ export function Notebook() {
         <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
           <input
             type="text"
-            placeholder="🔍 搜尋暱稱/單號/狀態... (輸入2字元以上)"
+            placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }}
@@ -738,18 +744,10 @@ export function Notebook() {
 
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  {selectedOrder.workflow_mode === 'free' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
-                      <span style={{ color: '#A05C5C', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更</span>
-                      <span style={{ color: '#A05C5C', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式且有綁定委託人的情況下，委託人只能收到預覽圖，有需要傳送原檔請自行場外傳送</span>
-                      <span style={{ color: '#7A7269', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
-                      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
-                      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</span>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+                    <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
+                    <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</span>
+                  </div>
                   
                   {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
                   {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}

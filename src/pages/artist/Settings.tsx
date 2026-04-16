@@ -105,7 +105,6 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
-  // 🌟【資安升級】頭像上傳：改用 POST FormData
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -134,7 +133,6 @@ export function Settings() {
     }
   };
 
-  // 🌟【資安升級】作品集上傳：改用 POST FormData
   const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
     setIsPortfolioUploading(true);
     try {
@@ -161,7 +159,6 @@ export function Settings() {
     }
   };
 
-  // 🌟【資安升級】Splash 背景上傳：改用 POST FormData
   const handleSplashUpload = async (resultBlobs: { preview: Blob }) => {
     setIsSplashUploading(true);
     try {
@@ -500,7 +497,9 @@ export function Settings() {
                     </div>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>上傳個人頭像</label>
+                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
+                        上傳個人頭像 <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(限制 2MB)</span>
+                      </label>
                       {isUploading ? (
                         <div style={{ padding: '12px', textAlign: 'center', color: '#A0978D', fontSize: '14px' }}>圖片處理中...</div>
                       ) : (
@@ -509,6 +508,7 @@ export function Settings() {
                           aspectRatio={1} 
                           withWatermark={false} 
                           buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
+                          maxSizeMB={2} // 🌟 傳入 2MB 限制給底層
                         />
                       )}
                       <span style={{ fontSize: '12px', color: '#A0978D' }}>目前的網址：{formData.avatar_url || '尚未上傳'}</span>
@@ -571,6 +571,7 @@ export function Settings() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
                         背景圖片設定 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用橫式美圖。若留空，將預設使用頭像)</span>
+                        <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(限制 10MB)</span>
                       </label>
                       
                       {settings.splash_image ? (
@@ -590,6 +591,7 @@ export function Settings() {
                           <ImageUploader 
                             onUpload={handleSplashUpload}
                             buttonText="點此選擇要上傳的開場背景圖檔"
+                            maxSizeMB={10} // 🌟 傳入 10MB 限制給底層
                           />
                         )
                       )}
@@ -647,6 +649,7 @@ export function Settings() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
                     上傳展示作品 <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'normal' }}>(已使用: {settings.portfolio.length} / 30 張，可拖曳圖片更改順序)</span>
+                    <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(單張限制 5MB)</span>
                   </label>
                   
                   {settings.portfolio.length < 30 ? (
@@ -658,6 +661,7 @@ export function Settings() {
                       <ImageUploader 
                         onUpload={handlePortfolioUpload}
                         buttonText="點此選擇要上傳的作品圖檔"
+                        maxSizeMB={5} // 🌟 傳入 5MB 限制給底層
                       />
                     )
                   ) : (

@@ -31,13 +31,12 @@ export function ImageUploader({
   metadata
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // 🌟 儲存原始 File 物件
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  
-  // 用來記住圖片「最原始的比例」，解決全身圖被裁切的問題
   const [dynamicAspect, setDynamicAspect] = useState<number>(1); 
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,18 +44,18 @@ export function ImageUploader({
       const file = e.target.files[0];
       const isImage = file.type.startsWith('image/');
 
-      // 🛡️ 資安與成本控制修改：
-      // 一般預覽圖維持 5MB。完稿原檔稍微放寬至 15MB (保護 R2 的 10GB 免費額度)
-      // 若檔案過大，請繪師自行壓縮或使用雲端硬碟連結交付。
-      const MAX_FILE_SIZE = (isFinal && !isImage) ? 5 * 1024 * 1024 : 5 * 1024 * 1024; 
+      // 🛡️ 嚴格鎖死 5MB 限制
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; 
       
       if (file.size > MAX_FILE_SIZE) {
-        alert(`檔案太大囉！您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。\n為了保護系統資源，一般圖片為 5MB。\n若檔案過大，建議壓縮後再上傳。`);
+        alert(`檔案太大囉！最大限制為 5MB。\n您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。`);
         e.target.value = ''; 
         return; 
       }
 
-      // 🌟 非圖片檔案的處理邏輯 (跳過裁切)
+      setSelectedFile(file); // 紀錄最原始的檔案
+
+      // 🌟 非圖片檔案處理 (ZIP/PSD 等，僅限完稿)
       if (!isImage) {
         if (!isFinal) {
           alert("此階段僅允許上傳圖片格式！");
@@ -65,30 +64,21 @@ export function ImageUploader({
         }
 
         setIsProcessing(true);
-        // 使用 Canvas 動態生成一張「檔案預覽圖」，解決前端破圖問題
         const canvas = document.createElement('canvas');
-        canvas.width = 800;
-        canvas.height = 600;
+        canvas.width = 800; canvas.height = 600;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.fillStyle = '#f8fafc';
-          ctx.fillRect(0, 0, 800, 600);
-          ctx.fillStyle = '#475569';
-          ctx.font = 'bold 40px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('📁 非圖片原檔已準備上傳', 400, 280);
-          ctx.fillStyle = '#64748b';
-          ctx.font = '24px sans-serif';
+          ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, 800, 600);
+          ctx.fillStyle = '#475569'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('📁 檔案原檔已準備上傳', 400, 280);
+          ctx.fillStyle = '#64748b'; ctx.font = '24px sans-serif';
           ctx.fillText(`檔名：${file.name}`, 400, 340);
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = '16px sans-serif';
-          ctx.fillText('（客戶將會看見此預覽圖，並可下載您的原檔）', 400, 400);
         }
 
         canvas.toBlob((blob) => {
           setIsProcessing(false);
           if (blob) {
-            // 將生成的預覽圖丟給 preview，真實的 File 物件丟給 original
+            // 預覽圖用 Canvas 產生，原檔直接回傳真實 File 物件
             onUpload({ preview: blob, original: file }, URL.createObjectURL(blob));
           }
         }, 'image/png');
@@ -97,7 +87,6 @@ export function ImageUploader({
         return;
       }
 
-      // 一般圖片處理邏輯 (進入 Cropper 裁切)
       const reader = new FileReader();
       reader.addEventListener('load', () => setImageSrc(reader.result?.toString() || null));
       reader.readAsDataURL(file);
@@ -110,27 +99,26 @@ export function ImageUploader({
   }, []);
 
   const handleConfirm = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
+    if (!imageSrc || !croppedAreaPixels || !selectedFile) return;
     setIsProcessing(true);
     try {
+      // 產生預覽用縮圖 (帶浮水印)
       const previewBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
         withWatermark,
         watermarkText
       });
 
       const previewUrl = URL.createObjectURL(previewBlob);
-      let resultBlobs: { preview: Blob; original?: Blob } = { preview: previewBlob };
+      
+      // 🌟【修復核心】：original 欄位直接傳送 selectedFile (File 物件)，
+      // 保證它是繪師原本挑選的檔案，完全不經過 Canvas 裁切或壓縮。
+      onUpload({ 
+        preview: previewBlob, 
+        original: isFinal ? selectedFile : undefined 
+      }, previewUrl);
 
-      if (isFinal) {
-        const originalBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
-          withWatermark: false,
-          quality: 0.95
-        });
-        resultBlobs.original = originalBlob;
-      }
-
-      onUpload(resultBlobs, previewUrl);
       setImageSrc(null);
+      setSelectedFile(null);
     } catch (e) {
       alert("圖片處理失敗");
     } finally {
@@ -186,7 +174,7 @@ export function ImageUploader({
           <div style={{ width: '90%', maxWidth: '700px', backgroundColor: '#FFF', padding: '20px', borderRadius: '12px', marginTop: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: 'bold' }}>縮放</span>
             <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={{ flex: 1 }} />
-            <button onClick={() => setImageSrc(null)} style={{ padding: '10px 20px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>取消</button>
+            <button onClick={() => { setImageSrc(null); setSelectedFile(null); }} style={{ padding: '10px 20px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>取消</button>
             <button onClick={handleConfirm} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>{isProcessing ? '處理中...' : '確認上傳'}</button>
           </div>
         </div>
