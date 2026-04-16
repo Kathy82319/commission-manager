@@ -83,16 +83,16 @@ export function ClientForm() {
       } catch(e) {}
     }
 
-    try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          status: 'unpaid',
-          agreed_tos_snapshot: currentTosSnapshot 
-        })
-      });
+try {
+    const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ 
+        status: 'unpaid', // 變更狀態觸發後端綁定邏輯
+        agreed_tos_snapshot: currentTosSnapshot 
+      })
+    });
       const data = await res.json();
       
       if (data.success) {

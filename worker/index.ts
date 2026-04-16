@@ -499,20 +499,18 @@ export default {
 
         const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
-        const comm = check[0] as any;
+const comm = check[0] as any;
 
-        // 🌟【修復問題 1：繪師自測與綁定邏輯】
-        // 只要這張單還沒有綁定 client_id，任何人（包含繪師自己）只要發出寫入 client_id 的 PATCH 請求，就可以綁定。
-        let isBinding = false;
-        if (!comm.client_id && body.client_id) {
-          isBinding = true;
-        }
+let isBinding = false;
+// 🌟 修正邏輯：若單據未綁定，且當前使用者已登入且非繪師，則自動注入 client_id 進行綁定
+if (!comm.client_id && currentUser && currentUser !== comm.artist_id) {
+  body.client_id = currentUser; 
+  isBinding = true;
+}
 
-        // 如果不是在綁定，且操作者既不是繪師也不是已被綁定的客戶，就拒絕
-        if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
-          return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
-        }
-
+if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
+  return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
+}
         if (currentUser === comm.client_id && body.total_price !== undefined) {
           return jsonRes({ success: false, error: "委託人無權修改金額" }, 403);
         }
