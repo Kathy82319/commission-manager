@@ -83,16 +83,16 @@ export function ClientForm() {
       } catch(e) {}
     }
 
-try {
-    const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ 
-        status: 'unpaid', // 變更狀態觸發後端綁定邏輯
-        agreed_tos_snapshot: currentTosSnapshot 
-      })
-    });
+    try {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          status: 'unpaid', // 變更狀態觸發後端綁定邏輯
+          agreed_tos_snapshot: currentTosSnapshot 
+        })
+      });
       const data = await res.json();
       
       if (data.success) {
@@ -126,7 +126,8 @@ try {
       const data = await res.json();
 
       if (data.success) {
-        navigate(`/client/order/${order.id}`);
+        // 🌟 修正跳轉：導向 ClientOrders 列表頁，並使用 URL 參數通知開啟特定訂單
+        navigate(`/client/orders?open=${order.id}`);
       } else {
         alert('進入工作區失敗：' + data.error);
       }

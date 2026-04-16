@@ -141,9 +141,6 @@ export default {
     const getS3Client = (env: Env) => {
       return new S3Client({
         region: "auto",
-        // 🌟【修復問題 2：CORS SSL 報錯】
-        // 強制使用 Path Style 路由 (https://account.r2.cloudflarestorage.com/bucket-name)
-        // 避免虛擬主機子網域造成的憑證或 CORS 攔截
         endpoint: `https://${env.R2_ACCOUNT_ID || 'f72c79d82828e2419ab5fb0e1d323ce5'}.r2.cloudflarestorage.com`, 
         forcePathStyle: true, 
         credentials: {
@@ -497,28 +494,33 @@ export default {
         const id = pathParts[3];
         const body: Record<string, any> = await request.json();
 
-        // worker/index.ts
+        const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
+        if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
+        const comm = check[0] as any;
 
-const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
-if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
-const comm = check[0] as any;
+        let isBinding = false;
 
-let isBinding = false;
+        // 🌟 核心修改：移除 currentUser !== comm.artist_id 的限制
+        // 只要單據還沒有 client_id 且觸發了以下任一條件，就允許綁定（同帳號測試也可通過）
+        if (!comm.client_id && currentUser) {
+          if (body.status === 'unpaid' || body.action === 'bind' || body.last_read_at_client !== undefined) {
+            isBinding = true;
+            body.client_id = currentUser; // 👈 關鍵：自動注入當前使用者 ID
+            
+            // 如果從 quote_created 過來且沒有主動傳 status，自動更新為 unpaid
+            if (comm.status === 'quote_created' && !body.status) {
+                body.status = 'unpaid';
+            }
+          }
+        }
 
-// 🌟 恢復舊版的「觸發機制」並結合「自動偵測」
-// 條件：單據尚未綁定 + (前端要求變更為 unpaid 或 這是已登入的委託人)
-if (!comm.client_id && currentUser && currentUser !== comm.artist_id) {
-  if (body.status === 'unpaid' || body.action === 'bind' || body.last_read_at_client !== undefined) {
-    isBinding = true;
-    body.client_id = currentUser; // 👈 關鍵：自動注入當前使用者 ID
-  }
-}
+        // 權限檢查：如果是綁定中，或者是單據的繪師、或者是已綁定的委託人，才允許通過
+        if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
+          return jsonRes({ success: false, error: "權限不足" }, 403);
+        }
 
-// 權限檢查：如果是綁定中，或者是當事人，才允許通過
-if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
-  return jsonRes({ success: false, error: "權限不足" }, 403);
-}
-        if (currentUser === comm.client_id && body.total_price !== undefined) {
+        // 委託人無權修改金額（但如果該委託人同時也是繪師，也就是同帳號測試時，則不阻擋）
+        if (!isBinding && currentUser === comm.client_id && currentUser !== comm.artist_id && body.total_price !== undefined) {
           return jsonRes({ success: false, error: "委託人無權修改金額" }, 403);
         }
 
@@ -954,7 +956,7 @@ if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_
         await env.commission_db.prepare(`UPDATE Users SET plan_type = 'trial', trial_start_at = ?, trial_end_at = ? WHERE id = ?`)
           .bind(now.toISOString(), end.toISOString(), currentUser).run();
         
-        return jsonRes({ success: true, message: "15 天專業版試用已開啟！" });
+        return jsonRes({ success: true, message: "15 天專業版試用開啟！" });
       } catch (e) { return jsonRes({ success: false, error: String(e) }, 500); }
     }
 

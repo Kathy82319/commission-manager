@@ -10,7 +10,7 @@ interface CommissionDetail {
   usage_type?: string; is_rush?: string | number;
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
-  client_id?: string; // 🌟 新增 client_id 用來嚴格過濾
+  client_id?: string; 
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -26,8 +26,10 @@ export function ClientOrders() {
   const navigate = useNavigate();
   const location = useLocation();
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  
+  // 🌟【修復自動開啟】支援讀取 ?open=ID 或 ?id=ID
   const queryParams = new URLSearchParams(location.search);
-  const initialSelectedId = queryParams.get('id');
+  const initialSelectedId = queryParams.get('open') || queryParams.get('id');
 
   const [orders, setOrders] = useState<CommissionDetail[]>([]);
   const [filter, setFilter] = useState<'all' | 'working' | 'completed'>('all');
@@ -45,15 +47,15 @@ export function ClientOrders() {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // 🌟 同步 URL 狀態，讓重整頁面也能保持在同一張單據
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedId) params.set('id', selectedId);
+    if (selectedId) params.set('open', selectedId);
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedId, navigate]);
 
   const fetchOrders = async () => {
     try {
-      // 🌟 Bug 1 修復：同時獲取單據與當前用戶資料
       const [res, meRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions`, { credentials: 'include' }),
         fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
@@ -69,7 +71,16 @@ export function ClientOrders() {
           o.client_id === myId // 🌟 嚴格限制：只顯示自己是「委託人」的單據，阻擋未綁定或身為繪師的單
         );
         setOrders(validOrders);
-        if (initialSelectedId) fetchDetailData(initialSelectedId, validOrders);
+        
+        // 🌟【修復自動開啟】確認該 ID 確實是自己名下的委託單才開啟，否則清空
+        if (initialSelectedId) {
+          const isValidTarget = validOrders.find((o: CommissionDetail) => o.id === initialSelectedId);
+          if (isValidTarget) {
+            fetchDetailData(initialSelectedId, validOrders);
+          } else {
+            setSelectedId(null);
+          }
+        }
       }
     } catch (e) {} finally { setIsListLoading(false); }
   };
@@ -92,7 +103,6 @@ export function ClientOrders() {
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
 
-      // 🌟 使用 parseTime 來比對時間
       if (orderData.latest_message_at) {
         const latestMsgTime = parseTime(orderData.latest_message_at);
         const lastReadTime = parseTime(orderData.last_read_at_client);
