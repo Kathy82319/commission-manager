@@ -287,13 +287,10 @@ export function Notebook() {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview.${previewExt}` })
       });
-      const { uploadUrl: publicUploadUrl, fields: publicFields, fileName: publicSafeFileName } = await ticketRes.json();
+      const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = await ticketRes.json();
       
-      const publicFormData = new FormData();
-      Object.entries(publicFields).forEach(([k, v]) => publicFormData.append(k, v as string));
-      publicFormData.append('file', resultBlobs.preview);
-
-      const pubRes = await fetch(publicUploadUrl, { method: 'POST', body: publicFormData });
+      // 🌟 退回原本最單純的 PUT，直接塞 body
+      const pubRes = await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': previewType } });
       if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (可能是檔案過大)");
 
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;

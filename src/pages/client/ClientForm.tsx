@@ -61,8 +61,7 @@ export function ClientForm() {
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
-          // 🌟 修改：移除原先的靜默綁定機制。
-          // 將綁定的動作延後到使用者點擊按鈕時才觸發。
+          // 🌟 修正：移除舊版的靜默自動綁定，將掌控權還給按鈕。
         } else {
           setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
@@ -73,7 +72,6 @@ export function ClientForm() {
     if (id) fetchOrder();
   }, [id, API_BASE]);
 
-  // 這是給「標準模式」：勾選同意後，一併送出綁定與狀態更新
   const handleSubmit = async () => {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
@@ -93,7 +91,7 @@ export function ClientForm() {
         body: JSON.stringify({ 
           status: 'unpaid',
           agreed_tos_snapshot: currentTosSnapshot 
-        }) // 這裡發送 PATCH，後端會自動判斷如果 client_id 為空就鎖定綁定！
+        })
       });
       const data = await res.json();
       
@@ -113,14 +111,12 @@ export function ClientForm() {
     }
   };
 
-  // 🌟 這是給「自由模式」或「已同意的標準模式」：點擊進入工作區時觸發綁定
+  // 🌟 點擊進入工作區（自由模式或已同意狀態下），發送 PATCH 並自動綁定
   const handleBindAndEnter = async () => {
     if (!id || !order) return;
     setIsSubmitting(true);
 
     try {
-      // 點擊進入工作區時，發送一個輕量的 PATCH 請求。
-      // 如果這張單還沒綁定，這個請求就會觸發後端的綁定邏輯；如果已經綁定了，就只是單純更新已讀時間。
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -130,10 +126,9 @@ export function ClientForm() {
       const data = await res.json();
 
       if (data.success) {
-        // 確定 API 回傳成功後，才安全跳轉到工作區
         navigate(`/client/order/${order.id}`);
       } else {
-        alert('綁定或進入工作區失敗：' + data.error);
+        alert('進入工作區失敗：' + data.error);
       }
     } catch (err) {
       alert('連線異常，請稍後再試。');
@@ -221,7 +216,12 @@ export function ClientForm() {
               />
             ) : (
               <>
-'繪師尚未設定使用規範。'
+                1. 本委託為客製化商品，確認送出後即代表雙方成立合作關係，不適用七天鑑賞期。<br/>
+                2. 繪師保有展示作品作為作品集之權利，若需買斷或延遲公開請於事前提出。<br/>
+                3. 完稿後若非繪師方失誤，僅提供協議內約定之微調修改次數。<br/>
+                4. 若有延遲交稿情形，繪師將主動告知並依雙方協議處理。<br/>
+                5. 確認委託後，請依約定時間內完成款項支付，逾期視同放棄委託。<br/>
+                6. 草稿階段退件重畫以三次為限，超出次數需視情況增加費用。<br/>
               </>
             )}
           </div>
@@ -241,9 +241,8 @@ export function ClientForm() {
               <div style={{ padding: '16px', backgroundColor: '#E8F3EB', color: '#4E7A5A', borderRadius: '12px', fontWeight: 'bold', marginBottom: '20px', border: '1px solid #C8E6C9' }}>
                 您已成功同意此委託！狀態已更新。
               </div>
-              {/* 🌟 替換為等待綁定成功的函式 */}
               <button onClick={handleBindAndEnter} disabled={isSubmitting} style={{ width: '100%', padding: '16px', backgroundColor: isSubmitting ? '#A0978D' : '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', boxShadow: '0 4px 16px rgba(74,114,148,0.2)' }}>
-                {isSubmitting ? '處理中，準備進入...' : '進入委託單管理與工作區'}
+                {isSubmitting ? '處理中...' : '進入委託單管理與工作區'}
               </button>
             </div>
           )}
