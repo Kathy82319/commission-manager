@@ -1,5 +1,6 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post"; 
 
 export interface Env {
   ASSETS: Fetcher;
@@ -13,7 +14,7 @@ export interface Env {
   PRIVATE_BUCKET: R2Bucket;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
-  R2_ACCOUNT_ID?: string;
+  R2_ACCOUNT_ID?: string; // 建議未來可以把 Account ID 加進環境變數，目前先寫死或用環境變數
 }
 
 interface CreateCommissionBody {
@@ -140,6 +141,9 @@ export default {
     const getS3Client = (env: Env) => {
       return new S3Client({
         region: "auto",
+        // 🌟【修復問題 2：CORS SSL 報錯】
+        // 強制使用 Path Style 路由 (https://account.r2.cloudflarestorage.com/bucket-name)
+        // 避免虛擬主機子網域造成的憑證或 CORS 攔截
         endpoint: `https://${env.R2_ACCOUNT_ID || 'f72c79d82828e2419ab5fb0e1d323ce5'}.r2.cloudflarestorage.com`, 
         forcePathStyle: true, 
         credentials: {
@@ -497,15 +501,14 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
         const comm = check[0] as any;
 
-        // 🌟【修復問題 1：終極綁定邏輯】
-        // 自動抓人：只要這張單還沒有 client_id，無論是誰（包含繪師自己）發出 PATCH 請求，
-        // 都直接認定他是來綁定的，強制寫入他的 ID！
+        // 🌟【修復問題 1：繪師自測與綁定邏輯】
+        // 只要這張單還沒有綁定 client_id，任何人（包含繪師自己）只要發出寫入 client_id 的 PATCH 請求，就可以綁定。
         let isBinding = false;
-        if (!comm.client_id) {
+        if (!comm.client_id && body.client_id) {
           isBinding = true;
-          body.client_id = currentUser; 
         }
 
+        // 如果不是在綁定，且操作者既不是繪師也不是已被綁定的客戶，就拒絕
         if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
           return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
         }
@@ -548,6 +551,7 @@ export default {
           params.push(id);
           const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
           
+          // 如果是綁定操作，寫入 ActionLog 以利追蹤
           if (isBinding) {
             batch.push(
               env.commission_db.prepare(
@@ -825,12 +829,16 @@ export default {
 
       const { contentType, bucketType, originalName } = await request.json() as any;
       
-      // 🌟【修復問題 2：退回最穩定的 PUT 模式】
+      let maxFileSize = 5 * 1024 * 1024; // 預設公開預覽圖限制 5MB
+
+      // 🌟 白名單分流與容量保護
       if (bucketType !== 'private') {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowedTypes.includes(contentType)) {
           return jsonRes({ success: false, error: "不支援的檔案格式，公開預覽僅允許圖片" }, 400);
         }
+      } else {
+        maxFileSize = 15 * 1024 * 1024; // 私有原檔放寬到 15MB
       }
 
       let extension = 'bin';
@@ -846,16 +854,20 @@ export default {
       try {
         const s3 = getS3Client(env);
         
-        // 🌟 恢復成原本不會報 CORS 錯誤的 PutObjectCommand
-        const command = new PutObjectCommand({
+        const { url: uploadUrl, fields } = await createPresignedPost(s3, {
           Bucket: bucketName,
           Key: safeFileName,
-          ContentType: contentType,
+          Conditions: [
+            ["content-length-range", 0, maxFileSize], // 🛡️ 依然死守容量上限！
+            ["starts-with", "$Content-Type", ""]      // 🌟 放寬這裡：允許瀏覽器上傳時的 MIME 類型有微小誤差，防止假 CORS 誤殺
+          ],
+          Fields: {
+            "Content-Type": contentType,
+          },
+          Expires: 600,
         });
-        
-        const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
 
-        return jsonRes({ success: true, uploadUrl, fileName: safeFileName });
+        return jsonRes({ success: true, uploadUrl, fields, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
       }
