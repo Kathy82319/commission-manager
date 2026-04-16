@@ -261,33 +261,40 @@ export function Notebook() {
     }
   };
 
+  // 🌟【資安修正：任務 2 前端連動】接收後端產生的安全檔名
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
-      const timestamp = Date.now();
-      const publicPath = `commissions/${selectedId}/${stageKey}_preview_${timestamp}.jpg`;
-      const privatePath = `commissions/${selectedId}/${stageKey}_original_${timestamp}.jpg`;
-
+      // 1. 向後端請求公開預覽圖的上傳通行證
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: publicPath, contentType: 'image/jpeg', bucketType: 'public' })
+        // 🚨 修正：不再傳送 fileName，完全交由後端亂數生成
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' })
       });
-      const { uploadUrl: publicUploadUrl } = await ticketRes.json();
+      // 🌟 修正：接收後端給予的 uploadUrl 以及安全檔名 (publicSafeFileName)
+      const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = await ticketRes.json();
+      
+      // 2. 進行 R2 實際上傳
       await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
 
-      const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicPath}`;
+      // 🌟 修正：利用回傳的安全檔名拼湊出最終能被存取的 URL
+      const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
 
       let privateKey = null;
       if (stageKey === 'final' && resultBlobs.original) {
+        // 3. 請求私有原檔的上傳通行證
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: privatePath, contentType: 'image/jpeg', bucketType: 'private' })
+          // 🚨 修正：不再傳送 fileName
+          body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'private' })
         });
-        const { uploadUrl: privateUploadUrl } = await privateTicketRes.json();
+        const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = await privateTicketRes.json();
+        
         await fetch(privateUploadUrl, { method: 'PUT', body: resultBlobs.original, headers: { 'Content-Type': 'image/jpeg' } });
-        privateKey = privatePath;
+        // 🌟 修正：把私有檔的 key 存起來，準備告訴資料庫
+        privateKey = privateSafeFileName;
       }
 
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {

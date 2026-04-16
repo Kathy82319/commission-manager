@@ -1,3 +1,4 @@
+// src/pages/artist/Settings.tsx
 import { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; 
@@ -35,7 +36,7 @@ export function Settings() {
   
   const [isUploading, setIsUploading] = useState(false); 
   const [isPortfolioUploading, setIsPortfolioUploading] = useState(false); 
-  const [isSplashUploading, setIsSplashUploading] = useState(false); // 🌟 新增：Splash 背景上傳狀態
+  const [isSplashUploading, setIsSplashUploading] = useState(false);
   
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number; trial_start_at?: string; trial_end_at?: string; pro_expires_at?: string } | null>(null);
 
@@ -104,18 +105,17 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
+  // 🌟【資安修正】頭像上傳：接收後端安全檔名
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
-      const timestamp = Date.now();
-      const fileName = `avatars/user_${timestamp}.jpg`;
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
       });
-      const { uploadUrl } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
       alert("頭像上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
     } catch (err) {
@@ -125,21 +125,18 @@ export function Settings() {
     }
   };
 
+  // 🌟【資安修正】作品集上傳：接收後端安全檔名
   const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
     setIsPortfolioUploading(true);
     try {
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(7);
-      const fileName = `portfolio/img_${timestamp}_${randomStr}.jpg`;
-      
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
       });
-      const { uploadUrl } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
       await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       
       setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
       alert("作品上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
@@ -150,19 +147,17 @@ export function Settings() {
     }
   };
 
-  // 🌟 新增：Splash 背景圖上傳邏輯
+  // 🌟【資安修正】Splash 背景上傳：接收後端安全檔名
   const handleSplashUpload = async (resultBlobs: { preview: Blob }) => {
     setIsSplashUploading(true);
     try {
-      const timestamp = Date.now();
-      const fileName = `splash/bg_${timestamp}.jpg`;
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, contentType: 'image/jpeg', bucketType: 'public' })
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
       });
-      const { uploadUrl } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${fileName}`;
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, splash_image: finalUrl }));
       alert("開場背景圖上傳成功！請記得點擊下方的「儲存全部內容」。");
     } catch (err) {
@@ -557,7 +552,6 @@ export function Settings() {
                         背景圖片設定 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用橫式美圖。若留空，將預設使用頭像)</span>
                       </label>
                       
-                      {/* 🌟 核心修改：Splash 背景圖改為 R2 上傳模式 */}
                       {settings.splash_image ? (
                         <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
                           <img src={settings.splash_image} alt="背景預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

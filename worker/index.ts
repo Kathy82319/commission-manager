@@ -67,9 +67,11 @@ async function verifyToken(token: string | undefined, secret: string): Promise<s
   return signature === expectedSig ? userId : null;
 }
 
-function sanitize(str: string): string {
+// 🌟【資安修正：任務 6】合併長度限制與 XSS 防護
+function sanitizeAndLimit(str: string | undefined | null, maxLength: number): string {
   if (!str) return '';
-  return str.replace(/&/g, '&amp;')
+  const limitedStr = str.substring(0, maxLength); // 強制截斷，防範資料庫被塞爆
+  return limitedStr.replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
@@ -109,8 +111,17 @@ export default {
     const pathParts = url.pathname.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
+    // 🌟【資安修正：任務 3】CORS 嚴格白名單設定
+    const allowedOrigins = [
+      env.FRONTEND_URL, 
+      "http://localhost:5173", 
+      "http://localhost:8787"
+    ];
+    // 如果來源在白名單內就放行，否則退回預設的安全網域 (或空字串)
+    const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : env.FRONTEND_URL || "";
+
     const corsHeaders = {
-      "Access-Control-Allow-Origin": requestOrigin || env.FRONTEND_URL || "*", 
+      "Access-Control-Allow-Origin": safeOrigin, 
       "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
@@ -120,10 +131,10 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    const jsonRes = (data: any, status = 200) => {
+    const jsonRes = (data: any, status = 200, extraHeaders = {}) => {
       return new Response(JSON.stringify(data), {
         status,
-        headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" }
+        headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8", ...extraHeaders }
       });
     };
 
@@ -194,15 +205,14 @@ export default {
 
         if (results.length === 0) {
           const publicId = `User_${Math.floor(10000 + Math.random() * 90000)}`;
-          await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, plan_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, profile.displayName || '未命名', profile.pictureUrl || '').run();
+          // 套用長度限制
+          const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
+          await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, plan_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, safeDisplayName, profile.pictureUrl || '').run();
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
           
-          // 🌟 登入時檢查是否為已被軟刪除的帳號
           if (user.role === 'deleted') {
-            // 如果不想讓他們登入，可以在這裡直接 return jsonRes({...}, 403);
-            // 但為了一般使用體驗，我們先導向 onboarding 讓他們以為帳號重置了
             targetPath = "/onboarding";
           } else {
             targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
@@ -223,7 +233,7 @@ export default {
     }
 
     // ============================================================================
-    // 2. 使用者管理 (Users API) - 🌟 包含方案檢查與計算額度
+    // 2. 使用者管理 (Users API) 
     // ============================================================================
 
     if (request.method === "GET" && url.pathname.startsWith("/api/users/")) {
@@ -239,7 +249,6 @@ export default {
         if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
         const user: any = results[0];
 
-        // 🌟 防護網：被軟刪除的帳號對外隱藏
         if (!isMe && user.role === 'deleted') {
              return jsonRes({ success: false, error: "此帳號已停用或刪除" }, 404);
         }
@@ -305,18 +314,22 @@ export default {
         const body: any = await request.json();
         await env.commission_db.prepare(`
           UPDATE Users SET display_name = ?, avatar_url = ?, bio = ?, profile_settings = ? WHERE id = ?
-        `).bind(sanitize(body.display_name), body.avatar_url || '', sanitize(body.bio), body.profile_settings || '{}', targetId).run();
+        `).bind(
+          sanitizeAndLimit(body.display_name, 100), 
+          body.avatar_url || '', 
+          sanitizeAndLimit(body.bio, 500), 
+          sanitizeAndLimit(body.profile_settings, 10000), // JSON 字串限制長度
+          targetId
+        ).run();
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-    // 🌟 新增：帳號軟刪除 API (Soft Delete)
     if (request.method === "DELETE" && url.pathname === "/api/users/me") {
         try {
           const currentUser = await getUserIdFromRequest(request, env);
           if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
   
-          // 將角色設為 deleted，並徹底清空個資與設定 (去識別化)
           await env.commission_db.prepare(`
             UPDATE Users 
             SET role = 'deleted', 
@@ -327,7 +340,10 @@ export default {
             WHERE id = ?
           `).bind(currentUser).run();
   
-          return jsonRes({ success: true, message: "帳號已成功刪除" });
+          // 🌟【資安修正：任務 5】徹底登出，覆蓋 cookie 讓其立刻過期
+          return jsonRes({ success: true, message: "帳號已成功刪除" }, 200, {
+            "Set-Cookie": "user_session=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly"
+          });
         } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
@@ -339,7 +355,7 @@ export default {
         const body: { display_name: string; role: string } = await request.json();
         
         const newRole = body.role === 'artist' ? 'artist' : 'client';
-        const newName = sanitize(body.display_name || '未命名');
+        const newName = sanitizeAndLimit(body.display_name || '未命名', 100);
 
         await env.commission_db.prepare(`
           UPDATE Users SET display_name = ?, role = ? WHERE id = ?
@@ -394,7 +410,12 @@ export default {
         if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
         const commission = results[0] as any;
 
-        if (commission.client_id && currentUser !== commission.client_id && currentUser !== commission.artist_id) {
+        // 🌟【資安修正：任務 4】防堵委託單明細被任意窺探
+        const isArtist = currentUser === commission.artist_id;
+        const isClient = currentUser === commission.client_id;
+        const isPublicQuote = !commission.client_id && commission.status === 'quote_created';
+
+        if (!isArtist && !isClient && !isPublicQuote) {
           return jsonRes({ success: false, error: "無權存取" }, 403);
         }
 
@@ -410,7 +431,6 @@ export default {
         const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role, trial_start_at, trial_end_at, pro_expires_at FROM Users WHERE id = ?").bind(currentUser).all();
         const userPlan = userRes[0] as any;
         
-        // 如果是已刪除帳號，不准建單
         if (userPlan.role === 'deleted') return jsonRes({ success: false, error: "帳號已停用" }, 403);
 
         let currentPlan = userPlan.plan_type || 'free';
@@ -446,6 +466,7 @@ export default {
           if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id}-${Date.now().toString().slice(-3)}`;
         }
         
+        // 🌟【資安修正：任務 6】全面套用輸入長度限制
         await env.commission_db.prepare(`
           INSERT INTO Commissions (
             id, artist_id, type_id, client_id, is_paid, artist_note, contact_memo,
@@ -455,14 +476,14 @@ export default {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           newOrderId, currentUser, 'type-01', clientId || null, 0,
-          '', sanitize(body.client_name || '未知'), body.total_price || 0,
+          '', sanitizeAndLimit(body.client_name || '未知', 100), body.total_price || 0,
           body.workflow_mode === 'free' ? 'unpaid' : (body.is_external ? 'paid' : 'quote_created'),
           body.is_external ? 'paid' : 'unpaid', 'sketch_drawing', body.is_external ? 1 : 0,
-          sanitize(body.project_name), sanitize(body.usage_type), body.is_rush,
-          body.delivery_method, sanitize(body.payment_method),
-          sanitize(body.draw_scope), body.char_count, sanitize(body.bg_type),
-          sanitize(body.add_ons), sanitize(body.detailed_settings), body.workflow_mode || 'standard',
-          body.agreed_tos_snapshot || '' 
+          sanitizeAndLimit(body.project_name, 255), sanitizeAndLimit(body.usage_type, 100), sanitizeAndLimit(body.is_rush, 50),
+          sanitizeAndLimit(body.delivery_method, 100), sanitizeAndLimit(body.payment_method, 100),
+          sanitizeAndLimit(body.draw_scope, 100), body.char_count, sanitizeAndLimit(body.bg_type, 100),
+          sanitizeAndLimit(body.add_ons, 1000), sanitizeAndLimit(body.detailed_settings, 10000), sanitizeAndLimit(body.workflow_mode, 50) || 'standard',
+          sanitizeAndLimit(body.agreed_tos_snapshot, 10000) || '' 
         ).run();
         
         return jsonRes({ success: true, id: newOrderId });
@@ -496,25 +517,35 @@ export default {
         const updates = [];
         const params = [];
         
-        const allowedFields = [
-          'status', 'payment_status','client_id', 'project_name', 'detailed_settings', 
-          'usage_type', 'is_rush', 'delivery_method', 'payment_method', 
-          'draw_scope', 'char_count', 'bg_type', 'add_ons', 'total_price', 
-          'current_stage', 'end_date', 'artist_note', 'workflow_mode', 
-          'queue_status', 'last_read_at_artist', 'last_read_at_client', 'client_custom_title',
-          'agreed_tos_snapshot' 
-        ];
+        // 🌟【資安修正：任務 6】根據欄位屬性，給予對應的長度限制
+        const fieldLimits: Record<string, number> = {
+          'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
+          'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
+          'draw_scope': 100, 'bg_type': 100, 'add_ons': 1000, 'current_stage': 50, 'end_date': 50, 
+          'artist_note': 5000, 'workflow_mode': 50, 'queue_status': 100, 'client_custom_title': 100,
+          'agreed_tos_snapshot': 10000 
+        };
         
-        for (const key of allowedFields) {
+        for (const key in fieldLimits) {
           if (body[key] !== undefined) {
             updates.push(`${key} = ?`);
             if (key === 'agreed_tos_snapshot') {
-              params.push(body[key]);
+              params.push(sanitizeAndLimit(body[key], fieldLimits[key]));
             } else {
-              params.push(typeof body[key] === 'string' ? sanitize(body[key]) : body[key]);
+              params.push(typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]);
             }
           }
         }
+        
+        // 處理不需長度限制的特殊欄位
+        const specialFields = ['total_price', 'char_count', 'last_read_at_artist', 'last_read_at_client'];
+        for (const key of specialFields) {
+           if (body[key] !== undefined) {
+               updates.push(`${key} = ?`);
+               params.push(body[key]);
+           }
+        }
+
         if (updates.length > 0) {
           params.push(id);
           await env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
@@ -572,7 +603,7 @@ export default {
         const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
         await env.commission_db.batch([
-          env.commission_db.prepare("INSERT INTO Submissions (id, commission_id, stage, file_url, version) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.stage, body.file_url, version),
+          env.commission_db.prepare("INSERT INTO Submissions (id, commission_id, stage, file_url, version) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, sanitizeAndLimit(body.stage, 50), body.file_url, version),
           env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'upload', ?)").bind(crypto.randomUUID(), id, `繪師已上傳 ${stageNameCH} (v${version})`),
           env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(newStageStatus, id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
@@ -600,7 +631,7 @@ export default {
 
         if (body.action === 'reject') {
           nextStageStatus = `${body.stage}_drawing`;
-          logMsg = `委託人請求修改 ${stageNameCH}：${sanitize(body.comment || '無備註')}`;
+          logMsg = `委託人請求修改 ${stageNameCH}：${sanitizeAndLimit(body.comment || '無備註', 1000)}`;
         } else if (body.action === 'read_only') {
           nextStageStatus = body.stage === 'sketch' ? 'lineart_drawing' : (body.stage === 'lineart' ? 'final_drawing' : 'completed');
           logMsg = `委託人已閱覽 ${stageNameCH}`;
@@ -645,9 +676,10 @@ export default {
         }
         
         await env.commission_db.batch([
-          env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(body.changes), id),
+          // JSON 不宜太長
+          env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(sanitizeAndLimit(JSON.stringify(body.changes), 5000), id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提出委託單內容異動申請，請前往「委託單細項」查看並確認。`),
-          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', ?)").bind(crypto.randomUUID(), id, logContent)
+          env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', ?)").bind(crypto.randomUUID(), id, sanitizeAndLimit(logContent, 2000))
         ]);
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
@@ -676,7 +708,7 @@ export default {
         if (body.action === 'approve') {
           const fields = Object.keys(changes);
           const sets = fields.map(f => `${f} = ?`).join(", ");
-          const values = fields.map(f => changes[f]);
+          const values = fields.map(f => sanitizeAndLimit(String(changes[f]), 10000)); // 安全限制
           batchOps.push(env.commission_db.prepare(`UPDATE Commissions SET ${sets}, pending_changes = NULL WHERE id = ?`).bind(...values, id));
           batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'approve_change', '委託人已同意內容')").bind(crypto.randomUUID(), id));
           batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', '[系統通知] 委託人已同意內容異動。')").bind(crypto.randomUUID(), id));
@@ -722,7 +754,7 @@ export default {
         const body: { sender_role: string; content: string } = await request.json();
         
         await env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)")
-          .bind(crypto.randomUUID(), id, body.sender_role, sanitize(body.content)).run();
+          .bind(crypto.randomUUID(), id, sanitizeAndLimit(body.sender_role, 50), sanitizeAndLimit(body.content, 10000)).run();
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
@@ -753,7 +785,7 @@ export default {
         const body: { record_date: string; item_name: string; amount: number } = await request.json();
         
         await env.commission_db.prepare("INSERT INTO PaymentRecords (id, commission_id, record_date, item_name, amount) VALUES (?, ?, ?, ?, ?)")
-          .bind(crypto.randomUUID(), id, body.record_date, sanitize(body.item_name), body.amount).run();
+          .bind(crypto.randomUUID(), id, sanitizeAndLimit(body.record_date, 50), sanitizeAndLimit(body.item_name, 255), body.amount).run();
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
@@ -784,18 +816,28 @@ export default {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-      const { fileName, contentType, bucketType } = await request.json() as any;
+      const { contentType, bucketType } = await request.json() as any;
+      
+      // 🌟【資安修正：任務 2】檔案覆蓋與格式白名單防護
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(contentType)) {
+        return jsonRes({ success: false, error: "不支援的檔案格式，僅允許圖片" }, 400);
+      }
+
+      const extension = contentType.split('/')[1]?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+      const safeFileName = `${crypto.randomUUID()}.${extension}`; // 後端強制作為唯一檔名
       const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
       
       try {
         const s3 = getS3Client(env);
         const command = new PutObjectCommand({
           Bucket: bucketName,
-          Key: fileName,
+          Key: safeFileName,
           ContentType: contentType,
         });
         const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
-        return jsonRes({ success: true, uploadUrl });
+        // 回傳安全的檔名讓前端拿去存
+        return jsonRes({ success: true, uploadUrl, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
       }
@@ -821,6 +863,21 @@ export default {
         return jsonRes({ success: false, error: "權限不足，完稿尚未解鎖或您非當事人" }, 403);
       }
 
+      // 🌟【資安修正：任務 1】IDOR 任意讀取防護
+      const { results: validFiles } = await env.commission_db.prepare(`
+        SELECT file_url AS file_key FROM Submissions WHERE commission_id = ?
+        UNION
+        SELECT r2_key AS file_key FROM Attachments WHERE commission_id = ?
+      `).bind(commissionId, commissionId).all();
+
+      const isFileOwnedByCommission = validFiles.some((row: any) => 
+        row.file_key && row.file_key.includes(fileName)
+      );
+
+      if (!isFileOwnedByCommission) {
+        return jsonRes({ success: false, error: "越權存取阻擋：該檔案不屬於此委託單" }, 403);
+      }
+
       try {
         const s3 = getS3Client(env);
         const command = new GetObjectCommand({ Bucket: "commission-private", Key: fileName });
@@ -835,7 +892,6 @@ export default {
     // 7. 模擬金流與訂閱測試 API (Mock Payment & Subscription)
     // ============================================================================
 
-    // A. 模擬開啟 15 天試用期
     if (request.method === "POST" && url.pathname === "/api/test/start-trial") {
       try {
         const currentUser = await getUserIdFromRequest(request, env);
@@ -844,7 +900,6 @@ export default {
         const { results: userRes } = await env.commission_db.prepare("SELECT role, plan_type, trial_start_at FROM Users WHERE id = ?").bind(currentUser).all();
         const user = userRes[0] as any;
 
-        // 🌟 防護網：拒絕已被停用的帳號開啟試用
         if (user.role === 'deleted') return jsonRes({ success: false, error: "此帳號已停用，請聯絡客服恢復權限。" }, 403);
         
         if (user.plan_type !== 'free') return jsonRes({ success: false, error: "目前狀態無法開啟試用" }, 400);
@@ -860,14 +915,12 @@ export default {
       } catch (e) { return jsonRes({ success: false, error: String(e) }, 500); }
     }
 
-    // B. 模擬付款開通專業版 30 天
     if (request.method === "POST" && url.pathname === "/api/test/mock-upgrade") {
       try {
         const currentUser = await getUserIdFromRequest(request, env);
         if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
         const { results: userRes } = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUser).all();
-        // 🌟 防護網：拒絕已被停用的帳號付費升級
         if (userRes[0]?.role === 'deleted') return jsonRes({ success: false, error: "此帳號已停用，無法進行付款操作。" }, 403);
 
         const now = new Date();
@@ -883,7 +936,6 @@ export default {
     if (!url.pathname.startsWith("/api/")) {
       const assetResponse = await env.ASSETS.fetch(request);
       
-      // 如果是靜態檔案找不到 (或是像 /@User 這種虛擬路徑)
       if (assetResponse.status === 404 || url.pathname.includes("@")) {
         const indexRequest = new Request(new URL("/", request.url).toString(), request);
         return env.ASSETS.fetch(indexRequest);
