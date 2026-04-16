@@ -268,7 +268,7 @@ export function Notebook() {
     }
   };
 
-  // 🌟【核心修復】：R2 上傳邏輯優化
+// 🌟【核心修復】：退回 PUT 上傳邏輯
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
@@ -285,15 +285,15 @@ export function Notebook() {
       const ticketData = await ticketRes.json();
       if (!ticketData.success) throw new Error(ticketData.error || "無法取得預覽圖上傳通行證");
       
-      const { uploadUrl: publicUploadUrl, fields: publicFields, fileName: publicSafeFileName } = ticketData;
+      const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = ticketData;
       
-      // 🌟 修正：使用 FormData POST (R2 規範：file 必須在最後一個 append)
-      const publicFormData = new FormData();
-      Object.entries(publicFields).forEach(([k, v]) => publicFormData.append(k, v as string));
-      publicFormData.append('file', resultBlobs.preview);
-
-      const pubRes = await fetch(publicUploadUrl, { method: 'POST', body: publicFormData });
-      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (請檢查檔案大小)");
+      // 🌟 修正：改用 PUT，直接把 blob 塞進 body，不使用 FormData
+      const pubRes = await fetch(publicUploadUrl, { 
+        method: 'PUT', 
+        body: resultBlobs.preview,
+        headers: { 'Content-Type': previewType } 
+      });
+      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕");
 
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
       let finalUrlToSave = publicFinalUrl; 
@@ -310,13 +310,14 @@ export function Notebook() {
         const privateTicketData = await privateTicketRes.json();
         if (!privateTicketData.success) throw new Error(privateTicketData.error || "無法取得原檔上傳通行證");
 
-        const { uploadUrl: privateUploadUrl, fields: privateFields, fileName: privateSafeFileName } = privateTicketData;
+        const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = privateTicketData;
         
-        const privateFormData = new FormData();
-        Object.entries(privateFields).forEach(([k, v]) => privateFormData.append(k, v as string));
-        privateFormData.append('file', resultBlobs.original);
-
-        const privRes = await fetch(privateUploadUrl, { method: 'POST', body: privateFormData });
+        // 🌟 修正：同樣改用 PUT
+        const privRes = await fetch(privateUploadUrl, { 
+          method: 'PUT', 
+          body: resultBlobs.original,
+          headers: { 'Content-Type': origType } 
+        });
         if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕");
         
         finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;

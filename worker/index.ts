@@ -826,7 +826,7 @@ export default {
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
 
-    // ============================================================================
+// ============================================================================
     // 6. R2 儲存管理 API (Presigned URL)
     // ============================================================================
 
@@ -836,16 +836,12 @@ export default {
 
       const { contentType, bucketType, originalName } = await request.json() as any;
       
-      let maxFileSize = 5 * 1024 * 1024; // 預設公開預覽圖限制 5MB
-
-      // 🌟 白名單分流與容量保護
+      // 🌟 白名單分流防護
       if (bucketType !== 'private') {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowedTypes.includes(contentType)) {
           return jsonRes({ success: false, error: "不支援的檔案格式，公開預覽僅允許圖片" }, 400);
         }
-      } else {
-        maxFileSize = 15 * 1024 * 1024; // 私有原檔放寬到 15MB
       }
 
       let extension = 'bin';
@@ -861,20 +857,18 @@ export default {
       try {
         const s3 = getS3Client(env);
         
-        const { url: uploadUrl, fields } = await createPresignedPost(s3, {
+        // 🌟 退回 R2 完美支援的 PUT 協議 (PutObjectCommand)
+        const command = new PutObjectCommand({
           Bucket: bucketName,
           Key: safeFileName,
-          Conditions: [
-            ["content-length-range", 0, maxFileSize], // 🛡️ 依然死守容量上限！
-            ["starts-with", "$Content-Type", ""]      // 🌟 放寬這裡：允許瀏覽器上傳時的 MIME 類型有微小誤差，防止假 CORS 誤殺
-          ],
-          Fields: {
-            "Content-Type": contentType,
-          },
-          Expires: 600,
+          ContentType: contentType // 必須精準指定，前端上傳時 Header 也要一致
         });
 
-        return jsonRes({ success: true, uploadUrl, fields, fileName: safeFileName });
+        // 產生 PUT 專用的預簽章網址
+        const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
+
+        // 不再回傳 fields，直接回傳 uploadUrl
+        return jsonRes({ success: true, uploadUrl, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
       }

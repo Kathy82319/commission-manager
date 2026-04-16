@@ -105,6 +105,7 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
+// Settings.tsx
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -114,14 +115,11 @@ export function Settings() {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}` }) 
       });
-      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      const formData = new FormData();
-      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
-      formData.append('file', resultBlobs.preview);
-
-      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+      // 🌟 改為 PUT 上傳
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
@@ -136,18 +134,16 @@ export function Settings() {
   const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
     setIsPortfolioUploading(true);
     try {
+      const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'portfolio.jpg' }) 
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'portfolio.jpg' }) 
       });
-      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      const formData = new FormData();
-      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
-      formData.append('file', resultBlobs.preview);
-
-      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+      // 🌟 改為 PUT 上傳
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
@@ -162,18 +158,16 @@ export function Settings() {
   const handleSplashUpload = async (resultBlobs: { preview: Blob }) => {
     setIsSplashUploading(true);
     try {
+      const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'splash.jpg' }) 
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'splash.jpg' }) 
       });
-      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
+      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      const formData = new FormData();
-      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
-      formData.append('file', resultBlobs.preview);
-
-      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+      // 🌟 改為 PUT 上傳
+      const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, splash_image: finalUrl }));
