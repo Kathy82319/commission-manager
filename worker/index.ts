@@ -495,12 +495,14 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
         const comm = check[0] as any;
 
-        if (!comm.client_id && comm.status === 'quote_created' && body.status === 'unpaid') {
+        let isBinding = false;
+        if (!comm.client_id && (body.status === 'unpaid' || body.action === 'bind')) {
+          isBinding = true;
           body.client_id = currentUser; 
-        } else {
-          if (currentUser !== comm.artist_id && currentUser !== comm.client_id) {
-            return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
-          }
+        }
+
+        if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
+          return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
         }
 
         if (currentUser === comm.client_id && body.total_price !== undefined) {

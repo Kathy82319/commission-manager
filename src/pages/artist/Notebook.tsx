@@ -19,7 +19,6 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
-// 🌟 核心修正：加入共用時間解析函數
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -287,7 +286,8 @@ export function Notebook() {
       await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
 
-      let privateKey = null;
+      let finalUrlToSave = publicFinalUrl; // 🌟 準備要存入 DB 的字串
+
       if (stageKey === 'final' && resultBlobs.original) {
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -296,7 +296,9 @@ export function Notebook() {
         const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = await privateTicketRes.json();
         
         await fetch(privateUploadUrl, { method: 'PUT', body: resultBlobs.original, headers: { 'Content-Type': 'image/jpeg' } });
-        privateKey = privateSafeFileName;
+        
+        // 🌟【修復 Bug 3】將公有預覽圖網址與私有安全檔名用 | 串接起來，完美避開資料庫變更
+        finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;
       }
 
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
@@ -305,8 +307,7 @@ export function Notebook() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           stage: stageKey, 
-          file_url: publicFinalUrl,
-          private_file_key: privateKey 
+          file_url: finalUrlToSave
         })
       });
 
@@ -437,7 +438,8 @@ export function Notebook() {
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
               withWatermark={!isFreeMode} 
               watermarkText="SAMPLE"
-              existingUrl={sub?.file_url}
+              // 🌟 將儲存的 url 切割，只取前面公開的預覽圖顯示
+              existingUrl={sub?.file_url?.split('|')[0]}
               isFinal={isFinal} 
               aspectRatio={undefined} 
               metadata={sub ? { 
@@ -527,7 +529,6 @@ export function Notebook() {
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             const isSelected = selectedId === order.id;
 
-            // 🌟 修正時間格式比對，並改為 ☆有新訊息
             const latestMsgTime = parseTime(order.latest_message_at);
             const lastReadTime = parseTime(order.last_read_at_artist);
             const hasNewMsg = latestMsgTime > lastReadTime;
@@ -557,8 +558,7 @@ export function Notebook() {
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
                   {statusBadge && <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>}
                   {order.queue_status && <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{order.queue_status}</span>}
-                  {/* 🌟 統一標籤樣式 */}
-                  {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>🌟新訊息</span>}
+                  {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>☆有新訊息</span>}
                 </div>
               </div>
             );
@@ -726,7 +726,7 @@ export function Notebook() {
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   {selectedOrder.workflow_mode === 'free' ? (
-                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更紀錄</p>
+                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
                   ) : (
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</p>
                   )}

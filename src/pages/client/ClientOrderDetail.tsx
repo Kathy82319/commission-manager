@@ -28,7 +28,6 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 核心修正：加入共用時間解析函數
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -75,7 +74,6 @@ export function ClientOrderDetail() {
         setCustomTitle(initialTitle);
         setSavedTitle(initialTitle);
 
-        // 🌟 修正時差判斷
         if (data.latest_message_at) {
           const latestMsgTime = parseTime(data.latest_message_at);
           const lastReadTime = parseTime(data.last_read_at_client);
@@ -178,17 +176,14 @@ export function ClientOrderDetail() {
     }
   };
 
-  const handleDownloadOriginal = async (publicUrl: string) => {
-    if (!id) return;
+  // 🌟【修復 Bug 3】直接拿取 | 切割後的 privateKey 去跟後端要通行證
+  const handleDownloadOriginal = async (privateKey: string) => {
+    if (!id || !privateKey) return;
     setIsProcessing(true);
     try {
-      const urlObj = new URL(publicUrl);
-      const publicPath = urlObj.pathname.substring(1); 
-      const privatePath = publicPath.replace('_preview_', '_original_');
-
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commissionId: id, fileName: privatePath })
+        body: JSON.stringify({ commissionId: id, fileName: privateKey })
       });
       const data = await res.json();
       
@@ -217,9 +212,13 @@ export function ClientOrderDetail() {
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
+    const isFreeMode = orderData?.workflow_mode === 'free';
     
+    // 🌟【修復 Bug 2】針對自由模式設定維持空白文字
     let statusText = '';
-    if (isPassed) {
+    if (isFreeMode) {
+      statusText = ''; 
+    } else if (isPassed) {
       statusText = isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段';
     } else if (isReviewing) {
       statusText = isFinal ? '👀 繪師已交付，待您確認' : '👀 繪師已交付，請過目';
@@ -229,8 +228,8 @@ export function ClientOrderDetail() {
     
     return (
       <div style={{ border: '1px solid #d0d8e4', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
-        <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#f8fafc'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#475569', borderBottom: '1px solid #d0d8e4' }}>
-          <span>{title}</span> <span style={{ color: isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#94a3b8') }}>{statusText}</span>
+        <div style={{ backgroundColor: isFreeMode ? (sub ? '#e6f4ea' : '#f8fafc') : (isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#f8fafc')), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#475569', borderBottom: '1px solid #d0d8e4' }}>
+          <span>{title}</span> <span style={{ color: isFreeMode ? (sub ? '#1e8e3e' : '#94a3b8') : (isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#94a3b8')) }}>{statusText}</span>
         </div>
         <div style={{ padding: '20px', textAlign: 'center' }}>
           {!sub ? (
@@ -248,8 +247,9 @@ export function ClientOrderDetail() {
                  maxWidth: '350px', 
                  margin: '0 auto' 
                }}>
+                 {/* 🌟 取前半段的 Public 預覽圖網址 */}
                  <img 
-                   src={sub.file_url} 
+                   src={sub.file_url.split('|')[0]} 
                    alt="稿件預覽" 
                    style={{ 
                      width: '100%', 
@@ -261,13 +261,15 @@ export function ClientOrderDetail() {
                </div>
                
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 {isReviewing && !isFinal && (
+                 {/* 草稿與線稿不顯示按鈕，且非自由模式 */}
+                 {isReviewing && !isFinal && !isFreeMode && (
                    <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#64748b', fontWeight: 'bold', textAlign: 'right' }}>
                      👀 本階段請過目即可，繪師後續將會直接推進至下一階段。
                    </div>
                  )}
 
-                 {isReviewing && isFinal && (
+                 {/* 🌟 完稿才顯示同意與退回按鈕，且自由模式不顯示 */}
+                 {isReviewing && isFinal && !isFreeMode && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
                      <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #d0d8e4', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>退回修改</button>
@@ -275,8 +277,10 @@ export function ClientOrderDetail() {
                    </>
                  )}
 
-                 {isPassed && isFinal && orderData?.status === 'completed' && (
-                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                 {/* 🌟 下載按鈕條件放寬：自由模式有上傳就可以載，標準模式要等結案 */}
+                 {( (isPassed && isFinal && orderData?.status === 'completed') || (isFreeMode && isFinal && sub) ) && (
+                   // 🌟 傳入切割後的 privateKey 
+                   <button onClick={() => handleDownloadOriginal(sub.file_url.split('|')[1] || sub.file_url.split('|')[0])} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
