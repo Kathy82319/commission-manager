@@ -1,12 +1,21 @@
 // src/pages/client/ClientForm.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
+import DOMPurify from 'dompurify'; 
+
+// 🌟 新增：安全解碼器。用來還原後端因防護而轉碼的 HTML 實體 (如 &lt;p&gt; 轉回 <p>)
+const decodeHTML = (html?: string) => {
+  if (!html) return '';
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+};
 
 interface Commission {
   id: string;
   project_name: string;
   client_name: string;
+  client_id?: string;
   total_price: number;
   status: string;
   payment_status: string;
@@ -20,7 +29,7 @@ interface Commission {
   add_ons: string;
   order_date: string;
   artist_settings?: string; 
-  agreed_tos_snapshot?: string; // 🌟 確保介面有這屬性
+  agreed_tos_snapshot?: string; 
 }
 
 export function ClientForm() {
@@ -52,6 +61,18 @@ export function ClientForm() {
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
+
+          // 🌟 修正 Bug 2 (綁定失敗)：靜默自動綁定機制
+          // 只要這張單還沒有 client_id，委託人一載入畫面就立刻發送 PATCH 觸發後端綁定！
+          if (!data.data.client_id) {
+            fetch(`${API_BASE}/api/commissions/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
+            });
+          }
+
         } else {
           setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
@@ -66,12 +87,11 @@ export function ClientForm() {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
     
-    // 🌟 修正：因為協議書在建立時就存進 agreed_tos_snapshot 了，
-    // 這邊主要是再確認一次要送回後端（或是後端單純靠 PATCH status 即可）。
     let currentTosSnapshot = order?.agreed_tos_snapshot || '';
     if (!currentTosSnapshot && order?.artist_settings) {
       try {
-        currentTosSnapshot = JSON.parse(order.artist_settings).rules || '';
+        // 🌟 確保 JSON.parse 之前先解碼，避免引號被轉義導致崩潰
+        currentTosSnapshot = JSON.parse(decodeHTML(order.artist_settings)).rules || '';
       } catch(e) {}
     }
 
@@ -163,17 +183,17 @@ export function ClientForm() {
             </div>
           )}
 
-          {/* 🌟 核心修正：優先讀取建立這張單時存下的專屬 agreed_tos_snapshot */}
           <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', fontSize: '14px', color: '#7A7269', lineHeight: '1.9', height: '180px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
             {order.agreed_tos_snapshot ? (
-              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(order.agreed_tos_snapshot) }} />
+              // 🌟 修正 Bug 3：解碼後端安全轉碼的文字，再交給 DOMPurify 進行安全渲染
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(order.agreed_tos_snapshot)) }} />
             ) : order.artist_settings ? (
               <div 
                 dangerouslySetInnerHTML={{ 
                   __html: (() => {
                     try {
-                      // 這是為了相容舊資料 (原本沒存快照的舊訂單)
-                      const rawHtml = JSON.parse(order.artist_settings).rules;
+                      const decodedSettings = decodeHTML(order.artist_settings);
+                      const rawHtml = JSON.parse(decodedSettings).rules;
                       return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
                     } catch(e) {
                       return '繪師尚未設定使用規範。';
@@ -183,12 +203,7 @@ export function ClientForm() {
               />
             ) : (
               <>
-                1. 本委託為客製化商品，確認送出後即代表雙方成立合作關係，不適用七天鑑賞期。<br/>
-                2. 繪師保有展示作品作為作品集之權利，若需買斷或延遲公開請於事前提出。<br/>
-                3. 完稿後若非繪師方失誤，僅提供協議內約定之微調修改次數。<br/>
-                4. 若有延遲交稿情形，繪師將主動告知並依雙方協議處理。<br/>
-                5. 確認委託後，請依約定時間內完成款項支付，逾期視同放棄委託。<br/>
-                6. 草稿階段退件重畫以三次為限，超出次數需視情況增加費用。<br/>
+'繪師尚未設定使用規範。'
               </>
             )}
           </div>

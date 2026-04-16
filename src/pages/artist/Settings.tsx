@@ -109,9 +109,11 @@ export function Settings() {
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
+      const fileType = resultBlobs.preview.type || 'image/jpeg';
+      const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'avatar.jpg' }) 
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}` }) 
       });
       const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
       

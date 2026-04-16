@@ -273,34 +273,36 @@ export function Notebook() {
   };
 
   // 🌟 核心防護機制升級：改成 POST FormData 格式，以對應後端 createPresignedPost
+// 🌟 修改：Notebook.tsx 的 handleR2FileUpload
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
-      // 1️⃣ 上傳公開預覽圖
+      // 1️⃣ 上傳公開預覽圖 (動態抓取真實 type)
+      const previewType = resultBlobs.preview.type || 'image/jpeg';
+      const previewExt = previewType.split('/')[1] || 'jpg';
+      
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'preview.jpg' })
+        body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview.${previewExt}` })
       });
       const { uploadUrl: publicUploadUrl, fields: publicFields, fileName: publicSafeFileName } = await ticketRes.json();
       
-      // 準備 FormData (必須把後端給的加密 fields 通通塞進去)
       const publicFormData = new FormData();
       Object.entries(publicFields).forEach(([k, v]) => publicFormData.append(k, v as string));
-      publicFormData.append('file', resultBlobs.preview); // 檔案必須放在最後
+      publicFormData.append('file', resultBlobs.preview);
 
-      // 發送 POST，注意：這裡不要自己設 Content-Type，讓瀏覽器自動加上 multipart/form-data
       const pubRes = await fetch(publicUploadUrl, { method: 'POST', body: publicFormData });
-      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (可能是檔案過大或網路不穩)");
+      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (可能是檔案過大)");
 
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
       let finalUrlToSave = publicFinalUrl; 
 
       // 2️⃣ 如果有原檔，上傳私有原檔
       if (stageKey === 'final' && resultBlobs.original) {
-        const origType = resultBlobs.original.type || 'image/jpeg';
-        const origName = (resultBlobs.original as File).name || 'final_original.jpg';
+        const origType = resultBlobs.original.type || 'application/octet-stream';
+        const origName = (resultBlobs.original as File).name || 'final_original.zip';
 
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -308,26 +310,22 @@ export function Notebook() {
         });
         const { uploadUrl: privateUploadUrl, fields: privateFields, fileName: privateSafeFileName } = await privateTicketRes.json();
         
-        // 準備 FormData
         const privateFormData = new FormData();
         Object.entries(privateFields).forEach(([k, v]) => privateFormData.append(k, v as string));
         privateFormData.append('file', resultBlobs.original);
 
         const privRes = await fetch(privateUploadUrl, { method: 'POST', body: privateFormData });
-        if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕 (請確認檔案是否超過 5MB)");
+        if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕 (請確認檔案是否超過限制)");
         
         finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;
       }
 
-      // 3️⃣ 通知後端資料庫更新檔案進度
+      // 3️⃣ 通知後端
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          stage: stageKey, 
-          file_url: finalUrlToSave
-        })
+        body: JSON.stringify({ stage: stageKey, file_url: finalUrlToSave })
       });
 
       if ((await submitRes.json()).success) {

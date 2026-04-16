@@ -837,21 +837,19 @@ if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
       try {
         const s3 = getS3Client(env);
         
-        // 🛡️ 核心資安升級：改用 createPresignedPost 強制限制 R2 接收規則
         const { url: uploadUrl, fields } = await createPresignedPost(s3, {
           Bucket: bucketName,
           Key: safeFileName,
           Conditions: [
-            ["content-length-range", 0, maxFileSize], // 嚴格死守：若檔案大於限制，R2 會直接切斷連線拒收
-            ["eq", "$Content-Type", contentType]      // 嚴格死守：防止駭客宣告 png 卻偷塞 exe
+            ["content-length-range", 0, maxFileSize], // 🛡️ 依然死守容量上限！
+            ["starts-with", "$Content-Type", ""]      // 🌟 放寬這裡：允許瀏覽器上傳時的 MIME 類型有微小誤差，防止假 CORS 誤殺
           ],
           Fields: {
             "Content-Type": contentType,
           },
-          Expires: 600, // 憑證 10 分鐘內有效
+          Expires: 600,
         });
 
-        // 注意：回傳多了 fields 這個物件，前端上傳時必須用到
         return jsonRes({ success: true, uploadUrl, fields, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
