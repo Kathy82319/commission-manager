@@ -17,6 +17,7 @@ interface ImageUploaderProps {
     version: number;
     date: string;
   };
+  maxSizeMB?: number; 
 }
 
 export function ImageUploader({

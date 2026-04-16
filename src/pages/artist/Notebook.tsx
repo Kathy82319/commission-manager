@@ -1,5 +1,5 @@
 // src/pages/artist/Notebook.tsx
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ImageUploader } from '../../components/ImageUploader'; 
 import DOMPurify from 'dompurify'; 
@@ -53,7 +53,6 @@ export function Notebook() {
   
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const loadedDeliverablesId = useRef<string | null>(null);
   
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
