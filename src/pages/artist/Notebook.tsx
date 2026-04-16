@@ -48,7 +48,7 @@ export function Notebook() {
   
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const loadedDeliverablesId = useRef<string | null>(null); // 🌟【Bug 6 修復】用 useRef 追蹤已載入的 ID，防止閃爍
+  const loadedDeliverablesId = useRef<string | null>(null);
   
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
@@ -64,7 +64,6 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
-      // 如果剛載入且有 initialId，自動選取並載入細節
       if (initialSelectedId && !selectedId) {
         const target = data.data.find((c: Commission) => c.id === initialSelectedId);
         if (target) {
@@ -84,7 +83,6 @@ export function Notebook() {
   };
 
   const fetchDeliverables = async (id: string) => {
-    // 🌟【Bug 6 修復】如果已經載入過同一個 ID 的資料，就不需要再清空重繪
     if (loadedDeliverablesId.current !== id) {
       loadedDeliverablesId.current = id;
     }
@@ -99,7 +97,7 @@ export function Notebook() {
   useEffect(() => { fetchCommissions(); }, []);
 
   const handleSelect = async (order: Commission) => {
-    if (selectedId === order.id) return; // 🌟【Bug 6 修復】點擊同一個不重複觸發
+    if (selectedId === order.id) return;
     setSelectedId(order.id);
     setEditData(order);
     setIsEditingRequest(false);
@@ -113,7 +111,7 @@ export function Notebook() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
       });
-      fetchCommissions(); // 這裡主要是更新左側列表的已讀狀態
+      fetchCommissions();
     } catch (e) {
       console.error("更新已讀時間失敗", e);
     }
@@ -373,15 +371,25 @@ export function Notebook() {
     const isFinal = stageKey === 'final';
     const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
     
-    // 🌟【Bug 2 修復】檢查是否尚未綁定委託人
     const isUnbound = !selectedOrder?.client_public_id;
+    const isFreeMode = selectedOrder?.workflow_mode === 'free';
 
     let headerBg = '#FCFAF8'; 
     let statusTag = '';
     let statusColor = '#A0978D';
     
-    // 🌟【Bug 2 修復】未綁定時的狀態處理，防止被誤認為已閱覽
-    if (isUnbound) {
+    // 🌟【邏輯修改】自由模式狀態判斷
+    if (isFreeMode) {
+      if (sub) {
+        headerBg = '#E8F3EB';
+        statusTag = '✓ 檔案已上傳 (自由模式)';
+        statusColor = '#4E7A5A';
+      } else {
+        statusTag = '等待繪製上傳...';
+      }
+    } 
+    // 🌟【Bug 2 修復】未綁定時的狀態處理
+    else if (isUnbound) {
       if (sub) {
         headerBg = '#F0ECE7';
         statusTag = '⚠️ 等待委託人綁定帳號後才能閱覽';
@@ -389,7 +397,9 @@ export function Notebook() {
       } else {
         statusTag = '等待繪製上傳...';
       }
-    } else {
+    } 
+    // 標準模式且已綁定
+    else {
       if (isPassed) {
         headerBg = '#E8F3EB';
         statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
@@ -413,7 +423,7 @@ export function Notebook() {
           <span>{title}</span> <span style={{ color: statusColor }}>{statusTag}</span>
         </div>
         <div style={{ padding: '20px' }}>
-          {isFinal && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+          {isFinal && !isFreeMode && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
             💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
           </div>}
 
@@ -422,7 +432,7 @@ export function Notebook() {
           ) : (
             <ImageUploader 
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-              withWatermark={true}
+              withWatermark={!isFreeMode} // 自由模式下不需要上浮水印，因為沒有審閱機制
               watermarkText="SAMPLE"
               existingUrl={sub?.file_url}
               isFinal={isFinal} 
@@ -489,7 +499,7 @@ export function Notebook() {
     <div style={{ display: 'flex', height: '100%', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       
       {/* 左側列表區 */}
-      <div style={{ width: '380px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+      <div style={{ width: '380px', backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
           <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', backgroundColor: '#FBFBF9', color: '#5D4A3E', outline: 'none' }}>
@@ -535,8 +545,8 @@ export function Notebook() {
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>項目：{order.project_name || order.type_name || '未命名項目'}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>訂單單號：{order.id.split('-')[1] || order.id}</span>
-                  <span>委託人編號：{order.client_public_id || '未綁定'}</span>
+                  <span>單號：{order.id.split('-')[1] || order.id}</span>
+                  <span>委託人：{order.client_public_id || '未綁定'}</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -553,20 +563,23 @@ export function Notebook() {
       </div>
 
       {/* 右側內容區 */}
-      <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由左側選擇委託單以檢視詳情</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             
-            <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-              <div>
+            {/* 🌟【排版修改 1】調整 Header 結構與 flexWrap 防止擠壓 */}
+            <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
+              <div style={{ flex: '1 1 300px', minWidth: '250px' }}>
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
-                <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
-                <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', gap: '16px' }}>
-                  {/* 🌟【修改 2】新增建單日期在最左側 */}
+                <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
+                
+                {/* 🌟 縮小 gap 並加入 flexWrap，防止文字被截斷 */}
+                <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
                   <span>建單日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
                   <span>單號：{selectedOrder.id}</span>
                   <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                 </div>
+
                 {getStatusBadge(selectedOrder.status) && (
                   <div style={{ marginTop: '8px' }}>
                     <span style={{ backgroundColor: getStatusBadge(selectedOrder.status)!.bg, color: getStatusBadge(selectedOrder.status)!.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: `1px solid ${getStatusBadge(selectedOrder.status)!.color}20` }}>
@@ -575,17 +588,19 @@ export function Notebook() {
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              
+              {/* 🌟 按鈕區塊也加上 flexWrap 自動適應 */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                 {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
-                  <button onClick={handleForceComplete} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', transition: 'all 0.2s ease' }}>強制結案</button>
+                  <button onClick={handleForceComplete} style={{ padding: '10px 14px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', transition: 'all 0.2s ease', fontSize: '13px' }}>強制結案</button>
                 )}
-                <button onClick={handleToggleArchive} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', transition: 'all 0.2s ease' }}>
+                <button onClick={handleToggleArchive} style={{ padding: '10px 14px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', transition: 'all 0.2s ease', fontSize: '13px' }}>
                   {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
                 </button>
                 {!selectedOrder.is_external && (
-                  <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '10px 18px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'all 0.2s ease' }}>複製連結</button>
+                  <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '10px 14px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'all 0.2s ease', fontSize: '13px' }}>複製連結</button>
                 )}
-                <button onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease' }}>進入聊天室</button>
+                <button onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ padding: '10px 14px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', transition: 'all 0.2s ease', fontSize: '13px' }}>進入聊天室</button>
               </div>
             </div>
 

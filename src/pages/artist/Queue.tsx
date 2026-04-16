@@ -47,7 +47,8 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete }: { value: st
         <span style={{ fontSize: '10px', color: '#A0978D', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', marginLeft: '4px' }}>▼</span>
       </div>
       {isOpen && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 9999, display: 'flex', flexDirection: 'column', maxHeight: '250px' }}>
+        // 🌟【Bug 4 修復】取消 right: 0，並增加 minWidth: 220px 讓輸入框不再超出邊界
+        <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '220px', marginTop: '4px', backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 9999, display: 'flex', flexDirection: 'column', maxHeight: '250px' }}>
           <div style={{ overflowY: 'auto', padding: '4px 0' }}>
             {stages.map(stage => (
               <div key={stage} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', fontSize: '14px', backgroundColor: value === stage ? '#F4F0EB' : 'transparent' }} onMouseEnter={e => { if (value !== stage) e.currentTarget.style.backgroundColor = '#FDFDFB'; }} onMouseLeave={e => { if (value !== stage) e.currentTarget.style.backgroundColor = 'transparent'; }}>
@@ -88,7 +89,6 @@ export function Queue() {
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
-        // 🌟【Bug 4 修復】確保與 Notebook.tsx 的「進行中 (working)」過濾條件完全一致
         const activeOrders = data.data
           .filter((c: Commission) => c.status !== 'completed' && c.status !== 'cancelled')
           .sort((a: Commission, b: Commission) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
@@ -245,7 +245,6 @@ export function Queue() {
                       </select>
                     </td>
                     <td style={tdStyle}>
-                      {/* 🌟【Bug 5 修復】加入 flexWrap 讓內部元素自動換行，防止擠出白框 */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', width: '100%' }}>
                         
                         {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>急件</span>}

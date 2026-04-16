@@ -148,7 +148,6 @@ export function QuoteBuilder() {
       
       const data = await res.json();
       if (data.success) {
-        // 🌟【修改 3】產單後自動複製連結並跳轉到該單
         const newOrderId = data.id;
         const linkToCopy = `${window.location.origin}/quote/${newOrderId}`;
         
@@ -156,11 +155,9 @@ export function QuoteBuilder() {
           await navigator.clipboard.writeText(linkToCopy);
           alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n專屬連結已自動複製到剪貼簿，為您導向委託單管理。`);
         } catch (err) {
-          // 若瀏覽器阻擋剪貼簿存取，則顯示這段備用訊息
           alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n為您導向委託單管理。`);
         }
         
-        // 帶上 id 參數進行跳轉，這樣 Notebook 載入時就會自動展開這張新單
         navigate(`/artist/notebook?id=${newOrderId}`);
       } else {
         alert('建置失敗：' + data.error);
@@ -413,10 +410,42 @@ export function QuoteBuilder() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>附加選項與備註</h3>
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
               
-              <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
+              <h3 style={{ margin: '0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>詳細設定與協議書</h3>
+              
+              {/* 🌟【修改 1】詳細設定置於上方 */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{...labelStyle, marginBottom: '4px'}}>
+                  詳細設定 
+                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
+                </label>
+                <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
+                  onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
+                  style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
+              </div>
+
+              {/* 🌟【修改 3】協議書內容置於下方，且不被 workflowMode 限制，自由模式也會顯示 */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{...labelStyle, marginBottom: '8px'}}>
+                  協議書內容 (自訂)
+                  <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
+                    *最終內容將做為該單的初始協議書快照，送出後委託人即視為同意此合約*
+                  </span>
+                </label>
+                <div className="quote-quill-wrapper">
+                  <ReactQuill 
+                    theme="snow" 
+                    value={tosContent} 
+                    onChange={setTosContent}
+                    modules={customQuillModules}
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ margin: '10px 0 0 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>附加選項與備註</h3>
+              
+              <div style={{ padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
                 <label style={labelStyle}>快速標籤{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                   {baseAddOnsList.map(item => {
@@ -465,38 +494,7 @@ export function QuoteBuilder() {
                 )}
               </div>
 
-              {/* 🌟【修改 1】互換：詳細設定移到上方 */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: workflowMode === 'standard' ? '20px' : '0' }}>
-                <label style={{...labelStyle, marginBottom: '4px'}}>
-                  詳細設定 
-                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
-                </label>
-                <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
-                  onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
-                  style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
-              </div>
-
-              {/* 🌟【修改 1】互換：協議書內容移到下方 */}
-              {workflowMode === 'standard' && (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{...labelStyle, marginBottom: '8px'}}>
-                    協議書內容 (自訂)
-                    <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
-                      *最終內容將做為該單的初始協議書快照，送出後委託人即視為同意此合約*
-                    </span>
-                  </label>
-                  <div className="quote-quill-wrapper">
-                    <ReactQuill 
-                      theme="snow" 
-                      value={tosContent} 
-                      onChange={setTosContent}
-                      modules={customQuillModules}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #F0ECE7' }}>
+              <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #F0ECE7' }}>
                 <button onClick={handleSubmit} style={{ width: '100%', padding: '16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.2s, transform 0.1s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'} onMouseDown={e => e.currentTarget.style.transform = 'translateY(0)'}>
                   確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
                 </button>
