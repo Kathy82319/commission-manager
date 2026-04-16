@@ -16,7 +16,6 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 核心修正：加入共用時間解析函數，避免時區錯亂
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -27,7 +26,6 @@ export function ClientOrders() {
   const location = useLocation();
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
-  // 🌟【修復自動開啟】支援讀取 ?open=ID 或 ?id=ID
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('open') || queryParams.get('id');
 
@@ -47,7 +45,6 @@ export function ClientOrders() {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 🌟 同步 URL 狀態，讓重整頁面也能保持在同一張單據
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedId) params.set('open', selectedId);
@@ -68,11 +65,10 @@ export function ClientOrders() {
         const validOrders = data.data.filter((o: CommissionDetail) => 
           o.status !== 'quote_created' && 
           o.status !== 'pending' &&
-          o.client_id === myId // 🌟 嚴格限制：只顯示自己是「委託人」的單據，阻擋未綁定或身為繪師的單
+          o.client_id === myId 
         );
         setOrders(validOrders);
         
-        // 🌟【修復自動開啟】確認該 ID 確實是自己名下的委託單才開啟，否則清空
         if (initialSelectedId) {
           const isValidTarget = validOrders.find((o: CommissionDetail) => o.id === initialSelectedId);
           if (isValidTarget) {
@@ -210,20 +206,32 @@ export function ClientOrders() {
     } catch (e) { alert("發生錯誤"); } finally { setIsProcessing(false); }
   };
 
-  const handleDownloadOriginal = async (publicUrl: string) => {
+  // 🌟【修復】解析組合字串並正確下載原檔
+  const handleDownloadOriginal = async (fileUrlString: string) => {
     if (!selectedId) return;
     setIsProcessing(true);
     try {
-      const urlObj = new URL(publicUrl);
-      const publicPath = urlObj.pathname.substring(1); 
-      const privatePath = publicPath.replace('_preview_', '_original_');
+      // 分離字串，取得 | 後面的原檔檔名 (例如 private_file.zip)
+      const parts = fileUrlString.split('|');
+      const privatePath = parts.length > 1 ? parts[1] : null;
+
+      if (!privatePath) {
+        alert("找不到原檔路徑，可能檔案格式有誤或為舊版檔案。");
+        setIsProcessing(false);
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commissionId: selectedId, fileName: privatePath })
+        body: JSON.stringify({ commissionId: selectedId, fileName: privatePath, bucketType: 'private' })
       });
       const data = await res.json();
       if (data.success) window.location.href = data.downloadUrl; else alert('無法下載：' + data.error);
-    } catch (e) { alert("網路連線錯誤"); } finally { setIsProcessing(false); }
+    } catch (e) { 
+      alert("網路連線錯誤"); 
+    } finally { 
+      setIsProcessing(false); 
+    }
   };
 
   const getLatestSubmissions = () => {
@@ -266,7 +274,12 @@ export function ClientOrders() {
           {!sub ? <div style={{ color: '#A0978D', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
             <div>
                <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})</div>
-               <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '350px', margin: '0 auto' }}><img src={sub.file_url} alt="稿件預覽" style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' }} /></div>
+               
+               {/* 🌟【修復】只擷取第一段網址(縮圖)作為圖片 src */}
+               <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '350px', margin: '0 auto' }}>
+                 <img src={sub.file_url.split('|')[0]} alt="稿件預覽" style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
+               </div>
+
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                  {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統已自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
                  {isReviewing && isFinal && (
@@ -276,7 +289,12 @@ export function ClientOrders() {
                      <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✓ 同意完稿</button>
                    </>
                  )}
-                 {isPassed && isFinal && selectedOrder?.status === 'completed' && (<button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>{isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}</button>)}
+                 {isPassed && isFinal && selectedOrder?.status === 'completed' && (
+                   // 🌟【修復】將整串 url 傳入給我們修復過的下載函數
+                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                     {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
+                   </button>
+                 )}
                </div>
             </div>
           )}
@@ -313,7 +331,6 @@ export function ClientOrders() {
         }
       `}</style>
 
-
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
@@ -347,8 +364,6 @@ export function ClientOrders() {
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
-                
-                // 🌟 使用 parseTime 來處理，修復通知時差 BUG
                 const latestMsgTime = parseTime(order.latest_message_at);
                 const lastReadTime = parseTime(order.last_read_at_client);
                 const hasUnread = latestMsgTime > lastReadTime;
