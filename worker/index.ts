@@ -497,19 +497,26 @@ export default {
         const id = pathParts[3];
         const body: Record<string, any> = await request.json();
 
-        const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
-        if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
+        // worker/index.ts
+
+const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
+if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
 const comm = check[0] as any;
 
 let isBinding = false;
-// 🌟 修正邏輯：若單據未綁定，且當前使用者已登入且非繪師，則自動注入 client_id 進行綁定
+
+// 🌟 恢復舊版的「觸發機制」並結合「自動偵測」
+// 條件：單據尚未綁定 + (前端要求變更為 unpaid 或 這是已登入的委託人)
 if (!comm.client_id && currentUser && currentUser !== comm.artist_id) {
-  body.client_id = currentUser; 
-  isBinding = true;
+  if (body.status === 'unpaid' || body.action === 'bind' || body.last_read_at_client !== undefined) {
+    isBinding = true;
+    body.client_id = currentUser; // 👈 關鍵：自動注入當前使用者 ID
+  }
 }
 
+// 權限檢查：如果是綁定中，或者是當事人，才允許通過
 if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
-  return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
+  return jsonRes({ success: false, error: "權限不足" }, 403);
 }
         if (currentUser === comm.client_id && body.total_price !== undefined) {
           return jsonRes({ success: false, error: "委託人無權修改金額" }, 403);
