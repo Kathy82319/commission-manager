@@ -28,10 +28,16 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
+// 🌟 核心修正：加入共用時間解析函數
+const parseTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+};
+
 export function ClientOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const API_BASE = (import.meta as any).VITE_API_BASE_URL || '';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
   const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
   const [orderData, setOrderData] = useState<CommissionDetail | null>(null);
@@ -69,9 +75,10 @@ export function ClientOrderDetail() {
         setCustomTitle(initialTitle);
         setSavedTitle(initialTitle);
 
+        // 🌟 修正時差判斷
         if (data.latest_message_at) {
-          const latestMsgTime = new Date(data.latest_message_at).getTime();
-          const lastReadTime = data.last_read_at_client ? new Date(data.last_read_at_client).getTime() : 0;
+          const latestMsgTime = parseTime(data.latest_message_at);
+          const lastReadTime = parseTime(data.last_read_at_client);
           if (latestMsgTime > lastReadTime) setHasNewMessage(true);
         }
 
@@ -211,7 +218,6 @@ export function ClientOrderDetail() {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
     
-    // 🌟 狀態文字優化
     let statusText = '';
     if (isPassed) {
       statusText = isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段';
@@ -255,14 +261,12 @@ export function ClientOrderDetail() {
                </div>
                
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 {/* 🌟 草稿與線稿不顯示按鈕，只給提示 */}
                  {isReviewing && !isFinal && (
                    <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#64748b', fontWeight: 'bold', textAlign: 'right' }}>
                      👀 本階段請過目即可，繪師後續將會直接推進至下一階段。
                    </div>
                  )}
 
-                 {/* 🌟 完稿才顯示同意與退回按鈕 */}
                  {isReviewing && isFinal && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
@@ -430,20 +434,24 @@ export function ClientOrderDetail() {
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
                 <div style={{ fontSize: '14px', color: '#556577', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
-                  {orderData.artist_settings ? (
+                  
+                  {orderData.agreed_tos_snapshot ? (
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(orderData.agreed_tos_snapshot) }} />
+                  ) : orderData.artist_settings ? (
                     <div dangerouslySetInnerHTML={{ 
                       __html: (() => {
                         try {
                           const rawHtml = JSON.parse(orderData.artist_settings).rules;
                           return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
                         } catch(e) {
-                          return orderData.agreed_tos_snapshot ? DOMPurify.sanitize(orderData.agreed_tos_snapshot) : '無協議紀錄';
+                          return '無協議紀錄';
                         }
                       })()
                     }} />
                   ) : (
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{orderData.agreed_tos_snapshot || '無協議紀錄'}</div>
+                    <div style={{ whiteSpace: 'pre-wrap' }}>無協議紀錄</div>
                   )}
+
                 </div>
               </div>
             </div>

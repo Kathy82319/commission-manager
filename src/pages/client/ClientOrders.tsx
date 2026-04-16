@@ -10,6 +10,7 @@ interface CommissionDetail {
   usage_type?: string; is_rush?: string | number;
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
+  client_id?: string; // 🌟 新增 client_id 用來嚴格過濾
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -24,7 +25,7 @@ const parseTime = (dateStr?: string) => {
 export function ClientOrders() {
   const navigate = useNavigate();
   const location = useLocation();
-  const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
 
@@ -52,10 +53,21 @@ export function ClientOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
+      // 🌟 Bug 1 修復：同時獲取單據與當前用戶資料
+      const [res, meRes] = await Promise.all([
+        fetch(`${API_BASE}/api/commissions`, { credentials: 'include' }),
+        fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+      ]);
       const data = await res.json();
+      const meData = await meRes.json();
+      const myId = meData.data?.id;
+
       if (data.success) {
-        const validOrders = data.data.filter((o: CommissionDetail) => o.status !== 'quote_created' && o.status !== 'pending');
+        const validOrders = data.data.filter((o: CommissionDetail) => 
+          o.status !== 'quote_created' && 
+          o.status !== 'pending' &&
+          o.client_id === myId // 🌟 嚴格限制：只顯示自己是「委託人」的單據，阻擋未綁定或身為繪師的單
+        );
         setOrders(validOrders);
         if (initialSelectedId) fetchDetailData(initialSelectedId, validOrders);
       }
@@ -326,7 +338,7 @@ export function ClientOrders() {
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
                 
-                // 🌟 使用 parseTime 來處理
+                // 🌟 使用 parseTime 來處理，修復通知時差 BUG
                 const latestMsgTime = parseTime(order.latest_message_at);
                 const lastReadTime = parseTime(order.last_read_at_client);
                 const hasUnread = latestMsgTime > lastReadTime;

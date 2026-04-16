@@ -19,10 +19,16 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
+// 🌟 核心修正：加入共用時間解析函數
+const parseTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+};
+
 export function Notebook() {
   const location = useLocation();
   const navigate = useNavigate(); 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
@@ -378,7 +384,6 @@ export function Notebook() {
     let statusTag = '';
     let statusColor = '#A0978D';
     
-    // 🌟【邏輯修改】自由模式狀態判斷
     if (isFreeMode) {
       if (sub) {
         headerBg = '#E8F3EB';
@@ -388,7 +393,6 @@ export function Notebook() {
         statusTag = '等待繪製上傳...';
       }
     } 
-    // 🌟【Bug 2 修復】未綁定時的狀態處理
     else if (isUnbound) {
       if (sub) {
         headerBg = '#F0ECE7';
@@ -398,7 +402,6 @@ export function Notebook() {
         statusTag = '等待繪製上傳...';
       }
     } 
-    // 標準模式且已綁定
     else {
       if (isPassed) {
         headerBg = '#E8F3EB';
@@ -432,7 +435,7 @@ export function Notebook() {
           ) : (
             <ImageUploader 
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
-              withWatermark={!isFreeMode} // 自由模式下不需要上浮水印，因為沒有審閱機制
+              withWatermark={!isFreeMode} 
               watermarkText="SAMPLE"
               existingUrl={sub?.file_url}
               isFinal={isFinal} 
@@ -524,8 +527,9 @@ export function Notebook() {
             const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
             const isSelected = selectedId === order.id;
 
-            const latestMsgTime = order.latest_message_at ? new Date(order.latest_message_at).getTime() : 0;
-            const lastReadTime = order.last_read_at_artist ? new Date(order.last_read_at_artist).getTime() : 0;
+            // 🌟 修正時間格式比對，並改為 ☆有新訊息
+            const latestMsgTime = parseTime(order.latest_message_at);
+            const lastReadTime = parseTime(order.last_read_at_artist);
             const hasNewMsg = latestMsgTime > lastReadTime;
             
             return (
@@ -553,7 +557,8 @@ export function Notebook() {
                   <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
                   {statusBadge && <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>}
                   {order.queue_status && <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{order.queue_status}</span>}
-                  {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>新訊息</span>}
+                  {/* 🌟 統一標籤樣式 */}
+                  {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>🌟新訊息</span>}
                 </div>
               </div>
             );
@@ -567,13 +572,11 @@ export function Notebook() {
         {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由左側選擇委託單以檢視詳情</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             
-            {/* 🌟【排版修改 1】調整 Header 結構與 flexWrap 防止擠壓 */}
             <div style={{ padding: '24px 30px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
               <div style={{ flex: '1 1 300px', minWidth: '250px' }}>
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
                 <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
                 
-                {/* 🌟 縮小 gap 並加入 flexWrap，防止文字被截斷 */}
                 <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
                   <span>建單日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
                   <span>單號：{selectedOrder.id}</span>
@@ -589,7 +592,6 @@ export function Notebook() {
                 )}
               </div>
               
-              {/* 🌟 按鈕區塊也加上 flexWrap 自動適應 */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                 {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
                   <button onClick={handleForceComplete} style={{ padding: '10px 14px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', transition: 'all 0.2s ease', fontSize: '13px' }}>強制結案</button>
@@ -724,7 +726,7 @@ export function Notebook() {
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   {selectedOrder.workflow_mode === 'free' ? (
-                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
+                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更紀錄</p>
                   ) : (
                     <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</p>
                   )}

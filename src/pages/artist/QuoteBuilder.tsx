@@ -465,23 +465,12 @@ export function QuoteBuilder() {
 
               <h3 style={{ margin: '0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>詳細設定與協議書</h3>
               
-              {/* 🌟【修改 1】詳細設定置於上方 */}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{...labelStyle, marginBottom: '4px'}}>
-                  詳細設定 
-                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
-                </label>
-                <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
-                  onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
-                  style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
-              </div>
 
-              {/* 🌟【修改 3】協議書內容置於下方，且不被 workflowMode 限制，自由模式也會顯示 */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{...labelStyle, marginBottom: '8px'}}>
-                  協議書內容 (自訂)
+                  協議書內容(自訂)
                   <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
-                    *最終內容將做為該單的初始協議書快照，送出後委託人即視為同意此合約*
+                    *內容將做為該單的初始協議書快照，送出後委託人需勾選同意，勾選後即視為同意此合約*
                   </span>
                 </label>
                 <div className="quote-quill-wrapper">
@@ -493,6 +482,17 @@ export function QuoteBuilder() {
                   />
                 </div>
               </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{...labelStyle, marginBottom: '4px'}}>
+                  詳細設定 
+                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
+                </label>
+                <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
+                  onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
+                  style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
+              </div>
+
 
 
 
