@@ -20,8 +20,8 @@
 		{
 			// 這是您原本正式機的資料庫，我們留著備用（如果需要存取正式資料的話）
 			"binding": "commission_db",
-			"database_name": "commission-db",
-			"database_id": "7d286ecf-cafe-4123-8516-79f51779b1ca"
+			"database_name": "commission_db_prod", // 🌟 修改這裡，讓它與 ID 真實匹配
+			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
 		},
 
     ],
