@@ -406,7 +406,8 @@ export default {
 
         const isArtist = currentUser === commission.artist_id;
         const isClient = currentUser === commission.client_id;
-        const isPublicQuote = !commission.client_id && commission.status === 'quote_created';
+        // 🌟【Bug 1 修復】放寬判斷：自由模式 (unpaid) 也允許進入詳細頁以觸發綁定
+        const isPublicQuote = !commission.client_id && (commission.status === 'quote_created' || commission.status === 'unpaid');
 
         if (!isArtist && !isClient && !isPublicQuote) {
           return jsonRes({ success: false, error: "無權存取" }, 403);
@@ -451,7 +452,6 @@ export default {
           return jsonRes({ success: false, error: "金額格式不正確" }, 400);
         }
 
-        // 🌟【修改 2】拔除預設的 Q- 前綴
         let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `${Date.now().toString().slice(-6)}`;
         const clientId = body.client_id || '';
 
@@ -495,8 +495,9 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
         const comm = check[0] as any;
 
+        // 🌟【Bug 1 修復】只要尚未綁定，且不是繪師本人，都可以自動綁定 (解決自由模式無法綁定的問題)
         let isBinding = false;
-        if (!comm.client_id && (body.status === 'unpaid' || body.action === 'bind')) {
+        if (!comm.client_id && currentUser !== comm.artist_id) {
           isBinding = true;
           body.client_id = currentUser; 
         }
@@ -583,7 +584,7 @@ export default {
         const currentUser = await getUserIdFromRequest(request, env);
         const body: { stage: string; file_url: string } = await request.json();
 
-        if (!isValidSafeUrl(body.file_url)) return jsonRes({ success: false, error: "不安全的檔案網址" }, 400);
+        if (!isValidSafeUrl(body.file_url) && !body.file_url.includes('|')) return jsonRes({ success: false, error: "不安全的檔案網址" }, 400);
 
         const { results: comm } = await env.commission_db.prepare("SELECT artist_id, current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
         if (comm.length === 0) return jsonRes({ success: false, error: "找不到委託單" }, 404);
@@ -837,7 +838,10 @@ export default {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-      const { commissionId, fileName } = await request.json() as any;
+      // 🌟【修復 Bug 3】動態接收 bucketType，預設為 private
+      const { commissionId, fileName, bucketType } = await request.json() as any;
+      const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
+
       const { results } = await env.commission_db.prepare(
         "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
       ).bind(commissionId).all();
@@ -869,11 +873,11 @@ export default {
 
       try {
         const s3 = getS3Client(env);
-        
-        // 🌟【資安修正：任務 3】強制瀏覽器下載檔案，解決直接展開並避免被瀏覽器壓縮的問題
         const rawFileName = fileName.split('/').pop() || 'download';
+        
+        // 🌟【修復 Bug 3】根據參數決定去哪一個 Bucket 抓檔案，並強制觸發下載
         const command = new GetObjectCommand({ 
-          Bucket: "commission-private", 
+          Bucket: bucketToUse, 
           Key: fileName,
           ResponseContentDisposition: `attachment; filename="${rawFileName}"` 
         });

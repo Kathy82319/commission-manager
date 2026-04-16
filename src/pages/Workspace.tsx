@@ -64,11 +64,16 @@ export function Workspace() {
       });
       const data = await res.json();
       if (data.success) {
-        if (data.data.length > messagesLengthRef.current) {
-          updateReadTime();
-          messagesLengthRef.current = data.data.length;
-        }
-        setMessages(data.data);
+        setMessages(prev => {
+           if (prev.length !== data.data.length) {
+               if (data.data.length > messagesLengthRef.current) {
+                   updateReadTime();
+                   messagesLengthRef.current = data.data.length;
+               }
+               return data.data;
+           }
+           return prev; // 無變化時不觸發 re-render
+        });
       }
     } catch (error) {
       console.error("無法讀取訊息", error);
@@ -91,15 +96,15 @@ export function Workspace() {
     return () => clearInterval(intervalId);
   }, [id, role]);
 
-  // 🌟 修正：加入 setTimeout 確保畫面渲染完成後才執行置底
+  // 🌟【修復 Bug 3】等畫面載入完成後，確保延遲 0.15 秒讓文字 DOM 長好才滾動
   useEffect(() => {
-    if (messages.length > 0) {
+    if (!loading && messages.length > 0) {
       const timer = setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100); // 給畫面 0.1 秒的繪製緩衝時間
+      }, 150); 
       return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [messages, loading]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;

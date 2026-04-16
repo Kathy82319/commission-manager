@@ -176,14 +176,32 @@ export function ClientOrderDetail() {
     }
   };
 
-  // 🌟【修復 Bug 3】直接拿取 | 切割後的 privateKey 去跟後端要通行證
-  const handleDownloadOriginal = async (privateKey: string) => {
-    if (!id || !privateKey) return;
+  // 🌟【修復 Bug 3】智慧分析網址並呼叫對應的 Bucket 進行下載
+  const handleDownloadOriginal = async (fileUrlString: string) => {
+    if (!id || !fileUrlString) return;
     setIsProcessing(true);
     try {
+      const parts = fileUrlString.split('|');
+      const publicUrl = parts[0];
+      const privateKey = parts[1];
+
+      let targetKey = '';
+      let bucketType = 'private';
+
+      if (privateKey) {
+          // 標準模式：有私有浮水印原檔
+          targetKey = privateKey;
+          bucketType = 'private';
+      } else {
+          // 自由模式：只有公開的預覽圖，直接從 Public 下載
+          const urlObj = new URL(publicUrl);
+          targetKey = urlObj.pathname.substring(1); 
+          bucketType = 'public';
+      }
+
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commissionId: id, fileName: privateKey })
+        body: JSON.stringify({ commissionId: id, fileName: targetKey, bucketType })
       });
       const data = await res.json();
       
@@ -214,7 +232,6 @@ export function ClientOrderDetail() {
     const isFinal = stageKey === 'final';
     const isFreeMode = orderData?.workflow_mode === 'free';
     
-    // 🌟【修復 Bug 2】針對自由模式設定維持空白文字
     let statusText = '';
     if (isFreeMode) {
       statusText = ''; 
@@ -247,7 +264,6 @@ export function ClientOrderDetail() {
                  maxWidth: '350px', 
                  margin: '0 auto' 
                }}>
-                 {/* 🌟 取前半段的 Public 預覽圖網址 */}
                  <img 
                    src={sub.file_url.split('|')[0]} 
                    alt="稿件預覽" 
@@ -261,14 +277,12 @@ export function ClientOrderDetail() {
                </div>
                
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 {/* 草稿與線稿不顯示按鈕，且非自由模式 */}
                  {isReviewing && !isFinal && !isFreeMode && (
                    <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#64748b', fontWeight: 'bold', textAlign: 'right' }}>
                      👀 本階段請過目即可，繪師後續將會直接推進至下一階段。
                    </div>
                  )}
 
-                 {/* 🌟 完稿才顯示同意與退回按鈕，且自由模式不顯示 */}
                  {isReviewing && isFinal && !isFreeMode && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
@@ -277,10 +291,9 @@ export function ClientOrderDetail() {
                    </>
                  )}
 
-                 {/* 🌟 下載按鈕條件放寬：自由模式有上傳就可以載，標準模式要等結案 */}
+                 {/* 🌟 傳入完整的 sub.file_url 讓上面的函式去解析與判斷 */}
                  {( (isPassed && isFinal && orderData?.status === 'completed') || (isFreeMode && isFinal && sub) ) && (
-                   // 🌟 傳入切割後的 privateKey 
-                   <button onClick={() => handleDownloadOriginal(sub.file_url.split('|')[1] || sub.file_url.split('|')[0])} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
