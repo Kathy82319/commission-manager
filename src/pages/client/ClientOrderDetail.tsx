@@ -176,7 +176,6 @@ export function ClientOrderDetail() {
     }
   };
 
-  // 🌟【修復 Bug 3】智慧分析網址並呼叫對應的 Bucket 進行下載
   const handleDownloadOriginal = async (fileUrlString: string) => {
     if (!id || !fileUrlString) return;
     setIsProcessing(true);
@@ -189,11 +188,9 @@ export function ClientOrderDetail() {
       let bucketType = 'private';
 
       if (privateKey) {
-          // 標準模式：有私有浮水印原檔
           targetKey = privateKey;
           bucketType = 'private';
       } else {
-          // 自由模式：只有公開的預覽圖，直接從 Public 下載
           const urlObj = new URL(publicUrl);
           targetKey = urlObj.pathname.substring(1); 
           bucketType = 'public';
@@ -291,7 +288,6 @@ export function ClientOrderDetail() {
                    </>
                  )}
 
-                 {/* 🌟 傳入完整的 sub.file_url 讓上面的函式去解析與判斷 */}
                  {( (isPassed && isFinal && orderData?.status === 'completed') || (isFreeMode && isFinal && sub) ) && (
                    <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#475569', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}

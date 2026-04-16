@@ -1,5 +1,6 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post"; 
 
 export interface Env {
   ASSETS: Fetcher;
@@ -406,7 +407,6 @@ export default {
 
         const isArtist = currentUser === commission.artist_id;
         const isClient = currentUser === commission.client_id;
-        // 🌟【Bug 1 修復】放寬判斷：自由模式 (unpaid) 也允許進入詳細頁以觸發綁定
         const isPublicQuote = !commission.client_id && (commission.status === 'quote_created' || commission.status === 'unpaid');
 
         if (!isArtist && !isClient && !isPublicQuote) {
@@ -495,7 +495,8 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
         const comm = check[0] as any;
 
-        // 🌟【Bug 1 修復】只要尚未綁定，且不是繪師本人，都可以自動綁定 (解決自由模式無法綁定的問題)
+        // 🌟【修復問題 1】自由模式與標準模式綁定防護放寬：
+        // 只要這張單還沒被綁定 (!comm.client_id)，且拿著連結進來的人不是繪師本人，就允許綁定。
         let isBinding = false;
         if (!comm.client_id && currentUser !== comm.artist_id) {
           isBinding = true;
@@ -805,30 +806,53 @@ export default {
     // 6. R2 儲存管理 API (Presigned URL)
     // ============================================================================
 
-    if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
+if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-      const { contentType, bucketType } = await request.json() as any;
+      const { contentType, bucketType, originalName } = await request.json() as any;
       
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      if (!allowedTypes.includes(contentType)) {
-        return jsonRes({ success: false, error: "不支援的檔案格式，僅允許圖片" }, 400);
+      let maxFileSize = 5 * 1024 * 1024; // 預設公開預覽圖限制 5MB
+
+      // 🌟 白名單分流與容量保護
+      if (bucketType !== 'private') {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedTypes.includes(contentType)) {
+          return jsonRes({ success: false, error: "不支援的檔案格式，公開預覽僅允許圖片" }, 400);
+        }
+      } else {
+        maxFileSize = 5 * 1024 * 1024; // 私有原檔放寬到 15MB
       }
 
-      const extension = contentType.split('/')[1]?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+      let extension = 'bin';
+      if (originalName && originalName.includes('.')) {
+        extension = originalName.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+      } else {
+        extension = contentType.split('/')[1]?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+      }
+
       const safeFileName = `${crypto.randomUUID()}.${extension}`; 
       const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
       
       try {
         const s3 = getS3Client(env);
-        const command = new PutObjectCommand({
+        
+        // 🛡️ 核心資安升級：改用 createPresignedPost 強制限制 R2 接收規則
+        const { url: uploadUrl, fields } = await createPresignedPost(s3, {
           Bucket: bucketName,
           Key: safeFileName,
-          ContentType: contentType,
+          Conditions: [
+            ["content-length-range", 0, maxFileSize], // 嚴格死守：若檔案大於限制，R2 會直接切斷連線拒收
+            ["eq", "$Content-Type", contentType]      // 嚴格死守：防止駭客宣告 png 卻偷塞 exe
+          ],
+          Fields: {
+            "Content-Type": contentType,
+          },
+          Expires: 600, // 憑證 10 分鐘內有效
         });
-        const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
-        return jsonRes({ success: true, uploadUrl, fileName: safeFileName });
+
+        // 注意：回傳多了 fields 這個物件，前端上傳時必須用到
+        return jsonRes({ success: true, uploadUrl, fields, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
       }
@@ -838,7 +862,6 @@ export default {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-      // 🌟【修復 Bug 3】動態接收 bucketType，預設為 private
       const { commissionId, fileName, bucketType } = await request.json() as any;
       const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
 
@@ -875,7 +898,6 @@ export default {
         const s3 = getS3Client(env);
         const rawFileName = fileName.split('/').pop() || 'download';
         
-        // 🌟【修復 Bug 3】根據參數決定去哪一個 Bucket 抓檔案，並強制觸發下載
         const command = new GetObjectCommand({ 
           Bucket: bucketToUse, 
           Key: fileName,

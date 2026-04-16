@@ -272,35 +272,54 @@ export function Notebook() {
     }
   };
 
+  // 🌟 核心防護機制升級：改成 POST FormData 格式，以對應後端 createPresignedPost
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
+      // 1️⃣ 上傳公開預覽圖
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' })
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'preview.jpg' })
       });
-      const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = await ticketRes.json();
+      const { uploadUrl: publicUploadUrl, fields: publicFields, fileName: publicSafeFileName } = await ticketRes.json();
       
-      await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      // 準備 FormData (必須把後端給的加密 fields 通通塞進去)
+      const publicFormData = new FormData();
+      Object.entries(publicFields).forEach(([k, v]) => publicFormData.append(k, v as string));
+      publicFormData.append('file', resultBlobs.preview); // 檔案必須放在最後
+
+      // 發送 POST，注意：這裡不要自己設 Content-Type，讓瀏覽器自動加上 multipart/form-data
+      const pubRes = await fetch(publicUploadUrl, { method: 'POST', body: publicFormData });
+      if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕 (可能是檔案過大或網路不穩)");
+
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
+      let finalUrlToSave = publicFinalUrl; 
 
-      let finalUrlToSave = publicFinalUrl; // 🌟 準備要存入 DB 的字串
-
+      // 2️⃣ 如果有原檔，上傳私有原檔
       if (stageKey === 'final' && resultBlobs.original) {
+        const origType = resultBlobs.original.type || 'image/jpeg';
+        const origName = (resultBlobs.original as File).name || 'final_original.jpg';
+
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'private' })
+          body: JSON.stringify({ contentType: origType, bucketType: 'private', originalName: origName })
         });
-        const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = await privateTicketRes.json();
+        const { uploadUrl: privateUploadUrl, fields: privateFields, fileName: privateSafeFileName } = await privateTicketRes.json();
         
-        await fetch(privateUploadUrl, { method: 'PUT', body: resultBlobs.original, headers: { 'Content-Type': 'image/jpeg' } });
+        // 準備 FormData
+        const privateFormData = new FormData();
+        Object.entries(privateFields).forEach(([k, v]) => privateFormData.append(k, v as string));
+        privateFormData.append('file', resultBlobs.original);
+
+        const privRes = await fetch(privateUploadUrl, { method: 'POST', body: privateFormData });
+        if (!privRes.ok) throw new Error("原檔上傳遭伺服器拒絕 (請確認檔案是否超過 5MB)");
         
-        // 🌟【修復 Bug 3】將公有預覽圖網址與私有安全檔名用 | 串接起來，完美避開資料庫變更
         finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;
       }
 
+      // 3️⃣ 通知後端資料庫更新檔案進度
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
@@ -315,8 +334,8 @@ export function Notebook() {
         alert(`${stageKey === 'final' ? '完稿預覽與原檔' : '稿件'}已成功交付！`);
         fetchCommissions(); fetchDeliverables(selectedId);
       }
-    } catch (err) {
-      alert("上傳過程中發生錯誤");
+    } catch (err: any) {
+      alert(err.message || "上傳過程中發生錯誤");
     } finally {
       setIsUploading(null);
     }
@@ -438,7 +457,6 @@ export function Notebook() {
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
               withWatermark={!isFreeMode} 
               watermarkText="SAMPLE"
-              // 🌟 將儲存的 url 切割，只取前面公開的預覽圖顯示
               existingUrl={sub?.file_url?.split('|')[0]}
               isFinal={isFinal} 
               aspectRatio={undefined} 
@@ -726,9 +744,16 @@ export function Notebook() {
               {activeTab === 'delivery' && (
                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                   {selectedOrder.workflow_mode === 'free' ? (
-                    <p style={{ color: '#A05C5C', marginBottom: '24px', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更及歷程紀錄，有爭議請各憑本事。</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+                      <span style={{ color: '#A05C5C', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式下將不紀錄合約變更</span>
+                      <span style={{ color: '#A05C5C', fontSize: '14px', fontWeight: 'bold' }}>🌟請注意：自由模式且有綁定委託人的情況下，委託人只能收到預覽圖，有需要傳送原檔請自行場外傳送</span>
+                      <span style={{ color: '#7A7269', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
+                    </div>
                   ) : (
-                    <p style={{ color: '#7A7269', marginBottom: '24px', fontSize: '14px' }}>提示：上傳後系統會自動進行壓縮與壓製浮水印，保護您的作品權益。可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+                      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
+                      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</span>
+                    </div>
                   )}
                   
                   {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}

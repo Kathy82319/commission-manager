@@ -43,15 +43,61 @@ export function ImageUploader({
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      const isImage = file.type.startsWith('image/');
 
-      // 🌟 核心修改：5MB 檔案大小攔截網
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      // 🛡️ 資安與成本控制修改：
+      // 一般預覽圖維持 5MB。完稿原檔稍微放寬至 15MB (保護 R2 的 10GB 免費額度)
+      // 若檔案過大，請繪師自行壓縮或使用雲端硬碟連結交付。
+      const MAX_FILE_SIZE = (isFinal && !isImage) ? 5 * 1024 * 1024 : 5 * 1024 * 1024; 
+      
       if (file.size > MAX_FILE_SIZE) {
-        alert(`檔案太大囉！您選擇的圖片為 ${(file.size / 1024 / 1024).toFixed(2)} MB，請上傳小於 5MB 的圖片。`);
-        e.target.value = ''; // 清空 input，讓使用者可以重新選擇同一張圖
-        return; // 直接中斷，不上傳
+        alert(`檔案太大囉！您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。\n為了保護系統資源，一般圖片為 5MB。\n若檔案過大，建議壓縮後再上傳。`);
+        e.target.value = ''; 
+        return; 
       }
 
+      // 🌟 非圖片檔案的處理邏輯 (跳過裁切)
+      if (!isImage) {
+        if (!isFinal) {
+          alert("此階段僅允許上傳圖片格式！");
+          e.target.value = '';
+          return;
+        }
+
+        setIsProcessing(true);
+        // 使用 Canvas 動態生成一張「檔案預覽圖」，解決前端破圖問題
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, 0, 800, 600);
+          ctx.fillStyle = '#475569';
+          ctx.font = 'bold 40px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('📁 非圖片原檔已準備上傳', 400, 280);
+          ctx.fillStyle = '#64748b';
+          ctx.font = '24px sans-serif';
+          ctx.fillText(`檔名：${file.name}`, 400, 340);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '16px sans-serif';
+          ctx.fillText('（客戶將會看見此預覽圖，並可下載您的原檔）', 400, 400);
+        }
+
+        canvas.toBlob((blob) => {
+          setIsProcessing(false);
+          if (blob) {
+            // 將生成的預覽圖丟給 preview，真實的 File 物件丟給 original
+            onUpload({ preview: blob, original: file }, URL.createObjectURL(blob));
+          }
+        }, 'image/png');
+
+        e.target.value = '';
+        return;
+      }
+
+      // 一般圖片處理邏輯 (進入 Cropper 裁切)
       const reader = new FileReader();
       reader.addEventListener('load', () => setImageSrc(reader.result?.toString() || null));
       reader.readAsDataURL(file);
@@ -104,7 +150,7 @@ export function ImageUploader({
           <img src={existingUrl} alt="已交付稿件" style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
           {isHovering && (
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
-              <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
+              <input type="file" accept={isFinal ? "image/*,.zip,.rar,.7z,.psd,.clip,.pdf" : "image/*"} onChange={onFileChange} style={{ position: 'absolute', opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }} />
               <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{buttonText}</span>
             </div>
           )}
@@ -116,7 +162,7 @@ export function ImageUploader({
   return (
     <>
       <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#FBFBF9', cursor: 'pointer', position: 'relative' }}>
-        <input type="file" accept="image/*" onChange={onFileChange} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+        <input type="file" accept={isFinal ? "image/*,.zip,.rar,.7z,.psd,.clip,.pdf" : "image/*"} onChange={onFileChange} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
         <span style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold' }}>{buttonText}</span>
       </div>
 
@@ -127,13 +173,11 @@ export function ImageUploader({
               image={imageSrc} 
               crop={crop} 
               zoom={zoom} 
-              // 🌟 核心修正：如果有傳入固定比例就用固定的，沒有的話就用圖片原始比例
               aspect={aspectRatio || dynamicAspect} 
               cropShape={shape} 
               onCropChange={setCrop} 
               onCropComplete={onCropComplete} 
               onZoomChange={setZoom} 
-              // 🌟 核心修正：圖片載入瞬間，抓取圖片原始寬高比
               onMediaLoaded={(mediaSize) => {
                 setDynamicAspect(mediaSize.width / mediaSize.height);
               }}

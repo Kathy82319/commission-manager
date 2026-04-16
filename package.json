@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1030.0",
+    "@aws-sdk/s3-presigned-post": "^3.1030.0",
     "@aws-sdk/s3-request-presigner": "^3.1030.0",
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@types/dompurify": "^3.0.5",

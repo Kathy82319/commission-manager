@@ -105,63 +105,82 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
-  // 🌟【資安修正】頭像上傳：接收後端安全檔名
+  // 🌟【資安升級】頭像上傳：改用 POST FormData
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'avatar.jpg' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
-      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
+      
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
+      formData.append('file', resultBlobs.preview);
+
+      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
       alert("頭像上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
-    } catch (err) {
-      alert("頭像上傳失敗");
+    } catch (err: any) {
+      alert(err.message || "頭像上傳失敗");
     } finally {
       setIsUploading(false);
     }
   };
 
-  // 🌟【資安修正】作品集上傳：接收後端安全檔名
+  // 🌟【資安升級】作品集上傳：改用 POST FormData
   const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
     setIsPortfolioUploading(true);
     try {
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'portfolio.jpg' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
+      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
       
-      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
+      formData.append('file', resultBlobs.preview);
+
+      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
-      
       setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
       alert("作品上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
-    } catch (err) {
-      alert("作品上傳失敗");
+    } catch (err: any) {
+      alert(err.message || "作品上傳失敗");
     } finally {
       setIsPortfolioUploading(false);
     }
   };
 
-  // 🌟【資安修正】Splash 背景上傳：接收後端安全檔名
+  // 🌟【資安升級】Splash 背景上傳：改用 POST FormData
   const handleSplashUpload = async (resultBlobs: { preview: Blob }) => {
     setIsSplashUploading(true);
     try {
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' }) // 拔除 fileName
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: 'splash.jpg' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
-      await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
+      const { uploadUrl, fields, fileName: safeFileName } = await ticketRes.json();
+      
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, v as string));
+      formData.append('file', resultBlobs.preview);
+
+      const uploadRes = await fetch(uploadUrl, { method: 'POST', body: formData });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕 (可能檔案過大)");
+
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, splash_image: finalUrl }));
       alert("開場背景圖上傳成功！請記得點擊下方的「儲存全部內容」。");
-    } catch (err) {
-      alert("背景圖上傳失敗");
+    } catch (err: any) {
+      alert(err.message || "背景圖上傳失敗");
     } finally {
       setIsSplashUploading(false);
     }
