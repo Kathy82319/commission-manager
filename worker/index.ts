@@ -1,7 +1,6 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-
 export interface Env {
   ASSETS: Fetcher;
   commission_db: D1Database;
@@ -14,7 +13,7 @@ export interface Env {
   PRIVATE_BUCKET: R2Bucket;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
-  R2_ACCOUNT_ID?: string; // 建議未來可以把 Account ID 加進環境變數，目前先寫死或用環境變數
+  R2_ACCOUNT_ID?: string; 
 }
 
 interface CreateCommissionBody {
@@ -244,13 +243,55 @@ export default {
 
         if (userId === "me" && !currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
-        const { results } = await env.commission_db.prepare("SELECT * FROM Users WHERE id = ? OR public_id = ?").bind(targetId, targetId).all();
+        // 🌟 核心修正：JOIN 兩張表，把資料組合起來
+        const { results } = await env.commission_db.prepare(`
+          SELECT 
+            u.*, 
+            ap.tos_content, ap.about_me, ap.portfolio_urls, ap.commission_process, 
+            ap.payment_info, ap.usage_rules, ap.custom_1_title, ap.custom_1_content,
+            ap.custom_2_title, ap.custom_2_content, ap.custom_3_title, ap.custom_3_content
+          FROM Users u
+          LEFT JOIN ArtistProfiles ap ON u.id = ap.user_id
+          WHERE u.id = ? OR u.public_id = ?
+        `).bind(targetId, targetId).all();
+
         if (results.length === 0) return jsonRes({ success: false, error: "找不到使用者" }, 404);
         const user: any = results[0];
 
         if (!isMe && user.role === 'deleted') {
              return jsonRes({ success: false, error: "此帳號已停用或刪除" }, 404);
         }
+
+        // 🌟 將 ArtistProfiles 的大文字覆寫回 profile_settings 給前端使用
+        let parsedSettings: any = {};
+        try {
+          parsedSettings = JSON.parse(user.profile_settings || '{}');
+        } catch (e) {}
+
+        if (user.about_me !== null && user.about_me !== undefined) {
+          parsedSettings.detailed_intro = user.about_me || parsedSettings.detailed_intro;
+          parsedSettings.process = user.commission_process || parsedSettings.process;
+          parsedSettings.payment = user.payment_info || parsedSettings.payment;
+          parsedSettings.rules = user.usage_rules || parsedSettings.rules;
+          try {
+            if (user.portfolio_urls && user.portfolio_urls !== '[]') {
+              parsedSettings.portfolio = JSON.parse(user.portfolio_urls);
+            }
+          } catch(e) {}
+
+          const cs = [];
+          if (user.custom_1_title || user.custom_1_content) cs.push({ id: 'custom_1', title: user.custom_1_title, content: user.custom_1_content });
+          if (user.custom_2_title || user.custom_2_content) cs.push({ id: 'custom_2', title: user.custom_2_title, content: user.custom_2_content });
+          if (user.custom_3_title || user.custom_3_content) cs.push({ id: 'custom_3', title: user.custom_3_title, content: user.custom_3_content });
+          if (cs.length > 0) parsedSettings.custom_sections = cs;
+        }
+
+        user.profile_settings = JSON.stringify(parsedSettings);
+        // 清理一下不必要的屬性，保持 API 乾淨
+        delete user.tos_content; delete user.about_me; delete user.portfolio_urls;
+        delete user.commission_process; delete user.payment_info; delete user.usage_rules;
+        delete user.custom_1_title; delete user.custom_1_content; delete user.custom_2_title;
+        delete user.custom_2_content; delete user.custom_3_title; delete user.custom_3_content;
 
         const now = new Date();
         let planChanged = false;
@@ -311,15 +352,66 @@ export default {
         if (currentUser !== targetId) return jsonRes({ success: false, error: "權限不足" }, 403);
 
         const body: any = await request.json();
-        await env.commission_db.prepare(`
+        
+        let settings: any = {};
+        try {
+          settings = typeof body.profile_settings === 'string' 
+            ? JSON.parse(body.profile_settings) 
+            : (body.profile_settings || {});
+        } catch (e) {
+          settings = {};
+        }
+
+        // 🌟 核心修正：不再擷取 (substring)，保留原本的 JSON
+        const updateUsers = env.commission_db.prepare(`
           UPDATE Users SET display_name = ?, avatar_url = ?, bio = ?, profile_settings = ? WHERE id = ?
         `).bind(
           sanitizeAndLimit(body.display_name, 100), 
           body.avatar_url || '', 
           sanitizeAndLimit(body.bio, 500), 
-          sanitizeAndLimit(body.profile_settings, 10000), 
+          JSON.stringify(settings), 
           targetId
-        ).run();
+        );
+
+        // 🌟 核心寫入：同步到 ArtistProfiles
+        const c1 = settings.custom_sections?.[0] || {};
+        const c2 = settings.custom_sections?.[1] || {};
+        const c3 = settings.custom_sections?.[2] || {};
+
+        const updateProfile = env.commission_db.prepare(`
+          INSERT INTO ArtistProfiles (
+            user_id, about_me, tos_content, portfolio_urls, commission_process, 
+            payment_info, usage_rules, custom_1_title, custom_1_content,
+            custom_2_title, custom_2_content, custom_3_title, custom_3_content
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(user_id) DO UPDATE SET
+            about_me = excluded.about_me,
+            tos_content = excluded.tos_content,
+            portfolio_urls = excluded.portfolio_urls,
+            commission_process = excluded.commission_process,
+            payment_info = excluded.payment_info,
+            usage_rules = excluded.usage_rules,
+            custom_1_title = excluded.custom_1_title,
+            custom_1_content = excluded.custom_1_content,
+            custom_2_title = excluded.custom_2_title,
+            custom_2_content = excluded.custom_2_content,
+            custom_3_title = excluded.custom_3_title,
+            custom_3_content = excluded.custom_3_content
+        `).bind(
+          targetId,
+          settings.detailed_intro || '',
+          settings.rules || '',
+          JSON.stringify(settings.portfolio || []),
+          settings.process || '',
+          settings.payment || '',
+          settings.rules || '',
+          c1.title || '', c1.content || '',
+          c2.title || '', c2.content || '',
+          c3.title || '', c3.content || ''
+        );
+
+        await env.commission_db.batch([updateUsers, updateProfile]);
+
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
     }
@@ -500,26 +592,21 @@ export default {
 
         let isBinding = false;
 
-        // 🌟 核心修改：移除 currentUser !== comm.artist_id 的限制
-        // 只要單據還沒有 client_id 且觸發了以下任一條件，就允許綁定（同帳號測試也可通過）
         if (!comm.client_id && currentUser) {
           if (body.status === 'unpaid' || body.action === 'bind' || body.last_read_at_client !== undefined) {
             isBinding = true;
-            body.client_id = currentUser; // 👈 關鍵：自動注入當前使用者 ID
+            body.client_id = currentUser; 
             
-            // 如果從 quote_created 過來且沒有主動傳 status，自動更新為 unpaid
             if (comm.status === 'quote_created' && !body.status) {
                 body.status = 'unpaid';
             }
           }
         }
 
-        // 權限檢查：如果是綁定中，或者是單據的繪師、或者是已綁定的委託人，才允許通過
         if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
           return jsonRes({ success: false, error: "權限不足" }, 403);
         }
 
-        // 委託人無權修改金額（但如果該委託人同時也是繪師，也就是同帳號測試時，則不阻擋）
         if (!isBinding && currentUser === comm.client_id && currentUser !== comm.artist_id && body.total_price !== undefined) {
           return jsonRes({ success: false, error: "委託人無權修改金額" }, 403);
         }
@@ -558,7 +645,6 @@ export default {
           params.push(id);
           const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
           
-          // 如果是綁定操作，寫入 ActionLog 以利追蹤
           if (isBinding) {
             batch.push(
               env.commission_db.prepare(
