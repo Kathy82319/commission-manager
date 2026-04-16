@@ -1,7 +1,16 @@
+// src/PublicProfile.tsx 完整修復版
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
+import DOMPurify from 'dompurify'; 
 import './styles/PublicProfile.css';
+
+// 🌟 安全解碼器：處理舊資料中可能殘留的轉碼字元
+const decodeHTML = (html?: string) => {
+  if (!html) return '';
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+};
 
 interface ProfileSettings {
   portfolio: string[];
@@ -49,7 +58,7 @@ const getSocialIcon = (platform: string) => {
 export function PublicProfile() {
   const { artistId, id } = useParams();
 
-  let rawId = artistId || id || 'u-artist-01';
+  let rawId = artistId || id || '';
   if (rawId.startsWith('@')) {
     rawId = rawId.substring(1); 
   }
@@ -60,11 +69,11 @@ export function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
-
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchArtistData = async () => {
+      if (!currentArtistId) return;
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
@@ -73,17 +82,17 @@ export function PublicProfile() {
           setArtist(data.data);
           if (data.data.profile_settings) {
             try {
-              const parsedSettings = JSON.parse(data.data.profile_settings);
+              // 🌟 核心修正：先解碼再解析 JSON
+              const decodedSettings = decodeHTML(data.data.profile_settings);
+              const parsedSettings = JSON.parse(decodedSettings);
               
-              // 🌟 核心修正：安靜地執行「僅傳送前 6 張圖片」功能
-              // 如果是基礎免費版 (free)，或者沒有方案資料，強制只切出前 6 張作品展示
               if ((data.data.plan_type === 'free' || !data.data.plan_type) && parsedSettings.portfolio) {
                 parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
               }
               
               setSettings(parsedSettings);
             } catch (e) {
-              console.error("解析 profile_settings 失敗");
+              console.error("解析 profile_settings 失敗", e);
             }
           }
         }
@@ -97,59 +106,41 @@ export function PublicProfile() {
   }, [currentArtistId]);
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && artist) {
       if (settings && settings.splash_enabled === false) {
         setShowSplash(false);
         return;
       }
-      
-      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 1500;
-      
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-      }, duration);
-      
+      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
+      const timer = setTimeout(() => setShowSplash(false), duration);
       return () => clearTimeout(timer);
     }
-  }, [loading, settings]);
+  }, [loading, settings, artist]);
 
-  const handlePrevImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (selectedImgIndex !== null && settings?.portfolio) {
-      setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length);
-    }
-  };
-
-  const handleNextImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (selectedImgIndex !== null && settings?.portfolio) {
-      setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length);
-    }
-  };
-
-  const availableTabs = [];
-  if (settings) {
+  // Tab 內容判斷邏輯
+  const availableTabs = useMemo(() => {
+    if (!settings) return [];
+    const tabs = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
-    
     const hasContent = (html: string) => {
       if (!html) return false;
       const stripped = html.replace(/<[^>]*>?/gm, '').trim();
       return stripped.length > 0 || html.includes('<img'); 
     };
 
-    if (!isHidden('portfolio') && settings.portfolio?.length > 0) availableTabs.push({ id: 'portfolio', label: '作品展示' });
-    
-    if (!isHidden('detailed_intro') && hasContent(settings.detailed_intro)) availableTabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-    if (!isHidden('process') && hasContent(settings.process)) availableTabs.push({ id: 'process', label: '委託流程' });
-    if (!isHidden('payment') && hasContent(settings.payment)) availableTabs.push({ id: 'payment', label: '付款方式' });
-    if (!isHidden('rules') && hasContent(settings.rules)) availableTabs.push({ id: 'rules', label: '委託規範' });
+    if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
+    if (!isHidden('detailed_intro') && hasContent(settings.detailed_intro)) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
+    if (!isHidden('process') && hasContent(settings.process)) tabs.push({ id: 'process', label: '委託流程' });
+    if (!isHidden('payment') && hasContent(settings.payment)) tabs.push({ id: 'payment', label: '付款方式' });
+    if (!isHidden('rules') && hasContent(settings.rules)) tabs.push({ id: 'rules', label: '委託規範' });
     
     if (settings.custom_sections) {
       settings.custom_sections.forEach(sec => {
-        if (!isHidden(sec.id) && hasContent(sec.content)) availableTabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
+        if (!isHidden(sec.id) && hasContent(sec.content)) tabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
       });
     }
-  }
+    return tabs;
+  }, [settings]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
 
@@ -158,7 +149,7 @@ export function PublicProfile() {
 
   return (
     <div className="public-profile-container">
-      
+      {/* Splash Screen */}
       <div 
         className={`splash-screen ${!showSplash ? 'hide' : ''}`}
         style={{
@@ -169,166 +160,80 @@ export function PublicProfile() {
           position: 'fixed',
           top: 0, left: 0, width: '100vw', height: '100vh',
           zIndex: 10000,
-          display: 'flex',
+          display: showSplash ? 'flex' : 'none',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 0.8s ease-in-out'
         }}
       >
-        {(settings?.splash_image || settings?.splash_text) ? (
-          <div style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.45)', 
-            padding: '40px 60px',
-            borderRadius: '16px',
-            backdropFilter: 'blur(8px)', 
-            WebkitBackdropFilter: 'blur(8px)',
-            textAlign: 'center',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-            maxWidth: '80%'
-          }}>
-            <h1 style={{ color: '#FFF', fontSize: '36px', margin: 0, letterSpacing: '2px', fontWeight: 'bold' }}>
-              {settings?.splash_text || artist.display_name}
-            </h1>
-            {settings?.splash_text && (
-              <div style={{ width: '40px', height: '2px', background: '#A67B3E', margin: '20px auto' }} />
-            )}
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '15px', margin: 0 }}>
-              {settings?.splash_text ? artist.display_name : ''}
-            </p>
-          </div>
-        ) : (
-          <div style={{ color: '#5D4A3E', fontSize: '20px', fontWeight: 'bold', letterSpacing: '4px' }}>
-          </div>
-        )}
+        <div style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.45)', 
+          padding: '40px 60px',
+          borderRadius: '16px',
+          backdropFilter: 'blur(8px)', 
+          textAlign: 'center',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          maxWidth: '80%'
+        }}>
+          <h1 style={{ color: '#FFF', fontSize: '36px', margin: 0 }}>
+            {settings?.splash_text || artist.display_name}
+          </h1>
+        </div>
       </div>
 
       <div className="content-wrapper">
         <div className="sidebar">
           <div className="avatar-container">
-            {artist.avatar_url ? (
-              <img src={artist.avatar_url} alt="Avatar" className="avatar-image" />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '18px' }}>無頭像</div>
-            )}
+            <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" />
           </div>
-          
-          <div>
-            <h1 className="artist-name">{artist.display_name || '未命名繪師'}</h1>
-            
-            <div className="social-links">
-              {settings?.social_links && settings.social_links.length > 0 && (
-                settings.social_links.map((link, idx) => {
-                  const style = platformStyles[link.platform] || { bg: '#eee', text: '#333' };
-                  const safeUrl = (url: string) => {
-                    const lowerUrl = (url || '').toLowerCase().trim();
-                    if (lowerUrl.startsWith('javascript:') || lowerUrl.startsWith('data:') || lowerUrl.startsWith('vbscript:')) return '#'; 
-                    return url;
-                  };
-                  return (
-                    <a 
-                      key={idx} 
-                      href={safeUrl(link.url)} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      title={link.platform}
-                      className="social-icon"
-                      style={{ backgroundColor: style.bg, color: style.text }}
-                    >
-                      {getSocialIcon(link.platform)}
-                    </a>
-                  );
-                })
-              )}
-            </div>
+          <h1 className="artist-name">{artist.display_name}</h1>
+          <div className="social-links">
+            {settings?.social_links?.map((link, idx) => (
+              <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
+                {getSocialIcon(link.platform)}
+              </a>
+            ))}
           </div>
-
           {!settings?.hidden_sections?.includes('profile_basic') && (
             <div className="about-card">
               <h3 className="about-title">關於我</h3>
-              <p className="about-text">{artist.bio || '這位繪師還沒有寫任何簡介。'}</p>
+              <p className="about-text">{artist.bio || '尚未填寫簡介。'}</p>
             </div>
           )}
         </div>
 
         <div className="main-content">
-          {availableTabs.length > 0 ? (
-            <>
-              <div className="tabs-container">
-                {availableTabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}
-                  >
-                    {tab.label}
-                  </button>
+          <div className="tabs-container">
+            {availableTabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="tab-content-area">
+            {currentTab === 'portfolio' && (
+              <div className="portfolio-grid">
+                {settings?.portfolio.map((img, idx) => (
+                  <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                    <img src={img} alt="作品" />
+                  </div>
                 ))}
               </div>
-
-              <div style={{ minHeight: '500px' }}>
-                {currentTab === 'portfolio' && settings?.portfolio && (
-                  <div className="portfolio-grid">
-                    {settings.portfolio.map((img, idx) => (
-                      <div 
-                        key={idx} 
-                        className="portfolio-item"
-                        onClick={() => setSelectedImgIndex(idx)} 
-                        style={{ cursor: 'zoom-in' }}
-                      >
-                        <img src={img} alt={`作品 ${idx + 1}`} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* 🌟 核心修正：使用 DOMPurify 清洗所有的富文本內容，防止 XSS 攻擊 */}
-                {currentTab === 'detailed_intro' && settings?.detailed_intro && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.detailed_intro) }} />
-                )}
-                {currentTab === 'process' && settings?.process && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.process) }} />
-                )}
-                {currentTab === 'payment' && settings?.payment && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.payment) }} />
-                )}
-                {currentTab === 'rules' && settings?.rules && (
-                  <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.rules) }} />
-                )}
-                {settings?.custom_sections?.map(sec => 
-                  currentTab === sec.id && (
-                    <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sec.content) }} />
-                  )
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="empty-state">這位繪師的版塊皆為隱藏或尚未設定資訊。</div>
-          )}
+            )}
+            {/* 🌟 核心：使用 decodeHTML 處理後端可能殘留的轉碼字元 */}
+            {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
+              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as string)) }} />
+            )}
+            {settings?.custom_sections?.map(sec => 
+              currentTab === sec.id && (
+                <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
+              )
+            )}
+          </div>
         </div>
       </div>
-
-      {selectedImgIndex !== null && settings?.portfolio && (
-        <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
-          <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}>✕</button>
-          
-          <button className="lightbox-nav prev" onClick={handlePrevImg}>❮</button>
-          
-          <div className="lightbox-content">
-            <img 
-              src={settings.portfolio[selectedImgIndex]} 
-              alt="放大預覽" 
-              onClick={(e) => e.stopPropagation()} 
-            />
-            <div className="lightbox-counter">
-              {selectedImgIndex + 1} / {settings.portfolio.length}
-            </div>
-          </div>
-          
-          <button className="lightbox-nav next" onClick={handleNextImg}>❯</button>
-        </div>
-      )}
     </div>
   );
 }
