@@ -14,6 +14,7 @@ export interface Env {
   PRIVATE_BUCKET: R2Bucket;
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
+  R2_ACCOUNT_ID?: string; // 建議未來可以把 Account ID 加進環境變數，目前先寫死或用環境變數
 }
 
 interface CreateCommissionBody {
@@ -114,13 +115,14 @@ export default {
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
-      "http://localhost:8787"
+      "https://commission-app.pages.dev",
+      "https://cath-commission-manager.pages.dev"
     ];
     const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : env.FRONTEND_URL || "";
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": safeOrigin, 
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Allow-Credentials": "true",
     };
@@ -139,7 +141,11 @@ export default {
     const getS3Client = (env: Env) => {
       return new S3Client({
         region: "auto",
-        endpoint: `https://f72c79d82828e2419ab5fb0e1d323ce5.r2.cloudflarestorage.com`, 
+        // 🌟【修復問題 2：CORS SSL 報錯】
+        // 強制使用 Path Style 路由 (https://account.r2.cloudflarestorage.com/bucket-name)
+        // 避免虛擬主機子網域造成的憑證或 CORS 攔截
+        endpoint: `https://${env.R2_ACCOUNT_ID || 'f72c79d82828e2419ab5fb0e1d323ce5'}.r2.cloudflarestorage.com`, 
+        forcePathStyle: true, 
         credentials: {
           accessKeyId: env.R2_ACCESS_KEY_ID,
           secretAccessKey: env.R2_SECRET_ACCESS_KEY,
@@ -495,14 +501,14 @@ export default {
         if (check.length === 0) return jsonRes({ success: false, error: "找不到該單據" }, 404);
         const comm = check[0] as any;
 
-        // 🌟【修復問題 1】自由模式與標準模式綁定防護放寬：
-        // 只要這張單還沒被綁定 (!comm.client_id)，且拿著連結進來的人不是繪師本人，就允許綁定。
+        // 🌟【修復問題 1：繪師自測與綁定邏輯】
+        // 只要這張單還沒有綁定 client_id，任何人（包含繪師自己）只要發出寫入 client_id 的 PATCH 請求，就可以綁定。
         let isBinding = false;
-        if (!comm.client_id && currentUser !== comm.artist_id) {
+        if (!comm.client_id && body.client_id) {
           isBinding = true;
-          body.client_id = currentUser; 
         }
 
+        // 如果不是在綁定，且操作者既不是繪師也不是已被綁定的客戶，就拒絕
         if (!isBinding && currentUser !== comm.artist_id && currentUser !== comm.client_id) {
           return jsonRes({ success: false, error: "權限不足，無法修改他人單據" }, 403);
         }
@@ -543,7 +549,18 @@ export default {
 
         if (updates.length > 0) {
           params.push(id);
-          await env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
+          const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
+          
+          // 如果是綁定操作，寫入 ActionLog 以利追蹤
+          if (isBinding) {
+            batch.push(
+              env.commission_db.prepare(
+                "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'bind', '委託人已成功綁定訂單')"
+              ).bind(crypto.randomUUID(), id)
+            );
+          }
+          
+          await env.commission_db.batch(batch);
         }
         return jsonRes({ success: true });
       } catch (error) { return jsonRes({ success: false, error: String(error) }, 500); }
@@ -806,7 +823,7 @@ export default {
     // 6. R2 儲存管理 API (Presigned URL)
     // ============================================================================
 
-if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
+    if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
       const currentUser = await getUserIdFromRequest(request, env);
       if (!currentUser) return jsonRes({ success: false, error: "未登入" }, 401);
 
@@ -821,7 +838,7 @@ if (request.method === "POST" && url.pathname === "/api/r2/upload-url") {
           return jsonRes({ success: false, error: "不支援的檔案格式，公開預覽僅允許圖片" }, 400);
         }
       } else {
-        maxFileSize = 5 * 1024 * 1024; // 私有原檔放寬到 15MB
+        maxFileSize = 15 * 1024 * 1024; // 私有原檔放寬到 15MB
       }
 
       let extension = 'bin';

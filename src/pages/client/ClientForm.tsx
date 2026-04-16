@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 
-// 🌟 新增：安全解碼器。用來還原後端因防護而轉碼的 HTML 實體 (如 &lt;p&gt; 轉回 <p>)
+// 🌟 安全解碼器：還原後端因防護而轉碼的 HTML 實體 (如 &lt;p&gt; 轉回 <p>)
 const decodeHTML = (html?: string) => {
   if (!html) return '';
   const txt = document.createElement("textarea");
@@ -61,18 +61,8 @@ export function ClientForm() {
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
-
-          // 🌟 修正 Bug 2 (綁定失敗)：靜默自動綁定機制
-          // 只要這張單還沒有 client_id，委託人一載入畫面就立刻發送 PATCH 觸發後端綁定！
-          if (!data.data.client_id) {
-            fetch(`${API_BASE}/api/commissions/${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
-            });
-          }
-
+          // 🌟 修改：移除原先的靜默綁定機制。
+          // 將綁定的動作延後到使用者點擊按鈕時才觸發。
         } else {
           setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
@@ -83,6 +73,7 @@ export function ClientForm() {
     if (id) fetchOrder();
   }, [id, API_BASE]);
 
+  // 這是給「標準模式」：勾選同意後，一併送出綁定與狀態更新
   const handleSubmit = async () => {
     if (!isAgreed) return alert('請先勾選同意委託協議書。');
     setIsSubmitting(true);
@@ -90,7 +81,6 @@ export function ClientForm() {
     let currentTosSnapshot = order?.agreed_tos_snapshot || '';
     if (!currentTosSnapshot && order?.artist_settings) {
       try {
-        // 🌟 確保 JSON.parse 之前先解碼，避免引號被轉義導致崩潰
         currentTosSnapshot = JSON.parse(decodeHTML(order.artist_settings)).rules || '';
       } catch(e) {}
     }
@@ -103,7 +93,7 @@ export function ClientForm() {
         body: JSON.stringify({ 
           status: 'unpaid',
           agreed_tos_snapshot: currentTosSnapshot 
-        })
+        }) // 這裡發送 PATCH，後端會自動判斷如果 client_id 為空就鎖定綁定！
       });
       const data = await res.json();
       
@@ -118,6 +108,35 @@ export function ClientForm() {
       }
     } catch (err) {
       alert('連線異常。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 🌟 這是給「自由模式」或「已同意的標準模式」：點擊進入工作區時觸發綁定
+  const handleBindAndEnter = async () => {
+    if (!id || !order) return;
+    setIsSubmitting(true);
+
+    try {
+      // 點擊進入工作區時，發送一個輕量的 PATCH 請求。
+      // 如果這張單還沒綁定，這個請求就會觸發後端的綁定邏輯；如果已經綁定了，就只是單純更新已讀時間。
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        // 確定 API 回傳成功後，才安全跳轉到工作區
+        navigate(`/client/order/${order.id}`);
+      } else {
+        alert('綁定或進入工作區失敗：' + data.error);
+      }
+    } catch (err) {
+      alert('連線異常，請稍後再試。');
     } finally {
       setIsSubmitting(false);
     }
@@ -185,7 +204,6 @@ export function ClientForm() {
 
           <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', fontSize: '14px', color: '#7A7269', lineHeight: '1.9', height: '180px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
             {order.agreed_tos_snapshot ? (
-              // 🌟 修正 Bug 3：解碼後端安全轉碼的文字，再交給 DOMPurify 進行安全渲染
               <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(order.agreed_tos_snapshot)) }} />
             ) : order.artist_settings ? (
               <div 
@@ -223,8 +241,9 @@ export function ClientForm() {
               <div style={{ padding: '16px', backgroundColor: '#E8F3EB', color: '#4E7A5A', borderRadius: '12px', fontWeight: 'bold', marginBottom: '20px', border: '1px solid #C8E6C9' }}>
                 您已成功同意此委託！狀態已更新。
               </div>
-              <button onClick={() => navigate(`/client/order/${order.id}`)} style={{ width: '100%', padding: '16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s ease', boxShadow: '0 4px 16px rgba(74,114,148,0.2)' }}>
-                進入委託單管理與工作區
+              {/* 🌟 替換為等待綁定成功的函式 */}
+              <button onClick={handleBindAndEnter} disabled={isSubmitting} style={{ width: '100%', padding: '16px', backgroundColor: isSubmitting ? '#A0978D' : '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', boxShadow: '0 4px 16px rgba(74,114,148,0.2)' }}>
+                {isSubmitting ? '處理中，準備進入...' : '進入委託單管理與工作區'}
               </button>
             </div>
           )}
