@@ -1,3 +1,4 @@
+// src/pages/artist/QuoteBuilder.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill-new'; 
@@ -47,13 +48,10 @@ export function QuoteBuilder() {
   
   const [tosContent, setTosContent] = useState('');
 
-  // 🌟 新增：存放使用者的方案與額度資訊
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number } | null>(null);
-
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
 
-  // 🌟 修改：合併讀取協議書與額度資訊
   useEffect(() => {
     const fetchArtistSettings = async () => {
       try {
@@ -62,14 +60,12 @@ export function QuoteBuilder() {
         const data = await res.json();
         
         if (data.success && data.data) {
-          // 設定額度資訊
           setQuotaInfo({
             plan_type: data.data.plan_type || 'free',
             used_quota: data.data.used_quota || 0,
             max_quota: data.data.max_quota || 3
           });
 
-          // 設定預設協議書
           if (data.data.profile_settings) {
             try {
               const parsed = JSON.parse(data.data.profile_settings);
@@ -84,7 +80,6 @@ export function QuoteBuilder() {
     fetchArtistSettings();
   }, []);
 
-  // 🌟 新增：計算是否額度用盡 (-1 代表無限額度)
   const isQuotaExceeded = quotaInfo !== null && quotaInfo.max_quota !== -1 && quotaInfo.used_quota >= quotaInfo.max_quota;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -115,7 +110,6 @@ export function QuoteBuilder() {
   };
 
   const handleSubmit = async () => {
-    // 🌟 雙重防護：如果額度用盡，不允許送出
     if (isQuotaExceeded) return alert('建單額度已用盡，請升級方案！');
 
     if (!formData.client_name.trim()) return alert('請填寫委託人名稱，以利系統辨識！');
@@ -154,8 +148,20 @@ export function QuoteBuilder() {
       
       const data = await res.json();
       if (data.success) {
-        alert(workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！');
-        navigate('/artist/notebook');
+        // 🌟【修改 3】產單後自動複製連結並跳轉到該單
+        const newOrderId = data.id;
+        const linkToCopy = `${window.location.origin}/quote/${newOrderId}`;
+        
+        try {
+          await navigator.clipboard.writeText(linkToCopy);
+          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n專屬連結已自動複製到剪貼簿，為您導向委託單管理。`);
+        } catch (err) {
+          // 若瀏覽器阻擋剪貼簿存取，則顯示這段備用訊息
+          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n為您導向委託單管理。`);
+        }
+        
+        // 帶上 id 參數進行跳轉，這樣 Notebook 載入時就會自動展開這張新單
+        navigate(`/artist/notebook?id=${newOrderId}`);
       } else {
         alert('建置失敗：' + data.error);
       }
@@ -215,7 +221,6 @@ export function QuoteBuilder() {
         <div>
           <h2 style={{ color: '#5D4A3E', fontSize: '24px', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>產出新委託單</h2>
           
-          {/* 🌟 新增：頂部額度狀態提示 Bar */}
           {quotaInfo && (
             <div style={{ 
               marginTop: '10px', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block',
@@ -256,10 +261,8 @@ export function QuoteBuilder() {
         </div>
       </div>
 
-      {/* 🌟 修改：將整個表單區塊包在 position: relative 中，以便疊加遮罩 */}
       <div style={{ position: 'relative', flex: 1, paddingBottom: '40px' }}>
         
-        {/* 表單內容主體 (根據額度狀態決定是否加上毛玻璃) */}
         <div style={{ 
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start',
           filter: isQuotaExceeded ? 'blur(6px)' : 'none',
@@ -284,7 +287,7 @@ export function QuoteBuilder() {
                     onFocus={() => setFocusedField('project_name')} onBlur={() => setFocusedField(null)} style={getInputStyle('project_name')} placeholder="例如：自創角半身委託" />
                 </div>
                 <div>
-                  <label style={labelStyle}>總金額設定</label>
+                  <label style={labelStyle}>總金額設定{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D', fontWeight: 'bold' }}>$</span>
                     <input type="number" name="total_price" value={formData.total_price} onChange={handleChange} 
@@ -355,8 +358,6 @@ export function QuoteBuilder() {
                             <div style={{ position: 'absolute', bottom: '100%', left: '0', width: '260px', padding: '16px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 100, marginBottom: '8px', color: '#5D4A3E' }}>
                               <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '13px' }}>三階段審閱：</div>
                               <div style={{ marginBottom: '8px', fontSize: '12px', lineHeight: '1.5', color: '#7A7269' }}>需上傳草稿、線稿、完稿</div>
-                              <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '13px' }}>一鍵出稿：</div>
-                              <div style={{ fontSize: '12px', color: '#7A7269' }}>僅需上傳一次最終稿件。</div>
                             </div>
                           </>
                         )}
@@ -464,7 +465,8 @@ export function QuoteBuilder() {
                 )}
               </div>
 
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {/* 🌟【修改 1】互換：詳細設定移到上方 */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: workflowMode === 'standard' ? '20px' : '0' }}>
                 <label style={{...labelStyle, marginBottom: '4px'}}>
                   詳細設定 
                   {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
@@ -474,13 +476,13 @@ export function QuoteBuilder() {
                   style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
               </div>
 
+              {/* 🌟【修改 1】互換：協議書內容移到下方 */}
               {workflowMode === 'standard' && (
-                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label style={{...labelStyle, marginBottom: '8px'}}>
                     協議書內容 (自訂)
                     <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
-                      *協議書內容可至個人設定那填寫範本，代入後可在此微調*
-                      *最終內容將做為該單的初始協議書快照，送出後委託人同意合約時即視為同意此內容*
+                      *最終內容將做為該單的初始協議書快照，送出後委託人即視為同意此合約*
                     </span>
                   </label>
                   <div className="quote-quill-wrapper">
@@ -505,7 +507,6 @@ export function QuoteBuilder() {
 
         </div>
 
-        {/* 🌟 新增：當額度用盡時，顯示正中央的解鎖提示視窗 */}
         {isQuotaExceeded && (
           <div style={{ 
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 

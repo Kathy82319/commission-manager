@@ -18,7 +18,8 @@ export function ClientLayout() {
           const data = await res.json();
           setProfile(data.data);
           setIsAuthorized(true);
-          fetchOrdersForNotifications();
+          // 將當前的 user ID 傳進去以便做雙重過濾
+          fetchOrdersForNotifications(data.data.id);
         } else {
           navigate('/login');
         }
@@ -29,7 +30,7 @@ export function ClientLayout() {
     checkClientAuth();
   }, [navigate]);
 
-  const fetchOrdersForNotifications = async () => {
+  const fetchOrdersForNotifications = async (currentUserId: string) => {
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
@@ -38,7 +39,6 @@ export function ClientLayout() {
       if (data.success) {
         const notifs: string[] = [];
         
-        // 🌟 核心修正：強制正規化時間格式，解決 UTC+8 時區 8 小時誤差問題
         const parseTime = (dateStr?: string) => {
           if (!dateStr) return 0;
           return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -46,6 +46,11 @@ export function ClientLayout() {
 
         data.data.forEach((order: any) => {
           if (order.status === 'cancelled') return;
+          
+          // 🌟【Bug 1 修復】最嚴格防護：只有這張單的委託人 ID 等於現在登入的用戶 ID 時，才允許產出通知
+          // 這樣就能絕對防堵「身兼繪師與委託人時」收到繪師單據通知，或是收到未綁定單據通知的錯誤。
+          if (order.client_id !== currentUserId) return;
+
           const title = order.client_custom_title || order.project_name;
           const titleStr = title ? `  訂單項目名稱：${title}` : '';
           

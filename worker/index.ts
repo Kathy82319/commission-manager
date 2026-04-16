@@ -67,10 +67,9 @@ async function verifyToken(token: string | undefined, secret: string): Promise<s
   return signature === expectedSig ? userId : null;
 }
 
-// 🌟【資安修正：任務 6】合併長度限制與 XSS 防護
 function sanitizeAndLimit(str: string | undefined | null, maxLength: number): string {
   if (!str) return '';
-  const limitedStr = str.substring(0, maxLength); // 強制截斷，防範資料庫被塞爆
+  const limitedStr = str.substring(0, maxLength); 
   return limitedStr.replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -111,13 +110,11 @@ export default {
     const pathParts = url.pathname.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
-    // 🌟【資安修正：任務 3】CORS 嚴格白名單設定
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
       "http://localhost:8787"
     ];
-    // 如果來源在白名單內就放行，否則退回預設的安全網域 (或空字串)
     const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : env.FRONTEND_URL || "";
 
     const corsHeaders = {
@@ -205,13 +202,11 @@ export default {
 
         if (results.length === 0) {
           const publicId = `User_${Math.floor(10000 + Math.random() * 90000)}`;
-          // 套用長度限制
           const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
           await env.commission_db.prepare(`INSERT INTO Users (id, public_id, line_id, display_name, avatar_url, role, plan_type, created_at) VALUES (?, ?, ?, ?, ?, 'pending', 'free', CURRENT_TIMESTAMP)`).bind(userId, publicId, userId, safeDisplayName, profile.pictureUrl || '').run();
           targetPath = "/onboarding"; 
         } else {
           const user: any = results[0];
-          
           if (user.role === 'deleted') {
             targetPath = "/onboarding";
           } else {
@@ -274,14 +269,14 @@ export default {
 
             if (user.plan_type === 'trial') {
                 maxQuota = 20; 
-                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ? AND order_date <= ?").bind(user.id, user.trial_start_at, user.trial_end_at).all();
+                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?) AND datetime(order_date) <= datetime(?)").bind(user.id, user.trial_start_at, user.trial_end_at).all();
                 usedQuota = countRes[0].count as number;
             } else if (user.plan_type === 'pro') {
                 maxQuota = -1; 
             } else {
                 maxQuota = 3; 
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(user.id, startOfMonth).all();
+                const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)").bind(user.id, startOfMonth).all();
                 usedQuota = countRes[0].count as number;
             }
 
@@ -318,7 +313,7 @@ export default {
           sanitizeAndLimit(body.display_name, 100), 
           body.avatar_url || '', 
           sanitizeAndLimit(body.bio, 500), 
-          sanitizeAndLimit(body.profile_settings, 10000), // JSON 字串限制長度
+          sanitizeAndLimit(body.profile_settings, 10000), 
           targetId
         ).run();
         return jsonRes({ success: true });
@@ -340,7 +335,6 @@ export default {
             WHERE id = ?
           `).bind(currentUser).run();
   
-          // 🌟【資安修正：任務 5】徹底登出，覆蓋 cookie 讓其立刻過期
           return jsonRes({ success: true, message: "帳號已成功刪除" }, 200, {
             "Set-Cookie": "user_session=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly"
           });
@@ -410,7 +404,6 @@ export default {
         if (results.length === 0) return jsonRes({ success: false, message: "找不到此委託單" }, 404);
         const commission = results[0] as any;
 
-        // 🌟【資安修正：任務 4】防堵委託單明細被任意窺探
         const isArtist = currentUser === commission.artist_id;
         const isClient = currentUser === commission.client_id;
         const isPublicQuote = !commission.client_id && commission.status === 'quote_created';
@@ -441,12 +434,12 @@ export default {
 
         if (currentPlan === 'free') {
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ?").bind(currentUser, startOfMonth).all();
+            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)").bind(currentUser, startOfMonth).all();
             if ((countRes[0].count as number) >= 3) {
                 return jsonRes({ success: false, error: "免費版每月 3 筆額度已用盡，請升級專業版或開啟試用。" }, 403);
             }
         } else if (currentPlan === 'trial') {
-            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND order_date >= ? AND order_date <= ?").bind(currentUser, userPlan.trial_start_at, userPlan.trial_end_at).all();
+            const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?) AND datetime(order_date) <= datetime(?)").bind(currentUser, userPlan.trial_start_at, userPlan.trial_end_at).all();
             if ((countRes[0].count as number) >= 20) {
                 return jsonRes({ success: false, error: "專業版試用 20 筆額度已用盡，請升級專業版。" }, 403);
             }
@@ -458,7 +451,8 @@ export default {
           return jsonRes({ success: false, error: "金額格式不正確" }, 400);
         }
 
-        let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `Q-${Date.now().toString().slice(-6)}`;
+        // 🌟【修改 2】拔除預設的 Q- 前綴
+        let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `${Date.now().toString().slice(-6)}`;
         const clientId = body.client_id || '';
 
         if (!body.is_external && clientId) {
@@ -466,7 +460,6 @@ export default {
           if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id}-${Date.now().toString().slice(-3)}`;
         }
         
-        // 🌟【資安修正：任務 6】全面套用輸入長度限制
         await env.commission_db.prepare(`
           INSERT INTO Commissions (
             id, artist_id, type_id, client_id, is_paid, artist_note, contact_memo,
@@ -517,7 +510,6 @@ export default {
         const updates = [];
         const params = [];
         
-        // 🌟【資安修正：任務 6】根據欄位屬性，給予對應的長度限制
         const fieldLimits: Record<string, number> = {
           'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
           'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
@@ -537,7 +529,6 @@ export default {
           }
         }
         
-        // 處理不需長度限制的特殊欄位
         const specialFields = ['total_price', 'char_count', 'last_read_at_artist', 'last_read_at_client'];
         for (const key of specialFields) {
            if (body[key] !== undefined) {
@@ -676,7 +667,6 @@ export default {
         }
         
         await env.commission_db.batch([
-          // JSON 不宜太長
           env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(sanitizeAndLimit(JSON.stringify(body.changes), 5000), id),
           env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提出委託單內容異動申請，請前往「委託單細項」查看並確認。`),
           env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'request_change', ?)").bind(crypto.randomUUID(), id, sanitizeAndLimit(logContent, 2000))
@@ -708,7 +698,7 @@ export default {
         if (body.action === 'approve') {
           const fields = Object.keys(changes);
           const sets = fields.map(f => `${f} = ?`).join(", ");
-          const values = fields.map(f => sanitizeAndLimit(String(changes[f]), 10000)); // 安全限制
+          const values = fields.map(f => sanitizeAndLimit(String(changes[f]), 10000));
           batchOps.push(env.commission_db.prepare(`UPDATE Commissions SET ${sets}, pending_changes = NULL WHERE id = ?`).bind(...values, id));
           batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'approve_change', '委託人已同意內容')").bind(crypto.randomUUID(), id));
           batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', '[系統通知] 委託人已同意內容異動。')").bind(crypto.randomUUID(), id));
@@ -818,14 +808,13 @@ export default {
 
       const { contentType, bucketType } = await request.json() as any;
       
-      // 🌟【資安修正：任務 2】檔案覆蓋與格式白名單防護
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(contentType)) {
         return jsonRes({ success: false, error: "不支援的檔案格式，僅允許圖片" }, 400);
       }
 
       const extension = contentType.split('/')[1]?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
-      const safeFileName = `${crypto.randomUUID()}.${extension}`; // 後端強制作為唯一檔名
+      const safeFileName = `${crypto.randomUUID()}.${extension}`; 
       const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
       
       try {
@@ -836,7 +825,6 @@ export default {
           ContentType: contentType,
         });
         const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
-        // 回傳安全的檔名讓前端拿去存
         return jsonRes({ success: true, uploadUrl, fileName: safeFileName });
       } catch (err: any) {
         return jsonRes({ success: false, error: "無法生成上傳通行證" }, 500);
@@ -863,7 +851,6 @@ export default {
         return jsonRes({ success: false, error: "權限不足，完稿尚未解鎖或您非當事人" }, 403);
       }
 
-      // 🌟【資安修正：任務 1】IDOR 任意讀取防護
       const { results: validFiles } = await env.commission_db.prepare(`
         SELECT file_url AS file_key FROM Submissions WHERE commission_id = ?
         UNION
@@ -880,7 +867,15 @@ export default {
 
       try {
         const s3 = getS3Client(env);
-        const command = new GetObjectCommand({ Bucket: "commission-private", Key: fileName });
+        
+        // 🌟【資安修正：任務 3】強制瀏覽器下載檔案，解決直接展開並避免被瀏覽器壓縮的問題
+        const rawFileName = fileName.split('/').pop() || 'download';
+        const command = new GetObjectCommand({ 
+          Bucket: "commission-private", 
+          Key: fileName,
+          ResponseContentDisposition: `attachment; filename="${rawFileName}"` 
+        });
+        
         const downloadUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
         return jsonRes({ success: true, downloadUrl });
       } catch (err: any) {

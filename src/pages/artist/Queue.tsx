@@ -1,3 +1,4 @@
+// src/pages/artist/Queue.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,6 +88,7 @@ export function Queue() {
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
+        // 🌟【Bug 4 修復】確保與 Notebook.tsx 的「進行中 (working)」過濾條件完全一致
         const activeOrders = data.data
           .filter((c: Commission) => c.status !== 'completed' && c.status !== 'cancelled')
           .sort((a: Commission, b: Commission) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
@@ -164,7 +166,7 @@ export function Queue() {
           <thead>
             <tr style={{ backgroundColor: '#FBFBF9', borderBottom: '2px solid #EAE6E1', textAlign: 'left', color: '#7A7269', fontSize: '15px' }}>
               <th style={{ padding: '12px 10px', width: '30px', textAlign: 'center' }}>≡</th>
-              <th style={{ padding: '12px 10px', width: '90px', fontWeight: 'bold' }}>委託日期</th>
+              <th style={{ padding: '12px 10px', width: '90px', fontWeight: 'bold' }}>建單日期</th>
               <th style={{ padding: '12px 10px', width: '180px', fontWeight: 'bold' }}>委託人資訊</th>
               <th style={{ padding: '12px 10px', width: '170px', fontWeight: 'bold' }}>進度狀態</th>
               <th style={{ padding: '12px 10px', width: '140px', fontWeight: 'bold' }}>預計完工</th>
@@ -221,7 +223,6 @@ export function Queue() {
                           項目：{order.project_name || order.type_name || '未命名項目'}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                          {/* 🌟 修改項目 2：標籤顏色修正為 #E8F3EB */}
                           <span style={{ 
                             fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px',
                             backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
@@ -244,36 +245,38 @@ export function Queue() {
                       </select>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>急件</span>}
-                          
-                          <input 
-                            type="text" 
-                            defaultValue={order.artist_note || ''} 
-                            placeholder="輸入備註..." 
-                            onBlur={(e) => { 
-                              if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); 
-                              e.currentTarget.style.border = '1px solid transparent'; 
-                              e.currentTarget.style.backgroundColor = 'transparent'; 
-                            }} 
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid transparent', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', transition: 'all 0.2s' }} 
-                            onFocus={e => {
-                              e.currentTarget.style.border = '1px solid #DED9D3'; 
-                              e.currentTarget.style.backgroundColor = '#FBFBF9'; 
-                            }} 
-                          />
-                        </div>
+                      {/* 🌟【Bug 5 修復】加入 flexWrap 讓內部元素自動換行，防止擠出白框 */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', width: '100%' }}>
+                        
+                        {order.is_rush === '是' && <span style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backgroundColor: '#F5EBEB', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>急件</span>}
+                        
+                        <input 
+                          type="text" 
+                          defaultValue={order.artist_note || ''} 
+                          placeholder="輸入備註..." 
+                          onBlur={(e) => { 
+                            if (e.target.value !== order.artist_note) handleUpdateField(order.id, 'artist_note', e.target.value); 
+                            e.currentTarget.style.border = '1px solid transparent'; 
+                            e.currentTarget.style.backgroundColor = 'transparent'; 
+                          }} 
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          style={{ minWidth: '100px', flex: '1 1 auto', padding: '6px 8px', borderRadius: '6px', border: '1px solid transparent', backgroundColor: 'transparent', color: '#5D4A3E', outline: 'none', fontSize: '14px', transition: 'all 0.2s' }} 
+                          onFocus={e => {
+                            e.currentTarget.style.border = '1px solid #DED9D3'; 
+                            e.currentTarget.style.backgroundColor = '#FBFBF9'; 
+                          }} 
+                        />
+                        
                         {hasNewMsg && (
-                          <div style={{ color: '#A67B3E', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start' }}>
+                          <div style={{ color: '#A67B3E', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                             ★此單有新訊息哦~
                           </div>
                         )}
+                        
                       </div>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>

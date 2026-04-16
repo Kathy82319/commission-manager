@@ -1,8 +1,8 @@
 // src/pages/artist/Notebook.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ImageUploader } from '../../components/ImageUploader'; 
-import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 進行 XSS 防護
+import DOMPurify from 'dompurify'; 
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -12,7 +12,7 @@ interface Commission {
   pending_changes?: string; workflow_mode: string; queue_status: string;
   type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
   client_public_id?: string;
-  agreed_tos_snapshot?: string; // 🌟 確保介面包含此欄位
+  agreed_tos_snapshot?: string; 
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
@@ -48,6 +48,7 @@ export function Notebook() {
   
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const loadedDeliverablesId = useRef<string | null>(null); // 🌟【Bug 6 修復】用 useRef 追蹤已載入的 ID，防止閃爍
   
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
@@ -63,12 +64,14 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
-      if (initialSelectedId) {
+      // 如果剛載入且有 initialId，自動選取並載入細節
+      if (initialSelectedId && !selectedId) {
         const target = data.data.find((c: Commission) => c.id === initialSelectedId);
         if (target) {
+          setSelectedId(target.id);
           setEditData(target);
-          fetchPayments(initialSelectedId);
-          fetchDeliverables(initialSelectedId);
+          fetchPayments(target.id);
+          fetchDeliverables(target.id);
         }
       }
     }
@@ -81,6 +84,10 @@ export function Notebook() {
   };
 
   const fetchDeliverables = async (id: string) => {
+    // 🌟【Bug 6 修復】如果已經載入過同一個 ID 的資料，就不需要再清空重繪
+    if (loadedDeliverablesId.current !== id) {
+      loadedDeliverablesId.current = id;
+    }
     const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
@@ -92,6 +99,7 @@ export function Notebook() {
   useEffect(() => { fetchCommissions(); }, []);
 
   const handleSelect = async (order: Commission) => {
+    if (selectedId === order.id) return; // 🌟【Bug 6 修復】點擊同一個不重複觸發
     setSelectedId(order.id);
     setEditData(order);
     setIsEditingRequest(false);
@@ -105,7 +113,7 @@ export function Notebook() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ last_read_at_artist: new Date().toISOString() })
       });
-      fetchCommissions();
+      fetchCommissions(); // 這裡主要是更新左側列表的已讀狀態
     } catch (e) {
       console.error("更新已讀時間失敗", e);
     }
@@ -261,39 +269,29 @@ export function Notebook() {
     }
   };
 
-  // 🌟【資安修正：任務 2 前端連動】接收後端產生的安全檔名
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
-      // 1. 向後端請求公開預覽圖的上傳通行證
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        // 🚨 修正：不再傳送 fileName，完全交由後端亂數生成
         body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public' })
       });
-      // 🌟 修正：接收後端給予的 uploadUrl 以及安全檔名 (publicSafeFileName)
       const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = await ticketRes.json();
       
-      // 2. 進行 R2 實際上傳
       await fetch(publicUploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': 'image/jpeg' } });
-
-      // 🌟 修正：利用回傳的安全檔名拼湊出最終能被存取的 URL
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
 
       let privateKey = null;
       if (stageKey === 'final' && resultBlobs.original) {
-        // 3. 請求私有原檔的上傳通行證
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          // 🚨 修正：不再傳送 fileName
           body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'private' })
         });
         const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = await privateTicketRes.json();
         
         await fetch(privateUploadUrl, { method: 'PUT', body: resultBlobs.original, headers: { 'Content-Type': 'image/jpeg' } });
-        // 🌟 修正：把私有檔的 key 存起來，準備告訴資料庫
         privateKey = privateSafeFileName;
       }
 
@@ -370,30 +368,43 @@ export function Notebook() {
     borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease'
   });
 
-const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
+  const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
     const isFinal = stageKey === 'final';
-
     const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
+    
+    // 🌟【Bug 2 修復】檢查是否尚未綁定委託人
+    const isUnbound = !selectedOrder?.client_public_id;
 
     let headerBg = '#FCFAF8'; 
     let statusTag = '';
     let statusColor = '#A0978D';
     
-    if (isPassed) {
-      headerBg = '#E8F3EB';
-      statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
-      statusColor = '#4E7A5A';
-    } else if (isReviewing) {
-      headerBg = '#FDF4E6';
-      statusTag = '⏳ 待委託人確認';
-      statusColor = '#A67B3E';
-    } else if (isRejected) { 
-      headerBg = '#fce8e6';
-      statusTag = '⚠️ 委託人已退回修改';
-      statusColor = '#d93025';
+    // 🌟【Bug 2 修復】未綁定時的狀態處理，防止被誤認為已閱覽
+    if (isUnbound) {
+      if (sub) {
+        headerBg = '#F0ECE7';
+        statusTag = '⚠️ 等待委託人綁定帳號後才能閱覽';
+        statusColor = '#A05C5C';
+      } else {
+        statusTag = '等待繪製上傳...';
+      }
     } else {
-      statusTag = '等待繪製上傳...';
+      if (isPassed) {
+        headerBg = '#E8F3EB';
+        statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
+        statusColor = '#4E7A5A';
+      } else if (isReviewing) {
+        headerBg = '#FDF4E6';
+        statusTag = '⏳ 待委託人確認';
+        statusColor = '#A67B3E';
+      } else if (isRejected) { 
+        headerBg = '#fce8e6';
+        statusTag = '⚠️ 委託人已退回修改';
+        statusColor = '#d93025';
+      } else {
+        statusTag = '等待繪製上傳...';
+      }
     }
 
     return (
@@ -551,6 +562,8 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
                 <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '22px' }}>{getDualName(selectedOrder)}</h2>
                 <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
                 <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', gap: '16px' }}>
+                  {/* 🌟【修改 2】新增建單日期在最左側 */}
+                  <span>建單日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
                   <span>單號：{selectedOrder.id}</span>
                   <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                 </div>
@@ -659,7 +672,6 @@ const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, i
                       <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '12px', minHeight: '100px', borderRadius: '8px', whiteSpace: 'pre-wrap', outline: 'none', backgroundColor: '#FBFBF9', resize: 'vertical' }} />
                     </div>
 
-                    {/* 🌟 新增：專屬協議書快照 (唯讀展示) */}
                     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px dashed #DED9D3' }}>
                       <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px' }}>
                         專屬協議書快照 (建單時綁定)：
