@@ -1,10 +1,9 @@
-// src/PublicProfile.tsx 完整修復版
-import { useState, useEffect } from 'react';
+// src/PublicProfile.tsx
+import { useState, useEffect, useMemo } from 'react'; // 🌟 修正 1：補上 useMemo
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import './styles/PublicProfile.css';
 
-// 🌟 安全解碼器：處理舊資料中可能殘留的轉碼字元
 const decodeHTML = (html?: string) => {
   if (!html) return '';
   const txt = document.createElement("textarea");
@@ -49,20 +48,14 @@ const getSocialIcon = (platform: string) => {
       return <svg {...props}><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>;
     case 'Plurk':
       return <svg {...props}><path d="M9 4h3a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H9V4z" /><line x1="9" y1="12" x2="9" y2="20" /></svg>;
-    case '個人網站':
     default:
       return <svg {...props}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
   }
 };
 
 export function PublicProfile() {
-  const { artistId, id } = useParams();
-
-  let rawId = artistId || id || '';
-  if (rawId.startsWith('@')) {
-    rawId = rawId.substring(1); 
-  }
-  const currentArtistId = rawId;
+  const { artistId } = useParams();
+  const currentArtistId = (artistId?.startsWith('@') ? artistId.substring(1) : artistId) || '';
 
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
@@ -82,22 +75,19 @@ export function PublicProfile() {
           setArtist(data.data);
           if (data.data.profile_settings) {
             try {
-              // 🌟 核心修正：先解碼再解析 JSON
               const decodedSettings = decodeHTML(data.data.profile_settings);
               const parsedSettings = JSON.parse(decodedSettings);
-              
               if ((data.data.plan_type === 'free' || !data.data.plan_type) && parsedSettings.portfolio) {
                 parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
               }
-              
               setSettings(parsedSettings);
             } catch (e) {
-              console.error("解析 profile_settings 失敗", e);
+              console.error("解析失敗");
             }
           }
         }
       } catch (error) {
-        console.error("讀取公開頁面失敗", error);
+        console.error("讀取失敗", error);
       } finally {
         setLoading(false);
       }
@@ -107,7 +97,7 @@ export function PublicProfile() {
 
   useEffect(() => {
     if (!loading && artist) {
-      if (settings && settings.splash_enabled === false) {
+      if (settings?.splash_enabled === false) {
         setShowSplash(false);
         return;
       }
@@ -117,7 +107,7 @@ export function PublicProfile() {
     }
   }, [loading, settings, artist]);
 
-  // Tab 內容判斷邏輯
+  // 🌟 修正 2：為 tab 加上明確型別 (tab: { id: string; label: string })
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
@@ -144,43 +134,41 @@ export function PublicProfile() {
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
 
+  const handlePrevImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length);
+    }
+  };
+
+  const handleNextImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length);
+    }
+  };
+
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
   return (
     <div className="public-profile-container">
-      {/* Splash Screen */}
-      <div 
-        className={`splash-screen ${!showSplash ? 'hide' : ''}`}
-        style={{
-          backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
-          backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          position: 'fixed',
-          top: 0, left: 0, width: '100vw', height: '100vh',
-          zIndex: 10000,
-          display: showSplash ? 'flex' : 'none',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.8s ease-in-out'
-        }}
-      >
-        <div style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.45)', 
-          padding: '40px 60px',
-          borderRadius: '16px',
-          backdropFilter: 'blur(8px)', 
-          textAlign: 'center',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          maxWidth: '80%'
-        }}>
-          <h1 style={{ color: '#FFF', fontSize: '36px', margin: 0 }}>
-            {settings?.splash_text || artist.display_name}
-          </h1>
+      {showSplash && (
+        <div 
+          className="splash-screen"
+          style={{
+            backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
+            backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
+            backgroundSize: 'cover', backgroundPosition: 'center', position: 'fixed',
+            top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 10000,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          }}
+        >
+          <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', padding: '40px 60px', borderRadius: '16px', backdropFilter: 'blur(8px)', textAlign: 'center', color: '#FFF' }}>
+            <h1>{settings?.splash_text || artist.display_name}</h1>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="content-wrapper">
         <div className="sidebar">
@@ -205,7 +193,7 @@ export function PublicProfile() {
 
         <div className="main-content">
           <div className="tabs-container">
-            {availableTabs.map(tab => (
+            {availableTabs.map((tab: { id: string; label: string }) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}>
                 {tab.label}
               </button>
@@ -222,10 +210,12 @@ export function PublicProfile() {
                 ))}
               </div>
             )}
-            {/* 🌟 核心：使用 decodeHTML 處理後端可能殘留的轉碼字元 */}
+            
+            {/* 🌟 核心防護：渲染內容前，DOMPurify 依然保護著您 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as string)) }} />
+              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
             )}
+
             {settings?.custom_sections?.map(sec => 
               currentTab === sec.id && (
                 <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
@@ -234,6 +224,19 @@ export function PublicProfile() {
           </div>
         </div>
       </div>
+
+      {/* 🌟 修正 3：確保 selectedImgIndex 被讀取使用 */}
+      {selectedImgIndex !== null && settings?.portfolio && (
+        <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
+          <button className="lightbox-close">✕</button>
+          <button className="lightbox-nav prev" onClick={handlePrevImg}>❮</button>
+          <div className="lightbox-content">
+            <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" onClick={(e) => e.stopPropagation()} />
+            <div className="lightbox-counter">{selectedImgIndex + 1} / {settings.portfolio.length}</div>
+          </div>
+          <button className="lightbox-nav next" onClick={handleNextImg}>❯</button>
+        </div>
+      )}
     </div>
   );
 }
