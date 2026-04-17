@@ -53,6 +53,9 @@ export function Settings() {
   
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
+  // 🌟 新增：跳轉藍新的載入狀態
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
   useEffect(() => {
@@ -105,7 +108,6 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE]);
 
-// Settings.tsx
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -117,7 +119,6 @@ export function Settings() {
       });
       const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      // 🌟 改為 PUT 上傳
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
@@ -141,7 +142,6 @@ export function Settings() {
       });
       const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      // 🌟 改為 PUT 上傳
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
@@ -165,7 +165,6 @@ export function Settings() {
       });
       const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
       
-      // 🌟 改為 PUT 上傳
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
@@ -212,15 +211,54 @@ export function Settings() {
     } catch(e) { alert('連線失敗'); }
   };
 
-  const handleMockUpgrade = async () => {
+  // 🌟 真實金流跳轉處理函數 (取代原本的 Mock 函數)
+  const handleUpgradeClick = async () => {
+    setIsUpgrading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/test/mock-upgrade`, { method: 'POST', credentials: 'include' });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        window.location.reload(); 
-      } else alert(data.error);
-    } catch(e) { alert('連線失敗'); }
+      // 1. 呼叫我們剛剛測試成功的後端建立訂單 API
+      const response = await fetch(`${API_BASE}/api/payment/create`, {
+        method: "POST",
+        credentials: "include", // 確保帶著 Cookie 認證
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_type: "pro" })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        // 2. 拿到藍新的加密包裹後，建立隱藏表單
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.data.PayGateWay; // 藍新刷卡機網址
+
+        // 3. 把參數塞入表單
+        const params = {
+          MerchantID: result.data.MerchantID,
+          TradeInfo: result.data.TradeInfo,
+          TradeSha: result.data.TradeSha,
+          Version: result.data.Version,
+        };
+
+        for (const [key, value] of Object.entries(params)) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        }
+
+        // 4. 掛載到畫面並火速送出跳轉
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        alert("訂單建立失敗：" + (result.error || "請稍後再試"));
+        setIsUpgrading(false);
+      }
+    } catch (error) {
+      console.error("升級失敗:", error);
+      alert("系統連線異常");
+      setIsUpgrading(false);
+    }
   };
 
   const validateSocialUrl = (platform: string, url: string) => {
@@ -414,10 +452,6 @@ export function Settings() {
             
             {activeTab === 'subscription' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ padding: '16px', backgroundColor: '#F4F0EB', borderRadius: '12px', color: '#5D4A3E', fontSize: '14px', lineHeight: '1.6' }}>
-                  <strong>💡 開發測試專區：</strong> 這裡已經串接了後端的「模擬金流 API」。您可以直接點擊下方按鈕測試切換方案，測試完畢後回到「產出委託單」即可看到毛玻璃被解鎖的真實效果！
-                </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                   
                   <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
@@ -457,7 +491,7 @@ export function Settings() {
 
                   <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
                     <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 199 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
                     <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
                       <li><strong>無限制建立委託單數量</strong></li>
                       <li>解鎖編輯「所有」進階區塊編輯權限</li>
@@ -468,7 +502,19 @@ export function Settings() {
                     {quotaInfo?.plan_type === 'pro' ? (
                        <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
                     ) : (
-                      <button onClick={handleMockUpgrade} style={{ padding: '12px', backgroundColor: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>模擬付費 (開通 30 天)</button>
+                      <button 
+                        onClick={handleUpgradeClick} 
+                        disabled={isUpgrading}
+                        style={{ 
+                          padding: '12px', backgroundColor: isUpgrading ? '#C4BDB5' : '#4E7A5A', color: '#FFF', 
+                          border: 'none', borderRadius: '8px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
+                          fontWeight: 'bold', transition: 'opacity 0.2s' 
+                        }} 
+                        onMouseEnter={e => !isUpgrading && (e.currentTarget.style.opacity='0.9')} 
+                        onMouseLeave={e => !isUpgrading && (e.currentTarget.style.opacity='1')}
+                      >
+                        {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
+                      </button>
                     )}
                   </div>
 
@@ -502,7 +548,7 @@ export function Settings() {
                           aspectRatio={1} 
                           withWatermark={false} 
                           buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
-                          maxSizeMB={2} // 🌟 傳入 2MB 限制給底層
+                          maxSizeMB={2}
                         />
                       )}
                       <span style={{ fontSize: '12px', color: '#A0978D' }}>目前的網址：{formData.avatar_url || '尚未上傳'}</span>
@@ -585,7 +631,7 @@ export function Settings() {
                           <ImageUploader 
                             onUpload={handleSplashUpload}
                             buttonText="點此選擇要上傳的開場背景圖檔"
-                            maxSizeMB={10} // 🌟 傳入 10MB 限制給底層
+                            maxSizeMB={10}
                           />
                         )
                       )}
@@ -655,7 +701,7 @@ export function Settings() {
                       <ImageUploader 
                         onUpload={handlePortfolioUpload}
                         buttonText="點此選擇要上傳的作品圖檔"
-                        maxSizeMB={5} // 🌟 傳入 5MB 限制給底層
+                        maxSizeMB={5}
                       />
                     )
                   ) : (
