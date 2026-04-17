@@ -34,7 +34,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
 
 export function App() {
-  const MY_ARTIST_ID = "User_84448";
+  const MY_ARTIST_ID = "@User_88736";
   
   return (
     <BrowserRouter>
