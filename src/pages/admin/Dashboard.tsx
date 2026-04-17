@@ -166,23 +166,42 @@ export function Dashboard() {
                 </td>
                 <td style={tdStyle}>
                   {view === 'users' ? (
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button 
-                        onClick={() => {
-                          const q = prompt(`調整 [${item.display_name}] 的配額\n目前已用：${item.total_commissions}\n輸入數字 (輸入 -1 為無限，留白則回復系統預設)：`, item.custom_quota || '');
-                          if (q !== null) handleUpdate(item.id, { custom_quota: q === '' ? null : parseInt(q) });
-                        }} 
-                        style={actionLinkStyle}
-                      >⚙️ 調整配額</button>
-                      
-                      <button 
-                        onClick={() => {
-                          const reason = prompt('請輸入停權原因（這會紀錄在用戶資料中）：');
-                          if (reason) handleUpdate(item.id, { role: 'deleted', ban_reason: reason });
-                        }} 
-                        style={{ ...actionLinkStyle, color: '#EF4444' }}
-                      >🚫 停權用戶</button>
-                    </div>
+<td style={tdStyle}>
+  <div style={{ display: 'flex', gap: '12px' }}>
+    {/* 調整配額按鈕 */}
+    <button 
+      onClick={() => {
+        const q = prompt(`調整 [${item.display_name}] 的配額\n輸入數字或留白回復預設：`, item.custom_quota || '');
+        if (q !== null) handleUpdate(item.id, { custom_quota: q === '' ? null : parseInt(q) });
+      }} 
+      style={actionLinkStyle}
+    >⚙️ 調整配額</button>
+    
+    {/* 🌟 優化：停權 / 解除停權切換按鈕 */}
+    {item.role === 'deleted' ? (
+      <button 
+        onClick={() => {
+          if (confirm(`確定要解除 [${item.display_name}] 的停權狀態嗎？`)) {
+            // 解除停權：預設改回 client，並清除 bio 中的封鎖標記
+            handleUpdate(item.id, { 
+              role: 'client', 
+              bio: item.bio ? item.bio.replace(/\[封鎖原因:.*?\]/, '').trim() : '' 
+            });
+          }
+        }} 
+        style={{ ...actionLinkStyle, color: '#059669' }} // 綠色表示恢復
+      >✅ 解除停權</button>
+    ) : (
+      <button 
+        onClick={() => {
+          const reason = prompt('請輸入停權原因（這會紀錄在用戶資料中）：');
+          if (reason) handleUpdate(item.id, { role: 'deleted', ban_reason: reason });
+        }} 
+        style={{ ...actionLinkStyle, color: '#EF4444' }} // 紅色表示停權
+      >🚫 停權用戶</button>
+    )}
+  </div>
+</td>
                   ) : <span style={{ color: '#D1D5DB' }}>無操作項目</span>}
                 </td>
               </tr>
