@@ -2,10 +2,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// 定義使用者型別，包含 role
+interface UserProfile {
+  display_name: string;
+  avatar_url: string;
+  role?: string; // 加上選用的 role 屬性
+}
+
 export function Portal() {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-  const [user, setUser] = useState<{ display_name: string; avatar_url: string } | null>(null);
+  
+  // 在這裡修正型別定義
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -22,14 +31,14 @@ export function Portal() {
       }
     };
     fetchUser();
-  }, [navigate]);
+  }, [navigate, API_BASE]);
 
   if (!user) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#FFF' }}>載入中...</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
       
-      <div style={{ textAlign: 'center', marginBottom: '40px', animation: 'fadeInDown 0.5s ease' }}>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <img 
           src={user.avatar_url || 'https://via.placeholder.com/100'} 
           alt="avatar" 
@@ -39,32 +48,64 @@ export function Portal() {
         <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0 }}>請問您今天想進入哪個模式？</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '800px', width: '100%' }}>
+      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', flexDirection: 'column', alignItems: 'center', maxWidth: '800px', width: '100%' }}>
         
-        {/* 委託人選項 */}
-        <div 
-          onClick={() => navigate('/client/orders')}
-          style={{ ...cardStyle, backgroundColor: '#FAFAFA' }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎨</div>
-          <h2 style={{ color: '#5D4A3E', margin: '0 0 8px 0' }}>我是委託人</h2>
-          <p style={{ color: '#A0978D', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>查看我發包的委託單進度、審閱繪師交付的稿件，或下載已完成的原檔。</p>
-        </div>
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+          {/* 委託人選項 */}
+          <div 
+            onClick={() => navigate('/client/orders')}
+            style={{ ...cardStyle, backgroundColor: '#FAFAFA' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎨</div>
+            <h2 style={{ color: '#5D4A3E', margin: '0 0 8px 0' }}>我是委託人</h2>
+            <p style={{ color: '#A0978D', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>查看我發包的委託單進度、審閱繪師交付的稿件，或下載已完成的原檔。</p>
+          </div>
 
-        {/* 繪師選項 */}
-        <div 
-          onClick={() => navigate('/artist/notebook')}
-          style={{ ...cardStyle, backgroundColor: '#5D4A3E' }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🖋️</div>
-          <h2 style={{ color: '#FFF', margin: '0 0 8px 0' }}>我是創作者</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>進入創作者筆記本，管理我的排單、交付稿件給委託人，並處理財務紀錄。</p>
+          {/* 繪師選項 */}
+          <div 
+            onClick={() => navigate('/artist/notebook')}
+            style={{ ...cardStyle, backgroundColor: '#5D4A3E' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🖋️</div>
+            <h2 style={{ color: '#FFF', margin: '0 0 8px 0' }}>我是創作者</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>進入創作者筆記本，管理我的排單、交付稿件給委託人，並處理財務紀錄。</p>
+          </div>
         </div>
-
+        
+        {/* 管理員專屬按鈕：僅當角色為 admin 時顯示 */}
+        {user?.role === 'admin' && (
+          <div style={{ width: '100%', marginTop: '20px', textAlign: 'center' }}>
+            <button
+              onClick={() => navigate('/admin')}
+              style={{
+                width: '100%',
+                maxWidth: '624px', // 配合上方兩個 card 的寬度
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: '#111827', // 深灰色
+                color: '#FFF',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1F2937'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#111827'}
+            >
+              ⚙️ 進入系統管理後台
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -72,6 +113,7 @@ export function Portal() {
 
 const cardStyle = {
   flex: '1 1 300px',
+  maxWidth: '300px',
   padding: '40px 30px',
   borderRadius: '20px',
   cursor: 'pointer',
