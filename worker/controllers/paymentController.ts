@@ -2,8 +2,9 @@
 import type { Env } from "../shared/types";
 
 export const paymentController = {
+// worker/controllers/paymentController.ts
+
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    
     try {
       if (!env.NEWEBPAY_MERCHANT_ID || !env.commission_db) {
         return new Response(JSON.stringify({ success: false, error: "系統環境配置錯誤" }), { status: 500, headers: corsHeaders });
@@ -19,22 +20,21 @@ export const paymentController = {
       ).bind(orderId, currentUserId, amount, plan_type).run();
 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
-      
-      // 🌟 修正點 1：NotifyURL 必須是 Hookdeck 地址，否則會被 Cloudflare 擋掉
       const hookdeckUrl = "https://hkdk.events/3zyr10gulio2ol";
 
+      // 🌟 修正點：恢復 Version 為 "2.0"，否則藍新會拒絕包裹
       const params = new URLSearchParams({
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
         RespondType: "JSON",
         TimeStamp: Math.floor(Date.now() / 1000).toString(),
-        version: "v1.0.1_TEST",
+        Version: "2.0", // 必須是 2.0，且 V 要大寫
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
-        ItemDesc: `TEST_PRO_PLAN_${Date.now()}`,//Arti 繪師小幫手 - 專業版 30 天
+        ItemDesc: `PRO_PLAN_TEST_${Date.now()}`, 
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        NotifyURL: hookdeckUrl, // 絕對要用 Hookdeck 地址
+        NotifyURL: hookdeckUrl,
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
 
@@ -44,6 +44,9 @@ export const paymentController = {
 
       return new Response(JSON.stringify({
         success: true,
+        // 🌟 偵錯標記：把測試版本號放在這裡，而不是放在 params 裡
+        // 這樣你在瀏覽器 F12 Network 看到這行，就代表上傳成功了！
+        deploy_version: "v1.0.2_STABLE", 
         data: {
           MerchantID: env.NEWEBPAY_MERCHANT_ID,
           TradeInfo: aesString,

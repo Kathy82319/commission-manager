@@ -825,7 +825,7 @@ useEffect(() => {
               {isSaving ? '儲存中...' : '儲存全部內容'}
             </button>
           </div>
-        )}console.log("Force Update 001");
+        )}console.log("Force Update 002");
       </div>
     </div>
   );
