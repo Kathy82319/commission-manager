@@ -5,12 +5,19 @@
     "lib": ["ESNext"],
     "types": [
       "@cloudflare/workers-types", 
-      "node"  // 🌟 必須要在這裡明確加上 node，TypeScript 才會在 Worker 環境認得 node:crypto
+      "node"
     ],
-    "moduleResolution": "Node", // 確保模組解析方式是 Node
+    // 🌟 解決報錯：加入這行忽略過時警告
+    "ignoreDeprecations": "5.0", 
+    // 🌟 現代化解析模式 (適合 Vite / Cloudflare)
+    "moduleResolution": "bundler", 
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["worker/**/*.ts"] 
+  "include": ["worker/**/*.ts"]
 }
