@@ -245,9 +245,6 @@ useEffect(() => {
           `請去 Console (F12) 查看完整資料。`
         );
 
-        // --- 為了除錯，我暫時把跳轉邏輯「註解掉」 ---
-        // --- 等你確認 Console 裡的 ItemDesc 是正確的，再把它取消註解 ---
-        /*
         const form = document.createElement("form");
         form.method = "POST";
         form.action = result.data.PayGateWay;
@@ -269,7 +266,7 @@ useEffect(() => {
 
         document.body.appendChild(form);
         form.submit();
-        */
+
         
         setIsUpgrading(false); // 停留在原頁面方便看 Console
       } else {
