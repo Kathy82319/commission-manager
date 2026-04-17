@@ -58,7 +58,16 @@ export function Settings() {
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
-  useEffect(() => {
+useEffect(() => {
+    // 🌟 1. 檢查網址參數是否有付款成功訊息
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+      alert("🎉 恭喜！您已成功升級為專業版。");
+      
+      // 🌟 2. 清除網址參數，讓使用者重新整理頁面時不會重複跳出通知
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const fetchUserData = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });

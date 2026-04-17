@@ -12,6 +12,12 @@ import { paymentController } from "./controllers/paymentController";
 export default {
   async fetch(request: any, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    // 🌟 新增：攔截藍新的 ReturnURL POST 請求
+    if (url.pathname === "/payment/result" && request.method === "POST") {
+     return Response.redirect("https://cath-commission-manager.pages.dev/artist/settings?payment=success", 302);
+    }
+
     const pathParts = url.pathname.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
 

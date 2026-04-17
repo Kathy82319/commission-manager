@@ -19,7 +19,6 @@ export const paymentController = {
 
       // 🌟 直接將網址寫死，確保藍新 100% 拿到正確地址！
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
-      const absoluteBackendUrl = "https://cath-commission-manager.pages.dev";
 
       const params = new URLSearchParams({
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
