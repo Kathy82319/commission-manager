@@ -11,17 +11,25 @@
         "nodejs_compat"
     ],
     "vars": {
-        "LINE_REDIRECT_URI": "https://commission-app.pages.dev/api/auth/line/callback",
-        "FRONTEND_URL": "https://commission-app.pages.dev",
+        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback", //切換測試機要改這裡
+        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",  //切換測試機要改這裡
         "LINE_CHANNEL_ID": "2009777002"
     },
     "d1_databases": [
 
 		{
 			// 這是您原本正式機的資料庫，我們留著備用（如果需要存取正式資料的話）
-			"binding": "commission_db",
+			"binding": "__commission_db",
 			"database_name": "commission_db_prod", // 🌟 修改這裡，讓它與 ID 真實匹配
 			"database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
+		},
+
+
+        		{
+			// 這是測試機資料庫，我們留著備用
+			"binding": "commission_db",
+			"database_name": "commission-db-test", // 🌟 修改這裡，讓它與 ID 真實匹配
+			"database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683"
 		},
 
     ],

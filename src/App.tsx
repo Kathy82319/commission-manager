@@ -29,6 +29,10 @@ import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { Portal } from './pages/Portal';
 
+
+import { AdminLayout } from './layouts/AdminLayout';
+import { Dashboard } from './pages/admin/Dashboard';
+
 export function App() {
   const MY_ARTIST_ID = "@User_84448";
   
@@ -75,6 +79,12 @@ export function App() {
           <Route path="/:artistId" element={<PublicProfile />} />
         </Route>
         
+        {/* === 新增：管理員後台區 === */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+        </Route>
+
+
       </Routes>
     </BrowserRouter>
   );

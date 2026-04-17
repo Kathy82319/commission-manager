@@ -258,7 +258,7 @@ export function ClientOrders() {
     if (status === 'completed') return <span style={{ color: '#1e8e3e', fontWeight: 'bold' }}>✓ 已結案</span>;
     if (status === 'cancelled') return <span style={{ color: '#d93025', fontWeight: 'bold' }}>作廢</span>;
     if (stage.includes('reviewing')) return <span style={{ color: '#e11d48', fontWeight: 'bold' }}>👀 待審閱</span>;
-    return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>✍️ 繪製中</span>;
+    return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>✍️ 安排中</span>;
   };
 
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
