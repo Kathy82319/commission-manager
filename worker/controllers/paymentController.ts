@@ -3,6 +3,7 @@ import type { Env } from "../shared/types";
 
 export const paymentController = {
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    
     try {
       if (!env.NEWEBPAY_MERCHANT_ID || !env.commission_db) {
         return new Response(JSON.stringify({ success: false, error: "系統環境配置錯誤" }), { status: 500, headers: corsHeaders });
@@ -29,7 +30,7 @@ export const paymentController = {
         Version: "2.0",
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
-        ItemDesc: `Arti 繪師小幫手 - 專業版 30 天`,
+        ItemDesc: `TEST_PRO_PLAN_${Date.now()}`,//Arti 繪師小幫手 - 專業版 30 天
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
