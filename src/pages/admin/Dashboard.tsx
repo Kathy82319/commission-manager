@@ -57,13 +57,14 @@ export function Dashboard() {
   };
 
   // --- 狀態中文化對照 ---
-  const statusMap: any = {
-    'unpaid': '🔴 待支付',
-    'in_progress': '🟡 進行中',
-    'awaiting_review': '🔵 待驗收',
-    'completed': '🟢 已完成',
-    'cancelled': '⚪ 已取消'
-  };
+const statusMap: any = {
+  'quote_created': '📑 報價已發出 (待綁定)',
+  'unpaid': '🔴 待支付 (已綁定)',
+  'in_progress': '🟡 進行中',
+  'awaiting_review': '🔵 待驗收',
+  'completed': '🟢 已完成',
+  'cancelled': '⚪ 已取消'
+};
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '---';

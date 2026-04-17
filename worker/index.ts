@@ -7,6 +7,7 @@ import { commController } from "./controllers/commController";
 import { r2Controller } from "./controllers/r2Controller";
 import { testController } from "./controllers/testController";
 import { adminController } from "./controllers/adminController";
+import { paymentController } from "./controllers/paymentController";
 
 export default {
     async fetch(request: any, env: Env): Promise<any> {
@@ -113,6 +114,23 @@ if (url.pathname.startsWith("/api/admin/")) {
         if (request.method === "POST" && url.pathname.endsWith("/mock-upgrade")) return testController.mockUpgrade(currentUserId!, env, corsHeaders);
       }
 
+      // 7. Payment API
+      if (url.pathname.startsWith("/api/payment/")) {
+        // 建立訂單需要登入
+        if (request.method === "POST" && url.pathname === "/api/payment/create") {
+          const authErr = requireAuth(currentUserId, corsHeaders); 
+          if (authErr) return authErr;
+          return paymentController.createOrder(request, currentUserId!, env, corsHeaders);
+        }
+        
+        // 接收通知不需要登入 (來自藍新伺服器)
+        // 🌟 特別注意：Notify 路徑不需要 auth，且它是直接由藍新 POST 過來的
+        if (request.method === "POST" && url.pathname === "/api/payment/notify") {
+          return paymentController.handleNotify(request, env);
+        }
+      }
+      
+
       // 找不到 API 路由
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
@@ -125,4 +143,5 @@ if (url.pathname.startsWith("/api/admin/")) {
     }
     return assetResponse as any;
   }  
+
 };

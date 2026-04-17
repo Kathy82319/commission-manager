@@ -14,6 +14,10 @@ export interface Env {
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
   R2_ACCOUNT_ID?: string; 
+  BACKEND_URL: string;
+  NEWEBPAY_MERCHANT_ID: string;
+  NEWEBPAY_HASH_KEY: string;
+  NEWEBPAY_HASH_IV: string;
 }
 
 // 建立委託單的請求格式

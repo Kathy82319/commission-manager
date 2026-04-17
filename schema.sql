@@ -166,6 +166,19 @@ CREATE TABLE PaymentRecords (
     FOREIGN KEY (commission_id) REFERENCES Commissions(id)
 );
 
+CREATE TABLE PaymentOrders (
+  id TEXT PRIMARY KEY,           
+  user_id TEXT NOT NULL,        
+  amount INTEGER NOT NULL,       
+  plan_type TEXT NOT NULL,      
+  duration_days INTEGER DEFAULT 30, 
+  status TEXT DEFAULT 'pending', 
+  trade_no TEXT,                
+  pay_time TEXT,                 
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES Users(id)
+);
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
