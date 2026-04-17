@@ -1,23 +1,36 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "composite": true,
-    "lib": ["ESNext"],
-    // 🌟 補上這行，解決你看到的報錯
-    "module": "ESNext", 
+    /* 核心環境設定 */
+    "target": "ESNext",         /* 🌟 解決 Uint8Array 報錯：設定現代化 JavaScript 目標 */
+    "module": "ESNext",         /* 🌟 解決模組解析報錯 */
+    "lib": ["ESNext"],          /* 載入最完整的現代標準庫 */
+    
+    /* 模組解析策略 */
+    "moduleResolution": "bundler", 
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+
+    /* 類型定義 */
     "types": [
       "@cloudflare/workers-types", 
       "node"
     ],
-    "ignoreDeprecations": "5.0", 
-    "moduleResolution": "bundler", 
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+
+    /* 資安與嚴格度 */
+    "strict": true,
+    "skipLibCheck": true,       /* 忽略第三方套件的小型類型衝突 */
+    "ignoreDeprecations": "5.0",
+
+    /* 路徑對齊 */
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["worker/**/*.ts"]
+  "include": [
+    "worker/**/*.ts",
+    "worker/*.ts"
+  ]
 }
