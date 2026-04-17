@@ -21,7 +21,7 @@
     /* 資安與嚴格度 */
     "strict": true,
     "skipLibCheck": true,       /* 忽略第三方套件的小型類型衝突 */
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "6.0",
 
     /* 路徑對齊 */
     "baseUrl": ".",
