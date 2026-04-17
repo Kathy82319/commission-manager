@@ -62,10 +62,12 @@ export const paymentController = {
       const status = formData.get("Status");
       const tradeInfo = formData.get("TradeInfo") as string;
 
+
       // 🕵️ 監視器啟動：只要藍新來敲門，不管成功失敗，先記錄下來！
+      const text = await request.text();
       await env.commission_db.prepare(
         "INSERT INTO WebhookLogs (message) VALUES (?)"
-      ).bind(`收到藍新通知, Status: ${status}, 包含加密包裹: ${!!tradeInfo}`).run();
+      ).bind(`收到請求原始內容: ${text.substring(0, 100)}...`).run();
 
       if (status !== "SUCCESS" || !tradeInfo) return new Response("OK");
 
@@ -109,8 +111,7 @@ export const paymentController = {
       return new Response("OK"); 
     } catch (error: any) {
       // 🕵️ 如果解密或資料庫出錯，記錄詳細錯誤
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`Notify 發生崩潰: ${error.message}`).run();
-      return new Response("OK"); 
+      return new Response(`Notify Error: ${error.message}`, { status: 500 });
     }
   }
 };
