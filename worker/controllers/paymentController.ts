@@ -32,7 +32,7 @@ export const paymentController = {
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        NotifyURL: `${absoluteBackendUrl}/api/payment/notify`, // 絕對正確的地址
+        NotifyURL: "https://events.hookdeck.com/e/src_https://hkdk.events/3zyr10gulio2ol", // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
 
