@@ -2,8 +2,6 @@
 import type { Env } from "../shared/types";
 
 export const paymentController = {
-// worker/controllers/paymentController.ts
-
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       if (!env.NEWEBPAY_MERCHANT_ID || !env.commission_db) {
@@ -19,34 +17,30 @@ export const paymentController = {
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
       ).bind(orderId, currentUserId, amount, plan_type).run();
 
+      // 🌟 直接將網址寫死，確保藍新 100% 拿到正確地址！
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
-      const hookdeckUrl = "https://hkdk.events/3zyr10gulio2ol";
 
-      // 🌟 修正點：恢復 Version 為 "2.0"，否則藍新會拒絕包裹
       const params = new URLSearchParams({
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
         RespondType: "JSON",
         TimeStamp: Math.floor(Date.now() / 1000).toString(),
-        Version: "2.0", // 必須是 2.0，且 V 要大寫
+        Version: "2.0",
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
-        ItemDesc: `PRO_PLAN_TEST_${Date.now()}`, 
+        ItemDesc: `Arti 繪師小幫手 - 專業版 30 天`,
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        NotifyURL: hookdeckUrl,
+        // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
+        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", 
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
-
       const { newebpay } = await import("../utils/crypto");
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
 
       return new Response(JSON.stringify({
         success: true,
-        // 🌟 偵錯標記：把測試版本號放在這裡，而不是放在 params 裡
-        // 這樣你在瀏覽器 F12 Network 看到這行，就代表上傳成功了！
-        deploy_version: "v1.0.2_STABLE", 
         data: {
           MerchantID: env.NEWEBPAY_MERCHANT_ID,
           TradeInfo: aesString,
@@ -64,33 +58,25 @@ export const paymentController = {
   async handleNotify(request: Request, env: Env): Promise<Response> {
     let rawBody = "";
     try {
+      // 🕵️ 步驟 1：第一時間把原始內容抓出來 (不要先用 formData)
       rawBody = await request.text();
-      const contentType = request.headers.get("content-type") || "";
 
+      // 🕵️ 步驟 2：立刻寫入監視器資料庫 (這是最安全的順序)
       await env.commission_db.prepare(
         "INSERT INTO WebhookLogs (message) VALUES (?)"
-      ).bind(`[入口觸發] 格式: ${contentType}, 長度: ${rawBody.length}`).run();
+      ).bind(`[入口觸發] 原始長度: ${rawBody.length}, 內容片段: ${rawBody.substring(0, 100)}`).run();
 
-      let status: string | null = null;
-      let tradeInfo: string | null = null;
-
-      // 🌟 修正點 2：支援 Hookdeck 的 JSON 格式解析
-      if (contentType.includes("application/json") || rawBody.trim().startsWith("{")) {
-        const jsonBody = JSON.parse(rawBody);
-        status = jsonBody.Status;
-        tradeInfo = jsonBody.TradeInfo;
-      } else {
-        const params = new URLSearchParams(rawBody);
-        status = params.get("Status");
-        tradeInfo = params.get("TradeInfo");
-      }
+      // 🕵️ 步驟 3：手動解析 URLSearchParams (這比 request.formData() 穩定)
+      const params = new URLSearchParams(rawBody);
+      const status = params.get("Status");
+      const tradeInfo = params.get("TradeInfo");
 
       if (status !== "SUCCESS" || !tradeInfo) {
-        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
-          .bind(`狀態不符: Status=${status}`).run();
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`狀態不符或無加密包裹: Status=${status}`).run();
         return new Response("OK");
       }
 
+      // 步驟 4：解密與升級 (這部分維持原樣，但加上 await)
       const { newebpay } = await import("../utils/crypto");
       const decrypted = await newebpay.decrypt(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const data = JSON.parse(decodeURIComponent(decrypted.replace(/\+/g, " ")));
@@ -103,7 +89,7 @@ export const paymentController = {
       ).bind(orderId).all();
       
       if (results.length === 0) {
-        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`訂單處理跳過: ${orderId}`).run();
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`訂單不存在或已處理: ${orderId}`).run();
         return new Response("OK");
       }
 
@@ -116,12 +102,17 @@ export const paymentController = {
         env.commission_db.prepare("UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?").bind(newExpiry.toISOString(), userId)
       ]);
 
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🎉 升級成功: 訂單 ${orderId}`).run();
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🎉 恭喜！訂單 ${orderId} 處理完成，使用者 ${userId} 已升級`).run();
 
       return new Response("OK");
     } catch (error: any) {
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🚨 Notify 錯誤: ${error.message}`).run();
-      return new Response("OK");
+      // 🕵️ 萬一崩潰，把錯誤訊息寫進資料庫
+      try {
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🚨 Notify 崩潰: ${error.message}`).run();
+      } catch (dbErr) {
+        console.error("連資料庫都寫不進去了", dbErr);
+      }
+      return new Response("OK"); // 永遠對藍新回 OK
     }
   }
 };

@@ -220,35 +220,27 @@ useEffect(() => {
     } catch(e) { alert('連線失敗'); }
   };
 
-// 🌟 除錯強化版：攔截跳轉，抓出後端真相
+  // 🌟 真實金流跳轉處理函數 (取代原本的 Mock 函數)
   const handleUpgradeClick = async () => {
     setIsUpgrading(true);
     try {
-      console.log("--- 開始金流建立請求 ---");
+      // 1. 呼叫我們剛剛測試成功的後端建立訂單 API
       const response = await fetch(`${API_BASE}/api/payment/create`, {
         method: "POST",
-        credentials: "include",
+        credentials: "include", // 確保帶著 Cookie 認證
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: "pro" })
       });
 
       const result = await response.json();
-      
-      // 🕵️ 這裡就是我們要看的「真相」
-      console.log("後端回傳的完整結果：", result);
 
       if (result.success && result.data) {
-        // 🌟 跳出視窗讓你肉眼確認版本號
-        alert(
-          `後端對接成功！\n` +
-          `部署版本：${result.deploy_version || "未提供版號"}\n` +
-          `請去 Console (F12) 查看完整資料。`
-        );
-
+        // 2. 拿到藍新的加密包裹後，建立隱藏表單
         const form = document.createElement("form");
         form.method = "POST";
-        form.action = result.data.PayGateWay;
+        form.action = result.data.PayGateWay; // 藍新刷卡機網址
 
+        // 3. 把參數塞入表單
         const params = {
           MerchantID: result.data.MerchantID,
           TradeInfo: result.data.TradeInfo,
@@ -264,11 +256,9 @@ useEffect(() => {
           form.appendChild(input);
         }
 
+        // 4. 掛載到畫面並火速送出跳轉
         document.body.appendChild(form);
         form.submit();
-
-        
-        setIsUpgrading(false); // 停留在原頁面方便看 Console
       } else {
         alert("訂單建立失敗：" + (result.error || "請稍後再試"));
         setIsUpgrading(false);
