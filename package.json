@@ -3,14 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build && npx esbuild worker/index.ts --bundle --format=esm --outfile=dist/_worker.js --external:node:*",
-    "lint": "eslint .",
-    "preview": "npm run build && vite preview",
-    "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "tsc && vite build && npm run build:worker",
+  "build:worker": "esbuild worker/index.ts --bundle --outfile=dist/_worker.js --format=esm --minify",
+  "preview": "vite preview",
+  "deploy": "wrangler pages deploy dist" 
+},
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1030.0",
     "@aws-sdk/s3-presigned-post": "^3.1030.0",
