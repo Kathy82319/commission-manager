@@ -47,15 +47,25 @@ export default {
         // 先嘗試獲取使用者 ID (不一定要強制登入，部分路由才需要)
         const currentUserId = await getUserIdFromRequest(request, env);
 
-        // 🟢 7. Payment API (金流專區)
+    // 🟢 7. Payment API (金流專區)
         if (url.pathname.startsWith("/api/payment/")) {
-          // A. 建立訂單 (需登入)
+          console.log(`[Debug] 進入 Payment API 路徑: ${url.pathname}`);
+
           if (request.method === "POST" && url.pathname === "/api/payment/create") {
+            console.log(`[Debug] 嘗試建立訂單, userId: ${currentUserId}`);
+            
             const authErr = requireAuth(currentUserId, corsHeaders);
-            if (authErr) return authErr;
-            return paymentController.createOrder(request, currentUserId!, env, corsHeaders);
+            if (authErr) {
+               console.log("[Debug] 被 requireAuth 攔截了");
+               return authErr;
+            }
+
+            // 🌟 這裡最關鍵：加一個 version 直接測試
+            const response = await paymentController.createOrder(request, currentUserId!, env, corsHeaders);
+            console.log("[Debug] Controller 執行完畢");
+            return response;
           }
-          // B. 接收回傳通知 (絕對不可 requireAuth)
+          
           if (request.method === "POST" && url.pathname === "/api/payment/notify") {
             return paymentController.handleNotify(request, env);
           }
