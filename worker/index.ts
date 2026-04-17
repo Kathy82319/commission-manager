@@ -161,6 +161,14 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+// 在 currentUserId 獲取之後加上這段：
+if (url.pathname === "/api/version") {
+  return new Response(JSON.stringify({ 
+    version: "v1.0.3_INTEGRATED",
+    status: "If you see this, the update is LIVE!" 
+  }), { headers: corsHeaders });
+}
+
     try {
       // --- 3. API 路由分發中心 ---
       if (url.pathname.startsWith("/api/")) {
