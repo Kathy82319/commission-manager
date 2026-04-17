@@ -1,36 +1,40 @@
 {
   "compilerOptions": {
-    /* 核心環境設定 */
-    "target": "ESNext",         /* 🌟 解決 Uint8Array 報錯：設定現代化 JavaScript 目標 */
-    "module": "ESNext",         /* 🌟 解決模組解析報錯 */
-    "lib": ["ESNext"],          /* 載入最完整的現代標準庫 */
-    
-    /* 模組解析策略 */
-    "moduleResolution": "bundler", 
+    /* 2026 現代環境設定 */
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext"],
+
+    /* 模組解析：使用現代 Bundler 邏輯 */
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,           /* Worker 由 Cloudflare 處理，TS 僅負責檢查 */
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
 
     /* 類型定義 */
     "types": [
-      "@cloudflare/workers-types", 
+      "@cloudflare/workers-types",
       "node"
     ],
 
-    /* 資安與嚴格度 */
+    /* 嚴格檢查：這是 2026 年開發的標準 */
     "strict": true,
-    "skipLibCheck": true,       /* 忽略第三方套件的小型類型衝突 */
-    "ignoreDeprecations": "6.0",
+    "skipLibCheck": true,
+    "noUnusedLocals": false,  /* 避免沒用到的變數導致編譯失敗 */
+    
+    /* 🌟 解決 tsbuildinfo 檔案：關閉增量編譯與複合專案 */
+    "composite": false,
+    "incremental": false,
 
-    /* 路徑對齊 */
-    "baseUrl": ".",
+    /* 🌟 解決過時警告：明確告訴 TS 忽略這些版本的嘮叨 */
+    "ignoreDeprecations": "5.0",
+
+    /* 路徑映射：不再需要 baseUrl */
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "worker/**/*.ts",
-    "worker/*.ts"
-  ]
+  "include": ["worker/**/*.ts"]
 }
