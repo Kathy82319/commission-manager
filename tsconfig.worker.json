@@ -3,13 +3,13 @@
   "compilerOptions": {
     "composite": true,
     "lib": ["ESNext"],
+    // 🌟 補上這行，解決你看到的報錯
+    "module": "ESNext", 
     "types": [
       "@cloudflare/workers-types", 
       "node"
     ],
-    // 🌟 解決報錯：加入這行忽略過時警告
     "ignoreDeprecations": "5.0", 
-    // 🌟 現代化解析模式 (適合 Vite / Cloudflare)
     "moduleResolution": "bundler", 
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
