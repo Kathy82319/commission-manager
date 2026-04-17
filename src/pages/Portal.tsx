@@ -76,36 +76,43 @@ export function Portal() {
           </div>
         </div>
         
-        {/* 管理員專屬按鈕：僅當角色為 admin 時顯示 */}
-        {user?.role === 'admin' && (
-          <div style={{ width: '100%', marginTop: '20px', textAlign: 'center' }}>
-            <button
-              onClick={() => navigate('/admin')}
-              style={{
-                width: '100%',
-                maxWidth: '624px', // 配合上方兩個 card 的寬度
-                padding: '16px',
-                borderRadius: '12px',
-                backgroundColor: '#111827', // 深灰色
-                color: '#FFF',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1F2937'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#111827'}
-            >
-              ⚙️ 進入系統管理後台
-            </button>
-          </div>
-        )}
+// 在 Portal.tsx 的 return 中修改這部分
+{user?.role === 'admin' && (
+  <div style={{ 
+    width: '100%', 
+    display: 'flex', 
+    justifyContent: 'center', 
+    marginTop: '30px',
+    paddingTop: '20px',
+    borderTop: '1px solid rgba(255,255,255,0.1)' 
+  }}>
+    <button
+      onClick={() => navigate('/admin')}
+      style={{
+        width: '100%',
+        maxWidth: '400px', // 限制最大寬度，避免在大螢幕太長
+        padding: '16px 32px',
+        borderRadius: '12px',
+        backgroundColor: '#111827',
+        color: '#FFF',
+        border: 'none',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        boxShadow: '0 10px 15px rgba(0,0,0,0.2)',
+        transition: 'all 0.2s ease'
+      }}
+      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1F2937'}
+      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#111827'}
+    >
+      ⚙️ 進入系統管理後台
+    </button>
+  </div>
+)}
       </div>
     </div>
   );
