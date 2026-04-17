@@ -29,7 +29,7 @@ const internalPaymentLogic = {
       ).bind(orderId, currentUserId, amount, plan_type).run();
 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
-      const hookdeckUrl = "https://hkdk.events/3zyr10gulio2ol";
+      const hookdeckUrl = "https://hkdk.events/e0wn3vfm19ldjq";
 
       // 2. 準備藍新包裹
       const params = new URLSearchParams({
