@@ -18,7 +18,6 @@ export function ClientLayout() {
           const data = await res.json();
           setProfile(data.data);
           setIsAuthorized(true);
-          // 將當前的 user ID 傳進去以便做雙重過濾
           fetchOrdersForNotifications(data.data.id);
         } else {
           navigate('/login');
@@ -46,9 +45,6 @@ export function ClientLayout() {
 
         data.data.forEach((order: any) => {
           if (order.status === 'cancelled') return;
-          
-          // 🌟【Bug 1 修復】最嚴格防護：只有這張單的委託人 ID 等於現在登入的用戶 ID 時，才允許產出通知
-          // 這樣就能絕對防堵「身兼繪師與委託人時」收到繪師單據通知，或是收到未綁定單據通知的錯誤。
           if (order.client_id !== currentUserId) return;
 
           const title = order.client_custom_title || order.project_name;
@@ -70,25 +66,36 @@ export function ClientLayout() {
     } catch (error) {}
   };
 
+  // 🌟 優化後的跳轉邏輯
   const handleSwitchToArtist = async () => {
     if (!profile) return;
-    if (profile.role === 'artist') {
+
+    // 1. 如果已經是繪師身分，直接跳轉，不需要詢問
+    if (profile.role === 'artist' || profile.role === 'admin') {
       window.location.href = '/artist/queue';
-    } else {
-      const confirmCreate = window.confirm("確定要開通繪師管理頁嗎？\n開通後將直接開始 7 天試用期。");
-      if (confirmCreate) {
-        try {
-          const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-          const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
-            method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
-          });
-          const result = await res.json();
-          if (result.success) {
-            alert("開通成功！為您導向繪師後台。");
-            window.location.href = '/artist/queue';
-          } else alert('開通失敗：' + result.error);
-        } catch (error) { alert('網路連線錯誤，請稍後再試。'); }
+      return;
+    }
+
+    // 2. 如果尚未開通繪師身分，才進行詢問 (且移除試用期文字)
+    const confirmCreate = window.confirm("確定要開通繪師管理頁嗎？");
+    if (confirmCreate) {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
+          method: 'POST', 
+          credentials: 'include', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("開通成功！為您導向繪師後台。");
+          window.location.href = '/artist/queue';
+        } else {
+          alert('開通失敗：' + result.error);
+        }
+      } catch (error) { 
+        alert('網路連線錯誤，請稍後再試。'); 
       }
     }
   };
@@ -112,12 +119,12 @@ export function ClientLayout() {
         <nav style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <div style={{ width: '1px', height: '14px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
           <button onClick={handleSwitchToArtist} style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', padding: 0, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.8'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-            {profile?.role === 'artist' ? '切換至繪師後台' : '開通繪師管理頁'}
+            {/* 這裡也會根據身分顯示不同文字 */}
+            {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
           </button>
         </nav>
       </header>
 
-      {/* 跑馬燈通知區塊 */}
       {notifications.length > 0 && (
         <div style={{ width: '100%', backgroundColor: 'rgba(250, 204, 21, 0.15)', borderBottom: '1px solid rgba(250, 204, 21, 0.3)', overflow: 'hidden', whiteSpace: 'nowrap', padding: '10px 0', display: 'block', position: 'relative', zIndex: 40 }}>
           <div style={{ display: 'inline-block', paddingLeft: '100%', animation: 'layout-marquee 20s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.5px' }}>
@@ -134,9 +141,9 @@ export function ClientLayout() {
 
       <footer style={{ padding: '24px', textAlign: 'center', marginTop: 'auto' }}>
         <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '1px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'}>服務條款</Link>
+          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
           <span>|</span>
-          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'}>隱私權政策</Link>
+          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
           <span>|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>

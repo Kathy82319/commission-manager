@@ -70,16 +70,21 @@ export const userController = {
     const now = new Date();
     let planChanged = false;
 
-    if (user.plan_type === 'trial' && user.trial_end_at && now > new Date(user.trial_end_at)) {
-      user.plan_type = 'free';
-      planChanged = true;
-    } else if (user.plan_type === 'pro' && user.pro_expires_at && now > new Date(user.pro_expires_at)) {
-      user.plan_type = 'free';
-      planChanged = true;
+    if (user.plan_type === 'trial' && user.trial_end_at) {
+      if (now > new Date(user.trial_end_at)) {
+        user.plan_type = 'free';
+        planChanged = true;
+      }
+    } else if (user.plan_type === 'pro' && user.pro_expires_at) {
+      if (now > new Date(user.pro_expires_at)) {
+        user.plan_type = 'free';
+        planChanged = true;
+      }
     }
 
     if (planChanged) {
       await env.commission_db.prepare("UPDATE Users SET plan_type = 'free' WHERE id = ?").bind(user.id).run();
+      user.plan_type = 'free';
     }
 
     if (isMe) {

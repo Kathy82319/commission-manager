@@ -43,13 +43,18 @@ export default {
       if (request.method === "GET" && url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
 
       // 2. Admin API
-      if (url.pathname.startsWith("/api/admin/")) {
-        const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
-        if (request.method === "GET" && url.pathname === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
-        if (request.method === "GET" && url.pathname === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
-        if (request.method === "GET" && url.pathname === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
-        if (request.method === "PATCH" && pathParts[3] === "users" && pathParts.length === 5) return adminController.updateUser(request, pathParts[4], currentUserId!, env, corsHeaders);
-      }
+if (url.pathname.startsWith("/api/admin/")) {
+  const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
+  
+  if (request.method === "GET" && url.pathname === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
+  if (request.method === "GET" && url.pathname === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
+  if (request.method === "GET" && url.pathname === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
+  
+  if (request.method === "PATCH" && pathParts[3] === "users" && pathParts.length === 5) {
+    const targetId = pathParts[4];
+    return adminController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
+  }
+}
 
       // 3. User API
       if (url.pathname.startsWith("/api/users/")) {
