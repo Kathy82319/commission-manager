@@ -50,8 +50,9 @@ const internalPaymentLogic = {
 
       return new Response(JSON.stringify({
         success: true,
-        deploy_version: "v1.0.3_INTEGRATED", // 🌟 新的版本號，用來確認更新成功
+        deploy_version: "v1.0.5_FINAL_BOSS", // 🌟 新的版本號，用來確認更新成功
         data: {
+          
           MerchantID: env.NEWEBPAY_MERCHANT_ID,
           TradeInfo: aesString,
           TradeSha: shaString,
@@ -163,11 +164,16 @@ export default {
 
 // 在 currentUserId 獲取之後加上這段：
 if (url.pathname === "/api/version") {
-  const testDesc = `PRO_PLAN_TEST_${Date.now()}`; // 這就是會送給藍新的變數
+  // 模擬一次商品名稱生成
+  const testOrderId = `ORD${Date.now()}`;
+  const testItemDesc = `FORCE_CHECK_DESCRIPTION_${Date.now()}`; 
+
   return new Response(JSON.stringify({ 
-    version: "v1.0.3_INTEGRATED",
-    expected_item_desc: testDesc,
-    status: "If this desc is new, the problem is definitely the Frontend URL." 
+    version: "v1.0.4_FINAL_CHECK",
+    status: "Online",
+    // 🌟 重點：如果這裡顯示 FORCE_CHECK，但藍新顯示 Arti，就代表程式碼在跳轉時被換掉了
+    what_will_be_sent_to_newebpay: testItemDesc,
+    current_time: new Date().toLocaleString()
   }), { headers: corsHeaders });
 }
 
