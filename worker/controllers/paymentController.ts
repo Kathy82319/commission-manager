@@ -27,7 +27,7 @@ export const paymentController = {
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
         RespondType: "JSON",
         TimeStamp: Math.floor(Date.now() / 1000).toString(),
-        Version: "2.0",
+        version: "v1.0.1_TEST",
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
         ItemDesc: `TEST_PRO_PLAN_${Date.now()}`,//Arti 繪師小幫手 - 專業版 30 天
