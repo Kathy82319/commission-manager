@@ -57,42 +57,50 @@ export const commController = {
     if (currentPlan === 'pro' && userPlan.pro_expires_at && now > new Date(userPlan.pro_expires_at)) currentPlan = 'free';
 
 const user = userRes[0] as any;
-const customQuota = user.custom_quota; // 取得新欄位
 
-// 🌟 新的配額檢查邏輯
+// 🌟 重新設計的「配額優先級」邏輯
 let maxQuota = 0;
 let usedQuota = 0;
 let isUnlimited = false;
 
-if (customQuota !== null) {
-    // A. 如果有自訂額度，直接使用自訂數值
-    maxQuota = customQuota;
-    if (maxQuota === -1) isUnlimited = true; // 約定 -1 為無限
-    
-    const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
+// 1. 優先判斷是否有「客製化額度」
+if (user.custom_quota !== null) {
+  maxQuota = user.custom_quota;
+  if (maxQuota === -1) isUnlimited = true;
+  
+  // 計算該繪師總單量
+  const { results: countRes } = await env.commission_db.prepare(
+    "SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?"
+  ).bind(currentUserId).all();
+  usedQuota = countRes[0].count as number;
+} 
+// 2. 沒有客製化額度，才走「方案預設」
+else {
+  if (user.plan_type === 'pro') {
+    isUnlimited = true;
+  } else if (user.plan_type === 'trial') {
+    maxQuota = 20;
+    const { results: countRes } = await env.commission_db.prepare(
+      "SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?"
+    ).bind(currentUserId).all();
     usedQuota = countRes[0].count as number;
-} else {
-    // B. 否則走原本的系統預設邏輯
-    if (currentPlan === 'free') {
-        maxQuota = 3;
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)").bind(currentUserId, startOfMonth).all();
-        usedQuota = countRes[0].count as number;
-    } else if (currentPlan === 'trial') {
-        maxQuota = 20;
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?) AND datetime(order_date) <= datetime(?)").bind(currentUserId, userPlan.trial_start_at, userPlan.trial_end_at).all();
-        usedQuota = countRes[0].count as number;
-    } else {
-        isUnlimited = true;
-    }
+  } else {
+    // 免費版：每月 3 單
+    maxQuota = 3;
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { results: countRes } = await env.commission_db.prepare(
+      "SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)"
+    ).bind(currentUserId, startOfMonth).all();
+    usedQuota = countRes[0].count as number;
+  }
 }
 
-// 執行檢查
+// 3. 最終執行檢查
 if (!isUnlimited && usedQuota >= maxQuota) {
-    return new Response(JSON.stringify({ 
-        success: false, 
-        error: `建單額度已達上限 (${usedQuota}/${maxQuota})，請升級或聯繫管理員。` 
-    }), { status: 403, headers: corsHeaders });
+  return new Response(JSON.stringify({ 
+    success: false, 
+    error: `您的帳號配額不足（目前：${usedQuota} / 上限：${maxQuota}）。如需調整請聯繫管理員。` 
+  }), { status: 403, headers: corsHeaders });
 }
 
     const body: CreateCommissionBody = await request.json();
