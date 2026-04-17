@@ -17,8 +17,10 @@ export const paymentController = {
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
       ).bind(orderId, currentUserId, amount, plan_type).run();
 
-      // 🌟 直接將網址寫死，確保藍新 100% 拿到正確地址！
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
+      
+      // 🌟 修正點 1：NotifyURL 必須是 Hookdeck 地址，否則會被 Cloudflare 擋掉
+      const hookdeckUrl = "https://hkdk.events/3zyr10gulio2ol";
 
       const params = new URLSearchParams({
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
@@ -31,10 +33,10 @@ export const paymentController = {
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
-        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", 
+        NotifyURL: hookdeckUrl, // 絕對要用 Hookdeck 地址
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
+
       const { newebpay } = await import("../utils/crypto");
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
@@ -55,13 +57,12 @@ export const paymentController = {
     }
   },
 
-async handleNotify(request: Request, env: Env): Promise<Response> {
+  async handleNotify(request: Request, env: Env): Promise<Response> {
     let rawBody = "";
     try {
       rawBody = await request.text();
       const contentType = request.headers.get("content-type") || "";
 
-      // 🕵️ 寫入初始日誌，幫我們確認收到的格式
       await env.commission_db.prepare(
         "INSERT INTO WebhookLogs (message) VALUES (?)"
       ).bind(`[入口觸發] 格式: ${contentType}, 長度: ${rawBody.length}`).run();
@@ -69,14 +70,12 @@ async handleNotify(request: Request, env: Env): Promise<Response> {
       let status: string | null = null;
       let tradeInfo: string | null = null;
 
-      // 🌟 核心修復：根據 Content-Type 決定解析方式
+      // 🌟 修正點 2：支援 Hookdeck 的 JSON 格式解析
       if (contentType.includes("application/json") || rawBody.trim().startsWith("{")) {
-        // 如果是 Hookdeck 轉發的 JSON 格式
         const jsonBody = JSON.parse(rawBody);
         status = jsonBody.Status;
         tradeInfo = jsonBody.TradeInfo;
       } else {
-        // 如果是原始的表單格式
         const params = new URLSearchParams(rawBody);
         status = params.get("Status");
         tradeInfo = params.get("TradeInfo");
@@ -84,11 +83,10 @@ async handleNotify(request: Request, env: Env): Promise<Response> {
 
       if (status !== "SUCCESS" || !tradeInfo) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
-          .bind(`狀態不符或無資料: Status=${status}`).run();
+          .bind(`狀態不符: Status=${status}`).run();
         return new Response("OK");
       }
 
-      // --- 以下加解密與資料庫邏輯維持不變 ---
       const { newebpay } = await import("../utils/crypto");
       const decrypted = await newebpay.decrypt(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const data = JSON.parse(decodeURIComponent(decrypted.replace(/\+/g, " ")));
@@ -101,7 +99,7 @@ async handleNotify(request: Request, env: Env): Promise<Response> {
       ).bind(orderId).all();
       
       if (results.length === 0) {
-        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`訂單不存在或已處理: ${orderId}`).run();
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`訂單處理跳過: ${orderId}`).run();
         return new Response("OK");
       }
 
@@ -114,15 +112,11 @@ async handleNotify(request: Request, env: Env): Promise<Response> {
         env.commission_db.prepare("UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?").bind(newExpiry.toISOString(), userId)
       ]);
 
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🎉 恭喜！訂單 ${orderId} 處理完成，使用者 ${userId} 已升級`).run();
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🎉 升級成功: 訂單 ${orderId}`).run();
 
       return new Response("OK");
     } catch (error: any) {
-      try {
-        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🚨 Notify 崩潰: ${error.message}`).run();
-      } catch (dbErr) {
-        console.error("資料庫寫入失敗", dbErr);
-      }
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🚨 Notify 錯誤: ${error.message}`).run();
       return new Response("OK");
     }
   }
