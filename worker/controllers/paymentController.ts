@@ -32,10 +32,10 @@ export const paymentController = {
         Email: "user@example.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        NotifyURL: "https://events.hookdeck.com/e/src_https://hkdk.events/3zyr10gulio2ol", // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
+        // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
+        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", 
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
-
       const { newebpay } = await import("../utils/crypto");
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
