@@ -1,8 +1,16 @@
 {
-  "extends": "./tsconfig.node.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker.tsbuildinfo",
-    "types": ["./worker-configuration.d.ts", "vite/client"],
+    "composite": true,
+    "lib": ["ESNext"],
+    "types": [
+      "@cloudflare/workers-types", 
+      "node"  // 🌟 必須要在這裡明確加上 node，TypeScript 才會在 Worker 環境認得 node:crypto
+    ],
+    "moduleResolution": "Node", // 確保模組解析方式是 Node
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["worker", "worker/shared"]
+  "include": ["worker/**/*.ts"] 
 }
