@@ -32,7 +32,7 @@ export const paymentController = {
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
         // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知
-        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", 
+        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", // 跳轉到 Hookdeck 監聽，確保能收到藍新的通知 
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       }).toString();
       const { newebpay } = await import("../utils/crypto");
