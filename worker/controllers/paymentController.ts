@@ -57,21 +57,27 @@ export const paymentController = {
   },
 
   async handleNotify(request: Request, env: Env): Promise<Response> {
+    let rawBody = "";
     try {
-      const formData = await request.formData();
-      const status = formData.get("Status");
-      const tradeInfo = formData.get("TradeInfo") as string;
+      // 🕵️ 步驟 1：第一時間把原始內容抓出來 (不要先用 formData)
+      rawBody = await request.text();
 
-
-      // 🕵️ 監視器啟動：只要藍新來敲門，不管成功失敗，先記錄下來！
-      const text = await request.text();
+      // 🕵️ 步驟 2：立刻寫入監視器資料庫 (這是最安全的順序)
       await env.commission_db.prepare(
         "INSERT INTO WebhookLogs (message) VALUES (?)"
-      ).bind(`收到請求原始內容: ${text.substring(0, 100)}...`).run();
+      ).bind(`[入口觸發] 原始長度: ${rawBody.length}, 內容片段: ${rawBody.substring(0, 100)}`).run();
 
-      if (status !== "SUCCESS" || !tradeInfo) return new Response("OK");
+      // 🕵️ 步驟 3：手動解析 URLSearchParams (這比 request.formData() 穩定)
+      const params = new URLSearchParams(rawBody);
+      const status = params.get("Status");
+      const tradeInfo = params.get("TradeInfo");
 
-      // 載入 Web Crypto API 進行解密
+      if (status !== "SUCCESS" || !tradeInfo) {
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`狀態不符或無加密包裹: Status=${status}`).run();
+        return new Response("OK");
+      }
+
+      // 步驟 4：解密與升級 (這部分維持原樣，但加上 await)
       const { newebpay } = await import("../utils/crypto");
       const decrypted = await newebpay.decrypt(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const data = JSON.parse(decodeURIComponent(decrypted.replace(/\+/g, " ")));
@@ -79,39 +85,35 @@ export const paymentController = {
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-      // 檢查訂單
       const { results } = await env.commission_db.prepare(
         "SELECT * FROM PaymentOrders WHERE id = ? AND status = 'pending'"
       ).bind(orderId).all();
       
       if (results.length === 0) {
-        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`找不到訂單或已付款: ${orderId}`).run();
-        return new Response("OK"); 
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`訂單不存在或已處理: ${orderId}`).run();
+        return new Response("OK");
       }
 
-      const order = results[0] as any;
-      const userId = order.user_id;
-
-      // 更新訂單與帳號
+      const userId = (results[0] as any).user_id;
       let newExpiry = new Date();
       newExpiry.setDate(newExpiry.getDate() + 30); 
 
       await env.commission_db.batch([
-        env.commission_db.prepare(
-          "UPDATE PaymentOrders SET status = 'paid', trade_no = ?, pay_time = ? WHERE id = ?"
-        ).bind(tradeNo, data.Result.PayTime, orderId),
-        env.commission_db.prepare(
-          "UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?"
-        ).bind(newExpiry.toISOString(), userId)
+        env.commission_db.prepare("UPDATE PaymentOrders SET status = 'paid', trade_no = ?, pay_time = ? WHERE id = ?").bind(tradeNo, data.Result.PayTime, orderId),
+        env.commission_db.prepare("UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?").bind(newExpiry.toISOString(), userId)
       ]);
 
-      // 🕵️ 記錄成功升級
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`完美升級成功！使用者: ${userId}`).run();
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🎉 恭喜！訂單 ${orderId} 處理完成，使用者 ${userId} 已升級`).run();
 
-      return new Response("OK"); 
+      return new Response("OK");
     } catch (error: any) {
-      // 🕵️ 如果解密或資料庫出錯，記錄詳細錯誤
-      return new Response(`Notify Error: ${error.message}`, { status: 500 });
+      // 🕵️ 萬一崩潰，把錯誤訊息寫進資料庫
+      try {
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)").bind(`🚨 Notify 崩潰: ${error.message}`).run();
+      } catch (dbErr) {
+        console.error("連資料庫都寫不進去了", dbErr);
+      }
+      return new Response("OK"); // 永遠對藍新回 OK
     }
   }
 };
