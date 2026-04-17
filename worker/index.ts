@@ -48,7 +48,7 @@ export default {
         if (request.method === "GET" && url.pathname === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
         if (request.method === "GET" && url.pathname === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
         if (request.method === "GET" && url.pathname === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
-        if (request.method === "PATCH" && pathParts.length === 4) return adminController.updateUser(request, pathParts[3], currentUserId!, env, corsHeaders);
+        if (request.method === "PATCH" && pathParts[3] === "users" && pathParts.length === 5) return adminController.updateUser(request, pathParts[4], currentUserId!, env, corsHeaders);
       }
 
       // 3. User API
