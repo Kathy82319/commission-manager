@@ -51,6 +51,18 @@ export function sanitizeAndLimit(str: string | undefined | null, maxLength: numb
             .replace(/'/g, '&#039;');
 }
 
+
+/**
+ * 專為富文本 (Rich Text) 設計的限制器
+ * 保留 HTML 排版標籤，但簡單過濾危險的 <script> 標籤
+ */
+export function limitRichText(str: string | undefined | null, maxLength: number): string {
+  if (!str) return '';
+  const limitedStr = str.substring(0, maxLength); 
+  // 移除 <script>...</script>，保留其餘 HTML 排版
+  return limitedStr.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+}
+
 /**
  * 驗證是否為安全的 URL (僅允許 http/https)
  */

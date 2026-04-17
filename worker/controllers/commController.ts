@@ -1,6 +1,6 @@
 // worker/controllers/commController.ts
 import type { Env, CreateCommissionBody } from "../shared/types";
-import { sanitizeAndLimit, isValidSafeUrl } from "../utils/security";
+import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
 export const commController = {
   // 取得委託單列表
@@ -99,7 +99,7 @@ export const commController = {
       sanitizeAndLimit(body.delivery_method, 100), sanitizeAndLimit(body.payment_method, 100),
       sanitizeAndLimit(body.draw_scope, 100), body.char_count, sanitizeAndLimit(body.bg_type, 100),
       sanitizeAndLimit(body.add_ons, 1000), sanitizeAndLimit(body.detailed_settings, 10000), sanitizeAndLimit(body.workflow_mode, 50) || 'standard',
-      sanitizeAndLimit(body.agreed_tos_snapshot, 10000) || '' 
+      limitRichText(body.agreed_tos_snapshot, 10000) || '' 
     ).run();
     
     return new Response(JSON.stringify({ success: true, id: newOrderId }), { status: 200, headers: corsHeaders });
@@ -141,11 +141,11 @@ export const commController = {
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
         updates.push(`${key} = ?`);
-        if (key === 'agreed_tos_snapshot') {
-          params.push(sanitizeAndLimit(body[key], fieldLimits[key]));
-        } else {
-          params.push(typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]);
-        }
+if (key === 'agreed_tos_snapshot') {
+  params.push(limitRichText(body[key], fieldLimits[key]));
+} else {
+  params.push(typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]);
+}
       }
     }
     
