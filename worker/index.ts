@@ -163,9 +163,11 @@ export default {
 
 // 在 currentUserId 獲取之後加上這段：
 if (url.pathname === "/api/version") {
+  const testDesc = `PRO_PLAN_TEST_${Date.now()}`; // 這就是會送給藍新的變數
   return new Response(JSON.stringify({ 
     version: "v1.0.3_INTEGRATED",
-    status: "If you see this, the update is LIVE!" 
+    expected_item_desc: testDesc,
+    status: "If this desc is new, the problem is definitely the Frontend URL." 
   }), { headers: corsHeaders });
 }
 
