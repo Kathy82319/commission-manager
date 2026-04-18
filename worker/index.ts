@@ -61,13 +61,29 @@ export default {
           }
         }
 
-        // --- Admin API (修正方法名稱與參數) ---
+        // --- Admin API (補全所有後台路由) ---
         if (url.pathname.startsWith("/api/admin/")) {
           const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
-          
-          if (url.pathname === "/api/admin/stats") {
-            // 🌟 修正：使用 getDashboardStats 並傳入 currentUserId
+
+          // 1. 營運統計
+          if (url.pathname === "/api/admin/stats" && request.method === "GET") {
             return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
+          }
+          
+          // 2. 用戶管理 (清單與搜尋)
+          if (url.pathname === "/api/admin/users" && request.method === "GET") {
+            return adminController.getUsers(request, currentUserId!, env, corsHeaders);
+          }
+
+          // 3. 用戶管理 (更新用戶權限/方案)
+          if (url.pathname.startsWith("/api/admin/users/") && request.method === "PATCH") {
+            const targetId = url.pathname.split("/")[4];
+            return adminController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
+          }
+
+          // 4. 全站委託單管理
+          if (url.pathname === "/api/admin/commissions" && request.method === "GET") {
+            return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
           }
         }
 
