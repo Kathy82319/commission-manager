@@ -25,6 +25,38 @@ const parseTime = (dateStr?: string) => {
 };
 
 // 輔助函式：強制縮小並壓縮預覽圖 Blob
+async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality = 0.5): Promise<Blob> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        // 如果圖片寬度大於上限，等比例縮小
+        if (width > maxWidth) {
+          height = (maxWidth / width) * height;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(originalBlob);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // 輸出成壓縮過的 WebP 或 JPEG (這裡用 jpeg 以求穩定，可依需求改 webp)
+        canvas.toBlob((blob) => {
+          resolve(blob || originalBlob);
+        }, 'image/jpeg', quality);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(originalBlob);
+  });
+}
 
 export function Notebook() {
   const location = useLocation();
@@ -278,17 +310,19 @@ export function Notebook() {
     setIsUploading(stageKey);
 
     try {
-      const previewType = resultBlobs.preview.type || 'image/jpeg';
-      const previewExt = previewType.split('/')[1] || 'jpg';
+            // 🌟 新增：將 preview 進行二次壓縮 (解析度縮小 + 品質降低)
+      // 這裡強制再次壓縮確保輕量級 (800px, 0.5 quality)
+      const lowResPreviewBlob = await compressPreviewBlob(resultBlobs.preview, 800, 0.5);
       
 // 1️⃣ 上傳公開預覽圖時
+const previewType = 'image/jpeg'; // 統一存為 jpeg 以利壓縮
 const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
   method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
   // 🌟 加上 folder: 'commissions'
   body: JSON.stringify({ 
     contentType: previewType, 
     bucketType: 'public', 
-    originalName: `preview.${previewExt}`,
+    originalName: `preview_${stageKey}.jpg`,
     folder: 'commissions' 
   })
 });
@@ -299,7 +333,7 @@ const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
       
       const pubRes = await fetch(publicUploadUrl, { 
         method: 'PUT', 
-        body: resultBlobs.preview,
+        body: lowResPreviewBlob, // 🌟 使用壓縮過的 Blob
         headers: { 'Content-Type': previewType } 
       });
       if (!pubRes.ok) throw new Error("預覽圖上傳遭伺服器拒絕");
