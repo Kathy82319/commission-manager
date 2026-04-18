@@ -133,7 +133,6 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setFormData(prev => ({ ...prev, avatar_url: finalUrl }));
-      alert("頭像上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
     } catch (err: any) {
       alert(err.message || "頭像上傳失敗");
     } finally {
@@ -160,7 +159,6 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
-      alert("作品上傳成功！請記得點擊下方的「儲存全部內容」以完成更新。");
     } catch (err: any) {
       alert(err.message || "作品上傳失敗");
     } finally {
@@ -187,7 +185,6 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${safeFileName}`;
       setSettings(prev => ({ ...prev, splash_image: finalUrl }));
-      alert("開場背景圖上傳成功！請記得點擊下方的「儲存全部內容」。");
     } catch (err: any) {
       alert(err.message || "背景圖上傳失敗");
     } finally {
