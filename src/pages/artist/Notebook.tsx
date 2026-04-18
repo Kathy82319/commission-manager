@@ -391,6 +391,16 @@ export function Notebook() {
     borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease'
   });
 
+// 🌟 新增：精準判斷該階段是否真的被委託人「看過」或「同意過」
+const isStageActuallyReviewed = (stageNameCH: string) => {
+  // 檢查 logs 陣列中，是否有委託人觸發的「已閱覽」或「已同意」紀錄
+  return logs.some(log => 
+    log.actor_role === 'client' && 
+    (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`已同意 ${stageNameCH}`))
+  );
+};
+
+
   const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
     const isFinal = stageKey === 'final';
@@ -743,18 +753,35 @@ export function Notebook() {
                 </div>
               )}
 
-              {activeTab === 'delivery' && (
-                <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
-                    <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印，但仍建議自行加上浮水印，保護自身作品權益</span>
-                    <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟可重複上傳新版本覆蓋，委託人閱覽後會將顯示。</span>
-                  </div>
-                  
-                  {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
-                  {renderStageBox('階段 3：完稿 (Final Preview)', 'final', selectedOrder.current_stage === 'final_reviewing', selectedOrder.status === 'completed')}
-                </div>
-              )}
+{/* 🌟 修改：將最後一個參數 isPassed 從「進度判斷」改為「日誌判斷」 */}
+{activeTab === 'delivery' && (
+  <div style={{ animation: 'fadeIn 0.3s ease' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
+      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印...</span>
+    </div>
+    
+    {renderStageBox(
+      '階段 1：草稿 (Sketch)', 
+      'sketch', 
+      selectedOrder.current_stage === 'sketch_reviewing', 
+      isStageActuallyReviewed('草稿') // 👈 改用日誌檢查
+    )}
+    
+    {renderStageBox(
+      '階段 2：線稿 (Lineart)', 
+      'lineart', 
+      selectedOrder.current_stage === 'lineart_reviewing', 
+      isStageActuallyReviewed('線稿') // 👈 改用日誌檢查
+    )}
+    
+    {renderStageBox(
+      '階段 3：完稿 (Final Preview)', 
+      'final', 
+      selectedOrder.current_stage === 'final_reviewing', 
+      selectedOrder.status === 'completed' // 完稿維持以結案狀態為準
+    )}
+  </div>
+)}
 
               {activeTab === 'logs' && (
                 <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
