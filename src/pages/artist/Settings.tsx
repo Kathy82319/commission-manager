@@ -234,32 +234,40 @@ useEffect(() => {
 
       const result = await response.json();
 
-      if (result.success && result.data) {
-        // 2. 拿到藍新的加密包裹後，建立隱藏表單
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = result.data.PayGateWay; // 藍新刷卡機網址
+if (result.success && result.data) {
+  // 🌟 1. 這是最暴力的方法，直接彈出視窗顯示後端傳回來的原始字串
+  // 這樣你就能 100% 確認 NotifyURL 到底長怎樣
+  const rawParams = result.debug_raw_params || "找不到 debug_raw_params";
+  
+  alert("【後端回傳的原始加密前參數】\n\n" + rawParams);
 
-        // 3. 把參數塞入表單
-        const params = {
-          MerchantID: result.data.MerchantID,
-          TradeInfo: result.data.TradeInfo,
-          TradeSha: result.data.TradeSha,
-          Version: result.data.Version,
-        };
+  // 🌟 2. 你也可以選擇先「不跳轉」，等你看清楚 F12 再手動放行
+  // 只要把下面這幾行註解掉，網頁就不會跳轉
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = result.data.PayGateWay;
 
-        for (const [key, value] of Object.entries(params)) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value as string;
-          form.appendChild(input);
-        }
+  const params = {
+    MerchantID: result.data.MerchantID,
+    TradeInfo: result.data.TradeInfo,
+    TradeSha: result.data.TradeSha,
+    Version: result.data.Version,
+  };
 
-        // 4. 掛載到畫面並火速送出跳轉
-        document.body.appendChild(form);
-        form.submit();
-      } else {
+  for (const [key, value] of Object.entries(params)) {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value as string;
+    form.appendChild(input);
+  }
+
+  document.body.appendChild(form);
+  
+  // 如果你想徹底檢查，可以先註解掉下面這行：
+  //form.submit(); 
+}
+ else {
         alert("訂單建立失敗：" + (result.error || "請稍後再試"));
         setIsUpgrading(false);
       }
