@@ -16,7 +16,7 @@ export const paymentController = {
       
       const amount = 199;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
+      const absoluteFrontendUrl = "https://commission-app.pages.dev";
 
       // 寫入資料庫待付款紀錄
       await env.commission_db.prepare(
