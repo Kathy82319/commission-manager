@@ -3,7 +3,7 @@ import type { Env } from "../shared/types";
 
 export const paymentController = {
   /**
-   * 1. 產生藍新支付表單資料
+   * 1. 產生藍新支付表單資料 (POST /api/payment/create)
    */
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
@@ -13,31 +13,39 @@ export const paymentController = {
 
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
+      
+      // --- 定義變數區 ---
       const amount = 199;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
+      const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
+      const hookdeckUrl = "https://hkdk.events/3zyr10gulio2ol"; 
+      // ----------------
 
-      // 建立訂單紀錄
+      // 寫入資料庫待付款紀錄
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
       ).bind(orderId, currentUserId, amount, plan_type).run();
 
-      const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
-
-      const params = new URLSearchParams({
+      // 🌟 準備原始參數 (使用物件形式)
+      const tradeInfoObj: any = {
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
         RespondType: "JSON",
         TimeStamp: Math.floor(Date.now() / 1000).toString(),
         Version: "2.0",
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
-        // 🌟 使用唯一字串，確保這絕對是 v1.0.8 版本發出的請求
-        ItemDesc: `PRO_PLAN_STABLE_v1.0.8_${Date.now()}`, 
+        ItemDesc: `PRO_PLAN_v1.0.9_${Date.now()}`,
         Email: "user@example.com",
         LoginType: "0",
-        ReturnURL: `${absoluteFrontendUrl}/payment/result`, 
-        NotifyURL: "https://hkdk.events/3zyr10gulio2ol", 
+        ReturnURL: `${absoluteFrontendUrl}/payment/result`,
+        NotifyURL: hookdeckUrl,
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
-      }).toString();
+      };
+
+      // 🌟 將物件轉為「原始字串」，確保 NotifyURL 不會被過度編碼
+      const params = Object.keys(tradeInfoObj)
+        .map(key => `${key}=${tradeInfoObj[key]}`)
+        .join('&');
 
       const { newebpay } = await import("../utils/crypto");
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
@@ -45,7 +53,8 @@ export const paymentController = {
 
       return new Response(JSON.stringify({
         success: true,
-        deploy_version: "v1.0.8_STABLE", // 增加版號回傳給前端 Console
+        deploy_version: "v1.0.9_STABLE_TEST",
+        debug_raw_params: params, // 供 F12 Console 檢查用
         data: {
           MerchantID: env.NEWEBPAY_MERCHANT_ID,
           TradeInfo: aesString,
@@ -61,21 +70,20 @@ export const paymentController = {
   },
 
   /**
-   * 2. 接收藍新通知 (Webhook)
+   * 2. 接收藍新通知 (Webhook) (POST /api/payment/notify)
    */
   async handleNotify(request: Request, env: Env): Promise<Response> {
     try {
       const rawBody = await request.text();
       const contentType = request.headers.get("content-type") || "";
 
-      // 🕵️ 日誌：追蹤封包進入
+      // 紀錄日誌
       await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
         .bind(`[Notify] 收到請求, 長度: ${rawBody.length}, 格式: ${contentType}`).run();
 
       let status: string | null = null;
       let tradeInfo: string | null = null;
 
-      // 解析邏輯
       if (contentType.includes("application/json") || rawBody.trim().startsWith("{")) {
         const jsonBody = JSON.parse(rawBody);
         status = jsonBody.Status;
@@ -86,31 +94,20 @@ export const paymentController = {
         tradeInfo = params.get("TradeInfo");
       }
 
-      if (status !== "SUCCESS" || !tradeInfo) {
-        return new Response("OK"); 
-      }
+      if (status !== "SUCCESS" || !tradeInfo) return new Response("OK");
 
-      // 🌟 加解密與資料更新 (強化版)
+      // 執行解密
       const { newebpay } = await import("../utils/crypto");
-      
-      // 1. 修剪字串，避免不可見字元破壞 AES 長度
       const encryptedData = tradeInfo.trim(); 
-      
-      // 2. 執行解密
       const decrypted = await newebpay.decrypt(encryptedData, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
-      
-      // 3. 解析內容
       const decodedData = decodeURIComponent(decrypted.replace(/\+/g, " "));
       const data = JSON.parse(decodedData);
       
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-      // 4. 更新資料庫
-      const { results } = await env.commission_db.prepare(
-        "SELECT * FROM PaymentOrders WHERE id = ?"
-      ).bind(orderId).all();
-      
+      // 更新資料庫
+      const { results } = await env.commission_db.prepare("SELECT user_id FROM PaymentOrders WHERE id = ?").bind(orderId).all();
       if (results.length === 0) return new Response("OK");
 
       const userId = (results[0] as any).user_id;
