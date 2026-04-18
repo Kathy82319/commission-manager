@@ -68,11 +68,13 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
-      if (initialSelectedId && !selectedId) {
+      // 🌟 修正 F5 Bug：只要網址有 ID，就算 selectedId 已經有值，也要確保抓取資料
+      if (initialSelectedId) {
         const target = data.data.find((c: Commission) => c.id === initialSelectedId);
         if (target) {
           setSelectedId(target.id);
           setEditData(target);
+          // 強制拉取該單據的附件與紀錄，避免 F5 後狀態丟失
           fetchPayments(target.id);
           fetchDeliverables(target.id);
         }
@@ -95,6 +97,7 @@ export function Notebook() {
     }
   };
 
+  // 避免重複依賴導致無限迴圈，僅在掛載時執行
   useEffect(() => { fetchCommissions(); }, []);
 
   const handleSelect = async (order: Commission) => {
@@ -268,13 +271,11 @@ export function Notebook() {
     }
   };
 
-// 🌟【核心修復】：退回 PUT 上傳邏輯
   const handleR2FileUpload = async (stageKey: string, resultBlobs: { preview: Blob; original?: Blob }) => {
     if (!selectedId) return;
     setIsUploading(stageKey);
 
     try {
-      // 1️⃣ 上傳公開預覽圖
       const previewType = resultBlobs.preview.type || 'image/jpeg';
       const previewExt = previewType.split('/')[1] || 'jpg';
       
@@ -287,7 +288,6 @@ export function Notebook() {
       
       const { uploadUrl: publicUploadUrl, fileName: publicSafeFileName } = ticketData;
       
-      // 🌟 修正：改用 PUT，直接把 blob 塞進 body，不使用 FormData
       const pubRes = await fetch(publicUploadUrl, { 
         method: 'PUT', 
         body: resultBlobs.preview,
@@ -298,7 +298,6 @@ export function Notebook() {
       const publicFinalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${publicSafeFileName}`;
       let finalUrlToSave = publicFinalUrl; 
 
-      // 2️⃣ 如果有原檔，上傳私有原檔
       if (stageKey === 'final' && resultBlobs.original) {
         const origType = resultBlobs.original.type || 'application/octet-stream';
         const origName = (resultBlobs.original as File).name || 'final_original.zip';
@@ -312,7 +311,6 @@ export function Notebook() {
 
         const { uploadUrl: privateUploadUrl, fileName: privateSafeFileName } = privateTicketData;
         
-        // 🌟 修正：同樣改用 PUT
         const privRes = await fetch(privateUploadUrl, { 
           method: 'PUT', 
           body: resultBlobs.original,
@@ -323,7 +321,6 @@ export function Notebook() {
         finalUrlToSave = `${publicFinalUrl}|${privateSafeFileName}`;
       }
 
-      // 3️⃣ 通知後端更新資料庫紀錄
       const submitRes = await fetch(`${API_BASE}/api/commissions/${selectedId}/submit`, {
         method: 'POST',
         credentials: 'include',
@@ -425,8 +422,12 @@ export function Notebook() {
       }
     } 
     else {
-      if (isPassed) {
+      // 🌟 修正標籤邏輯：不再盲目根據 isPassed 判定，必須先確認「這階段到底有沒有上傳過檔案(sub)」
+      if (!sub) {
+        statusTag = '等待繪製上傳...';
+      } else if (isPassed) {
         headerBg = '#E8F3EB';
+        // 只有完稿才顯示同意，其他顯示已閱覽
         statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
         statusColor = '#4E7A5A';
       } else if (isReviewing) {
