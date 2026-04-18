@@ -67,9 +67,9 @@ export function PublicProfile() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
-  const [isSplashClosing, setIsSplashClosing] = useState(false); // 🌟 控制淡出狀態
+  const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
       try {
@@ -100,7 +100,7 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 🌟 修改後的開場動畫計時邏輯
+  // 🌟 核心修正：分兩階段關閉開場動畫
   useEffect(() => {
     if (!loading && artist) {
       if (settings?.splash_enabled === false) {
@@ -108,18 +108,19 @@ export function PublicProfile() {
         return;
       }
       
-      // 讀取使用者自訂的秒數，預設為 2 秒
+      // 1. 讀取使用者設定的停留秒數 (毫秒)
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
       
       const timer = setTimeout(() => {
-        setIsSplashClosing(true); // 1. 先觸發 CSS 的淡出動畫 (.hide)
+        // 第一步：觸發 CSS 中的 .hide (啟動 0.8s 的 opacity 與 transform 動畫)
+        setIsSplashClosing(true); 
         
-        // 2. 等待 CSS transition (0.8s) 完成後，再從 DOM 中移除
-        const removeTimer = setTimeout(() => {
+        // 第二步：等待 CSS 動畫跑完 (這裡設 850ms 確保完整) 後，才正式移除 DOM
+        const removeDomTimer = setTimeout(() => {
           setShowSplash(false);
-        }, 800); 
+        }, 850); 
 
-        return () => clearTimeout(removeTimer);
+        return () => clearTimeout(removeDomTimer);
       }, duration);
 
       return () => clearTimeout(timer);
@@ -170,8 +171,8 @@ export function PublicProfile() {
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
   return (
-    <div className="public-profile-container">
-      {/* 🌟 修改：根據 isSplashClosing 狀態加上 'hide' 類別 */}
+  <div className="public-profile-container">
+      {/* 🌟 核心修正：將 isSplashClosing 綁定到 className */}
       {showSplash && (
         <div 
           className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
