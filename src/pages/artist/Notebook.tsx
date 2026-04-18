@@ -97,24 +97,38 @@ export function Notebook() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedId, activeTab, navigate]);
 
-  const fetchCommissions = async () => {
-    const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
-    const data = await res.json();
-    if (data.success) {
-      setCommissions(data.data);
-      // 🌟 修正 F5 Bug：只要網址有 ID，就算 selectedId 已經有值，也要確保抓取資料
-      if (initialSelectedId) {
-        const target = data.data.find((c: Commission) => c.id === initialSelectedId);
-        if (target) {
-          setSelectedId(target.id);
-          setEditData(target);
-          // 強制拉取該單據的附件與紀錄，避免 F5 後狀態丟失
-          fetchPayments(target.id);
-          fetchDeliverables(target.id);
-        }
+// 修改 1：給 fetchCommissions 加上一個 isInitialLoad 參數
+const fetchCommissions = async (isInitialLoad = false) => {
+  const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
+  const data = await res.json();
+  if (data.success) {
+    setCommissions(data.data);
+    
+    // 🌟 修正 F5 Bug：只有在「初次載入」時，才根據網址的 ID 初始化細節資料
+    if (isInitialLoad && initialSelectedId) {
+      const target = data.data.find((c: Commission) => c.id === initialSelectedId);
+      if (target) {
+        setSelectedId(target.id);
+        setEditData(target);
+        fetchPayments(target.id);
+        fetchDeliverables(target.id);
+      }
+    } 
+    // 若不是初次載入，我們也要確保右側的 editData 吃到最新的列表狀態 (例如狀態從 unpaid 變 paid)
+    else if (!isInitialLoad && selectedId) {
+      const target = data.data.find((c: Commission) => c.id === selectedId);
+      if (target) {
+        setEditData(prev => ({ ...target, ...prev })); // 保持正在編輯的狀態，但更新底層資料
       }
     }
-  };
+  }
+};
+
+// 修改 2：在掛載時的 useEffect 傳入 true
+useEffect(() => { 
+  fetchCommissions(true); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const fetchPayments = async (id: string) => {
     const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
