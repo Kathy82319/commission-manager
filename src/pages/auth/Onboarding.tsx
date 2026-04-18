@@ -1,4 +1,3 @@
-// src/pages/auth/Onboarding.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,11 +11,9 @@ export function Onboarding() {
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
       try {
-        // 🔒 安全修正：不再依賴 localStorage 或 URL 參數
-        // 呼叫 /api/users/me，讓後端依據 HttpOnly Cookie 判斷身分
-        const res = await fetch(`${API_BASE}/api/users/me`, {
+        // 直接使用相對路徑，瀏覽器會自動補上當前的 .pages.dev 網域
+        const res = await fetch('/api/users/me', {
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -28,7 +25,6 @@ export function Onboarding() {
 
         const data = await res.json();
         if (data.success && data.data) {
-          // 如果已經設定過角色，直接導向對應頁面
           if (data.data.role === 'artist') navigate('/artist/queue');
           else if (data.data.role === 'client') navigate('/client/home');
           
@@ -51,11 +47,10 @@ export function Onboarding() {
     }
 
     setSubmitting(true);
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
 
     try {
-      // 🔒 安全修正：將請求發送到 /me，不再夾帶容易被竄改的 userId
-      const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
+      // 直接使用相對路徑
+      const res = await fetch('/api/users/me/complete-onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
