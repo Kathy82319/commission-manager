@@ -118,15 +118,8 @@ export const paymentController = {
       let newExpiry = new Date();
       newExpiry.setDate(newExpiry.getDate() + 30); 
 
-      // 🌟 關鍵：使用 D1 Batch 進行「原子更新 (Atomic Update)」
-      // 語句 A：將訂單狀態更新為 paid (關鍵條件：WHERE status = 'pending')
-      const updateOrderStmt = env.commission_db.prepare(`
-        UPDATE PaymentOrders 
-        SET status = 'paid', trade_no = ?, pay_time = ? 
-        WHERE id = ? AND status = 'pending'
-      `).bind(tradeNo, data.Result.PayTime, orderId);
-
-      // 語句 B：更新 User 效期 (關鍵條件：只有當這筆訂單狀態還是 pending 時才加值)
+            // 🌟 關鍵：使用 D1 Batch 進行「原子更新 (Atomic Update)」
+      // 語句 A：更新 User 效期 (關鍵條件：只有當這筆訂單狀態還是 pending 時才加值)
       const updateUserStmt = env.commission_db.prepare(`
         UPDATE Users 
         SET plan_type = 'pro', pro_expires_at = ? 
@@ -135,10 +128,17 @@ export const paymentController = {
         )
       `).bind(newExpiry.toISOString(), userId, orderId);
 
-      const batchResults = await env.commission_db.batch([updateOrderStmt, updateUserStmt]);
+      // 語句 B：將訂單狀態更新為 paid (關鍵條件：WHERE status = 'pending')
+      const updateOrderStmt = env.commission_db.prepare(`
+        UPDATE PaymentOrders 
+        SET status = 'paid', trade_no = ?, pay_time = ? 
+        WHERE id = ? AND status = 'pending'
+      `).bind(tradeNo, data.Result.PayTime, orderId);
+
+      const batchResults = await env.commission_db.batch([updateUserStmt, updateOrderStmt]);
 
       // 🌟 檢查是否真的搶到了這筆訂單的處理權
-      if (batchResults[0].meta.changes === 0) {
+      if (batchResults[1].meta.changes === 0) {
         // 如果 changes 為 0，代表發生了併發，這筆訂單已經在別的請求中被改成 paid 了
         console.log(`[Idempotency] Order ${orderId} was already processed concurrently.`);
         return new Response("OK");

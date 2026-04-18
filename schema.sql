@@ -179,6 +179,13 @@ CREATE TABLE PaymentOrders (
   FOREIGN KEY (user_id) REFERENCES Users(id)
 );
 
+-- 10. Webhook 日誌表
+CREATE TABLE WebhookLogs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
