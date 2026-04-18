@@ -13,7 +13,7 @@ export default {
   async fetch(request: any, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // 1. 處理藍新跳轉 (ReturnURL)
+    // 1. 處理藍新支付完成後的跳轉 (ReturnURL)
     if (url.pathname === "/payment/result" && request.method === "POST") {
       const redirectUrl = new URL("/artist/settings", url.origin);
       redirectUrl.searchParams.set("payment", "success");
@@ -61,12 +61,14 @@ export default {
           }
         }
 
-        // --- Admin API (補回先前遺失的路由) ---
+        // --- Admin API (修正方法名稱與參數) ---
         if (url.pathname.startsWith("/api/admin/")) {
           const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
-          // 將請求交給 adminController
-          if (url.pathname === "/api/admin/stats") return adminController.getStats(env, corsHeaders);
-          // 如果還有其他 admin 路由，請依此類推...
+          
+          if (url.pathname === "/api/admin/stats") {
+            // 🌟 修正：使用 getDashboardStats 並傳入 currentUserId
+            return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
+          }
         }
 
         // --- Commission API ---
