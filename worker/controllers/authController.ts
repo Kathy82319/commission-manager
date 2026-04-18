@@ -60,7 +60,7 @@ export const authController = {
       let targetPath = "/artist/queue";
 
       if (!user) {
-        // 新使用者：寫入資料庫並導向初始設定頁
+        // 新使用者：寫入資料庫
         const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
         await createNewUser(env, userId, safeDisplayName, profile.pictureUrl || '');
         targetPath = "/onboarding"; 
@@ -72,6 +72,12 @@ export const authController = {
           targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
         }
       }
+
+      // 🌟 [封測邏輯：全體強制升級]
+      // 不管是新舊使用者，登入時都強制更新為 Pro 權限，這樣你自己登入也會變 Pro
+      await env.commission_db.prepare(
+        "UPDATE Users SET plan_type = 'pro', pro_expires_at = '2099-12-31 23:59:59' WHERE id = ?"
+      ).bind(userId).run();
 
       // 4. 重新導向回前端
       let baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");

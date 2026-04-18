@@ -51,7 +51,9 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  /*
   const [isUpgrading, setIsUpgrading] = useState(false);
+  */
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
@@ -215,6 +217,7 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     }
   };
 
+    /*
   const handleStartTrial = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
@@ -270,6 +273,7 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
       setIsUpgrading(false);
     }
   };
+  */
 
   const validateSocialUrl = (platform: string, url: string) => {
     let formattedUrl = url.trim();
@@ -356,7 +360,8 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     { id: 'payment', label: '付款方式' },
     { id: 'rules', label: '協議書內容' },
     { id: 'custom', label: '其他 (自訂標題)' },
-    { id: 'subscription', label: '💎 方案與訂閱' }
+    // 🚧 [封測限制] 隱藏訂閱分頁，不讓使用者在測試期間看到付費資訊
+    // { id: 'subscription', label: '💎 方案與訂閱' }
   ];
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
@@ -463,7 +468,8 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
           <div style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto', userSelect: isCurrentTabLocked ? 'none' : 'auto', height: '100%', opacity: isCurrentTabLocked ? 0.5 : 1 }}>
             
-            {activeTab === 'subscription' && (
+            {/* 🚧 [封測限制] 隱藏整個訂閱分頁內容區塊 */}
+            {/* {activeTab === 'subscription' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
                   
@@ -534,6 +540,7 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
                 </div>
               </div>
             )}
+            */}
 
             {activeTab === 'profile_basic' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
