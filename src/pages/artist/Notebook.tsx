@@ -92,8 +92,8 @@ export function Notebook() {
     const res = await fetch(`${API_BASE}/api/commissions/${id}/deliverables`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
-      setSubmissions(data.data.submissions);
-      setLogs(data.data.logs);
+    setSubmissions(data.data.submissions || []); 
+    setLogs(data.data.logs || []);
     }
   };
 

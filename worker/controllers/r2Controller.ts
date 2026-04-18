@@ -45,7 +45,7 @@ export const r2Controller = {
     }
   },
 
-  /**
+    /**
    * 取得下載用預簽章網址 (需校驗當事人身分)
    */
   async getDownloadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {

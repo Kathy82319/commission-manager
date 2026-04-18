@@ -123,6 +123,8 @@ export function ClientOrderDetail() {
             });
             const data = await res.json();
             if (data.success) {
+              setSubmissions(data.data.submissions || []); 
+            setLogs(data.data.logs || []);
               // 後端狀態已推進，重新拉取最新資料與歷史紀錄
               await fetchDetailData();
             }
@@ -257,7 +259,12 @@ export function ClientOrderDetail() {
     return latest;
   };
 
-  const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
+
+
+
+
+
+    const renderClientStageBox = (title: string, stageKey: string, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
     const isFreeMode = orderData?.workflow_mode === 'free';
@@ -502,13 +509,13 @@ export function ClientOrderDetail() {
 
           {activeTab === 'review' && (
             <div>
-              {orderData.delivery_method !== '一鍵出圖' && (
+                            {orderData.delivery_method !== '一鍵出圖' && (
                 <>
-                  {renderClientStageBox('階段 1：草稿', 'sketch', orderData.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
-                  {renderClientStageBox('階段 2：線稿', 'lineart', orderData.current_stage === 'lineart_reviewing', ['final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
+                  {renderClientStageBox('階段 1：草稿', 'sketch', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
+                  {renderClientStageBox('階段 2：線稿', 'lineart', ['final_drawing', 'final_reviewing', 'completed'].includes(orderData.current_stage))}
                 </>
               )}
-              {renderClientStageBox('階段 3：完稿交付', 'final', orderData.current_stage === 'final_reviewing', orderData.status === 'completed')}
+              {renderClientStageBox('階段 3：完稿交付', 'final', orderData.status === 'completed')}
             </div>
           )}
 
