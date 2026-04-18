@@ -49,22 +49,22 @@ export const r2Controller = {
     if (results.length === 0) return new Response(JSON.stringify({ success: false, error: "單據不存在" }), { status: 404, headers: corsHeaders });
     const comm = results[0] as any;
 
-    const isArtist = currentUserId === comm.artist_id;
-    const isClient = currentUserId === comm.client_id;
-    const isCompleted = comm.status === 'completed';
-
-    if (!isArtist && !(isClient && isCompleted)) {
+    // 🌟 修正身分判定邏輯：優先判斷是否為委託人，確保開發者自己測試時身分紀錄正確
+    let actorRole = '';
+    if (currentUserId === comm.client_id) {
+      actorRole = 'client';
+    } else if (currentUserId === comm.artist_id) {
+      actorRole = 'artist';
+    } else {
       return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
-    // 🌟 補全：紀錄檔案下載日誌
-    const actorRole = isArtist ? 'artist' : 'client';
     const logContent = `${actorRole === 'artist' ? '繪師' : '委託人'}已下載檔案: ${fileName}`;
 
     try {
       const downloadUrl = await generateDownloadUrl(env, bucketToUse, fileName);
       
-      // 寫入日誌
+      // 寫入下載日誌
       await env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, ?, 'download', ?)")
         .bind(crypto.randomUUID(), commissionId, actorRole, logContent).run();
 

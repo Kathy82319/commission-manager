@@ -18,7 +18,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
   },
 
-  // 取得單筆委託單詳細資料
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results } = await env.commission_db.prepare(`
       SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings,
@@ -32,14 +31,10 @@ export const commController = {
 
     if (results.length === 0) return new Response(JSON.stringify({ success: false, message: "找不到此委託單" }), { status: 404, headers: corsHeaders });
     const commission = results[0] as any;
-
     const isArtist = currentUserId === commission.artist_id;
     const isClient = currentUserId === commission.client_id;
     const isPublicQuote = !commission.client_id && (commission.status === 'quote_created' || commission.status === 'unpaid');
-
-    if (!isArtist && !isClient && !isPublicQuote) {
-      return new Response(JSON.stringify({ success: false, error: "無權存取" }), { status: 403, headers: corsHeaders });
-    }
+    if (!isArtist && !isClient && !isPublicQuote) return new Response(JSON.stringify({ success: false, error: "無權存取" }), { status: 403, headers: corsHeaders });
     return new Response(JSON.stringify({ success: true, data: commission }), { status: 200, headers: corsHeaders });
   },
 
