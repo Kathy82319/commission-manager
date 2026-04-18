@@ -1,4 +1,7 @@
 // src/PublicProfile.tsx
+
+
+
 import { useState, useEffect, useMemo } from 'react'; // 🌟 修正 1：補上 useMemo
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
@@ -29,30 +32,30 @@ interface ProfileSettings {
 }
 
 const platformStyles: Record<string, { bg: string; text: string }> = {
-  'Facebook': { bg: '#1877F2', text: '#fff' },
-  'Plurk': { bg: '#FF574D', text: '#fff' },
-  'Twitter / X': { bg: '#000000', text: '#fff' },
-  'Threads': { bg: '#000000', text: '#fff' },
-  'Instagram': { bg: '#E1306C', text: '#fff' },
-  '個人網站': { bg: '#4CAF50', text: '#fff' }
+  'Facebook': { bg: '#dbdbdb', text: '#000' },
+  'Plurk': { bg: '#dbdbdb', text: '#000' },
+  'Twitter / X': { bg: '#dbdbdb', text: '#000' },
+  'Threads': { bg: '#dbdbdb', text: '#000' },
+  'Instagram': { bg: '#dbdbdb', text: '#000' },
+  '個人網站': { bg: '#dbdbdb', text: '#000' }
 };
 
 const getSocialIcon = (platform: string) => {
-  const size = 18;
+  const size = 20; // 稍微加大 icon 佔滿圓圈
   switch (platform) {
     case 'Facebook':
-      return <SiFacebook size={size} color="currentColor" />;
+      return <SiFacebook size={size} color="#1877F2" />;
     case 'Twitter / X':
-      return <SiX size={size} color="currentColor" />;
+      return <SiX size={size} color="#000000" />;
     case 'Instagram':
-      return <SiInstagram size={size} color="currentColor" />;
+      return <SiInstagram size={size} color="#E1306C" />;
     case 'Threads':
-      return <SiThreads size={size} color="currentColor" />;
+      return <SiThreads size={size} color="#000000" />;
     case 'Plurk':
-      return <SiPlurk size={size} color="currentColor" />;
+      return <SiPlurk size={size} color="#FF574D" />;
     case '個人網站':
     default:
-      return <Globe size={size} color="currentColor" />;
+      return <Globe size={size} color="#333333" />;
   }
 };
 
