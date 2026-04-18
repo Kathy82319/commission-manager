@@ -1,8 +1,6 @@
 // src/PublicProfile.tsx
 
-
-
-import { useState, useEffect, useMemo } from 'react'; // 🌟 修正 1：補上 useMemo
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
@@ -41,7 +39,7 @@ const platformStyles: Record<string, { bg: string; text: string }> = {
 };
 
 const getSocialIcon = (platform: string) => {
-  const size = 20; // 稍微加大 icon 佔滿圓圈
+  const size = 20; 
   switch (platform) {
     case 'Facebook':
       return <SiFacebook size={size} color="#1877F2" />;
@@ -69,6 +67,7 @@ export function PublicProfile() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
+  const [isSplashClosing, setIsSplashClosing] = useState(false); // 🌟 控制淡出狀態
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -101,19 +100,32 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
+  // 🌟 修改後的開場動畫計時邏輯
   useEffect(() => {
     if (!loading && artist) {
       if (settings?.splash_enabled === false) {
         setShowSplash(false);
         return;
       }
+      
+      // 讀取使用者自訂的秒數，預設為 2 秒
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
-      const timer = setTimeout(() => setShowSplash(false), duration);
+      
+      const timer = setTimeout(() => {
+        setIsSplashClosing(true); // 1. 先觸發 CSS 的淡出動畫 (.hide)
+        
+        // 2. 等待 CSS transition (0.8s) 完成後，再從 DOM 中移除
+        const removeTimer = setTimeout(() => {
+          setShowSplash(false);
+        }, 800); 
+
+        return () => clearTimeout(removeTimer);
+      }, duration);
+
       return () => clearTimeout(timer);
     }
   }, [loading, settings, artist]);
 
-  // 🌟 修正 2：為 tab 加上明確型別 (tab: { id: string; label: string })
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
@@ -159,9 +171,10 @@ export function PublicProfile() {
 
   return (
     <div className="public-profile-container">
+      {/* 🌟 修改：根據 isSplashClosing 狀態加上 'hide' 類別 */}
       {showSplash && (
         <div 
-          className="splash-screen"
+          className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
           style={{
             backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
             backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
@@ -217,7 +230,6 @@ export function PublicProfile() {
               </div>
             )}
             
-            {/* 🌟 核心防護：渲染內容前，DOMPurify 依然保護著您 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
               <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
             )}
@@ -231,7 +243,6 @@ export function PublicProfile() {
         </div>
       </div>
 
-      {/* 🌟 修正 3：確保 selectedImgIndex 被讀取使用 */}
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close">✕</button>
