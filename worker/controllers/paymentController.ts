@@ -105,23 +105,54 @@ export const paymentController = {
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-      const { results } = await env.commission_db.prepare("SELECT user_id FROM PaymentOrders WHERE id = ?").bind(orderId).all();
-      if (results.length === 0) return new Response("OK");
+            const order = await env.commission_db.prepare("SELECT status, user_id FROM PaymentOrders WHERE id = ?").bind(orderId).first();
+      if (!order) return new Response("OK");
 
-      const userId = (results[0] as any).user_id;
+      if (order.status === 'paid') {
+        // 提早攔截：如果已經是 paid 狀態，代表已處理過，直接回傳
+        return new Response("OK");
+      }
+
+      const userId = order.user_id;
       let newExpiry = new Date();
       newExpiry.setDate(newExpiry.getDate() + 30); 
 
-      await env.commission_db.batch([
-        env.commission_db.prepare("UPDATE PaymentOrders SET status = 'paid', trade_no = ?, pay_time = ? WHERE id = ?").bind(tradeNo, data.Result.PayTime, orderId),
-        env.commission_db.prepare("UPDATE Users SET plan_type = 'pro', pro_expires_at = ? WHERE id = ?").bind(newExpiry.toISOString(), userId)
-      ]);
+      // 🌟 關鍵：使用 D1 Batch 進行「原子更新 (Atomic Update)」
+      // 語句 A：將訂單狀態更新為 paid (關鍵條件：WHERE status = 'pending')
+      const updateOrderStmt = env.commission_db.prepare(`
+        UPDATE PaymentOrders 
+        SET status = 'paid', trade_no = ?, pay_time = ? 
+        WHERE id = ? AND status = 'pending'
+      `).bind(tradeNo, data.Result.PayTime, orderId);
+
+      // 語句 B：更新 User 效期 (關鍵條件：只有當這筆訂單狀態還是 pending 時才加值)
+      const updateUserStmt = env.commission_db.prepare(`
+        UPDATE Users 
+        SET plan_type = 'pro', pro_expires_at = ? 
+        WHERE id = ? AND EXISTS (
+          SELECT 1 FROM PaymentOrders WHERE id = ? AND status = 'pending'
+        )
+      `).bind(newExpiry.toISOString(), userId, orderId);
+
+      const batchResults = await env.commission_db.batch([updateOrderStmt, updateUserStmt]);
+
+      // 🌟 檢查是否真的搶到了這筆訂單的處理權
+      if (batchResults[0].meta.changes === 0) {
+        // 如果 changes 為 0，代表發生了併發，這筆訂單已經在別的請求中被改成 paid 了
+        console.log(`[Idempotency] Order ${orderId} was already processed concurrently.`);
+        return new Response("OK");
+      }
 
       return new Response("OK");
-    } catch (error: any) {
-      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
-        .bind(`🚨 Notify 處理異常: ${error.message}`).run();
-      return new Response("OK");
+        } catch (error: any) {
+      try {
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
+          .bind(`🚨 Notify 處理異常: ${error.message}`).run();
+      } catch (logError) {
+        console.error("WebhookLogs insert failed", logError);
+      }
+      // 發生資料庫內部錯誤時，回傳 500，這樣藍新稍後就會自動重試這筆通知
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 };
