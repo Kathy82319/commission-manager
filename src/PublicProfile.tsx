@@ -2,6 +2,8 @@
 import { useState, useEffect, useMemo } from 'react'; // 🌟 修正 1：補上 useMemo
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
+import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
+import { Globe } from 'lucide-react';
 import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
@@ -36,20 +38,21 @@ const platformStyles: Record<string, { bg: string; text: string }> = {
 };
 
 const getSocialIcon = (platform: string) => {
-  const props = { width: "18", height: "18", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
+  const size = 18;
   switch (platform) {
     case 'Facebook':
-      return <svg {...props} fill="currentColor" stroke="none"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>;
+      return <SiFacebook size={size} color="currentColor" />;
     case 'Twitter / X':
-      return <svg {...props}><line x1="4" y1="4" x2="20" y2="20" /><line x1="20" y1="4" x2="4" y2="20" /></svg>;
+      return <SiX size={size} color="currentColor" />;
     case 'Instagram':
-      return <svg {...props}><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>;
+      return <SiInstagram size={size} color="currentColor" />;
     case 'Threads':
-      return <svg {...props}><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>;
+      return <SiThreads size={size} color="currentColor" />;
     case 'Plurk':
-      return <svg {...props}><path d="M9 4h3a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H9V4z" /><line x1="9" y1="12" x2="9" y2="20" /></svg>;
+      return <SiPlurk size={size} color="currentColor" />;
+    case '個人網站':
     default:
-      return <svg {...props}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
+      return <Globe size={size} color="currentColor" />;
   }
 };
 
