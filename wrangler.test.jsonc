@@ -1,0 +1,29 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "cath-commission-manager", // 🌟 測試專案名稱
+    "pages_build_output_dir": "dist",
+    "compatibility_date": "2026-04-09",
+    "compatibility_flags": ["nodejs_compat"],
+    "vars": {
+        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback",
+        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",
+        "LINE_CHANNEL_ID": "2008032417" // 測試機 LINE ID
+    },
+    "d1_databases": [
+        {
+            "binding": "commission_db",
+            "database_name": "commission-db-test",
+            "database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683"
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "PUBLIC_BUCKET",
+            "bucket_name": "commission-public"
+        },
+        {
+            "binding": "PRIVATE_BUCKET",
+            "bucket_name": "commission-private"
+        }
+    ]
+}
