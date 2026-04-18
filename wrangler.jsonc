@@ -1,10 +1,20 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "commission-app",
+    "name": "commission-app", // 🌟 正式專案名稱
     "pages_build_output_dir": "dist",
     "compatibility_date": "2026-04-09",
-    "compatibility_flags": [
-        "nodejs_compat"
+    "compatibility_flags": ["nodejs_compat"],
+    "vars": {
+        "LINE_REDIRECT_URI": "https://commission-app.pages.dev/api/auth/line/callback",
+        "FRONTEND_URL": "https://commission-app.pages.dev",
+        "LINE_CHANNEL_ID": "2009777002" // 正式機 LINE ID
+    },
+    "d1_databases": [
+        {
+            "binding": "commission_db",
+            "database_name": "commission_db_prod",
+            "database_id": "098f6357-7523-4ddb-bce8-92d5045a1a3c"
+        }
     ],
     "r2_buckets": [
         {
