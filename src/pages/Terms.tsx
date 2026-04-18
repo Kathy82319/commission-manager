@@ -88,9 +88,9 @@ export function Terms() {
           <li style={itemStyle}>
             <span style={highlightStyle}>專業版 (Pro)：</span>
             <ul style={nestedListStyle}>
-              <li><span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買，截止日前提醒)。</li>
+              <li><span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買)。</li>
               <li>無接單數量限制。</li>
-              <li>可自訂最多 7 個分頁區塊，作品區上傳限制提高至 20 張。</li>
+              <li>可使用最多 7 個分頁區塊，作品區上傳限制提高至 20 張。</li>
               <li>費用採預付制，用戶可隨時停止續訂。</li>
             </ul>
           </li>
@@ -103,7 +103,7 @@ export function Terms() {
       <section style={sectionStyle}>
         <h2 style={subTitleStyle}>三、 權利與責任免責聲明</h2>
         <p style={itemStyle}>1. 繪師與委託人間的畫作版權歸屬（包含但不限於授權範圍、著作權轉讓等協議）、酬金給付及糾紛處理，應依據雙方於建單時簽署之「協議書內容」為準。</p>
-        <p style={itemStyle}>2. <span style={highlightStyle}>本平台不介入亦不代為定義任何法律條文之實質效力。</span> 系統提供之預設授權類別僅供分類參考，實際契約義務由雙方自行議定。</p>
+        <p style={itemStyle}>2. <span style={highlightStyle}>本平台不介入亦不代為定義任何法律條文之實質效力。</span> 系統不提供協議保障，實際契約義務由雙方自行議定。</p>
         <p style={itemStyle}>3. 本平台對委託人間之溝通落差、跑單或畫作品質爭議不負法律賠償責任，但提供完整歷程紀錄（ActionLogs）作為舉證參考。</p>
       </section>
 
@@ -111,8 +111,8 @@ export function Terms() {
         <h2 style={subTitleStyle}>四、 違規與法律責任</h2>
         <p style={itemStyle}>1. <span style={highlightStyle}>禁止行為：</span>用戶不得利用本服務儲存、發布或傳送任何非法、具威脅性、誹謗、猥褻、色情、侵權或違反公共秩序之內容。若上傳之畫作涉及版權爭議，由上傳用戶自行承擔所有法律責任。</p>
         <p style={itemStyle}>2. <span style={highlightStyle}>紀錄之真實性義務：</span>繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任須由該用戶百分之百自負。</p>
-        <p style={itemStyle}>3. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」或「永久刪除帳號」等措施。</p>
-        <p style={itemStyle}>4. <span style={highlightStyle}>損害賠償：</span>若因用戶之違規行為導致本平台受有損害或面臨法律訴訟，該用戶應負擔本平台之所有損失（包含律師費與商譽損失）。</p>
+        <p style={itemStyle}>3. <span style={highlightStyle}>異常使用防範：</span>用戶不得利用自動化程式或人為惡意手段進行不合理之資源耗損行為，包含但不限於短時間內大量建立單據（如一分鐘內連續建單）、大量上傳無關或冗餘圖檔、或執行任何足以導致伺服器效能受損之行為。</p>
+        <p style={itemStyle}>4. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定或有異常使用之情事，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」、「永久刪除帳號」或「限制 IP 訪問」等措施。</p>
       </section>
 
       <section style={sectionStyle}>

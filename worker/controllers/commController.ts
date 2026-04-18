@@ -45,6 +45,28 @@ export const commController = {
     
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
 
+    // 🌟 防護機制：異常使用防範 (Rate Limiting) - 檢查過去 1 分鐘內的建單數量
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { results: recentOrders } = await env.commission_db.prepare(`
+      SELECT COUNT(*) as recent_count 
+      FROM Commissions 
+      WHERE artist_id = ? AND datetime(order_date) >= datetime(?)
+    `).bind(currentUserId, oneMinuteAgo).all();
+
+    const recentCount = (recentOrders[0]?.recent_count as number) || 0;
+
+    // 如果 1 分鐘內建單超過 5 筆，視為惡意操作
+    if (recentCount >= 5) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "系統偵測到異常的建單頻率，為保護伺服器資源，請稍後再試。" 
+      }), { 
+        status: 429, // 429 Too Many Requests
+        headers: corsHeaders 
+      });
+    }
+    // 🌟 防護機制結束
+
     const now = new Date();
     let maxQuota = 0;
     let usedQuota = 0;
@@ -280,6 +302,18 @@ export const commController = {
 
   async postMessage(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { sender_role: string; content: string } = await request.json();
+    
+    // 🌟 防護機制：聊天室防洗頻 (1 分鐘內最多 30 則訊息)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { results: recentMsgs } = await env.commission_db.prepare(`
+      SELECT COUNT(*) as count FROM Messages 
+      WHERE commission_id = ? AND sender_role = ? AND datetime(created_at) >= datetime(?)
+    `).bind(id, body.sender_role, oneMinuteAgo).all();
+
+    if ((recentMsgs[0]?.count as number) >= 30) {
+      return new Response(JSON.stringify({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }), { status: 429, headers: corsHeaders });
+    }
+
     await env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.sender_role, sanitizeAndLimit(body.content, 10000)).run();
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
@@ -291,6 +325,18 @@ export const commController = {
 
   async postPayment(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { record_date: string; item_name: string; amount: number } = await request.json();
+    
+    // 🌟 防護機制：記帳防呆與防刷 (1 分鐘內最多 5 筆帳目)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { results: recentPayments } = await env.commission_db.prepare(`
+      SELECT COUNT(*) as count FROM PaymentRecords 
+      WHERE commission_id = ? AND datetime(created_at) >= datetime(?)
+    `).bind(id, oneMinuteAgo).all();
+
+    if ((recentPayments[0]?.count as number) >= 5) {
+      return new Response(JSON.stringify({ success: false, error: "新增帳目頻率過高，請稍後再試。" }), { status: 429, headers: corsHeaders });
+    }
+
     await env.commission_db.prepare("INSERT INTO PaymentRecords (id, commission_id, record_date, item_name, amount) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.record_date, body.item_name, body.amount).run();
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
