@@ -24,6 +24,8 @@ const parseTime = (dateStr?: string) => {
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
 };
 
+// 輔助函式：強制縮小並壓縮預覽圖 Blob
+
 export function Notebook() {
   const location = useLocation();
   const navigate = useNavigate(); 
