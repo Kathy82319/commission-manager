@@ -105,6 +105,39 @@ export function ClientOrderDetail() {
     fetchDetailData();
   }, [id]);
 
+  // 🌟 新增：自動已讀流機制 (Auto-Read Flow)
+  useEffect(() => {
+    if (activeTab === 'review' && orderData && !isProcessing) {
+      // 只有在草稿或線稿審閱中，才會觸發自動已讀
+      if (orderData.current_stage === 'sketch_reviewing' || orderData.current_stage === 'lineart_reviewing') {
+        const stageKey = orderData.current_stage.replace('_reviewing', '');
+        
+        const triggerAutoRead = async () => {
+          setIsProcessing(true);
+          try {
+            const res = await fetch(`${API_BASE}/api/commissions/${id}/review`, {
+              method: 'POST', 
+              credentials: 'include', 
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stage: stageKey, action: 'read_only' })
+            });
+            const data = await res.json();
+            if (data.success) {
+              // 後端狀態已推進，重新拉取最新資料與歷史紀錄
+              await fetchDetailData();
+            }
+          } catch (e) {
+            console.error("自動標記已讀失敗", e);
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+
+        triggerAutoRead();
+      }
+    }
+  }, [activeTab, orderData?.current_stage, id, API_BASE]);
+
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!id) return;
     try {
