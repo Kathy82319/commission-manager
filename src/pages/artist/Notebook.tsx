@@ -392,8 +392,8 @@ export function Notebook() {
   });
 
 // 🌟 新增：精準判斷該階段是否真的被委託人「看過」或「同意過」
+// 輔助函式
 const isStageActuallyReviewed = (stageNameCH: string) => {
-  // 檢查 logs 陣列中，是否有委託人觸發的「已閱覽」或「已同意」紀錄
   return logs.some(log => 
     log.actor_role === 'client' && 
     (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`已同意 ${stageNameCH}`))
@@ -401,57 +401,54 @@ const isStageActuallyReviewed = (stageNameCH: string) => {
 };
 
 
-  const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
-    const sub = submissions.find(s => s.stage === stageKey);
-    const isFinal = stageKey === 'final';
-    const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
-    
-    const isUnbound = !selectedOrder?.client_public_id;
-    const isFreeMode = selectedOrder?.workflow_mode === 'free';
+const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
+  const sub = submissions.find(s => s.stage === stageKey);
+  const isFinal = stageKey === 'final';
+  const isRejected = selectedOrder?.current_stage === `${stageKey}_drawing` && !!sub;
+  
+  const isUnbound = !selectedOrder?.client_public_id;
+  const isFreeMode = selectedOrder?.workflow_mode === 'free';
 
-    let headerBg = '#FCFAF8'; 
-    let statusTag = '';
-    let statusColor = '#A0978D';
-    
+  let headerBg = '#FCFAF8'; 
+  let statusTag = '';
+  let statusColor = '#A0978D';
+  
+  // --- 開始修正後的邏輯判斷 ---
+  if (!sub) {
+    // 沒檔案的情況：永遠是等待上傳
+    statusTag = '等待繪製上傳...';
+  } else {
+    // 有檔案的情況：
     if (isFreeMode) {
-      if (sub) {
-        headerBg = '#E8F3EB';
-        statusTag = '✓ 檔案已上傳 (自由模式)';
-        statusColor = '#4E7A5A';
-      } else {
-        statusTag = '等待繪製上傳...';
-      }
-    } 
-    else if (isUnbound) {
-      if (sub) {
-        headerBg = '#F0ECE7';
-        statusTag = '⚠️ 等待委託人綁定帳號後才能閱覽';
-        statusColor = '#A05C5C';
-      } else {
-        statusTag = '等待繪製上傳...';
-      }
-    } 
-    else {
-      // 🌟 修正標籤邏輯：不再盲目根據 isPassed 判定，必須先確認「這階段到底有沒有上傳過檔案(sub)」
-      if (!sub) {
-        statusTag = '等待繪製上傳...';
-      } else if (isPassed) {
-        headerBg = '#E8F3EB';
-        // 只有完稿才顯示同意，其他顯示已閱覽
-        statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
-        statusColor = '#4E7A5A';
-      } else if (isReviewing) {
-        headerBg = '#FDF4E6';
-        statusTag = '⏳ 待委託人確認';
-        statusColor = '#A67B3E';
-      } else if (isRejected) { 
-        headerBg = '#fce8e6';
-        statusTag = '⚠️ 委託人已退回修改';
-        statusColor = '#d93025';
-      } else {
-        statusTag = '等待繪製上傳...';
-      }
+      headerBg = '#E8F3EB';
+      statusTag = '✓ 檔案已上傳 (自由模式)';
+      statusColor = '#4E7A5A';
+    } else if (isUnbound) {
+      headerBg = '#F0ECE7';
+      statusTag = '⚠️ 等待委託人綁定';
+      statusColor = '#A05C5C';
+    } else if (isPassed) {
+      // 確實有閱覽紀錄或已結案
+      headerBg = '#E8F3EB';
+      statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽';
+      statusColor = '#4E7A5A';
+    } else if (isReviewing) {
+      // 正在該階段審閱中
+      headerBg = '#FDF4E6';
+      statusTag = '⏳ 待委託人確認';
+      statusColor = '#A67B3E';
+    } else if (isRejected) { 
+      // 被退回
+      headerBg = '#fce8e6';
+      statusTag = '⚠️ 委託人已退回修改';
+      statusColor = '#d93025';
+    } else {
+      // 🌟 關鍵修正：有檔案，但目前進度已經跑到後面去了（且委託人還沒看這階段）
+      headerBg = '#E8F3EB'; // 給予淡淡的綠色，代表「已完成交付」
+      statusTag = '✓ 稿件已上傳 (待閱覽)';
+      statusColor = '#4E7A5A';
     }
+  }
 
     return (
       <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
