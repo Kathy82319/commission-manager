@@ -90,9 +90,9 @@ export function Onboarding() {
   return (
     <div style={containerStyle}>
       <div style={{ maxWidth: '500px', width: '100%', padding: '40px', backgroundColor: '#FFFFFF', borderRadius: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' }}>
-        <h2 style={{ margin: '0 0 8px 0', textAlign: 'center' }}>歡迎來到 Commission！</h2>
+        <h2 style={{ margin: '0 0 8px 0', textAlign: 'center' }}>歡迎來到 Arti繪師小幫手！</h2>
         <p style={{ margin: '0 0 32px 0', textAlign: 'center', color: '#A0978D', fontSize: '14px' }}>
-          花一分鐘設定您的個人檔案，開始您的旅程。
+          花10秒鐘設定您的暱稱，開始您的旅程。
         </p>
 
         <div style={{ marginBottom: '24px' }}>

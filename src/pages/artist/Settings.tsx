@@ -265,7 +265,7 @@ if (result.success && result.data) {
   document.body.appendChild(form);
   
   // 如果你想徹底檢查，可以先註解掉下面這行：
-  //form.submit(); 
+  form.submit(); 
 }
  else {
         alert("訂單建立失敗：" + (result.error || "請稍後再試"));
