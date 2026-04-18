@@ -1,6 +1,6 @@
 import React from 'react';
 
-// 🌟 樣式定義
+// 樣式定義
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   backgroundColor: '#778ca4', 
@@ -30,8 +30,9 @@ const loginButtonStyle: React.CSSProperties = {
 
 export function Login() {
   const handleLineLogin = () => {
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://commission-manager.cath82319.workers.dev';
-    window.location.href = `${API_BASE}/api/auth/line/login`;
+    // 移除完整的 API_BASE 判斷，直接使用相對路徑
+    // 瀏覽器會自動在前面補上 https://cath-commission-manager.pages.dev
+    window.location.href = '/api/auth/line/login';
   };
 
   return (
