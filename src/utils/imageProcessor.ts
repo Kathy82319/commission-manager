@@ -47,7 +47,7 @@ export default async function getCroppedImg(
     throw new Error('無法建立 Canvas 內容');
   }
 
-  // 設定 Canvas 尺寸為使用者裁切的尺寸
+  // 設定 Canvas 尺寸為使用者裁切的尺寸 (支援自由比例)
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
@@ -64,36 +64,23 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // 2. 如果需要浮水印，依照您的原始版本邏輯擴充為「全圖平鋪」
+  // 2. 如果需要浮水印，加上半透明傾斜文字
   if (withWatermark) {
     ctx.save();
-    
-    // 設定浮水印樣式 (沿用您的參數，稍微調小字體以利平鋪美觀)
-    const fontSize = Math.floor(pixelCrop.width / 12); 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // 半透明白色
-    ctx.font = `bold ${fontSize}px sans-serif`;
+    // 設定浮水印樣式
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // 半透明白色
+    ctx.font = `bold ${Math.floor(pixelCrop.width / 8)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // 加上陰影
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 8;
-
-    // 定義平鋪間距
-    const stepX = fontSize * 5; 
-    const stepY = fontSize * 4;
-
-    // 🌟 使用雙層迴圈直接在畫布上重複繪製
-    for (let x = 0; x <= canvas.width + stepX; x += stepX) {
-      for (let y = 0; y <= canvas.height + stepY; y += stepY) {
-        ctx.save();
-        // 移動到格點並旋轉 -30 度
-        ctx.translate(x, y);
-        ctx.rotate((-30 * Math.PI) / 180);
-        ctx.fillText(watermarkText, 0, 0);
-        ctx.restore();
-      }
-    }
+    // 將文字旋轉 -30 度並放在正中間
+    ctx.translate(pixelCrop.width / 2, pixelCrop.height / 2);
+    ctx.rotate((-30 * Math.PI) / 180);
+    
+    // 畫出文字 (加上黑色陰影讓它在白底也清楚)
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(watermarkText, 0, 0);
     
     ctx.restore();
   }
