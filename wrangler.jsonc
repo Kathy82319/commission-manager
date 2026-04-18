@@ -1,29 +1,74 @@
 {
+
     "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "cath-commission-manager", // 🌟 測試專案名稱
+
+    "name": "commission-app",
+
     "pages_build_output_dir": "dist",
+
     "compatibility_date": "2026-04-09",
-    "compatibility_flags": ["nodejs_compat"],
-    "vars": {
-        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback",
-        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",
-        "LINE_CHANNEL_ID": "2008032417" // 測試機 LINE ID
+
+    "observability": {
+
+        "enabled": true
+
     },
-    "d1_databases": [
-        {
-            "binding": "commission_db",
-            "database_name": "commission-db-test",
-            "database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683"
-        }
+
+    "upload_source_maps": true,
+
+    "compatibility_flags": [
+
+        "nodejs_compat"
+
     ],
-    "r2_buckets": [
-        {
-            "binding": "PUBLIC_BUCKET",
-            "bucket_name": "commission-public"
+
+    "vars": {
+
+        "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback", //切換測試機要改這裡
+
+        "FRONTEND_URL": "https://cath-commission-manager.pages.dev",  //切換測試機要改這裡
+
+        "LINE_CHANNEL_ID": "2008032417"
+
+    },
+
+    "d1_databases": [
+
+
+                {
+
+            // 這是測試機資料庫，我們留著備用
+
+            "binding": "commission_db",
+
+            "database_name": "commission-db-test", // 🌟 修改這裡，讓它與 ID 真實匹配
+
+            "database_id": "80259dbd-5d37-4a60-aaa7-b3ce9c24a683"
+
         },
+
+
+
+    ],
+
+    "r2_buckets": [
+
         {
+
+            "binding": "PUBLIC_BUCKET",
+
+            "bucket_name": "commission-public"
+
+        },
+
+        {
+
             "binding": "PRIVATE_BUCKET",
+
             "bucket_name": "commission-private"
+
         }
+
     ]
+
 }
