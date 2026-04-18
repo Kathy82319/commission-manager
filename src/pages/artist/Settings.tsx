@@ -1,5 +1,5 @@
 // src/pages/artist/Settings.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; 
 import { ImageUploader } from '../../components/ImageUploader';
@@ -50,72 +50,66 @@ export function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-
-  // 🌟 新增：跳轉藍新的載入狀態
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
-useEffect(() => {
-    // 🌟 1. 檢查網址參數是否有付款成功訊息
+  const fetchUserData = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setFormData({
+          display_name: data.data.display_name || '',
+          avatar_url: data.data.avatar_url || '',
+          bio: data.data.bio || '',
+        });
+        
+        setQuotaInfo({
+          plan_type: data.data.plan_type || 'free',
+          used_quota: data.data.used_quota || 0,
+          max_quota: data.data.max_quota || 3,
+          trial_start_at: data.data.trial_start_at,
+          trial_end_at: data.data.trial_end_at,
+          pro_expires_at: data.data.pro_expires_at,
+        });
+
+        if (data.data.profile_settings) {
+          try {
+            const parsed = JSON.parse(data.data.profile_settings);
+            setSettings({
+              portfolio: parsed.portfolio || [],
+              detailed_intro: parsed.detailed_intro || '',
+              process: parsed.process || '',
+              payment: parsed.payment || '',
+              rules: parsed.rules || '',
+              custom_sections: parsed.custom_sections || [],
+              social_links: parsed.social_links || [],
+              hidden_sections: parsed.hidden_sections || [],
+              splash_enabled: parsed.splash_enabled !== false, 
+              splash_image: parsed.splash_image || '',
+              splash_duration: parsed.splash_duration || 2,
+              splash_text: parsed.splash_text || ''
+            });
+          } catch (e) {
+            console.error("解析 profile_settings 失敗");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("讀取設定失敗", error);
+    }
+  }, [API_BASE]);
+
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment') === 'success') {
       alert("🎉 恭喜！您已成功升級為專業版。");
-      
-      // 🌟 2. 清除網址參數，讓使用者重新整理頁面時不會重複跳出通知
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-
-    const fetchUserData = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
-        const data = await res.json();
-        if (data.success && data.data) {
-          setFormData({
-            display_name: data.data.display_name || '',
-            avatar_url: data.data.avatar_url || '',
-            bio: data.data.bio || '',
-          });
-          
-          setQuotaInfo({
-            plan_type: data.data.plan_type || 'free',
-            used_quota: data.data.used_quota || 0,
-            max_quota: data.data.max_quota || 3,
-            trial_start_at: data.data.trial_start_at,
-            trial_end_at: data.data.trial_end_at,
-            pro_expires_at: data.data.pro_expires_at,
-          });
-
-          if (data.data.profile_settings) {
-            try {
-              const parsed = JSON.parse(data.data.profile_settings);
-              setSettings({
-                portfolio: parsed.portfolio || [],
-                detailed_intro: parsed.detailed_intro || '',
-                process: parsed.process || '',
-                payment: parsed.payment || '',
-                rules: parsed.rules || '',
-                custom_sections: parsed.custom_sections || [],
-                social_links: parsed.social_links || [],
-                hidden_sections: parsed.hidden_sections || [],
-                splash_enabled: parsed.splash_enabled !== false, 
-                splash_image: parsed.splash_image || '',
-                splash_duration: parsed.splash_duration || 2,
-                splash_text: parsed.splash_text || ''
-              });
-            } catch (e) {
-              console.error("解析 profile_settings 失敗");
-            }
-          }
-        }
-      } catch (error) {
-        console.error("讀取設定失敗", error);
-      }
-    };
     fetchUserData();
-  }, [API_BASE]);
+  }, [API_BASE, fetchUserData]);
 
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
@@ -215,59 +209,46 @@ useEffect(() => {
       const data = await res.json();
       if (data.success) {
         alert(data.message);
-        window.location.reload(); 
+        fetchUserData();
       } else alert(data.error);
     } catch(e) { alert('連線失敗'); }
   };
 
-  // 🌟 真實金流跳轉處理函數 (取代原本的 Mock 函數)
   const handleUpgradeClick = async () => {
     setIsUpgrading(true);
     try {
-      // 1. 呼叫我們剛剛測試成功的後端建立訂單 API
       const response = await fetch(`${API_BASE}/api/payment/create`, {
         method: "POST",
-        credentials: "include", // 確保帶著 Cookie 認證
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: "pro" })
       });
 
       const result = await response.json();
 
-if (result.success && result.data) {
-  // 🌟 1. 這是最暴力的方法，直接彈出視窗顯示後端傳回來的原始字串
-  // 這樣你就能 100% 確認 NotifyURL 到底長怎樣
-  const rawParams = result.debug_raw_params || "找不到 debug_raw_params";
-  
-  alert("【後端回傳的原始加密前參數】\n\n" + rawParams);
+      if (result.success && result.data) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.data.PayGateWay;
 
-  // 🌟 2. 你也可以選擇先「不跳轉」，等你看清楚 F12 再手動放行
-  // 只要把下面這幾行註解掉，網頁就不會跳轉
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = result.data.PayGateWay;
+        const params = {
+          MerchantID: result.data.MerchantID,
+          TradeInfo: result.data.TradeInfo,
+          TradeSha: result.data.TradeSha,
+          Version: result.data.Version,
+        };
 
-  const params = {
-    MerchantID: result.data.MerchantID,
-    TradeInfo: result.data.TradeInfo,
-    TradeSha: result.data.TradeSha,
-    Version: result.data.Version,
-  };
+        for (const [key, value] of Object.entries(params)) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        }
 
-  for (const [key, value] of Object.entries(params)) {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = key;
-    input.value = value as string;
-    form.appendChild(input);
-  }
-
-  document.body.appendChild(form);
-  
-  // 如果你想徹底檢查，可以先註解掉下面這行：
-  form.submit(); 
-}
- else {
+        document.body.appendChild(form);
+        form.submit(); 
+      } else {
         alert("訂單建立失敗：" + (result.error || "請稍後再試"));
         setIsUpgrading(false);
       }
@@ -329,6 +310,7 @@ if (result.success && result.data) {
     setSettings(prev => ({ ...prev, social_links: [...prev.social_links, { platform: socialPlatform, url: validation.formattedUrl! }] }));
     setSocialUrl('');
   };
+
   const handleRemoveSocial = (index: number) => {
     setSettings(prev => ({ ...prev, social_links: prev.social_links.filter((_, i) => i !== index) }));
   };
@@ -337,9 +319,11 @@ if (result.success && result.data) {
     if (settings.custom_sections.length >= 3) return;
     setSettings(prev => ({ ...prev, custom_sections: [...prev.custom_sections, { id: `custom_${Date.now()}`, title: '', content: '' }] }));
   };
+
   const handleUpdateCustomSection = (id: string, field: 'title' | 'content', value: string) => {
     setSettings(prev => ({ ...prev, custom_sections: prev.custom_sections.map(sec => sec.id === id ? { ...sec, [field]: value } : sec) }));
   };
+
   const handleRemoveCustomSection = (id: string) => {
     setSettings(prev => ({ ...prev, custom_sections: prev.custom_sections.filter(sec => sec.id !== id) }));
   };
