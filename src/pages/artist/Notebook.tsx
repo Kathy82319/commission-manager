@@ -279,10 +279,17 @@ export function Notebook() {
       const previewType = resultBlobs.preview.type || 'image/jpeg';
       const previewExt = previewType.split('/')[1] || 'jpg';
       
-      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview.${previewExt}` })
-      });
+// 1️⃣ 上傳公開預覽圖時
+const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+  method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+  // 🌟 加上 folder: 'commissions'
+  body: JSON.stringify({ 
+    contentType: previewType, 
+    bucketType: 'public', 
+    originalName: `preview.${previewExt}`,
+    folder: 'commissions' 
+  })
+});
       const ticketData = await ticketRes.json();
       if (!ticketData.success) throw new Error(ticketData.error || "無法取得預覽圖上傳通行證");
       
@@ -302,10 +309,18 @@ export function Notebook() {
         const origType = resultBlobs.original.type || 'application/octet-stream';
         const origName = (resultBlobs.original as File).name || 'final_original.zip';
 
-        const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
-          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contentType: origType, bucketType: 'private', originalName: origName })
-        });
+// 2️⃣ 如果是完稿，上傳私有原檔時
+const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+  method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+  // 🌟 同樣加上 folder: 'commissions'
+  body: JSON.stringify({ 
+    contentType: origType, 
+    bucketType: 'private', 
+    originalName: origName,
+    folder: 'commissions' 
+  })
+});
+
         const privateTicketData = await privateTicketRes.json();
         if (!privateTicketData.success) throw new Error(privateTicketData.error || "無法取得原檔上傳通行證");
 

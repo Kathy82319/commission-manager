@@ -111,16 +111,20 @@ export function Settings() {
     fetchUserData();
   }, [API_BASE, fetchUserData]);
 
-  const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
+const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}` }) 
+        // 🌟 加上 folder: 'avatars'
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}`, folder: 'avatars' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
+      
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
+      const { uploadUrl, fileName: safeFileName } = ticketData;
       
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
@@ -141,9 +145,13 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'portfolio.jpg' }) 
+        // 🌟 加上 folder: 'portfolio'
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'portfolio.jpg', folder: 'portfolio' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
+      
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
+      const { uploadUrl, fileName: safeFileName } = ticketData;
       
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
@@ -164,9 +172,13 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'splash.jpg' }) 
+        // 🌟 加上 folder: 'system'
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'splash.jpg', folder: 'system' }) 
       });
-      const { uploadUrl, fileName: safeFileName } = await ticketRes.json();
+      
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
+      const { uploadUrl, fileName: safeFileName } = ticketData;
       
       const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");

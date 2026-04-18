@@ -105,25 +105,34 @@ export function ClientOrderDetail() {
     fetchDetailData();
   }, [id]);
 
-  // 自動已讀流機制 (非完稿階段)
+  // 🌟 新增：自動已讀流機制 (Auto-Read Flow)
   useEffect(() => {
     if (activeTab === 'review' && orderData && !isProcessing) {
+      // 只有在草稿或線稿審閱中，才會觸發自動已讀
       if (orderData.current_stage === 'sketch_reviewing' || orderData.current_stage === 'lineart_reviewing') {
         const stageKey = orderData.current_stage.replace('_reviewing', '');
+        
         const triggerAutoRead = async () => {
           setIsProcessing(true);
           try {
             const res = await fetch(`${API_BASE}/api/commissions/${id}/review`, {
-              method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+              method: 'POST', 
+              credentials: 'include', 
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ stage: stageKey, action: 'read_only' })
             });
-            if ((await res.json()).success) await fetchDetailData();
+            const data = await res.json();
+            if (data.success) {
+              // 後端狀態已推進，重新拉取最新資料與歷史紀錄
+              await fetchDetailData();
+            }
           } catch (e) {
             console.error("自動標記已讀失敗", e);
           } finally {
             setIsProcessing(false);
           }
         };
+
         triggerAutoRead();
       }
     }
@@ -205,16 +214,32 @@ export function ClientOrderDetail() {
     setIsProcessing(true);
     try {
       const parts = fileUrlString.split('|');
-      const targetKey = parts[1] || new URL(parts[0]).pathname.substring(1);
-      const bucketType = parts[1] ? 'private' : 'public';
+      const publicUrl = parts[0];
+      const privateKey = parts[1];
+
+      let targetKey = '';
+      let bucketType = 'private';
+
+      if (privateKey) {
+          targetKey = privateKey;
+          bucketType = 'private';
+      } else {
+          const urlObj = new URL(publicUrl);
+          targetKey = urlObj.pathname.substring(1); 
+          bucketType = 'public';
+      }
 
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commissionId: id, fileName: targetKey, bucketType })
       });
       const data = await res.json();
-      if (data.success) window.location.href = data.downloadUrl;
-      else alert('無法下載：' + data.error);
+      
+      if (data.success) {
+        window.location.href = data.downloadUrl;
+      } else {
+        alert('無法下載：' + data.error);
+      }
     } catch (e) { 
       alert("網路連線錯誤"); 
     } finally { 
@@ -236,8 +261,7 @@ export function ClientOrderDetail() {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
     const isFreeMode = orderData?.workflow_mode === 'free';
-    
-    // 🌟 修正：按鈕顯示判定改為「有檔案且未通過」
+// 🌟 修正：按鈕顯示判定改為「有檔案且未通過」
     const shouldShowActionButtons = isFinal && !isFreeMode && !!sub && !isPassed;
 
     let statusText = '';
@@ -369,7 +393,11 @@ export function ClientOrderDetail() {
       <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column' }}>
         <button 
           onClick={() => navigate('/client/orders')} 
-          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: '0 0 16px 0', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', transition: 'color 0.2s', alignSelf: 'flex-start', fontWeight: 'bold' }} 
+          style={{ 
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', padding: '0 0 16px 0', 
+            cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', transition: 'color 0.2s',
+            alignSelf: 'flex-start', fontWeight: 'bold'
+          }} 
           onMouseEnter={e => e.currentTarget.style.color = '#FFF'} 
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
         >
@@ -389,8 +417,28 @@ export function ClientOrderDetail() {
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>項目名稱</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="請輸入您的委託名稱..." style={{ flex: 1, padding: '10px', borderRadius: '8px', outline: 'none', border: isSavedAndNotEmpty ? '1px solid #e2e8f0' : '1px solid #94a3b8', backgroundColor: isSavedAndNotEmpty ? '#f1f5f9' : '#FFFFFF', transition: 'all 0.3s ease', color: '#475569' }} />
-                    <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#1e8e3e' : '#556577', transition: 'all 0.3s ease', minWidth: '90px' }}>
+                    <input 
+                      type="text" 
+                      value={customTitle} 
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                      placeholder="請輸入您的委託名稱..."
+                      style={{ 
+                        flex: 1, padding: '10px', borderRadius: '8px', outline: 'none', 
+                        border: isSavedAndNotEmpty ? '1px solid #e2e8f0' : '1px solid #94a3b8',
+                        backgroundColor: isSavedAndNotEmpty ? '#f1f5f9' : '#FFFFFF',
+                        transition: 'all 0.3s ease', color: '#475569'
+                      }}
+                    />
+                    <button 
+                      onClick={handleSaveTitle}
+                      disabled={saveStatus !== 'idle'}
+                      style={{ 
+                        padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', 
+                        cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold',
+                        backgroundColor: saveStatus === 'success' ? '#1e8e3e' : '#556577',
+                        transition: 'all 0.3s ease', minWidth: '90px'
+                      }}
+                    >
                       {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
                     </button>
                   </div>
@@ -404,7 +452,14 @@ export function ClientOrderDetail() {
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8ecf3', paddingBottom: '12px', marginBottom: '12px' }}>
                   <h3 style={{ fontSize: '16px', color: '#475569', margin: 0 }}>委託規格</h3>
-                  <button onClick={() => navigate(`/workspace/${id}`)} style={{ padding: '8px 16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', transition: 'all 0.3s', animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none' }}>
+                  <button 
+                    onClick={() => navigate(`/workspace/${id}`)}
+                    style={{ 
+                      padding: '8px 16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', 
+                      fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', transition: 'all 0.3s',
+                      animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none'
+                    }}
+                  >
                     {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
                   </button>
                 </div>
@@ -422,13 +477,24 @@ export function ClientOrderDetail() {
               <div style={{ ...sectionBoxStyle, marginBottom: '0' }}>
                 <h3 style={{ fontSize: '16px', color: '#475569', margin: '0 0 12px 0', borderBottom: '1px solid #e8ecf3', paddingBottom: '8px' }}>委託協議</h3>
                 <div style={{ fontSize: '14px', color: '#556577', maxHeight: '200px', overflowY: 'auto', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e8ecf3' }}>
+                  
                   {orderData.agreed_tos_snapshot ? (
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(orderData.agreed_tos_snapshot) }} />
                   ) : orderData.artist_settings ? (
-                    <div dangerouslySetInnerHTML={{ __html: (() => { try { const rawHtml = JSON.parse(orderData.artist_settings).rules; return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。'; } catch(e) { return '無協議紀錄'; } })() }} />
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: (() => {
+                        try {
+                          const rawHtml = JSON.parse(orderData.artist_settings).rules;
+                          return rawHtml ? DOMPurify.sanitize(rawHtml) : '繪師尚未設定使用規範。';
+                        } catch(e) {
+                          return '無協議紀錄';
+                        }
+                      })()
+                    }} />
                   ) : (
                     <div style={{ whiteSpace: 'pre-wrap' }}>無協議紀錄</div>
                   )}
+
                 </div>
               </div>
             </div>
