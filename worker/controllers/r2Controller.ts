@@ -9,14 +9,14 @@ export const r2Controller = {
   async getUploadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { contentType, bucketType, originalName, folder } = await request.json() as any;
     
-    // 🌟 防護機制 1：檢查一分鐘內索取上傳網址的頻率 (上限 10 次)
+    // 🌟 修正：改用 WebhookLogs 進行查詢 (避開 ActionLogs 的外鍵限制)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-    const systemLogId = `sys-upload-${currentUserId}`; // 使用虛擬的單號來記錄全域上傳行為
+    const rateLimitKey = `req_upload_${currentUserId}`; 
     
     const { results: recentReqs } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as count FROM ActionLogs 
+      SELECT COUNT(*) as count FROM WebhookLogs 
       WHERE commission_id = ? AND action_type = 'request_upload' AND datetime(created_at) >= datetime(?)
-    `).bind(systemLogId, oneMinuteAgo).all();
+    `).bind(rateLimitKey, oneMinuteAgo).all();
 
     if ((recentReqs[0]?.count as number) >= 10) {
       return new Response(JSON.stringify({ 
@@ -40,39 +40,32 @@ export const r2Controller = {
       extension = contentType.split('/')[1]?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
     }
 
-    // 根據前端傳入的 folder 決定 R2 中的存放路徑
-    let pathPrefix = "";
-    if (folder) {
-      pathPrefix = `${folder}/`;
-    } else {
-      pathPrefix = "commissions/";
-    }
-
+    let pathPrefix = folder ? `${folder}/` : "commissions/";
     const safeFileName = `${pathPrefix}${crypto.randomUUID()}.${extension}`; 
     const bucketName = bucketType === 'private' ? "commission-private" : "commission-public";
     
     try {
       const uploadUrl = await generateUploadUrl(env, bucketName, safeFileName, contentType);
       
-      // 🌟 防護機制 1 續：成功產出網址後，寫入一筆系統日誌作為計數依據
+      // 🌟 修正：成功後寫入 WebhookLogs (注意：WebhookLogs 的 ID 是自增的，不需傳 UUID)
       await env.commission_db.prepare(
-        "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'user', 'request_upload', ?)"
-      ).bind(crypto.randomUUID(), systemLogId, `索取上傳網址 (${folder || 'commissions'})`).run();
+        "INSERT INTO WebhookLogs (commission_id, actor_role, action_type, message) VALUES (?, 'user', 'request_upload', ?)"
+      ).bind(rateLimitKey, `索取上傳網址 (${folder || 'commissions'})`).run();
 
       return new Response(JSON.stringify({ success: true, uploadUrl, fileName: safeFileName }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
+      // 若進入此區塊，通常代表 R2 服務或上述 SQL 寫入失敗
       return new Response(JSON.stringify({ success: false, error: "無法生成上傳通行證" }), { status: 500, headers: corsHeaders });
     }
   },
 
-    /**
-   * 取得下載用預簽章網址 (需校驗當事人身分)
+  /**
+   * 取得下載用預簽章網址
    */
   async getDownloadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { commissionId, fileName, bucketType } = await request.json() as any;
     const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
 
-    // 檢查是否有權限讀取這筆訂單的檔案
     const { results } = await env.commission_db.prepare(
       "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
     ).bind(commissionId).all();
@@ -89,7 +82,7 @@ export const r2Controller = {
       return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
-    // 🌟 防護機制 2：檢查一分鐘內下載檔案的頻率 (上限 15 次，防止惡意爬蟲刷流量)
+    // 🌟 下載部分因為有真實的 commissionId，可以使用 ActionLogs
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentDls } = await env.commission_db.prepare(`
       SELECT COUNT(*) as count FROM ActionLogs 
@@ -108,7 +101,6 @@ export const r2Controller = {
     try {
       const downloadUrl = await generateDownloadUrl(env, bucketToUse, fileName);
       
-      // 寫入下載日誌 (同時作為計數依據)
       await env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, ?, 'download', ?)")
         .bind(crypto.randomUUID(), commissionId, actorRole, logContent).run();
 
