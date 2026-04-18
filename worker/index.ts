@@ -101,50 +101,62 @@ export default {
       }
 
 // --- Commission API ---
+// --- Commission API ---
 if (url.pathname.startsWith("/api/commissions")) {
   const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
   
   const pathParts = url.pathname.split("/");
-  const targetId = pathParts[3]; // e.g., "order-123"
-  const subPath = pathParts[4];  // e.g., "deliverables", "submit"
+  const targetId = pathParts[3]; // 這是 ID (例如 12345)
+  const subAction = pathParts[4]; // 這是動作 (例如 submit, review, deliverables)
 
-  // 1. 無 ID 的操作 (List / Create)
+  // 1. 無 ID 的操作
   if (!targetId) {
     if (request.method === "GET") return commController.getList(currentUserId!, env, corsHeaders);
     if (request.method === "POST") return commController.create(request, currentUserId!, env, corsHeaders);
   }
 
-  // 2. 有 ID 但沒有子路徑的操作 (Detail / Update)
-  if (targetId && !subPath) {
+  // 2. 有 ID 但沒有子動作的操作 (詳情或更新)
+  if (targetId && !subAction) {
     if (request.method === "GET") return commController.getDetail(targetId, currentUserId!, env, corsHeaders);
     if (request.method === "PATCH") return commController.update(request, targetId, currentUserId, env, corsHeaders);
   }
 
-  // 3. 有子路徑的操作 (交付、審閱、記帳、訊息)
-  if (targetId && subPath) {
-    if (subPath === "deliverables" || subPath === "submissions") {
-      return commController.getDeliverables(targetId, subPath, currentUserId!, env, corsHeaders);
-    }
-    if (subPath === "submit" && request.method === "POST") {
-      return commController.submitArtwork(request, targetId, currentUserId!, env, corsHeaders);
-    }
-    if (subPath === "review" && request.method === "POST") {
-      return commController.reviewArtwork(request, targetId, currentUserId!, env, corsHeaders);
-    }
-    if (subPath === "payments") {
-      if (request.method === "GET") return commController.getPayments(targetId, currentUserId!, env, corsHeaders);
-      if (request.method === "POST") return commController.postPayment(request, targetId, currentUserId!, env, corsHeaders);
-    }
-    if (subPath === "messages") {
-      if (request.method === "GET") return commController.getMessages(targetId, currentUserId!, env, corsHeaders);
-      if (request.method === "POST") return commController.postMessage(request, targetId, currentUserId!, env, corsHeaders);
-    }
-    
-    // 財務紀錄刪除路由 /api/commissions/:id/payments/:paymentId
-    if (subPath === "payments" && pathParts[5] && request.method === "DELETE") {
-      return commController.deletePayment(pathParts[5], currentUserId!, env, corsHeaders);
+  // 3. 有子動作的操作 (這部分是原本漏掉或被攔截的關鍵)
+  if (targetId && subAction) {
+    switch (subAction) {
+      case "deliverables":
+      case "submissions":
+      case "logs":
+        return commController.getDeliverables(targetId, subAction, currentUserId!, env, corsHeaders);
+      case "submit":
+        if (request.method === "POST") return commController.submitArtwork(request, targetId, currentUserId!, env, corsHeaders);
+        break;
+      case "review":
+        if (request.method === "POST") return commController.reviewArtwork(request, targetId, currentUserId!, env, corsHeaders);
+        break;
+      case "change-request": // 異動申請
+        if (request.method === "POST") return commController.changeRequest(request, targetId, currentUserId!, env, corsHeaders);
+        break;
+      case "change-response": // 異動回應
+        if (request.method === "POST") return commController.respondToChange(request, targetId, currentUserId!, env, corsHeaders);
+        break;
+      case "payments":
+        if (request.method === "GET") return commController.getPayments(targetId, currentUserId!, env, corsHeaders);
+        if (request.method === "POST") return commController.postPayment(request, targetId, currentUserId!, env, corsHeaders);
+        break;
+      case "messages":
+        if (request.method === "GET") return commController.getMessages(targetId, currentUserId!, env, corsHeaders);
+        if (request.method === "POST") return commController.postMessage(request, targetId, currentUserId!, env, corsHeaders);
+        break;
     }
   }
+}
+
+// --- Storage API (R2) ---
+if (url.pathname.startsWith("/api/r2/")) {
+  const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
+  if (url.pathname.endsWith("/upload-url")) return r2Controller.getUploadUrl(request, currentUserId!, env, corsHeaders);
+  if (url.pathname.endsWith("/download-url")) return r2Controller.getDownloadUrl(request, currentUserId!, env, corsHeaders);
 }
 
       // 5. R2 API

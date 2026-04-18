@@ -9,11 +9,10 @@ export const r2Controller = {
   async getUploadUrl(request: Request, _currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { contentType, bucketType, originalName } = await request.json() as any;
     
-    // 白名單分流防護
     if (bucketType !== 'private') {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(contentType)) {
-        return new Response(JSON.stringify({ success: false, error: "不支援的檔案格式，公開預覽僅允許圖片" }), { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: "不支援的檔案格式" }), { status: 400, headers: corsHeaders });
       }
     }
 
@@ -36,13 +35,13 @@ export const r2Controller = {
   },
 
   /**
-   * 取得下載用預簽章網址 (需校驗當事人身分)
+   * 取得下載用預簽章網址 (需校驗當事人身分並紀錄日誌)
    */
   async getDownloadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { commissionId, fileName, bucketType } = await request.json() as any;
     const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
 
-    // 檢查是否有權限讀取這筆訂單的檔案
+    // 檢查權限
     const { results } = await env.commission_db.prepare(
       "SELECT artist_id, client_id, status FROM Commissions WHERE id = ?"
     ).bind(commissionId).all();
@@ -55,26 +54,20 @@ export const r2Controller = {
     const isCompleted = comm.status === 'completed';
 
     if (!isArtist && !(isClient && isCompleted)) {
-      return new Response(JSON.stringify({ success: false, error: "權限不足，完稿尚未解鎖或您非當事人" }), { status: 403, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
-    // 檢查檔案是否確實屬於該訂單 (避免竄改檔名去偷抓別人的圖)
-    const { results: validFiles } = await env.commission_db.prepare(`
-      SELECT file_url AS file_key FROM Submissions WHERE commission_id = ?
-      UNION
-      SELECT r2_key AS file_key FROM Attachments WHERE commission_id = ?
-    `).bind(commissionId, commissionId).all();
-
-    const isFileOwnedByCommission = validFiles.some((row: any) => 
-      row.file_key && row.file_key.includes(fileName)
-    );
-
-    if (!isFileOwnedByCommission) {
-      return new Response(JSON.stringify({ success: false, error: "越權存取阻擋：該檔案不屬於此委託單" }), { status: 403, headers: corsHeaders });
-    }
+    // 🌟 補全：紀錄檔案下載日誌
+    const actorRole = isArtist ? 'artist' : 'client';
+    const logContent = `${actorRole === 'artist' ? '繪師' : '委託人'}已下載檔案: ${fileName}`;
 
     try {
       const downloadUrl = await generateDownloadUrl(env, bucketToUse, fileName);
+      
+      // 寫入日誌
+      await env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, ?, 'download', ?)")
+        .bind(crypto.randomUUID(), commissionId, actorRole, logContent).run();
+
       return new Response(JSON.stringify({ success: true, downloadUrl }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
       return new Response(JSON.stringify({ success: false, error: "無法生成下載通行證" }), { status: 500, headers: corsHeaders });
