@@ -1,11 +1,12 @@
 // src/utils/imageProcessor.ts
 
+// 輔助函式：將網址或 Base64 轉換為 Image 物件
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener('load', () => resolve(image));
     image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous');
+    image.setAttribute('crossOrigin', 'anonymous'); // 避免 CORS 問題
     image.src = url;
   });
 
@@ -20,9 +21,12 @@ interface ProcessOptions {
   withWatermark?: boolean;
   watermarkText?: string;
   outputFormat?: 'image/jpeg' | 'image/webp';
-  quality?: number;
+  quality?: number; // 0 到 1 之間
 }
 
+/**
+ * 核心：根據使用者的裁切範圍，擷取圖片並可選加上浮水印
+ */
 export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: PixelCrop,
@@ -39,12 +43,15 @@ export default async function getCroppedImg(
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
-  if (!ctx) throw new Error('無法建立 Canvas 內容');
+  if (!ctx) {
+    throw new Error('無法建立 Canvas 內容');
+  }
 
+  // 設定 Canvas 尺寸為使用者裁切的尺寸
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
-  // 1. 繪製原始裁切圖片
+  // 1. 將圖片的「裁切區域」畫到 Canvas 上
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -57,51 +64,41 @@ export default async function getCroppedImg(
     pixelCrop.height
   );
 
-  // 2. 強化浮水印：全圖平鋪邏輯 (修正 Context 重置問題)
+  // 2. 如果需要浮水印，依照您的原始版本邏輯擴充為「全圖平鋪」
   if (withWatermark) {
-    const fontSize = Math.max(20, Math.floor(pixelCrop.width / 15)); 
-    const tileCanvas = document.createElement('canvas');
-    const tileCtx = tileCanvas.getContext('2d');
+    ctx.save();
+    
+    // 設定浮水印樣式 (沿用您的參數，稍微調小字體以利平鋪美觀)
+    const fontSize = Math.floor(pixelCrop.width / 12); 
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // 半透明白色
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // 加上陰影
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 8;
 
-    if (tileCtx) {
-      // 🌟 重要：先暫時設定字體以進行精確測量
-      tileCtx.font = `bold ${fontSize}px sans-serif`;
-      const metrics = tileCtx.measureText(watermarkText);
-      
-      // 設定單個浮水印單元的尺寸 (留出足夠間距)
-      const tileWidth = metrics.width + fontSize * 4;
-      const tileHeight = fontSize * 5; 
-      
-      tileCanvas.width = tileWidth;
-      tileCanvas.height = tileHeight;
+    // 定義平鋪間距
+    const stepX = fontSize * 5; 
+    const stepY = fontSize * 4;
 
-      // 🌟 核心修正：改變畫布寬高後，必須「重新設定」Context 狀態
-      tileCtx.font = `bold ${fontSize}px sans-serif`;
-      tileCtx.fillStyle = 'rgba(255, 255, 255, 0.3)'; // 提高一點透明度確保可見
-      tileCtx.textAlign = 'center';
-      tileCtx.textBaseline = 'middle';
-      
-      // 設定陰影，增加在亮色背景下的辨識度
-      tileCtx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-      tileCtx.shadowBlur = 4;
-
-      // 繪製文字
-      tileCtx.translate(tileWidth / 2, tileHeight / 2);
-      tileCtx.rotate((-25 * Math.PI) / 180);
-      tileCtx.fillText(watermarkText, 0, 0);
-
-      // 建立平鋪圖案並填充至主畫布
-      const pattern = ctx.createPattern(tileCanvas, 'repeat');
-      if (pattern) {
+    // 🌟 使用雙層迴圈直接在畫布上重複繪製
+    for (let x = 0; x <= canvas.width + stepX; x += stepX) {
+      for (let y = 0; y <= canvas.height + stepY; y += stepY) {
         ctx.save();
-        ctx.fillStyle = pattern;
-        // 使用 fillRect 覆蓋全圖
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 移動到格點並旋轉 -30 度
+        ctx.translate(x, y);
+        ctx.rotate((-30 * Math.PI) / 180);
+        ctx.fillText(watermarkText, 0, 0);
         ctx.restore();
       }
     }
+    
+    ctx.restore();
   }
 
+  // 3. 將 Canvas 輸出為 Blob
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
