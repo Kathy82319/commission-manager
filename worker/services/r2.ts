@@ -7,9 +7,14 @@ import type { Env } from "../shared/types";
  * 內部函式：初始化並取得 S3 Client (對接 Cloudflare R2)
  */
 function getS3Client(env: Env) {
+  // 檢查環境變數是否存在，避免執行時才報錯
+  if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_ACCOUNT_ID) {
+    throw new Error("R2 認證資訊缺失，請檢查環境變數設定");
+  }
+
   return new S3Client({
     region: "auto",
-    endpoint: `https://${env.R2_ACCOUNT_ID || 'f72c79d82828e2419ab5fb0e1d323ce5'}.r2.cloudflarestorage.com`, 
+    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, 
     forcePathStyle: true, 
     credentials: {
       accessKeyId: env.R2_ACCESS_KEY_ID,
@@ -30,8 +35,12 @@ export async function generateUploadUrl(env: Env, bucketName: string, fileName: 
     ContentType: contentType 
   });
 
-  // 回傳有效時間 10 分鐘 (600秒) 的上傳通行證
-  return await getSignedUrl(s3, command, { expiresIn: 600 });
+  // 1. 回傳有效時間 10 分鐘 (600秒) 的上傳通行證
+  // 2. signableHeaders 確保 Content-Type 被強制納入簽章校驗
+  return await getSignedUrl(s3, command, { 
+    expiresIn: 600,
+    signableHeaders: new Set(["content-type"])
+  });
 }
 
 /**
