@@ -54,6 +54,13 @@ export default {
         if (url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
 
         if (url.pathname.startsWith("/api/users/")) {
+          // 🌟 補上這段：專門處理完成初始設定的路由
+          if (url.pathname === "/api/users/me/complete-onboarding" && request.method === "POST") {
+            const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
+            return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
+          }
+
+          // 原本的 GET 與 PATCH 邏輯
           const targetId = url.pathname.split("/")[3];
           if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
           if (request.method === "PATCH") {
