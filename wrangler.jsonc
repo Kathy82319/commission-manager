@@ -1,5 +1,6 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "commission-app",
     "pages_build_output_dir": "dist",
     "compatibility_date": "2026-04-09",
     "compatibility_flags": [
