@@ -67,9 +67,9 @@ export function PublicProfile() {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showSplash, setShowSplash] = useState(true);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
-  const [isSplashClosing, setIsSplashClosing] = useState(false);
+  const [isSplashClosing, setIsSplashClosing] = useState(false); // 🌟 核心：控制淡出動畫狀態
 
-useEffect(() => {
+  useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
       try {
@@ -100,7 +100,7 @@ useEffect(() => {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 🌟 核心修正：分兩階段關閉開場動畫
+    // 🌟 核心修正：將開場動畫改為兩段式關閉
   useEffect(() => {
     if (!loading && artist) {
       if (settings?.splash_enabled === false) {
@@ -108,25 +108,28 @@ useEffect(() => {
         return;
       }
       
-      // 1. 讀取使用者設定的停留秒數 (毫秒)
+      // 讀取自訂時間
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
+      let removeTimer: ReturnType<typeof setTimeout>;
       
       const timer = setTimeout(() => {
-        // 第一步：觸發 CSS 中的 .hide (啟動 0.8s 的 opacity 與 transform 動畫)
-        setIsSplashClosing(true); 
+        // 階段 1：先觸發 CSS 的淡出 (hide class)
+        setIsSplashClosing(true);
         
-        // 第二步：等待 CSS 動畫跑完 (這裡設 850ms 確保完整) 後，才正式移除 DOM
-        const removeDomTimer = setTimeout(() => {
+        // 階段 2：等待 800ms (對應 CSS 的 transition 時間) 後再把 DOM 移除
+        removeTimer = setTimeout(() => {
           setShowSplash(false);
-        }, 850); 
-
-        return () => clearTimeout(removeDomTimer);
+        }, 800);
       }, duration);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        if (removeTimer) clearTimeout(removeTimer);
+      };
     }
   }, [loading, settings, artist]);
 
+  // 🌟 修正 2：為 tab 加上明確型別
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
@@ -171,17 +174,18 @@ useEffect(() => {
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
   return (
-  <div className="public-profile-container">
-      {/* 🌟 核心修正：將 isSplashClosing 綁定到 className */}
-      {showSplash && (
+    <div className="public-profile-container">
+            {showSplash && (
         <div 
+          // 🌟 關鍵：動態切換 hide 類別來觸發 CSS transition
           className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
           style={{
             backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
             backgroundColor: settings?.splash_image ? '#000' : '#F4F0EB', 
             backgroundSize: 'cover', backgroundPosition: 'center', position: 'fixed',
             top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 10000,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
           <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', padding: '40px 60px', borderRadius: '16px', backdropFilter: 'blur(8px)', textAlign: 'center', color: '#FFF' }}>

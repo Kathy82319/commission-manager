@@ -363,11 +363,9 @@
 /* 讓動畫更平滑，確保 hide 狀態不擋住點擊 */
 .splash-screen {
   opacity: 1;
-  visibility: visible;
 }
 
 .splash-screen.hide {
   opacity: 0;
-  visibility: hidden; /* 確保隱藏後點擊可以穿透 */
   pointer-events: none;
 }
