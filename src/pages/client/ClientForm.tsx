@@ -159,21 +159,21 @@ export function ClientForm() {
   const isExpiredWarning = diffDays > 14 && !hasAlreadyAgreed;
 
   return (
-    <div style={{ backgroundColor: '#FBFBF9', minHeight: '100vh', padding: '40px 16px', fontFamily: 'sans-serif', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ backgroundColor: '#FBFBF9', minHeight: '100vh', padding: '40px 16px', fontFamily: 'sans-serif', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        <div style={{ backgroundColor: '#FFFFFF', padding: '30px 24px', borderRadius: '16px', textAlign: 'center', border: '1px solid #EAE6E1', boxShadow: '0 8px 24px rgba(93,74,62,0.04)' }}>
-          <h1 style={{ margin: '0 0 12px 0', fontSize: '22px', color: '#5D4A3E', letterSpacing: '0.5px' }}>委託確認與協議書</h1>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4A7294', marginBottom: '8px' }}>
-            {order.project_name || '未命名委託項目'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 4px' }}>
+          <h1 style={{ margin: 0, fontSize: '14px', color: '#A0978D', fontWeight: 'normal' }}>委託確認與協議書</h1>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'bold' }}>{order.project_name || '未命名委託項目'}</div>
+            <div style={{ color: '#C0B7AD', fontSize: '11px', fontFamily: 'monospace' }}>訂單編號：{order.id}</div>
           </div>
-          <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace' }}>訂單編號：{order.id}</div>
         </div>
 
-        <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
-          <h2 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>委託內容明細</h2>
+        <div style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+          <h2 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '8px' }}>委託內容明細</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '14px', lineHeight: '1.5' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px', fontSize: '13px', lineHeight: '1.4' }}>
             <div style={detailItemStyle}><span style={detailLabelStyle}>委託用途</span><span style={detailValueStyle}>{order.usage_type || '未填寫'}</span></div>
             <div style={detailItemStyle}><span style={detailLabelStyle}>是否急件</span><span style={{ ...detailValueStyle, color: order.is_rush === '是' ? '#A05C5C' : '#5D4A3E' }}>{order.is_rush || '否'}</span></div>
             <div style={detailItemStyle}><span style={detailLabelStyle}>交稿方式</span><span style={detailValueStyle}>{order.delivery_method || '未填寫'}</span></div>
@@ -183,14 +183,14 @@ export function ClientForm() {
             <div style={{ ...detailItemStyle, gridColumn: '1 / -1' }}><span style={detailLabelStyle}>背景設定</span><span style={detailValueStyle}>{order.bg_type || '未填寫'}</span></div>
           </div>
 
-          <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px dashed #DED9D3' }}>
+                    <div style={{ marginTop: '16px', padding: '12px 16px', backgroundColor: '#FBFBF9', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px dashed #DED9D3' }}>
             <span style={{ color: '#7A7269', fontWeight: 'bold', fontSize: '14px' }}>總金額</span>
-            <span style={{ color: '#4E7A5A', fontWeight: '900', fontSize: '20px' }}>NT$ {order.total_price.toLocaleString()}</span>
+            <span style={{ color: '#4E7A5A', fontWeight: '900', fontSize: '18px' }}>NT$ {order.total_price.toLocaleString()}</span>
           </div>
         </div>
 
         <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
-          <h2 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>委託協議書</h2>
+          <h2 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#5D4A3E', borderBottom: '2px solid #F0ECE7', paddingBottom: '12px', fontWeight: 'bold' }}>委託協議書</h2>
           
           {isExpiredWarning && (
             <div style={{ backgroundColor: '#FDF4E6', border: '1px solid #A67B3E', color: '#8A602B', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', marginBottom: '16px', lineHeight: '1.5' }}>
@@ -215,15 +215,8 @@ export function ClientForm() {
                   })()
                 }} 
               />
-            ) : (
-              <>
-                1. 本委託為客製化商品，確認送出後即代表雙方成立合作關係，不適用七天鑑賞期。<br/>
-                2. 繪師保有展示作品作為作品集之權利，若需買斷或延遲公開請於事前提出。<br/>
-                3. 完稿後若非繪師方失誤，僅提供協議內約定之微調修改次數。<br/>
-                4. 若有延遲交稿情形，繪師將主動告知並依雙方協議處理。<br/>
-                5. 確認委託後，請依約定時間內完成款項支付，逾期視同放棄委託。<br/>
-                6. 草稿階段退件重畫以三次為限，超出次數需視情況增加費用。<br/>
-              </>
+                        ) : (
+              '繪師尚未設定使用規範。'
             )}
           </div>
 
@@ -255,5 +248,5 @@ export function ClientForm() {
 
 const centerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#A0978D', fontSize: '15px' };
 const detailItemStyle = { display: 'flex', flexDirection: 'column' as const };
-const detailLabelStyle = { color: '#A0978D', fontSize: '13px', marginBottom: '6px', fontWeight: 'bold' };
-const detailValueStyle = { color: '#5D4A3E', fontWeight: 'bold', fontSize: '15px' };
+const detailLabelStyle = { color: '#A0978D', fontSize: '12px', marginBottom: '2px', fontWeight: 'bold' };
+const detailValueStyle = { color: '#5D4A3E', fontWeight: 'bold', fontSize: '14px' };
