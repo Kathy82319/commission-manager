@@ -100,30 +100,52 @@ export default {
         }
       }
 
-      // 4. Commissions API
-      if (url.pathname.startsWith("/api/commissions")) {
-        const authErr = requireAuth(currentUserId, corsHeaders); 
-        if (authErr) return authErr;
-        const targetId = pathParts[3];
+// --- Commission API ---
+if (url.pathname.startsWith("/api/commissions")) {
+  const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
+  
+  const pathParts = url.pathname.split("/");
+  const targetId = pathParts[3]; // e.g., "order-123"
+  const subPath = pathParts[4];  // e.g., "deliverables", "submit"
 
-        if (request.method === "GET" && !targetId) return commController.getList(currentUserId!, env, corsHeaders);
-        if (request.method === "POST" && !targetId) return commController.create(request, currentUserId!, env, corsHeaders);
+  // 1. 無 ID 的操作 (List / Create)
+  if (!targetId) {
+    if (request.method === "GET") return commController.getList(currentUserId!, env, corsHeaders);
+    if (request.method === "POST") return commController.create(request, currentUserId!, env, corsHeaders);
+  }
 
-        if (targetId) {
-          if (request.method === "GET" && pathParts.length === 4) return commController.getDetail(targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "PATCH" && pathParts.length === 4) return commController.update(request, targetId, currentUserId!, env, corsHeaders);
+  // 2. 有 ID 但沒有子路徑的操作 (Detail / Update)
+  if (targetId && !subPath) {
+    if (request.method === "GET") return commController.getDetail(targetId, currentUserId!, env, corsHeaders);
+    if (request.method === "PATCH") return commController.update(request, targetId, currentUserId, env, corsHeaders);
+  }
 
-          const subAction = pathParts[4];
-          if (request.method === "GET" && ["deliverables", "submissions", "logs"].includes(subAction)) return commController.getDeliverables(targetId, subAction, currentUserId!, env, corsHeaders);
-          if (request.method === "POST" && subAction === "submit") return commController.submitArtwork(request, targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "POST" && subAction === "review") return commController.reviewArtwork(request, targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "GET" && subAction === "messages") return commController.getMessages(targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "POST" && subAction === "messages") return commController.postMessage(request, targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "GET" && subAction === "payments") return commController.getPayments(targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "POST" && subAction === "payments") return commController.postPayment(request, targetId, currentUserId!, env, corsHeaders);
-          if (request.method === "DELETE" && subAction === "payments") return commController.deletePayment(pathParts[5], currentUserId!, env, corsHeaders);
-        }
-      }
+  // 3. 有子路徑的操作 (交付、審閱、記帳、訊息)
+  if (targetId && subPath) {
+    if (subPath === "deliverables" || subPath === "submissions") {
+      return commController.getDeliverables(targetId, subPath, currentUserId!, env, corsHeaders);
+    }
+    if (subPath === "submit" && request.method === "POST") {
+      return commController.submitArtwork(request, targetId, currentUserId!, env, corsHeaders);
+    }
+    if (subPath === "review" && request.method === "POST") {
+      return commController.reviewArtwork(request, targetId, currentUserId!, env, corsHeaders);
+    }
+    if (subPath === "payments") {
+      if (request.method === "GET") return commController.getPayments(targetId, currentUserId!, env, corsHeaders);
+      if (request.method === "POST") return commController.postPayment(request, targetId, currentUserId!, env, corsHeaders);
+    }
+    if (subPath === "messages") {
+      if (request.method === "GET") return commController.getMessages(targetId, currentUserId!, env, corsHeaders);
+      if (request.method === "POST") return commController.postMessage(request, targetId, currentUserId!, env, corsHeaders);
+    }
+    
+    // 財務紀錄刪除路由 /api/commissions/:id/payments/:paymentId
+    if (subPath === "payments" && pathParts[5] && request.method === "DELETE") {
+      return commController.deletePayment(pathParts[5], currentUserId!, env, corsHeaders);
+    }
+  }
+}
 
       // 5. R2 API
       if (url.pathname.startsWith("/api/r2/")) {
