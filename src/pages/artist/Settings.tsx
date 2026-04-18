@@ -705,11 +705,11 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                    上傳展示作品 <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'normal' }}>(已使用: {settings.portfolio.length} / 30 張，可拖曳圖片更改順序)</span>
+                    上傳展示作品 <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'normal' }}>(已使用: {settings.portfolio.length} / 20 張，可拖曳圖片更改順序)</span>
                     <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(單張限制 5MB)</span>
                   </label>
                   
-                  {settings.portfolio.length < 30 ? (
+                  {settings.portfolio.length < 20 ? (
                     isPortfolioUploading ? (
                       <div style={{ padding: '20px', textAlign: 'center', color: '#A0978D', fontSize: '14px', border: '2px dashed #DED9D3', borderRadius: '12px' }}>
                         圖片處理與上傳中，請稍候...
@@ -723,7 +723,7 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
                     )
                   ) : (
                     <div style={{ padding: '16px', backgroundColor: '#F5EBEB', color: '#A05C5C', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #E5CACA' }}>
-                      已達 30 張作品上限！若需新增，請先刪除部分舊作品。
+                      已達 20 張作品上限！若需新增，請先刪除部分舊作品。
                     </div>
                   )}
                 </div>
