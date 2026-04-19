@@ -194,14 +194,10 @@ export function Queue() {
                       </span>                     
                     </div>
                     <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <span style={{ color: '#A0978D', marginLeft: '7px', fontSize: '11px', fontFamily: 'monospace' }}>
-                        {order.client_public_id ||'未綁定'}(訂單編號：{order.id.split('-')[1] || order.id})
+                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
+                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
                       </span>                     
                     </div>
-
-
-
-
                   </div>
                   
                 </td>
