@@ -1,0 +1,286 @@
+/* src/styles/QuoteBuilder.css */
+
+.quote-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.quote-header {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quote-header-title {
+  color: #5D4A3E;
+  font-size: 24px;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.5px;
+}
+
+.plan-badge {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.plan-badge.pro { background-color: #E8F3EB; color: #4E7A5A; }
+.plan-badge.trial { background-color: #FDF4E6; color: #A67B3E; }
+.plan-badge.free { background-color: #F4F0EB; color: #7A7269; }
+
+.mode-toggle-group {
+  display: flex;
+  background-color: #EAE6E1;
+  padding: 4px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.mode-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  color: #A0978D;
+}
+
+.mode-btn.active {
+  background-color: #FFFFFF;
+  color: #5D4A3E;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.mode-btn.active-dark {
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 🌟 表單雙欄 Grid 佈局 */
+.quote-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* 手機版單欄 */
+  gap: 24px;
+  align-items: start;
+  position: relative;
+}
+
+/* 🌟 標準化白色卡片 */
+.quote-card {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #EAE6E1;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; /* 防護罩 */
+}
+
+.quote-card-title {
+  margin: 0;
+  font-size: 16px;
+  color: #5D4A3E;
+  border-bottom: 1px solid #F0ECE7;
+  padding-bottom: 12px;
+}
+
+/* 表單內部微型 Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.form-grid-full {
+  grid-column: 1 / -1;
+}
+
+/* 輸入框共用樣式 */
+.form-label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #5D4A3E;
+  font-size: 13px;
+}
+
+.req-star {
+  color: #A05C5C;
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #DED9D3;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background-color: #FBFBF9;
+  color: #5D4A3E;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: #A67B3E;
+  box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
+}
+
+.input-with-prefix {
+  position: relative;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #A0978D;
+  font-weight: bold;
+}
+
+.input-with-prefix .form-input {
+  padding-left: 28px;
+}
+
+.flex-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* 標籤按鈕 (Add-ons) */
+.addon-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.addon-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  border: 1px solid #DED9D3;
+  background-color: #FFFFFF;
+  color: #7A7269;
+}
+
+.addon-tag.selected {
+  border: 1px solid #A67B3E;
+  background-color: #FDF4E6;
+  color: #A67B3E;
+  font-weight: bold;
+}
+
+.addon-tag.custom.selected {
+  border: 1px solid #4A7294;
+  background-color: #EBF2F7;
+  color: #4A7294;
+}
+
+/* Quill 編輯器包裝 */
+.quote-quill-wrapper {
+  border: 1px solid #DED9D3;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #FBFBF9;
+  transition: border-color 0.2s ease;
+}
+
+.quote-quill-wrapper:focus-within {
+  border-color: #A67B3E;
+  box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
+}
+
+.quote-quill-wrapper .ql-toolbar {
+  border: none;
+  border-bottom: 1px solid #EAE6E1;
+  background-color: #FFFFFF;
+}
+
+.quote-quill-wrapper .ql-container {
+  border: none;
+}
+
+.quote-quill-wrapper .ql-editor {
+  min-height: 120px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 14px;
+  color: #5D4A3E;
+  line-height: 1.5;
+}
+
+/* 提交按鈕 */
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(93,74,62,0.2);
+  transition: opacity 0.2s;
+}
+.submit-btn:hover { opacity: 0.9; }
+
+/* 鎖定遮罩 */
+.quota-modal-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  border-radius: 16px;
+}
+
+.quota-modal-box {
+  background-color: #FFFFFF;
+  padding: 40px 24px;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  text-align: center;
+  max-width: 420px;
+  border: 1px solid #EAE6E1;
+}
+
+/* === 電腦版佈局 === */
+@media (min-width: 768px) {
+  .quote-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .quote-grid {
+    grid-template-columns: 1fr 1fr; /* 電腦版改為左右兩大欄 */
+  }
+}

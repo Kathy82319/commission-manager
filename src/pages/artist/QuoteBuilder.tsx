@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill-new'; 
 import 'react-quill-new/dist/quill.snow.css'; 
+import '../../styles/QuoteBuilder.css'; // 🌟 引入標準化樣式
 
 const baseAddOnsList = ['驚喜包', '無償'];
 
@@ -49,7 +50,6 @@ export function QuoteBuilder() {
   const [tosContent, setTosContent] = useState('');
 
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number } | null>(null);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
 
   useEffect(() => {
@@ -163,75 +163,15 @@ export function QuoteBuilder() {
     }
   };
 
-  const getInputStyle = (fieldName: string) => ({
-    width: '100%', 
-    padding: '10px 14px', 
-    border: focusedField === fieldName ? '1px solid #A67B3E' : '1px solid #DED9D3', 
-    boxSizing: 'border-box' as const,
-    borderRadius: '8px',
-    backgroundColor: '#FBFBF9',
-    color: '#5D4A3E',
-    outline: 'none',
-    transition: 'all 0.2s ease',
-    boxShadow: focusedField === fieldName ? '0 0 0 2px rgba(166,123,62,0.1)' : 'none',
-    fontSize: '14px' 
-  });
-
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%', padding: '0 16px' }}>
+    <div className="quote-page">
       
-      <style>{`
-        .quote-quill-wrapper {
-          border: 1px solid #DED9D3;
-          border-radius: 8px;
-          overflow: hidden;
-          background-color: #FBFBF9;
-          transition: border-color 0.2s ease;
-        }
-        .quote-quill-wrapper:focus-within {
-          border-color: #A67B3E;
-          box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
-        }
-        .quote-quill-wrapper .ql-toolbar.ql-snow {
-          border: none;
-          border-bottom: 1px solid #EAE6E1;
-          background-color: #FFFFFF;
-          padding: 8px;
-        }
-        .quote-quill-wrapper .ql-container.ql-snow {
-          border: none;
-        }
-        .quote-quill-wrapper .ql-editor {
-          min-height: 120px;
-          max-height: 250px;
-          overflow-y: auto;
-          font-size: 14px;
-          color: #5D4A3E;
-        }
-        /* RWD Grid Adjustments */
-        .quote-grid-container {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 24px;
-          align-items: start;
-        }
-        @media (min-width: 768px) {
-          .quote-grid-container {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-      `}</style>
-
       {/* Header Section */}
-      <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }} className="md:flex-row md:justify-between md:items-start">
+      <div className="quote-header">
         <div>
-          <h2 style={{ color: '#5D4A3E', fontSize: '24px', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>產出新委託單</h2>
+          <h2 className="quote-header-title">產出新委託單</h2>
           {quotaInfo && (
-            <div style={{ 
-              marginTop: '4px', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block',
-              backgroundColor: quotaInfo.plan_type === 'pro' ? '#E8F3EB' : '#FDF4E6', 
-              color: quotaInfo.plan_type === 'pro' ? '#4E7A5A' : '#A67B3E'
-            }}>
+            <div className={`plan-badge ${quotaInfo.plan_type}`}>
               {quotaInfo.plan_type === 'pro' && '✨ 目前方案：專業版 (無限建單額度)'}
               {quotaInfo.plan_type === 'trial' && `⏳ 目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
               {quotaInfo.plan_type === 'free' && `🌱 目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
@@ -239,254 +179,221 @@ export function QuoteBuilder() {
           )}
         </div>
 
-        <div style={{ display: 'flex', backgroundColor: '#EAE6E1', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+        <div className="mode-toggle-group">
           <button 
             onClick={() => setWorkflowMode('standard')}
-            style={{ 
-              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer',
-              backgroundColor: workflowMode === 'standard' ? '#FFFFFF' : 'transparent',
-              color: workflowMode === 'standard' ? '#5D4A3E' : '#A0978D',
-              boxShadow: workflowMode === 'standard' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
-            }}
+            className={`mode-btn ${workflowMode === 'standard' ? 'active' : ''}`}
           >
             標準委託
           </button>
           <button 
             onClick={() => setWorkflowMode('free')}
-            style={{ 
-              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer',
-              backgroundColor: workflowMode === 'free' ? '#5D4A3E' : 'transparent',
-              color: workflowMode === 'free' ? '#FFFFFF' : '#A0978D',
-              boxShadow: workflowMode === 'free' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
-            }}
+            className={`mode-btn ${workflowMode === 'free' ? 'active-dark' : ''}`}
           >
             自由紀錄
           </button>
         </div>
       </div>
 
-      <div style={{ position: 'relative', flex: 1, paddingBottom: '40px' }}>
-        <div className="quote-grid-container" style={{ 
-          filter: isQuotaExceeded ? 'blur(6px)' : 'none',
-          pointerEvents: isQuotaExceeded ? 'none' : 'auto',
-          opacity: isQuotaExceeded ? 0.7 : 1,
-          transition: 'all 0.3s ease'
-        }}>
+      {/* Main Grid */}
+      <div className="quote-grid" style={{ 
+        filter: isQuotaExceeded ? 'blur(6px)' : 'none',
+        pointerEvents: isQuotaExceeded ? 'none' : 'auto',
+        opacity: isQuotaExceeded ? 0.7 : 1,
+        transition: 'all 0.3s ease'
+      }}>
+        
+        {/* Left Column: Basic Info */}
+        <div className="quote-card">
+          <h3 className="quote-card-title">基本資訊設定</h3>
           
-          {/* Left Column: Information */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>基本資訊設定</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>委託人名稱 (FB暱稱/ID等備註) <span style={reqStyle}>*</span></label>
-                  <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} 
-                    onFocus={() => setFocusedField('client_name')} onBlur={() => setFocusedField(null)} style={getInputStyle('client_name')} placeholder="例如：FB - 王小明" />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={labelStyle}>項目名稱</label>
-                  <input type="text" name="project_name" value={formData.project_name} onChange={handleChange} 
-                    onFocus={() => setFocusedField('project_name')} onBlur={() => setFocusedField(null)} style={getInputStyle('project_name')} placeholder="例如：自創角半身委託" />
-                </div>
-                <div>
-                  <label style={labelStyle}>總金額設定{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D', fontWeight: 'bold' }}>$</span>
-                    <input type="number" name="total_price" value={formData.total_price} onChange={handleChange} 
-                      min="0" onFocus={() => setFocusedField('total_price')} onBlur={() => setFocusedField(null)} style={{...getInputStyle('total_price'), paddingLeft: '28px'}} />
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle}>交易方式</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select name="payment_method" value={formData.payment_method} onChange={handleChange} 
-                      onFocus={() => setFocusedField('payment_method')} onBlur={() => setFocusedField(null)} style={getInputStyle('payment_method')}>
-                      <option value="匯款">匯款</option><option value="無卡">無卡</option><option value="超商">超商</option><option value="LinePay">LinePay</option><option value="其他">其他</option>
-                    </select>
-                    {formData.payment_method === '其他' && (
-                      <input type="text" name="payment_method" placeholder="說明..." value={customFields.payment_method} onChange={handleCustomFieldChange} 
-                        onFocus={() => setFocusedField('custom_payment')} onBlur={() => setFocusedField(null)} style={getInputStyle('custom_payment')} />
-                    )}
-                  </div>
-                </div>
+          <div className="form-grid">
+            <div className="form-grid-full">
+              <label className="form-label">委託人名稱 (FB暱稱/ID等備註) <span className="req-star">*</span></label>
+              <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} className="form-input" placeholder="例如：FB - 王小明" />
+            </div>
+            
+            <div className="form-grid-full">
+              <label className="form-label">項目名稱</label>
+              <input type="text" name="project_name" value={formData.project_name} onChange={handleChange} className="form-input" placeholder="例如：自創角半身委託" />
+            </div>
+            
+            <div>
+              <label className="form-label">總金額設定{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <div className="input-with-prefix">
+                <span className="input-prefix">$</span>
+                <input type="number" name="total_price" value={formData.total_price} onChange={handleChange} min="0" className="form-input" />
               </div>
             </div>
-
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>委託規格參數</h3>
-                {workflowMode === 'standard' && (
-                  <span style={{ fontSize: '11px', color: '#A05C5C', fontWeight: 'bold' }}>標註 * 之欄位需經同意方能修改</span>
+            
+            <div>
+              <label className="form-label">交易方式</label>
+              <div className="flex-input-group">
+                <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="form-input">
+                  <option value="匯款">匯款</option><option value="無卡">無卡</option><option value="超商">超商</option><option value="LinePay">LinePay</option><option value="其他">其他</option>
+                </select>
+                {formData.payment_method === '其他' && (
+                  <input type="text" name="payment_method" placeholder="說明..." value={customFields.payment_method} onChange={handleCustomFieldChange} className="form-input" />
                 )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={labelStyle}>委託用途{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select name="usage_type" value={formData.usage_type} onChange={handleChange} 
-                      onFocus={() => setFocusedField('usage_type')} onBlur={() => setFocusedField(null)} style={getInputStyle('usage_type')}>
-                      <option value="商用">商用</option><option value="非商用">非商用</option><option value="其他">其他</option>
-                    </select>
-                    {formData.usage_type === '其他' && (
-                      <input type="text" name="usage_type" placeholder="說明..." value={customFields.usage_type} onChange={handleCustomFieldChange} 
-                        onFocus={() => setFocusedField('custom_usage')} onBlur={() => setFocusedField(null)} style={getInputStyle('custom_usage')} />
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle}>是否急件{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <select value={formData.is_rush} onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
-                    style={getInputStyle('is_rush')} onFocus={() => setFocusedField('is_rush')} onBlur={() => setFocusedField(null)}>
-                    <option value="否">否</option><option value="是">是</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>
-                    交稿方式{workflowMode === 'standard' && <span style={reqStyle}>*</span>}
-                    {workflowMode === 'standard' && (
-                      <span onClick={() => setShowDeliveryHelp(true)} style={{ color: '#4A7294', fontSize: '12px', marginLeft: '6px', cursor: 'pointer', textDecoration: 'underline' }}> [?] </span>
-                    )}
-                  </label>
-                  {workflowMode === 'free' ? (
-                    <input type="text" name="delivery_method" value={formData.delivery_method} onChange={handleChange} 
-                      onFocus={() => setFocusedField('delivery_method_free')} onBlur={() => setFocusedField(null)} style={getInputStyle('delivery_method_free')} placeholder="例如：雲端硬碟交稿" />
-                  ) : (
-                    <select name="delivery_method" value={formData.delivery_method} onChange={handleChange} 
-                      onFocus={() => setFocusedField('delivery_method')} onBlur={() => setFocusedField(null)} style={getInputStyle('delivery_method')}>
-                      <option value="三階段審閱">三階段審閱</option><option value="一鍵出圖">一鍵出圖</option>
-                    </select>
-                  )}
-                  {showDeliveryHelp && (
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)' }} onClick={() => setShowDeliveryHelp(false)} />
-                      <div style={{ position: 'relative', width: '100%', maxWidth: '300px', padding: '20px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
-                        <h4 style={{ marginTop: 0, fontSize: '15px' }}>交稿方式說明</h4>
-                        <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0' }}>三階段模式下，系統會引導委託人進行草稿/線稿/完稿審閱。完稿需經委託人按下「同意稿件」才會結單。</p>
-                        <button onClick={() => setShowDeliveryHelp(false)} style={{ marginTop: '16px', width: '100%', padding: '8px', background: '#F4F0EB', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>關閉</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label style={labelStyle}>人物數量{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <input type="number" name="char_count" value={formData.char_count} onChange={handleChange} min="1" 
-                    onFocus={() => setFocusedField('char_count')} onBlur={() => setFocusedField(null)} style={getInputStyle('char_count')} />
-                </div>
-                <div>
-                  <label style={labelStyle}>繪畫範圍{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select name="draw_scope" value={formData.draw_scope} onChange={handleChange} 
-                      onFocus={() => setFocusedField('draw_scope')} onBlur={() => setFocusedField(null)} style={getInputStyle('draw_scope')}>
-                      <option value="頭貼">頭貼</option><option value="半身">半身</option><option value="全身">全身</option><option value="其他">其他</option>
-                    </select>
-                    {formData.draw_scope === '其他' && (
-                      <input type="text" name="draw_scope" placeholder="說明..." value={customFields.draw_scope} onChange={handleCustomFieldChange} 
-                        onFocus={() => setFocusedField('custom_draw_scope')} onBlur={() => setFocusedField(null)} style={getInputStyle('custom_draw_scope')} />
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle}>背景{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select name="bg_type" value={formData.bg_type} onChange={handleChange} 
-                      onFocus={() => setFocusedField('bg_type')} onBlur={() => setFocusedField(null)} style={getInputStyle('bg_type')}>
-                      <option value="無背景">無背景</option><option value="基本">基本</option><option value="複雜">複雜</option><option value="其他">其他</option>
-                    </select>
-                    {formData.bg_type === '其他' && (
-                      <input type="text" name="bg_type" placeholder="說明..." value={customFields.bg_type} onChange={handleCustomFieldChange} 
-                        onFocus={() => setFocusedField('custom_bg')} onBlur={() => setFocusedField(null)} style={getInputStyle('custom_bg')} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Tags & Rich Text */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>附加選項與備註</h3>
-              
-              <div style={{ padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
-                <label style={labelStyle}>快速標籤{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                  {baseAddOnsList.map(item => {
-                    const isSelected = selectedAddOns.includes(item);
-                    return (
-                      <label key={item} style={{ 
-                        display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer',
-                        padding: '6px 12px', borderRadius: '20px', border: isSelected ? '1px solid #A67B3E' : '1px solid #DED9D3',
-                        backgroundColor: isSelected ? '#FDF4E6' : '#FFFFFF', color: isSelected ? '#A67B3E' : '#7A7269',
-                        fontWeight: isSelected ? 'bold' : 'normal', transition: 'all 0.2s ease'
-                      }}>
-                        <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
-                        {isSelected ? '✓ ' : '+ '}{item}
-                      </label>
-                    );
-                  })}
-                  {customAddOns.map((item, index) => {
-                    const isSelected = selectedAddOns.includes(item);
-                    return (
-                      <label key={`custom-${index}`} style={{ 
-                        display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer',
-                        padding: '6px 12px', borderRadius: '20px', border: isSelected ? '1px solid #4A7294' : '1px solid #DED9D3',
-                        backgroundColor: isSelected ? '#EBF2F7' : '#FFFFFF', color: isSelected ? '#4A7294' : '#7A7269',
-                        fontWeight: isSelected ? 'bold' : 'normal', transition: 'all 0.2s ease'
-                      }}>
-                        <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
-                        {isSelected ? '✓ ' : '+ '}{item}
-                      </label>
-                    );
-                  })}
-                </div>
-                
-                {customAddOns.length < 5 && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
-                      placeholder="自行增加標籤..." style={{...getInputStyle('new_addon'), width: '160px', padding: '8px 12px'}} 
-                      onFocus={() => setFocusedField('new_addon')} onBlur={() => setFocusedField(null)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomOption(); }}
-                    />
-                    <button type="button" onClick={handleAddCustomOption} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>新增</button>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{...labelStyle, marginBottom: '8px'}}>
-                  協議書內容(自訂)
-                  <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
-                    *內容將做為該單的初始協議書快照，勾選後即視為同意此合約*
-                  </span>
-                </label>
-                <div className="quote-quill-wrapper">
-                  <ReactQuill theme="snow" value={tosContent} onChange={setTosContent} modules={customQuillModules} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <label style={{...labelStyle, marginBottom: '4px'}}>
-                  詳細設定 
-                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}> (僅繪師註記)</span>}
-                </label>
-                <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
-                  onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
-                  style={{ ...getInputStyle('detailed_settings'), minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
-              </div>
-
-              <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-                <button onClick={handleSubmit} style={{ width: '100%', padding: '16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }}>
-                  確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
-                </button>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Middle Column: Specs */}
+        <div className="quote-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>
+            <h3 className="quote-card-title" style={{ borderBottom: 'none', paddingBottom: 0 }}>委託規格參數</h3>
+            {workflowMode === 'standard' && <span style={{ fontSize: '11px', color: '#A05C5C', fontWeight: 'bold' }}>標註 * 之欄位需經同意方能修改</span>}
+          </div>
+          
+          <div className="form-grid">
+            <div>
+              <label className="form-label">委託用途{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <div className="flex-input-group">
+                <select name="usage_type" value={formData.usage_type} onChange={handleChange} className="form-input">
+                  <option value="商用">商用</option><option value="非商用">非商用</option><option value="其他">其他</option>
+                </select>
+                {formData.usage_type === '其他' && (
+                  <input type="text" name="usage_type" placeholder="說明..." value={customFields.usage_type} onChange={handleCustomFieldChange} className="form-input" />
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label className="form-label">是否急件{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <select value={formData.is_rush} onChange={(e) => setFormData({...formData, is_rush: e.target.value})} className="form-input">
+                <option value="否">否</option><option value="是">是</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="form-label">
+                交稿方式{workflowMode === 'standard' && <span className="req-star">*</span>}
+                {workflowMode === 'standard' && (
+                  <span onClick={() => setShowDeliveryHelp(true)} style={{ color: '#4A7294', fontSize: '12px', marginLeft: '6px', cursor: 'pointer', textDecoration: 'underline' }}> [?] </span>
+                )}
+              </label>
+              {workflowMode === 'free' ? (
+                <input type="text" name="delivery_method" value={formData.delivery_method} onChange={handleChange} className="form-input" placeholder="例如：雲端硬碟交稿" />
+              ) : (
+                <select name="delivery_method" value={formData.delivery_method} onChange={handleChange} className="form-input">
+                  <option value="三階段審閱">三階段審閱</option><option value="一鍵出圖">一鍵出圖</option>
+                </select>
+              )}
+              
+              {showDeliveryHelp && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)' }} onClick={() => setShowDeliveryHelp(false)} />
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '300px', padding: '20px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
+                    <h4 style={{ marginTop: 0, fontSize: '15px' }}>交稿方式說明</h4>
+                    <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0' }}>三階段模式下，系統會引導委託人進行草稿/線稿/完稿審閱。完稿需經委託人按下「同意稿件」才會結單。</p>
+                    <button onClick={() => setShowDeliveryHelp(false)} style={{ marginTop: '16px', width: '100%', padding: '8px', background: '#F4F0EB', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>關閉</button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <label className="form-label">人物數量{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <input type="number" name="char_count" value={formData.char_count} onChange={handleChange} min="1" className="form-input" />
+            </div>
+            
+            <div>
+              <label className="form-label">繪畫範圍{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <div className="flex-input-group">
+                <select name="draw_scope" value={formData.draw_scope} onChange={handleChange} className="form-input">
+                  <option value="頭貼">頭貼</option><option value="半身">半身</option><option value="全身">全身</option><option value="其他">其他</option>
+                </select>
+                {formData.draw_scope === '其他' && (
+                  <input type="text" name="draw_scope" placeholder="說明..." value={customFields.draw_scope} onChange={handleCustomFieldChange} className="form-input" />
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label className="form-label">背景{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <div className="flex-input-group">
+                <select name="bg_type" value={formData.bg_type} onChange={handleChange} className="form-input">
+                  <option value="無背景">無背景</option><option value="基本">基本</option><option value="複雜">複雜</option><option value="其他">其他</option>
+                </select>
+                {formData.bg_type === '其他' && (
+                  <input type="text" name="bg_type" placeholder="說明..." value={customFields.bg_type} onChange={handleCustomFieldChange} className="form-input" />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Tags & Rich Text ( spans full width on mobile, falls into grid on desktop ) */}
+        <div className="quote-card form-grid-full">
+          <h3 className="quote-card-title">附加選項與備註</h3>
+          
+          <div style={{ padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
+            <label className="form-label">快速標籤{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+            <div className="addon-tags-container">
+              {baseAddOnsList.map(item => {
+                const isSelected = selectedAddOns.includes(item);
+                return (
+                  <label key={item} className={`addon-tag ${isSelected ? 'selected' : ''}`}>
+                    <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
+                    {isSelected ? '✓ ' : '+ '}{item}
+                  </label>
+                );
+              })}
+              {customAddOns.map((item, index) => {
+                const isSelected = selectedAddOns.includes(item);
+                return (
+                  <label key={`custom-${index}`} className={`addon-tag custom ${isSelected ? 'selected' : ''}`}>
+                    <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
+                    {isSelected ? '✓ ' : '+ '}{item}
+                  </label>
+                );
+              })}
+            </div>
+            
+            {customAddOns.length < 5 && (
+              <div className="flex-input-group" style={{ marginTop: '16px' }}>
+                <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
+                  placeholder="自行增加標籤..." className="form-input" style={{ width: '160px' }} 
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomOption(); }}
+                />
+                <button type="button" onClick={handleAddCustomOption} style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>新增</button>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="form-label">
+              協議書內容(自訂)
+              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
+                *內容將做為該單的初始協議書快照，勾選後即視為同意此合約*
+              </span>
+            </label>
+            <div className="quote-quill-wrapper">
+              <ReactQuill theme="snow" value={tosContent} onChange={setTosContent} modules={customQuillModules} />
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">
+              詳細設定 
+              {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}> (僅繪師註記)</span>}
+            </label>
+            <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} className="form-input" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
+          </div>
+
+          <div style={{ marginTop: '20px' }}>
+            <button onClick={handleSubmit} className="submit-btn">
+              確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
+            </button>
+          </div>
+        </div>
+
         {/* Quota Exceeded Modal */}
         {isQuotaExceeded && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-            <div style={{ backgroundColor: '#FFFFFF', padding: '40px 24px', borderRadius: '20px', boxShadow: '0 12px 40px rgba(0,0,0,0.15)', textAlign: 'center', maxWidth: '420px', border: '1px solid #EAE6E1' }}>
+          <div className="quota-modal-overlay">
+            <div className="quota-modal-box">
               <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
               <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>建單額度已用盡</h3>
               <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
@@ -509,6 +416,3 @@ export function QuoteBuilder() {
     </div>
   );
 }
-
-const labelStyle = { display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#5D4A3E', fontSize: '13px' };
-const reqStyle = { color: '#A05C5C', marginLeft: '4px', fontSize: '14px' };
