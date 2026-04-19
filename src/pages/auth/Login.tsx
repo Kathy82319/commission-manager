@@ -30,8 +30,7 @@ const loginButtonStyle: React.CSSProperties = {
 
 export function Login() {
   const handleLineLogin = () => {
-    // 移除完整的 API_BASE 判斷，直接使用相對路徑
-    // 瀏覽器會自動在前面補上 https://cath-commission-manager.pages.dev
+
     window.location.href = '/api/auth/line/login';
   };
 

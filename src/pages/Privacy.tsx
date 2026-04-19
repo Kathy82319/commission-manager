@@ -21,14 +21,14 @@ export function Privacy() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#FFFFFF', // 純白標題
+    color: '#FFFFFF', 
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#E8D5C4', // 奶油金/淺膚色，在深藍背景上非常顯眼且優雅
+    color: '#E8D5C4', 
     display: 'flex',
     alignItems: 'center',
   };

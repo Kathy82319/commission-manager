@@ -7,6 +7,7 @@ import type { PixelCrop } from '../utils/imageProcessor';
 interface ImageUploaderProps {
   onUpload: (blobs: { preview: Blob; original?: Blob }, previewUrl: string) => void;
   aspectRatio?: number;
+  targetWidth?: number; // 🌟 新增：目標縮圖寬度
   withWatermark?: boolean;
   watermarkText?: string;
   shape?: 'rect' | 'round';
@@ -23,6 +24,7 @@ interface ImageUploaderProps {
 export function ImageUploader({
   onUpload,
   aspectRatio = undefined,
+  targetWidth = 0, // 預設 0 代表不限制
   withWatermark = false,
   watermarkText = "SAMPLE",
   shape = 'rect',
@@ -32,7 +34,7 @@ export function ImageUploader({
   metadata
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // 🌟 儲存原始 File 物件
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
@@ -45,18 +47,15 @@ export function ImageUploader({
       const file = e.target.files[0];
       const isImage = file.type.startsWith('image/');
 
-      // 🛡️ 嚴格鎖死 5MB 限制
       const MAX_FILE_SIZE = 5 * 1024 * 1024; 
-      
       if (file.size > MAX_FILE_SIZE) {
         alert(`檔案太大囉！最大限制為 5MB。\n您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。`);
         e.target.value = ''; 
         return; 
       }
 
-      setSelectedFile(file); // 紀錄最原始的檔案
+      setSelectedFile(file);
 
-      // 🌟 非圖片檔案處理 (ZIP/PSD 等，僅限完稿)
       if (!isImage) {
         if (!isFinal) {
           alert("此階段僅允許上傳圖片格式！");
@@ -79,7 +78,6 @@ export function ImageUploader({
         canvas.toBlob((blob) => {
           setIsProcessing(false);
           if (blob) {
-            // 預覽圖用 Canvas 產生，原檔直接回傳真實 File 物件
             onUpload({ preview: blob, original: file }, URL.createObjectURL(blob));
           }
         }, 'image/png');
@@ -103,16 +101,16 @@ export function ImageUploader({
     if (!imageSrc || !croppedAreaPixels || !selectedFile) return;
     setIsProcessing(true);
     try {
-      // 產生預覽用縮圖 (帶浮水印)
+      // 🌟 呼叫處理器時傳入 targetWidth 實現縮圖功能
       const previewBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
         withWatermark,
-        watermarkText
+        watermarkText,
+        maxWidth: targetWidth, 
+        quality: 0.8
       });
 
       const previewUrl = URL.createObjectURL(previewBlob);
       
-      // 🌟【修復核心】：original 欄位直接傳送 selectedFile (File 物件)，
-      // 保證它是繪師原本挑選的檔案，完全不經過 Canvas 裁切或壓縮。
       onUpload({ 
         preview: previewBlob, 
         original: isFinal ? selectedFile : undefined 

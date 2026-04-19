@@ -12,7 +12,6 @@ export function Onboarding() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        // 直接使用相對路徑，瀏覽器會自動補上當前的 .pages.dev 網域
         const res = await fetch('/api/users/me', {
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
@@ -49,7 +48,6 @@ export function Onboarding() {
     setSubmitting(true);
 
     try {
-      // 直接使用相對路徑
       const res = await fetch('/api/users/me/complete-onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,13 +110,13 @@ export function Onboarding() {
             <div style={cardStyle(role === 'artist')} onClick={() => setRole('artist')}>
               <span style={{ fontSize: '32px' }}>🎨</span>
               <div style={{ fontWeight: 'bold' }}>我是繪師</div>
-              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想管理委託、上傳作品並設定報價</div>
+              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想管理委託、上傳作品</div>
             </div>
             
             <div style={cardStyle(role === 'client')} onClick={() => setRole('client')}>
               <span style={{ fontSize: '32px' }}>🌟</span>
               <div style={{ fontWeight: 'bold' }}>我是委託方</div>
-              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想尋找繪師、發起委託並追蹤進度</div>
+              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>我想看委託並追蹤進度</div>
             </div>
           </div>
         </div>

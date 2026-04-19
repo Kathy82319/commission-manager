@@ -507,7 +507,7 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
 
                   <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
                     <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 199 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
                     <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
                       <li><strong>無限制建立委託單數量</strong></li>
                       <li>解鎖編輯「所有」進階區塊編輯權限</li>
@@ -563,7 +563,8 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
                         <ImageUploader 
                           onUpload={handleAvatarUpload}
                           aspectRatio={1} 
-                          withWatermark={false} 
+                          targetWidth={400}     // 🌟 大頭照：縮小尺寸並壓縮
+                          withWatermark={false} // 🌟 大頭照：無浮水印
                           buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
                           maxSizeMB={2}
                         />
@@ -647,6 +648,8 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
                         ) : (
                           <ImageUploader 
                             onUpload={handleSplashUpload}
+                            targetWidth={1920}    // 🌟 開場圖：保持高解析但適度壓縮
+                            withWatermark={false} // 🌟 開場圖：無浮水印
                             buttonText="點此選擇要上傳的開場背景圖檔"
                             maxSizeMB={10}
                           />
@@ -717,6 +720,9 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
                     ) : (
                       <ImageUploader 
                         onUpload={handlePortfolioUpload}
+                        targetWidth={1200}    // 🌟 作品展示：啟用縮圖處理
+                        withWatermark={true}  // 🌟 作品展示：啟用全圖平鋪浮水印
+                        watermarkText={formData.display_name || "SAMPLE"} // 🌟 浮水印內容預設為繪師名稱
                         buttonText="點此選擇要上傳的作品圖檔"
                         maxSizeMB={5}
                       />

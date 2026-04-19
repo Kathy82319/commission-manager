@@ -22,10 +22,11 @@ interface ProcessOptions {
   watermarkText?: string;
   outputFormat?: 'image/jpeg' | 'image/webp';
   quality?: number; // 0 到 1 之間
+  maxWidth?: number; // 🌟 新增：最大寬度限制 (用於縮圖)
 }
 
 /**
- * 核心：根據使用者的裁切範圍，擷取圖片並可選加上浮水印
+ * 核心：根據使用者的裁切範圍，擷取圖片並可選加上浮水印與縮圖
  */
 export default async function getCroppedImg(
   imageSrc: string,
@@ -36,7 +37,8 @@ export default async function getCroppedImg(
     withWatermark = false,
     watermarkText = "SAMPLE",
     outputFormat = 'image/jpeg',
-    quality = 0.8
+    quality = 0.8,
+    maxWidth = 0 // 0 代表不限制
   } = options;
 
   const image = await createImage(imageSrc);
@@ -47,11 +49,17 @@ export default async function getCroppedImg(
     throw new Error('無法建立 Canvas 內容');
   }
 
-  // 設定 Canvas 尺寸為使用者裁切的尺寸
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // 🌟 計算縮放比例
+  let scale = 1;
+  if (maxWidth > 0 && pixelCrop.width > maxWidth) {
+    scale = maxWidth / pixelCrop.width;
+  }
 
-  // 1. 將圖片的「裁切區域」畫到 Canvas 上
+  // 設定 Canvas 尺寸為縮放後的尺寸
+  canvas.width = pixelCrop.width * scale;
+  canvas.height = pixelCrop.height * scale;
+
+  // 1. 將圖片的「裁切區域」畫到 Canvas 上 (同時處理縮放)
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -60,16 +68,16 @@ export default async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    canvas.width,
+    canvas.height
   );
 
-  // 2. 如果需要浮水印，依照您的原始版本邏輯擴充為「全圖平鋪」
+  // 2. 如果需要浮水印，全圖平鋪
   if (withWatermark) {
     ctx.save();
     
-    // 設定浮水印樣式 (沿用您的參數，稍微調小字體以利平鋪美觀)
-    const fontSize = Math.floor(pixelCrop.width / 12); 
+    // 設定浮水印樣式 (根據縮放後的寬度調整字體)
+    const fontSize = Math.floor(canvas.width / 12); 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // 半透明白色
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
@@ -83,11 +91,9 @@ export default async function getCroppedImg(
     const stepX = fontSize * 5; 
     const stepY = fontSize * 4;
 
-    // 🌟 使用雙層迴圈直接在畫布上重複繪製
     for (let x = 0; x <= canvas.width + stepX; x += stepX) {
       for (let y = 0; y <= canvas.height + stepY; y += stepY) {
         ctx.save();
-        // 移動到格點並旋轉 -30 度
         ctx.translate(x, y);
         ctx.rotate((-30 * Math.PI) / 180);
         ctx.fillText(watermarkText, 0, 0);

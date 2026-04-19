@@ -24,7 +24,7 @@ export function Portal() {
         if (data.success) {
           setUser(data.data);
         } else {
-          navigate('/login'); // 沒登入就踢回登入頁
+          navigate('/login'); 
         }
       } catch (e) {
         console.error(e);
@@ -89,7 +89,7 @@ export function Portal() {
       onClick={() => navigate('/admin')}
       style={{
         width: '100%',
-        maxWidth: '400px', // 限制最大寬度，避免在大螢幕太長
+        maxWidth: '400px', 
         padding: '16px 32px',
         borderRadius: '12px',
         backgroundColor: '#111827',
