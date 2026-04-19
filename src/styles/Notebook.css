@@ -1,7 +1,7 @@
 /* src/styles/Notebook.css */
 
 .notebook-page {
-  padding: 0;
+  padding: 16px 20px;
 }
 
 .notebook-container {
@@ -13,10 +13,15 @@
   margin: 0 auto;
 }
 
-/* === 手機版 & 平板版 (小於 1024px 時上下排列) === */
+/* === 核心切換邏輯：手機版隱藏工具 === */
+.mobile-hide {
+  display: none !important;
+}
+
+/* 左側：委託單列表 (手機版預設撐滿畫面) */
 .notebook-sidebar {
   width: 100%;
-  max-height: 45vh; /* 限制清單區塊高度，內部可滾動 */
+  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
   background-color: #FFFFFF;
@@ -33,17 +38,39 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* 右側：詳情區塊 (手機版預設隱藏，點擊後撐滿畫面) */
 .notebook-main {
   width: 100%;
+  min-height: calc(100vh - 120px);
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
-  /* 手機版移除 overflow hidden，讓內容自然撐開向下延伸 */
 }
 
+/* 手機版返回列表按鈕 */
+.mobile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  background-color: #F4F0EB;
+  color: #5D4A3E;
+  border: 1px solid #DED9D3;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-back-btn:hover {
+  background-color: #EAE6E1;
+}
+
+/* 頂部操作列 */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -52,6 +79,7 @@
   flex: 1 1 auto;
 }
 
+/* 標籤導覽 (Tabs) */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -61,10 +89,7 @@
   scrollbar-width: none;
   flex-shrink: 0;
 }
-
-.scroll-tabs::-webkit-scrollbar { 
-  display: none; 
-}
+.scroll-tabs::-webkit-scrollbar { display: none; }
 
 .tab-btn {
   padding: 14px 20px;
@@ -86,85 +111,55 @@
 
 .tab-content-area {
   padding: 20px;
-  /* 手機版自然撐開，不強制滾動 */
+  flex: 1;
 }
 
-.payment-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-}
+/* 表單與 Grid */
+.payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.details-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 
 .form-input {
-  color: #5D4A3E;
-  border: 1px solid #DED9D3;
-  padding: 10px;
-  border-radius: 8px;
-  background-color: #FBFBF9;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
+  color: #5D4A3E; border: 1px solid #DED9D3; padding: 10px;
+  border-radius: 8px; background-color: #FBFBF9; outline: none;
+  width: 100%; box-sizing: border-box;
 }
 
 .action-btn {
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 13px;
-  transition: opacity 0.2s;
+  padding: 8px 12px; border-radius: 8px; cursor: pointer;
+  font-weight: bold; font-size: 13px; transition: opacity 0.2s;
 }
+.action-btn:hover { opacity: 0.8; }
 
-.action-btn:hover { 
-  opacity: 0.8; 
-}
-
-/* === 電腦版 (1024px 以上左右排列) === */
+/* === 電腦版 (1024px 以上)：覆蓋手機版隱藏邏輯，強制並排 === */
 @media (min-width: 1024px) {
-  .notebook-page {
-    height: calc(100vh - 80px); /* 固定外層高度，避免整個網頁長出雙捲軸 */
-  }
-  .notebook-container {
-    flex-direction: row;
-    height: 100%;
-    gap: 20px;
-  }
+  /* 解除手機版的隱藏狀態 */
+  .mobile-hide { display: flex !important; }
+  /* 隱藏返回列表按鈕 */
+  .mobile-back-btn { display: none !important; }
+
+  .notebook-page { height: calc(100vh - 80px); }
+  .notebook-container { flex-direction: row; height: 100%; gap: 20px; }
+  
   .notebook-sidebar {
-    width: 300px; /* 縮窄內部側邊欄，讓出空間給主畫面 */
+    width: 300px;
     height: 100%;
-    max-height: 100%;
   }
+  
   .notebook-main {
     flex: 1;
     min-width: 0;
     height: 100%;
-    overflow: hidden; /* 電腦版限制高度，讓內部區塊可滾動 */
+    overflow: hidden; /* 電腦版讓詳情區塊內部可滾動 */
   }
+  
   .tab-content-area {
-    flex: 1;
-    overflow-y: auto; /* 電腦版啟用內部獨立滾動 */
+    overflow-y: auto;
   }
 }
 
-/* === 超大螢幕 (1280px 以上) 表單才並排，避免被擠壓 === */
+/* === 超大螢幕 (1280px 以上) === */
 @media (min-width: 1280px) {
-  .details-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .payment-inputs {
-    flex-direction: row;
-    align-items: stretch;
-  }
+  .details-grid { grid-template-columns: 1fr 1fr; }
+  .payment-inputs { flex-direction: row; align-items: stretch; }
 }

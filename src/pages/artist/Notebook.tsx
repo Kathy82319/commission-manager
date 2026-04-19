@@ -143,10 +143,8 @@ export function Notebook() {
       fetchCommissions();
     } catch (e) { console.error("更新已讀時間失敗", e); }
     
-    // 手機版點擊列表後，自動捲動到內容區
-    if (window.innerWidth < 1024) {
-      window.scrollTo({ top: 450, behavior: 'smooth' });
-    }
+    // 手機版切換時，自動捲動到最上方
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSaveDailyFields = async () => {
@@ -446,8 +444,9 @@ export function Notebook() {
     <div className="notebook-page">
       <div className="notebook-container">
         
-        {/* 左側：委託單清單區 */}
-        <div className="notebook-sidebar">
+        {/* === 左側：委託單清單區 === */}
+        {/* 🌟 根據有無 selectedId 來決定是否掛上 mobile-hide 隱藏此區 */}
+        <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
             <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
@@ -499,8 +498,9 @@ export function Notebook() {
           </div>
         </div>
 
-        {/* 右側：詳情區塊 */}
-        <div className="notebook-main">
+        {/* === 右側：詳情區塊 === */}
+        {/* 🌟 根據沒有 selectedId 來決定是否掛上 mobile-hide 隱藏此區 */}
+        <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
             <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由列表選擇委託單以檢視詳情</div> 
           ) : (
@@ -509,6 +509,12 @@ export function Notebook() {
               {/* 詳情頭部 */}
               <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
                 <div style={{ flex: '1 1 250px' }}>
+                  
+                  {/* 🌟 新增的返回列表按鈕，透過 CSS 僅在手機版顯示 */}
+                  <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
+                    ⬅ 返回列表
+                  </button>
+
                   <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '20px' }}>{getDualName(selectedOrder)}</h2>
                   <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
                   <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
