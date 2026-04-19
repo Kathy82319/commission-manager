@@ -18,10 +18,10 @@
   display: none !important;
 }
 
-/* 左側：委託單列表 */
+/* 左側：委託單列表 (內部滾動) */
 .notebook-sidebar {
   width: 100%;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 90px);
   display: flex;
   flex-direction: column;
   background-color: #FFFFFF;
@@ -38,10 +38,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 右側：詳情區塊 */
+/* 🌟 右側：詳情區塊 (改為鎖死高度 + 內部滾動，防止頂部列滑走) */
 .notebook-main {
   width: 100%;
-  min-height: calc(100vh - 120px);
+  height: calc(100vh - 90px); /* 將 min-height 改為固定 height */
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
@@ -50,6 +50,7 @@
   flex-direction: column;
   min-width: 0; 
   max-width: 100%;
+  overflow: hidden; /* 確保外殼不會被撐破 */
 }
 
 .mobile-back-btn {
@@ -71,7 +72,7 @@
   background-color: #EAE6E1;
 }
 
-/* 🌟 優化頂部操作按鈕 (手機版兩兩並排，電腦版靠右靠齊) */
+/* 頂部操作按鈕 */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -81,7 +82,7 @@
 }
 
 .action-btn {
-  flex: 1 1 calc(50% - 8px); /* 手機版：每排兩個按鈕 */
+  flex: 1 1 calc(50% - 8px); 
   text-align: center;
   padding: 10px 12px; 
   border-radius: 8px; 
@@ -118,6 +119,7 @@
   font-family: inherit;
   border-bottom: 2px solid transparent; 
   margin-bottom: -2px; 
+  outline: none; /* 移除點擊時的預設黑框 */
 }
 
 .tab-btn.active {
@@ -131,16 +133,18 @@
   border-bottom: 2px solid #DED9D3;
 }
 
-/* 內部內容區域 */
+/* 🌟 內部內容區域 (開啟內部滾動，取代全域滾動) */
 .tab-content-area {
   padding: 20px;
   flex: 1;
   min-width: 0; 
+  overflow-y: auto; /* 讓內容在區塊內自行滑動 */
+  -webkit-overflow-scrolling: touch;
 }
 
 .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
-/* 🌟 解除表格寬度限制，讓它自然適應螢幕 */
+/* 解除表格寬度限制，自然適應螢幕 */
 .custom-table {
   width: 100%;
   border-collapse: collapse;
@@ -150,7 +154,7 @@
 
 .custom-table th, .custom-table td {
   padding: 12px 8px;
-  word-break: break-word; /* 允許長文字自動換行 */
+  word-break: break-word; 
 }
 
 .table-responsive { 
@@ -186,14 +190,24 @@
   
   .tab-content-area { overflow-y: auto; }
 
-  /* 電腦版按鈕恢復靠右並排 */
   .main-header-actions {
     width: auto;
     margin-top: 0;
     justify-content: flex-end;
   }
   .action-btn {
-    flex: none; /* 取消手機版的強制延展 */
+    flex: none; 
+  }
+
+  /* 🌟 CSS 防護罩：強制覆蓋 Settings.css 洩漏過來的右邊框污染 */
+  .scroll-tabs .tab-btn {
+    border-right: none !important;
+    margin-right: 0 !important;
+    padding: 14px 4px !important;
+    border-bottom: 2px solid transparent !important;
+  }
+  .scroll-tabs .tab-btn.active {
+    border-bottom: 2px solid #5D4A3E !important;
   }
 }
 
