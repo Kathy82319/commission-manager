@@ -30,22 +30,22 @@ document.addEventListener('mousedown', handleClick);
 return () => document.removeEventListener('mousedown', handleClick);
 }, []);
 return (
-<div ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
-<div onClick={() => setIsOpen(!isOpen)} style={{ padding: '8px', border: '1px solid #DED9D3', borderRadius: '6px', backgroundColor: '#FFF', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-<span style={{ fontWeight: 'bold', color: '#5D4A3E' }}>{value || '設定狀態'}</span>
-<span>▼</span>
+<div ref={dropdownRef} className="relative w-full">
+<div onClick={() => setIsOpen(!isOpen)} className="p-2 border border-[#DED9D3] rounded-md bg-white cursor-pointer flex justify-between items-center text-sm">
+<span className="font-bold text-[#5D4A3E]">{value || '設定狀態'}</span>
+<span className="ml-2 text-xs">▼</span>
 </div>
 {isOpen && (
-<div style={{ position: 'absolute', top: '100%', left: 0, minWidth: '200px', backgroundColor: '#FFF', border: '1px solid #EAE6E1', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 1000, padding: '8px' }}>
+<div className="absolute top-full left-0 min-w-[200px] bg-white border border-[#EAE6E1] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.1)] z-[1000] p-2 mt-1">
 {stages.map((s: string) => (
-<div key={s} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid #F0ECE7' }}>
-<span onClick={() => { onChange(s); setIsOpen(false); }} style={{ flex: 1, cursor: 'pointer' }}>{s}</span>
-<button onClick={() => onDelete(s)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer' }}>×</button>
+<div key={s} className="flex justify-between p-2 border-b border-[#F0ECE7]">
+<span onClick={() => { onChange(s); setIsOpen(false); }} className="flex-1 cursor-pointer">{s}</span>
+<button onClick={() => onDelete(s)} className="text-[#A05C5C] border-none bg-transparent cursor-pointer">×</button>
 </div>
 ))}
-<div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-<input value={newVal} onChange={e => setNewVal(e.target.value)} placeholder="新標籤" style={{ flex: 1, padding: '4px', border: '1px solid #DDD' }} />
-<button onClick={() => { onAdd(newVal); onChange(newVal); setNewVal(''); setIsOpen(false); }} style={{ padding: '4px 8px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '4px' }}>+</button>
+<div className="flex gap-1 mt-2">
+<input value={newVal} onChange={e => setNewVal(e.target.value)} placeholder="新標籤" className="flex-1 p-1 border border-[#DDD] rounded outline-none" />
+<button onClick={() => { onAdd(newVal); onChange(newVal); setNewVal(''); setIsOpen(false); }} className="px-2 py-1 bg-[#5D4A3E] text-white border-none rounded cursor-pointer">+</button>
 </div>
 </div>
 )}
@@ -90,68 +90,62 @@ export function Queue() {
   });
 
 
-  return (
-<div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-<style>{`
-.queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
-.queue-controls { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; }
-/* 🌟 RWD Table to Card Transformation */
-@media (max-width: 768px) {
-.queue-table thead { display: none; }
-.queue-table, .queue-table tbody, .queue-table tr, .queue-table td { display: block; width: 100%; }
-.queue-table tr { margin-bottom: 20px; border: 1px solid #EAE6E1; borderRadius: 12px; padding: 16px; background: #FFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.queue-table td { padding: 8px 0; border: none; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-.queue-table td::before { content: attr(data-label); fontWeight: bold; color: #7A7269; }
-.queue-controls input, .queue-controls select { flex: 1; }
-}
-@media (min-width: 769px) {
-.queue-controls { width: auto; }
-.queue-table { width: 100%; border-collapse: collapse; background: #FFF; borderRadius: 12px; overflow: hidden; }
-.queue-table th, .queue-table td { padding: 12px; border-bottom: 1px solid #F0ECE7; text-align: left; }
-}
-`}</style>
-<div className="queue-header">
-<h2 style={{ margin: 0, color: '#5D4A3E' }}>工作排單表</h2>
-<div className="queue-controls">
-<input placeholder="🔍 搜尋..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3' }} />
-<select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #DED9D3' }}>
+    return (
+<div className="p-5 max-w-[1200px] mx-auto">
+<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
+<h2 className="m-0 text-[#5D4A3E] font-bold text-2xl">工作排單表</h2>
+<div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+<input placeholder="🔍 搜尋..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="px-3 py-2 rounded-lg border border-[#DED9D3] flex-1 md:flex-none outline-none" />
+<select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="p-2 rounded-lg border border-[#DED9D3] flex-1 md:flex-none outline-none">
 <option value="all">全部月份</option>
 {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
 </select>
-{isUpdating && <span style={{ color: '#A67B3E', fontSize: '13px', fontWeight: 'bold' }}>儲存中...</span>}
+{isUpdating && <span className="text-[#A67B3E] text-[13px] font-bold self-center">儲存中...</span>}
 </div>
 </div>
-<div style={{ overflowX: 'auto' }}>
-<table className="queue-table">
-<thead>
-<tr style={{ backgroundColor: '#FBFBF9', color: '#7A7269' }}>
-<th>日期</th><th>委託人</th><th>狀態</th><th>預計完工</th><th>付款</th><th>備註</th><th>管理</th>
+<div className="overflow-x-auto w-full">
+<table className="w-full border-collapse bg-transparent md:bg-white md:rounded-xl md:overflow-hidden block md:table shadow-none md:shadow-sm">
+<thead className="hidden md:table-header-group">
+<tr className="bg-[#FBFBF9] text-[#7A7269]">
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">日期</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">委託人</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">狀態</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">預計完工</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">付款</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">備註</th>
+<th className="p-3 border-b border-[#F0ECE7] text-left font-bold">管理</th>
 </tr>
 </thead>
-<tbody>
+<tbody className="block md:table-row-group">
 {filteredCommissions.map(order => (
-<tr key={order.id}>
-<td data-label="建單日期">{order.order_date.substring(5, 10)}</td>
-<td data-label="委託人">
-<div style={{ fontWeight: 'bold' }}>{order.contact_memo || '未命名'}</div>
-<div style={{ fontSize: '11px', color: '#A0978D' }}>ID: {order.client_public_id || '未綁定'}</div>
+<tr key={order.id} className="block md:table-row mb-5 border border-[#EAE6E1] md:border-none rounded-xl md:rounded-none p-4 bg-white shadow-sm md:shadow-none">
+<td data-label="建單日期" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+{order.order_date.substring(5, 10)}
 </td>
-<td data-label="進度狀態">
+<td data-label="委託人" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<div className="text-right md:text-left">
+<div className="font-bold">{order.contact_memo || '未命名'}</div>
+<div className="text-[11px] text-[#A0978D]">ID: {order.client_public_id || '未綁定'}</div>
+</div>
+</td>
+<td data-label="進度狀態" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<div className="w-[140px] md:w-[150px] text-right md:text-left">
 <StageDropdown value={order.queue_status} onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} stages={stages} onAdd={(v:any) => setStages([...stages, v])} onDelete={(v:any) => setStages(stages.filter(s=>s!==v))} />
+</div>
 </td>
-<td data-label="預計完工">
-<input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} style={{ border: '1px solid #EEE', padding: '4px', width: '120px' }} />
+<td data-label="預計完工" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="border border-[#EEE] p-1 w-[130px] rounded bg-transparent outline-none text-right md:text-left" />
 </td>
-<td data-label="付款狀態">
-<select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ padding: '4px', borderRadius: '4px', background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text, border: 'none', fontWeight: 'bold' }}>
+<td data-label="付款狀態" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="p-1 rounded font-bold border-none outline-none cursor-pointer">
 <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
 </select>
 </td>
-<td data-label="備註">
-<input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} style={{ width: '100%', border: 'none', borderBottom: '1px solid #EEE' }} placeholder="點擊編輯..." />
+<td data-label="備註" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="w-[120px] md:w-[150px] border-none border-b border-[#EEE] bg-transparent outline-none text-right md:text-left placeholder:text-right md:placeholder:text-left" placeholder="點擊編輯..." />
 </td>
-<td data-label="操作">
-<button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} style={{ padding: '6px 12px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>管理</button>
+<td data-label="操作" className="flex md:table-cell justify-between items-center py-2 md:p-3 border-none md:border-b md:border-[#F0ECE7] text-sm md:text-base before:content-[attr(data-label)] before:font-bold before:text-[#7A7269] md:before:content-none">
+<button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="px-3 py-1.5 bg-[#5D4A3E] text-white border-none rounded-md cursor-pointer font-bold w-[100px] md:w-full">管理</button>
 </td>
 </tr>
 ))}
@@ -159,5 +153,5 @@ export function Queue() {
 </table>
 </div>
 </div>
-);
+  );
 }
