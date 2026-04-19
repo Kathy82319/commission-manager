@@ -37,11 +37,21 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-        // 切換選單後，如果是手機版螢幕，自動關閉選單
+          // 追蹤螢幕寬度，以便用 style 動態控制 transform (解決純 class 在某些情況下的優先級覆蓋問題)
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 切換選單後，如果是手機版螢幕，自動關閉選單
   useEffect(() => {
     // 當路由改變時，強制關閉手機版選單
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+    if (windowWidth < 1024) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [location.pathname, windowWidth]);
 
   const handlePreviewAndCopy = () => {
     if (!artist) return;
@@ -123,7 +133,10 @@ export function ArtistLayout() {
 
             <div style={{ display: 'flex', flex: 1 }}>
                 {/* 側邊欄 (加入 RWD 控制) */}
-                <aside className={`fixed top-0 pt-[64px] lg:pt-0 left-0 bottom-0 z-50 w-[260px] shrink-0 bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <aside 
+                  className={`fixed top-0 pt-[64px] lg:pt-0 left-0 bottom-0 z-50 w-[260px] shrink-0 bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:z-0`}
+                  style={{ transform: windowWidth >= 1024 ? 'translateX(0)' : isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+                >
           
           <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }} className="hidden lg:block">
             
