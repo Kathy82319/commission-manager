@@ -670,7 +670,7 @@ const fetchCommissions = async (isInitialLoad = false) => {
                   </div>
                 )}
 
-              {activeTab === 'logs' && (
+                {activeTab === 'logs' && (
                   <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E' }}>決策與操作追蹤紀錄</h3>
                     
@@ -691,11 +691,6 @@ const fetchCommissions = async (isInitialLoad = false) => {
                         ))}
                       </div>
                     )}
-                  </div>
-                )}
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
                 )}
               </div>
