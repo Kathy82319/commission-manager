@@ -25,7 +25,7 @@ export function PublicLayout() {
         <button 
           onClick={handleLoginClick} 
           style={{
-            padding: '8px 20px',
+            padding: '6px 16px',
             backgroundColor: 'transparent',
             color: '#5D4A3E',
             border: '2px solid #5D4A3E',
