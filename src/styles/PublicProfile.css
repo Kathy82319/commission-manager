@@ -351,6 +351,27 @@
 
 /* 手機版適應 */
 @media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    padding: 20px 15px;
+    gap: 30px;
+  }
+  
+  .sidebar {
+    width: 100%;
+    position: relative;
+    top: 0;
+  }
+  
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .rich-text-content {
+    padding: 20px;
+  }
+
   .lightbox-nav {
     padding: 10px 10px;
     font-size: 30px;
