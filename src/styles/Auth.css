@@ -1,0 +1,216 @@
+/* src/styles/Auth.css */
+
+/* === Login 頁面專用 === */
+.login-container {
+  min-height: 100vh;
+  background-color: #778ca4; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: sans-serif;
+  color: #FFFFFF;
+}
+
+.login-title {
+  margin-bottom: 32px;
+  letter-spacing: 2px;
+  font-size: 24px;
+}
+
+.line-login-btn {
+  background-color: #06C755; 
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.line-login-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+.line-icon {
+  width: 30px;
+  height: 30px;
+  background-color: #FFFFFF;
+  color: #06C755; 
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.login-footer-text {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #E0E6ED;
+}
+
+.login-footer-text a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* === Onboarding 頁面專用 === */
+.onboarding-page {
+  background-color: #FBFBF9;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.onboarding-card {
+  max-width: 500px;
+  width: 100%;
+  padding: 40px 30px;
+  background-color: #FFFFFF;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  box-sizing: border-box;
+}
+
+.onboarding-title {
+  margin: 0 0 8px 0;
+  text-align: center;
+  color: #5D4A3E;
+  font-size: 22px;
+}
+
+.onboarding-subtitle {
+  margin: 0 0 32px 0;
+  text-align: center;
+  color: #A0978D;
+  font-size: 14px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #5D4A3E;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #DED9D3;
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: #A67B3E;
+}
+
+.role-cards-container {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.role-card {
+  flex: 1 1 0;
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid #EAE6E1;
+  background-color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 160px;
+}
+
+.role-card:hover {
+  border-color: #DED9D3;
+  transform: translateY(-2px);
+}
+
+.role-card.selected {
+  border-color: #5D4A3E;
+  background-color: #F4F0EB;
+}
+
+.role-icon {
+  font-size: 32px;
+}
+
+.role-title {
+  font-weight: bold;
+  color: #5D4A3E;
+}
+
+.role-desc {
+  font-size: 12px;
+  color: #A0978D;
+  text-align: center;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(93,74,62,0.2);
+}
+
+.submit-btn:disabled {
+  background-color: #DED9D3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.submit-btn:not(:disabled):hover {
+  background-color: #4A3A30;
+}
+
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #5D4A3E;
+  font-weight: bold;
+}
+
+/* RWD for Onboarding */
+@media (max-width: 600px) {
+  .role-cards-container {
+    flex-direction: column;
+  }
+  .role-card {
+    min-width: auto;
+  }
+}

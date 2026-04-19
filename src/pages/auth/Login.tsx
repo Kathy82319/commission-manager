@@ -1,60 +1,22 @@
-import React from 'react';
-
-// 樣式定義
-const containerStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  backgroundColor: '#778ca4', 
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontFamily: 'sans-serif',
-  color: '#FFFFFF'
-};
-
-const loginButtonStyle: React.CSSProperties = {
-  backgroundColor: '#06C755', 
-  color: 'white',
-  border: 'none',
-  padding: '12px 24px',
-  borderRadius: '12px',
-  fontSize: '16px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  transition: 'transform 0.2s',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-};
+// src/pages/auth/Login.tsx
+import '../../styles/Auth.css'; // 🌟 引入剛剛建立的 CSS
 
 export function Login() {
   const handleLineLogin = () => {
-
     window.location.href = '/api/auth/line/login';
   };
 
   return (
-    <div style={containerStyle}>
-      <h2 style={{ marginBottom: '32px', letterSpacing: '2px' }}>歡迎回來</h2>
+    <div className="login-container">
+      <h2 className="login-title">歡迎回來</h2>
       
-      <button 
-        onClick={handleLineLogin}
-        style={loginButtonStyle}
-        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-      >
-        <div style={{ 
-          width: '30px', height: '30px', backgroundColor: '#FFFFFF', color: '#06C755', 
-          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' 
-        }}>
-          L
-        </div>
+      <button onClick={handleLineLogin} className="line-login-btn">
+        <div className="line-icon">L</div>
         使用 LINE 帳號登入
       </button>
 
-      <p style={{ marginTop: '24px', fontSize: '13px', color: '#E0E6ED' }}>
-        登入即代表您同意我們的 <a href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>服務條款</a>
+      <p className="login-footer-text">
+        登入即代表您同意我們的 <a href="/terms">服務條款</a>
       </p>
     </div>
   );
