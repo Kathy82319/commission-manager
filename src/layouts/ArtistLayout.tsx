@@ -183,7 +183,7 @@ export function ArtistLayout() {
         </aside>
 
         {/* 主內容區 */}
-        <main style={{ flex: 1, padding: '20px', maxWidth: '100%', overflowX: 'hidden' }}>
+        <main className="flex-1 w-full overflow-x-hidden min-w-0" style={{ maxWidth: '100vw' }}>
           {showWarningBanner && (
             <div style={{ 
               backgroundColor: '#FFF3CD', color: '#856404', padding: '16px 20px', 
