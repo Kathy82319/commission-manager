@@ -374,7 +374,10 @@ export function QuoteBuilder() {
             <label className="form-label">
               協議書內容 (自訂)
               <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
-                *內容將做為該單的初始協議書快照，勾選後即視為同意此合約*
+                *內容將做為該單的初始協議書快照，之後無法更改*
+              </span>
+              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
+                *可至個人設定→協議書內容那寫入範本，之後每次會自動代入*
               </span>
             </label>
             <div className="quote-quill-wrapper">
