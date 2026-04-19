@@ -29,6 +29,15 @@ interface ProfileSettings {
   splash_text?: string;
 }
 
+const platformStyles: Record<string, { bg: string; text: string }> = {
+  'Facebook': { bg: '#dbdbdb', text: '#000' },
+  'Plurk': { bg: '#dbdbdb', text: '#000' },
+  'Twitter / X': { bg: '#dbdbdb', text: '#000' },
+  'Threads': { bg: '#dbdbdb', text: '#000' },
+  'Instagram': { bg: '#dbdbdb', text: '#000' },
+  '個人網站': { bg: '#dbdbdb', text: '#000' }
+};
+
 const getSocialIcon = (platform: string) => {
   const size = 20; 
   switch (platform) {
@@ -165,7 +174,7 @@ export function PublicProfile() {
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
   return (
-    <div className="public-profile-container" style={{ backgroundColor: '#FBFBF9', minHeight: '100vh' }}>
+    <div className="public-profile-container">
             {showSplash && (
         <div 
           // 🌟 關鍵：動態切換 hide 類別來觸發 CSS transition
@@ -185,51 +194,31 @@ export function PublicProfile() {
         </div>
       )}
 
-                  <div className="content-wrapper flex flex-col md:flex-row w-full max-w-7xl mx-auto p-0 md:p-5" style={{ 
-      }}>
-                <div className="sidebar w-full md:w-80 p-10 md:p-6 bg-white border-b md:border-b-0 md:border-r border-gray-200 md:sticky md:top-20 md:h-fit md:rounded-2xl text-center" style={{ 
-        }}>
-          <div className="avatar-container" style={{ margin: '0 auto 20px auto', width: '120px', height: '120px' }}>
-            <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+      <div className="content-wrapper">
+        <div className="sidebar">
+          <div className="avatar-container">
+            <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" />
           </div>
-          <h1 className="artist-name" style={{ fontSize: '24px', color: '#5D4A3E', marginBottom: '16px' }}>{artist.display_name}</h1>
-          <div className="social-links" style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <h1 className="artist-name">{artist.display_name}</h1>
+          <div className="social-links">
             {settings?.social_links?.map((link, idx) => (
-              <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" style={{ padding: '8px', backgroundColor: '#F4F0EB', borderRadius: '50%' }}>
+              <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
                 {getSocialIcon(link.platform)}
               </a>
             ))}
           </div>
           {!settings?.hidden_sections?.includes('profile_basic') && (
-            <div className="about-card" style={{ textAlign: 'left', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px' }}>
-              <h3 className="about-title" style={{ fontSize: '14px', color: '#A0978D', marginBottom: '8px' }}>關於我</h3>
-              <p className="about-text" style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.6' }}>{artist.bio || '尚未填寫簡介。'}</p>
+            <div className="about-card">
+              <h3 className="about-title">關於我</h3>
+              <p className="about-text">{artist.bio || '尚未填寫簡介。'}</p>
             </div>
           )}
         </div>
 
-        <div className="main-content flex-1 p-5" style={{ }}>
-          <div className="tabs-container" style={{ 
-            display: 'flex', 
-            gap: '8px', 
-            overflowX: 'auto', 
-            paddingBottom: '12px',
-            marginBottom: '20px',
-            scrollbarWidth: 'none' 
-          }}>
+        <div className="main-content">
+          <div className="tabs-container">
             {availableTabs.map((tab: { id: string; label: string }) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
-              style={{ 
-                whiteSpace: 'nowrap',
-                padding: '8px 20px',
-                borderRadius: '20px',
-                border: 'none',
-                backgroundColor: currentTab === tab.id ? '#5D4A3E' : '#FFFFFF',
-                color: currentTab === tab.id ? '#FFFFFF' : '#7A7269',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}>
                 {tab.label}
               </button>
             ))}
@@ -237,23 +226,22 @@ export function PublicProfile() {
 
           <div className="tab-content-area">
             {currentTab === 'portfolio' && (
-                            <div className="portfolio-grid grid grid-cols-2 md:grid-cols-3 gap-3" style={{ 
-              }}>
+              <div className="portfolio-grid">
                 {settings?.portfolio.map((img, idx) => (
-                  <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', cursor: 'pointer' }}>
-                    <img src={img} alt="作品" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                    <img src={img} alt="作品" />
                   </div>
                 ))}
               </div>
             )}
             
             {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-              <div className="rich-text-content" style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', lineHeight: '1.8' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
+              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
             )}
 
             {settings?.custom_sections?.map(sec => 
               currentTab === sec.id && (
-                <div key={sec.id} className="rich-text-content" style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', lineHeight: '1.8' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
+                <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
               )
             )}
           </div>
