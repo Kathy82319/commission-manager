@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ImageUploader } from '../../components/ImageUploader'; 
 import DOMPurify from 'dompurify'; 
+import '../../styles/Notebook.css'; // 🌟 引入專屬樣式表
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -364,13 +365,6 @@ export function Notebook() {
     return null;
   };
 
-  const tabStyle = (isActive: boolean) => ({
-    padding: '14px 20px', cursor: 'pointer', borderBottom: isActive ? '3px solid #5D4A3E' : '3px solid transparent',
-    fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#5D4A3E' : '#A0978D', backgroundColor: 'transparent', 
-    borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap' as const
-  });
-
   const isStageActuallyReviewed = (stageNameCH: string) => {
     return logs.some(log => log.actor_role === 'client' && (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`已同意 ${stageNameCH}`)));
   };
@@ -431,11 +425,11 @@ export function Notebook() {
         <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{label}</span>
         {canDirectEdit ? (
           type === 'select' ? (
-            <select value={(editData[fieldKey] as string) || ''} onChange={e => setEditData({...editData, [fieldKey]: e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none' }}>
+            <select className="form-input" value={(editData[fieldKey] as string) || ''} onChange={e => setEditData({...editData, [fieldKey]: e.target.value})}>
               <option value="">請選擇</option>{options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           ) : (
-            <input type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '10px', borderRadius: '8px', backgroundColor: '#FBFBF9', outline: 'none', width: '100%', boxSizing: 'border-box' }} />
+            <input className="form-input" type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} />
           )
         ) : (
           <div style={{ padding: '10px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '8px', minHeight: '19px', display: 'flex', alignItems: 'center' }}>
@@ -449,39 +443,20 @@ export function Notebook() {
   };
 
   return (
-    <div style={{ padding: '16px 0' }}>
-      {/* 🌟 核心 RWD 樣式定義 */}
-      <style>{`
-        .notebook-container { display: flex; flex-direction: column; gap: 24px; max-width: 1200px; margin: 0 auto; height: auto; }
-        .notebook-sidebar { width: 100%; max-height: 400px; }
-        .details-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .scroll-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid #EAE6E1; padding: 0 20px; background-color: #FAFAFA; scrollbar-width: none; }
-        .scroll-tabs::-webkit-scrollbar { display: none; }
-
-        @media (min-width: 768px) {
-          .notebook-container { flex-direction: row; height: calc(100vh - 80px); }
-          .notebook-sidebar { width: 380px; max-height: none; height: 100%; }
-          .details-grid { grid-template-columns: 1fr 1fr; }
-          .payment-inputs { flex-direction: row; align-items: stretch; }
-        }
-      `}</style>
-
+    <div className="notebook-page">
       <div className="notebook-container">
         
-        {/* 左側清單區 */}
-        <div className="notebook-sidebar" style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', flexShrink: 0 }}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        {/* 左側：委託單清單區 */}
+        <div className="notebook-sidebar">
+          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-            <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', backgroundColor: '#FBFBF9', color: '#5D4A3E', outline: 'none' }}>
+            <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
               {tabs.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
             </select>
           </div>
 
           <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }} />
+            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
@@ -524,12 +499,15 @@ export function Notebook() {
           </div>
         </div>
 
-        {/* 右側詳情區 */}
-        <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, height: '100%' }}>
-          {!selectedOrder ? <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由列表選擇委託單以檢視詳情</div> : (
+        {/* 右側：詳情區塊 */}
+        <div className="notebook-main">
+          {!selectedOrder ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由列表選擇委託單以檢視詳情</div> 
+          ) : (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               
-              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
+              {/* 詳情頭部 */}
+              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
                 <div style={{ flex: '1 1 250px' }}>
                   <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '20px' }}>{getDualName(selectedOrder)}</h2>
                   <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
@@ -547,28 +525,29 @@ export function Notebook() {
                   )}
                 </div>
                 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-start', flex: '1 1 auto' }}>
+                <div className="main-header-actions">
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
-                    <button onClick={handleForceComplete} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#4E7A5A', fontSize: '13px' }}>強制結案</button>
+                    <button className="action-btn" onClick={handleForceComplete} style={{ backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', color: '#4E7A5A' }}>強制結案</button>
                   )}
-                  <button onClick={handleToggleArchive} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C', fontSize: '13px' }}>
+                  <button className="action-btn" onClick={handleToggleArchive} style={{ backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C' }}>
                     {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
                   </button>
                   {!selectedOrder.is_external && (
-                    <button onClick={() => copyLink(selectedOrder.id)} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '13px' }}>複製連結</button>
+                    <button className="action-btn" onClick={() => copyLink(selectedOrder.id)} style={{ backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', color: '#5D4A3E' }}>複製連結</button>
                   )}
-                  <button onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ padding: '8px 12px', borderRadius: '8px', border: 'none', color: '#FFFFFF', fontWeight: 'bold', backgroundColor: '#5D4A3E', cursor: 'pointer', fontSize: '13px' }}>進入聊天室</button>
+                  <button className="action-btn" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ border: 'none', color: '#FFFFFF', backgroundColor: '#5D4A3E' }}>進入聊天室</button>
                 </div>
               </div>
 
-              {/* RWD Tab Area */}
+              {/* RWD Tab 導覽區 */}
               <div className="scroll-tabs">
-                <button onClick={() => setActiveTab('details')} style={tabStyle(activeTab === 'details')}>委託單細項</button>
-                <button onClick={() => setActiveTab('delivery')} style={tabStyle(activeTab === 'delivery')}>檔案交付</button>
-                <button onClick={() => setActiveTab('logs')} style={tabStyle(activeTab === 'logs')}>歷程紀錄</button>
+                <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>委託單細項</button>
+                <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
+                <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px', backgroundColor: '#FFFFFF' }}>
+              {/* 內容顯示區 */}
+              <div className="tab-content-area">
                 
                 {activeTab === 'details' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -579,18 +558,17 @@ export function Notebook() {
                         <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>財務與收款狀態</h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>帳務狀態：</span>
-                          <select value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', fontWeight: 'bold', color: '#5D4A3E', backgroundColor: '#FFFFFF', outline: 'none' }}>
+                          <select className="form-input" style={{ width: 'auto', padding: '8px 12px', fontWeight: 'bold' }} value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)}>
                             <option value="unpaid">未收款</option><option value="partial">已收訂金</option><option value="paid">已收款</option>
                           </select>
                         </div>
                       </div>
 
-                      {/* RWD 記帳輸入區 */}
                       <div className="payment-inputs">
-                        <input type="date" value={newPayment.record_date} onChange={e => setNewPayment({...newPayment, record_date: e.target.value})} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', color: '#5D4A3E', outline: 'none', flex: 1 }} />
-                        <input type="text" placeholder="項目 (如: 訂金)" value={newPayment.item_name} onChange={e => setNewPayment({...newPayment, item_name: e.target.value})} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', flex: 1 }} />
-                        <input type="number" placeholder="金額" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', flex: 1 }} />
-                        <button onClick={handleAddPayment} style={{ padding: '10px 20px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>+ 記帳</button>
+                        <input type="date" className="form-input" value={newPayment.record_date} onChange={e => setNewPayment({...newPayment, record_date: e.target.value})} />
+                        <input type="text" className="form-input" placeholder="項目 (如: 訂金)" value={newPayment.item_name} onChange={e => setNewPayment({...newPayment, item_name: e.target.value})} />
+                        <input type="number" className="form-input" placeholder="金額" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} />
+                        <button className="action-btn" onClick={handleAddPayment} style={{ padding: '10px 20px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', whiteSpace: 'nowrap' }}>+ 記帳</button>
                       </div>
 
                       <div className="table-responsive">
@@ -626,7 +604,6 @@ export function Notebook() {
                         </div>
                       </div>
                       
-                      {/* RWD 細項 Grid */}
                       <div className="details-grid">
                         {renderRequestField('項目名稱 (繪師自訂)：', 'project_name')}
                         {renderRequestField('交易方式 (繪師自訂)：', 'payment_method')}
@@ -640,9 +617,9 @@ export function Notebook() {
                         {renderRequestField('附加選項：', 'add_ons')}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', marginTop: '20px' }}>
                         <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>詳細設定：(委託方不可見)</span>
-                        <textarea value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ color: '#5D4A3E', border: '1px solid #DED9D3', padding: '12px', minHeight: '100px', borderRadius: '8px', whiteSpace: 'pre-wrap', outline: 'none', backgroundColor: '#FBFBF9', resize: 'vertical', width: '100%', boxSizing: 'border-box' }} />
+                        <textarea className="form-input" value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ minHeight: '100px', whiteSpace: 'pre-wrap', resize: 'vertical' }} />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px dashed #DED9D3' }}>
@@ -656,16 +633,16 @@ export function Notebook() {
 
                       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>
                         {selectedOrder.workflow_mode === 'free' ? (
-                          <button onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>儲存設定</button>
+                          <button className="action-btn" onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none' }}>儲存設定</button>
                         ) : isEditingRequest ? (
                           <>
-                            <button onClick={handleCancelEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>取消編輯</button>
-                            <button onClick={handleSubmitRequestFields} style={{ padding: '10px 20px', backgroundColor: '#A05C5C', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>確認送出異動</button>
+                            <button className="action-btn" onClick={handleCancelEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3' }}>取消編輯</button>
+                            <button className="action-btn" onClick={handleSubmitRequestFields} style={{ padding: '10px 20px', backgroundColor: '#A05C5C', color: '#FFFFFF', border: 'none' }}>確認送出異動</button>
                           </>
                         ) : (
                           <>
-                            <button onClick={handleStartEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>申請委託單異動</button>
-                            <button onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>日常儲存</button>
+                            <button className="action-btn" onClick={handleStartEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3' }}>申請委託單異動</button>
+                            <button className="action-btn" onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none' }}>日常儲存</button>
                           </>
                         )}
                       </div>
