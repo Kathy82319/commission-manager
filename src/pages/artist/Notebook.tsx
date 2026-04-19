@@ -674,22 +674,31 @@ const fetchCommissions = async (isInitialLoad = false) => {
                   <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E' }}>決策與操作追蹤紀錄</h3>
                     
-                    {/* 🌟 移除 minWidth 限制，套用 custom-table */}
                     <div className="table-responsive">
                       <table className="custom-table">
                         <tbody>
                           {logs.length === 0 ? <tr><td style={{ color: '#A0978D', textAlign: 'center', padding: '30px 0' }}>尚未有紀錄</td></tr> : null}
-                          {logs.map(log => (
-                            <tr key={log.id} style={{ borderBottom: '1px solid #EAE6E1' }}>
-                              <td style={{ color: '#A0978D', width: '120px' }}>{new Date(log.created_at).toLocaleString()}</td>
-                              <td style={{ width: '70px' }}>
-                                <span style={{ backgroundColor: log.actor_role === 'artist' ? '#EAE6E1' : '#E8F3EB', color: log.actor_role === 'artist' ? '#5D4A3E' : '#4E7A5A', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                                  {log.actor_role === 'artist' ? '繪師' : '委託人'}
-                                </span>
-                              </td>
-                              <td style={{ color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{log.content}</td>
-                            </tr>
-                          ))}
+{logs.map(log => (
+  <tr key={log.id} style={{ borderBottom: '1px solid #EAE6E1' }}>
+    <td style={{ color: '#A0978D', whiteSpace: 'nowrap', paddingRight: '16px' }}>
+      {new Date(log.created_at).toLocaleString('zh-TW')}
+    </td>
+    
+    <td style={{ whiteSpace: 'nowrap', paddingRight: '16px' }}>
+      <span style={{ 
+        backgroundColor: log.actor_role === 'artist' ? '#EAE6E1' : '#E8F3EB', 
+        color: log.actor_role === 'artist' ? '#5D4A3E' : '#4E7A5A', 
+        padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' 
+      }}>
+        {log.actor_role === 'artist' ? '繪師' : '委託人'}
+      </span>
+    </td>
+    
+    <td style={{ color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.5', width: '100%' }}>
+      {log.content}
+    </td>
+  </tr>
+))}
                         </tbody>
                       </table>
                     </div>
