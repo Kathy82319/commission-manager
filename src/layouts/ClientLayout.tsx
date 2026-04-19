@@ -1,13 +1,14 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
+import '../styles/ClientLayout.css'; // 🌟 引入專屬樣式表
 
 export function ClientLayout() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 🌟 手機版選單狀態
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkClientAuth = async () => {
@@ -80,50 +81,32 @@ export function ClientLayout() {
     }
   };
 
-  if (!isAuthorized) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#5a6e85', color: '#FFF' }}>載入中...</div>;
+  if (!isAuthorized) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#5a6e85', color: '#FFF' }}>
+        載入中...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif' }}>
+    <div className="client-layout-container">
       
-      <style>{`
-        @keyframes layout-marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-100%); }
-        }
-                .client-header {
-          padding: 16px 24px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          z-index: 100;
-        }
-        .mobile-nav-toggle { display: none; background: none; border: none; color: #FFF; fontSize: 24px; cursor: pointer; }
-        @media (max-width: 768px) {
-          .desktop-nav { display: none; }
-          .mobile-nav-toggle { display: block; }
-          .mobile-menu {
-            position: fixed; top: 60px; left: 0; right: 0; background: #5a6e85;
-            padding: 20px; display: flex; flexDirection: column; gap: 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 99;
-          }
-        }
-      `}</style>
-
-            <header className="client-header sticky top-0 md:px-8 md:py-4">
-        <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px' }}>
+      {/* 頂部導覽列 */}
+      <header className="client-header">
+        <div className="header-logo">
           Arti 繪師小幫手
-          <div style={{ fontSize: '12px', opacity: 0.8 }}>委託管理 (委託方)</div>
+          <div className="header-subtitle">委託管理 (委託方)</div>
         </div>
         
-        <nav className="desktop-nav" style={{ display: 'flex', gap: '20px', alignItems: 'center', margin: 0, padding: 0 }}>
-          <button onClick={handleSwitchToArtist} style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }}>
+        {/* 電腦版選單 */}
+        <nav className="desktop-nav">
+          <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
           </button>
         </nav>
 
+        {/* 手機版漢堡按鈕 */}
         <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? '✕' : '☰'}
         </button>
@@ -131,16 +114,17 @@ export function ClientLayout() {
 
       {/* 手機版下拉選單 */}
       {isMobileMenuOpen && (
-        <div className="mobile-menu" style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'rgba(90, 110, 133, 0.98)', padding: '16px', gap: '12px' }}>
-          <button onClick={handleSwitchToArtist} style={{ color: '#facc15', background: 'none', border: 'none', textAlign: 'left', fontWeight: 'bold', padding: '10px 0' }}>
+        <div className="mobile-menu">
+          <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '進入繪師後台' : '開通繪師管理頁'}
           </button>
         </div>
       )}
 
+      {/* 跑馬燈通知 */}
       {notifications.length > 0 && (
-        <div style={{ width: '100%', backgroundColor: 'rgba(250, 204, 21, 0.15)', overflow: 'hidden', whiteSpace: 'nowrap', padding: '8px 0', borderBottom: '1px solid rgba(250,204,21,0.2)' }}>
-          <div style={{ display: 'inline-block', paddingLeft: '100%', animation: 'layout-marquee 25s linear infinite', color: '#facc15', fontWeight: 'bold', fontSize: '13px' }}>
+        <div className="notification-bar">
+          <div className="marquee-content">
             {notifications.map((msg, index) => (
               <span key={index} style={{ marginRight: '80px' }}>🔔 {msg}</span>
             ))}
@@ -148,15 +132,17 @@ export function ClientLayout() {
         </div>
       )}
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '100vw', overflowX: 'hidden' }}>
+      {/* 主內容區 */}
+      <main className="client-main">
         <Outlet />
       </main>
 
-            <footer className="p-5 md:p-6" style={{ textAlign: 'center', background: 'rgba(0,0,0,0.05)' }}>
-        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+      {/* 頁尾 */}
+      <footer className="client-footer">
+        <div className="footer-links">
+          <Link to="/terms">服務條款</Link>
           <span>|</span>
-          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+          <Link to="/privacy">隱私權政策</Link>
           <span>|</span>
           <span>客服：cath40286@gmail.com</span>
         </div>

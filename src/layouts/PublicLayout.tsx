@@ -1,5 +1,6 @@
 // src/layouts/PublicLayout.tsx
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import '../styles/PublicLayout.css'; // 🌟 引入專屬樣式表
 
 export function PublicLayout() {
   const location = useLocation();
@@ -13,85 +14,37 @@ export function PublicLayout() {
   const isLegalPage = location.pathname === '/terms' || location.pathname === '/privacy';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
+    <div className="public-layout-container">
       
-      {/* 頂部列：手機版改為相對定位，避免遮擋內容；電腦版維持絕對定位 */}
-            <header style={{ 
-              position: 'relative', 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              zIndex: 1000 
-            }} className="p-4 md:absolute md:top-0 md:right-0 md:p-6 md:pt-4">
-        <button 
-          onClick={handleLoginClick} 
-          style={{
-            padding: '6px 16px',
-            backgroundColor: 'transparent',
-            color: '#5D4A3E',
-            border: '2px solid #5D4A3E',
-            borderRadius: '24px',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(93, 74, 62, 0.15)'
-          }}
-        >
+      {/* 頂部列：手機版相對定位，電腦版絕對定位 (由 CSS 控制) */}
+      <header className="public-header">
+        <button onClick={handleLoginClick} className="login-btn">
           登入 / 註冊
         </button>
       </header>
 
-      <main style={{ flex: 1, width: '100%', paddingTop: isLegalPage ? '20px' : '0' }}>
+      {/* 主內容區 */}
+      <main className={`public-main ${isLegalPage ? 'legal-page' : ''}`}>
         <Outlet />
         
         {isLegalPage && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '60px', padding: '0 20px' }}>
-            <button 
-              onClick={() => navigate(-1)}
-              style={{
-                width: '100%',
-                maxWidth: '200px',
-                padding: '10px 30px',
-                backgroundColor: 'transparent',
-                color: '#5D4A3E',
-                border: '2px solid #5D4A3E',
-                borderRadius: '24px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
+          <div className="back-btn-container">
+            <button onClick={() => navigate(-1)} className="back-btn">
               回上一頁
             </button>
           </div>
         )}
       </main>
 
-            {/* 頁尾：手機版文字改為垂直堆疊以增加清晰度 */}
-      <footer style={{ 
-        textAlign: 'center',
-        background: 'transparent',
-        marginTop: 'auto'
-      }} className="py-6 px-5">
-        <div style={{ 
-          width: '60px', 
-          margin: '0 auto 16px auto', 
-          borderTop: '1px solid rgba(255, 255, 255, 0.3)' 
-        }} />
-
-        <div style={{ 
-          fontSize: '13px', 
-          color: 'rgba(255, 255, 255, 0.9)', 
-          display: 'flex', 
-          flexDirection: 'row', 
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
-          <span style={{ opacity: 0.5 }}>|</span>
-          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
-          <span style={{ opacity: 0.5 }}>|</span>
+      {/* 頁尾 */}
+      <footer className="public-footer">
+        <div className="footer-divider" />
+        
+        <div className="footer-links">
+          <Link to="/terms">服務條款</Link>
+          <span className="footer-divider-text">|</span>
+          <Link to="/privacy">隱私權政策</Link>
+          <span className="footer-divider-text">|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>
       </footer>
