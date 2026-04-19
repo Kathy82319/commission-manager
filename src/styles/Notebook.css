@@ -2,6 +2,7 @@
 
 .notebook-page {
   padding: 0;
+  width: 100%;
 }
 
 .notebook-container {
@@ -18,7 +19,7 @@
   display: none !important;
 }
 
-/* === 左側：委託單列表 === */
+/* === 左側：委託單列表 (手機版預設高度) === */
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 90px);
@@ -176,10 +177,11 @@
 }
 
 
-/* === 右側：詳情區塊 === */
+/* === 🌟 右側：詳情區塊 (手機版設定) === */
 .notebook-main {
   width: 100%;
   min-height: 100vh;
+  height: auto; /* 手機版不限制高度 */
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
@@ -187,7 +189,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: visible;
+  overflow: visible; /* 手機版允許溢出以供視窗捲動 */
 }
 
 .main-empty {
@@ -200,8 +202,8 @@
 .main-content-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-width: 0; /* 防護罩 */
+  height: auto; /* 手機版不鎖死 */
+  min-width: 0;
 }
 
 .main-header {
@@ -218,7 +220,7 @@
 
 .main-header-info {
   flex: 1 1 250px;
-  min-width: 0; /* 防護罩 */
+  min-width: 0;
 }
 
 .mobile-back-btn {
@@ -281,8 +283,6 @@
   border: 1px solid transparent;
 }
 
-
-/* 頂部操作按鈕 */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -309,8 +309,6 @@
 .btn-outline-default { background-color: #FFFFFF; border: 1px solid #DED9D3; color: #5D4A3E; }
 .btn-danger { background-color: #A05C5C; color: #FFFFFF; border: none; }
 
-
-/* === 標籤導覽 === */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -350,19 +348,20 @@
   border-bottom: 2px solid #DED9D3;
 }
 
-
-/* === 內部內容區域 === */
+/* === 🌟 內容區域 (手機版隨內容撐開) === */
 .tab-content-area {
   padding: 20px;
   flex: 1;
-  min-width: 0; 
+  min-width: 0;
+  height: auto; /* 手機版內容直接長出來 */
+  overflow-y: visible; /* 手機版不使用內部捲軸 */
 }
 
 .tab-details-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-width: 0; /* 防護罩 */
+  min-width: 0;
 }
 
 .section-card {
@@ -370,8 +369,8 @@
   padding: 20px;
   border-radius: 12px;
   border: 1px solid #EAE6E1;
-  min-width: 0; /* 徹底防止內部表格將區塊撐寬 */
-  overflow: hidden; /* 保底防線 */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .section-header {
@@ -418,8 +417,6 @@
   font-weight: bold;
 }
 
-
-/* === 表格與記帳 === */
 .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 .btn-add-payment { padding: 10px 20px; white-space: nowrap; }
 
@@ -463,8 +460,6 @@
 .summary-val.paid { color: #4E7A5A; }
 .summary-val.unpaid { color: #A05C5C; }
 
-
-/* === 委託單細項與表單 === */
 .details-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 
 .form-input {
@@ -495,8 +490,6 @@
 .details-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 20px; }
 .btn-save { padding: 10px 24px; }
 
-
-/* === 狀態 Badge 色系抽象化 === */
 .badge-paid { background-color: #E8F3EB; color: #4E7A5A; }
 .badge-partial { background-color: #FDF4E6; color: #A67B3E; }
 .badge-unpaid { background-color: #F4F0EB; color: #8A7A7A; }
@@ -507,8 +500,6 @@
 .badge-queue { background-color: #F0ECE7; color: #5D4A3E; }
 .badge-new-msg { background-color: #F5EBEB; color: #A05C5C; }
 
-
-/* === 檔案交付區塊 === */
 .fade-in { animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -528,8 +519,6 @@
 .stage-notice { font-size: 12px; color: #A05C5C; background-color: #F5EBEB; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
 .stage-loading { text-align: center; padding: 30px; color: #4A7294; font-weight: bold; }
 
-
-/* === 歷程紀錄區塊 === */
 .logs-title { margin: 0 0 20px 0; }
 .logs-empty { text-align: center; color: #A0978D; padding: 40px; }
 .logs-list { display: flex; flex-direction: column; gap: 12px; }
@@ -542,66 +531,85 @@
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
 
-/* --- 網頁版 (Desktop) 強力鎖定架構 --- */
+/* === 🌟 網頁版 (1024px 以上) 強勢鎖死高度 === */
 @media (min-width: 1024px) {
-  /* 1. 確保最外層頁面剛好等於視窗高度，不准出現全網頁捲軸 */
-  .notebook-page {
-    height: calc(100vh - 80px); /* 扣掉頂部導覽列的高度 */
-    overflow: hidden;
-  }
+  .mobile-hide { display: flex !important; }
+  .mobile-back-btn { display: none !important; }
 
-  /* 2. 左右並排的容器必須填滿高度 */
-  .notebook-container {
+  /* 1. 鎖死最外層頁面，確保完全等於視窗可用空間 */
+  .notebook-page { 
+    height: calc(100vh - 80px); /* 扣掉 Header 高度 */
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    overflow: hidden; /* 防止整個視窗出現捲軸 */
+  }
+  
+  /* 2. 鎖死左右並列容器 */
+  .notebook-container { 
+    flex: 1;
+    min-height: 0; 
+    flex-direction: row; 
     height: 100%; 
-    gap: 20px;
-    align-items: stretch; /* 讓左右兩邊永遠等高 */
+    gap: 20px; 
+    align-items: stretch;
   }
-
-  /* 3. 左側列表鎖死高度 */
-  .notebook-sidebar {
-    width: 300px;
-    height: 100%;
-    flex-shrink: 0;
+  
+  /* 3. 左側列表鎖死 */
+  .notebook-sidebar { 
+    width: 300px; 
+    height: 100%; 
   }
-
-  /* 4. 右側主內容區塊鎖死高度 */
+  
+  /* 4. 右側詳情區強力鎖死 100% 高度，不准被子元素撐大 */
   .notebook-main {
     flex: 1;
     min-width: 0;
-    height: 100% !important; /* 強制鎖死，不准被子元素撐開 */
-    background-color: #FFFFFF;
-    border-radius: 16px;
-    overflow: hidden; /* 這是關鍵：把溢出的內容切掉，交給裡面捲動 */
+    min-height: 0; 
+    height: 100% !important; 
+    overflow: hidden; /* 超出框架的部分切掉，交給內層捲動 */
   }
-
-  /* 5. 白色背景的 Wrapper 也要填滿 */
+  
+  /* 5. 白色包裝層也要 100% */
   .main-content-wrapper {
+    flex: 1;
+    min-height: 0;
+    height: 100% !important;
     display: flex;
     flex-direction: column;
+  }
+  
+  /* 6. 🌟 關鍵修正：內容區塊接管捲動權限 */
+  .tab-content-area { 
+    flex: 1;
+    overflow-y: auto; /* 內容多時在這裡產生捲軸 */
+    min-height: 0; 
     height: 100%;
-    width: 100%;
   }
 
-  /* 6. 標籤內容區：這是唯一允許產生捲軸的地方 */
-  .tab-content-area {
-    flex: 1; /* 佔據所有剩餘空間 */
-    overflow-y: auto; /* 內容太多時在這裡產生捲軸 */
-    min-height: 0; /* Flexbox 的防撐破機制 */
-    background-color: #FFFFFF;
-    padding: 24px;
+  .main-header-actions {
+    width: auto;
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+  
+  .action-btn {
+    flex: none; 
   }
 
-  /* 修正：確保 header 和 tabs 不會跟著捲走 */
-  .main-header, .scroll-tabs {
-    flex-shrink: 0; 
+  /* 導覽按鈕排版微調 */
+  .scroll-tabs .tab-btn {
+    border-right: none !important;
+    margin-right: 0 !important;
+    padding: 14px 4px !important;
+    border-bottom: 2px solid transparent !important;
+  }
+  
+  .scroll-tabs .tab-btn.active {
+    border-bottom: 2px solid #5D4A3E !important;
   }
 }
 
-/* 財務區塊的 Table 防撐破機制 */
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-  min-width: 0;
+@media (min-width: 1280px) {
+  .details-grid { grid-template-columns: 1fr 1fr; }
+  .payment-inputs { flex-direction: row; align-items: stretch; }
 }
