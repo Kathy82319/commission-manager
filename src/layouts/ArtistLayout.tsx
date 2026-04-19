@@ -10,24 +10,6 @@ export function ArtistLayout() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 控制手機選單開關
   
-  // 偵測螢幕寬度，如果是電腦版 (>= 1024px)，預設將 isMobileMenuOpen 設為 true
-  // 這裡我們直接用 CSS classes 控制，但保留這個 state 作為手機版的切換邏輯
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsMobileMenuOpen(true);
-      } else {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    
-    // 初始化執行一次
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
@@ -55,7 +37,7 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-    // 切換選單後，如果是手機版螢幕，自動關閉選單
+      // 切換選單後，如果是手機版螢幕，自動關閉選單
   useEffect(() => {
     if (window.innerWidth < 1024) {
       setIsMobileMenuOpen(false);
@@ -122,25 +104,27 @@ export function ArtistLayout() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
       
-      {/* 手機版頂部列 (僅在寬度小於 1024px 顯示) */}
+            {/* 手機版頂部列 (僅在寬度小於 1024px 顯示) */}
       <header style={{ 
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+        display: 'flex', alignItems: 'center', gap: '16px',
         padding: '15px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1',
         position: 'sticky', top: 0, zIndex: 100,
       }} className="lg:hidden">
-        <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-        <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
+          style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
         >
           {isMobileMenuOpen ? '✕' : '☰'}
         </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E', lineHeight: '1' }}>Arti繪師小幫手</div>
+          <div style={{ fontSize: '13px', color: '#A0978D', lineHeight: '1' }}>繪師管理後台</div>
+        </div>
       </header>
 
             <div style={{ display: 'flex', flex: 1 }}>
-        {/* 側邊欄 (加入 RWD 控制) */}
-        <aside className={`fixed top-[56px] left-0 bottom-0 z-50 w-[260px] bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen lg:z-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                {/* 側邊欄 (加入 RWD 控制) */}
+                <aside className={`fixed top-0 pt-[64px] lg:pt-0 left-0 bottom-0 z-50 w-[260px] shrink-0 bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           
           <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }} className="hidden lg:block">
             
