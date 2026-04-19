@@ -197,18 +197,25 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="委託人資訊">
-                  <div className="cell-content cell-client-info">
-                    <div className="client-name-row">
+                  <div className="td-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      <span className="client-sub-text">({order.client_name || '無暱稱'})</span>
+                      <span style={{ color: '#A0978D', marginLeft: '3px' }}>
+                        ({order.client_name || '無暱稱'} )  
+                      </span>
                     </div>
-                    <div className="project-name-row">
-                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
+                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
+                      </span>                     
                     </div>
-                    <div className="order-id-row">
-                      {order.client_public_id || '未綁定'} (單號：{order.id.split('-')[1] || order.id})
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
+                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
+                      </span>                     
                     </div>
                   </div>
+                  
                 </td>
                 <td data-label="當前進度">
                   <div className="cell-content cell-status">
