@@ -1,9 +1,10 @@
 /* src/styles/Settings.css */
 
 .settings-page {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  /* 移除了原本防呆用的左右 padding，讓 ArtistLayout 的外殼統一控管邊距 */
+  /* 移除內部防呆 padding，由外部的 Layout 統一控制 */
 }
 
 .settings-layout {
@@ -12,14 +13,17 @@
   gap: 20px;
 }
 
-/* 側邊分頁導覽列 (手機版為橫向滾動) */
+/* === 側邊選單 / 手機版頂部橫向滑動列 === */
 .settings-sidebar {
   display: flex;
-  overflow-x: auto;
+  /* 🌟 解除封印：允許橫向滾動 */
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; /* iOS 順暢滾動 */
   gap: 8px;
   border-bottom: 1px solid #EAE6E1;
   padding-bottom: 12px;
-  scrollbar-width: none;
+  /* 隱藏捲軸軸體，但保留滾動功能 */
+  scrollbar-width: none; 
   flex-shrink: 0;
 }
 
@@ -27,8 +31,13 @@
   display: none;
 }
 
+.sidebar-title {
+  display: none; /* 手機版不顯示側邊標題 */
+}
+
 .tab-btn {
-  white-space: nowrap;
+  /* 🌟 強制單行：按鈕文字絕對不准斷行 */
+  white-space: nowrap; 
   padding: 10px 16px;
   border: none;
   background: transparent;
@@ -37,6 +46,7 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .tab-btn:hover {
@@ -49,11 +59,7 @@
   font-weight: bold;
 }
 
-.sidebar-title {
-  display: none;
-}
-
-/* 右側主內容區 */
+/* === 右側主內容白底卡片 === */
 .settings-content-area {
   flex: 1;
   background-color: #FFFFFF;
@@ -61,7 +67,7 @@
   border: 1px solid #EAE6E1;
   padding: 20px;
   position: relative;
-  /* 🌟 關鍵：設定最小高度，防止切換不同資料量的分頁時畫面劇烈跳動 */
+  /* 🌟 剛體結構：給定最小高度，防止內容太少時外框劇烈縮水跳動 */
   min-height: 600px;
   display: flex;
   flex-direction: column;
@@ -75,6 +81,8 @@
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #F0ECE7;
 }
 
 .settings-header h3 {
@@ -83,12 +91,12 @@
   font-size: 18px;
 }
 
-/* 確保內容區塊撐開剩餘空間，將儲存按鈕推到最底 */
+/* 分頁內容展示區 */
 .tab-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 /* 編輯器容器優化 */
@@ -99,7 +107,6 @@
   background: #FFF;
   display: flex;
   flex-direction: column;
-  flex: 1;
 }
 
 .custom-quill-wrapper .ql-toolbar {
@@ -111,18 +118,18 @@
 
 .custom-quill-wrapper .ql-container {
   border: none;
-  flex: 1;
+  font-family: inherit;
 }
 
 .custom-quill-wrapper .ql-editor {
   min-height: 300px;
-  max-height: 600px;
   font-size: 15px;
+  line-height: 1.6;
 }
 
 /* 底部儲存列 */
 .save-action-bar {
-  margin-top: 30px;
+  margin-top: 32px;
   border-top: 1px solid #EAE6E1;
   padding-top: 20px;
   display: flex;
@@ -131,23 +138,52 @@
   gap: 16px;
 }
 
-/* === 電腦版 (768px 以上) 樣式覆蓋 === */
-@media (min-width: 768px) {
+/* 共用表單元件 */
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #DED9D3;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background-color: #FBFBF9;
+  color: #5D4A3E;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: #A67B3E;
+  box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: bold;
+  display: block;
+  marginBottom: 6px;
+  color: #7A7269;
+}
+
+
+/* === 電腦版 (1024px 以上) Dashboard 雙欄佈局 === */
+@media (min-width: 1024px) {
   .settings-layout {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: flex-start; /* 頂部對齊 */
   }
   
   .settings-sidebar {
-    flex-direction: column;
-    width: 220px;
+    flex-direction: column; /* 改為垂直排列 */
+    width: 220px; /* 固定寬度 */
     border-bottom: none;
     padding-bottom: 0;
-    overflow-x: visible;
+    overflow-x: visible; /* 取消橫向滾動 */
   }
   
   .sidebar-title {
-    display: block;
+    display: block; /* 顯示大標題 */
     font-size: 18px;
     color: #5D4A3E;
     margin-bottom: 16px;
@@ -156,10 +192,10 @@
   }
 
   .tab-btn {
-    text-align: left;
+    text-align: left; /* 按鈕文字靠左對齊 */
   }
   
   .settings-content-area {
-    padding: 32px;
+    padding: 32px 40px; /* 電腦版給予更寬裕的留白 */
   }
 }

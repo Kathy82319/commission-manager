@@ -121,6 +121,7 @@ export function Settings() {
       const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        // 🌟 加上 folder: 'avatars'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}`, folder: 'avatars' }) 
       });
       
@@ -146,6 +147,7 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        // 🌟 加上 folder: 'portfolio'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'portfolio.jpg', folder: 'portfolio' }) 
       });
       
@@ -171,6 +173,7 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        // 🌟 加上 folder: 'system'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'splash.jpg', folder: 'system' }) 
       });
       
@@ -363,13 +366,6 @@ export function Settings() {
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
-  const getInputStyle = (fieldName: string) => ({
-    width: '100%', padding: '12px 16px', border: focusedField === fieldName ? '1px solid #A67B3E' : '1px solid #DED9D3', 
-    boxSizing: 'border-box' as const, borderRadius: '8px', backgroundColor: '#FBFBF9', color: '#5D4A3E',
-    outline: 'none', transition: 'all 0.2s ease', boxShadow: focusedField === fieldName ? '0 0 0 2px rgba(166,123,62,0.1)' : 'none',
-    fontSize: '15px'
-  });
-
   return (
     <div className="settings-page">
       <div className="settings-layout">
@@ -396,7 +392,15 @@ export function Settings() {
           <div className="settings-header">
             <h3>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
             {activeTab !== 'profile_basic' && !isCurrentTabLocked && (
-              <button onClick={()=>toggleVisibility(activeTab)} style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '20px', border: 'none', backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#E8F3EB', color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#4E7A5A', cursor: 'pointer', fontWeight: 'bold' }}>
+              <button 
+                onClick={()=>toggleVisibility(activeTab)} 
+                style={{ 
+                  fontSize: '12px', padding: '6px 12px', borderRadius: '20px', border: 'none', 
+                  backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#E8F3EB', 
+                  color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#4E7A5A', 
+                  cursor: 'pointer', fontWeight: 'bold' 
+                }}
+              >
                 {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
               </button>
             )}
@@ -404,10 +408,10 @@ export function Settings() {
 
           {isCurrentTabLocked && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)', borderRadius: '16px' }}>
-              <div style={{ textAlign: 'center', padding: '24px', background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                <div style={{ fontSize: '32px' }}>🔒</div>
-                <h4 style={{ margin: '8px 0', color: '#5D4A3E' }}>此功能僅限專業版</h4>
-                <button onClick={() => alert('方案升級即將開放')} style={{ marginTop: '10px', padding: '8px 16px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>查看方案</button>
+              <div style={{ textAlign: 'center', padding: '32px', background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+                <h4 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '18px' }}>此功能僅限專業版</h4>
+                <button onClick={() => alert('方案升級即將開放')} style={{ padding: '10px 20px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>查看方案</button>
               </div>
             </div>
           )}
@@ -415,53 +419,60 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(4px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             
             {activeTab === 'profile_basic' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #EEE', flexShrink: 0 }}>
+                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
                     <img src={formData.avatar_url || '/default-avatar.png'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Avatar" />
                   </div>
                   <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: '#7A7269' }}>顯示名稱</label>
-                    <input value={formData.display_name} onChange={e=>setFormData({...formData, display_name: e.target.value})} onFocus={()=>setFocusedField('name')} onBlur={()=>setFocusedField(null)} style={getInputStyle('name')} />
-                    <div style={{ marginTop: '12px' }}>
+                    <label className="form-label">顯示名稱</label>
+                    <input className="form-input" value={formData.display_name} onChange={e=>setFormData({...formData, display_name: e.target.value})} onFocus={()=>setFocusedField('name')} onBlur={()=>setFocusedField(null)} />
+                    <div style={{ marginTop: '16px' }}>
                       <ImageUploader onUpload={handleAvatarUpload} targetWidth={400} withWatermark={false} buttonText={isUploading ? "上傳中..." : "更換頭像"} maxSizeMB={2} />
                     </div>
                   </div>
                 </div>
                 
                 <div>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: '#7A7269' }}>個人簡介</label>
-                  <textarea value={formData.bio} onChange={e=>setFormData({...formData, bio: e.target.value})} onFocus={()=>setFocusedField('bio')} onBlur={()=>setFocusedField(null)} style={{ ...getInputStyle('bio'), minHeight: '100px', resize: 'vertical' }} />
+                  <label className="form-label">個人簡介</label>
+                  <textarea className="form-input" value={formData.bio} onChange={e=>setFormData({...formData, bio: e.target.value})} onFocus={()=>setFocusedField('bio')} onBlur={()=>setFocusedField(null)} style={{ minHeight: '120px', resize: 'vertical' }} />
                 </div>
                 
-                <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '10px', color: '#7A7269' }}>社群連結</label>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <select value={socialPlatform} onChange={e=>setSocialPlatform(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', backgroundColor: '#FFF', color: '#5D4A3E' }}>
+                <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '24px' }}>
+                  <label className="form-label" style={{ marginBottom: '12px' }}>社群連結</label>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                    <select className="form-input" value={socialPlatform} onChange={e=>setSocialPlatform(e.target.value)} style={{ width: 'auto', minWidth: '140px' }}>
                       {['Facebook', 'Plurk', 'Twitter / X', 'Threads', 'Instagram', '個人網站'].map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
-                    <input value={socialUrl} onChange={e=>setSocialUrl(e.target.value)} onFocus={()=>setFocusedField('url')} onBlur={()=>setFocusedField(null)} placeholder="網址..." style={{ ...getInputStyle('url'), flex: 1, minWidth: '150px' }} />
-                    <button onClick={handleAddSocial} style={{ padding: '8px 16px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>+ 新增</button>
+                    <input className="form-input" value={socialUrl} onChange={e=>setSocialUrl(e.target.value)} onFocus={()=>setFocusedField('url')} onBlur={()=>setFocusedField(null)} placeholder="網址..." style={{ flex: 1, minWidth: '180px' }} />
+                    <button onClick={handleAddSocial} style={{ padding: '10px 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>+ 新增</button>
                   </div>
                   
-                  {settings.social_links.map((link, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#FBFBF9', borderRadius: '8px', marginBottom: '8px', fontSize: '14px', border: '1px solid #EAE6E1' }}>
-                      <span style={{ wordBreak: 'break-all', paddingRight: '10px' }}><strong style={{ color: '#5D4A3E' }}>{link.platform}:</strong> <span style={{ color: '#7A7269' }}>{link.url}</span></span>
-                      <button onClick={()=>handleRemoveSocial(i)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>移除</button>
-                    </div>
-                  ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {settings.social_links.map((link, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#FAFAFA', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                        <span style={{ wordBreak: 'break-all', paddingRight: '12px', fontSize: '14px' }}>
+                          <strong style={{ color: '#5D4A3E', marginRight: '6px' }}>{link.platform}:</strong> 
+                          <span style={{ color: '#7A7269' }}>{link.url}</span>
+                        </span>
+                        <button onClick={()=>handleRemoveSocial(i)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0, padding: '4px' }}>移除</button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
             {activeTab === 'portfolio' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <ImageUploader onUpload={handlePortfolioUpload} targetWidth={1200} withWatermark={true} watermarkText={formData.display_name} buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品"} maxSizeMB={5} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
+                  <ImageUploader onUpload={handlePortfolioUpload} targetWidth={1200} withWatermark={true} watermarkText={formData.display_name} buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔"} maxSizeMB={5} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
                   {settings.portfolio.map((img, i) => (
-                    <div key={i} draggable onDragStart={()=>setDraggedIdx(i)} onDragOver={(e)=>{e.preventDefault(); if(draggedIdx===null || draggedIdx===i)return; const newPortfolio=[...settings.portfolio]; const item=newPortfolio.splice(draggedIdx, 1)[0]; newPortfolio.splice(i, 0, item); setDraggedIdx(i); setSettings(prev=>({...prev, portfolio: newPortfolio}));}} onDragEnd={()=>setDraggedIdx(null)} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1', opacity: draggedIdx === i ? 0.5 : 1, cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                      <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Portfolio" />
-                      <button onClick={()=>handleRemoveImage(i)} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(255,255,255,0.9)', color: '#A05C5C', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>×</button>
+                    <div key={i} draggable onDragStart={()=>setDraggedIdx(i)} onDragOver={(e)=>{e.preventDefault(); if(draggedIdx===null || draggedIdx===i)return; const newPortfolio=[...settings.portfolio]; const item=newPortfolio.splice(draggedIdx, 1)[0]; newPortfolio.splice(i, 0, item); setDraggedIdx(i); setSettings(prev=>({...prev, portfolio: newPortfolio}));}} onDragEnd={()=>setDraggedIdx(null)} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1', opacity: draggedIdx === i ? 0.5 : 1, cursor: 'grab', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                      <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`Portfolio ${i}`} />
+                      <button onClick={()=>handleRemoveImage(i)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.9)', color: '#A05C5C', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>✕</button>
                     </div>
                   ))}
                 </div>
@@ -475,17 +486,25 @@ export function Settings() {
             )}
 
             {activeTab === 'splash' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                  <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '18px', height: '18px' }} />
-                  啟用開場動畫
-                </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+                    啟用專屬開場動畫
+                  </label>
+                </div>
+                
                 {settings.splash_enabled && (
-                  <div style={{ padding: '20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <ImageUploader onUpload={handleSplashUpload} targetWidth={1920} withWatermark={false} buttonText={isSplashUploading ? "上傳中..." : "上傳背景圖"} maxSizeMB={10} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div>
-                      <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px', color: '#7A7269' }}>自訂開場文字</label>
-                      <input value={settings.splash_text} onChange={e=>setSettings({...settings, splash_text: e.target.value})} onFocus={()=>setFocusedField('splash_text')} onBlur={()=>setFocusedField(null)} placeholder="輸入開場顯示的文字..." style={getInputStyle('splash_text')} />
+                      <label className="form-label">自訂開場標語</label>
+                      <input className="form-input" value={settings.splash_text} onChange={e=>setSettings({...settings, splash_text: e.target.value})} onFocus={()=>setFocusedField('splash_text')} onBlur={()=>setFocusedField(null)} placeholder="輸入開場顯示的文字..." />
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
+                      <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
+                        <ImageUploader onUpload={handleSplashUpload} targetWidth={1920} withWatermark={false} buttonText={isSplashUploading ? "圖片上傳中..." : "上傳全螢幕背景圖"} maxSizeMB={10} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -493,19 +512,24 @@ export function Settings() {
             )}
 
             {activeTab === 'custom' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {settings.custom_sections.map(sec => (
-                  <div key={sec.id} style={{ padding: '20px', border: '1px solid #EAE6E1', borderRadius: '12px', backgroundColor: '#FAFAFA' }}>
-                    <input value={sec.title} onChange={e=>handleUpdateCustomSection(sec.id, 'title', e.target.value)} onFocus={()=>setFocusedField(`t_${sec.id}`)} onBlur={()=>setFocusedField(null)} placeholder="自訂區塊標題" style={{ ...getInputStyle(`t_${sec.id}`), marginBottom: '12px', fontWeight: 'bold' }} />
-                    <div className="custom-quill-wrapper" style={{ minHeight: 'auto' }}>
+                  <div key={sec.id} style={{ padding: '24px', border: '1px solid #EAE6E1', borderRadius: '16px', backgroundColor: '#FAFAFA', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <input className="form-input" value={sec.title} onChange={e=>handleUpdateCustomSection(sec.id, 'title', e.target.value)} onFocus={()=>setFocusedField(`t_${sec.id}`)} onBlur={()=>setFocusedField(null)} placeholder="輸入自訂區塊大標題..." style={{ fontWeight: 'bold', fontSize: '16px' }} />
+                    <div className="custom-quill-wrapper">
                       <ReactQuill theme="snow" value={sec.content} onChange={v=>handleUpdateCustomSection(sec.id, 'content', v)} modules={customQuillModules} />
                     </div>
-                    <button onClick={()=>handleRemoveCustomSection(sec.id)} style={{ marginTop: '12px', color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ 移除此區塊</button>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button onClick={()=>handleRemoveCustomSection(sec.id)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: '8px 16px', borderRadius: '8px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F5EBEB'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        🗑️ 刪除此區塊
+                      </button>
+                    </div>
                   </div>
                 ))}
+                
                 {settings.custom_sections.length < 3 && (
-                  <button onClick={handleAddCustomSection} style={{ padding: '16px', border: '1px dashed #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', transition: 'background 0.2s' }}>
-                    + 新增自訂區塊
+                  <button onClick={handleAddCustomSection} style={{ padding: '16px', border: '2px dashed #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s', fontSize: '15px' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#A67B3E'; e.currentTarget.style.color = '#A67B3E'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#DED9D3'; e.currentTarget.style.color = '#7A7269'; }}>
+                    + 新增自訂區塊 (最多 3 個)
                   </button>
                 )}
               </div>
@@ -515,7 +539,7 @@ export function Settings() {
 
           <div className="save-action-bar">
             {message && <span style={{ color: message.includes('失敗') || message.includes('錯誤') ? '#A05C5C' : '#4E7A5A', fontWeight: 'bold', fontSize: '14px' }}>{message}</span>}
-            <button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 32px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: isSaving ? 0.7 : 1, transition: 'opacity 0.2s' }}>
+            <button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 32px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: isSaving ? 0.7 : 1, transition: 'opacity 0.2s', fontSize: '15px' }}>
               {isSaving ? '儲存中...' : '儲存變更'}
             </button>
           </div>
