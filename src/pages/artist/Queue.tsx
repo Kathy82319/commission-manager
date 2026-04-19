@@ -197,7 +197,7 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="委託人資訊">
-                  <div className="td-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                  <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
                       <span style={{ color: '#A0978D', marginLeft: '3px' }}>
