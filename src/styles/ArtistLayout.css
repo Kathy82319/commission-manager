@@ -36,10 +36,10 @@
   display: flex;
   flex: 1;
   position: relative;
-  overflow: hidden;
+  /* 🌟【關鍵修改】：移除了 overflow: hidden; 讓手機版內容自然往下長，不會被剪裁 */
 }
 
-/* 側邊欄預設為手機版樣式：浮動、隱藏於左側 */
+/* 側邊欄預設為手機版樣式：完全浮空、隱藏於左側 */
 .sidebar {
   width: 260px;
   background-color: #FFFFFF;
@@ -47,11 +47,12 @@
   flex-direction: column;
   border-right: 1px solid #EAE6E1;
   transition: transform 0.3s ease-in-out;
-  position: fixed;
+  /* 🌟【關鍵修改】：確保手機版是 fixed，且擁有最高的 z-index，完全不佔據實體空間 */
+  position: fixed; 
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 50;
+  z-index: 105; 
   transform: translateX(-100%);
 }
 
@@ -124,13 +125,17 @@
 
 .main-content {
   flex: 1;
-  min-width: 0;
+  width: 100%; /* 🌟 保證主內容在手機版寬度為 100%，不被任何幽靈側邊欄擠壓 */
+  min-width: 0; /* 防止內部 Flex 元素撐破外殼 */
   background-color: #FBFBF9;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-inner {
   padding: 20px;
   max-width: 100%;
+  flex: 1;
 }
 
 .mobile-overlay {
@@ -140,7 +145,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 40;
+  z-index: 104; /* 在 sidebar (105) 之下，主內容之上 */
 }
 
 .warning-banner {
@@ -175,6 +180,7 @@
   .sidebar {
     position: sticky;
     height: 100vh;
+    z-index: 10;
     transform: translateX(0); /* 電腦版永遠顯示 */
   }
 
