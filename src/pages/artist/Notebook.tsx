@@ -89,13 +89,18 @@ export function Notebook() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedId, activeTab, navigate]);
 
-  const fetchCommissions = async (isInitialLoad = false) => {
+const fetchCommissions = async (isInitialLoad = false) => {
     const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
       setCommissions(data.data);
-      if (isInitialLoad && initialSelectedId) {
-        const target = data.data.find((c: Commission) => c.id === initialSelectedId);
+      
+      if (isInitialLoad) {
+        // 嘗試找網址指定的 ID，若沒有指定，則在「電腦版」預設選取第一筆資料
+        const target = initialSelectedId 
+          ? data.data.find((c: Commission) => c.id === initialSelectedId)
+          : (window.innerWidth >= 1024 && data.data.length > 0 ? data.data[0] : null);
+
         if (target) {
           setSelectedId(target.id);
           setEditData(target);
@@ -645,7 +650,7 @@ export function Notebook() {
                           </>
                         ) : (
                           <>
-                            <button className="action-btn" onClick={handleStartEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3' }}>申請委託單異動</button>
+                            <button className="action-btn" onClick={handleStartEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3' }}>委託單異動</button>
                             <button className="action-btn" onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none' }}>日常儲存</button>
                           </>
                         )}

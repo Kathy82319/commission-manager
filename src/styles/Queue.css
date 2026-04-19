@@ -268,3 +268,34 @@
     width: 150px;
   }
 }
+
+
+/* src/styles/Queue.css 底部新增：統一桌面版寬度與卡片風格 */
+
+.queue-container {
+  width: 100%;
+  max-width: 1200px; /* 🌟 讓它跟 Settings / Notebook 擁有相同的最大寬度 */
+  margin: 0 auto;
+}
+
+.manage-button {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  /* 手機版按鈕寬度恢復你原本要的尺寸 */
+  .manage-button {
+    width: 100px;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* 電腦版讓表格外框變成白底卡片，跟其他頁面風格統一 */
+  .queue-table-wrapper {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #EAE6E1;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    padding: 20px;
+  }
+}
