@@ -1,0 +1,165 @@
+/* src/styles/Settings.css */
+
+.settings-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  /* 移除了原本防呆用的左右 padding，讓 ArtistLayout 的外殼統一控管邊距 */
+}
+
+.settings-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 側邊分頁導覽列 (手機版為橫向滾動) */
+.settings-sidebar {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  border-bottom: 1px solid #EAE6E1;
+  padding-bottom: 12px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.settings-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  white-space: nowrap;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #7A7269;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  background-color: #FAFAFA;
+}
+
+.tab-btn.active {
+  background-color: #F4F0EB;
+  color: #5D4A3E;
+  font-weight: bold;
+}
+
+.sidebar-title {
+  display: none;
+}
+
+/* 右側主內容區 */
+.settings-content-area {
+  flex: 1;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #EAE6E1;
+  padding: 20px;
+  position: relative;
+  /* 🌟 關鍵：設定最小高度，防止切換不同資料量的分頁時畫面劇烈跳動 */
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings-header h3 {
+  margin: 0;
+  color: #5D4A3E;
+  font-size: 18px;
+}
+
+/* 確保內容區塊撐開剩餘空間，將儲存按鈕推到最底 */
+.tab-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 編輯器容器優化 */
+.custom-quill-wrapper {
+  border: 1px solid #DED9D3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #FFF;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.custom-quill-wrapper .ql-toolbar {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background-color: #FAFAFA;
+}
+
+.custom-quill-wrapper .ql-container {
+  border: none;
+  flex: 1;
+}
+
+.custom-quill-wrapper .ql-editor {
+  min-height: 300px;
+  max-height: 600px;
+  font-size: 15px;
+}
+
+/* 底部儲存列 */
+.save-action-bar {
+  margin-top: 30px;
+  border-top: 1px solid #EAE6E1;
+  padding-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+
+/* === 電腦版 (768px 以上) 樣式覆蓋 === */
+@media (min-width: 768px) {
+  .settings-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .settings-sidebar {
+    flex-direction: column;
+    width: 220px;
+    border-bottom: none;
+    padding-bottom: 0;
+    overflow-x: visible;
+  }
+  
+  .sidebar-title {
+    display: block;
+    font-size: 18px;
+    color: #5D4A3E;
+    margin-bottom: 16px;
+    font-weight: bold;
+    padding-left: 16px;
+  }
+
+  .tab-btn {
+    text-align: left;
+  }
+  
+  .settings-content-area {
+    padding: 32px;
+  }
+}
