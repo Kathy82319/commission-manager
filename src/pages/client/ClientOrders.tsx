@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
+import '../../styles/Notebook.css'; // 🌟 確保套用標準化架構
 
 interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
@@ -157,11 +158,7 @@ export function ClientOrders() {
   const handleSelect = (orderId: string) => {
     setSelectedId(orderId);
     fetchDetailData(orderId);
-    
-    // 🌟 手機版點擊列表後自動捲動到右側詳情區
-    if (window.innerWidth < 768) {
-      window.scrollTo({ top: 400, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleReviewChange = async (action: 'approve' | 'reject') => {
@@ -258,9 +255,9 @@ export function ClientOrders() {
   }, [orders, filter, searchTerm]);
 
   const getStatusDisplay = (status: string, stage: string) => {
-    if (status === 'completed') return <span style={{ color: '#1e8e3e', fontWeight: 'bold' }}>✓ 已結案</span>;
-    if (status === 'cancelled') return <span style={{ color: '#d93025', fontWeight: 'bold' }}>作廢</span>;
-    if (stage.includes('reviewing')) return <span style={{ color: '#e11d48', fontWeight: 'bold' }}>👀 待審閱</span>;
+    if (status === 'completed') return <span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>✓ 已結案</span>;
+    if (status === 'cancelled') return <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>作廢</span>;
+    if (stage.includes('reviewing')) return <span style={{ color: '#d93025', fontWeight: 'bold' }}>👀 待審閱</span>;
     return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>✍️ 安排中</span>;
   };
 
@@ -304,9 +301,6 @@ export function ClientOrders() {
     );
   };
 
-  const tabStyle = (isActive: boolean) => ({ padding: '16px 24px', cursor: 'pointer', borderBottom: isActive ? '3px solid #5D4A3E' : '3px solid transparent', fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#5D4A3E' : '#A0978D', backgroundColor: 'transparent', borderTop: 'none', borderLeft: 'none', borderRight: 'none', fontSize: '15px', transition: 'all 0.2s ease', outline: 'none', whiteSpace: 'nowrap' as const });
-  const sectionBoxStyle = { backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' };
-
   let parsedChanges: Record<string, string> | null = null;
   if (selectedOrder?.pending_changes) {
     try {
@@ -322,30 +316,9 @@ export function ClientOrders() {
   else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'sans-serif', backgroundColor: '#FBFBF9' }}>
+    <div className="notebook-page">
       
-      <style>{`
-        @keyframes pulse-yellow {
-          0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
-          70% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
-        }
-        /* 🌟 RWD 核心佈局控制 */
-        .client-orders-container {
-          display: flex; flex-direction: column; gap: 24px; padding: 16px; max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; flex: 1; overflow: hidden;
-        }
-        .orders-sidebar { width: 100%; max-height: 45vh; }
-        .orders-content { width: 100%; flex: 1; }
-        .tab-scroll-container { display: flex; overflow-x: auto; gap: 8px; white-space: nowrap; scrollbar-width: none; }
-        .tab-scroll-container::-webkit-scrollbar { display: none; }
-
-        @media (min-width: 768px) {
-          .client-orders-container { flex-direction: row; padding: 24px; }
-          .orders-sidebar { width: 380px; max-height: none; height: 100%; }
-          .orders-content { height: 100%; }
-        }
-      `}</style>
-
+      {/* 異動申請遮罩層保持原樣 */}
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
@@ -362,21 +335,23 @@ export function ClientOrders() {
         </div>
       )}
 
-      {/* 🌟 替換外層容器 */}
-      <div className="client-orders-container">
+      {/* 🌟 完全套用 Notebook.css 的標準架構 */}
+      <div className="notebook-container">
         
-        {/* 左側列表區 (套用 orders-sidebar) */}
-        <div className="orders-sidebar" style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', flexShrink: 0 }}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* 左側：委託單清單區 */}
+        <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-            <select value={filter} onChange={e => setFilter(e.target.value as any)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', color: '#5D4A3E', backgroundColor: '#FBFBF9' }}>
+            <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
               <option value="all">全部</option><option value="working">進行中</option><option value="completed">已結單</option>
             </select>
           </div>
+
           <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', boxSizing: 'border-box' }} />
+            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
+
+          <div className="sidebar-list-container">
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
@@ -405,59 +380,68 @@ export function ClientOrders() {
           </div>
         </div>
 
-        {/* 右側詳情區 (套用 orders-content) */}
-        <div className="orders-content" style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {/* 右側：詳情區塊 */}
+        <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#A0978D', fontSize: '16px', padding: '40px' }}>請從列表選擇一張委託單以檢視詳情</div> : (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               
-              {/* 🌟 修改點：將 justifyContent 改為 wrap 以適應手機螢幕 */}
-              <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
-                <div style={{ flex: '1 1 200px' }}>
+              {/* 詳情頭部 */}
+              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
+                <div style={{ flex: '1 1 250px' }}>
+                  
+                  {/* 🌟 返回按鈕 (僅手機版顯示) */}
+                  <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
+                    ⬅ 返回列表
+                  </button>
+
                   <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   <div style={{ color: '#7A7269', fontSize: '13px', marginBottom: '4px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
                   <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
                 </div>
                 
-                <button 
-                  onClick={() => {
-                    fetch(`${API_BASE}/api/commissions/${selectedOrder.id}`, {
-                      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                      body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
-                    });
-                    navigate(`/workspace/${selectedOrder.id}`);
-                  }} 
-                  style={{ 
-                    padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', 
-                    fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: 'all 0.3s', 
-                    animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none',
-                    flex: '1 1 auto', minWidth: '120px' /* 🌟 修改點：手機版自動撐滿 */
-                  }}
-                >
-                  {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
-                </button>
+                <div className="main-header-actions">
+                  <button 
+                    onClick={() => {
+                      fetch(`${API_BASE}/api/commissions/${selectedOrder.id}`, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
+                      });
+                      navigate(`/workspace/${selectedOrder.id}`);
+                    }} 
+                    className="action-btn"
+                    style={{ 
+                      padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', 
+                      fontSize: '14px', animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none'
+                    }}
+                  >
+                    {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
+                  </button>
+                </div>
               </div>
 
-              {/* 🌟 修改點：橫向滑動 Tabs */}
-              <div className="tab-scroll-container" style={{ backgroundColor: '#FAFAFA', borderBottom: '1px solid #EAE6E1', padding: '0 16px' }}>
-                <button onClick={() => setActiveTab('main')} style={tabStyle(activeTab === 'main')}>詳細內容</button>
-                <button onClick={() => setActiveTab('review')} style={tabStyle(activeTab === 'review')}>稿件審閱</button>
-                <button onClick={() => setActiveTab('history')} style={tabStyle(activeTab === 'history')}>歷程紀錄</button>
+              {/* 🌟 RWD Tab 導覽區 (現代底線分頁) */}
+              <div className="scroll-tabs">
+                <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
+                <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
+                <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px', backgroundColor: '#FBFBF9' }}>
+              {/* 內容顯示區 */}
+              <div className="tab-content-area">
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
-                    <div style={sectionBoxStyle}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, padding: '10px', borderRadius: '8px', outline: 'none', border: customTitle === savedTitle && customTitle ? '1px solid #EAE6E1' : '1px solid #DED9D3', backgroundColor: customTitle === savedTitle && customTitle ? '#FAFAFA' : '#FFFFFF', minWidth: '150px' }} />
-                          <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#4E7A5A' : '#5D4A3E', minWidth: '90px' }}>{saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}</button>
-                        </div>
+                    
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />
+                        <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#4E7A5A' : '#5D4A3E', flexShrink: 0 }}>
+                          {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
+                        </button>
                       </div>
                     </div>
 
-                    <div style={sectionBoxStyle}>
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                       <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 16px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '20px', fontSize: '14px', color: '#5D4A3E' }}>
                         <div><strong style={{ color: '#7A7269' }}>委託用途：</strong>{selectedOrder.usage_type || '未提供'}</div>
@@ -471,7 +455,7 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-                    <div style={sectionBoxStyle}>
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                       <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 12px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>委託協議</h3>
                       <div style={{ fontSize: '14px', color: '#5D4A3E', maxHeight: '300px', overflowY: 'auto', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #EAE6E1', whiteSpace: 'pre-wrap' }}>
                         {finalTosHtml ? (<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalTosHtml) }} />) : (<div style={{ color: '#A0978D' }}>無協議紀錄</div>)}
