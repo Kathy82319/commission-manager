@@ -1,7 +1,7 @@
 /* src/styles/Notebook.css */
 
 .notebook-page {
-  padding: 16px 20px;
+  padding: 0;
 }
 
 .notebook-container {
@@ -13,12 +13,12 @@
   margin: 0 auto;
 }
 
-/* === 核心切換邏輯：手機版隱藏工具 === */
+/* === 核心切換邏輯 === */
 .mobile-hide {
   display: none !important;
 }
 
-/* 左側：委託單列表 (手機版預設撐滿畫面) */
+/* 左側：委託單列表 */
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 120px);
@@ -38,7 +38,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 右側：詳情區塊 (手機版預設隱藏，點擊後撐滿畫面) */
+/* 右側：詳情區塊 */
 .notebook-main {
   width: 100%;
   min-height: calc(100vh - 120px);
@@ -48,9 +48,12 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
+  
+  /* 🌟 防護罩：絕對不允許裡面的表格撐破外框 */
+  min-width: 0; 
+  max-width: 100%;
 }
 
-/* 手機版返回列表按鈕 */
 .mobile-back-btn {
   display: inline-flex;
   align-items: center;
@@ -70,7 +73,6 @@
   background-color: #EAE6E1;
 }
 
-/* 頂部操作列 */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -79,44 +81,63 @@
   flex: 1 1 auto;
 }
 
-/* 標籤導覽 (Tabs) */
+/* === 標籤導覽 (改為現代底線分頁) === */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
-  border-bottom: 1px solid #EAE6E1;
   padding: 0 20px;
   background-color: #FAFAFA;
   scrollbar-width: none;
   flex-shrink: 0;
+  
+  gap: 24px;
+  border-bottom: 2px solid #EAE6E1; /* 底部軌道線 */
 }
+
 .scroll-tabs::-webkit-scrollbar { display: none; }
 
 .tab-btn {
-  padding: 14px 20px;
+  white-space: nowrap;
+  padding: 14px 4px;
   cursor: pointer;
   border: none;
-  border-bottom: 3px solid transparent;
-  background-color: transparent;
+  background-color: transparent !important; /* 移除色塊 */
   font-size: 15px;
   color: #A0978D;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  font-family: inherit;
+  border-bottom: 2px solid transparent; 
+  margin-bottom: -2px; /* 往下偏移蓋住軌道線 */
 }
 
 .tab-btn.active {
-  border-bottom: 3px solid #5D4A3E;
+  border-bottom: 2px solid #5D4A3E; /* 啟用的深色底線 */
   font-weight: bold;
   color: #5D4A3E;
 }
 
+.tab-btn:hover:not(.active) {
+  color: #7A7269;
+  border-bottom: 2px solid #DED9D3;
+}
+
+/* 內部內容區域 */
 .tab-content-area {
   padding: 20px;
   flex: 1;
+  /* 🌟 防護罩：確保內部區塊也不被撐破 */
+  min-width: 0; 
 }
 
-/* 表單與 Grid */
 .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* 🌟 表格滾動防護罩：這確保寬度 400px 的表格在手機上會產生內部橫向捲軸，而不撐破外框 */
+.table-responsive { 
+  width: 100%; 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
+}
+
 .details-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
 
 .form-input {
@@ -131,34 +152,26 @@
 }
 .action-btn:hover { opacity: 0.8; }
 
-/* === 電腦版 (1024px 以上)：覆蓋手機版隱藏邏輯，強制並排 === */
+/* === 電腦版 (1024px 以上) === */
 @media (min-width: 1024px) {
-  /* 解除手機版的隱藏狀態 */
   .mobile-hide { display: flex !important; }
-  /* 隱藏返回列表按鈕 */
   .mobile-back-btn { display: none !important; }
 
   .notebook-page { height: calc(100vh - 80px); }
   .notebook-container { flex-direction: row; height: 100%; gap: 20px; }
   
-  .notebook-sidebar {
-    width: 300px;
-    height: 100%;
-  }
+  .notebook-sidebar { width: 300px; height: 100%; }
   
   .notebook-main {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* 防護罩 */
     height: 100%;
-    overflow: hidden; /* 電腦版讓詳情區塊內部可滾動 */
+    overflow: hidden; 
   }
   
-  .tab-content-area {
-    overflow-y: auto;
-  }
+  .tab-content-area { overflow-y: auto; }
 }
 
-/* === 超大螢幕 (1280px 以上) === */
 @media (min-width: 1280px) {
   .details-grid { grid-template-columns: 1fr 1fr; }
   .payment-inputs { flex-direction: row; align-items: stretch; }
