@@ -1,0 +1,175 @@
+/* src/styles/Portal.css */
+
+.portal-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  /* 🌟 統一加上與 Login 相同的背景色，否則白色文字會看不見 */
+  background-color: #778ca4; 
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+.portal-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: #FFFFFF;
+  background-color: #778ca4;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.portal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #FFFFFF;
+  margin-bottom: 16px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.portal-title {
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  font-size: 28px;
+}
+
+.portal-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 15px;
+}
+
+.portal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  gap: 20px;
+}
+
+/* 卡片容器：預設手機版直向排列 */
+.portal-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  align-items: center;
+}
+
+.portal-card {
+  flex: 1;
+  width: 100%;
+  max-width: 320px;
+  padding: 30px 24px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+}
+
+.portal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+/* 委託人卡片樣式 */
+.card-client {
+  background-color: #FAFAFA;
+}
+
+.card-client .card-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.card-client .card-title {
+  color: #5D4A3E;
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.card-client .card-desc {
+  color: #A0978D;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 繪師卡片樣式 */
+.card-artist {
+  background-color: #5D4A3E;
+}
+
+.card-artist .card-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.card-artist .card-title {
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.card-artist .card-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 系統管理員區塊 */
+.admin-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px;
+  border-radius: 12px;
+  background-color: #111827;
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+}
+
+.admin-btn:hover {
+  background-color: #1f2937;
+}
+
+/* === 電腦版排版 (取代原本的 md:flex-row) === */
+@media (min-width: 768px) {
+  .portal-cards-container {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
