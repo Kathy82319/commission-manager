@@ -113,7 +113,7 @@ export function ClientLayout() {
         }
       `}</style>
 
-      <header className="client-header">
+            <header className="client-header md:px-8 md:py-4">
         <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px' }}>
           Arti 繪師小幫手
           <div style={{ fontSize: '12px', opacity: 0.8 }}>委託管理 (委託方)</div>
@@ -153,7 +153,7 @@ export function ClientLayout() {
         <Outlet />
       </main>
 
-      <footer style={{ padding: '30px 20px', textAlign: 'center', background: 'rgba(0,0,0,0.05)' }}>
+            <footer className="p-5 md:p-6" style={{ textAlign: 'center', background: 'rgba(0,0,0,0.05)' }}>
         <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
           <span>|</span>

@@ -9,6 +9,24 @@ export function ArtistLayout() {
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 控制手機選單開關
+  
+  // 偵測螢幕寬度，如果是電腦版 (>= 1024px)，預設將 isMobileMenuOpen 設為 true
+  // 這裡我們直接用 CSS classes 控制，但保留這個 state 作為手機版的切換邏輯
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(true);
+      } else {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    // 初始化執行一次
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
@@ -37,9 +55,11 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 切換選單後自動關閉手機選單
+    // 切換選單後，如果是手機版螢幕，自動關閉選單
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    if (window.innerWidth < 1024) {
+      setIsMobileMenuOpen(false);
+    }
   }, [location.pathname]);
 
   const handlePreviewAndCopy = () => {

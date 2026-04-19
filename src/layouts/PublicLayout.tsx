@@ -16,13 +16,13 @@ export function PublicLayout() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
       
       {/* 頂部列：手機版改為相對定位，避免遮擋內容；電腦版維持絕對定位 */}
-      <header style={{ 
+            <header style={{ 
         position: 'relative', 
         padding: '20px', 
         display: 'flex', 
         justifyContent: 'flex-end', 
         zIndex: 1000 
-      }} className="md:absolute md:top-0 md:right-0 md:padding-24">
+      }} className="md:absolute md:top-0 md:right-0 md:p-6 md:pt-4 md:pr-6">
         <button 
           onClick={handleLoginClick} 
           style={{
@@ -68,12 +68,11 @@ export function PublicLayout() {
       </main>
 
       {/* 頁尾：手機版文字改為垂直堆疊以增加清晰度 */}
-      <footer style={{ 
-        padding: '30px 20px', 
+            <footer style={{ 
         textAlign: 'center',
         background: 'transparent',
         marginTop: 'auto'
-      }}>
+      }} className="p-5 md:p-6">
         <div style={{ 
           width: '60px', 
           margin: '0 auto 20px auto', 
