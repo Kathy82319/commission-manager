@@ -1,0 +1,198 @@
+/* src/styles/ArtistLayout.css */
+
+.artist-layout-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #FBFBF9;
+  color: #4A4A4A;
+  font-family: sans-serif;
+}
+
+.mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 20px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #EAE6E1;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.layout-body {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 側邊欄預設為手機版樣式：浮動、隱藏於左側 */
+.sidebar {
+  width: 260px;
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #EAE6E1;
+  transition: transform 0.3s ease-in-out;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  transform: translateX(-100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-top {
+  padding: 30px 20px;
+  border-bottom: 1px solid #F0ECE7;
+  display: none; /* 手機版預設隱藏 */
+}
+
+.nav-container {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  text-decoration: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #7A7269;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item:hover {
+  background-color: #FBFBF9;
+}
+
+.nav-item.active {
+  background-color: #F4F0EB;
+  color: #5D4A3E;
+  font-weight: bold;
+}
+
+.sidebar-bottom {
+  padding: 20px;
+  border-top: 1px solid #F0ECE7;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  border: 1px solid #DED9D3;
+}
+
+.btn-client {
+  background-color: #F4F0EB;
+  color: #5D4A3E;
+  border-style: dashed;
+}
+
+.btn-preview {
+  background-color: #FFFFFF;
+  color: #7A7269;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  background-color: #FBFBF9;
+}
+
+.content-inner {
+  padding: 20px;
+  max-width: 100%;
+}
+
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 40;
+}
+
+.warning-banner {
+  background-color: #FFF3CD;
+  border: 1px solid #FFEEBA;
+  color: #856404;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.warning-btn {
+  background-color: #856404;
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* 電腦版 (1024px 以上) 的樣式覆蓋 */
+@media (min-width: 1024px) {
+  .mobile-header {
+    display: none;
+  }
+  
+  .sidebar {
+    position: sticky;
+    height: 100vh;
+    transform: translateX(0); /* 電腦版永遠顯示 */
+  }
+
+  .sidebar-top {
+    display: block;
+  }
+
+  .content-inner {
+    padding: 40px;
+  }
+
+  .mobile-overlay {
+    display: none;
+  }
+
+  .warning-banner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
