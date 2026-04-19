@@ -8,6 +8,7 @@ export function ArtistLayout() {
   const navigate = useNavigate();
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 控制手機選單開關
 
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
@@ -36,6 +37,11 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
+  // 切換選單後自動關閉手機選單
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const handlePreviewAndCopy = () => {
     if (!artist) return;
     const publicUrl = `${window.location.origin}/${artist.public_id}`; 
@@ -53,10 +59,9 @@ export function ArtistLayout() {
     { path: '/artist/settings', label: '個人設定' }
   ];
 
-  // 🌟 核心優化：計算方案狀態與截止日期顯示
   let planDisplay = '基礎免費版';
   let expiryDateText = '';
-  let planBadgeColor = '#A0978D';
+  let planBadgeColor = '#4A4A4A';
   let planBadgeBg = '#F0ECE7';
   let daysRemaining: number | null = null;
   let showWarningBanner = false;
@@ -69,7 +74,6 @@ export function ArtistLayout() {
 
   if (artist) {
     const now = new Date();
-    
     if (artist.plan_type === 'pro') {
       planDisplay = '專業版 Pro';
       planBadgeColor = '#4E7A5A';
@@ -96,100 +100,116 @@ export function ArtistLayout() {
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
-      <aside style={{ width: '260px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', borderRight: '1px solid #EAE6E1', position: 'sticky', top: 0, height: '100vh' }}>
-        <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-          <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FBFBF9', color: '#4A4A4A', fontFamily: 'sans-serif' }}>
+      
+      {/* 手機版頂部列 (僅在寬度小於 1024px 顯示) */}
+      <header style={{ 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+        padding: '15px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #EAE6E1',
+        position: 'sticky', top: 0, zIndex: 100,
+      }} className="lg:hidden">
+        <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
+        >
+          {isMobileMenuOpen ? '✕' : '☰'}
+        </button>
+      </header>
+
+      <div style={{ display: 'flex', flex: 1 }}>
+        {/* 側邊欄 (加入 RWD 控制) */}
+        <aside style={{ 
+          width: '260px', backgroundColor: '#FFFFFF', display: isMobileMenuOpen ? 'flex' : 'none', 
+          flexDirection: 'column', borderRight: '1px solid #EAE6E1', 
+          position: 'fixed', top: '56px', left: 0, bottom: 0, zIndex: 90,
+          transition: 'all 0.3s ease'
+        }} className="lg:flex lg:sticky lg:top-0 lg:h-screen">
           
-          {/* 🌟 優化：側邊欄方案標籤 (顯示版本與截止日) */}
-          {artist && (
+          <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }} className="hidden lg:block">
+            <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+            <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
+            
+            {artist && (
+              <div style={{ 
+                padding: '10px', backgroundColor: planBadgeBg, color: planBadgeColor, 
+                borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', lineHeight: '1.5'
+              }}>
+                <div>{planDisplay}</div>
+                {expiryDateText && <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'normal' }}>{expiryDateText}</div>}
+              </div>
+            )}
+          </div>
+          
+          <nav style={{ flex: 1, padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
+            {navItems.map(item => (
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                style={{ 
+                  textDecoration: 'none', padding: '12px 16px', borderRadius: '8px', 
+                  backgroundColor: isActive(item.path) ? '#F4F0EB' : 'transparent', 
+                  color: isActive(item.path) ? '#5D4A3E' : '#7A7269', 
+                  fontWeight: isActive(item.path) ? 'bold' : 'normal', fontSize: '15px' 
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div style={{ padding: '20px', borderTop: '1px solid #F0ECE7', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button onClick={() => navigate('/client/orders')} style={sidebarButtonStyle}>切換為委託方模式</button>
+            <button onClick={handlePreviewAndCopy} style={sidebarButtonStyle}>預覽/複製個人首頁</button>
+
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
+              <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+              <span style={{ margin: '0 4px' }}>|</span>
+              <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+              <div style={{ marginTop: '2px' }}>客服：cath40286@gmail.com</div>
+            </div>
+          </div>
+        </aside>
+
+        {/* 主內容區 */}
+        <main style={{ flex: 1, padding: '20px', maxWidth: '100%', overflowX: 'hidden' }}>
+          {showWarningBanner && (
             <div style={{ 
-              padding: '10px', backgroundColor: planBadgeBg, color: planBadgeColor, 
-              borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', lineHeight: '1.5'
-            }}>
-              <div>{planDisplay}</div>
-              {expiryDateText && <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'normal' }}>{expiryDateText}</div>}
+              backgroundColor: '#FFF3CD', color: '#856404', padding: '16px 20px', 
+              borderRadius: '12px', marginBottom: '24px', display: 'flex', 
+              flexDirection: 'column', gap: '12px', border: '1px solid #FFEEBA'
+            }} className="md:flex-row md:justify-between md:items-center">
+              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                ⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！
+                <div style={{ fontWeight: 'normal', fontSize: '12px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
+              </div>
+              <button 
+                onClick={() => navigate('/artist/settings')} 
+                style={{ backgroundColor: '#856404', color: '#FFFFFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+              >
+                立即查看續費方案
+              </button>
             </div>
           )}
-        </div>
-        
-        <nav style={{ flex: 1, padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {navItems.map(item => (
-            <Link 
-              key={item.path} 
-              to={item.path} 
-              style={{ 
-                textDecoration: 'none', padding: '12px 16px', borderRadius: '8px', 
-                backgroundColor: isActive(item.path) ? '#F4F0EB' : 'transparent', 
-                color: isActive(item.path) ? '#5D4A3E' : '#7A7269', 
-                fontWeight: isActive(item.path) ? 'bold' : 'normal', fontSize: '15px' 
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
 
-        <div style={{ padding: '20px', borderTop: '1px solid #F0ECE7', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button 
-            onClick={() => navigate('/client/orders')} 
-            style={{ 
-              width: '100%', padding: '10px', backgroundColor: '#F4F0EB', 
-              border: '1px dashed #DED9D3', borderRadius: '8px', color: '#5D4A3E', 
-              cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' 
-            }}
-          >
-            切換為委託方模式
-          </button>
-          
-          <button 
-            onClick={handlePreviewAndCopy} 
-            style={{ 
-              width: '100%', padding: '10px', backgroundColor: '#FFFFFF', 
-              border: '1px solid #DED9D3', borderRadius: '8px', color: '#7A7269', 
-              cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' 
-            }}
-          >
-            預覽/複製個人首頁
-          </button>
+          <Outlet />
+        </main>
+      </div>
 
-          <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
-            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
-            <span style={{ margin: '0 4px' }}>|</span>
-            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
-            <div style={{ marginTop: '2px' }}>客服：cath40286@gmail.com</div>
-          </div>
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        {/* 🌟 優化：到期警告橫幅內容 */}
-        {showWarningBanner && (
-          <div style={{ 
-            backgroundColor: '#FFF3CD', color: '#856404', padding: '16px 20px', 
-            borderRadius: '12px', marginBottom: '24px', display: 'flex', 
-            justifyContent: 'space-between', alignItems: 'center', border: '1px solid #FFEEBA'
-          }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-              ⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！
-              <div style={{ fontWeight: 'normal', fontSize: '12px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
-            </div>
-            <button 
-              onClick={() => navigate('/artist/settings')} 
-              style={{ 
-                backgroundColor: '#856404', color: '#FFFFFF', border: 'none', 
-                padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', 
-                fontSize: '13px', fontWeight: 'bold' 
-              }}
-            >
-              立即查看續費方案
-            </button>
-          </div>
-        )}
-
-        <Outlet />
-      </main>
+      {/* 手機選單背景遮罩 */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 85 }} 
+          className="lg:hidden"
+        />
+      )}
     </div>
   );
 }
+
+const sidebarButtonStyle = {
+  width: '100%', padding: '10px', backgroundColor: '#FFFFFF', 
+  border: '1px solid #DED9D3', borderRadius: '8px', color: '#7A7269', 
+  cursor: 'pointer', fontSize: '13px', fontWeight: 'bold'
+};

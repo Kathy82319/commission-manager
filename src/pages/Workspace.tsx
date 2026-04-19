@@ -149,116 +149,100 @@ export function Workspace() {
     </div>
   );
 
-  return (
-    <div style={{ 
-      height: '100vh', display: 'flex', justifyContent: 'center', 
-      backgroundColor: '#FBFBF9', 
-      fontFamily: 'sans-serif' 
-    }}>
+    return (
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9' }}>
       <div style={{ 
-        width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', 
+        width: '100%', 
+        maxWidth: '800px', // 電腦版稍微寬一點
+        display: 'flex', 
+        flexDirection: 'column', 
         backgroundColor: '#FBFBF9', 
-        boxShadow: 'none', 
         position: 'relative' 
       }}>
-          <header style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, position: 'sticky', top: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button 
-                onClick={() => navigate(-1)} 
-                style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', padding: 0, fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-              >
-                ← 返回
-              </button>
-              <div>
-                <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#5D4A3E' }}>
-                  {order.client_name || '未命名委託人'} 的聊天室
-                </h2>
-                <div style={{ fontSize: '12px', color: '#A0978D', fontFamily: 'monospace' }}>
-                  訂單編號：{order.id}
+        {/* Header 優化：手機版文字縮小 */}
+        <header style={{ backgroundColor: '#FFFFFF', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '14px', cursor: 'pointer' }}>
+              ←
+            </button>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }} className="md:text-lg">
+                {order.client_name || '未命名委託人'} 的聊天室
+              </h2>
+              <div style={{ fontSize: '11px', color: '#A0978D' }}>ID: {order.id}</div>
+            </div>
+          </div>
+          <div style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7' }}>
+            {role === 'artist' ? '🎨 繪師' : '👤 委託人'}
+          </div>
+        </header>
+
+        {/* 訊息區域：手機版泡泡寬度增加到 85% */}
+        <main style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {messages.map(msg => {
+            const isMe = msg.sender_role === role;
+            return (
+              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
+                  <span style={{ color: '#C4BDB5' }}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div style={{ 
+                  maxWidth: '85%', // 手機版建議加寬，避免長字串被擠壓
+                  padding: '10px 14px', 
+                  fontSize: '15px',
+                  backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
+                  color: isMe ? '#FFFFFF' : '#4A4A4A',
+                  borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  border: isMe ? 'none' : '1px solid #EAE6E1',
+                  wordBreak: 'break-word',
+                  whiteSpace: 'pre-wrap'
+                }} className="md:max-w-3/4">
+                  {msg.content}
                 </div>
               </div>
-            </div>
-            <div style={{ backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7', color: role === 'artist' ? '#5D4A3E' : '#4A7294', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-              {role === 'artist' ? '🎨 繪師' : '👤 委託人'}
-            </div>
-          </header>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </main>
 
-          <main style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#FBFBF9' }}>
-            <div style={{ textAlign: 'center', margin: '10px 0 20px 0' }}>
-              <span style={{ backgroundColor: '#EAE6E1', color: '#7A7269', padding: '6px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
-                雙方已確認委託，專屬聊天室已建立
-              </span>
-            </div>
-            
-            {messages.map(msg => {
-              const isMe = msg.sender_role === role;
-              
-              return (
-                <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', animation: 'fadeIn 0.3s ease' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: msg.sender_role === 'artist' ? '#EAE6E1' : '#EBF2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: msg.sender_role === 'artist' ? '#5D4A3E' : '#4A7294', fontWeight: 'bold' }}>
-                      {msg.sender_role === 'artist' ? '繪' : '客'}
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>
-                      {msg.sender_role === 'artist' ? '繪師' : '委託人'}
-                    </span>
-                    <span style={{ fontSize: '10px', color: '#C4BDB5' }}>
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-
-                  <div style={{ 
-                    maxWidth: '75%', padding: '12px 16px', lineHeight: '1.6', fontSize: '15px',
-                    backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
-                    color: isMe ? '#FFFFFF' : '#4A4A4A',
-                    borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                    wordBreak: 'break-word', whiteSpace: 'pre-wrap',
-                    border: isMe ? 'none' : '1px solid #EAE6E1'
-                  }}>
-                    {msg.content}
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} style={{ height: '10px' }} /> 
-          </main>
-
-          <footer style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '12px', alignItems: 'flex-end', position: 'sticky', bottom: 0 }}>
-            <textarea 
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onFocus={() => setFocusedField(true)}
-              onBlur={() => setFocusedField(false)}
-              placeholder="請輸入訊息..."
-              style={{ 
-                flex: 1, padding: '12px 16px', borderRadius: '12px', resize: 'none', 
-                minHeight: '24px', maxHeight: '120px', fontFamily: 'inherit', fontSize: '15px',
-                border: focusedField ? '2px solid #5D4A3E' : '1px solid #DED9D3',
-                backgroundColor: '#FBFBF9', color: '#5D4A3E', outline: 'none',
-                transition: 'border-color 0.2s ease', lineHeight: '1.5'
-              }}
-              onKeyDown={(e) => { 
-                if (e.key === 'Enter' && !e.shiftKey) { 
-                  e.preventDefault(); 
-                  handleSendMessage(); 
-                } 
-              }}
-            />
-            <button 
-              onClick={handleSendMessage}
-              disabled={!inputText.trim()}
-              style={{ 
-                padding: '14px 24px', backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3', 
-                color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', 
-                cursor: inputText.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
-                boxShadow: inputText.trim() ? '0 4px 12px rgba(93,74,62,0.2)' : 'none',
-                height: '48px', display: 'flex', alignItems: 'center'
-              }}
-            >
-              傳送
-            </button>
-          </footer>
+        {/* Footer 優化：按鈕在手機版稍微縮小 */}
+        <footer style={{ backgroundColor: '#FFFFFF', padding: '12px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+          <textarea 
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onFocus={() => setFocusedField(true)}
+            onBlur={() => setFocusedField(false)}
+            onKeyDown={(e) => { 
+              if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                handleSendMessage(); 
+              } 
+            }}
+            placeholder="請輸入訊息..."
+            style={{ 
+              flex: 1, padding: '10px 14px', borderRadius: '20px', 
+              border: focusedField ? '2px solid #5D4A3E' : '1px solid #DED9D3',
+              backgroundColor: '#FBFBF9', fontSize: '15px', minHeight: '40px', maxHeight: '100px', outline: 'none'
+            }}
+          />
+          <button 
+            onClick={handleSendMessage}
+            disabled={!inputText.trim()}
+            style={{ 
+              padding: '10px 20px', 
+              borderRadius: '20px', 
+              backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3',
+              color: '#FFFFFF',
+              border: 'none',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            傳送
+          </button>
+        </footer>
       </div>
     </div>
   );

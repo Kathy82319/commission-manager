@@ -1,3 +1,4 @@
+// src/layouts/PublicLayout.tsx
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 
 export function PublicLayout() {
@@ -9,16 +10,19 @@ export function PublicLayout() {
     window.location.href = `${API_BASE}/api/auth/line/login`;
   };
 
-  // 判斷是否為條款頁面
   const isLegalPage = location.pathname === '/terms' || location.pathname === '/privacy';
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'transparent' }}>
       
+      {/* 頂部列：手機版改為相對定位，避免遮擋內容；電腦版維持絕對定位 */}
       <header style={{ 
-        position: 'absolute', top: 0, right: 0, padding: '20px 24px', 
-        display: 'flex', gap: '16px', zIndex: 1000, background: 'transparent' 
-      }}>
+        position: 'relative', 
+        padding: '20px', 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        zIndex: 1000 
+      }} className="md:absolute md:top-0 md:right-0 md:padding-24">
         <button 
           onClick={handleLoginClick} 
           style={{
@@ -30,37 +34,32 @@ export function PublicLayout() {
             fontSize: '14px',
             fontWeight: 'bold',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
             boxShadow: '0 4px 12px rgba(93, 74, 62, 0.15)'
           }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#5D4A3E'; e.currentTarget.style.color = '#FFF'; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#5D4A3E'; }}
         >
           登入 / 註冊
         </button>
       </header>
 
-      <main style={{ flex: 1, width: '100%' }}>
+      <main style={{ flex: 1, width: '100%', paddingTop: isLegalPage ? '20px' : '0' }}>
         <Outlet />
         
-        {/* 🌟 修改項目 1：在條款頁面下方增加「回上一頁」按鈕 */}
         {isLegalPage && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '60px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '60px', padding: '0 20px' }}>
             <button 
               onClick={() => navigate(-1)}
               style={{
-                padding: '8px 30px',
+                width: '100%',
+                maxWidth: '200px',
+                padding: '10px 30px',
                 backgroundColor: 'transparent',
                 color: '#5D4A3E',
                 border: '2px solid #5D4A3E',
                 borderRadius: '24px',
                 fontSize: '14px',
                 fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                cursor: 'pointer'
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#5D4A3E'; e.currentTarget.style.color = '#FFF'; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#5D4A3E'; }}
             >
               回上一頁
             </button>
@@ -68,39 +67,33 @@ export function PublicLayout() {
         )}
       </main>
 
+      {/* 頁尾：手機版文字改為垂直堆疊以增加清晰度 */}
       <footer style={{ 
-        padding: '24px 20px', 
+        padding: '30px 20px', 
         textAlign: 'center',
         background: 'transparent',
         marginTop: 'auto'
       }}>
         <div style={{ 
-          width: '100%', 
-          maxWidth: '300px', 
-          margin: '0 auto 12px auto', 
-          borderTop: '1px solid rgba(255, 255, 255, 0.2)' 
+          width: '60px', 
+          margin: '0 auto 20px auto', 
+          borderTop: '1px solid rgba(255, 255, 255, 0.3)' 
         }} />
 
-        {/* 🌟 修改項目 2：調整頁尾文字顏色與清晰度 */}
-        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '1px' }}>
-          <Link 
-            to="/terms" 
-            style={{ color: 'inherit', textDecoration: 'none', transition: 'opacity 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            服務條款
-          </Link>
-          <span style={{ margin: '0 12px', opacity: 0.5 }}>|</span>
-          <Link 
-            to="/privacy" 
-            style={{ color: 'inherit', textDecoration: 'none', transition: 'opacity 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            隱私權政策
-          </Link>
-          <span style={{ margin: '0 12px', opacity: 0.5 }}>|</span>
+        <div style={{ 
+          fontSize: '13px', 
+          color: 'rgba(255, 255, 255, 0.9)', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px',
+          alignItems: 'center'
+        }} className="md:flex-row md:justify-center md:gap-0">
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+            <span style={{ opacity: 0.5 }} className="hidden md:inline">|</span>
+            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+          </div>
+          <span style={{ opacity: 0.5 }} className="hidden md:inline">|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>
       </footer>

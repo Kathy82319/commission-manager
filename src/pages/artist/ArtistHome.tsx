@@ -1,6 +1,7 @@
+// src/pages/artist/ArtistHome.tsx
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import DOMPurify from 'dompurify'; // 🌟 引入 DOMPurify 防範 XSS
+import DOMPurify from 'dompurify';
 
 interface ProfileSettings {
   portfolio: string[];
@@ -23,12 +24,9 @@ export function ArtistHome() {
     const fetchArtistData = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        // 🔒 安全修正：補上 API_BASE
         const res = await fetch(`${API_BASE}/api/users/${artistId}`);
         
-        if (!res.ok) {
-          throw new Error('伺服器找不到該路徑或頁面');
-        }
+        if (!res.ok) throw new Error('伺服器找不到該繪師頁面');
 
         const data = await res.json();
         
@@ -37,131 +35,116 @@ export function ArtistHome() {
           if (data.data.profile_settings) {
             try {
               setSettings(JSON.parse(data.data.profile_settings));
-            } catch (e) {
-              console.error("解析 profile_settings 失敗");
-            }
+            } catch (e) { console.error("解析 profile_settings 失敗"); }
           }
         } else {
           setErrorMsg(data.message || '找不到該繪師的資料');
         }
       } catch (error) {
-        console.error("讀取公開頁面失敗", error);
-        setErrorMsg('讀取頁面時發生錯誤，請確認伺服器已啟動。');
+        setErrorMsg('讀取頁面時發生錯誤，請稍後再試。');
       } finally {
         setLoading(false);
       }
     };
-
     fetchArtistData();
   }, [artistId]);
 
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#666', marginTop: '100px' }}>載入中...</div>;
-  }
-
-  if (errorMsg || !artist) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#c62828', marginTop: '100px', fontWeight: 'bold' }}>{errorMsg || '找不到該繪師的資料。'}</div>;
-  }
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#A0978D' }}>載入繪師資料中...</div>;
+  if (errorMsg || !artist) return <div style={{ padding: '80px', textAlign: 'center', color: '#c62828', fontWeight: 'bold' }}>{errorMsg}</div>;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
       
-      {/* 左側：固定式個人簡介 */}
-      <div style={{ width: '300px', position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f0f0', border: '1px solid #ddd' }}>
-          {artist.avatar_url ? (
-            <img src={artist.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>無頭像</div>
-          )}
-        </div>
+      {/* 🌟 核心 RWD 樣式控制 */}
+      <style>{`
+        .artist-home-container { display: flex; flex-direction: column; gap: 40px; padding: 40px 0; }
+        .artist-sidebar { width: 100%; display: flex; flex-direction: column; gap: 20px; }
+        .artist-content { flex: 1; display: flex; flexDirection: column; gap: 40px; }
+        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .rich-text-box { font-size: 15px; color: #444; line-height: 1.8; background: #FFF; padding: 24px; border-radius: 16px; border: 1px solid #EAE6E1; }
+
+        @media (min-width: 768px) {
+          .artist-home-container { flex-direction: row; align-items: flex-start; }
+          .artist-sidebar { width: 300px; position: sticky; top: 40px; }
+          .portfolio-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        }
+      `}</style>
+
+      <div className="artist-home-container">
         
-        <div>
-          <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', color: '#333' }}>
-            {artist.display_name || '未命名繪師'}
-          </h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-             <button style={{ flex: 1, padding: '12px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}>
-               前往委託
-             </button>
+        {/* 左側：個人簡介 (手機版置頂) */}
+        <aside className="artist-sidebar">
+          <div style={{ width: '100%', aspectRatio: '1', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            {artist.avatar_url ? (
+              <img src={artist.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>無頭像</div>
+            )}
           </div>
-        </div>
-
-        <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '12px', border: '1px solid #eee' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#555', borderBottom: '1px solid #ddd', paddingBottom: '8px' }}>關於我</h3>
-          <p style={{ margin: 0, fontSize: '14px', color: '#555', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-            {artist.bio || '這位繪師還沒有寫任何簡介。'}
-          </p>
-        </div>
-      </div>
-
-      {/* 右側：滾動式內容區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '40px' }}>
-        
-        {settings?.portfolio && settings.portfolio.length > 0 && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '22px', color: '#333', borderBottom: '2px solid #333', paddingBottom: '10px', display: 'inline-block' }}>
-              作品展示區
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {settings.portfolio.map((img, idx) => (
-                <div key={idx} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f5f5f5', border: '1px solid #eee' }}>
-                  <img src={img} alt={`作品 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} 
-                       onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                       onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                </div>
-              ))}
+          
+          <div>
+            <h1 style={{ margin: '0 0 12px 0', fontSize: '26px', color: '#5D4A3E', fontWeight: 'bold' }}>
+              {artist.display_name || '未命名繪師'}
+            </h1>
+            <div style={{ display: 'flex' }}>
+               <button style={{ flex: 1, padding: '14px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }}>
+                 前往委託
+               </button>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* 🌟 安全修正：以下富文本渲染全部改用 dangerouslySetInnerHTML + DOMPurify.sanitize */}
-        {settings?.process && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託流程說明</h2>
-            <div 
-              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.process) }}
-            />
-          </section>
-        )}
+          <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#7A7269', borderBottom: '1px solid #F0ECE7', paddingBottom: '8px', fontWeight: 'bold' }}>關於我</h3>
+            <p style={{ margin: 0, fontSize: '14px', color: '#5D4A3E', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+              {artist.bio || '這位繪師尚未填寫簡介。'}
+            </p>
+          </div>
+        </aside>
 
-        {settings?.payment && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>付款方式</h2>
-            <div 
-              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.payment) }}
-            />
-          </section>
-        )}
+        {/* 右側：詳細內容區 */}
+        <main className="artist-content">
+          
+          {/* 作品展示區 */}
+          {settings?.portfolio && settings.portfolio.length > 0 && (
+            <section>
+              <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#5D4A3E', borderBottom: '3px solid #5D4A3E', paddingBottom: '8px', display: 'inline-block' }}>
+                作品展示
+              </h2>
+              <div className="portfolio-grid">
+                {settings.portfolio.map((img, idx) => (
+                  <div key={idx} style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', cursor: 'zoom-in' }}>
+                    <img src={img} alt={`作品 ${idx + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} 
+                         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+                         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-        {settings?.rules && (
-          <section>
-            <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>委託範圍與使用規範</h2>
-            <div 
-              style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.rules) }}
-            />
-          </section>
-        )}
+          {/* 🌟 富文本區塊 (安全渲染) */}
+          {[
+            { id: 'process', label: '委託流程說明', content: settings?.process },
+            { id: 'payment', label: '付款方式', content: settings?.payment },
+            { id: 'rules', label: '委託範圍與使用規範', content: settings?.rules }
+          ].map(sec => sec.content && (
+            <section key={sec.id}>
+              <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>{sec.label}</h2>
+              <div className="rich-text-box" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sec.content) }} />
+            </section>
+          ))}
 
-        {settings?.custom_sections && settings.custom_sections.length > 0 && (
-          <>
-            {settings.custom_sections.map((section) => (
-              <section key={section.id}>
-                <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                  {section.title || '未命名區塊'}
-                </h2>
-                <div 
-                  style={{ fontSize: '15px', color: '#444', lineHeight: '1.8', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee' }}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.content) }}
-                />
-              </section>
-            ))}
-          </>
-        )}
+          {/* 自訂區塊 */}
+          {settings?.custom_sections?.map((section) => section.content && (
+            <section key={section.id}>
+              <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>
+                {section.title || '其他資訊'}
+              </h2>
+              <div className="rich-text-box" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.content) }} />
+            </section>
+          ))}
 
+        </main>
       </div>
     </div>
   );

@@ -373,474 +373,143 @@ const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
   });
 
   return (
-    <div style={{ display: 'flex', gap: '30px', padding: '10px 20px', maxWidth: '1100px', margin: '0 auto', height: '100%' }}>
-      
-      <style>{`
-        .custom-quill-wrapper { border: 1px solid #DED9D3; border-radius: 12px; overflow: hidden; background-color: #FFFFFF; }
-        .custom-quill-wrapper .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid #EAE6E1; background-color: #FBFBF9; padding: 12px; }
-        .custom-quill-wrapper .ql-container.ql-snow { border: none; }
-        .custom-quill-wrapper .ql-editor { min-height: 300px; max-height: 500px; overflow-y: auto; font-size: 15px; line-height: 1.6; color: #5D4A3E; }
-        .custom-quill-wrapper.small .ql-editor { min-height: 150px; max-height: 300px; }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar { width: 8px; }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-track { background: transparent; }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb { background: #DED9D3; border-radius: 4px; }
-        .custom-quill-wrapper .ql-editor::-webkit-scrollbar-thumb:hover { background: #C4BDB5; }
-      `}</style>
-
-      {/* 左側選單 */}
-      <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <h2 style={{ margin: '0 0 20px 10px', color: '#5D4A3E', fontSize: '24px', letterSpacing: '0.5px' }}>個人頁編輯</h2>
-        {menuItems.map(item => {
-          const isActive = activeTab === item.id;
-          const isLockedMenu = isFreePlan && !freeAllowedTabs.includes(item.id);
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id as any); setMessage(''); }}
-              style={{
-                padding: '12px 16px', border: 'none', borderRadius: '12px',
-                backgroundColor: isActive ? '#F4F0EB' : 'transparent',
-                color: isActive ? (item.id === 'subscription' ? '#A67B3E' : '#5D4A3E') : (isLockedMenu ? '#C4BDB5' : '#7A7269'),
-                fontWeight: isActive ? 'bold' : 'normal',
-                cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease', fontSize: '15px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.backgroundColor = '#FBFBF9'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}
-            >
-              <span>{item.label}</span>
-              {isLockedMenu && <span style={{ fontSize: '14px' }}>🔒</span>}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* 右側編輯區 */}
-      <div style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '30px 40px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F0ECE7', paddingBottom: '15px', marginBottom: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <h3 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>
-              {menuItems.find(m => m.id === activeTab)?.label}
-            </h3>
-            
-            {activeTab !== 'profile_basic' && activeTab !== 'splash' && activeTab !== 'subscription' && !isCurrentTabLocked && (
-              <button 
-                onClick={() => toggleVisibility(activeTab)}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', 
-                  fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px',
-                  color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#7A7269',
-                  padding: '6px 12px', borderRadius: '20px', 
-                  backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#FBFBF9',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 狀態：公開顯示'}
-              </button>
-            )}
-          </div>
-          
-          {message && (
-            <span style={{ padding: '8px 16px', backgroundColor: message.includes('失敗') ? '#F5EBEB' : '#E8F3EB', color: message.includes('失敗') ? '#A05C5C' : '#4E7A5A', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold' }}>
-              {message}
-            </span>
-          )}
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px', position: 'relative' }}>
-          
-          {/* 免費版毛玻璃鎖定遮罩 */}
-          {isCurrentTabLocked && (
-             <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)' }}>
-               <div style={{ padding: '30px 40px', backgroundColor: '#FFF', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px', border: '1px solid #EAE6E1' }}>
-                 <div style={{ fontSize: '40px' }}>🔒</div>
-                 <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px' }}>啟用專業版後解鎖</h3>
-                 <p style={{ margin: 0, color: '#7A7269', fontSize: '14px', lineHeight: '1.6' }}>此區塊僅限專業版編輯。<br/><br/>(若您曾於專業版期間設定過此區塊，內容依然會在您的公開頁面持續展示，不會被刪除，僅鎖定後台編輯權限。)</p>
-                 <button onClick={() => setActiveTab('subscription')} style={{ marginTop: '10px', padding: '12px 24px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s', boxShadow: '0 4px 12px rgba(166,123,62,0.3)' }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform='translateY(0)'}>前往查看升級方案</button>
-               </div>
-             </div>
-          )}
-
-          <div style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto', userSelect: isCurrentTabLocked ? 'none' : 'auto', height: '100%', opacity: isCurrentTabLocked ? 0.5 : 1 }}>
-            
-            {/* 🚧 [封測限制] 隱藏整個訂閱分頁內容區塊 */}
-            {/* {activeTab === 'subscription' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
-                  
-                  <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
-                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-                      <li>每月最高建立 <strong>3 筆</strong>委託單</li>
-                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-                      <li>開放編輯「頭像與簡介、作品展示、詳細介紹」</li>
-                      <li>公開頁面最多展示 <strong>前 6 張</strong>作品</li>
-                    </ul>
-                    {quotaInfo?.plan_type === 'free' ? (
-                      <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontWeight: 'bold', backgroundColor: '#F0ECE7', borderRadius: '8px' }}>目前方案</div>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>到期後將自動降級至此方案</div>
-                    )}
-                  </div>
-
-                  <div style={{ border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'trial' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', color: '#A67B3E' }}>專業版 (15天試用)</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
-                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-                      <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
-                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-                      <li>解鎖編輯「所有」進階區塊編輯權限</li>
-                      <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
-                      <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>💡 降級保障：方案過期後，已設定的進階區塊與超過 6 張的圖片不會刪除且持續展示，僅鎖定後台編輯權限。</li>
-                    </ul>
-                    {quotaInfo?.plan_type === 'trial' ? (
-                       <div style={{ textAlign: 'center', padding: '12px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '8px' }}>試用中</div>
-                    ) : quotaInfo?.trial_start_at ? (
-                       <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
-                    ) : (
-                      <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>開啟 15 天試用</button>
-                    )}
-                  </div>
-
-                  <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
-                    <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
-                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-                      <li><strong>無限制建立委託單數量</strong></li>
-                      <li>解鎖編輯「所有」進階區塊編輯權限</li>
-                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-                      <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
-                      <li>享有未來所有進階功能更新</li>
-                    </ul>
-                    {quotaInfo?.plan_type === 'pro' ? (
-                       <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
-                    ) : (
-                      <button 
-                        onClick={handleUpgradeClick} 
-                        disabled={isUpgrading}
-                        style={{ 
-                          padding: '12px', backgroundColor: isUpgrading ? '#C4BDB5' : '#4E7A5A', color: '#FFF', 
-                          border: 'none', borderRadius: '8px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
-                          fontWeight: 'bold', transition: 'opacity 0.2s' 
-                        }} 
-                        onMouseEnter={e => !isUpgrading && (e.currentTarget.style.opacity='0.9')} 
-                        onMouseLeave={e => !isUpgrading && (e.currentTarget.style.opacity='1')}
-                      >
-                        {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
-                      </button>
-                    )}
-                  </div>
-
-                </div>
-              </div>
-            )}
-            */}
-
-            {activeTab === 'profile_basic' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <div style={{ display: 'flex', gap: '30px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '120px', height: '120px', borderRadius: '50%', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                      {formData.avatar_url ? <img src={formData.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#C4BDB5', fontSize: '13px', display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>無頭像</span>}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>顯示名稱</label>
-                      <input type="text" value={formData.display_name} onChange={e => setFormData({...formData, display_name: e.target.value})} onFocus={() => setFocusedField('display_name')} onBlur={() => setFocusedField(null)} placeholder="對外展示的暱稱" style={getInputStyle('display_name')} />
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                        上傳個人頭像 <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(限制 2MB)</span>
-                      </label>
-                      {isUploading ? (
-                        <div style={{ padding: '12px', textAlign: 'center', color: '#A0978D', fontSize: '14px' }}>圖片處理中...</div>
-                      ) : (
-                        <ImageUploader 
-                          onUpload={handleAvatarUpload}
-                          aspectRatio={1} 
-                          targetWidth={400}     // 🌟 大頭照：縮小尺寸並壓縮
-                          withWatermark={false} // 🌟 大頭照：無浮水印
-                          buttonText={formData.avatar_url ? "重新更換頭像" : "上傳頭像圖檔"}
-                          maxSizeMB={2}
-                        />
-                      )}
-                      <span style={{ fontSize: '12px', color: '#A0978D' }}>目前的網址：{formData.avatar_url || '尚未上傳'}</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>簡短個人介紹 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(顯示於預覽頁左側)</span></label>
-                  <textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} onFocus={() => setFocusedField('bio')} onBlur={() => setFocusedField(null)} placeholder="介紹您的繪畫風格或經歷..." style={{...getInputStyle('bio'), minHeight: '120px', resize: 'vertical'}} />
-                </div>
-
-                <div style={{ borderTop: '1px solid #F0ECE7', paddingTop: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <label style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E' }}>社群平台連結</label>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <select value={socialPlatform} onChange={e => setSocialPlatform(e.target.value)} onFocus={() => setFocusedField('platform')} onBlur={() => setFocusedField(null)} style={{...getInputStyle('platform'), width: '180px'}}>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Plurk">Plurk</option>
-                      <option value="Twitter / X">Twitter / X</option>
-                      <option value="Threads">Threads</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="個人網站">個人網站</option>
-                    </select>
-                    <input type="text" value={socialUrl} onChange={e => setSocialUrl(e.target.value)} onFocus={() => setFocusedField('social_url')} onBlur={() => setFocusedField(null)} onKeyDown={e => { if (e.key === 'Enter') handleAddSocial(); }} placeholder="輸入網址..." style={{...getInputStyle('social_url'), flex: 1}} />
-                    <button onClick={handleAddSocial} style={{ padding: '0 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}>新增</button>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {settings.social_links.length === 0 && <span style={{ color: '#C4BDB5', fontSize: '14px', padding: '10px 0' }}>尚未新增任何社群連結。</span>}
-                    {settings.social_links.map((link, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 'bold', color: '#4A7294', width: '100px' }}>{link.platform}</span>
-                          <a href={link.url} target="_blank" rel="noreferrer" style={{ color: '#7A7269', fontSize: '14px', wordBreak: 'break-all', textDecoration: 'none' }}>{link.url}</a>
-                        </div>
-                        <button onClick={() => handleRemoveSocial(idx)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', fontWeight: 'bold', padding: '0 10px', fontSize: '13px' }}>刪除</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'splash' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-                  <input 
-                    type="checkbox" 
-                    id="splash_enabled"
-                    checked={settings.splash_enabled} 
-                    onChange={(e) => setSettings({...settings, splash_enabled: e.target.checked})}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="splash_enabled" style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
-                    啟用滿版開場動畫
-                  </label>
-                </div>
-
-                {settings.splash_enabled && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                        背景圖片設定 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(建議使用橫式美圖。若留空，將預設使用頭像)</span>
-                        <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(限制 10MB)</span>
-                      </label>
-                      
-                      {settings.splash_image ? (
-                        <div style={{ position: 'relative', width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
-                          <img src={settings.splash_image} alt="背景預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button 
-                            onClick={() => setSettings({...settings, splash_image: ''})} 
-                            style={{ position: 'absolute', top: '10px', right: '10px', padding: '6px 12px', backgroundColor: 'rgba(160, 92, 92, 0.9)', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-                          >
-                            移除圖片
-                          </button>
-                        </div>
-                      ) : (
-                        isSplashUploading ? (
-                          <div style={{ padding: '30px', textAlign: 'center', border: '2px dashed #DED9D3', borderRadius: '12px', color: '#A0978D', backgroundColor: '#FBFBF9' }}>圖片上傳中...</div>
-                        ) : (
-                          <ImageUploader 
-                            onUpload={handleSplashUpload}
-                            targetWidth={1920}    // 🌟 開場圖：保持高解析但適度壓縮
-                            withWatermark={false} // 🌟 開場圖：無浮水印
-                            buttonText="點此選擇要上傳的開場背景圖檔"
-                            maxSizeMB={10}
-                          />
-                        )
-                      )}
-                      <span style={{ fontSize: '11px', color: '#A0978D' }}>目前的圖片網址：{settings.splash_image || '使用預設頭像'}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                        開場展示時間：<span style={{ color: '#A67B3E' }}>{settings.splash_duration} 秒</span>
-                      </label>
-                      <input 
-                        type="range" 
-                        min="1" 
-                        max="5" 
-                        step="0.5"
-                        value={settings.splash_duration}
-                        onChange={(e) => setSettings({...settings, splash_duration: parseFloat(e.target.value)})}
-                        style={{ width: '100%', cursor: 'pointer' }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D' }}>
-                        <span>1 秒 (快速)</span>
-                        <span>3 秒 (適中)</span>
-                        <span>5 秒 (緩慢)</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                        中央文字框內容 <span style={{fontSize: '12px', color: '#A0978D', fontWeight: 'normal'}}>(留空則預設顯示您的顯示名稱)</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        value={settings.splash_text} 
-                        onChange={e => setSettings({...settings, splash_text: e.target.value})} 
-                        onFocus={() => setFocusedField('splash_text')} 
-                        onBlur={() => setFocusedField(null)} 
-                        placeholder="例如：Welcome to my Studio" 
-                        style={getInputStyle('splash_text')} 
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'portfolio' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
-                {quotaInfo?.plan_type === 'free' && (
-                  <div style={{ padding: '12px 16px', backgroundColor: '#FDF4E6', color: '#A67B3E', borderRadius: '8px', border: '1px solid #E8D3B9', fontSize: '14px', fontWeight: 'bold', lineHeight: '1.6' }}>
-                    ⚠️ 您目前為「基礎免費版」，此處上傳的圖片資料會全數被保留，但在對外公開的個人專屬首頁中，<span style={{ color: '#A05C5C' }}>僅會展示前 6 張作品</span>。升級專業版即可解鎖無上限展示！
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>
-                    上傳展示作品 <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'normal' }}>(已使用: {settings.portfolio.length} / 20 張，可拖曳圖片更改順序)</span>
-                    <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'normal', marginLeft: '6px' }}>(單張限制 5MB)</span>
-                  </label>
-                  
-                  {settings.portfolio.length < 20 ? (
-                    isPortfolioUploading ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#A0978D', fontSize: '14px', border: '2px dashed #DED9D3', borderRadius: '12px' }}>
-                        圖片處理與上傳中，請稍候...
-                      </div>
-                    ) : (
-                      <ImageUploader 
-                        onUpload={handlePortfolioUpload}
-                        targetWidth={1200}    // 🌟 作品展示：啟用縮圖處理
-                        withWatermark={true}  // 🌟 作品展示：啟用全圖平鋪浮水印
-                        watermarkText={formData.display_name || "SAMPLE"} // 🌟 浮水印內容預設為繪師名稱
-                        buttonText="點此選擇要上傳的作品圖檔"
-                        maxSizeMB={5}
-                      />
-                    )
-                  ) : (
-                    <div style={{ padding: '16px', backgroundColor: '#F5EBEB', color: '#A05C5C', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #E5CACA' }}>
-                      已達 20 張作品上限！若需新增，請先刪除部分舊作品。
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', marginTop: '10px' }}>
-                  {settings.portfolio.length === 0 && <div style={{ color: '#C4BDB5', fontSize: '14px', gridColumn: '1 / -1', padding: '20px 0' }}>目前尚無作品，請在上方上傳圖片。</div>}
-                  
-                  {settings.portfolio.map((img, index) => (
-                    <div 
-                      key={index} 
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedIdx(index);
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault(); 
-                        if (draggedIdx === null || draggedIdx === index) return;
-                        const newPortfolio = [...settings.portfolio];
-                        const draggedItem = newPortfolio[draggedIdx];
-                        newPortfolio.splice(draggedIdx, 1);
-                        newPortfolio.splice(index, 0, draggedItem);
-                        setDraggedIdx(index);
-                        setSettings(prev => ({ ...prev, portfolio: newPortfolio }));
-                      }}
-                      onDragEnd={() => setDraggedIdx(null)}
-                      style={{ 
-                        position: 'relative', aspectRatio: '1', borderRadius: '12px', border: '1px solid #EAE6E1', 
-                        overflow: 'hidden', backgroundColor: '#FBFBF9', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        cursor: 'grab', opacity: draggedIdx === index ? 0.5 : 1, transform: 'translateZ(0)'
-                      }}
-                    >
-                      <img src={img} alt={`作品 ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
-                      
-                      {quotaInfo?.plan_type === 'free' && index >= 6 && (
-                        <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A05C5C', fontWeight: 'bold', fontSize: '13px', backdropFilter: 'blur(2px)' }}>
-                          前台已隱藏
-                        </div>
-                      )}
-                      
-                      <button onClick={(e) => { e.stopPropagation(); handleRemoveImage(index); }} style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', backgroundColor: 'rgba(255,255,255,0.95)', color: '#A05C5C', border: 'none', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>×</button>
-                      
-                      <div style={{ position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFF', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', pointerEvents: 'none' }}>
-                        {index + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(activeTab === 'detailed_intro' || activeTab === 'process' || activeTab === 'payment' || activeTab === 'rules') && (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '40px' }}>
-                {activeTab === 'rules' && (
-                  <div style={{ 
-                    marginBottom: '12px', color: '#8A602B', fontSize: '14px', fontWeight: 'bold', backgroundColor: '#FDF4E6', 
-                    padding: '12px 16px', borderRadius: '8px', border: '1px solid #E8D3B9', display: 'flex', alignItems: 'center', gap: '8px'
-                  }}>
-                    💡 說明：此部分內容將會出現在每次委託書下方必須閱覽的區域
-                  </div>
-                )}
-                <div className="custom-quill-wrapper">
-                  <ReactQuill 
-                    theme="snow" 
-                    value={settings[activeTab as keyof ProfileSettings] as string || ''} 
-                    onChange={value => setSettings({...settings, [activeTab]: value})}
-                    modules={customQuillModules}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'custom' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                {settings.custom_sections.map((section, index) => (
-                  <div key={section.id} style={{ padding: '24px', border: '1px solid #EAE6E1', borderRadius: '16px', backgroundColor: '#FBFBF9', position: 'relative' }}>
-                    <button onClick={() => handleRemoveCustomSection(section.id)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', fontSize: '20px', fontWeight: 'bold' }}>×</button>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <input type="text" value={section.title} onChange={e => handleUpdateCustomSection(section.id, 'title', e.target.value)} onFocus={() => setFocusedField(`custom_title_${section.id}`)} onBlur={() => setFocusedField(null)} placeholder={`自訂標題 ${index + 1}`} style={{...getInputStyle(`custom_title_${section.id}`), width: '60%', backgroundColor: '#FFFFFF', fontWeight: 'bold'}} />
-                      <div style={{ paddingBottom: '40px' }}>
-                        <div className="custom-quill-wrapper small">
-                          <ReactQuill 
-                            theme="snow" value={section.content || ''} 
-                            onChange={value => handleUpdateCustomSection(section.id, 'content', value)}
-                            modules={customQuillModules}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {settings.custom_sections.length < 3 ? (
-                  <button onClick={handleAddCustomSection} style={{ padding: '16px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '2px dashed #DED9D3', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#A67B3E'; e.currentTarget.style.backgroundColor = '#FBFBF9'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#DED9D3'; e.currentTarget.style.backgroundColor = '#FFFFFF'; }}>
-                    + 新增自訂區塊 ({settings.custom_sections.length}/3)
-                  </button>
-                ) : (
-                  <div style={{ textAlign: 'center', color: '#A0978D', fontSize: '14px', padding: '10px' }}>已達到自訂區塊數量上限 (3/3)</div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {activeTab !== 'subscription' && !isCurrentTabLocked && (
-          <div style={{ marginTop: '20px', borderTop: '1px solid #F0ECE7', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end', zIndex: 20 }}>
-            <button onClick={handleSave} disabled={isSaving} style={{ padding: '14px 40px', backgroundColor: isSaving ? '#C4BDB5' : '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', fontSize: '16px', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => !isSaving && (e.currentTarget.style.transform = 'translateY(-2px)')} onMouseLeave={e => !isSaving && (e.currentTarget.style.transform = 'translateY(0)')}>
-              {isSaving ? '儲存中...' : '儲存全部內容'}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+<div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px' }}>
+<style>{`
+.settings-layout { display: flex; flex-direction: column; gap: 24px; padding: 20px 0; }
+.settings-sidebar { display: flex; overflow-x: auto; gap: 8px; border-bottom: 1px solid #EAE6E1; padding-bottom: 10px; scrollbar-width: none; }
+.settings-sidebar::-webkit-scrollbar { display: none; }
+.settings-sidebar button { white-space: nowrap; padding: 10px 16px; border: none; background: none; color: #7A7269; font-size: 14px; border-radius: 8px; cursor: pointer; }
+.settings-sidebar button.active { background-color: #F4F0EB; color: #5D4A3E; font-weight: bold; }
+.custom-quill-wrapper { border: 1px solid #DED9D3; border-radius: 12px; overflow: hidden; background: #FFF; }
+.custom-quill-wrapper .ql-editor { min-height: 250px; max-height: 500px; font-size: 15px; }
+@media (min-width: 768px) {
+.settings-layout { flex-direction: row; align-items: flex-start; }
+.settings-sidebar { flex-direction: column; width: 200px; border-bottom: none; border-right: 1px solid #EAE6E1; padding-bottom: 0; padding-right: 16px; overflow-x: visible; }
+.settings-sidebar button { text-align: left; }
+}
+`}</style>
+<div className="settings-layout">
+{/* Sidebar Menu */}
+<aside className="settings-sidebar">
+<h2 style={{ fontSize: '18px', color: '#5D4A3E', marginBottom: '16px' }} className="hidden md:block">個人頁編輯</h2>
+{menuItems.map(item => {
+const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
+return (
+<button key={item.id} className={activeTab === item.id ? 'active' : ''} onClick={() => setActiveTab(item.id as any)}>
+{item.label} {isLocked && '🔒'}
+</button>
+);
+})}
+</aside>
+{/* Content Area */}
+<div style={{ flex: 1, backgroundColor: '#FFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', position: 'relative' }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
+<h3 style={{ margin: 0, color: '#5D4A3E' }}>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
+{activeTab !== 'profile_basic' && !isCurrentTabLocked && (
+<button onClick={()=>toggleVisibility(activeTab)} style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '20px', border: 'none', backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#E8F3EB', color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#4E7A5A', cursor: 'pointer' }}>
+{settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
+</button>
+)}
+</div>
+{isCurrentTabLocked && (
+<div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)', borderRadius: '16px' }}>
+<div style={{ textAlign: 'center', padding: '24px', background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+<div style={{ fontSize: '32px' }}>🔒</div>
+<h4 style={{ margin: '8px 0', color: '#5D4A3E' }}>此功能僅限專業版</h4>
+<button onClick={() => alert('方案升級即將開放')} style={{ marginTop: '10px', padding: '8px 16px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>查看方案</button>
+</div>
+</div>
+)}
+<div style={{ filter: isCurrentTabLocked ? 'blur(4px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
+{activeTab === 'profile_basic' && (
+<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+<div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+<div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '1px solid #EEE' }}>
+<img src={formData.avatar_url || '/default-avatar.png'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Avatar" />
+</div>
+<div style={{ flex: 1, minWidth: '200px' }}>
+<label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>顯示名稱</label>
+<input value={formData.display_name} onChange={e=>setFormData({...formData, display_name: e.target.value})} onFocus={()=>setFocusedField('name')} onBlur={()=>setFocusedField(null)} style={getInputStyle('name')} />
+<div style={{ marginTop: '12px' }}>
+<ImageUploader onUpload={handleAvatarUpload} targetWidth={400} withWatermark={false} buttonText={isUploading ? "上傳中..." : "更換頭像"} maxSizeMB={2} />
+</div>
+</div>
+</div>
+<div>
+<label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>個人簡介</label>
+<textarea value={formData.bio} onChange={e=>setFormData({...formData, bio: e.target.value})} onFocus={()=>setFocusedField('bio')} onBlur={()=>setFocusedField(null)} style={{ ...getInputStyle('bio'), minHeight: '100px' }} />
+</div>
+<div style={{ borderTop: '1px solid #EEE', paddingTop: '20px' }}>
+<label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>社群連結</label>
+<div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+<select value={socialPlatform} onChange={e=>setSocialPlatform(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #DDD' }}>
+{['Facebook', 'Plurk', 'Twitter / X', 'Threads', 'Instagram', '個人網站'].map(p=><option key={p} value={p}>{p}</option>)}
+</select>
+<input value={socialUrl} onChange={e=>setSocialUrl(e.target.value)} onFocus={()=>setFocusedField('url')} onBlur={()=>setFocusedField(null)} placeholder="網址..." style={{ ...getInputStyle('url'), flex: 1 }} />
+<button onClick={handleAddSocial} style={{ padding: '8px 16px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px' }}>+</button>
+</div>
+{settings.social_links.map((link, i) => (
+<div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#FBFBF9', borderRadius: '6px', marginBottom: '6px', fontSize: '14px' }}>
+<span><strong>{link.platform}:</strong> {link.url}</span>
+<button onClick={()=>handleRemoveSocial(i)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer' }}>移除</button>
+</div>
+))}
+</div>
+</div>
+)}
+{activeTab === 'portfolio' && (
+<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+<ImageUploader onUpload={handlePortfolioUpload} targetWidth={1200} withWatermark={true} watermarkText={formData.display_name} buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品"} maxSizeMB={5} />
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px' }}>
+{settings.portfolio.map((img, i) => (
+<div key={i} draggable onDragStart={()=>setDraggedIdx(i)} onDragOver={(e)=>{e.preventDefault(); if(draggedIdx===null || draggedIdx===i)return; const newPortfolio=[...settings.portfolio]; const item=newPortfolio.splice(draggedIdx, 1)[0]; newPortfolio.splice(i, 0, item); setDraggedIdx(i); setSettings(prev=>({...prev, portfolio: newPortfolio}));}} onDragEnd={()=>setDraggedIdx(null)} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EEE', opacity: draggedIdx === i ? 0.5 : 1, cursor: 'grab' }}>
+<img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Portfolio" />
+<button onClick={()=>handleRemoveImage(i)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer' }}>×</button>
+</div>
+))}
+</div>
+</div>
+)}
+{['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+<div className="custom-quill-wrapper">
+<ReactQuill theme="snow" value={settings[activeTab as keyof ProfileSettings] as string} onChange={v=>setSettings({...settings, [activeTab]: v})} modules={customQuillModules} />
+</div>
+)}
+{activeTab === 'splash' && (
+<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+<label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+<input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} />
+啟用開場動畫
+</label>
+{settings.splash_enabled && (
+<>
+<ImageUploader onUpload={handleSplashUpload} targetWidth={1920} withWatermark={false} buttonText={isSplashUploading ? "上傳中..." : "上傳背景圖"} maxSizeMB={10} />
+<input value={settings.splash_text} onChange={e=>setSettings({...settings, splash_text: e.target.value})} onFocus={()=>setFocusedField('splash_text')} onBlur={()=>setFocusedField(null)} placeholder="開場文字..." style={getInputStyle('splash_text')} />
+</>
+)}
+</div>
+)}
+{activeTab === 'custom' && (
+<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+{settings.custom_sections.map(sec => (
+<div key={sec.id} style={{ padding: '16px', border: '1px solid #EEE', borderRadius: '12px' }}>
+<input value={sec.title} onChange={e=>handleUpdateCustomSection(sec.id, 'title', e.target.value)} onFocus={()=>setFocusedField(`t_${sec.id}`)} onBlur={()=>setFocusedField(null)} placeholder="區塊標題" style={{ ...getInputStyle(`t_${sec.id}`), marginBottom: '10px', fontWeight: 'bold' }} />
+<ReactQuill theme="snow" value={sec.content} onChange={v=>handleUpdateCustomSection(sec.id, 'content', v)} modules={customQuillModules} />
+<button onClick={()=>handleRemoveCustomSection(sec.id)} style={{ marginTop: '10px', color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer' }}>移除此區塊</button>
+</div>
+))}
+{settings.custom_sections.length < 3 && <button onClick={handleAddCustomSection} style={{ padding: '12px', border: '1px dashed #DDD', background: 'none', borderRadius: '12px', cursor: 'pointer' }}>+ 新增自訂區塊</button>}
+</div>
+)}
+</div>
+<div style={{ marginTop: '30px', borderTop: '1px solid #EEE', paddingTop: '20px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px' }}>
+{message && <span style={{ color: message.includes('失敗') || message.includes('錯誤') ? '#A05C5C' : '#4E7A5A', fontWeight: 'bold' }}>{message}</span>}
+<button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 32px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', opacity: isSaving ? 0.7 : 1 }}>
+{isSaving ? '儲存中...' : '儲存變更'}
+</button>
+</div>
+</div>
+</div>
+</div>
+);
 }

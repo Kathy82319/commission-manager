@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill-new'; 
 import 'react-quill-new/dist/quill.snow.css'; 
 
-const baseAddOnsList = ['驚喜包',  '無償'];
+const baseAddOnsList = ['驚喜包', '無償'];
 
 const customQuillModules = {
   toolbar: [
@@ -111,7 +111,6 @@ export function QuoteBuilder() {
 
   const handleSubmit = async () => {
     if (isQuotaExceeded) return alert('建單額度已用盡，請升級方案！');
-
     if (!formData.client_name.trim()) return alert('請填寫委託人名稱，以利系統辨識！');
     
     if (workflowMode === 'standard') {
@@ -122,7 +121,6 @@ export function QuoteBuilder() {
     }
 
     const finalAddOnsString = selectedAddOns.join(', ');
-    
     const finalSubmitData = { 
       ...formData, 
       workflow_mode: workflowMode,
@@ -150,14 +148,12 @@ export function QuoteBuilder() {
       if (data.success) {
         const newOrderId = data.id;
         const linkToCopy = `${window.location.origin}/quote/${newOrderId}`;
-        
         try {
           await navigator.clipboard.writeText(linkToCopy);
           alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n專屬連結已自動複製到剪貼簿，為您導向委託單管理。`);
         } catch (err) {
           alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n為您導向委託單管理。`);
         }
-        
         navigate(`/artist/notebook?id=${newOrderId}`);
       } else {
         alert('建置失敗：' + data.error);
@@ -176,13 +172,13 @@ export function QuoteBuilder() {
     backgroundColor: '#FBFBF9',
     color: '#5D4A3E',
     outline: 'none',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+    transition: 'all 0.2s ease',
     boxShadow: focusedField === fieldName ? '0 0 0 2px rgba(166,123,62,0.1)' : 'none',
     fontSize: '14px' 
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100%', padding: '0 16px' }}>
       
       <style>{`
         .quote-quill-wrapper {
@@ -212,31 +208,42 @@ export function QuoteBuilder() {
           font-size: 14px;
           color: #5D4A3E;
         }
+        /* RWD Grid Adjustments */
+        .quote-grid-container {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (min-width: 768px) {
+          .quote-grid-container {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
       `}</style>
 
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      {/* Header Section */}
+      <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }} className="md:flex-row md:justify-between md:items-start">
         <div>
           <h2 style={{ color: '#5D4A3E', fontSize: '24px', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>產出新委託單</h2>
-          
           {quotaInfo && (
             <div style={{ 
-              marginTop: '10px', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block',
+              marginTop: '4px', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block',
               backgroundColor: quotaInfo.plan_type === 'pro' ? '#E8F3EB' : '#FDF4E6', 
               color: quotaInfo.plan_type === 'pro' ? '#4E7A5A' : '#A67B3E'
             }}>
               {quotaInfo.plan_type === 'pro' && '✨ 目前方案：專業版 (無限建單額度)'}
               {quotaInfo.plan_type === 'trial' && `⏳ 目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
-              {quotaInfo.plan_type === 'free' && `🌱 目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆 (每月 1 號重置)`}
+              {quotaInfo.plan_type === 'free' && `🌱 目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
             </div>
           )}
-
         </div>
 
-        <div style={{ display: 'flex', backgroundColor: '#EAE6E1', padding: '4px', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', backgroundColor: '#EAE6E1', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
           <button 
             onClick={() => setWorkflowMode('standard')}
             style={{ 
-              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
+              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer',
               backgroundColor: workflowMode === 'standard' ? '#FFFFFF' : 'transparent',
               color: workflowMode === 'standard' ? '#5D4A3E' : '#A0978D',
               boxShadow: workflowMode === 'standard' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
@@ -247,7 +254,7 @@ export function QuoteBuilder() {
           <button 
             onClick={() => setWorkflowMode('free')}
             style={{ 
-              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
+              padding: '8px 20px', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer',
               backgroundColor: workflowMode === 'free' ? '#5D4A3E' : 'transparent',
               color: workflowMode === 'free' ? '#FFFFFF' : '#A0978D',
               boxShadow: workflowMode === 'free' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
@@ -259,16 +266,14 @@ export function QuoteBuilder() {
       </div>
 
       <div style={{ position: 'relative', flex: 1, paddingBottom: '40px' }}>
-        
-        <div style={{ 
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start',
+        <div className="quote-grid-container" style={{ 
           filter: isQuotaExceeded ? 'blur(6px)' : 'none',
           pointerEvents: isQuotaExceeded ? 'none' : 'auto',
-          userSelect: isQuotaExceeded ? 'none' : 'auto',
           opacity: isQuotaExceeded ? 0.7 : 1,
           transition: 'all 0.3s ease'
         }}>
           
+          {/* Left Column: Information */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
               <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>基本資訊設定</h3>
@@ -288,8 +293,7 @@ export function QuoteBuilder() {
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D', fontWeight: 'bold' }}>$</span>
                     <input type="number" name="total_price" value={formData.total_price} onChange={handleChange} 
-                      min="0"
-                      onFocus={() => setFocusedField('total_price')} onBlur={() => setFocusedField(null)} style={{...getInputStyle('total_price'), paddingLeft: '28px'}} />
+                      min="0" onFocus={() => setFocusedField('total_price')} onBlur={() => setFocusedField(null)} style={{...getInputStyle('total_price'), paddingLeft: '28px'}} />
                   </div>
                 </div>
                 <div>
@@ -312,10 +316,9 @@ export function QuoteBuilder() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px', marginBottom: '20px' }}>
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>委託規格參數</h3>
                 {workflowMode === 'standard' && (
-                  <span style={{ fontSize: '12px', color: '#A05C5C', fontWeight: 'bold' }}>標註 * 之欄位需經同意方能修改</span>
+                  <span style={{ fontSize: '11px', color: '#A05C5C', fontWeight: 'bold' }}>標註 * 之欄位需經同意方能修改</span>
                 )}
               </div>
-              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label style={labelStyle}>委託用途{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
@@ -332,33 +335,16 @@ export function QuoteBuilder() {
                 </div>
                 <div>
                   <label style={labelStyle}>是否急件{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
-                  <select 
-                    value={formData.is_rush} 
-                    onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
-                    style={getInputStyle('is_rush')}
-                    onFocus={() => setFocusedField('is_rush')} onBlur={() => setFocusedField(null)}
-                  >
-                    <option value="否">否</option>
-                    <option value="是">是</option>
+                  <select value={formData.is_rush} onChange={(e) => setFormData({...formData, is_rush: e.target.value})}
+                    style={getInputStyle('is_rush')} onFocus={() => setFocusedField('is_rush')} onBlur={() => setFocusedField(null)}>
+                    <option value="否">否</option><option value="是">是</option>
                   </select>
                 </div>
-                
                 <div>
                   <label style={labelStyle}>
                     交稿方式{workflowMode === 'standard' && <span style={reqStyle}>*</span>}
                     {workflowMode === 'standard' && (
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <span onClick={() => setShowDeliveryHelp(true)} style={{ color: '#4A7294', fontSize: '12px', marginLeft: '6px', cursor: 'pointer', fontWeight: 'normal', textDecoration: 'underline' }}> [?] 說明 </span>
-                        {showDeliveryHelp && (
-                          <>
-                            <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowDeliveryHelp(false)} />
-                            <div style={{ position: 'absolute', bottom: '100%', left: '0', width: '260px', padding: '16px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 100, marginBottom: '8px', color: '#5D4A3E' }}>
-                              <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '13px' }}>三階段審閱：</div>
-                              <div style={{ marginBottom: '8px', fontSize: '12px', lineHeight: '1.5', color: '#7A7269' }}>需上傳草稿、線稿、完稿</div>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      <span onClick={() => setShowDeliveryHelp(true)} style={{ color: '#4A7294', fontSize: '12px', marginLeft: '6px', cursor: 'pointer', textDecoration: 'underline' }}> [?] </span>
                     )}
                   </label>
                   {workflowMode === 'free' ? (
@@ -370,14 +356,22 @@ export function QuoteBuilder() {
                       <option value="三階段審閱">三階段審閱</option><option value="一鍵出圖">一鍵出圖</option>
                     </select>
                   )}
+                  {showDeliveryHelp && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)' }} onClick={() => setShowDeliveryHelp(false)} />
+                      <div style={{ position: 'relative', width: '100%', maxWidth: '300px', padding: '20px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
+                        <h4 style={{ marginTop: 0, fontSize: '15px' }}>交稿方式說明</h4>
+                        <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0' }}>三階段模式下，系統會引導委託人進行草稿/線稿/完稿審閱。完稿需經委託人按下「同意稿件」才會結單。</p>
+                        <button onClick={() => setShowDeliveryHelp(false)} style={{ marginTop: '16px', width: '100%', padding: '8px', background: '#F4F0EB', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>關閉</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
                 <div>
                   <label style={labelStyle}>人物數量{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
                   <input type="number" name="char_count" value={formData.char_count} onChange={handleChange} min="1" 
                     onFocus={() => setFocusedField('char_count')} onBlur={() => setFocusedField(null)} style={getInputStyle('char_count')} />
                 </div>
-
                 <div>
                   <label style={labelStyle}>繪畫範圍{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -391,7 +385,6 @@ export function QuoteBuilder() {
                     )}
                   </div>
                 </div>
-
                 <div>
                   <label style={labelStyle}>背景{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -409,10 +402,10 @@ export function QuoteBuilder() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
-
-              <h3 style={{ margin: '10px 0 0 0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>附加選項與備註</h3>
+          {/* Right Column: Tags & Rich Text */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #EAE6E1', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>附加選項與備註</h3>
               
               <div style={{ padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
                 <label style={labelStyle}>快速標籤{workflowMode === 'standard' && <span style={reqStyle}>*</span>}</label>
@@ -449,114 +442,69 @@ export function QuoteBuilder() {
                 
                 {customAddOns.length < 5 && (
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
+                    <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
                       placeholder="自行增加標籤..." style={{...getInputStyle('new_addon'), width: '160px', padding: '8px 12px'}} 
                       onFocus={() => setFocusedField('new_addon')} onBlur={() => setFocusedField(null)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomOption(); }}
                     />
-                    <button type="button" onClick={handleAddCustomOption} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e=>e.currentTarget.style.backgroundColor='#FBFBF9'} onMouseLeave={e=>e.currentTarget.style.backgroundColor='#FFFFFF'}>
-                      新增標籤
-                    </button>
-                    <span style={{ fontSize: '12px', color: '#A0978D' }}>({5 - customAddOns.length})</span>
+                    <button type="button" onClick={handleAddCustomOption} style={{ padding: '8px 12px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>新增</button>
                   </div>
                 )}
               </div>
 
-              <h3 style={{ margin: '0', fontSize: '16px', color: '#5D4A3E', borderBottom: '1px solid #F0ECE7', paddingBottom: '10px' }}>詳細設定與協議書</h3>
-              
-
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{...labelStyle, marginBottom: '8px'}}>
                   協議書內容(自訂)
-                  <span style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'normal', marginLeft: '8px' }}>
-                    *內容將做為該單的初始協議書快照，送出後委託人需勾選同意，勾選後即視為同意此合約*
+                  <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
+                    *內容將做為該單的初始協議書快照，勾選後即視為同意此合約*
                   </span>
                 </label>
                 <div className="quote-quill-wrapper">
-                  <ReactQuill 
-                    theme="snow" 
-                    value={tosContent} 
-                    onChange={setTosContent}
-                    modules={customQuillModules}
-                  />
+                  <ReactQuill theme="snow" value={tosContent} onChange={setTosContent} modules={customQuillModules} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{...labelStyle, marginBottom: '4px'}}>
                   詳細設定 
-                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'normal' }}>(僅供繪師註記，委託方不可見)</span>}
+                  {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}> (僅繪師註記)</span>}
                 </label>
                 <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} 
                   onFocus={() => setFocusedField('detailed_settings')} onBlur={() => setFocusedField(null)}
-                  style={{ ...getInputStyle('detailed_settings'), flex: 1, minHeight: '80px', resize: 'vertical' }} placeholder="請輸入詳細的角色設定、動作要求或任何參考資料備註..." />
+                  style={{ ...getInputStyle('detailed_settings'), minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
               </div>
 
-
-
-
-              <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #F0ECE7' }}>
-                <button onClick={handleSubmit} style={{ width: '100%', padding: '16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.2s, transform 0.1s', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'} onMouseDown={e => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+                <button onClick={handleSubmit} style={{ width: '100%', padding: '16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(93,74,62,0.2)' }}>
                   確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
                 </button>
               </div>
-              
             </div>
           </div>
-
         </div>
 
+        {/* Quota Exceeded Modal */}
         {isQuotaExceeded && (
-          <div style={{ 
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', 
-            zIndex: 10 
-          }}>
-            <div style={{ 
-              backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '20px', 
-              boxShadow: '0 12px 40px rgba(0,0,0,0.15)', textAlign: 'center', 
-              maxWidth: '420px', border: '1px solid #EAE6E1', animation: 'fadeIn 0.4s ease'
-            }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '40px 24px', borderRadius: '20px', boxShadow: '0 12px 40px rgba(0,0,0,0.15)', textAlign: 'center', maxWidth: '420px', border: '1px solid #EAE6E1' }}>
               <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
               <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>建單額度已用盡</h3>
-              <p style={{ color: '#7A7269', fontSize: '15px', lineHeight: '1.6', marginBottom: '30px' }}>
+              <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
                 {quotaInfo?.plan_type === 'trial' 
-                  ? '您的 15 天專業版試用額度 (20筆) 已使用完畢。升級專業版以獲得無限建單額度與完整功能！' 
-                  : '基礎免費版每月最多可建立 3 筆委託單。您可以等待下個月 1 號額度重置，或立即升級以解鎖無限額度！'}
+                  ? '您的專業版試用額度已用完。升級專業版獲得無限建單額度！' 
+                  : '基礎免費版每月最多建立 3 筆委託。升級以解鎖無限額度！'}
               </p>
-              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
-                  onClick={() => navigate('/artist/settings')} 
-                  style={{ 
-                    padding: '14px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', 
-                    border: 'none', borderRadius: '12px', fontWeight: 'bold', 
-                    cursor: 'pointer', fontSize: '16px', boxShadow: '0 4px 12px rgba(93,74,62,0.2)',
-                    transition: 'transform 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  前往查看升級方案
+                <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                  前往升級方案
                 </button>
-                <button 
-                  onClick={() => navigate('/artist/queue')} 
-                  style={{ 
-                    padding: '12px 24px', backgroundColor: 'transparent', color: '#7A7269', 
-                    border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', 
-                    cursor: 'pointer', fontSize: '15px', transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FBFBF9'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
+                <button onClick={() => navigate('/artist/queue')} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                   返回排單表
                 </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

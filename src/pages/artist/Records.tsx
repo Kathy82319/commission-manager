@@ -1,3 +1,4 @@
+// src/pages/artist/Records.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -7,14 +8,14 @@ export function Records() {
   
   // 記錄選取的月份，格式為 '2024-04'
   const [selectedMonth, setSelectedMonth] = useState<string>(''); 
-  // 記錄哪些年份被展開
+  // 記錄哪些年份被展開 (主要用於電腦版)
   const [expandedYears, setExpandedYears] = useState<string[]>([]);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        // 🔒 安全修正：補上 API_BASE 與 credentials: 'include' 確保攜帶 Cookie
         const res = await fetch(`${API_BASE}/api/commissions`, {
           credentials: 'include'
         }); 
@@ -49,9 +50,9 @@ export function Records() {
     };
 
     fetchRecords();
-  }, []);
+  }, [API_BASE]);
 
-  // 1. 萃取並整理年份與月份結構
+  // 整理年份與月份結構
   const groupedByYear: Record<string, string[]> = {};
   records.forEach(r => {
     const d = new Date(r.order_date);
@@ -64,19 +65,16 @@ export function Records() {
     }
   });
 
-  // 年份由大到小排序
   const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a));
-  // 每個年份內的月份也由大到小排序
   sortedYears.forEach(y => groupedByYear[y].sort((a, b) => Number(b) - Number(a)));
 
-  // 展開/收合年份的切換功能
   const toggleYear = (year: string) => {
     setExpandedYears(prev => 
       prev.includes(year) ? prev.filter(y => y !== year) : [...prev, year]
     );
   };
 
-  // 2. 篩選出當前所選月份的訂單
+  // 篩選當前月份
   const currentMonthRecords = records.filter(r => {
     if (!selectedMonth) return false;
     const d = new Date(r.order_date);
@@ -85,154 +83,129 @@ export function Records() {
     return `${year}-${month}` === selectedMonth;
   });
 
-  // 3. 計算當月總計金額
   const currentMonthTotal = currentMonthRecords.reduce((sum, r) => sum + (r.total_price || 0), 0);
-
-  // 顯示用的當前月份字串
   const displaySelectedMonth = selectedMonth 
     ? `${selectedMonth.split('-')[0]}年 ${parseInt(selectedMonth.split('-')[1], 10)}月` 
     : '';
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>資料載入中...</div>;
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#A0978D' }}>讀取紀錄中...</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1100px', margin: '0 auto', display: 'flex', gap: '40px', alignItems: 'flex-start' }}>
+    <div style={{ padding: '0 16px', maxWidth: '1100px', margin: '0 auto' }}>
       
-      {/* 左側：年份與月份手風琴選單 */}
-      <div style={{ width: '220px', display: 'flex', flexDirection: 'column', gap: '15px', position: 'sticky', top: '20px' }}>
-        <h2 style={{ fontSize: '20px', color: '#333', marginBottom: '5px' }}>
-          歷史紀錄
-        </h2>
+      <style>{`
+        .records-layout { display: flex; flex-direction: column; gap: 24px; padding: 20px 0; }
+        .records-sidebar { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .year-scroll-wrapper { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 10px; scrollbar-width: none; }
+        .year-scroll-wrapper::-webkit-scrollbar { display: none; }
+        .month-chip { white-space: nowrap; padding: 8px 16px; border-radius: 20px; border: 1px solid #DED9D3; background: #FFF; color: #7A7269; font-size: 14px; cursor: pointer; }
+        .month-chip.active { background: #5D4A3E; color: #FFF; border-color: #5D4A3E; font-weight: bold; }
         
-        {sortedYears.length === 0 ? (
-          <div style={{ color: '#999', fontSize: '14px', padding: '10px 0', borderTop: '2px solid #333' }}>尚無結案紀錄</div>
-        ) : (
-          <div style={{ borderTop: '2px solid #333', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {sortedYears.map(year => (
-              <div key={year} style={{ display: 'flex', flexDirection: 'column' }}>
-                
-                {/* 年份標題 */}
-                <button
-                  onClick={() => toggleYear(year)}
-                  style={{
-                    background: 'none', border: 'none', textAlign: 'left',
-                    padding: '0 0 8px 0', fontSize: '18px', fontWeight: 'bold', color: '#333',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  <span style={{ fontSize: '12px', display: 'inline-block', transition: 'transform 0.2s', transform: expandedYears.includes(year) ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
-                    ▼
-                  </span>
-                  {year}年
-                </button>
-                
-                {/* 虛線分隔線 */}
-                <div style={{ borderBottom: '1px dashed #ccc', marginBottom: '10px' }}></div>
-                
-                {/* 該年份底下的月份 */}
-                {expandedYears.includes(year) && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '18px' }}>
-                    {groupedByYear[year].map(month => {
-                      const monthKey = `${year}-${month}`;
-                      const isActive = selectedMonth === monthKey;
-                      return (
-                        <button
-                          key={monthKey}
-                          onClick={() => setSelectedMonth(monthKey)}
-                          style={{
-                            padding: '10px 16px', textAlign: 'left', border: 'none', borderRadius: '8px',
-                            backgroundColor: isActive ? '#333' : 'transparent',
-                            color: isActive ? '#fff' : '#666',
-                            fontWeight: isActive ? 'bold' : 'normal', cursor: 'pointer', fontSize: '15px',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          {parseInt(month, 10)}月
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        .record-card { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #FFF; border-radius: 16px; border: 1px solid #EAE6E1; transition: all 0.2s; text-decoration: none; color: inherit; }
+        .record-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .price-text { font-size: 20px; font-weight: 900; color: #4E7A5A; }
 
-      {/* 右側：結案清單與小計 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {selectedMonth && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid #eee', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-            <h3 style={{ margin: 0, fontSize: '22px', color: '#333' }}>
-              {displaySelectedMonth} 結案明細
-            </h3>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '14px', color: '#777', marginBottom: '6px', fontWeight: 'bold' }}>本月小計金額</div>
-              <div style={{ fontSize: '28px', fontWeight: '900', color: '#2e7d32' }}>
-                NT$ {currentMonthTotal.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        )}
+        @media (min-width: 768px) {
+          .records-layout { flex-direction: row; align-items: flex-start; }
+          .records-sidebar { width: 220px; position: sticky; top: 20px; }
+          .year-scroll-wrapper { flex-direction: column; overflow-x: visible; border-top: 2px solid #5D4A3E; padding-top: 15px; }
+          .month-chip { border: none; border-radius: 8px; text-align: left; }
+          .month-chip.active { background: #F4F0EB; color: #5D4A3E; }
+        }
+      `}</style>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {currentMonthRecords.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#999', backgroundColor: '#fafafa', borderRadius: '12px', border: '1px dashed #ddd' }}>
-              這個月沒有結案的委託單喔！
-            </div>
+      <div className="records-layout">
+        
+        {/* 左側選單 (手機版置頂) */}
+        <aside className="records-sidebar">
+          <h2 style={{ fontSize: '20px', color: '#5D4A3E', margin: '0 0 10px 0' }}>歷史紀錄</h2>
+          
+          {sortedYears.length === 0 ? (
+            <div style={{ color: '#A0978D', fontSize: '14px' }}>尚無資料</div>
           ) : (
-            currentMonthRecords.map(record => (
-              <Link
-                key={record.id}
-                to={`/artist/notebook?id=${record.id}&tab=details`}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px 20px', // 🌟 縮小 Padding
-                  backgroundColor: '#fff',
-                  borderRadius: '12px',
-                  border: '1px solid #eee',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}> {/* 🌟 縮小 gap */}
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                      已結案
-                    </span>
-                    <span style={{ fontSize: '13px', color: '#888', fontWeight: '500' }}>
-                      {new Date(record.order_date).toLocaleDateString()}
-                    </span>
-                  </div>
+            <div className="year-scroll-wrapper">
+              {sortedYears.map(year => (
+                <div key={year} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {/* 年份標籤 */}
+                  <button onClick={() => toggleYear(year)} style={{ background: 'none', border: 'none', textAlign: 'left', padding: '8px 0', fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '10px', transition: 'transform 0.2s', transform: expandedYears.includes(year) ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                    {year}年
+                  </button>
                   
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#222' }}>
-                    {record.project_name || '未命名委託'}
-                  </div>
-                  
-                  <div style={{ fontSize: '13px', color: '#666' }}>
-                    委託人：{record.client_name || '未知'}
-                  </div>
-
-                  {/* 🌟 新增：訂單單號與委託人編號 */}
-                  <div style={{ fontSize: '12px', color: '#999', display: 'flex', gap: '16px', marginTop: '2px' }}>
-                    <span>單號：{record.id ? (record.id.includes('-') ? record.id.split('-')[1] : record.id) : '未知'}</span>
-                    <span>委託人編號：{record.client_public_id || '未綁定'}</span>
-                  </div>
+                  {/* 月份選單 */}
+                  {expandedYears.includes(year) && (
+                    <div style={{ display: 'flex', gap: '6px' }} className="md:flex-col md:pl-4">
+                      {groupedByYear[year].map(month => {
+                        const monthKey = `${year}-${month}`;
+                        return (
+                          <button key={monthKey} className={`month-chip ${selectedMonth === monthKey ? 'active' : ''}`} onClick={() => setSelectedMonth(monthKey)}>
+                            {parseInt(month, 10)}月
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                
-                <div style={{ fontSize: '20px', fontWeight: '900', color: '#1976d2' }}> {/* 🌟 字體微調 */}
-                  NT$ {(record.total_price || 0).toLocaleString()}
-                </div>
-              </Link>
-            ))
+              ))}
+            </div>
           )}
+        </aside>
+
+        {/* 右側內容區 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* 當月統計摘要 */}
+          {selectedMonth && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>{displaySelectedMonth}</h3>
+                <div style={{ fontSize: '13px', color: '#A0978D', marginTop: '4px' }}>結案明細統計</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '12px', color: '#7A7269', fontWeight: 'bold', marginBottom: '2px' }}>本月小計營收</div>
+                <div style={{ fontSize: '26px', fontWeight: '900', color: '#4E7A5A' }}>NT$ {currentMonthTotal.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+
+          {/* 紀錄列表 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {currentMonthRecords.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#A0978D', background: '#FBFBF9', borderRadius: '16px', border: '1px dashed #DED9D3' }}>
+                該月份尚無結案紀錄。
+              </div>
+            ) : (
+              currentMonthRecords.map(record => (
+                <Link key={record.id} to={`/artist/notebook?id=${record.id}&tab=details`} className="record-card">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ backgroundColor: '#E8F3EB', color: '#4E7A5A', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>已結案</span>
+                      <span style={{ fontSize: '12px', color: '#A0978D' }}>{new Date(record.order_date).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {record.project_name || '未命名委託'}
+                    </div>
+                    
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      委託人：{record.client_name || '未知'}
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: '#C4BDB5', display: 'flex', gap: '12px', marginTop: '2px' }}>
+                      <span>單號：{record.id.split('-')[1] || record.id}</span>
+                      <span className="hidden md:inline">編號：{record.client_public_id || '未綁定'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="price-text">
+                    ${(record.total_price || 0).toLocaleString()}
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-}  
+}
