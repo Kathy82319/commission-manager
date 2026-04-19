@@ -151,13 +151,13 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th style={{ width: '80px' }}>日期</th>
+              <th style={{ width: '90px' }}>日期</th>
               <th>委託人資訊</th>
-              <th>進度狀態</th>
+              <th>當前進度</th>
               <th>預計完工</th>
-              <th>付款狀態</th>
-              <th>備註</th>
-              <th>管理</th>
+              <th>付款進度</th>
+              <th>備註欄位</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -207,12 +207,12 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="預計完工">
-                  <div className="td-content-right">
+                  <div className="td-content-right cell-date-input">
                     <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
                   </div>
                 </td>
                 <td data-label="付款進度">
-                  <div className="td-content-right">
+                  <div className="td-content-right cell-payment">
                     <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
                       <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
                     </select>
@@ -227,7 +227,7 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="操作管理">
-                  <div className="td-content-right">
+                  <div className="td-content-right cell-manage">
                     <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
                   </div>
                 </td>

@@ -2,7 +2,7 @@
 
 .queue-container {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -37,6 +37,7 @@
   flex: 1;
   background-color: #FFF;
   color: #5D4A3E;
+  font-size: 14px;
 }
 
 .updating-hint {
@@ -46,11 +47,18 @@
   align-self: center;
 }
 
-/* === 下拉選單樣式 (補齊缺失樣式) === */
+/* === 核心修正：解決穿透與對齊 === */
+.queue-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 下拉選單樣式 */
 .dropdown-container {
   position: relative;
   width: 100%;
-  z-index: 10;
+  z-index: 10; /* 電腦版基礎層級 */
 }
 
 .dropdown-button {
@@ -64,23 +72,10 @@
   align-items: center;
   font-size: 13px;
   min-height: 38px;
-  transition: all 0.2s;
 }
 
-.dropdown-button:hover {
-  border-color: #A0978D;
-}
-
-.dropdown-text {
-  font-weight: bold;
-  color: #5D4A3E;
-}
-
-.dropdown-arrow {
-  font-size: 10px;
-  color: #A0978D;
-  margin-left: 8px;
-}
+.dropdown-text { font-weight: bold; color: #5D4A3E; }
+.dropdown-arrow { font-size: 10px; color: #A0978D; margin-left: 8px; }
 
 .dropdown-menu {
   position: absolute;
@@ -90,8 +85,8 @@
   background-color: #FFF;
   border: 1px solid #EAE6E1;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  z-index: 9999;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  z-index: 10000; /* 🌟 確保不會被穿透 */
   padding: 8px;
   margin-top: 6px;
 }
@@ -102,60 +97,16 @@
   align-items: center;
   padding: 10px 12px;
   border-bottom: 1px solid #F0ECE7;
-  transition: background-color 0.2s;
+  cursor: pointer;
   border-radius: 6px;
 }
+.dropdown-item:hover { background-color: #FAFAFA; }
+.dropdown-item-text { flex: 1; color: #5D4A3E; font-size: 14px; }
+.dropdown-item-delete { color: #A05C5C; border: none; background: transparent; cursor: pointer; font-size: 18px; padding: 0 4px; opacity: 0.6; }
 
-.dropdown-item:hover {
-  background-color: #FAFAFA;
-}
-
-.dropdown-item-text {
-  flex: 1;
-  cursor: pointer;
-  color: #5D4A3E;
-  font-size: 14px;
-}
-
-.dropdown-item-delete {
-  color: #A05C5C;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 0 4px;
-  opacity: 0.6;
-}
-
-.dropdown-item-delete:hover {
-  opacity: 1;
-}
-
-.dropdown-add-container {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 4px;
-}
-
-.dropdown-add-input {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid #DED9D3;
-  border-radius: 6px;
-  outline: none;
-  font-size: 13px;
-}
-
-.dropdown-add-button {
-  padding: 6px 12px;
-  background-color: #5D4A3E;
-  color: #FFF;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
+.dropdown-add-container { display: flex; gap: 6px; margin-top: 8px; padding: 4px; }
+.dropdown-add-input { flex: 1; padding: 6px 10px; border: 1px solid #DED9D3; border-radius: 6px; outline: none; font-size: 13px; }
+.dropdown-add-button { padding: 6px 12px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
 /* === 手機版排版優化 (卡片模式) === */
 @media (max-width: 768px) {
@@ -177,7 +128,7 @@
     box-shadow: 0 6px 16px rgba(0,0,0,0.04);
   }
   
-  /* 🌟 優化：將最重要的委託人資訊放在第一行，不顯示標題 */
+  /* 頂部委託人資訊 */
   .queue-table td[data-label="委託人資訊"] {
     border-bottom: 1px solid #F0ECE7;
     padding-bottom: 15px;
@@ -188,13 +139,9 @@
     text-align: left; align-items: flex-start;
   }
 
-  /* 🌟 標籤區域獨立顯示 */
-  .queue-table td[data-label="當前進度"] {
-    flex-direction: column; align-items: flex-start;
-  }
-
+  /* 下方控制項統一靠右對齊 */
   .queue-table td {
-    padding: 8px 0;
+    padding: 10px 0;
     border: none;
     display: flex;
     justify-content: space-between;
@@ -214,16 +161,19 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    width: 180px; /* 🌟 統一控制項寬度，方便對齊 */
   }
 
-  .desktop-only { display: none !important; }
+  .dropdown-container, .date-input, .payment-select {
+    width: 100% !important; /* 滿寬度填滿 td-content-right */
+  }
 
-  /* 讓按鈕與備註在手機版更寬 */
-  .note-input { width: 100%; text-align: right; }
-  .manage-button { margin-top: 10px; }
+  .note-input { width: 100%; text-align: right; margin-top: 5px; }
+  .desktop-only { display: none !important; }
+  .manage-button { margin-top: 15px; height: 42px; font-size: 15px; }
 }
 
-/* === 電腦版排版優化 === */
+/* === 電腦版排版優化 (鎖定對齊與溢出) === */
 @media (min-width: 769px) {
   .queue-title-mobile { display: none; }
   .queue-title-desktop { display: block; }
@@ -231,7 +181,7 @@
   .queue-search, .queue-select { flex: none; }
 
   .queue-table-wrapper {
-    overflow: visible !important; 
+    overflow: visible !important; /* 🌟 關鍵：允許下拉選單跳出表格 */
     background-color: #FFFFFF;
     border-radius: 16px;
     border: 1px solid #EAE6E1;
@@ -240,50 +190,46 @@
   }
 
   .queue-table { width: 100%; border-collapse: collapse; overflow: visible !important; }
+  
   .queue-table th {
     padding: 16px 12px; border-bottom: 1px solid #F0ECE7;
     text-align: left; background-color: #FBFBF9;
     color: #7A7269; font-size: 13px;
   }
-  .queue-table td { padding: 18px 12px; border-bottom: 1px solid #F0ECE7; vertical-align: middle; }
+  
+  .queue-table td { 
+    padding: 20px 12px; 
+    border-bottom: 1px solid #F0ECE7; 
+    vertical-align: top; /* 🌟 關鍵：頂部對齊，防止隨內容跳動 */
+  }
+
   .td-content-right { text-align: left; }
+  
+  /* 防止日期換行 */
+  .cell-date { white-space: nowrap; min-width: 90px; }
+  
+  /* 讓下拉選單與輸入框看起來在同一個基準線 */
+  .cell-status, .cell-date-input, .cell-payment { padding-top: 18px; }
 }
 
-/* 資訊小元件 */
-.cell-client-info { line-height: 1.6; }
-.client-main-name { color: #5D4A3E; font-size: 14px; }
-.client-sub-name { color: #A0978D; margin-left: 4px; font-weight: normal; }
-.project-detail { color: #7A7269; font-size: 13px; }
-.order-id-row { color: #A0978D; font-size: 11px; font-family: monospace; margin-top: 4px; }
+/* 小元件樣式細節 */
+.client-main-name { color: #5D4A3E; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+.client-sub-name { color: #A0978D; margin-left: 4px; font-weight: normal; font-size: 13px; }
+.project-detail { color: #7A7269; font-size: 13px; margin-bottom: 2px; }
+.order-id-row { color: #A0978D; font-size: 11px; font-family: monospace; }
 
 .workflow-badge-wrapper { margin-bottom: 8px; }
 .workflow-badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
 .workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
 .workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
 
-.rush-badge {
-  background-color: #F5EBEB; color: #A05C5C; padding: 2px 8px; 
-  border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px;
-}
+.rush-badge { background-color: #F5EBEB; color: #A05C5C; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
 
-.date-input {
-  border: 1px solid #DED9D3; padding: 8px; border-radius: 8px;
-  background: #FBFBF9; color: #5D4A3E; outline: none; font-size: 13px;
-}
+.date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; outline: none; font-size: 13px; height: 38px; }
+.payment-select { padding: 8px 12px; border-radius: 8px; font-weight: bold; border: none; outline: none; cursor: pointer; height: 38px; }
+.note-input { border: none; border-bottom: 1px solid #EAE6E1; background: transparent; outline: none; padding: 6px 0; color: #5D4A3E; font-size: 14px; width: 100%; }
 
-.payment-select {
-  padding: 6px 12px; border-radius: 6px; font-weight: bold; border: none; outline: none; cursor: pointer;
-}
-
-.note-input {
-  border: none; border-bottom: 1px solid #EAE6E1;
-  background: transparent; outline: none; padding: 4px 0; color: #5D4A3E;
-}
-
-.manage-button {
-  padding: 10px 20px; background-color: #5D4A3E; color: #FFF; border: none;
-  border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-}
+.manage-button { padding: 10px 20px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
 .manage-button:hover { opacity: 0.8; transform: translateY(-1px); }
 
 .drag-handle { cursor: grab; color: #C4BDB5; display: flex; align-items: center; padding-right: 8px; }
