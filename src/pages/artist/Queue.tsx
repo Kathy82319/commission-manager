@@ -37,7 +37,7 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete }: any) {
     <div ref={dropdownRef} className="dropdown-container">
       <div onClick={() => setIsOpen(!isOpen)} className="dropdown-button">
         <span className="dropdown-text">{value || '設定狀態'}</span>
-        <span style={{ marginLeft: '8px', fontSize: '12px' }}>▼</span>
+        <span className="dropdown-arrow">▼</span>
       </div>
       {isOpen && (
         <div className="dropdown-menu">
@@ -144,7 +144,7 @@ export function Queue() {
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          {isUpdating && <span style={{ color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', alignSelf: 'center' }}>儲存中...</span>}
+          {isUpdating && <span className="updating-hint">儲存中...</span>}
         </div>
       </div>
       <div className="queue-table-wrapper">
@@ -152,7 +152,7 @@ export function Queue() {
           <thead>
             <tr>
               <th style={{ width: '80px' }}>日期</th>
-              <th>委託資訊</th>
+              <th>委託人資訊</th>
               <th>進度狀態</th>
               <th>預計完工</th>
               <th>付款狀態</th>
@@ -167,9 +167,8 @@ export function Queue() {
                 onDragOver={(e) => handleDragOver(e, idx)}
                 className={draggedIdx === idx ? 'dragging' : ''}
               >
-                <td data-label="日期">
+                <td data-label="建單日期">
                   <div className="td-content-right cell-date">
-                    {/* 只有電腦版顯示拖曳手把 */}
                     <div 
                       draggable 
                       onDragStart={() => handleDragStart(idx)}
@@ -181,7 +180,7 @@ export function Queue() {
                     <span>{order.order_date.substring(5, 10)}</span>
                   </div>
                 </td>
-                <td data-label="委託資訊">
+                <td data-label="委託人資訊">
                   <div className="td-content-right cell-client-info">
                     <div className="client-main-name">
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
@@ -197,7 +196,7 @@ export function Queue() {
                     </div>
                   </div>
                 </td>
-                <td data-label="進度狀態">
+                <td data-label="當前進度">
                   <div className="td-content-right cell-status">
                     <div className="workflow-badge-wrapper">
                       <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
@@ -208,16 +207,18 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="預計完工">
-                  <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input td-content-right" />
+                  <div className="td-content-right">
+                    <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
+                  </div>
                 </td>
-                <td data-label="付款狀態">
+                <td data-label="付款進度">
                   <div className="td-content-right">
                     <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
                       <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
                     </select>
                   </div>
                 </td>
-                <td data-label="備註">
+                <td data-label="備註欄位">
                   <div className="td-content-right cell-note">
                     {order.is_rush === '是' && (
                       <span className="rush-badge">急單</span>
@@ -225,7 +226,7 @@ export function Queue() {
                     <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
-                <td data-label="操作">
+                <td data-label="操作管理">
                   <div className="td-content-right">
                     <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
                   </div>

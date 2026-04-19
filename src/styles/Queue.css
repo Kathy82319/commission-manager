@@ -35,80 +35,201 @@
   border: 1px solid #DED9D3;
   outline: none;
   flex: 1;
+  background-color: #FFF;
+  color: #5D4A3E;
 }
 
-/* === 核心修正：框架與選單截斷問題 === */
-.queue-table-wrapper {
+.updating-hint {
+  color: #A67B3E;
+  font-size: 13px;
+  font-weight: bold;
+  align-self: center;
+}
+
+/* === 下拉選單樣式 (補齊缺失樣式) === */
+.dropdown-container {
+  position: relative;
   width: 100%;
-  /* 手機版預設需要橫向捲動，但桌機會被覆蓋 */
-  overflow-x: auto; 
-  -webkit-overflow-scrolling: touch;
+  z-index: 10;
 }
 
-/* 🌟 RWD Table to Card Transformation (手機版) */
+.dropdown-button {
+  padding: 8px 12px;
+  border: 1px solid #DED9D3;
+  border-radius: 8px;
+  background-color: #FBFBF9;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  min-height: 38px;
+  transition: all 0.2s;
+}
+
+.dropdown-button:hover {
+  border-color: #A0978D;
+}
+
+.dropdown-text {
+  font-weight: bold;
+  color: #5D4A3E;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: #A0978D;
+  margin-left: 8px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  background-color: #FFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 9999;
+  padding: 8px;
+  margin-top: 6px;
+}
+
+.dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #F0ECE7;
+  transition: background-color 0.2s;
+  border-radius: 6px;
+}
+
+.dropdown-item:hover {
+  background-color: #FAFAFA;
+}
+
+.dropdown-item-text {
+  flex: 1;
+  cursor: pointer;
+  color: #5D4A3E;
+  font-size: 14px;
+}
+
+.dropdown-item-delete {
+  color: #A05C5C;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+  opacity: 0.6;
+}
+
+.dropdown-item-delete:hover {
+  opacity: 1;
+}
+
+.dropdown-add-container {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px;
+}
+
+.dropdown-add-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #DED9D3;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+}
+
+.dropdown-add-button {
+  padding: 6px 12px;
+  background-color: #5D4A3E;
+  color: #FFF;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* === 手機版排版優化 (卡片模式) === */
 @media (max-width: 768px) {
-  .queue-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
+  .queue-header { flex-direction: column; align-items: flex-start; }
   .queue-title-desktop { display: none; }
-  .queue-title-mobile { display: block; margin-bottom: 8px; }
+  .queue-title-mobile { display: block; margin-bottom: 12px; }
   .queue-table thead { display: none; }
   
   .queue-table, .queue-table tbody, .queue-table tr, .queue-table td {
-    display: block;
-    width: 100%;
+    display: block; width: 100%;
   }
   
   .queue-table tr {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     border: 1px solid #EAE6E1;
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 20px;
+    padding: 20px;
     background: #FFF;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.04);
   }
   
+  /* 🌟 優化：將最重要的委託人資訊放在第一行，不顯示標題 */
+  .queue-table td[data-label="委託人資訊"] {
+    border-bottom: 1px solid #F0ECE7;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+  }
+  .queue-table td[data-label="委託人資訊"]::before { content: ""; display: none; }
+  .queue-table td[data-label="委託人資訊"] .td-content-right {
+    text-align: left; align-items: flex-start;
+  }
+
+  /* 🌟 標籤區域獨立顯示 */
+  .queue-table td[data-label="當前進度"] {
+    flex-direction: column; align-items: flex-start;
+  }
+
   .queue-table td {
-    padding: 10px 0;
+    padding: 8px 0;
     border: none;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* 讓內容多行時頂部對齊 */
+    align-items: center;
     font-size: 14px;
-    border-bottom: 1px dashed #F0ECE7;
   }
-
-  .queue-table td:last-child { border-bottom: none; }
   
   .queue-table td::before {
     content: attr(data-label);
     font-weight: bold;
-    color: #7A7269;
-    min-width: 80px;
-    flex-shrink: 0;
+    color: #A0978D;
+    font-size: 12px;
   }
 
   .td-content-right {
     text-align: right;
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
   }
 
   .desktop-only { display: none !important; }
+
+  /* 讓按鈕與備註在手機版更寬 */
+  .note-input { width: 100%; text-align: right; }
+  .manage-button { margin-top: 10px; }
 }
 
-/* 🌟 電腦版優化 (解決截斷問題) */
+/* === 電腦版排版優化 === */
 @media (min-width: 769px) {
   .queue-title-mobile { display: none; }
   .queue-title-desktop { display: block; }
   .queue-controls { width: auto; }
   .queue-search, .queue-select { flex: none; }
 
-  /* 核心修正：電腦版關閉溢出裁剪，否則選單會被切斷 */
   .queue-table-wrapper {
     overflow: visible !important; 
     background-color: #FFFFFF;
@@ -118,79 +239,52 @@
     padding: 10px;
   }
 
-  .queue-table {
-    width: 100%;
-    border-collapse: collapse;
-    overflow: visible !important;
-  }
-  
+  .queue-table { width: 100%; border-collapse: collapse; overflow: visible !important; }
   .queue-table th {
-    padding: 14px 12px;
-    border-bottom: 1px solid #F0ECE7;
-    text-align: left;
-    background-color: #FBFBF9;
-    color: #7A7269;
-    font-size: 13px;
+    padding: 16px 12px; border-bottom: 1px solid #F0ECE7;
+    text-align: left; background-color: #FBFBF9;
+    color: #7A7269; font-size: 13px;
   }
-
-  .queue-table td {
-    padding: 16px 12px;
-    border-bottom: 1px solid #F0ECE7;
-    vertical-align: middle;
-  }
-
+  .queue-table td { padding: 18px 12px; border-bottom: 1px solid #F0ECE7; vertical-align: middle; }
   .td-content-right { text-align: left; }
 }
 
-/* === 資訊單元樣式 === */
+/* 資訊小元件 */
 .cell-client-info { line-height: 1.6; }
 .client-main-name { color: #5D4A3E; font-size: 14px; }
 .client-sub-name { color: #A0978D; margin-left: 4px; font-weight: normal; }
 .project-detail { color: #7A7269; font-size: 13px; }
-.order-id-row { color: #A0978D; font-size: 11px; font-family: monospace; }
+.order-id-row { color: #A0978D; font-size: 11px; font-family: monospace; margin-top: 4px; }
 
-/* 標籤樣式 */
-.workflow-badge-wrapper { margin-bottom: 6px; }
-.workflow-badge {
-  font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;
-}
+.workflow-badge-wrapper { margin-bottom: 8px; }
+.workflow-badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
 .workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
 .workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
 
 .rush-badge {
-  background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; 
-  border-radius: 4px; fontSize: 11px; font-weight: bold; white-space: nowrap;
+  background-color: #F5EBEB; color: #A05C5C; padding: 2px 8px; 
+  border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px;
 }
 
-/* 表單元件 */
 .date-input {
-  border: 1px solid #DED9D3; padding: 6px; border-radius: 6px;
-  background: #FBFBF9; color: #5D4A3E; outline: none;
+  border: 1px solid #DED9D3; padding: 8px; border-radius: 8px;
+  background: #FBFBF9; color: #5D4A3E; outline: none; font-size: 13px;
 }
 
 .payment-select {
-  padding: 6px 10px; border-radius: 6px; font-weight: bold; border: none; outline: none;
+  padding: 6px 12px; border-radius: 6px; font-weight: bold; border: none; outline: none; cursor: pointer;
 }
 
 .note-input {
-  width: 100%; min-width: 120px; border: none; border-bottom: 1px solid #EAE6E1;
+  border: none; border-bottom: 1px solid #EAE6E1;
   background: transparent; outline: none; padding: 4px 0; color: #5D4A3E;
 }
 
 .manage-button {
-  padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none;
-  border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;
+  padding: 10px 20px; background-color: #5D4A3E; color: #FFF; border: none;
+  border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.2s;
 }
-.manage-button:hover { opacity: 0.8; }
+.manage-button:hover { opacity: 0.8; transform: translateY(-1px); }
 
-/* 拖曳手把與狀態 */
-.drag-handle { cursor: grab; color: #C4BDB5; display: flex; align-items: center; }
+.drag-handle { cursor: grab; color: #C4BDB5; display: flex; align-items: center; padding-right: 8px; }
 .dragging { opacity: 0.5; background-color: #FAFAFA !important; }
-
-/* 下拉選單 z-index 確保在最上層 */
-.dropdown-container { position: relative; width: 100%; z-index: 10; }
-.dropdown-menu {
-  position: absolute; top: 100%; left: 0; min-width: 180px;
-  background-color: #FFF; border: 1px solid #EAE6E1; border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999; padding: 8px; margin-top: 4px;
-}
