@@ -670,35 +670,29 @@ const fetchCommissions = async (isInitialLoad = false) => {
                   </div>
                 )}
 
-                {activeTab === 'logs' && (
+              {activeTab === 'logs' && (
                   <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E' }}>決策與操作追蹤紀錄</h3>
                     
-                    <div className="table-responsive">
-                      <table className="custom-table">
-                        <tbody>
-                          {logs.length === 0 ? <tr><td style={{ color: '#A0978D', textAlign: 'center', padding: '30px 0' }}>尚未有紀錄</td></tr> : null}
-{logs.map(log => (
-  <tr key={log.id} style={{ borderBottom: '1px solid #EAE6E1' }}>
-    <td style={{ color: '#A0978D', whiteSpace: 'nowrap', paddingRight: '16px' }}>
-      {new Date(log.created_at).toLocaleString('zh-TW')}
-    </td>
-    
-    <td style={{ whiteSpace: 'nowrap', paddingRight: '16px' }}>
-      <span style={{ 
-        backgroundColor: log.actor_role === 'artist' ? '#EAE6E1' : '#E8F3EB', 
-        color: log.actor_role === 'artist' ? '#5D4A3E' : '#4E7A5A', 
-        padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' 
-      }}>
-        {log.actor_role === 'artist' ? '繪師' : '委託人'}
-      </span>
-    </td>
-    
-    <td style={{ color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.5', width: '100%' }}>
-      {log.content}
-    </td>
-  </tr>
-))}
+                    {/* 🌟 徹底捨棄 <table>，改用彈性的卡片式排版 */}
+                    {logs.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: '#A0978D', padding: '40px' }}>尚未有紀錄</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {logs.map(log => (
+                          <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
+                            <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>
+                              {new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '委託人'}
+                            </div>
+                            <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                              {log.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                         </tbody>
                       </table>
                     </div>
