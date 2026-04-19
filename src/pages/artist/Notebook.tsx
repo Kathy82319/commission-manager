@@ -89,7 +89,7 @@ export function Notebook() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [selectedId, activeTab, navigate]);
 
-const fetchCommissions = async (isInitialLoad = false) => {
+  const fetchCommissions = async (isInitialLoad = false) => {
     const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
@@ -327,9 +327,9 @@ const fetchCommissions = async (isInitialLoad = false) => {
   };
 
   const getPaymentBadge = (payment_status: string) => {
-    if (payment_status === 'paid') return { text: '已收全額', color: '#4E7A5A', bg: '#E8F3EB' };
-    if (payment_status === 'partial') return { text: '已收訂金', color: '#A67B3E', bg: '#FDF4E6' };
-    return { text: '尚未付款', color: '#8A7A7A', bg: '#F4F0EB' };
+    if (payment_status === 'paid') return { text: '已收全額', className: 'badge-paid' };
+    if (payment_status === 'partial') return { text: '已收訂金', className: 'badge-partial' };
+    return { text: '尚未付款', className: 'badge-unpaid' };
   };
 
   const filteredOrders = useMemo(() => {
@@ -362,8 +362,8 @@ const fetchCommissions = async (isInitialLoad = false) => {
   const getDualName = (order: Commission) => `${order.contact_memo || '未知'} (${order.client_name ? `暱稱: ${order.client_name}` : '未綁定'})`;
   
   const getStatusBadge = (status: string) => {
-    if (status === 'completed') return { text: '已結案', color: '#4E7A5A', bg: '#E8F3EB' };
-    if (status === 'cancelled') return { text: '已作廢', color: '#A05C5C', bg: '#F5EBEB' };
+    if (status === 'completed') return { text: '已結案', className: 'badge-completed' };
+    if (status === 'cancelled') return { text: '已作廢', className: 'badge-cancelled' };
     return null;
   };
 
@@ -378,28 +378,28 @@ const fetchCommissions = async (isInitialLoad = false) => {
     const isUnbound = !selectedOrder?.client_public_id;
     const isFreeMode = selectedOrder?.workflow_mode === 'free';
   
-    let headerBg = '#FCFAF8', statusTag = '', statusColor = '#A0978D';
+    let headerClass = 'stage-pending', statusTag = '等待繪製上傳...';
     
-    if (!sub) { statusTag = '等待繪製上傳...'; } 
-    else if (isFreeMode) { headerBg = '#E8F3EB'; statusTag = '✓ 檔案已上傳 (自由模式)'; statusColor = '#4E7A5A'; } 
-    else if (isUnbound) { headerBg = '#F0ECE7'; statusTag = '⚠️ 等待委託人綁定'; statusColor = '#A05C5C'; } 
-    else if (isPassed) { headerBg = '#E8F3EB'; statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽'; statusColor = '#4E7A5A'; } 
-    else if (isReviewing) { headerBg = '#FDF4E6'; statusTag = '⏳ 待委託人確認'; statusColor = '#A67B3E'; } 
-    else if (isRejected) { headerBg = '#fce8e6'; statusTag = '⚠️ 委託人已退回修改'; statusColor = '#d93025'; } 
-    else { headerBg = '#E8F3EB'; statusTag = '✓ 稿件已上傳 (待閱覽)'; statusColor = '#4E7A5A'; }
+    if (!sub) { headerClass = 'stage-empty'; } 
+    else if (isFreeMode) { headerClass = 'stage-passed'; statusTag = '✓ 檔案已上傳 (自由模式)'; } 
+    else if (isUnbound) { headerClass = 'stage-unbound'; statusTag = '⚠️ 等待委託人綁定'; } 
+    else if (isPassed) { headerClass = 'stage-passed'; statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽'; } 
+    else if (isReviewing) { headerClass = 'stage-reviewing'; statusTag = '⏳ 待委託人確認'; } 
+    else if (isRejected) { headerClass = 'stage-rejected'; statusTag = '⚠️ 委託人已退回修改'; } 
+    else { headerClass = 'stage-passed'; statusTag = '✓ 稿件已上傳 (待閱覽)'; }
   
     return (
-      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
+      <div className="stage-box">
         {/* 🌟 修正了標題與狀態標籤的排版，確保手機版不會擠壓重疊 */}
-        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s' }}>
-          <span>{title}</span> <span style={{ color: statusColor }}>{statusTag}</span>
+        <div className={`stage-box-header ${headerClass}`}>
+          <span>{title}</span> <span className="stage-status">{statusTag}</span>
         </div>
-        <div style={{ padding: '20px' }}>
-          {isFinal && !isFreeMode && <div style={{ fontSize: '12px', color: '#A05C5C', backgroundColor: '#F5EBEB', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+        <div className="stage-box-content">
+          {isFinal && !isFreeMode && <div className="stage-notice">
             💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
           </div>}
           {isUploading === stageKey ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: '#4A7294', fontWeight: 'bold' }}>檔案處理中，請稍候...</div>
+            <div className="stage-loading">檔案處理中，請稍候...</div>
           ) : (
             <ImageUploader 
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
@@ -424,8 +424,8 @@ const fetchCommissions = async (isInitialLoad = false) => {
     const hasPending = pendingValue !== undefined && pendingValue !== originalValue;
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>{label}</span>
+      <div className="request-field">
+        <span className="field-label">{label}</span>
         {canDirectEdit ? (
           type === 'select' ? (
             <select className="form-input" value={(editData[fieldKey] as string) || ''} onChange={e => setEditData({...editData, [fieldKey]: e.target.value})}>
@@ -435,10 +435,13 @@ const fetchCommissions = async (isInitialLoad = false) => {
             <input className="form-input" type={type} value={editData[fieldKey] || ''} onChange={e => setEditData({...editData, [fieldKey]: type === 'number' ? Number(e.target.value) : e.target.value})} />
           )
         ) : (
-          <div style={{ padding: '10px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '8px', minHeight: '19px', display: 'flex', alignItems: 'center' }}>
+          <div className="field-display">
             {hasPending ? (
-              <div><span style={{ textDecoration: 'line-through', color: '#C4BDB5', marginRight: '8px' }}>{originalValue}{suffix}</span><span style={{ color: '#A05C5C', fontWeight: 'bold' }}>待異動：{pendingValue}{suffix}</span></div>
-            ) : (<span style={{ color: '#5D4A3E' }}>{originalValue || '-'}{suffix}</span>)}
+              <div>
+                <span className="field-strikethrough">{originalValue}{suffix}</span>
+                <span className="field-pending">待異動：{pendingValue}{suffix}</span>
+              </div>
+            ) : (<span className="field-value">{originalValue || '-'}{suffix}</span>)}
           </div>
         )}
       </div>
@@ -451,15 +454,15 @@ const fetchCommissions = async (isInitialLoad = false) => {
         
         {/* === 左側：委託單清單區 === */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
-            <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-            <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
+          <div className="sidebar-header">
+            <span className="sidebar-title">委託單列表</span>
+            <select className="form-input sidebar-filter" value={filter} onChange={e => setFilter(e.target.value as any)}>
               {tabs.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
             </select>
           </div>
 
-          <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div className="sidebar-search">
+            <input type="text" className="form-input sidebar-search-input" placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div className="sidebar-list-container">
@@ -471,62 +474,62 @@ const fetchCommissions = async (isInitialLoad = false) => {
               const hasNewMsg = parseTime(order.latest_message_at) > parseTime(order.last_read_at_artist);
               
               return (
-                <div key={order.id} onClick={() => handleSelect(order)} style={{ padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>
+                <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
+                  <div className="card-meta-row">
                     <span>{dateStr}</span>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB', color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A' }}>
+                    <span className={`card-mode-badge ${order.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
                       {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }} title={getDualName(order)}>{getDualName(order)}</span>
-                    <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '15px' }}>NT$ {order.total_price}</span>
+                  <div className="card-title-row">
+                    <span className="card-client-name" title={getDualName(order)}>{getDualName(order)}</span>
+                    <span className="card-price">NT$ {order.total_price}</span>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>項目：{order.project_name || order.type_name || '未命名項目'}</span>
+                  <div className="card-project-row">
+                    <span className="card-project-name">項目：{order.project_name || order.type_name || '未命名項目'}</span>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="card-info-row">
                     <span>單號：{order.id.split('-')[1] || order.id}</span>
                     <span>委託人：{order.client_public_id || '未綁定'}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', fontSize: '11px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ backgroundColor: payBadge.bg, color: payBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{payBadge.text}</span>
-                    {statusBadge && <span style={{ backgroundColor: statusBadge.bg, color: statusBadge.color, padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{statusBadge.text}</span>}
-                    {order.queue_status && <span style={{ backgroundColor: '#F0ECE7', color: '#5D4A3E', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>{order.queue_status}</span>}
-                    {hasNewMsg && <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '4px 8px', borderRadius: '6px', fontWeight: 'bold' }}>☆新訊息</span>}
+                  <div className="card-tags-row">
+                    <span className={`card-tag ${payBadge.className}`}>{payBadge.text}</span>
+                    {statusBadge && <span className={`card-tag ${statusBadge.className}`}>{statusBadge.text}</span>}
+                    {order.queue_status && <span className="card-tag badge-queue">{order.queue_status}</span>}
+                    {hasNewMsg && <span className="card-tag badge-new-msg">☆新訊息</span>}
                   </div>
                 </div>
               );
             })}
-            {filteredOrders.length === 0 && <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合條件的委託單</div>}
+            {filteredOrders.length === 0 && <div className="sidebar-empty">沒有符合條件的委託單</div>}
           </div>
         </div>
 
         {/* === 右側：詳情區塊 === */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由列表選擇委託單以檢視詳情</div> 
+            <div className="main-empty">請由列表選擇委託單以檢視詳情</div> 
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="main-content-wrapper">
               
               {/* 詳情頭部 */}
-              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
-                <div style={{ flex: '1 1 250px' }}>
+              <div className="main-header">
+                <div className="main-header-info">
                   
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
                     ⬅ 返回列表
                   </button>
 
-                  <h2 style={{ margin: '0 0 6px 0', color: '#5D4A3E', fontSize: '20px' }}>{getDualName(selectedOrder)}</h2>
-                  <div style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>項目：{selectedOrder.project_name || '未命名項目'}</div>
-                  <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+                  <h2 className="main-title">{getDualName(selectedOrder)}</h2>
+                  <div className="main-subtitle">項目：{selectedOrder.project_name || '未命名項目'}</div>
+                  <div className="main-meta-row">
                     <span>日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                   </div>
                   {getStatusBadge(selectedOrder.status) && (
-                    <div style={{ marginTop: '8px' }}>
-                      <span style={{ backgroundColor: getStatusBadge(selectedOrder.status)!.bg, color: getStatusBadge(selectedOrder.status)!.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: `1px solid ${getStatusBadge(selectedOrder.status)!.color}20` }}>
+                    <div className="main-status-wrapper">
+                      <span className={`main-status-badge ${getStatusBadge(selectedOrder.status)!.className}`}>
                         {getStatusBadge(selectedOrder.status)!.text}
                       </span>
                     </div>
@@ -535,15 +538,15 @@ const fetchCommissions = async (isInitialLoad = false) => {
                 
                 <div className="main-header-actions">
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
-                    <button className="action-btn" onClick={handleForceComplete} style={{ backgroundColor: '#FFFFFF', border: '1px solid #4E7A5A', color: '#4E7A5A' }}>強制結案</button>
+                    <button className="action-btn btn-outline-success" onClick={handleForceComplete}>強制結案</button>
                   )}
-                  <button className="action-btn" onClick={handleToggleArchive} style={{ backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', color: selectedOrder.status === 'cancelled' ? '#4E7A5A' : '#A05C5C' }}>
+                  <button className={`action-btn ${selectedOrder.status === 'cancelled' ? 'btn-outline-success' : 'btn-outline-danger'}`} onClick={handleToggleArchive}>
                     {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
                   </button>
                   {!selectedOrder.is_external && (
-                    <button className="action-btn" onClick={() => copyLink(selectedOrder.id)} style={{ backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', color: '#5D4A3E' }}>複製連結</button>
+                    <button className="action-btn btn-outline-default" onClick={() => copyLink(selectedOrder.id)}>複製連結</button>
                   )}
-                  <button className="action-btn" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)} style={{ border: 'none', color: '#FFFFFF', backgroundColor: '#5D4A3E' }}>進入聊天室</button>
+                  <button className="action-btn btn-primary" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}>進入聊天室</button>
                 </div>
               </div>
 
@@ -558,15 +561,15 @@ const fetchCommissions = async (isInitialLoad = false) => {
               <div className="tab-content-area">
                 
                 {activeTab === 'details' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div className="tab-details-container">
                     
                     {/* 財務區塊 */}
-                    <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
-                        <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>財務與收款狀態</h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>帳務狀態：</span>
-                          <select className="form-input" style={{ width: 'auto', padding: '8px 12px', fontWeight: 'bold' }} value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)}>
+                    <div className="section-card">
+                      <div className="section-header">
+                        <h3 className="section-title">財務與收款狀態</h3>
+                        <div className="payment-status-wrapper">
+                          <span className="payment-status-label">帳務狀態：</span>
+                          <select className="form-input select-status" value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)}>
                             <option value="unpaid">未收款</option><option value="partial">已收訂金</option><option value="paid">已收款</option>
                           </select>
                         </div>
@@ -576,40 +579,39 @@ const fetchCommissions = async (isInitialLoad = false) => {
                         <input type="date" className="form-input" value={newPayment.record_date} onChange={e => setNewPayment({...newPayment, record_date: e.target.value})} />
                         <input type="text" className="form-input" placeholder="項目 (如: 訂金)" value={newPayment.item_name} onChange={e => setNewPayment({...newPayment, item_name: e.target.value})} />
                         <input type="number" className="form-input" placeholder="金額" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} />
-                        <button className="action-btn" onClick={handleAddPayment} style={{ padding: '10px 20px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', whiteSpace: 'nowrap' }}>+ 記帳</button>
+                        <button className="action-btn btn-primary btn-add-payment" onClick={handleAddPayment}>+ 記帳</button>
                       </div>
 
-                      {/* 🌟 移除 minWidth 限制，套用 custom-table */}
                       <div className="table-responsive">
                         <table className="custom-table">
                           <tbody>
-                            {payments.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '15px', color: '#A0978D' }}>尚無記帳紀錄</td></tr>}
+                            {payments.length === 0 && <tr><td colSpan={4} className="table-empty">尚無記帳紀錄</td></tr>}
                             {payments.map(p => (
-                              <tr key={p.id} style={{ borderBottom: '1px dashed #EAE6E1' }}>
-                                <td style={{ color: '#A0978D' }}>{p.record_date}</td>
-                                <td style={{ color: '#5D4A3E', fontWeight: '500' }}>{p.item_name}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#4E7A5A' }}>+ NT$ {p.amount}</td>
-                                <td style={{ textAlign: 'right' }}><button onClick={() => handleDeletePayment(p.id)} style={{ padding: '4px 10px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>刪除</button></td>
+                              <tr key={p.id} className="table-row">
+                                <td className="col-date">{p.record_date}</td>
+                                <td className="col-item">{p.item_name}</td>
+                                <td className="col-amount">+ NT$ {p.amount}</td>
+                                <td style={{ textAlign: 'right' }}><button className="btn-delete" onClick={() => handleDeletePayment(p.id)}>刪除</button></td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '16px', fontSize: '14px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1', marginTop: '20px' }}>
-                        <div style={{ color: '#7A7269' }}>總金額：<span style={{ fontWeight: 'bold', color: '#5D4A3E' }}>${selectedOrder.total_price}</span></div>
-                        <div style={{ color: '#7A7269' }}>已收款：<span style={{ fontWeight: 'bold', color: '#4E7A5A' }}>${totalPaid}</span></div>
-                        <div style={{ color: '#7A7269' }}>未付款：<span style={{ fontWeight: 'bold', color: '#A05C5C' }}>${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
+                      <div className="payment-summary">
+                        <div className="summary-item">總金額：<span className="summary-val total">${selectedOrder.total_price}</span></div>
+                        <div className="summary-item">已收款：<span className="summary-val paid">${totalPaid}</span></div>
+                        <div className="summary-item">未付款：<span className="summary-val unpaid">${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
                       </div>
                     </div>
 
                     {/* 委託細項區塊 */}
-                    <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h3 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>委託單細項</h3>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {isEditingRequest && <span style={{ color: '#A05C5C', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#F5EBEB', padding: '6px 12px', borderRadius: '6px' }}>異動編輯模式</span>}
-                          {selectedOrder.workflow_mode === 'free' && <span style={{ color: '#A67B3E', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '6px 12px', borderRadius: '6px' }}>自由紀錄模式</span>}
+                    <div className="section-card">
+                      <div className="section-header-no-border">
+                        <h3 className="section-title">委託單細項</h3>
+                        <div className="mode-badges">
+                          {isEditingRequest && <span className="badge-edit-mode">異動編輯模式</span>}
+                          {selectedOrder.workflow_mode === 'free' && <span className="badge-free-mode">自由紀錄模式</span>}
                         </div>
                       </div>
                       
@@ -626,32 +628,32 @@ const fetchCommissions = async (isInitialLoad = false) => {
                         {renderRequestField('附加選項：', 'add_ons')}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', marginTop: '20px' }}>
-                        <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>詳細設定：(委託方不可見)</span>
-                        <textarea className="form-input" value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} style={{ minHeight: '100px', whiteSpace: 'pre-wrap', resize: 'vertical' }} />
+                      <div className="detailed-settings-wrapper">
+                        <span className="field-label">詳細設定：(委託方不可見)</span>
+                        <textarea className="form-input textarea-large" value={editData.detailed_settings || ''} onChange={e => setEditData({...editData, detailed_settings: e.target.value})} />
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px dashed #DED9D3' }}>
-                        <span style={{ color: '#7A7269', fontWeight: 'bold', marginBottom: '8px', fontSize: '13px' }}>
-                          專屬協議書快照 <span style={{ fontWeight: 'normal', color: '#A0978D', marginLeft: '6px' }}>(不可修改)</span>
+                      <div className="tos-snapshot-wrapper">
+                        <span className="field-label">
+                          專屬協議書快照 <span className="label-note">(不可修改)</span>
                         </span>
-                        <div style={{ color: '#5D4A3E', fontSize: '13px', lineHeight: '1.6', maxHeight: '150px', overflowY: 'auto' }}
+                        <div className="tos-content"
                           dangerouslySetInnerHTML={{ __html: selectedOrder.agreed_tos_snapshot ? DOMPurify.sanitize(selectedOrder.agreed_tos_snapshot) : '<span style="color:#A0978D">未設定或舊版訂單</span>' }} 
                         />
                       </div>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>
+                      <div className="details-actions">
                         {selectedOrder.workflow_mode === 'free' ? (
-                          <button className="action-btn" onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none' }}>儲存設定</button>
+                          <button className="action-btn btn-primary btn-save" onClick={handleSaveDailyFields}>儲存設定</button>
                         ) : isEditingRequest ? (
                           <>
-                            <button className="action-btn" onClick={handleCancelEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3' }}>取消編輯</button>
-                            <button className="action-btn" onClick={handleSubmitRequestFields} style={{ padding: '10px 20px', backgroundColor: '#A05C5C', color: '#FFFFFF', border: 'none' }}>確認送出異動</button>
+                            <button className="action-btn btn-outline-default" onClick={handleCancelEditRequest}>取消編輯</button>
+                            <button className="action-btn btn-danger" onClick={handleSubmitRequestFields}>確認送出異動</button>
                           </>
                         ) : (
                           <>
-                            <button className="action-btn" onClick={handleStartEditRequest} style={{ padding: '10px 20px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3' }}>委託單異動</button>
-                            <button className="action-btn" onClick={handleSaveDailyFields} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none' }}>日常儲存</button>
+                            <button className="action-btn btn-outline-default" onClick={handleStartEditRequest}>委託單異動</button>
+                            <button className="action-btn btn-primary btn-save" onClick={handleSaveDailyFields}>日常儲存</button>
                           </>
                         )}
                       </div>
@@ -660,9 +662,9 @@ const fetchCommissions = async (isInitialLoad = false) => {
                 )}
 
                 {activeTab === 'delivery' && (
-                  <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '24px' }}>
-                      <span style={{ color: '#7A7269', fontSize: '14px' }}>🌟提示：上傳後系統會自動進行壓縮與壓製浮水印...</span>
+                  <div className="fade-in">
+                    <div className="delivery-hint-wrapper">
+                      <span className="hint-text">🌟提示：上傳後系統會自動進行壓縮與壓製浮水印...</span>
                     </div>
                     {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', isStageActuallyReviewed('草稿'))}
                     {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', isStageActuallyReviewed('線稿'))}
@@ -671,20 +673,19 @@ const fetchCommissions = async (isInitialLoad = false) => {
                 )}
 
                 {activeTab === 'logs' && (
-                  <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-                    <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E' }}>決策與操作追蹤紀錄</h3>
+                  <div className="section-card">
+                    <h3 className="section-title logs-title">決策與操作追蹤紀錄</h3>
                     
-                    {/* 🌟 徹底捨棄 <table>，改用彈性的卡片式排版 */}
                     {logs.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: '#A0978D', padding: '40px' }}>尚未有紀錄</div>
+                      <div className="logs-empty">尚未有紀錄</div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div className="logs-list">
                         {logs.map(log => (
-                          <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
-                            <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>
+                          <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : 'log-client'}`}>
+                            <div className="log-meta">
                               {new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '委託人'}
                             </div>
-                            <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                            <div className="log-content">
                               {log.content}
                             </div>
                           </div>
