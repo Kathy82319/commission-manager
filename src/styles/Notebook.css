@@ -1,45 +1,49 @@
 /* src/styles/Notebook.css */
 
 .notebook-page {
-  padding: 16px 20px;
+  padding: 0;
 }
 
 .notebook-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-/* 左側側邊欄：委託單列表 */
+/* === 手機版 & 平板版 (小於 1024px 時上下排列) === */
 .notebook-sidebar {
   width: 100%;
-  height: 400px; /* 手機版固定高度，內部可滾動 */
+  max-height: 45vh; /* 限制清單區塊高度，內部可滾動 */
+  display: flex;
+  flex-direction: column;
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
-  display: flex;
-  flex-direction: column;
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   flex-shrink: 0;
 }
 
-/* 右側主畫面：詳細內容 */
-.notebook-main {
+.sidebar-list-container {
+  overflow-y: auto;
   flex: 1;
+  padding: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.notebook-main {
+  width: 100%;
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 600px; /* 🌟 解決手機版高度坍塌的關鍵 */
+  /* 手機版移除 overflow hidden，讓內容自然撐開向下延伸 */
 }
 
-/* 頂部標題區與操作按鈕 */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -48,7 +52,6 @@
   flex: 1 1 auto;
 }
 
-/* 標籤導覽列 (Tabs) */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -56,8 +59,12 @@
   padding: 0 20px;
   background-color: #FAFAFA;
   scrollbar-width: none;
+  flex-shrink: 0;
 }
-.scroll-tabs::-webkit-scrollbar { display: none; }
+
+.scroll-tabs::-webkit-scrollbar { 
+  display: none; 
+}
 
 .tab-btn {
   padding: 14px 20px;
@@ -77,19 +84,11 @@
   color: #5D4A3E;
 }
 
-.tab-btn:hover:not(.active) {
-  color: #7A7269;
-}
-
-/* 內部內容滾動區 */
 .tab-content-area {
-  flex: 1;
-  overflow-y: auto;
   padding: 20px;
-  background-color: #FFFFFF;
+  /* 手機版自然撐開，不強制滾動 */
 }
 
-/* 財務記帳輸入區 */
 .payment-inputs {
   display: flex;
   flex-direction: column;
@@ -102,14 +101,12 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 細項 Grid */
 .details-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
 }
 
-/* 共用表單元件 */
 .form-input {
   color: #5D4A3E;
   border: 1px solid #DED9D3;
@@ -121,7 +118,6 @@
   box-sizing: border-box;
 }
 
-/* 共用按鈕 */
 .action-btn {
   padding: 8px 12px;
   border-radius: 8px;
@@ -130,21 +126,40 @@
   font-size: 13px;
   transition: opacity 0.2s;
 }
-.action-btn:hover { opacity: 0.8; }
 
-/* 電腦版 (768px 以上) 排版覆蓋 */
-@media (min-width: 768px) {
+.action-btn:hover { 
+  opacity: 0.8; 
+}
+
+/* === 電腦版 (1024px 以上左右排列) === */
+@media (min-width: 1024px) {
+  .notebook-page {
+    height: calc(100vh - 80px); /* 固定外層高度，避免整個網頁長出雙捲軸 */
+  }
   .notebook-container {
     flex-direction: row;
-    height: calc(100vh - 120px); /* 電腦版固定高度，讓內部滾動 */
+    height: 100%;
+    gap: 20px;
   }
   .notebook-sidebar {
-    width: 380px;
+    width: 300px; /* 縮窄內部側邊欄，讓出空間給主畫面 */
     height: 100%;
+    max-height: 100%;
   }
   .notebook-main {
+    flex: 1;
+    min-width: 0;
     height: 100%;
+    overflow: hidden; /* 電腦版限制高度，讓內部區塊可滾動 */
   }
+  .tab-content-area {
+    flex: 1;
+    overflow-y: auto; /* 電腦版啟用內部獨立滾動 */
+  }
+}
+
+/* === 超大螢幕 (1280px 以上) 表單才並排，避免被擠壓 === */
+@media (min-width: 1280px) {
   .details-grid {
     grid-template-columns: 1fr 1fr;
   }

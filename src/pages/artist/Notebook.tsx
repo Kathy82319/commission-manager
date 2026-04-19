@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ImageUploader } from '../../components/ImageUploader'; 
 import DOMPurify from 'dompurify'; 
-import '../../styles/Notebook.css'; // 🌟 引入專屬樣式表
+import '../../styles/Notebook.css';
 
 interface Commission {
   id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
@@ -144,8 +144,8 @@ export function Notebook() {
     } catch (e) { console.error("更新已讀時間失敗", e); }
     
     // 手機版點擊列表後，自動捲動到內容區
-    if (window.innerWidth < 768) {
-      window.scrollTo({ top: 420, behavior: 'smooth' });
+    if (window.innerWidth < 1024) {
+      window.scrollTo({ top: 450, behavior: 'smooth' });
     }
   };
 
@@ -459,7 +459,7 @@ export function Notebook() {
             <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          <div style={{ overflowY: 'auto', flex: 1, padding: '10px' }}>
+          <div className="sidebar-list-container">
             {filteredOrders.map(order => {
               const payBadge = getPaymentBadge(order.payment_status);
               const statusBadge = getStatusBadge(order.status);
