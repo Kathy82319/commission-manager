@@ -1,6 +1,7 @@
 // src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GripVertical } from 'lucide-react'; // 🌟 引入拖拽手把圖示
 import '../../styles/Queue.css';
 
 interface Commission {
@@ -64,18 +65,46 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   
+  // 🌟 拖拽狀態
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
   const fetchQueue = async () => {
     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/commissions`, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
-      setCommissions(data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled')
-      .sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime()));
+      let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
+      
+      // 🌟 讀取自訂排序列表
+      const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
+      if (savedOrder.length > 0) {
+        list.sort((a: any, b: any) => {
+          const idxA = savedOrder.indexOf(a.id);
+          const idxB = savedOrder.indexOf(b.id);
+          // 若找不到（新單），預設排在最後
+          if (idxA === -1 && idxB === -1) return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
+        });
+      } else {
+        list.sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+      }
+
+      setCommissions(list);
     }
   };
   
   useEffect(() => { fetchQueue(); }, []);
+
+  // 🌟 當 commissions 變動時，更新儲存的排序 ID 列表
+  useEffect(() => {
+    if (commissions.length > 0) {
+      const orderIds = commissions.map(c => c.id);
+      localStorage.setItem('queue_order_list', JSON.stringify(orderIds));
+    }
+  }, [commissions]);
   
   const handleUpdateField = async (id: string, field: string, value: string) => {
     setIsUpdating(true);
@@ -87,10 +116,33 @@ export function Queue() {
     setIsUpdating(false);
   };
   
+  // 🌟 處理拖拽邏輯
+  const handleDragStart = (idx: number) => {
+    setDraggedIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === idx) return;
+
+    const newCommissions = [...commissions];
+    const draggedItem = newCommissions[draggedIdx];
+    newCommissions.splice(draggedIdx, 1);
+    newCommissions.splice(idx, 0, draggedItem);
+    
+    setDraggedIdx(idx);
+    setCommissions(newCommissions);
+  };
+
   const filteredCommissions = commissions.filter(c => {
     if (selectedMonth !== 'all' && !c.order_date.startsWith(selectedMonth)) return false;
     const term = searchTerm.toLowerCase();
-    return c.client_name?.toLowerCase().includes(term) || c.contact_memo?.toLowerCase().includes(term) || c.id.includes(term);
+    return (
+      c.client_name?.toLowerCase().includes(term) || 
+      c.contact_memo?.toLowerCase().includes(term) || 
+      c.project_name?.toLowerCase().includes(term) ||
+      c.id.includes(term)
+    );
   });
 
   return (
@@ -99,7 +151,7 @@ export function Queue() {
         <h2 className="queue-title queue-title-desktop">工作排單表</h2>
         <div className="queue-controls">
           <h2 className="queue-title queue-title-mobile">工作排單表</h2>
-          <input placeholder="🔍 搜尋..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
+          <input placeholder="🔍 搜尋項目/暱稱/單號..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
@@ -111,8 +163,8 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th>日期</th>
-              <th>委託人</th>
+              <th style={{ width: '80px' }}>日期</th>
+              <th>委託人及項目</th>
               <th>狀態</th>
               <th>預計完工</th>
               <th>付款</th>
@@ -121,15 +173,52 @@ export function Queue() {
             </tr>
           </thead>
           <tbody>
-            {filteredCommissions.map(order => (
-              <tr key={order.id}>
-                <td data-label="建單日期">
-                  {order.order_date.substring(5, 10)}
+            {filteredCommissions.map((order, idx) => (
+              <tr 
+                key={order.id}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                style={{ opacity: draggedIdx === idx ? 0.5 : 1, transition: 'opacity 0.2s' }}
+              >
+                <td data-label="日期">
+                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* 🌟 拖拽手把 */}
+                    <div 
+                      draggable 
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragEnd={() => setDraggedIdx(null)}
+                      style={{ cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center' }}
+                    >
+                      <GripVertical size={16} />
+                    </div>
+                    <span>{order.order_date.substring(5, 10)}</span>
+                  </div>
                 </td>
-                <td data-label="委託人">
-                  <div className="td-content-right">
-                    <div style={{ fontWeight: 'bold' }}>{order.contact_memo || '未命名'}</div>
-                    <div style={{ fontSize: '11px', color: '#A0978D' }}>ID: {order.client_public_id || '未綁定'}</div>
+                <td data-label="委託資訊">
+                  <div className="td-content-right" style={{ textAlign: 'left' }}>
+                    {/* 🌟 項目名稱與模式標籤 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E' }}>
+                        {order.project_name || order.type_name || '未命名項目'}
+                      </span>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontWeight: 'bold',
+                        backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
+                        color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
+                      }}>
+                        {order.workflow_mode === 'free' ? '自由模式' : '標準委託'}
+                      </span>
+                    </div>
+                    {/* 🌟 委託人備註名稱 */}
+                    <div style={{ fontSize: '13px', color: '#7A7269', marginBottom: '2px' }}>
+                      {order.contact_memo || '未命名'}
+                    </div>
+                    {/* 🌟 訂單編號 */}
+                    <div style={{ fontSize: '11px', color: '#A0978D', fontFamily: 'monospace' }}>
+                      ID: {order.id.split('-')[1] || order.id}
+                    </div>
                   </div>
                 </td>
                 <td data-label="進度狀態">
@@ -149,7 +238,6 @@ export function Queue() {
                   <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input td-content-right" placeholder="點擊編輯..." />
                 </td>
                 <td data-label="操作">
-                  {/* 🌟 移除了 window.innerWidth 的行內樣式，寬度由 CSS 接管 */}
                   <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
                 </td>
               </tr>
