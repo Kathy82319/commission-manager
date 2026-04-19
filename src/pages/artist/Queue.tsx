@@ -1,7 +1,7 @@
 // src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical } from 'lucide-react'; // 🌟 引入拖拽手把圖示
+import { GripVertical } from 'lucide-react';
 import '../../styles/Queue.css';
 
 interface Commission {
@@ -64,8 +64,6 @@ export function Queue() {
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
-  
-  // 🌟 拖拽狀態
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -75,14 +73,11 @@ export function Queue() {
     const data = await res.json();
     if (data.success) {
       let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-      
-      // 🌟 讀取自訂排序列表
       const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
       if (savedOrder.length > 0) {
         list.sort((a: any, b: any) => {
           const idxA = savedOrder.indexOf(a.id);
           const idxB = savedOrder.indexOf(b.id);
-          // 若找不到（新單），預設排在最後
           if (idxA === -1 && idxB === -1) return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
           if (idxA === -1) return 1;
           if (idxB === -1) return -1;
@@ -91,14 +86,12 @@ export function Queue() {
       } else {
         list.sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
       }
-
       setCommissions(list);
     }
   };
   
   useEffect(() => { fetchQueue(); }, []);
 
-  // 🌟 當 commissions 變動時，更新儲存的排序 ID 列表
   useEffect(() => {
     if (commissions.length > 0) {
       const orderIds = commissions.map(c => c.id);
@@ -116,20 +109,15 @@ export function Queue() {
     setIsUpdating(false);
   };
   
-  // 🌟 處理拖拽邏輯
-  const handleDragStart = (idx: number) => {
-    setDraggedIdx(idx);
-  };
+  const handleDragStart = (idx: number) => setDraggedIdx(idx);
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === idx) return;
-
     const newCommissions = [...commissions];
     const draggedItem = newCommissions[draggedIdx];
     newCommissions.splice(draggedIdx, 1);
     newCommissions.splice(idx, 0, draggedItem);
-    
     setDraggedIdx(idx);
     setCommissions(newCommissions);
   };
@@ -163,8 +151,8 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th style={{ width: '80px' }}>日期</th>
-              <th>委託人及項目</th>
+              <th style={{ width: '100px' }}>日期</th>
+              <th>委託人資訊</th>
               <th>狀態</th>
               <th>預計完工</th>
               <th>付款</th>
@@ -180,8 +168,7 @@ export function Queue() {
                 style={{ opacity: draggedIdx === idx ? 0.5 : 1, transition: 'opacity 0.2s' }}
               >
                 <td data-label="日期">
-                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {/* 🌟 拖拽手把 */}
+                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                     <div 
                       draggable 
                       onDragStart={() => handleDragStart(idx)}
@@ -193,36 +180,34 @@ export function Queue() {
                     <span>{order.order_date.substring(5, 10)}</span>
                   </div>
                 </td>
-                <td data-label="委託資訊">
-                  <div className="td-content-right" style={{ textAlign: 'left' }}>
-                    {/* 🌟 項目名稱與模式標籤 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E' }}>
-                        {order.project_name || order.type_name || '未命名項目'}
-                      </span>
-                      <span style={{ 
-                        fontSize: '10px', 
-                        padding: '2px 6px', 
-                        borderRadius: '4px', 
-                        fontWeight: 'bold',
-                        backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
-                        color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
-                      }}>
-                        {order.workflow_mode === 'free' ? '自由模式' : '標準委託'}
+                <td data-label="委託人資訊">
+                  <div className="td-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                      <strong>委託人：</strong>{order.contact_memo || '未命名'} 
+                      <span style={{ color: '#A0978D', marginLeft: '4px' }}>
+                        ({order.client_name || '無暱稱'} {order.client_public_id || '未綁定'})
                       </span>
                     </div>
-                    {/* 🌟 委託人備註名稱 */}
-                    <div style={{ fontSize: '13px', color: '#7A7269', marginBottom: '2px' }}>
-                      {order.contact_memo || '未命名'}
-                    </div>
-                    {/* 🌟 訂單編號 */}
-                    <div style={{ fontSize: '11px', color: '#A0978D', fontFamily: 'monospace' }}>
-                      ID: {order.id.split('-')[1] || order.id}
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
+                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
+                        (訂單編號：{order.id.split('-')[1] || order.id})
+                      </span>
                     </div>
                   </div>
                 </td>
                 <td data-label="進度狀態">
                   <div className="td-content-right">
+                    {/* 🌟 標籤移動到下拉選單上方 */}
+                    <div style={{ marginBottom: '6px' }}>
+                      <span style={{ 
+                        fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold',
+                        backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
+                        color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
+                      }}>
+                        {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
+                      </span>
+                    </div>
                     <StageDropdown value={order.queue_status} onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} stages={stages} onAdd={(v:any) => setStages([...stages, v])} onDelete={(v:any) => setStages(stages.filter(s=>s!==v))} />
                   </div>
                 </td>
@@ -235,7 +220,15 @@ export function Queue() {
                   </select>
                 </td>
                 <td data-label="備註">
-                  <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input td-content-right" placeholder="點擊編輯..." />
+                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {/* 🌟 急單標籤 */}
+                    {order.is_rush === '是' && (
+                      <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                        急單
+                      </span>
+                    )}
+                    <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." style={{ flex: 1 }} />
+                  </div>
                 </td>
                 <td data-label="操作">
                   <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
