@@ -151,11 +151,11 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th style={{ width: '100px' }}>日期</th>
-              <th>委託人資訊</th>
-              <th>狀態</th>
+              <th style={{ width: '80px' }}>日期</th>
+              <th>委託資訊</th>
+              <th>進度狀態</th>
               <th>預計完工</th>
-              <th>付款</th>
+              <th>付款狀態</th>
               <th>備註</th>
               <th>管理</th>
             </tr>
@@ -165,51 +165,42 @@ export function Queue() {
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                style={{ opacity: draggedIdx === idx ? 0.5 : 1, transition: 'opacity 0.2s' }}
+                className={draggedIdx === idx ? 'dragging' : ''}
               >
                 <td data-label="日期">
-                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                  <div className="td-content-right cell-date">
+                    {/* 只有電腦版顯示拖曳手把 */}
                     <div 
                       draggable 
                       onDragStart={() => handleDragStart(idx)}
                       onDragEnd={() => setDraggedIdx(null)}
-                      style={{ cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center' }}
+                      className="drag-handle desktop-only"
                     >
                       <GripVertical size={16} />
                     </div>
                     <span>{order.order_date.substring(5, 10)}</span>
                   </div>
                 </td>
-                <td data-label="委託人資訊">
-                  <div className="td-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                <td data-label="委託資訊">
+                  <div className="td-content-right cell-client-info">
+                    <div className="client-main-name">
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      <span style={{ color: '#A0978D', marginLeft: '3px' }}>
-                        ({order.client_name || '無暱稱'} )  
+                      <span className="client-sub-name">
+                        ({order.client_name || '無暱稱'})
                       </span>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                    <div className="project-detail">
                       <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
-                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
-                      </span>                     
                     </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
-                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
-                      </span>                     
+                    <div className="order-id-row">
+                      {order.client_public_id ||'未綁定'} (單號：{order.id.split('-')[1] || order.id})
                     </div>
                   </div>
-                  
                 </td>
                 <td data-label="進度狀態">
-                  <div className="td-content-right">
-                    {/* 🌟 標籤移動到下拉選單上方 */}
-                    <div style={{ marginBottom: '6px' }}>
-                      <span style={{ 
-                        fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold',
-                        backgroundColor: order.workflow_mode === 'free' ? '#FDF4E6' : '#E8F3EB',
-                        color: order.workflow_mode === 'free' ? '#A67B3E' : '#4E7A5A'
-                      }}>
+                  <div className="td-content-right cell-status">
+                    <div className="workflow-badge-wrapper">
+                      <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
                         {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
                       </span>
                     </div>
@@ -220,23 +211,24 @@ export function Queue() {
                   <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input td-content-right" />
                 </td>
                 <td data-label="付款狀態">
-                  <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
-                    <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
-                  </select>
+                  <div className="td-content-right">
+                    <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
+                      <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
+                    </select>
+                  </div>
                 </td>
                 <td data-label="備註">
-                  <div className="td-content-right" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {/* 🌟 急單標籤 */}
+                  <div className="td-content-right cell-note">
                     {order.is_rush === '是' && (
-                      <span style={{ backgroundColor: '#F5EBEB', color: '#A05C5C', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                        急單
-                      </span>
+                      <span className="rush-badge">急單</span>
                     )}
-                    <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." style={{ flex: 1 }} />
+                    <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
                 <td data-label="操作">
-                  <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
+                  <div className="td-content-right">
+                    <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
+                  </div>
                 </td>
               </tr>
             ))}

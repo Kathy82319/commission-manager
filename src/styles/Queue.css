@@ -37,30 +37,24 @@
   flex: 1;
 }
 
+/* === 核心修正：框架與選單截斷問題 === */
 .queue-table-wrapper {
-  overflow-x: auto;
   width: 100%;
+  /* 手機版預設需要橫向捲動，但桌機會被覆蓋 */
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch;
 }
 
-/* 🌟 RWD Table to Card Transformation */
+/* 🌟 RWD Table to Card Transformation (手機版) */
 @media (max-width: 768px) {
   .queue-header {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .queue-title-desktop {
-    display: none;
-  }
-
-  .queue-title-mobile {
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .queue-table thead {
-    display: none;
-  }
+  .queue-title-desktop { display: none; }
+  .queue-title-mobile { display: block; margin-bottom: 8px; }
+  .queue-table thead { display: none; }
   
   .queue-table, .queue-table tbody, .queue-table tr, .queue-table td {
     display: block;
@@ -70,232 +64,133 @@
   .queue-table tr {
     margin-bottom: 20px;
     border: 1px solid #EAE6E1;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 16px;
     background: #FFF;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   }
   
   .queue-table td {
-    padding: 8px 0;
+    padding: 10px 0;
     border: none;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start; /* 讓內容多行時頂部對齊 */
     font-size: 14px;
+    border-bottom: 1px dashed #F0ECE7;
   }
+
+  .queue-table td:last-child { border-bottom: none; }
   
   .queue-table td::before {
     content: attr(data-label);
     font-weight: bold;
     color: #7A7269;
+    min-width: 80px;
+    flex-shrink: 0;
   }
 
   .td-content-right {
     text-align: right;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
   }
+
+  .desktop-only { display: none !important; }
 }
 
+/* 🌟 電腦版優化 (解決截斷問題) */
 @media (min-width: 769px) {
-  .queue-title-mobile {
-    display: none;
-  }
+  .queue-title-mobile { display: none; }
+  .queue-title-desktop { display: block; }
+  .queue-controls { width: auto; }
+  .queue-search, .queue-select { flex: none; }
 
-  .queue-title-desktop {
-    display: block;
-  }
-
-  .queue-controls {
-    width: auto;
-  }
-  
-  .queue-search, .queue-select {
-    flex: none;
+  /* 核心修正：電腦版關閉溢出裁剪，否則選單會被切斷 */
+  .queue-table-wrapper {
+    overflow: visible !important; 
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    border: 1px solid #EAE6E1;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    padding: 10px;
   }
 
   .queue-table {
     width: 100%;
     border-collapse: collapse;
-    background: #FFF;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: visible !important;
   }
   
   .queue-table th {
-    padding: 12px;
+    padding: 14px 12px;
     border-bottom: 1px solid #F0ECE7;
     text-align: left;
     background-color: #FBFBF9;
     color: #7A7269;
-    font-weight: bold;
+    font-size: 13px;
   }
 
   .queue-table td {
-    padding: 12px;
+    padding: 16px 12px;
     border-bottom: 1px solid #F0ECE7;
-    text-align: left;
+    vertical-align: middle;
   }
 
-  .queue-table tr {
-    border: none;
-  }
-
-  .td-content-right {
-    text-align: left;
-  }
+  .td-content-right { text-align: left; }
 }
 
-/* Stage Dropdown Styles */
-.dropdown-container {
-  position: relative;
-  width: 100%;
+/* === 資訊單元樣式 === */
+.cell-client-info { line-height: 1.6; }
+.client-main-name { color: #5D4A3E; font-size: 14px; }
+.client-sub-name { color: #A0978D; margin-left: 4px; font-weight: normal; }
+.project-detail { color: #7A7269; font-size: 13px; }
+.order-id-row { color: #A0978D; font-size: 11px; font-family: monospace; }
+
+/* 標籤樣式 */
+.workflow-badge-wrapper { margin-bottom: 6px; }
+.workflow-badge {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;
+}
+.workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
+.workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
+
+.rush-badge {
+  background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; 
+  border-radius: 4px; fontSize: 11px; font-weight: bold; white-space: nowrap;
 }
 
-.dropdown-button {
-  padding: 8px;
-  border: 1px solid #DED9D3;
-  border-radius: 6px;
-  background-color: #FFF;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-}
-
-.dropdown-text {
-  font-weight: bold;
-  color: #5D4A3E;
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 200px;
-  background-color: #FFF;
-  border: 1px solid #EAE6E1;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 1000;
-  padding: 8px;
-  margin-top: 4px;
-}
-
-.dropdown-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px;
-  border-bottom: 1px solid #F0ECE7;
-}
-
-.dropdown-item-text {
-  flex: 1;
-  cursor: pointer;
-}
-
-.dropdown-item-delete {
-  color: #A05C5C;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.dropdown-add-container {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.dropdown-add-input {
-  flex: 1;
-  padding: 4px;
-  border: 1px solid #DDD;
-  border-radius: 4px;
-  outline: none;
-}
-
-.dropdown-add-button {
-  padding: 4px 8px;
-  background-color: #5D4A3E;
-  color: #FFF;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* Form elements within table */
+/* 表單元件 */
 .date-input {
-  border: 1px solid #EEE;
-  padding: 4px;
-  width: 130px;
-  border-radius: 4px;
-  background: transparent;
-  outline: none;
+  border: 1px solid #DED9D3; padding: 6px; border-radius: 6px;
+  background: #FBFBF9; color: #5D4A3E; outline: none;
 }
 
 .payment-select {
-  padding: 4px;
-  border-radius: 4px;
-  font-weight: bold;
-  border: none;
-  outline: none;
-  cursor: pointer;
+  padding: 6px 10px; border-radius: 6px; font-weight: bold; border: none; outline: none;
 }
 
 .note-input {
-  width: 150px;
-  border: none;
-  border-bottom: 1px solid #EEE;
-  background: transparent;
-  outline: none;
+  width: 100%; min-width: 120px; border: none; border-bottom: 1px solid #EAE6E1;
+  background: transparent; outline: none; padding: 4px 0; color: #5D4A3E;
 }
 
 .manage-button {
-  padding: 6px 12px;
-  background-color: #5D4A3E;
-  color: #FFF;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  width: 100%;
+  padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none;
+  border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;
 }
+.manage-button:hover { opacity: 0.8; }
 
-@media (min-width: 769px) {
-  .dropdown-container {
-    width: 150px;
-  }
-}
+/* 拖曳手把與狀態 */
+.drag-handle { cursor: grab; color: #C4BDB5; display: flex; align-items: center; }
+.dragging { opacity: 0.5; background-color: #FAFAFA !important; }
 
-
-/* src/styles/Queue.css 底部新增：統一桌面版寬度與卡片風格 */
-
-.queue-container {
-  width: 100%;
-  max-width: 1200px; /* 🌟 讓它跟 Settings / Notebook 擁有相同的最大寬度 */
-  margin: 0 auto;
-}
-
-.manage-button {
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  /* 手機版按鈕寬度恢復你原本要的尺寸 */
-  .manage-button {
-    width: 100px;
-  }
-}
-
-@media (min-width: 1024px) {
-  /* 電腦版讓表格外框變成白底卡片，跟其他頁面風格統一 */
-  .queue-table-wrapper {
-    background-color: #FFFFFF;
-    border-radius: 16px;
-    border: 1px solid #EAE6E1;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-    padding: 20px;
-  }
+/* 下拉選單 z-index 確保在最上層 */
+.dropdown-container { position: relative; width: 100%; z-index: 10; }
+.dropdown-menu {
+  position: absolute; top: 100%; left: 0; min-width: 180px;
+  background-color: #FFF; border: 1px solid #EAE6E1; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 9999; padding: 8px; margin-top: 4px;
 }
