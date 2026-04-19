@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import '../../styles/ArtistLayout.css'; // 引入專屬樣式表
 
 export function ArtistLayout() {
   const location = useLocation();
@@ -10,7 +11,6 @@ export function ArtistLayout() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 身分驗證邏輯
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
@@ -40,12 +40,10 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 路由改變時自動關閉手機選單 (電腦版不受此狀態影響)
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // 商業邏輯：方案計算與功能
   const handlePreviewAndCopy = () => {
     if (!artist) return;
     const publicUrl = `${window.location.origin}/${artist.public_id}`;
@@ -99,101 +97,87 @@ export function ArtistLayout() {
     { path: '/artist/settings', label: '個人設定' }
   ];
 
-  if (loading) return <div className="h-screen flex justify-center items-center text-[#A0978D]">驗證身分中...</div>;
+  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FBFBF9] text-[#4A4A4A] font-sans">
+    <div className="artist-layout-container">
       
-      {/* 1. 手機版 Header (僅在 lg 以下顯示) */}
-      <header className="lg:hidden flex items-center gap-4 px-5 py-4 bg-white border-b border-[#EAE6E1] sticky top-0 z-[100]">
+      {/* 1. 手機版 Header */}
+      <header className="mobile-header">
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-none border-none text-2xl cursor-pointer flex items-center justify-center p-0"
+          className="mobile-menu-btn"
         >
           {isMobileMenuOpen ? '✕' : '☰'}
         </button>
-        <div className="flex flex-col">
-          <div className="font-bold text-base text-[#5D4A3E] leading-none">Arti繪師小幫手</div>
-          <div className="text-[13px] text-[#A0978D] leading-tight mt-1">管理後台</div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E', lineHeight: '1' }}>Arti繪師小幫手</div>
+          <div style={{ fontSize: '13px', color: '#A0978D', lineHeight: '1.2', marginTop: '4px' }}>管理後台</div>
         </div>
       </header>
 
-      <div className="flex flex-1 relative overflow-hidden">
-        {/* 2. 側邊欄 (純 Tailwind RWD 處理) 
-            手機版：預設 fixed 且 -translate-x-full (移出畫面)，開啟時變成 translate-x-0
-            電腦版 (lg)：強制 sticky、不偏移 (lg:translate-x-0)
-        */}
-        <aside 
-          className={`
-            w-[260px] bg-white flex flex-col border-r border-[#EAE6E1] 
-            transition-transform duration-300 ease-in-out
-            fixed inset-y-0 left-0 z-50
-            lg:sticky lg:top-0 lg:h-screen lg:z-0 lg:translate-x-0
-            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-          `}
-        >
-          <div className="p-[30px_20px] border-b border-[#F0ECE7] hidden lg:block">
-            <div className="font-bold text-lg text-[#5D4A3E]">Arti繪師小幫手</div>
-            <div className="text-[13px] text-[#A0978D] mb-4">繪師管理後台</div>
+      <div className="layout-body">
+        {/* 2. 側邊欄 */}
+        <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+          <div className="sidebar-top">
+            <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+            <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
             {artist && (
               <div 
-                className="p-2.5 rounded-xl text-xs font-bold leading-normal"
-                style={{ backgroundColor: planBadgeBg, color: planBadgeColor }}
+                style={{ padding: '10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: planBadgeBg, color: planBadgeColor }}
               >
                 <div>{planDisplay}</div>
-                {expiryDateText && <div className="text-[10px] opacity-80 font-normal">{expiryDateText}</div>}
+                {expiryDateText && <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'normal', marginTop: '2px' }}>{expiryDateText}</div>}
               </div>
             )}
           </div>
           
-          <nav className="flex-1 p-2.5 flex flex-col gap-2 overflow-y-auto">
+          <nav className="nav-container">
             {navItems.map(item => (
-              <Link key={item.path} to={item.path} 
-                className={`no-underline p-[12px_16px] rounded-lg text-[15px] transition-colors
-                  ${location.pathname === item.path ? 'bg-[#F4F0EB] text-[#5D4A3E] font-bold' : 'text-[#7A7269] hover:bg-[#FBFBF9]'}`}
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="p-5 border-t border-[#F0ECE7] flex flex-col gap-2.5">
+          <div className="sidebar-bottom">
             <button 
               onClick={() => navigate('/client/orders')} 
-              className="w-full p-2.5 bg-[#F4F0EB] border border-dashed border-[#DED9D3] rounded-lg text-[#5D4A3E] cursor-pointer text-[13px] font-bold transition-colors hover:bg-[#EAE6E1]"
+              className="sidebar-btn btn-client"
             >
               切換為委託方模式
             </button>
             <button 
               onClick={handlePreviewAndCopy} 
-              className="w-full p-2.5 bg-white border border-[#DED9D3] rounded-lg text-[#7A7269] cursor-pointer text-[13px] font-bold transition-colors hover:bg-[#F4F0EB]"
+              className="sidebar-btn btn-preview"
             >
               預覽/複製個人首頁
             </button>
             
-            <div className="mt-2.5 text-[12px] text-[#9CA3AF] text-center leading-relaxed">
-              <Link to="/terms" className="text-inherit no-underline hover:text-[#7A7269]">服務條款</Link>
-              <span className="mx-1">|</span>
-              <Link to="/privacy" className="text-inherit no-underline hover:text-[#7A7269]">隱私權政策</Link>
-              <div className="mt-1">客服：cath40286@gmail.com</div>
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
+              <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+              <span style={{ margin: '0 4px' }}>|</span>
+              <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+              <div style={{ marginTop: '4px' }}>客服：cath40286@gmail.com</div>
             </div>
           </div>
         </aside>
 
         {/* 3. 主內容區 */}
-        <main className="flex-1 min-w-0 bg-[#FBFBF9]">
-          <div className="p-5 md:p-10 max-w-full">
+        <main className="main-content">
+          <div className="content-inner">
             {/* 到期警告 Banner */}
             {showWarningBanner && (
-              <div className="bg-[#FFF3CD] border border-[#FFEEBA] text-[#856404] p-4 rounded-xl mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-                <div className="text-sm font-bold">
-                  ⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！
-                  <div className="font-normal text-xs mt-1">截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
+              <div className="warning-banner">
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold' }}>⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
                 </div>
-                <button 
-                  onClick={() => navigate('/artist/settings')} 
-                  className="bg-[#856404] text-white border-none py-2 px-4 rounded-md cursor-pointer text-[13px] font-bold shrink-0 transition-opacity hover:opacity-90"
-                >
+                <button onClick={() => navigate('/artist/settings')} className="warning-btn">
                   立即查看續費方案
                 </button>
               </div>
@@ -202,11 +186,11 @@ export function ArtistLayout() {
           </div>
         </main>
 
-        {/* 4. 手機版遮罩 (點擊旁邊可以關閉選單) */}
+        {/* 4. 手機版遮罩 */}
         {isMobileMenuOpen && (
           <div 
             onClick={() => setIsMobileMenuOpen(false)}
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity"
+            className="mobile-overlay"
           />
         )}
       </div>
