@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import '../../styles/ArtistLayout.css'; // 引入專屬樣式表
+import '../styles/ArtistLayout.css'; // 引入專屬樣式表
 
 export function ArtistLayout() {
   const location = useLocation();
