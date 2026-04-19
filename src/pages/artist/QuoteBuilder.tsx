@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill-new'; 
 import 'react-quill-new/dist/quill.snow.css'; 
-import '../../styles/QuoteBuilder.css'; // 🌟 引入標準化樣式
+import '../../styles/QuoteBuilder.css'; 
 
 const baseAddOnsList = ['驚喜包', '無償'];
 
@@ -209,7 +209,7 @@ export function QuoteBuilder() {
           
           <div className="form-grid">
             <div className="form-grid-full">
-              <label className="form-label">委託人名稱 (FB暱稱/ID等備註) <span className="req-star">*</span></label>
+              <label className="form-label">委託人名稱 (FB暱稱/ID等備註)</label>
               <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} className="form-input" placeholder="例如：FB - 王小明" />
             </div>
             
@@ -230,7 +230,10 @@ export function QuoteBuilder() {
               <label className="form-label">交易方式</label>
               <div className="flex-input-group">
                 <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="form-input">
-                  <option value="匯款">匯款</option><option value="無卡">無卡</option><option value="超商">超商</option><option value="LinePay">LinePay</option><option value="其他">其他</option>
+                  <option value="匯款">匯款</option>
+                  <option value="無卡">無卡</option>
+                  <option value="超商">超商</option>
+                  <option value="其他">其他</option>
                 </select>
                 {formData.payment_method === '其他' && (
                   <input type="text" name="payment_method" placeholder="說明..." value={customFields.payment_method} onChange={handleCustomFieldChange} className="form-input" />
@@ -322,50 +325,54 @@ export function QuoteBuilder() {
                 )}
               </div>
             </div>
+
+            {/* 🌟 將快速標籤移至規格參數的最後，並改為緊湊排版 */}
+            <div className="form-grid-full" style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px dashed #EAE6E1' }}>
+              <label className="form-label">快速標籤{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              <div className="addon-tags-container" style={{ alignItems: 'center' }}>
+                {baseAddOnsList.map(item => {
+                  const isSelected = selectedAddOns.includes(item);
+                  return (
+                    <label key={item} className={`addon-tag ${isSelected ? 'selected' : ''}`}>
+                      <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
+                      {isSelected ? '✓ ' : '+ '}{item}
+                    </label>
+                  );
+                })}
+                {customAddOns.map((item, index) => {
+                  const isSelected = selectedAddOns.includes(item);
+                  return (
+                    <label key={`custom-${index}`} className={`addon-tag custom ${isSelected ? 'selected' : ''}`}>
+                      <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
+                      {isSelected ? '✓ ' : '+ '}{item}
+                    </label>
+                  );
+                })}
+                
+                {/* 輸入框變得小巧並緊跟在標籤後方 */}
+                {customAddOns.length < 5 && (
+                  <div className="flex-input-group" style={{ marginLeft: '4px' }}>
+                    <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
+                      placeholder="自訂標籤..." className="form-input" style={{ width: '120px', padding: '6px 12px', fontSize: '13px' }} 
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomOption(); }}
+                    />
+                    <button type="button" onClick={handleAddCustomOption} style={{ padding: '6px 12px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                      + 新增
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Right Column: Tags & Rich Text ( spans full width on mobile, falls into grid on desktop ) */}
         <div className="quote-card form-grid-full">
-          <h3 className="quote-card-title">附加選項與備註</h3>
-          
-          <div style={{ padding: '16px', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #F0ECE7' }}>
-            <label className="form-label">快速標籤{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
-            <div className="addon-tags-container">
-              {baseAddOnsList.map(item => {
-                const isSelected = selectedAddOns.includes(item);
-                return (
-                  <label key={item} className={`addon-tag ${isSelected ? 'selected' : ''}`}>
-                    <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
-                    {isSelected ? '✓ ' : '+ '}{item}
-                  </label>
-                );
-              })}
-              {customAddOns.map((item, index) => {
-                const isSelected = selectedAddOns.includes(item);
-                return (
-                  <label key={`custom-${index}`} className={`addon-tag custom ${isSelected ? 'selected' : ''}`}>
-                    <input type="checkbox" checked={isSelected} onChange={() => handleAddOnToggle(item)} style={{ display: 'none' }} />
-                    {isSelected ? '✓ ' : '+ '}{item}
-                  </label>
-                );
-              })}
-            </div>
-            
-            {customAddOns.length < 5 && (
-              <div className="flex-input-group" style={{ marginTop: '16px' }}>
-                <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
-                  placeholder="自行增加標籤..." className="form-input" style={{ width: '160px' }} 
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomOption(); }}
-                />
-                <button type="button" onClick={handleAddCustomOption} style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>新增</button>
-              </div>
-            )}
-          </div>
+          <h3 className="quote-card-title">協議書內容與備註</h3>
 
           <div>
             <label className="form-label">
-              協議書內容(自訂)
+              協議書內容 (自訂)
               <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
                 *內容將做為該單的初始協議書快照，勾選後即視為同意此合約*
               </span>
@@ -383,7 +390,7 @@ export function QuoteBuilder() {
             <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} className="form-input" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
           </div>
 
-          <div style={{ marginTop: '20px' }}>
+          <div style={{ marginTop: '12px' }}>
             <button onClick={handleSubmit} className="submit-btn">
               確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
             </button>

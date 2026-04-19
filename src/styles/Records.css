@@ -1,0 +1,292 @@
+/* src/styles/Records.css */
+
+.records-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.records-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* === 左側選單 / 手機版頂部橫向滑動列 === */
+.records-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  color: #5D4A3E;
+  margin: 0;
+  font-weight: bold;
+}
+
+/* 年份區塊橫向滑動 (手機版) */
+.year-scroll-wrapper {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #EAE6E1;
+  scrollbar-width: none;
+}
+
+.year-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.year-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.year-toggle-btn {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: bold;
+  color: #5D4A3E;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.year-toggle-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+/* 月份按鈕群 */
+.month-list {
+  display: flex;
+  gap: 8px;
+}
+
+.month-chip {
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #DED9D3;
+  background-color: #FFFFFF;
+  color: #7A7269;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.month-chip.active {
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border-color: #5D4A3E;
+  font-weight: bold;
+}
+
+/* === 右側內容區 === */
+.records-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; /* 🌟 防護罩：防止內部卡片撐破畫面 */
+}
+
+.summary-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #FFFFFF;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #EAE6E1;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+}
+
+.summary-title {
+  margin: 0;
+  font-size: 18px;
+  color: #5D4A3E;
+}
+
+.summary-subtitle {
+  font-size: 13px;
+  color: #A0978D;
+  margin-top: 4px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #7A7269;
+  font-weight: bold;
+  margin-bottom: 4px;
+  text-align: right;
+}
+
+.summary-amount {
+  font-size: 26px;
+  font-weight: 900;
+  color: #4E7A5A;
+  text-align: right;
+}
+
+.record-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.record-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #EAE6E1;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+}
+
+.record-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.04);
+  border-color: #DED9D3;
+}
+
+.record-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0; /* 確保長標題會被截斷，不會撐破卡片 */
+}
+
+.record-header-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-tag {
+  background-color: #E8F3EB;
+  color: #4E7A5A;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.date-text {
+  font-size: 12px;
+  color: #A0978D;
+}
+
+.project-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #5D4A3E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-name {
+  font-size: 13px;
+  color: #7A7269;
+}
+
+.record-meta {
+  font-size: 11px;
+  color: #C4BDB5;
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.price-text {
+  font-size: 20px;
+  font-weight: 900;
+  color: #4E7A5A;
+  flex-shrink: 0; /* 確保價錢區塊不會被壓縮 */
+  margin-left: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px;
+  color: #A0978D;
+  background-color: #FBFBF9;
+  border-radius: 16px;
+  border: 1px dashed #DED9D3;
+}
+
+.desktop-only {
+  display: none;
+}
+
+/* === 電腦版 (1024px 以上) 雙欄排版 === */
+@media (min-width: 1024px) {
+  .records-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .records-sidebar {
+    width: 220px;
+    border-right: 2px solid #EAE6E1;
+    padding-right: 20px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+  }
+  
+  .year-scroll-wrapper {
+    flex-direction: column;
+    overflow-x: visible;
+    border-bottom: none;
+    gap: 12px;
+  }
+  
+  .year-group {
+    gap: 4px;
+  }
+  
+  .month-list {
+    flex-direction: column;
+    padding-left: 12px; /* 電腦版子選單內縮 */
+  }
+  
+  .month-chip {
+    border: none;
+    border-radius: 8px;
+    text-align: left;
+    padding: 10px 16px;
+    background-color: transparent;
+  }
+  
+  .month-chip:hover:not(.active) {
+    background-color: #FAFAFA;
+  }
+  
+  .month-chip.active {
+    background-color: #F4F0EB;
+    color: #5D4A3E;
+  }
+
+  .desktop-only {
+    display: inline; /* 電腦版顯示額外資訊 */
+  }
+}
