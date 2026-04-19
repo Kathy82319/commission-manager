@@ -1,5 +1,4 @@
 // src/PublicProfile.tsx
-
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
@@ -66,10 +65,9 @@ export function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('');
   
-  // 🌟 修正：初始設為 false，避免在資料載入前閃爍開場畫面
-  const [showSplash, setShowSplash] = useState(false); 
-  const [isSplashClosing, setIsSplashClosing] = useState(false); 
-  
+  // 🌟 預設為 true，但在 Fetch 結束時會立刻校正
+  const [showSplash, setShowSplash] = useState(true);
+  const [isSplashClosing, setIsSplashClosing] = useState(false);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -79,23 +77,30 @@ export function PublicProfile() {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
         const data = await res.json();
+        
         if (data.success && data.data) {
           setArtist(data.data);
           if (data.data.profile_settings) {
-            try {
-              const decodedSettings = decodeHTML(data.data.profile_settings);
-              const parsedSettings = JSON.parse(decodedSettings);
-              if ((data.data.plan_type === 'free' || !data.data.plan_type) && parsedSettings.portfolio) {
-                parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
-              }
-              setSettings(parsedSettings);
-            } catch (e) {
-              console.error("解析失敗");
+            const decodedSettings = decodeHTML(data.data.profile_settings);
+            const parsedSettings = JSON.parse(decodedSettings);
+            
+            if ((data.data.plan_type === 'free' || !data.data.plan_type) && parsedSettings.portfolio) {
+              parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
             }
+            
+            // 🌟 關鍵修正：在停止 Loading 的同一刻，決定是否要顯示 Splash
+            if (parsedSettings.splash_enabled === false) {
+              setShowSplash(false);
+            }
+            setSettings(parsedSettings);
+          } else {
+            // 沒有設定檔也直接關閉 Splash
+            setShowSplash(false);
           }
         }
       } catch (error) {
         console.error("讀取失敗", error);
+        setShowSplash(false);
       } finally {
         setLoading(false);
       }
@@ -103,34 +108,25 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 🌟 核心修正：只有在啟用時才開啟，並執行兩段式關閉
   useEffect(() => {
-    if (!loading && artist && settings) {
-      if (settings.splash_enabled === true) {
-        setShowSplash(true); // 確認啟用後才開啟顯示
-        
-        const duration = settings.splash_duration ? settings.splash_duration * 1000 : 2000;
-        let removeTimer: ReturnType<typeof setTimeout>;
-        
-        const timer = setTimeout(() => {
-          // 階段 1：先觸發 CSS 的淡出 (hide class)
-          setIsSplashClosing(true);
-          
-          // 階段 2：等待 800ms 後再把 DOM 移除
-          removeTimer = setTimeout(() => {
-            setShowSplash(false);
-          }, 800);
-        }, duration);
+    // 只有在啟用且資料載入完成時才啟動計時器
+    if (!loading && settings?.splash_enabled !== false && showSplash) {
+      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
+      let removeTimer: ReturnType<typeof setTimeout>;
+      
+      const timer = setTimeout(() => {
+        setIsSplashClosing(true);
+        removeTimer = setTimeout(() => {
+          setShowSplash(false);
+        }, 800);
+      }, duration);
 
-        return () => {
-          clearTimeout(timer);
-          if (removeTimer) clearTimeout(removeTimer);
-        };
-      } else {
-        setShowSplash(false); // 若未啟用則維持關閉
-      }
+      return () => {
+        clearTimeout(timer);
+        if (removeTimer) clearTimeout(removeTimer);
+      };
     }
-  }, [loading, settings, artist]);
+  }, [loading, settings, showSplash]);
 
   const availableTabs = useMemo(() => {
     if (!settings) return [];
@@ -177,6 +173,7 @@ export function PublicProfile() {
 
   return (
     <div className="public-profile-container">
+      {/* 開場動畫層 */}
       {showSplash && (
         <div 
           className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
@@ -195,7 +192,8 @@ export function PublicProfile() {
         </div>
       )}
 
-      <div className="content-wrapper">
+      {/* 🌟 主內容層：當動畫正在顯示且尚未開始關閉時，將其隱藏 (避免閃爍) */}
+      <div className="content-wrapper" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1, transition: 'opacity 0.5s' }}>
         <div className="sidebar">
           <div className="avatar-container">
             <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" />
