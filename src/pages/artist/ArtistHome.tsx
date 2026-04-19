@@ -59,7 +59,7 @@ export function ArtistHome() {
       <style>{`
         .artist-home-container { display: flex; flex-direction: column; gap: 40px; padding: 40px 0; }
         .artist-sidebar { width: 100%; display: flex; flex-direction: column; gap: 20px; }
-        .artist-content { flex: 1; display: flex; flexDirection: column; gap: 40px; }
+        .artist-content { flex: 1; display: flex; flex-direction: column; gap: 40px; }
         .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .rich-text-box { font-size: 15px; color: #444; line-height: 1.8; background: #FFF; padding: 24px; border-radius: 16px; border: 1px solid #EAE6E1; }
 

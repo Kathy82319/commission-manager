@@ -185,20 +185,9 @@ export function PublicProfile() {
         </div>
       )}
 
-            <div className="content-wrapper md:flex-row md:padding-20" style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        width: '100%', 
-        maxWidth: '1200px', 
-        margin: '0 auto',
-        padding: '0' 
+                  <div className="content-wrapper flex flex-col md:flex-row w-full max-w-7xl mx-auto p-0 md:p-5" style={{ 
       }}>
-        <div className="sidebar md:w-80 md:border-b-0 md:border-r md:sticky md:top-20 md:h-fit md:rounded-2xl" style={{ 
-          width: '100%', 
-          padding: '40px 20px', 
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #EAE6E1',
-          textAlign: 'center'
+                <div className="sidebar w-full md:w-80 p-10 md:p-6 bg-white border-b md:border-b-0 md:border-r border-gray-200 md:sticky md:top-20 md:h-fit md:rounded-2xl text-center" style={{ 
         }}>
           <div className="avatar-container" style={{ margin: '0 auto 20px auto', width: '120px', height: '120px' }}>
             <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
@@ -219,7 +208,7 @@ export function PublicProfile() {
           )}
         </div>
 
-        <div className="main-content" style={{ flex: 1, padding: '20px' }}>
+        <div className="main-content flex-1 p-5" style={{ }}>
           <div className="tabs-container" style={{ 
             display: 'flex', 
             gap: '8px', 
@@ -248,10 +237,7 @@ export function PublicProfile() {
 
           <div className="tab-content-area">
             {currentTab === 'portfolio' && (
-              <div className="portfolio-grid md:grid-cols-3" style={{ 
-                display: 'grid', 
-                gap: '12px',
-                gridTemplateColumns: 'repeat(2, 1fr)'
+                            <div className="portfolio-grid grid grid-cols-2 md:grid-cols-3 gap-3" style={{ 
               }}>
                 {settings?.portfolio.map((img, idx) => (
                   <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)} style={{ aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', cursor: 'pointer' }}>
