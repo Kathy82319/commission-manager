@@ -176,10 +176,10 @@
 }
 
 
-/* === 🌟 右側：詳情區塊 (手機版解除高度封印) === */
+/* === 右側：詳情區塊 === */
 .notebook-main {
   width: 100%;
-  min-height: 100vh; /* 解除死鎖，讓內容自然往下長 */
+  min-height: 100vh;
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
@@ -187,7 +187,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: visible; /* 讓手機版可以用整個螢幕滾動 */
+  overflow: visible;
 }
 
 .main-empty {
@@ -201,6 +201,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0; /* 防護罩 */
 }
 
 .main-header {
@@ -217,6 +218,7 @@
 
 .main-header-info {
   flex: 1 1 250px;
+  min-width: 0; /* 防護罩 */
 }
 
 .mobile-back-btn {
@@ -242,6 +244,9 @@
   margin: 0 0 6px 0;
   color: #5D4A3E;
   font-size: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main-subtitle {
@@ -249,6 +254,9 @@
   font-size: 14px;
   font-weight: bold;
   margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main-meta-row {
@@ -302,7 +310,7 @@
 .btn-danger { background-color: #A05C5C; color: #FFFFFF; border: none; }
 
 
-/* === 標籤導覽 (現代底線分頁) === */
+/* === 標籤導覽 === */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -348,13 +356,13 @@
   padding: 20px;
   flex: 1;
   min-width: 0; 
-  /* 手機版不設定 min-height / overflow，交給視窗滑動 */
 }
 
 .tab-details-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0; /* 防護罩 */
 }
 
 .section-card {
@@ -362,6 +370,8 @@
   padding: 20px;
   border-radius: 12px;
   border: 1px solid #EAE6E1;
+  min-width: 0; /* 徹底防止內部表格將區塊撐寬 */
+  overflow: hidden; /* 保底防線 */
 }
 
 .section-header {
@@ -469,9 +479,9 @@
 .badge-edit-mode { color: #A05C5C; font-size: 12px; font-weight: bold; background-color: #F5EBEB; padding: 6px 12px; border-radius: 6px; }
 .badge-free-mode { color: #A67B3E; font-size: 12px; font-weight: bold; background-color: #FDF4E6; padding: 6px 12px; border-radius: 6px; }
 
-.request-field { display: flex; flex-direction: column; }
+.request-field { display: flex; flex-direction: column; min-width: 0; }
 .field-label { color: #7A7269; font-weight: bold; margin-bottom: 6px; font-size: 13px; }
-.field-display { padding: 10px; background-color: #FBFBF9; border: 1px solid #EAE6E1; border-radius: 8px; min-height: 19px; display: flex; align-items: center; }
+.field-display { padding: 10px; background-color: #FBFBF9; border: 1px solid #EAE6E1; border-radius: 8px; min-height: 19px; display: flex; align-items: center; word-break: break-word; }
 .field-strikethrough { text-decoration: line-through; color: #C4BDB5; margin-right: 8px; }
 .field-pending { color: #A05C5C; font-weight: bold; }
 .field-value { color: #5D4A3E; }
@@ -532,27 +542,47 @@
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
 
-/* === 🌟 電腦版 (1024px 以上) 嚴格防護機制 === */
+/* === 電腦版 (1024px 以上) 嚴格防護機制 === */
 @media (min-width: 1024px) {
   .mobile-hide { display: flex !important; }
   .mobile-back-btn { display: none !important; }
 
-  /* 鎖死全頁高度 */
-  .notebook-page { height: calc(100vh - 80px); }
-  .notebook-container { flex-direction: row; height: 100%; gap: 20px; }
+  /* 終極鎖死全頁高度，使其完全等於視窗可用空間 */
+  .notebook-page { 
+    height: calc(100vh - 80px); /* 假設頂部導覽列高 80px */
+    display: flex;
+    flex-direction: column;
+  }
   
-  .notebook-sidebar { width: 300px; height: 100%; }
+  /* 鎖死並列容器，絕對不允許被內容撐高 */
+  .notebook-container { 
+    flex: 1;
+    min-height: 0; 
+    flex-direction: row; 
+    height: auto; 
+    gap: 20px; 
+    align-items: stretch; /* 讓左側列表與右側內容永遠保持絕對等高 */
+  }
   
-  /* 右側卡片高度鎖死，防止塌陷或撐破 */
+  .notebook-sidebar { 
+    width: 300px; 
+    height: auto; 
+  }
+  
+  /* 右側卡片高度鎖死，徹底防範分頁切換時的塌陷與撐破 */
   .notebook-main {
     flex: 1;
     min-width: 0;
-    min-height: auto; /* 移除手機版的 min-height */
-    height: 100%; 
-    overflow: hidden; 
+    min-height: 0; 
+    height: auto; 
   }
   
-  /* 只有內部內容可以捲動 */
+  .main-content-wrapper {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  /* 只有最內部的內容區域可以捲動 */
   .tab-content-area { 
     overflow-y: auto; 
     min-height: 0; 
@@ -563,17 +593,18 @@
     margin-top: 0;
     justify-content: flex-end;
   }
+  
   .action-btn {
     flex: none; 
   }
 
-  /* 強制覆蓋 Settings.css 可能洩漏過來的右邊框污染 */
   .scroll-tabs .tab-btn {
     border-right: none !important;
     margin-right: 0 !important;
     padding: 14px 4px !important;
     border-bottom: 2px solid transparent !important;
   }
+  
   .scroll-tabs .tab-btn.active {
     border-bottom: 2px solid #5D4A3E !important;
   }
