@@ -37,11 +37,10 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-      // 切換選單後，如果是手機版螢幕，自動關閉選單
+        // 切換選單後，如果是手機版螢幕，自動關閉選單
   useEffect(() => {
-    if (window.innerWidth < 1024) {
-      setIsMobileMenuOpen(false);
-    }
+    // 當路由改變時，強制關閉手機版選單
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   const handlePreviewAndCopy = () => {
