@@ -10,15 +10,7 @@ export function ArtistLayout() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 1. 追蹤螢幕寬度與身分驗證邏輯
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  // 身分驗證邏輯
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
@@ -48,12 +40,12 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 路由改變時自動關閉手機選單
+  // 路由改變時自動關閉手機選單 (電腦版不受此狀態影響)
   useEffect(() => {
-    if (windowWidth < 1024) setIsMobileMenuOpen(false);
-  }, [location.pathname, windowWidth]);
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
-  // 2. 商業邏輯：方案計算與功能
+  // 商業邏輯：方案計算與功能
   const handlePreviewAndCopy = () => {
     if (!artist) return;
     const publicUrl = `${window.location.origin}/${artist.public_id}`;
@@ -112,7 +104,7 @@ export function ArtistLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBF9] text-[#4A4A4A] font-sans">
       
-      {/* 1. 手機版 Header */}
+      {/* 1. 手機版 Header (僅在 lg 以下顯示) */}
       <header className="lg:hidden flex items-center gap-4 px-5 py-4 bg-white border-b border-[#EAE6E1] sticky top-0 z-[100]">
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -126,14 +118,19 @@ export function ArtistLayout() {
         </div>
       </header>
 
-      <div className="flex flex-1 relative">
-        {/* 2. 側邊欄 (RWD 相容) */}
+      <div className="flex flex-1 relative overflow-hidden">
+        {/* 2. 側邊欄 (純 Tailwind RWD 處理) 
+            手機版：預設 fixed 且 -translate-x-full (移出畫面)，開啟時變成 translate-x-0
+            電腦版 (lg)：強制 sticky、不偏移 (lg:translate-x-0)
+        */}
         <aside 
-          className="w-[260px] bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out fixed inset-y-0 left-0 z-50 lg:sticky lg:top-0 lg:h-screen lg:z-0"
-          style={{ 
-            transform: windowWidth >= 1024 ? 'none' : (isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)'),
-            position: windowWidth >= 1024 ? 'sticky' : 'fixed'
-          }}
+          className={`
+            w-[260px] bg-white flex flex-col border-r border-[#EAE6E1] 
+            transition-transform duration-300 ease-in-out
+            fixed inset-y-0 left-0 z-50
+            lg:sticky lg:top-0 lg:h-screen lg:z-0 lg:translate-x-0
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
         >
           <div className="p-[30px_20px] border-b border-[#F0ECE7] hidden lg:block">
             <div className="font-bold text-lg text-[#5D4A3E]">Arti繪師小幫手</div>
@@ -163,21 +160,21 @@ export function ArtistLayout() {
           <div className="p-5 border-t border-[#F0ECE7] flex flex-col gap-2.5">
             <button 
               onClick={() => navigate('/client/orders')} 
-              className="w-full p-2.5 bg-[#F4F0EB] border border-dashed border-[#DED9D3] rounded-lg text-[#5D4A3E] cursor-pointer text-[13px] font-bold"
+              className="w-full p-2.5 bg-[#F4F0EB] border border-dashed border-[#DED9D3] rounded-lg text-[#5D4A3E] cursor-pointer text-[13px] font-bold transition-colors hover:bg-[#EAE6E1]"
             >
               切換為委託方模式
             </button>
             <button 
               onClick={handlePreviewAndCopy} 
-              className="w-full p-2.5 bg-white border border-[#DED9D3] rounded-lg text-[#7A7269] cursor-pointer text-[13px] font-bold"
+              className="w-full p-2.5 bg-white border border-[#DED9D3] rounded-lg text-[#7A7269] cursor-pointer text-[13px] font-bold transition-colors hover:bg-[#F4F0EB]"
             >
               預覽/複製個人首頁
             </button>
             
-            <div className="mt-2.5 text-[12px] color-[#9CA3AF] text-center leading-relaxed">
-              <Link to="/terms" className="text-inherit no-underline">服務條款</Link>
+            <div className="mt-2.5 text-[12px] text-[#9CA3AF] text-center leading-relaxed">
+              <Link to="/terms" className="text-inherit no-underline hover:text-[#7A7269]">服務條款</Link>
               <span className="mx-1">|</span>
-              <Link to="/privacy" className="text-inherit no-underline">隱私權政策</Link>
+              <Link to="/privacy" className="text-inherit no-underline hover:text-[#7A7269]">隱私權政策</Link>
               <div className="mt-1">客服：cath40286@gmail.com</div>
             </div>
           </div>
@@ -191,11 +188,11 @@ export function ArtistLayout() {
               <div className="bg-[#FFF3CD] border border-[#FFEEBA] text-[#856404] p-4 rounded-xl mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                 <div className="text-sm font-bold">
                   ⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！
-                  <div className="font-normal text-xs">截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
+                  <div className="font-normal text-xs mt-1">截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
                 </div>
                 <button 
                   onClick={() => navigate('/artist/settings')} 
-                  className="bg-[#856404] text-white border-none py-2 px-4 rounded-md cursor-pointer text-[13px] font-bold shrink-0"
+                  className="bg-[#856404] text-white border-none py-2 px-4 rounded-md cursor-pointer text-[13px] font-bold shrink-0 transition-opacity hover:opacity-90"
                 >
                   立即查看續費方案
                 </button>
@@ -205,11 +202,11 @@ export function ArtistLayout() {
           </div>
         </main>
 
-        {/* 4. 手機版遮罩 */}
+        {/* 4. 手機版遮罩 (點擊旁邊可以關閉選單) */}
         {isMobileMenuOpen && (
           <div 
             onClick={() => setIsMobileMenuOpen(false)}
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity"
           />
         )}
       </div>
