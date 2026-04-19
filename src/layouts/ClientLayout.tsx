@@ -90,7 +90,7 @@ export function ClientLayout() {
           0% { transform: translateX(0); }
           100% { transform: translateX(-100%); }
         }
-        .client-header {
+                .client-header {
           padding: 16px 24px;
           display: flex;
           justify-content: space-between;
@@ -99,7 +99,6 @@ export function ClientLayout() {
           backdrop-filter: blur(10px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           z-index: 100;
-          position: sticky; top: 0;
         }
         .mobile-nav-toggle { display: none; background: none; border: none; color: #FFF; fontSize: 24px; cursor: pointer; }
         @media (max-width: 768px) {
@@ -113,7 +112,7 @@ export function ClientLayout() {
         }
       `}</style>
 
-            <header className="client-header md:px-8 md:py-4">
+            <header className="client-header sticky top-0 md:px-8 md:py-4">
         <div style={{ fontWeight: 'bold', color: '#FFF', fontSize: '18px' }}>
           Arti 繪師小幫手
           <div style={{ fontSize: '12px', opacity: 0.8 }}>委託管理 (委託方)</div>

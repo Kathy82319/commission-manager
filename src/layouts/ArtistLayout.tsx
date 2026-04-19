@@ -137,14 +137,9 @@ export function ArtistLayout() {
         </button>
       </header>
 
-      <div style={{ display: 'flex', flex: 1 }}>
+            <div style={{ display: 'flex', flex: 1 }}>
         {/* 側邊欄 (加入 RWD 控制) */}
-                <aside style={{ 
-          width: '260px', backgroundColor: '#FFFFFF', display: isMobileMenuOpen ? 'flex' : 'none', 
-          flexDirection: 'column', borderRight: '1px solid #EAE6E1', 
-          position: 'fixed', top: '56px', left: 0, bottom: 0, zIndex: 90,
-          transition: 'all 0.3s ease'
-        }} className="lg:!flex lg:!sticky lg:!top-0 lg:h-screen lg:!z-0">
+        <aside className={`fixed top-[56px] left-0 bottom-0 z-50 w-[260px] bg-white flex flex-col border-r border-[#EAE6E1] transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen lg:z-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           
           <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }} className="hidden lg:block">
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
@@ -216,12 +211,11 @@ export function ArtistLayout() {
         </main>
       </div>
 
-            {/* 手機選單背景遮罩 (僅限手機版顯示) */}
+                        {/* 手機選單背景遮罩 (僅限手機版顯示) */}
       {isMobileMenuOpen && (
         <div 
           onClick={() => setIsMobileMenuOpen(false)}
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 85 }} 
-          className="lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
         />
       )}
     </div>
