@@ -17,12 +17,11 @@ export function PublicLayout() {
       
       {/* 頂部列：手機版改為相對定位，避免遮擋內容；電腦版維持絕對定位 */}
             <header style={{ 
-        position: 'relative', 
-        padding: '20px', 
-        display: 'flex', 
-        justifyContent: 'flex-end', 
-        zIndex: 1000 
-      }} className="md:absolute md:top-0 md:right-0 md:p-6 md:pt-4 md:pr-6">
+              position: 'relative', 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              zIndex: 1000 
+            }} className="p-4 md:absolute md:top-0 md:right-0 md:p-6 md:pt-4">
         <button 
           onClick={handleLoginClick} 
           style={{
@@ -67,15 +66,15 @@ export function PublicLayout() {
         )}
       </main>
 
-      {/* 頁尾：手機版文字改為垂直堆疊以增加清晰度 */}
-            <footer style={{ 
+            {/* 頁尾：手機版文字改為垂直堆疊以增加清晰度 */}
+      <footer style={{ 
         textAlign: 'center',
         background: 'transparent',
         marginTop: 'auto'
-      }} className="p-5 md:p-6">
+      }} className="py-6 px-5">
         <div style={{ 
           width: '60px', 
-          margin: '0 auto 20px auto', 
+          margin: '0 auto 16px auto', 
           borderTop: '1px solid rgba(255, 255, 255, 0.3)' 
         }} />
 
@@ -83,16 +82,16 @@ export function PublicLayout() {
           fontSize: '13px', 
           color: 'rgba(255, 255, 255, 0.9)', 
           display: 'flex', 
-          flexDirection: 'column', 
-          gap: '12px',
-          alignItems: 'center'
-        }} className="md:flex-row md:justify-center md:gap-0">
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
-            <span style={{ opacity: 0.5 }} className="hidden md:inline">|</span>
-            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
-          </div>
-          <span style={{ opacity: 0.5 }} className="hidden md:inline">|</span>
+          flexDirection: 'row', 
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+          <span style={{ opacity: 0.5 }}>|</span>
+          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+          <span style={{ opacity: 0.5 }}>|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>
       </footer>

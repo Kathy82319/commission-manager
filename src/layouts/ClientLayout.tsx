@@ -119,7 +119,7 @@ export function ClientLayout() {
           <div style={{ fontSize: '12px', opacity: 0.8 }}>委託管理 (委託方)</div>
         </div>
         
-        <nav className="desktop-nav" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <nav className="desktop-nav" style={{ display: 'flex', gap: '20px', alignItems: 'center', margin: 0, padding: 0 }}>
           <button onClick={handleSwitchToArtist} style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }}>
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
           </button>

@@ -139,12 +139,12 @@ export function ArtistLayout() {
 
       <div style={{ display: 'flex', flex: 1 }}>
         {/* 側邊欄 (加入 RWD 控制) */}
-        <aside style={{ 
+                <aside style={{ 
           width: '260px', backgroundColor: '#FFFFFF', display: isMobileMenuOpen ? 'flex' : 'none', 
           flexDirection: 'column', borderRight: '1px solid #EAE6E1', 
           position: 'fixed', top: '56px', left: 0, bottom: 0, zIndex: 90,
           transition: 'all 0.3s ease'
-        }} className="lg:flex lg:sticky lg:top-0 lg:h-screen">
+        }} className="lg:!flex lg:!sticky lg:!top-0 lg:h-screen lg:!z-0">
           
           <div style={{ padding: '30px 20px', borderBottom: '1px solid #F0ECE7' }} className="hidden lg:block">
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
@@ -216,7 +216,7 @@ export function ArtistLayout() {
         </main>
       </div>
 
-      {/* 手機選單背景遮罩 */}
+            {/* 手機選單背景遮罩 (僅限手機版顯示) */}
       {isMobileMenuOpen && (
         <div 
           onClick={() => setIsMobileMenuOpen(false)}
