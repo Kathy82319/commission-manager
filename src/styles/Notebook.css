@@ -542,75 +542,66 @@
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
 
-/* === 電腦版 (1024px 以上) 嚴格防護機制 === */
+/* --- 網頁版 (Desktop) 強力鎖定架構 --- */
 @media (min-width: 1024px) {
-  .mobile-hide { display: flex !important; }
-  .mobile-back-btn { display: none !important; }
+  /* 1. 確保最外層頁面剛好等於視窗高度，不准出現全網頁捲軸 */
+  .notebook-page {
+    height: calc(100vh - 80px); /* 扣掉頂部導覽列的高度 */
+    overflow: hidden;
+  }
 
-  /* 終極鎖死全頁高度，使其完全等於視窗可用空間 */
-  .notebook-page { 
-    height: calc(100vh - 80px); /* 假設頂部導覽列高 80px */
+  /* 2. 左右並排的容器必須填滿高度 */
+  .notebook-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    height: 100%; 
+    gap: 20px;
+    align-items: stretch; /* 讓左右兩邊永遠等高 */
   }
-  
-  /* 鎖死並列容器，絕對不允許被內容撐高 */
-  .notebook-container { 
-    flex: 1;
-    min-height: 0; 
-    flex-direction: row; 
-    height: auto; 
-    gap: 20px; 
-    align-items: stretch; /* 讓左側列表與右側內容永遠保持絕對等高 */
+
+  /* 3. 左側列表鎖死高度 */
+  .notebook-sidebar {
+    width: 300px;
+    height: 100%;
+    flex-shrink: 0;
   }
-  
-  .notebook-sidebar { 
-    width: 300px; 
-    height: auto; 
-  }
-  
-  /* 右側卡片高度鎖死，徹底防範分頁切換時的塌陷與撐破 */
+
+  /* 4. 右側主內容區塊鎖死高度 */
   .notebook-main {
     flex: 1;
     min-width: 0;
-    min-height: 0; 
-    height: auto; 
+    height: 100% !important; /* 強制鎖死，不准被子元素撐開 */
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    overflow: hidden; /* 這是關鍵：把溢出的內容切掉，交給裡面捲動 */
   }
-  
+
+  /* 5. 白色背景的 Wrapper 也要填滿 */
   .main-content-wrapper {
-    flex: 1;
-    min-height: 0;
-  }
-  
-  /* 只有最內部的內容區域可以捲動 */
-  .tab-content-area { 
-    overflow-y: auto; 
-    min-height: 0; 
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
   }
 
-  .main-header-actions {
-    width: auto;
-    margin-top: 0;
-    justify-content: flex-end;
-  }
-  
-  .action-btn {
-    flex: none; 
+  /* 6. 標籤內容區：這是唯一允許產生捲軸的地方 */
+  .tab-content-area {
+    flex: 1; /* 佔據所有剩餘空間 */
+    overflow-y: auto; /* 內容太多時在這裡產生捲軸 */
+    min-height: 0; /* Flexbox 的防撐破機制 */
+    background-color: #FFFFFF;
+    padding: 24px;
   }
 
-  .scroll-tabs .tab-btn {
-    border-right: none !important;
-    margin-right: 0 !important;
-    padding: 14px 4px !important;
-    border-bottom: 2px solid transparent !important;
-  }
-  
-  .scroll-tabs .tab-btn.active {
-    border-bottom: 2px solid #5D4A3E !important;
+  /* 修正：確保 header 和 tabs 不會跟著捲走 */
+  .main-header, .scroll-tabs {
+    flex-shrink: 0; 
   }
 }
 
-@media (min-width: 1280px) {
-  .details-grid { grid-template-columns: 1fr 1fr; }
-  .payment-inputs { flex-direction: row; align-items: stretch; }
+/* 財務區塊的 Table 防撐破機制 */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  min-width: 0;
 }
