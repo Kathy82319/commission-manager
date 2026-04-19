@@ -143,7 +143,6 @@ export function Notebook() {
       fetchCommissions();
     } catch (e) { console.error("更新已讀時間失敗", e); }
     
-    // 手機版切換時，自動捲動到最上方
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -386,7 +385,8 @@ export function Notebook() {
   
     return (
       <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s' }}>
+        {/* 🌟 修正了標題與狀態標籤的排版，確保手機版不會擠壓重疊 */}
+        <div style={{ backgroundColor: headerBg, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.3s' }}>
           <span>{title}</span> <span style={{ color: statusColor }}>{statusTag}</span>
         </div>
         <div style={{ padding: '20px' }}>
@@ -445,7 +445,6 @@ export function Notebook() {
       <div className="notebook-container">
         
         {/* === 左側：委託單清單區 === */}
-        {/* 🌟 根據有無 selectedId 來決定是否掛上 mobile-hide 隱藏此區 */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
@@ -499,7 +498,6 @@ export function Notebook() {
         </div>
 
         {/* === 右側：詳情區塊 === */}
-        {/* 🌟 根據沒有 selectedId 來決定是否掛上 mobile-hide 隱藏此區 */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
             <div style={{ padding: '60px', textAlign: 'center', color: '#C4BDB5', fontSize: '15px' }}>請由列表選擇委託單以檢視詳情</div> 
@@ -510,7 +508,6 @@ export function Notebook() {
               <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
                 <div style={{ flex: '1 1 250px' }}>
                   
-                  {/* 🌟 新增的返回列表按鈕，透過 CSS 僅在手機版顯示 */}
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
                     ⬅ 返回列表
                   </button>
@@ -577,23 +574,24 @@ export function Notebook() {
                         <button className="action-btn" onClick={handleAddPayment} style={{ padding: '10px 20px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', whiteSpace: 'nowrap' }}>+ 記帳</button>
                       </div>
 
+                      {/* 🌟 移除 minWidth 限制，套用 custom-table */}
                       <div className="table-responsive">
-                        <table style={{ width: '100%', minWidth: '400px', fontSize: '14px', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                        <table className="custom-table">
                           <tbody>
                             {payments.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '15px', color: '#A0978D' }}>尚無記帳紀錄</td></tr>}
                             {payments.map(p => (
                               <tr key={p.id} style={{ borderBottom: '1px dashed #EAE6E1' }}>
-                                <td style={{ padding: '12px 8px', color: '#A0978D' }}>{p.record_date}</td>
-                                <td style={{ padding: '12px 8px', color: '#5D4A3E', fontWeight: '500' }}>{p.item_name}</td>
-                                <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4E7A5A' }}>+ NT$ {p.amount}</td>
-                                <td style={{ padding: '12px 8px', textAlign: 'right' }}><button onClick={() => handleDeletePayment(p.id)} style={{ padding: '4px 10px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>刪除</button></td>
+                                <td style={{ color: '#A0978D' }}>{p.record_date}</td>
+                                <td style={{ color: '#5D4A3E', fontWeight: '500' }}>{p.item_name}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#4E7A5A' }}>+ NT$ {p.amount}</td>
+                                <td style={{ textAlign: 'right' }}><button onClick={() => handleDeletePayment(p.id)} style={{ padding: '4px 10px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>刪除</button></td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '16px', fontSize: '14px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '16px', fontSize: '14px', backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1', marginTop: '20px' }}>
                         <div style={{ color: '#7A7269' }}>總金額：<span style={{ fontWeight: 'bold', color: '#5D4A3E' }}>${selectedOrder.total_price}</span></div>
                         <div style={{ color: '#7A7269' }}>已收款：<span style={{ fontWeight: 'bold', color: '#4E7A5A' }}>${totalPaid}</span></div>
                         <div style={{ color: '#7A7269' }}>未付款：<span style={{ fontWeight: 'bold', color: '#A05C5C' }}>${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
@@ -670,19 +668,21 @@ export function Notebook() {
                 {activeTab === 'logs' && (
                   <div style={{ backgroundColor: '#FBFBF9', padding: '20px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
                     <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#5D4A3E' }}>決策與操作追蹤紀錄</h3>
+                    
+                    {/* 🌟 移除 minWidth 限制，套用 custom-table */}
                     <div className="table-responsive">
-                      <table style={{ width: '100%', minWidth: '400px', borderCollapse: 'collapse', fontSize: '14px' }}>
+                      <table className="custom-table">
                         <tbody>
                           {logs.length === 0 ? <tr><td style={{ color: '#A0978D', textAlign: 'center', padding: '30px 0' }}>尚未有紀錄</td></tr> : null}
                           {logs.map(log => (
                             <tr key={log.id} style={{ borderBottom: '1px solid #EAE6E1' }}>
-                              <td style={{ padding: '16px 10px', color: '#A0978D', width: '160px', whiteSpace: 'nowrap' }}>{new Date(log.created_at).toLocaleString()}</td>
-                              <td style={{ padding: '16px 10px', width: '80px' }}>
+                              <td style={{ color: '#A0978D', width: '120px' }}>{new Date(log.created_at).toLocaleString()}</td>
+                              <td style={{ width: '70px' }}>
                                 <span style={{ backgroundColor: log.actor_role === 'artist' ? '#EAE6E1' : '#E8F3EB', color: log.actor_role === 'artist' ? '#5D4A3E' : '#4E7A5A', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
                                   {log.actor_role === 'artist' ? '繪師' : '委託人'}
                                 </span>
                               </td>
-                              <td style={{ padding: '16px 10px', color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{log.content}</td>
+                              <td style={{ color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{log.content}</td>
                             </tr>
                           ))}
                         </tbody>

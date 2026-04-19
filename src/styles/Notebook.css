@@ -48,8 +48,6 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   display: flex;
   flex-direction: column;
-  
-  /* 🌟 防護罩：絕對不允許裡面的表格撐破外框 */
   min-width: 0; 
   max-width: 100%;
 }
@@ -73,15 +71,28 @@
   background-color: #EAE6E1;
 }
 
+/* 🌟 優化頂部操作按鈕 (手機版兩兩並排，電腦版靠右靠齊) */
 .main-header-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: flex-start;
-  flex: 1 1 auto;
+  width: 100%;
+  margin-top: 12px;
 }
 
-/* === 標籤導覽 (改為現代底線分頁) === */
+.action-btn {
+  flex: 1 1 calc(50% - 8px); /* 手機版：每排兩個按鈕 */
+  text-align: center;
+  padding: 10px 12px; 
+  border-radius: 8px; 
+  cursor: pointer;
+  font-weight: bold; 
+  font-size: 13px; 
+  transition: opacity 0.2s;
+}
+.action-btn:hover { opacity: 0.8; }
+
+/* === 標籤導覽 (現代底線分頁) === */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -89,9 +100,8 @@
   background-color: #FAFAFA;
   scrollbar-width: none;
   flex-shrink: 0;
-  
   gap: 24px;
-  border-bottom: 2px solid #EAE6E1; /* 底部軌道線 */
+  border-bottom: 2px solid #EAE6E1;
 }
 
 .scroll-tabs::-webkit-scrollbar { display: none; }
@@ -101,17 +111,17 @@
   padding: 14px 4px;
   cursor: pointer;
   border: none;
-  background-color: transparent !important; /* 移除色塊 */
+  background-color: transparent !important;
   font-size: 15px;
   color: #A0978D;
   transition: all 0.2s ease;
   font-family: inherit;
   border-bottom: 2px solid transparent; 
-  margin-bottom: -2px; /* 往下偏移蓋住軌道線 */
+  margin-bottom: -2px; 
 }
 
 .tab-btn.active {
-  border-bottom: 2px solid #5D4A3E; /* 啟用的深色底線 */
+  border-bottom: 2px solid #5D4A3E;
   font-weight: bold;
   color: #5D4A3E;
 }
@@ -125,13 +135,24 @@
 .tab-content-area {
   padding: 20px;
   flex: 1;
-  /* 🌟 防護罩：確保內部區塊也不被撐破 */
   min-width: 0; 
 }
 
 .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
-/* 🌟 表格滾動防護罩：這確保寬度 400px 的表格在手機上會產生內部橫向捲軸，而不撐破外框 */
+/* 🌟 解除表格寬度限制，讓它自然適應螢幕 */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: auto;
+}
+
+.custom-table th, .custom-table td {
+  padding: 12px 8px;
+  word-break: break-word; /* 允許長文字自動換行 */
+}
+
 .table-responsive { 
   width: 100%; 
   overflow-x: auto; 
@@ -146,12 +167,6 @@
   width: 100%; box-sizing: border-box;
 }
 
-.action-btn {
-  padding: 8px 12px; border-radius: 8px; cursor: pointer;
-  font-weight: bold; font-size: 13px; transition: opacity 0.2s;
-}
-.action-btn:hover { opacity: 0.8; }
-
 /* === 電腦版 (1024px 以上) === */
 @media (min-width: 1024px) {
   .mobile-hide { display: flex !important; }
@@ -164,12 +179,22 @@
   
   .notebook-main {
     flex: 1;
-    min-width: 0; /* 防護罩 */
+    min-width: 0;
     height: 100%;
     overflow: hidden; 
   }
   
   .tab-content-area { overflow-y: auto; }
+
+  /* 電腦版按鈕恢復靠右並排 */
+  .main-header-actions {
+    width: auto;
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+  .action-btn {
+    flex: none; /* 取消手機版的強制延展 */
+  }
 }
 
 @media (min-width: 1280px) {
