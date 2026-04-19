@@ -52,9 +52,6 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  /*
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  */
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
@@ -121,7 +118,6 @@ export function Settings() {
       const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        // 🌟 加上 folder: 'avatars'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `avatar.${fileExt}`, folder: 'avatars' }) 
       });
       
@@ -147,7 +143,6 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        // 🌟 加上 folder: 'portfolio'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'portfolio.jpg', folder: 'portfolio' }) 
       });
       
@@ -173,7 +168,6 @@ export function Settings() {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        // 🌟 加上 folder: 'system'
         body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'splash.jpg', folder: 'system' }) 
       });
       
@@ -215,64 +209,6 @@ export function Settings() {
     }
   };
 
-    /*
-  const handleStartTrial = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        fetchUserData();
-      } else alert(data.error);
-    } catch(e) { alert('連線失敗'); }
-  };
-
-  const handleUpgradeClick = async () => {
-    setIsUpgrading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/payment/create`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_type: "pro" })
-      });
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = result.data.PayGateWay;
-
-        const params = {
-          MerchantID: result.data.MerchantID,
-          TradeInfo: result.data.TradeInfo,
-          TradeSha: result.data.TradeSha,
-          Version: result.data.Version,
-        };
-
-        for (const [key, value] of Object.entries(params)) {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value as string;
-          form.appendChild(input);
-        }
-
-        document.body.appendChild(form);
-        form.submit(); 
-      } else {
-        alert("訂單建立失敗：" + (result.error || "請稍後再試"));
-        setIsUpgrading(false);
-      }
-    } catch (error) {
-      console.error("升級失敗:", error);
-      alert("系統連線異常");
-      setIsUpgrading(false);
-    }
-  };
-  */
-
   const validateSocialUrl = (platform: string, url: string) => {
     let formattedUrl = url.trim();
     const lowerUrl = formattedUrl.toLowerCase();
@@ -305,7 +241,6 @@ export function Settings() {
           if (!hostname.includes('instagram.com') && !hostname.includes('ig.me')) 
             return { valid: false, msg: '網址與 Instagram 平台不符' };
           break;
-        case '個人網站': break;
       }
       return { valid: true, formattedUrl };
     } catch (e) {
@@ -358,19 +293,19 @@ export function Settings() {
     { id: 'payment', label: '付款方式' },
     { id: 'rules', label: '協議書內容' },
     { id: 'custom', label: '其他 (自訂標題)' },
-    // 🚧 [封測限制] 隱藏訂閱分頁，不讓使用者在測試期間看到付費資訊
-    // { id: 'subscription', label: '💎 方案與訂閱' }
   ];
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
+  // 產生 0.5s ~ 10.0s 的選項
+  const durationOptions = Array.from({ length: 20 }, (_, i) => (i + 1) * 0.5);
+
   return (
     <div className="settings-page">
       <div className="settings-layout">
         
-        {/* Sidebar Menu */}
         <aside className="settings-sidebar">
           <div className="sidebar-title">個人頁編輯</div>
           {menuItems.map(item => {
@@ -387,7 +322,6 @@ export function Settings() {
           })}
         </aside>
 
-        {/* Content Area */}
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
@@ -426,7 +360,7 @@ export function Settings() {
                   </div>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <label className="form-label">顯示名稱</label>
-                    <input className="form-input" value={formData.display_name} onChange={e=>setFormData({...formData, display_name: e.target.value})} onFocus={()=>setFocusedField('name')} onBlur={()=>setFocusedField(null)} />
+                    <input className="form-input" value={formData.display_name} onChange={e=>setFormData({...formData, display_name: e.target.value})} />
                     <div style={{ marginTop: '16px' }}>
                       <ImageUploader onUpload={handleAvatarUpload} targetWidth={400} withWatermark={false} buttonText={isUploading ? "上傳中..." : "更換頭像"} maxSizeMB={2} />
                     </div>
@@ -435,7 +369,7 @@ export function Settings() {
                 
                 <div>
                   <label className="form-label">個人簡介</label>
-                  <textarea className="form-input" value={formData.bio} onChange={e=>setFormData({...formData, bio: e.target.value})} onFocus={()=>setFocusedField('bio')} onBlur={()=>setFocusedField(null)} style={{ minHeight: '120px', resize: 'vertical' }} />
+                  <textarea className="form-input" value={formData.bio} onChange={e=>setFormData({...formData, bio: e.target.value})} style={{ minHeight: '120px', resize: 'vertical' }} />
                 </div>
                 
                 <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '24px' }}>
@@ -444,7 +378,7 @@ export function Settings() {
                     <select className="form-input" value={socialPlatform} onChange={e=>setSocialPlatform(e.target.value)} style={{ width: 'auto', minWidth: '140px' }}>
                       {['Facebook', 'Plurk', 'Twitter / X', 'Threads', 'Instagram', '個人網站'].map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
-                    <input className="form-input" value={socialUrl} onChange={e=>setSocialUrl(e.target.value)} onFocus={()=>setFocusedField('url')} onBlur={()=>setFocusedField(null)} placeholder="網址..." style={{ flex: 1, minWidth: '180px' }} />
+                    <input className="form-input" value={socialUrl} onChange={e=>setSocialUrl(e.target.value)} placeholder="網址..." style={{ flex: 1, minWidth: '180px' }} />
                     <button onClick={handleAddSocial} style={{ padding: '10px 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>+ 新增</button>
                   </div>
                   
@@ -485,42 +419,70 @@ export function Settings() {
               </div>
             )}
 
-            {activeTab === 'splash' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
-                    啟用專屬開場動畫
-                  </label>
-                </div>
-                
-                {settings.splash_enabled && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div>
-                      <label className="form-label">自訂開場標語</label>
-                      <input className="form-input" value={settings.splash_text} onChange={e=>setSettings({...settings, splash_text: e.target.value})} onFocus={()=>setFocusedField('splash_text')} onBlur={()=>setFocusedField(null)} placeholder="輸入開場顯示的文字..." />
-                    </div>
-                    <div>
-                      <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
-                      <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
-                        <ImageUploader onUpload={handleSplashUpload} targetWidth={1920} withWatermark={false} buttonText={isSplashUploading ? "圖片上傳中..." : "上傳全螢幕背景圖"} maxSizeMB={10} />
-                      </div>
-                    </div>
-                  </div>
-                )}
+{activeTab === 'splash' && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
+            <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+            啟用專屬開場動畫
+          </label>
+        </div>
+        
+        {settings.splash_enabled && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* 動畫時長：滑動長條 */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label className="form-label" style={{ margin: 0 }}>動畫停留時長</label>
+                <span style={{ fontWeight: 'bold', color: '#A67B3E', fontSize: '15px' }}>{settings.splash_duration} 秒</span>
               </div>
-            )}
+              <input 
+                type="range" 
+                min="0.5" 
+                max="10" 
+                step="0.5" 
+                value={settings.splash_duration} 
+                onChange={e => setSettings({...settings, splash_duration: Number(e.target.value)})}
+                style={{ width: '100%', cursor: 'pointer', accentColor: '#5D4A3E' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginTop: '4px' }}>
+                <span>快 (0.5s)</span>
+                <span>慢 (10s)</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
+              <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
+                <ImageUploader 
+                  onUpload={handleSplashUpload} 
+                  targetWidth={1920} 
+                  aspectRatio={16/9}
+                  withWatermark={false} 
+                  buttonText={isSplashUploading ? "圖片上傳中..." : "上傳全螢幕背景圖"} 
+                  maxSizeMB={3} // 🌟 鎖定為 3MB
+                />
+                <div style={{ marginTop: '12px', fontSize: '13px', color: '#7A7269', lineHeight: '1.6' }}>
+                  <p>📸 <strong>建議規格：</strong> 1920x1080 (比例 16:9)。</p>
+                  <p>🚀 <strong>載入優化：</strong> 檔案限制放寬至 3MB，但系統會自動壓縮。若初次載入全黑，建議先手動壓縮圖檔至 1MB 內。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
 
             {activeTab === 'custom' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {settings.custom_sections.map(sec => (
                   <div key={sec.id} style={{ padding: '24px', border: '1px solid #EAE6E1', borderRadius: '16px', backgroundColor: '#FAFAFA', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <input className="form-input" value={sec.title} onChange={e=>handleUpdateCustomSection(sec.id, 'title', e.target.value)} onFocus={()=>setFocusedField(`t_${sec.id}`)} onBlur={()=>setFocusedField(null)} placeholder="輸入自訂區塊大標題..." style={{ fontWeight: 'bold', fontSize: '16px' }} />
+                    <input className="form-input" value={sec.title} onChange={e=>handleUpdateCustomSection(sec.id, 'title', e.target.value)} placeholder="輸入自訂區塊大標題..." style={{ fontWeight: 'bold', fontSize: '16px' }} />
                     <div className="custom-quill-wrapper">
                       <ReactQuill theme="snow" value={sec.content} onChange={v=>handleUpdateCustomSection(sec.id, 'content', v)} modules={customQuillModules} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button onClick={()=>handleRemoveCustomSection(sec.id)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: '8px 16px', borderRadius: '8px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F5EBEB'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                      <button onClick={()=>handleRemoveCustomSection(sec.id)} style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold', padding: '8px 16px', borderRadius: '8px', transition: 'background 0.2s' }}>
                         🗑️ 刪除此區塊
                       </button>
                     </div>
@@ -528,7 +490,7 @@ export function Settings() {
                 ))}
                 
                 {settings.custom_sections.length < 3 && (
-                  <button onClick={handleAddCustomSection} style={{ padding: '16px', border: '2px dashed #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s', fontSize: '15px' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#A67B3E'; e.currentTarget.style.color = '#A67B3E'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#DED9D3'; e.currentTarget.style.color = '#7A7269'; }}>
+                  <button onClick={handleAddCustomSection} style={{ padding: '16px', border: '2px dashed #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s', fontSize: '15px' }}>
                     + 新增自訂區塊 (最多 3 個)
                   </button>
                 )}

@@ -65,9 +65,12 @@ export function PublicProfile() {
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('');
-  const [showSplash, setShowSplash] = useState(true);
+  
+  // 🌟 修正：初始設為 false，避免在資料載入前閃爍開場畫面
+  const [showSplash, setShowSplash] = useState(false); 
+  const [isSplashClosing, setIsSplashClosing] = useState(false); 
+  
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
-  const [isSplashClosing, setIsSplashClosing] = useState(false); // 🌟 核心：控制淡出動畫狀態
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -100,36 +103,35 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-    // 🌟 核心修正：將開場動畫改為兩段式關閉
+  // 🌟 核心修正：只有在啟用時才開啟，並執行兩段式關閉
   useEffect(() => {
-    if (!loading && artist) {
-      if (settings?.splash_enabled === false) {
-        setShowSplash(false);
-        return;
-      }
-      
-      // 讀取自訂時間
-      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
-      let removeTimer: ReturnType<typeof setTimeout>;
-      
-      const timer = setTimeout(() => {
-        // 階段 1：先觸發 CSS 的淡出 (hide class)
-        setIsSplashClosing(true);
+    if (!loading && artist && settings) {
+      if (settings.splash_enabled === true) {
+        setShowSplash(true); // 確認啟用後才開啟顯示
         
-        // 階段 2：等待 800ms (對應 CSS 的 transition 時間) 後再把 DOM 移除
-        removeTimer = setTimeout(() => {
-          setShowSplash(false);
-        }, 800);
-      }, duration);
+        const duration = settings.splash_duration ? settings.splash_duration * 1000 : 2000;
+        let removeTimer: ReturnType<typeof setTimeout>;
+        
+        const timer = setTimeout(() => {
+          // 階段 1：先觸發 CSS 的淡出 (hide class)
+          setIsSplashClosing(true);
+          
+          // 階段 2：等待 800ms 後再把 DOM 移除
+          removeTimer = setTimeout(() => {
+            setShowSplash(false);
+          }, 800);
+        }, duration);
 
-      return () => {
-        clearTimeout(timer);
-        if (removeTimer) clearTimeout(removeTimer);
-      };
+        return () => {
+          clearTimeout(timer);
+          if (removeTimer) clearTimeout(removeTimer);
+        };
+      } else {
+        setShowSplash(false); // 若未啟用則維持關閉
+      }
     }
   }, [loading, settings, artist]);
 
-  // 🌟 修正 2：為 tab 加上明確型別
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
@@ -175,9 +177,8 @@ export function PublicProfile() {
 
   return (
     <div className="public-profile-container">
-            {showSplash && (
+      {showSplash && (
         <div 
-          // 🌟 關鍵：動態切換 hide 類別來觸發 CSS transition
           className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
           style={{
             backgroundImage: settings?.splash_image ? `url(${settings.splash_image})` : 'none',
