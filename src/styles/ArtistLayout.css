@@ -7,6 +7,8 @@
   background-color: #FBFBF9;
   color: #4A4A4A;
   font-family: sans-serif;
+  /* 🌟 強制封鎖橫向滑動，防止主畫面被擠出去後還能滑到幽靈空間 */
+  overflow-x: hidden;
 }
 
 .mobile-header {
@@ -35,11 +37,9 @@
 .layout-body {
   display: flex;
   flex: 1;
-  position: relative;
-  /* 🌟【關鍵修改】：移除了 overflow: hidden; 讓手機版內容自然往下長，不會被剪裁 */
 }
 
-/* 側邊欄預設為手機版樣式：完全浮空、隱藏於左側 */
+/* 側邊欄：徹底浮空且脫離文件流 */
 .sidebar {
   width: 260px;
   background-color: #FFFFFF;
@@ -47,12 +47,12 @@
   flex-direction: column;
   border-right: 1px solid #EAE6E1;
   transition: transform 0.3s ease-in-out;
-  /* 🌟【關鍵修改】：確保手機版是 fixed，且擁有最高的 z-index，完全不佔據實體空間 */
-  position: fixed; 
+  /* 🌟 手機版固定浮動，不論如何都不會推擠主畫面 */
+  position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 105; 
+  z-index: 200;
   transform: translateX(-100%);
 }
 
@@ -63,7 +63,7 @@
 .sidebar-top {
   padding: 30px 20px;
   border-bottom: 1px solid #F0ECE7;
-  display: none; /* 手機版預設隱藏 */
+  display: none;
 }
 
 .nav-container {
@@ -81,11 +81,6 @@
   border-radius: 8px;
   font-size: 15px;
   color: #7A7269;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.nav-item:hover {
-  background-color: #FBFBF9;
 }
 
 .nav-item.active {
@@ -112,30 +107,14 @@
   border: 1px solid #DED9D3;
 }
 
-.btn-client {
-  background-color: #F4F0EB;
-  color: #5D4A3E;
-  border-style: dashed;
-}
-
-.btn-preview {
-  background-color: #FFFFFF;
-  color: #7A7269;
-}
-
 .main-content {
   flex: 1;
-  width: 100%; /* 🌟 保證主內容在手機版寬度為 100%，不被任何幽靈側邊欄擠壓 */
-  min-width: 0; /* 防止內部 Flex 元素撐破外殼 */
+  min-width: 0;
   background-color: #FBFBF9;
-  display: flex;
-  flex-direction: column;
 }
 
 .content-inner {
   padding: 20px;
-  max-width: 100%;
-  flex: 1;
 }
 
 .mobile-overlay {
@@ -145,43 +124,20 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 104; /* 在 sidebar (105) 之下，主內容之上 */
+  z-index: 190;
 }
 
-.warning-banner {
-  background-color: #FFF3CD;
-  border: 1px solid #FFEEBA;
-  color: #856404;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.warning-btn {
-  background-color: #856404;
-  color: #FFFFFF;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-/* 電腦版 (1024px 以上) 的樣式覆蓋 */
+/* 電腦版樣式回歸並排 */
 @media (min-width: 1024px) {
   .mobile-header {
     display: none;
   }
   
   .sidebar {
-    position: sticky;
+    position: sticky; /* 電腦版改回 sticky 以便跟隨內容捲動並佔據空間 */
     height: 100vh;
+    transform: translateX(0);
     z-index: 10;
-    transform: translateX(0); /* 電腦版永遠顯示 */
   }
 
   .sidebar-top {
@@ -194,11 +150,5 @@
 
   .mobile-overlay {
     display: none;
-  }
-
-  .warning-banner {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
   }
 }
