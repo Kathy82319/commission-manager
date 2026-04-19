@@ -22,7 +22,6 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
 
-// 🌟 修改 Dropdown 接收 onToggle 狀態
 function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [newVal, setNewVal] = useState('');
@@ -77,8 +76,6 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  
-  // 🌟 核心：追蹤哪個選單被打開，用來動態提升該行的 z-index
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -180,7 +177,6 @@ export function Queue() {
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                // 🌟 當選單開啟時套用 active-row 類別來提升 z-index
                 className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''}`}
               >
                 <td data-label="日期">
@@ -197,25 +193,18 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="委託人資訊">
-                  <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                  <div className="cell-content cell-client-info" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                    <div className="client-name-row">
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      <span style={{ color: '#A0978D', marginLeft: '3px' }}>
-                        ({order.client_name || '無暱稱'} )  
-                      </span>
+                      <span className="client-sub-text">({order.client_name || '無暱稱'})</span>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
-                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
-                      </span>                     
+                    <div className="project-name-row">
+                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
-                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
-                      </span>                     
+                    <div className="order-id-row">
+                      <span className="client-sub-text">{order.client_public_id || '未綁定'}</span> (單號：{order.id.split('-')[1] || order.id})
                     </div>
                   </div>
-                  
                 </td>
                 <td data-label="當前進度">
                   <div className="cell-content cell-status">
