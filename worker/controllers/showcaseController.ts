@@ -2,32 +2,34 @@
 import { Env } from "../shared/types";
 
 export const showcaseController = {
-  // 獲取清單 (公開) - 修正：支援 Handle (@username) 查詢
-  async getPublicList(artistIdOrHandle: string, env: Env, headers: any) {
-    let artistId = artistIdOrHandle;
-
-    // 如果傳入的是 @username，先去 Users 表找出對應的 UUID
-    if (artistIdOrHandle.startsWith('@')) {
-      const handle = artistIdOrHandle.substring(1);
-      const user = await env.commission_db
-        .prepare("SELECT id FROM Users WHERE handle = ?")
-        .bind(handle)
-        .first<{ id: string }>();
-      
-      if (!user) {
-        return new Response(JSON.stringify({ success: false, error: "User not found" }), { status: 404, headers });
-      }
-      artistId = user.id;
+  /**
+   * 獲取公開清單 (修正版：支援透過 public_id 或 內部 id 查詢)
+   */
+  async getPublicList(identifier: string, env: Env, headers: any) {
+    // 1. 先從 Users 表找出該使用者的「真正內部 ID」
+    // 無論傳入的是 UUID (id) 還是公開 ID (public_id)，都能查到
+    const user = await env.commission_db
+      .prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?")
+      .bind(identifier, identifier)
+      .first<{ id: string }>();
+    
+    // 如果找不到該使用者，回傳空陣列
+    if (!user) {
+      return new Response(JSON.stringify({ success: true, data: [] }), { headers });
     }
 
+    // 2. 使用查到的內部 ID (user.id) 去抓取 ShowcaseItems
     const { results } = await env.commission_db
       .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC")
-      .bind(artistId)
+      .bind(user.id)
       .all();
+
     return new Response(JSON.stringify({ success: true, data: results }), { headers });
   },
 
-  // 繪師管理自己的項目
+  /**
+   * 繪師管理自己的項目 (這部分邏輯原本就是對的，因為 currentUserId 是 UUID)
+   */
   async getMyItems(userId: string, env: Env, headers: any) {
     const { results } = await env.commission_db
       .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC")

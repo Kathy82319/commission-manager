@@ -63,7 +63,7 @@ const getSocialIcon = (platform: string) => {
 
 export function PublicProfile() {
   const { artistId } = useParams();
-  const currentArtistId = (artistId?.startsWith('@') ? artistId.substring(1) : artistId) || '';
+  const currentArtistId = artistId || '';
 
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
@@ -76,7 +76,7 @@ export function PublicProfile() {
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
-
+  
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
