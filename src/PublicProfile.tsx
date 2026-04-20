@@ -207,7 +207,11 @@ export function PublicProfile() {
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
 
   return (
-    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}>
+    /* 修正 1：將背景色套用在最外層，確保覆蓋 index.css 的底色，並強制最小高度為 100vh */
+    <div 
+      className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
+      style={{ backgroundColor: bgColor, minHeight: '100vh' }}
+    >
       
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={{ backgroundColor: bgColor }}>
@@ -259,9 +263,12 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        <main className="profile-main-content">
+        {/* 修正 2：主畫面區域設定為透明，讓最外層的 bgColor 透出來 */}
+        <main className="profile-main-content" style={{ backgroundColor: 'transparent' }}>
+          {/* 修正 3：確保 wrapper 包裹了內容區與 footer，並透過 CSS 撐開高度 */}
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
+              
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
                   {availableTags.length > 1 && (
@@ -318,6 +325,7 @@ export function PublicProfile() {
               )}
             </div>
 
+            {/* 修正 4：Footer 放在這個內層框架的底部 */}
             <footer className="profile-internal-footer">
               <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
                 <Link to="/terms">服務條款</Link>

@@ -1,22 +1,17 @@
 /* src/index.css */
-:root {
-  --site-global-bg: #778ca4; 
-}
-
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--site-global-bg);
+  background-color: #778ca4;
   color: #333;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
-  background-color: transparent; 
 }
 
 * {

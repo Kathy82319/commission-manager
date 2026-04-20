@@ -5,10 +5,14 @@
 .public-profile-container {
   min-height: 100vh;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  /* 背景色由 TSX 的 inline style 決定 */
 }
 
 .profile-layout-root {
   display: flex;
+  flex: 1; /* 關鍵：撐開剩餘高度 */
   width: 100%;
   min-height: 100vh;
 }
@@ -121,18 +125,20 @@
 .profile-main-content {
   flex: 1;
   min-width: 0;
-  padding: 40px;
+  padding: 40px 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center; /* 讓內容容器水平置中 */
+  background-color: transparent !important; 
 }
 
-/* 這是你在技術說明中提到的加一層框架解決方案 */
+/* 加一層框架解決方案 */
 .tab-inner-wrapper {
   width: 100%;
+  flex: 1; /* 關鍵：讓 wrapper 撐滿 main 的高度 */
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 讓內部的 footer 能置底 */
   align-items: center;
   min-height: 100%;
 }
@@ -148,6 +154,7 @@
 }
 
 .tab-content-area {
+  flex: 1; /* 讓內容區佔據上方所有空間 */
   width: 100%;
 }
 
@@ -155,7 +162,8 @@
 .profile-internal-footer {
   width: 100%;
   padding: 60px 0 20px 0;
-  margin-top: auto;
+  margin-top: auto; /* 將 Footer 推到 wrapper 的最底端 */
+  text-align: center;
 }
 
 .profile-internal-footer .footer-links {
