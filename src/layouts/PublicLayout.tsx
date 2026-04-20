@@ -46,6 +46,11 @@ export function PublicLayout() {
         </button>
       </header>
 
+<main className={`public-main ${isLegalPage ? 'legal-page' : ''}`} style={{ border: '5px solid red' }}>
+  <Outlet context={{ setTheme }} />
+</main>
+
+
       <main className="public-main">
         <Outlet context={{ setTheme }} />
         
