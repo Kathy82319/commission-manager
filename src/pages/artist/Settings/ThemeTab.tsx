@@ -1,5 +1,5 @@
+import type { ProfileSettings } from '../Settings/types';
 // src/pages/artist/Settings/ThemeTab.tsx
-import { ProfileSettings } from './types';
 
 interface Props {
   settings: ProfileSettings;
