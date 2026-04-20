@@ -1,27 +1,36 @@
-/* src/styles/PublicProfile.css 完整修正版 */
+/* src/styles/PublicProfile.css - 完整覆蓋版 */
 
+/* --- 1. 全域與基礎樣式 --- */
 .public-profile-container {
   min-height: 100vh;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
-/* 藝廊模式排版覆蓋 */
-.layout-gallery .content-wrapper {
-  max-width: 1400px;
+.content-wrapper {
+  max-width: 1200px;
   margin: 0 auto;
   padding: 60px 20px;
-  display: block; /* 移除 flex 側邊欄模式 */
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+  transition: opacity 0.5s ease;
 }
 
-/* 藝廊模式頭像修正 */
+/* --- 2. 藝廊模式 (Gallery Layout) 專屬樣式 --- */
+.layout-gallery .content-wrapper {
+  max-width: 1400px;
+  display: block; /* 藝廊模式不使用側邊欄 flex 佈局 */
+}
+
 .gallery-header {
   display: flex;
   align-items: center;
   gap: 40px;
   margin-bottom: 40px;
   padding-bottom: 30px;
-  border-bottom: 1px solid rgba(128,128,128,0.2);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
 }
 
 .gallery-avatar {
@@ -30,15 +39,25 @@
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border: 3px solid rgba(255, 255, 255, 0.2);
 }
 
 .gallery-info h1 {
   font-size: 32px;
   margin: 0 0 10px 0;
+  letter-spacing: 1px;
 }
 
-/* 標籤過濾 */
+.gallery-info p {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 700px;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+
+/* 藝廊模式標籤篩選 */
 .gallery-tag-filter {
   display: flex;
   justify-content: center;
@@ -54,19 +73,28 @@
   background: transparent;
   color: inherit;
   font-weight: bold;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.tag-btn:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.1);
 }
 
 .tag-btn.active {
+  opacity: 1;
   background: currentColor;
-  filter: invert(1);
+  filter: invert(1); /* 自動根據文字顏色反轉背景 */
 }
 
-/* 瀑布流核心佈局 */
+/* --- 3. 瀑布流佈局 (Masonry Grid) --- */
 .masonry-grid {
   column-count: 3;
   column-gap: 24px;
+  width: 100%;
 }
 
 @media (max-width: 1100px) { .masonry-grid { column-count: 2; } }
@@ -79,74 +107,133 @@
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: rgba(128, 128, 128, 0.05);
 }
 
 .masonry-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px);
 }
 
 .masonry-item img {
   width: 100%;
   display: block;
+  object-fit: cover;
 }
 
-/* 右下角浮動框 */
+/* 圖片右下角半透明浮動框 */
 .floating-info-box {
   position: absolute;
   bottom: 12px;
   right: 12px;
   padding: 12px 18px;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   text-align: right;
-  max-width: 80%;
+  max-width: 85%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
-.item-price { font-weight: 900; font-size: 14px; opacity: 0.9; }
-.item-tags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
-.item-tags span { font-size: 11px; opacity: 0.7; font-weight: bold; }
-
-/* 修正部落格模式樣式衝突 */
-.sidebar, .about-card, .rich-text-content {
-  border-radius: 16px;
-  border: 1px solid rgba(128,128,128,0.15);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  /* 移除原本 CSS 裡的 background-color，交給 TSX 決定 */
+.item-title {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.sidebar {
-  padding: 24px;
+.item-price {
+  font-weight: 900;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
-.rich-text-content {
-  padding: 40px;
-}
-
-/* 其他共用樣式維持... */
-.content-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 60px 20px;
+.item-tags {
   display: flex;
-  gap: 60px;
-  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
 }
 
-.avatar-container {
+.item-tags span {
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: bold;
+}
+
+/* --- 4. 部落格模式 (Blog Layout) 修正 --- */
+.layout-blog .sidebar {
+  width: 320px;
+  position: sticky;
+  top: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+.layout-blog .avatar-container {
   width: 100%;
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(128, 128, 128, 0.2);
 }
 
-.avatar-image { width: 100%; height: 100%; object-fit: cover; }
+.layout-blog .main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 
-/* 詳情彈窗 */
+.about-card {
+  margin-top: 8px;
+}
+
+.about-title {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  padding-bottom: 8px;
+}
+
+.tab-content-area .rich-text-content {
+  padding: 40px;
+  border-radius: 18px;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+/* --- 5. 互動彈窗 (Modals / Lightbox) --- */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  backdrop-filter: blur(10px);
+}
+
+/* 展示項目詳情彈窗 */
 .showcase-content-box {
   display: flex;
   width: 90vw;
@@ -154,13 +241,104 @@
   max-height: 85vh;
   border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
-.showcase-cover { flex: 1.2; background: #000; display: flex; align-items: center; }
-.showcase-cover img { width: 100%; max-height: 85vh; object-fit: contain; }
-.showcase-details { flex: 1; padding: 40px; overflow-y: auto; }
+.showcase-cover {
+  flex: 1.2;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.showcase-cover img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+}
+
+.showcase-details {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.showcase-details h2 {
+  margin: 0 0 12px 0;
+  font-size: 26px;
+}
+
+.modal-price {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #A67B3E;
+}
+
+.modal-tags {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.modal-tags span {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  background: rgba(128, 128, 128, 0.1);
+}
+
+/* --- 6. 響應式調整 --- */
 @media (max-width: 850px) {
-  .showcase-content-box { flex-direction: column; }
-  .showcase-cover { height: 40vh; }
+  .showcase-content-box {
+    flex-direction: column;
+  }
+  .showcase-cover {
+    height: 40vh;
+    flex: none;
+  }
+  .content-wrapper {
+    flex-direction: column;
+    gap: 30px;
+  }
+  .layout-blog .sidebar {
+    width: 100%;
+    position: relative;
+    top: 0;
+  }
+  .gallery-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
 }
+
+/* --- 7. 其他原本的樣式維持 --- */
+.social-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.social-icon {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  text-decoration: none; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+  transition: transform 0.2s ease;
+}
+.social-icon:hover { transform: translateY(-3px); filter: brightness(1.1); }
+
+.tabs-container {
+  display: flex; gap: 12px; border-bottom: 2px solid rgba(128,128,128,0.2);
+  margin-bottom: 35px; overflow-x: auto;
+}
+.tab-button {
+  padding: 14px 24px; border: none; background: transparent; border-bottom: 3px solid transparent;
+  color: inherit; opacity: 0.6; cursor: pointer; white-space: nowrap; font-size: 16px;
+}
+.tab-button.active { border-bottom-color: currentColor; opacity: 1; font-weight: bold; }
+
+.portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
+.portfolio-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 24px rgba(0,0,0,0.1); border: 1px solid rgba(128,128,128,0.1); }
+.portfolio-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.portfolio-item:hover img { transform: scale(1.08); }
+
+.lightbox-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 30px; cursor: pointer; z-index: 20001; }
+.empty-state { padding: 60px; text-align: center; opacity: 0.6; border: 2px dashed rgba(128,128,128,0.3); border-radius: 16px; width: 100%; }
