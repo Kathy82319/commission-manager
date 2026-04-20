@@ -31,14 +31,12 @@
 }
 
 .sidebar-header {
-  padding: 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid #EAE6E1;
-  background-color: #FFFFFF;
+  background-color: #FAFAFA;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
   border-radius: 16px 16px 0 0;
 }
 
@@ -48,19 +46,24 @@
   font-size: 16px;
 }
 
-.sidebar-filter {
-  width: auto;
-  padding: 6px 12px;
-}
-
-.sidebar-search {
-  padding: 10px 20px;
-  border-bottom: 1px solid #EAE6E1;
-  background-color: #FAFAFA;
+.sidebar-controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
 }
 
 .sidebar-search-input {
   padding: 8px 12px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-filter {
+  width: auto;
+  padding: 8px 12px;
+  flex-shrink: 0;
   font-size: 13px;
 }
 
