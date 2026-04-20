@@ -22,6 +22,7 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
 
+// 🌟 修改 Dropdown 接收 onToggle 狀態
 function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [newVal, setNewVal] = useState('');
@@ -77,7 +78,7 @@ export function Queue() {
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   
-  // 核心：追蹤哪個選單被打開，用來動態提升該行的 z-index
+  // 🌟 核心：追蹤哪個選單被打開，用來動態提升該行的 z-index
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -167,11 +168,11 @@ export function Queue() {
             <tr>
               <th style={{ width: '100px' }}>日期</th>
               <th>委託人資訊</th>
-              <th style={{ width: '150px' }}>當前進度</th>
-              <th style={{ width: '140px' }}>預計完工</th>
-              <th style={{ width: '120px' }}>付款進度</th>
-              <th style={{ width: '180px' }}>備註欄位</th>
-              <th style={{ width: '100px' }}>操作</th>
+              <th>當前進度</th>
+              <th>預計完工</th>
+              <th>付款進度</th>
+              <th>備註欄位</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -179,7 +180,7 @@ export function Queue() {
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                // 🌟 當選單開啟時，提升該行 z-index 避免穿透
+                // 🌟 當選單開啟時套用 active-row 類別來提升 z-index
                 className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''}`}
               >
                 <td data-label="日期">
@@ -196,23 +197,28 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="委託人資訊">
-                  {/* 🌟 委託人資訊維持你設定的三行排版，不動！ */}
-                  <div className="cell-content-client">
-                    <div className="client-name-row">
+                  <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      <span className="client-sub-text">({order.client_name || '無暱稱'})</span>
+                      <span style={{ color: '#A0978D', marginLeft: '3px' }}>
+                        ({order.client_name || '無暱稱'} )  
+                      </span>
                     </div>
-                    <div className="project-name-row">
-                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
+                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
+                      </span>                     
                     </div>
-                    <div className="order-id-row">
-                      {order.client_public_id || '未綁定'} (單號：{order.id.split('-')[1] || order.id})
+                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
+                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
+                      </span>                     
                     </div>
                   </div>
+                  
                 </td>
                 <td data-label="當前進度">
                   <div className="cell-content cell-status">
-                    {/* 🌟 浮空標籤：絕對定位，不佔用空間 */}
                     <div className="workflow-badge-wrapper">
                       <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
                         {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
@@ -242,7 +248,7 @@ export function Queue() {
                 </td>
                 <td data-label="備註欄位">
                   <div className="cell-content cell-note">
-                    {order.is_rush === '是' && <span className="rush-badge desktop-only-badge">急單</span>}
+                    {order.is_rush === '是' && <span className="rush-badge">急單</span>}
                     <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
