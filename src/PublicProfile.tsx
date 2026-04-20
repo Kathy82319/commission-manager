@@ -1,4 +1,4 @@
-// src/PublicProfile.tsx 完整修正版
+// src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
@@ -71,13 +71,12 @@ export function PublicProfile() {
   const [loading, setLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
   const [selectedShowcase, setSelectedShowcase] = useState<ShowcaseItem | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
+  
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
-
-  // 1. 標籤複選狀態
-  const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -139,7 +138,6 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
-  // 2. 複選切換邏輯
   const handleTagClick = (tag: string) => {
     setSelectedTags(prev => {
       if (tag === '全部') return ['全部'];
@@ -152,7 +150,6 @@ export function PublicProfile() {
     });
   };
 
-  // 3. 多重過濾邏輯
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return showcaseItems;
     return showcaseItems.filter(item => 
@@ -208,138 +205,114 @@ export function PublicProfile() {
       )}
 
       <div className="content-wrapper" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        {layoutType === 'gallery' ? (
-          <div className="gallery-layout-inner">
-            <div className="gallery-header">
-              <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="gallery-avatar" />
-              <div className="gallery-info">
-                <h1>{artist.display_name}</h1>
-                <p>{artist.bio || '這名繪師還沒有寫下簡介。'}</p>
-                <div className="social-links">
-                  {settings?.social_links?.map((link, idx) => (
-                    <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
-                      {getSocialIcon(link.platform)}
-                    </a>
-                  ))}
-                </div>
-              </div>
+        {/* 統一側邊欄設計 */}
+        <aside className="profile-sidebar" style={{ background: cardBg }}>
+          <div className="sidebar-sticky-content">
+            <div className="avatar-section">
+              <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
             </div>
-
-            {availableTags.length > 1 && (
-              <div className="gallery-tag-filter">
-                {availableTags.map(tag => {
-                  const isSelected = selectedTags.includes(tag);
-                  return (
-                    <button 
-                      key={tag} 
-                      className={`tag-btn ${isSelected ? 'active' : ''}`} 
-                      onClick={() => handleTagClick(tag)}
-                      style={{
-                        background: 'transparent',
-                        color: textColor,
-                        borderColor: isSelected ? '#A67B3E' : 'rgba(128,128,128,0.3)', 
-                        borderWidth: '2px',
-                        borderStyle: 'solid'
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {settings?.hidden_sections?.includes('showcase') ? (
-              <div className="empty-state">徵委託項目目前設定為隱藏。</div>
-            ) : filteredShowcaseItems.length === 0 ? (
-              <div className="empty-state">目前沒有符合的項目。</div>
-            ) : (
-              <div className="masonry-grid">
-                {filteredShowcaseItems.map(item => (
-                  <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
-                    <img src={item.cover_url} alt={item.title} loading="lazy" />
-                    <div className="floating-info-box" style={{ background: cardBg }}>
-                      <div className="item-title">{item.title}</div>
-                      <div className="item-price">${item.price_info}</div>
-                      <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="sidebar" style={{ background: cardBg }}>
-              <div className="avatar-container">
-                <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="avatar-image" />
-              </div>
-              <h1 className="artist-name">{artist.display_name}</h1>
+            
+            <div className="info-section">
+              <h1 className="profile-name">{artist.display_name}</h1>
+              <p className="profile-bio">{artist.bio || '這名繪師還沒有寫下簡介。'}</p>
               <div className="social-links">
                 {settings?.social_links?.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
+                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" 
+                    style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
                     {getSocialIcon(link.platform)}
                   </a>
                 ))}
               </div>
-              {!settings?.hidden_sections?.includes('profile_basic') && (
-                <div className="about-card">
-                  <h3 className="about-title">關於我</h3>
-                  <p className="about-text">{artist.bio || '尚未填寫簡介。'}</p>
-                </div>
-              )}
             </div>
 
-            <div className="main-content">
-              <div className="tabs-container">
-                {availableTabs.map((tab: any) => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`tab-button ${currentTab === tab.id ? 'active' : ''}`}>
-                    {tab.label}
-                  </button>
+            <nav className="sidebar-nav">
+              {availableTabs.map((tab: any) => (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)} 
+                  className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
+                  style={{ color: currentTab === tab.id ? textColor : 'inherit' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* 右側主內容區 */}
+        <main className="profile-main-content">
+          <div className="tab-content-area">
+            {/* 1. 徵委託項目 (瀑布流) */}
+            {currentTab === 'showcase' && (
+              <div className="showcase-section">
+                {availableTags.length > 1 && (
+                  <div className="tag-filter-bar">
+                    {availableTags.map(tag => {
+                      const isSelected = selectedTags.includes(tag);
+                      return (
+                        <button 
+                          key={tag} 
+                          className={`tag-btn ${isSelected ? 'active' : ''}`} 
+                          onClick={() => handleTagClick(tag)}
+                          style={{
+                            background: 'transparent',
+                            color: textColor,
+                            borderColor: isSelected ? '#A67B3E' : 'rgba(128,128,128,0.3)', 
+                            borderWidth: '2px',
+                            borderStyle: 'solid'
+                          }}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="masonry-grid">
+                  {filteredShowcaseItems.map(item => (
+                    <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
+                      <img src={item.cover_url} alt={item.title} loading="lazy" />
+                      <div className="floating-info-box" style={{ background: cardBg }}>
+                        <div className="item-title">{item.title}</div>
+                        <div className="item-price">${item.price_info}</div>
+                        <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. 作品展示 (網格) */}
+            {currentTab === 'portfolio' && (
+              <div className="portfolio-grid">
+                {settings?.portfolio.map((img, idx) => (
+                  <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                    <img src={img} alt="作品" loading="lazy" />
+                  </div>
                 ))}
               </div>
+            )}
+            
+            {/* 3. 富文本分頁內容 */}
+            {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
+              <div className="rich-text-content" style={{ background: cardBg }} 
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
+            )}
 
-              <div className="tab-content-area">
-                {currentTab === 'showcase' && (
-                  <div className="masonry-grid">
-                    {filteredShowcaseItems.map(item => (
-                      <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
-                        <img src={item.cover_url} alt={item.title} loading="lazy" />
-                        <div className="floating-info-box" style={{ background: cardBg }}>
-                          <div className="item-title">{item.title}</div>
-                          <div className="item-price">${item.price_info}</div>
-                          <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {currentTab === 'portfolio' && (
-                  <div className="portfolio-grid">
-                    {settings?.portfolio.map((img, idx) => (
-                      <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
-                        <img src={img} alt="作品" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-                  <div className="rich-text-content" style={{ background: cardBg }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
-                )}
-
-                {settings?.custom_sections?.map(sec => 
-                  currentTab === sec.id && (
-                    <div key={sec.id} className="rich-text-content" style={{ background: cardBg }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
-                  )
-                )}
-              </div>
-            </div>
-          </>
-        )}
+            {/* 4. 自訂區塊 */}
+            {settings?.custom_sections?.map(sec => 
+              currentTab === sec.id && (
+                <div key={sec.id} className="rich-text-content" style={{ background: cardBg }} 
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
+              )
+            )}
+          </div>
+        </main>
       </div>
 
+      {/* Showcase 詳細 Modal */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close">✕</button>
@@ -355,6 +328,7 @@ export function PublicProfile() {
         </div>
       )}
 
+      {/* 單張圖片放大 Modal */}
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close">✕</button>

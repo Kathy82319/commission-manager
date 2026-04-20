@@ -20,8 +20,83 @@
 
 /* --- 2. 藝廊模式 (Gallery Layout) 專屬樣式 --- */
 .layout-gallery .content-wrapper {
-  max-width: 1400px;
-  display: block; /* 藝廊模式不使用側邊欄 flex 佈局 */
+  max-width: 1600px; /* 增加最大寬度以容納側邊欄與大瀑布牆 */
+  display: flex;
+  gap: 50px;
+  align-items: flex-start;
+}
+
+/* 側邊欄樣式 */
+.profile-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 40px; /* 滾動時固定在頂部 */
+}
+
+.avatar-section {
+  margin-bottom: 24px;
+}
+
+.profile-avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 20px; /* 改用圓角矩形增加現代感 */
+  object-fit: cover;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.profile-name {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.profile-bio {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+/* 側邊導覽選單 */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(128,128,128,0.2);
+}
+
+.nav-item {
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  opacity: 1;
+  background: rgba(128,128,128,0.1);
+  padding-left: 24px; /* 選中時稍微右偏，增加動態感 */
+}
+
+/* 主內容區 */
+.profile-main-content {
+  flex: 1;
+  min-width: 0; /* 防止 Masonry 撐破 Flex 容器 */
+}
+
+/* 針對文字分頁的空虛感優化 */
+.layout-gallery .rich-text-content {
+  max-width: 900px; /* 文字內容不要太寬，維持閱讀舒適 */
+  margin: 0;
+  padding: 50px;
 }
 
 .gallery-header {
