@@ -160,7 +160,7 @@ export function PublicProfile() {
   }, [showcaseItems, activeTag]);
 
   // 舊版部落格模式的 Tab 邏輯
-  const availableTabs = useMemo(() => {
+const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
@@ -171,6 +171,10 @@ export function PublicProfile() {
     };
 
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
+    
+    // 增加這行：判斷若沒有隱藏且有項目，就加入分頁
+    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵委託項目' });
+
     if (!isHidden('detailed_intro') && hasContent(settings.detailed_intro)) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && hasContent(settings.process)) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && hasContent(settings.payment)) tabs.push({ id: 'payment', label: '付款方式' });
@@ -182,7 +186,7 @@ export function PublicProfile() {
       });
     }
     return tabs;
-  }, [settings]);
+  }, [settings, showcaseItems]); // 記得在 dependency array 加入 showcaseItems
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
 
@@ -270,7 +274,11 @@ export function PublicProfile() {
             )}
 
             {/* 瀑布流徵委託卡片區 */}
-            {filteredShowcaseItems.length === 0 ? (
+            {settings?.hidden_sections?.includes('showcase') ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: secondaryTextColor }}>
+                徵委託項目目前設定為隱藏。
+              </div>
+            ) : filteredShowcaseItems.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: secondaryTextColor }}>
                 目前沒有符合的徵委託項目。
               </div>
@@ -335,6 +343,27 @@ export function PublicProfile() {
               </div>
 
               <div className="tab-content-area" style={{ color: isDarkText ? '#333' : '#EEE' }}>
+
+                {/* 增加這段：渲染徵委託項目的瀑布流 */}
+                {currentTab === 'showcase' && (
+                  <div className="masonry-grid">
+                    {filteredShowcaseItems.map(item => (
+                      <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
+                        <img src={item.cover_url} alt={item.title} loading="lazy" />
+                        <div className="floating-info-box" style={{ background: cardBgColor, color: isDarkText ? '#333' : '#FFF' }}>
+                          <div className="item-title">{item.title}</div>
+                          <div className="item-price">{item.price_info}</div>
+                          <div className="item-tags">
+                            {item.tags.slice(0, 3).map(tag => (
+                              <span key={tag}>#{tag}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {currentTab === 'portfolio' && (
                   <div className="portfolio-grid">
                     {settings?.portfolio.map((img, idx) => (

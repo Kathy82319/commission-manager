@@ -132,7 +132,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
-            {['portfolio', 'detailed_intro', 'process', 'payment', 'rules', 'custom'].includes(activeTab) && !isCurrentTabLocked && (
+            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules', 'custom'].includes(activeTab) && !isCurrentTabLocked && (
               <button 
                 onClick={()=>toggleVisibility(activeTab)} 
                 style={{ 
