@@ -451,11 +451,11 @@ export function Notebook() {
     <div className="notebook-page">
       <div className="notebook-container">
         
-        <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
+          <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div className="sidebar-header">
-          <span className="sidebar-title">委託單列表</span>
+            <span className="sidebar-title">委託單列表</span>
             <div className="sidebar-controls">
-              <input type="text" className="form-input sidebar-search-input" placeholder="搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <input type="text" className="form-input sidebar-search-input" placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               <select className="form-input sidebar-filter" value={filter} onChange={e => setFilter(e.target.value as any)}>
                 {tabs.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
               </select>

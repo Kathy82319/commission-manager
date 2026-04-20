@@ -33,11 +33,12 @@
 .sidebar-header {
   padding: 16px 20px;
   border-bottom: 1px solid #EAE6E1;
-  background-color: #FAFAFA;
+  background-color: #FFFFFF;
   display: flex;
   flex-direction: column;
   gap: 12px;
   border-radius: 16px 16px 0 0;
+  box-sizing: border-box;
 }
 
 .sidebar-title {
@@ -53,18 +54,21 @@
   align-items: center;
 }
 
-.sidebar-search-input {
+/* 提升選擇器權重 (.sidebar-controls .class名稱) 
+   以此精準覆寫 .form-input 帶來的 width: 100% 災難 */
+.sidebar-controls .sidebar-search-input {
   padding: 8px 12px;
   font-size: 13px;
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto; /* 允許彈性伸縮，佔滿剩餘空間 */
+  width: auto;
+  min-width: 100px; /* 給予基本底線，防止再次被擠壓到消失 */
 }
 
-.sidebar-filter {
-  width: auto;
+.sidebar-controls .sidebar-filter {
   padding: 8px 12px;
-  flex-shrink: 0;
   font-size: 13px;
+  flex: 0 0 auto; /* 固定自身大小，不隨意擴張 */
+  width: auto;
 }
 
 .sidebar-list-container {
