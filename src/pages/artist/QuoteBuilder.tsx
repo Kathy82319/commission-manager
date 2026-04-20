@@ -171,9 +171,9 @@ export function QuoteBuilder() {
           <h2 className="quote-header-title">產出新委託單</h2>
           {quotaInfo && (
             <div className={`plan-badge ${quotaInfo.plan_type}`}>
-              {quotaInfo.plan_type === 'pro' && '✨ 目前方案：專業版 (無限建單額度)'}
-              {quotaInfo.plan_type === 'trial' && `⏳ 目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
-              {quotaInfo.plan_type === 'free' && `🌱 目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
+              {quotaInfo.plan_type === 'pro' && '目前方案：專業版 (無限建單額度)'}
+              {quotaInfo.plan_type === 'trial' && `目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
+              {quotaInfo.plan_type === 'free' && `目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
             </div>
           )}
         </div>
@@ -194,6 +194,7 @@ export function QuoteBuilder() {
         </div>
       </div>
 
+      {/* 模糊效果僅套用到表單網格容器 */}
       <div className="quote-grid" style={{ 
         filter: isQuotaExceeded ? 'blur(6px)' : 'none',
         pointerEvents: isQuotaExceeded ? 'none' : 'auto',
@@ -203,7 +204,6 @@ export function QuoteBuilder() {
         
         <div className="quote-card">
           <h3 className="quote-card-title">基本資訊設定</h3>
-          
           <div className="form-grid">
             <div className="form-grid-full">
               <label className="form-label">委託人名稱 (FB暱稱/ID等備註)</label>
@@ -392,29 +392,30 @@ export function QuoteBuilder() {
             </button>
           </div>
         </div>
+      </div>
 
-        {isQuotaExceeded && (
-          <div className="quota-modal-overlay">
-            <div className="quota-modal-box">
-              <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
-              <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>建單額度已用盡</h3>
-              <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
-                {quotaInfo?.plan_type === 'trial' 
-                  ? '您的專業版試用額度已用完。升級專業版獲得無限建單額度！' 
-                  : '基礎免費版每月最多建立 3 筆委託。升級以解鎖無限額度！'}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-                  前往升級方案
-                </button>
-                <button onClick={() => navigate('/artist/queue')} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  返回排單表
-                </button>
-              </div>
+      {/* 關鍵點：將額度限制 Modal 移出被模糊的容器之外 */}
+      {isQuotaExceeded && (
+        <div className="quota-modal-overlay">
+          <div className="quota-modal-box">
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
+            <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>建單額度已用盡</h3>
+            <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
+              {quotaInfo?.plan_type === 'trial' 
+                ? '您的專業版試用額度已用完。升級專業版獲得無限建單額度！' 
+                : '基礎免費版每月最多建立 3 筆委託。升級以解鎖無限額度！'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                前往升級方案
+              </button>
+              <button onClick={() => navigate('/artist/queue')} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                返回排單表
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
