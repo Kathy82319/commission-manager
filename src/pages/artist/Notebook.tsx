@@ -462,9 +462,6 @@ export function Notebook() {
             </div>
           </div>
 
-          <div className="sidebar-search">
-            <input type="text" className="form-input sidebar-search-input" placeholder="🔍 搜尋暱稱/單號... (輸入2字元以上)" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          </div>
 
           <div className="sidebar-list-container">
             {filteredOrders.map(order => {
