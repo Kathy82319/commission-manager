@@ -609,6 +609,9 @@ export function Settings() {
                        <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '12px', color: '#A05C5C', textAlign: 'center', lineHeight: '1.4' }}>
+                          點擊按鈕即代表同意<a href="/refund-policy" target="_blank" style={{ color: '#A05C5C', textDecoration: 'underline' }}>退款政策</a>，<br/>數位內容一經啟用恕不退費。
+                        </div>                        
                         <button 
                           onClick={handleUpgradeClick} 
                           disabled={isUpgrading}
@@ -622,10 +625,7 @@ export function Settings() {
                         >
                           {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
                         </button>
-                        {/* 🌟 藍新金流要求的退款政策明確宣告 */}
-                        <div style={{ fontSize: '12px', color: '#A05C5C', textAlign: 'center', lineHeight: '1.4' }}>
-                          點擊按鈕即代表同意<a href="/refund-policy" target="_blank" style={{ color: '#A05C5C', textDecoration: 'underline' }}>退款政策</a>，<br/>數位內容一經啟用恕不退費。
-                        </div>
+
                       </div>
                     )}
                   </div>
