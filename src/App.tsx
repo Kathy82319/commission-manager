@@ -74,7 +74,7 @@ export function App() {
         </Route>
         
         {/* === 新增：管理員後台區 === */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/adminbalabababa" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
         </Route>
 
