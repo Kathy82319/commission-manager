@@ -1,8 +1,8 @@
-/* src/styles/PublicProfile.css - 完整重構版 */
+/* src/styles/PublicProfile.css - 藝廊模式優化版 */
 
 /* ==========================================================================
    1. 共用全域樣式 (Global Styles)
-   適用於所有模式的基礎設定、動畫、小元件與彈窗
+   基礎設定、動畫、捲軸與通用的彈窗元件
    ========================================================================== */
 
 .public-profile-container {
@@ -12,39 +12,18 @@
   overflow-x: hidden;
 }
 
+/* 主容器：控制整體內容與視窗邊界的距離 */
 .content-wrapper {
   max-width: 1600px;
   margin: 0 auto;
   display: flex;
-  gap: 50px;
-  padding: 60px 40px;
+  gap: 40px;           /* 縮小側邊欄與內容的間距 */
+  padding: 40px 20px;  /* 距離邊界縮短一半 (原 60px 40px) */
   align-items: flex-start;
   transition: opacity 0.5s ease;
 }
 
-/* 社群連結 */
-.social-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
-.social-icon {
-  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  text-decoration: none; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
-  transition: transform 0.2s ease;
-}
-
-.social-icon {
-  width: 36px; 
-  height: 36px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  text-decoration: none; 
-  border-radius: 50%; 
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: transform 0.2s ease, filter 0.2s ease;
-}
-
-.social-icon:hover { transform: translateY(-3px); filter: brightness(1.1); }
-
-/* 富文本內容通用樣式 (詳細介紹、規則等) */
+/* 富文本內容 (詳細介紹、規則等) */
 .rich-text-content {
   line-height: 1.9;
   font-size: 16px;
@@ -73,105 +52,81 @@
   width: 100%; 
 }
 
-/* 圖片放大與詳情彈窗 (Lightbox / Modal) */
-.lightbox-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.9); display: flex; align-items: center;
-  justify-content: center; z-index: 20000; backdrop-filter: blur(10px);
-}
-
-.lightbox-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 30px; cursor: pointer; z-index: 20001; }
-
-.showcase-content-box {
-  display: flex;
-  width: 90vw;
-  max-width: 1100px;
-  max-height: 85vh;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-}
-
-.showcase-cover { flex: 1.2; background: #000; display: flex; align-items: center; }
-.showcase-cover img { max-width: 100%; max-height: 85vh; object-fit: contain; }
-.showcase-details { flex: 1; padding: 40px; overflow-y: auto; }
-
-.showcase-details h2 { margin: 0 0 12px 0; font-size: 26px; }
-.modal-price { font-size: 22px; font-weight: bold; margin-bottom: 16px; color: #A67B3E; }
-.modal-tags { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-.modal-tags span { padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; background: rgba(128,128,128,0.1); }
-
-
 /* ==========================================================================
-   2. 藝廊模式 (Gallery Layout)
-   採用側邊導覽列 (Navigation Rail) 配置
+   2. 側邊欄樣式 (Sidebar)
+   大頭照、個人簡介、社群連結與導覽選單
    ========================================================================== */
 
-.layout-gallery .content-wrapper {
-  max-width: 1600px;
-  display: flex;
-  gap: 50px;
-  padding: 60px 40px;
-  align-items: flex-start;
-}
-
-/* 側邊欄樣式 - 修正圓角問題 */
 .profile-sidebar {
   width: 280px;
   flex-shrink: 0;
   position: sticky;
   top: 40px;
   padding: 30px;
-  border-radius: 24px; /* 這裡確保側邊欄有圓角 */
+  border-radius: 24px;
   border: 1px solid rgba(128, 128, 128, 0.1);
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.layout-gallery {
-  width: 120px;
-  height: 120px;
-  border-radius: 20px;
-  object-fit: cover;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-.profile-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 20px;
-  object-fit: cover;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-.layout-gallery {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.profile-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-.profile-bio { font-size: 14px; line-height: 1.6; opacity: 0.8; margin-bottom: 24px; }
-
-.layout-gallery  {
-  font-size: 14px;
-  line-height: 1.6;
-  opacity: 0.8;
+/* 大頭像區域 - 執行置中 */
+.avatar-section {
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
 }
 
-/* 藝廊選單按鈕 */
-.layout-gallery  {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(128,128,128,0.2);
+.profile-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-/* 選單導覽 */
+.info-section {
+  text-align: center; /* 讓簡介內容也配合居中 */
+}
+
+.profile-name { 
+  font-size: 22px; 
+  font-weight: bold; 
+  margin-bottom: 10px; 
+}
+
+.profile-bio { 
+  font-size: 14px; 
+  line-height: 1.6; 
+  opacity: 0.8; 
+  margin-bottom: 24px; 
+}
+
+/* 社群連結小圖示 */
+.social-links { 
+  display: flex; 
+  justify-content: center;
+  flex-wrap: wrap; 
+  gap: 10px; 
+  margin-bottom: 20px; 
+}
+
+.social-icon {
+  width: 36px; 
+  height: 36px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  text-decoration: none; 
+  border-radius: 50%; 
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.social-icon:hover { 
+  transform: translateY(-3px); 
+  filter: brightness(1.1); 
+}
+
+/* 側邊導覽選單 (取代原本的 Tab 選單) */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -179,20 +134,6 @@
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(128,128,128,0.2);
-}
-
-.layout-gallery {
-  text-align: left;
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 15px;
-  color: inherit;
-  opacity: 0.5;
-  transition: all 0.2s ease;
-  font-weight: 500;
 }
 
 .nav-item {
@@ -208,115 +149,84 @@
   transition: all 0.2s ease;
 }
 
-.layout-gallery  {
-  opacity: 1;
-  background: rgba(128,128,128,0.08);
-}
-
-.layout-gallery  {
-  opacity: 1;
-  background: rgba(128,128,128,0.12);
-  padding-left: 20px; /* 選中時稍微右移增加層次感 */
-  font-weight: bold;
-}
 .nav-item:hover, .nav-item.active {
   opacity: 1;
   background: rgba(128,128,128,0.12);
   font-weight: bold;
 }
 
-/* 藝廊主內容區 */
-.layout-gallery .profile-main-content {
+/* ==========================================================================
+   3. 主內容展示區 (Gallery & Masonry)
+   瀑布牆佈局、作品卡片與標籤篩選
+   ========================================================================== */
+
+.profile-main-content {
   flex: 1;
-  min-width: 0;
+  min-width: 0; /* 關鍵：防止內容撐開導致圖片無限大 */
 }
 
 /* 標籤篩選列 */
-.layout-gallery  {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
+.tag-filter-bar { 
+  display: flex; 
+  gap: 10px; 
+  margin-bottom: 30px; 
+  flex-wrap: wrap; 
 }
 
-/* 標籤篩選列 */
-.tag-filter-bar { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
 .tag-btn {
-  padding: 6px 18px; border-radius: 30px; background: transparent; color: inherit;
-  font-weight: bold; font-size: 13px; cursor: pointer; transition: all 0.2s ease;
-  opacity: 0.6; border: 2px solid rgba(128,128,128,0.3);
-}
-.tag-btn.active { opacity: 1; border-color: #A67B3E; }
-
-.layout-gallery {
-  padding: 6px 18px;
-  border-radius: 30px;
-  background: transparent;
+  padding: 6px 18px; 
+  border-radius: 30px; 
+  background: transparent; 
   color: inherit;
-  font-weight: bold;
-  font-size: 13px;
-  cursor: pointer;
+  font-weight: bold; 
+  font-size: 13px; 
+  cursor: pointer; 
   transition: all 0.2s ease;
-  opacity: 0.6;
-  border: 2px solid rgba(128,128,128,0.3); /* 預設框線顏色 */
+  opacity: 0.6; 
+  border: 2px solid rgba(128,128,128,0.3);
 }
 
-.layout-gallery .tag-btn:hover {
-  opacity: 1;
-  border-color: rgba(128,128,128,0.5);
+.tag-btn.active { 
+  opacity: 1; 
+  border-color: #A67B3E; 
 }
 
-.layout-gallery  {
-  opacity: 1;
-  background: transparent !important; 
-  /* 選取時的 border-color 由 TSX style 控制為 #A67B3E */
+/* 瀑布牆核心設定 - 解決圖片巨大問題 */
+.masonry-grid { 
+  column-count: 3; 
+  column-gap: 20px; 
+  width: 100%; 
 }
 
-/* 藝廊瀑布流佈局 */
-.layout-gallery .masonry-grid {
-  column-count: 3;
-  column-gap: 20px;
-  width: 100%;
-}
-
-/* 瀑布流 */
-.masonry-grid { column-count: 3; column-gap: 20px; width: 100%; }
+/* 響應式欄位調整 */
 @media (max-width: 1200px) { .masonry-grid { column-count: 2; } }
 @media (max-width: 700px) { .masonry-grid { column-count: 1; } }
 
-.layout-gallery  {
-  break-inside: avoid;
-  margin-bottom: 20px;
-  position: relative;
+.masonry-item {
+  break-inside: avoid; 
+  margin-bottom: 20px; 
+  position: relative; 
   border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
+  overflow: hidden; 
+  cursor: pointer; 
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
   background: rgba(128, 128, 128, 0.05);
 }
 
+.masonry-item:hover { transform: translateY(-6px); }
 
-.masonry-item {
-  break-inside: avoid; margin-bottom: 20px; position: relative; border-radius: 16px;
-  overflow: hidden; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+/* 強制讓圖片在欄位內 100% 縮放 */
+.masonry-item img { 
+  width: 100%; 
+  height: auto; 
+  display: block; 
 }
 
-.layout-gallery .masonry-item:hover { transform: translateY(-6px); }
-.layout-gallery .masonry-item img { width: 100%; display: block; }
-
-/* 藝廊文字分頁優化 (防止太寬) */
-.layout-gallery .rich-text-content {
-  max-width: 900px;
-  padding: 50px;
-  border-radius: 24px;
-}
-
-/* 右下角浮動框 - 修正標籤貼地問題 */
+/* 作品右下角半透明浮動框 */
 .floating-info-box {
   position: absolute;
-  bottom: 20px; /* 從 12px 增加到 20px 讓它往上移 */
+  bottom: 20px; 
   right: 12px;
   padding: 12px 18px;
   border-radius: 12px;
@@ -327,120 +237,84 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
-.item-price { font-weight: 900; font-size: 14px; opacity: 0.9; }
-.item-tags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.item-tags span { font-size: 11px; opacity: 0.8; font-weight: bold; }
-
-/* ==========================================================================
-   3. 部落格模式 (Blog Layout)
-   採用傳統置中大區塊配置
-   ========================================================================== */
-
-.layout-blog .content-wrapper {
-  max-width: 1200px;
-  display: flex;
-  gap: 40px;
-  padding: 60px 20px;
+.item-title { 
+  font-weight: bold; 
+  font-size: 16px; 
+  margin-bottom: 2px; 
 }
 
-.layout-blog .profile-sidebar {
-  width: 320px;
-  flex-shrink: 0;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+.item-price { 
+  font-weight: 900; 
+  font-size: 14px; 
+  opacity: 0.9; 
 }
 
-.layout-blog .profile-avatar {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  object-fit: cover;
-  margin-bottom: 20px;
+.item-tags { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 6px; 
+  margin-top: 6px; 
+  flex-wrap: wrap; 
 }
 
-.layout-blog .sidebar-nav {
-  display: flex;
-  gap: 10px;
-  border-bottom: 2px solid rgba(128,128,128,0.2);
-  margin-bottom: 30px;
-  overflow-x: auto;
-  padding-bottom: 0px;
+.item-tags span { 
+  font-size: 11px; 
+  opacity: 0.8; 
+  font-weight: bold; 
 }
 
-.layout-blog {
-  padding: 14px 20px;
-  border: none;
-  background: transparent;
-  border-bottom: 3px solid transparent;
-  color: inherit;
-  opacity: 0.6;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 16px;
-  transition: all 0.2s;
-}
-
-.layout-blog .nav-item.active {
-  border-bottom-color: currentColor;
-  opacity: 1;
-  font-weight: bold;
-}
-
-.layout-blog  {
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-}
+/* 文字分頁容器 (詳細介紹等) */
 .rich-text-content {
-  max-width: 900px; padding: 50px; border-radius: 24px;
-  line-height: 1.9; font-size: 16px;
+  max-width: 900px; 
+  padding: 40px; 
+  border-radius: 24px;
 }
-
-/* 舊版網格展示 */
-.portfolio-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-  gap: 20px; 
-}
-
-.portfolio-item { 
-  aspect-ratio: 1; 
-  border-radius: 12px; 
-  overflow: hidden; 
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
-}
-
-.portfolio-item img { 
-  width: 100%; height: 100%; object-fit: cover; 
-  transition: transform 0.4s ease; 
-}
-
-.portfolio-item:hover img { transform: scale(1.08); }
-
 
 /* ==========================================================================
-   4. 響應式微調 (Responsive)
+   4. 彈窗與行動版調整 (Modals & Mobile)
    ========================================================================== */
 
-@media (max-width: 900px) {
-  .content-wrapper { flex-direction: column; padding: 30px 20px; gap: 30px; }
-  .profile-sidebar { width: 100%; position: relative; top: 0; }
-  .showcase-content-box { flex-direction: column; }
-  .showcase-cover { height: 40vh; flex: none; }
+/* 圖片放大 / 作品詳情彈窗 */
+.lightbox-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.9); display: flex; align-items: center;
+  justify-content: center; z-index: 20000; backdrop-filter: blur(10px);
 }
-
-  .layout-gallery .profile-sidebar,
-  .layout-blog .profile-sidebar {
-    width: 100%;
-    position: relative;
-    top: 0;
-  }
 
 .showcase-content-box {
-  display: flex; width: 90vw; max-width: 1100px; max-height: 85vh;
-  border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  display: flex; 
+  width: 90vw; 
+  max-width: 1100px; 
+  max-height: 85vh;
+  border-radius: 20px; 
+  overflow: hidden; 
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
+.showcase-cover { flex: 1.2; background: #000; display: flex; align-items: center; }
+.showcase-cover img { max-width: 100%; max-height: 85vh; object-fit: contain; }
+.showcase-details { flex: 1; padding: 40px; overflow-y: auto; }
 
+/* 行動裝置適應 */
+@media (max-width: 900px) {
+  .content-wrapper { 
+    flex-direction: column; 
+    padding: 20px; 
+    gap: 30px; 
+  }
+
+  .profile-sidebar { 
+    width: 100%; 
+    position: relative; 
+    top: 0; 
+  }
+
+  .showcase-content-box { 
+    flex-direction: column; 
+  }
+
+  .showcase-cover { 
+    height: 40vh; 
+    flex: none; 
+  }
+}
