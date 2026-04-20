@@ -1,6 +1,5 @@
 /* src/styles/Queue.css */
 
-/* === 1. 基礎佈局與容器 === */
 .queue-container {
   padding: 20px;
   max-width: 1300px;
@@ -37,15 +36,14 @@
 
 .updating-hint { color: #A67B3E; font-size: 13px; font-weight: bold; align-self: center; }
 
-/* === 2. 核心技術修正：電腦版層級與對齊 === */
 .queue-table-wrapper {
   width: 100%;
-  overflow-x: auto; /* 手機版保留橫向捲動 */
+  overflow-x: auto;
 }
 
 @media (min-width: 1024px) {
   .queue-table-wrapper {
-    overflow: visible !important; /* 關鍵：電腦版不裁剪，選單才能浮出來 */
+    overflow: visible !important; 
     background-color: #FFFFFF;
     border-radius: 16px;
     border: 1px solid #EAE6E1;
@@ -68,21 +66,18 @@
   .queue-table td {
     padding: 15px 12px;
     border-bottom: 1px solid #F0ECE7;
-    vertical-align: middle; /* 關鍵：垂直居中，解決向上漂浮 */
+    vertical-align: middle; 
   }
 
-  /* 核心：解決層級穿透。當某行 Dropdown 開啟時，提升該行 z-index */
   .queue-table tr { position: relative; }
   .queue-table tr.active-row { z-index: 100 !important; }
 
   .cell-content { display: flex; align-items: center; text-align: left; width: 100%; }
   .cell-date { white-space: nowrap; min-width: 100px; }
   
-  /* 確保主要輸入框置中，並將上方標籤絕對定位往上推 */
   .cell-status { position: relative; display: flex; align-items: center; }
 }
 
-/* === 3. 下拉選單與輸入框 UI === */
 .dropdown-container { position: relative; width: 100%; }
 .dropdown-button {
   padding: 8px 12px; border: 1px solid #DED9D3; border-radius: 8px;
@@ -110,7 +105,6 @@
 .dropdown-add-input { flex: 1; padding: 6px 10px; border: 1px solid #DED9D3; border-radius: 6px; outline: none; font-size: 13px; }
 .dropdown-add-button { padding: 6px 12px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-/* 表單與標籤 */
 .workflow-badge-wrapper {
   position: absolute;
   bottom: 100%;
@@ -129,7 +123,6 @@
 
 .manage-button { padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
 
-/* === 4. 手機版排版修正 (卡片模式) === */
 @media (max-width: 1023px) {
   .queue-header { flex-direction: column; align-items: flex-start; }
   .queue-controls { justify-content: flex-start; width: 100%; }
@@ -143,22 +136,20 @@
     padding: 20px; background: #FFF; box-shadow: 0 6px 16px rgba(0,0,0,0.04);
   }
   
-  /* 委託資訊置頂展示 */
   .queue-table td[data-label="委託人資訊"] {
     border-bottom: 1px solid #F0ECE7; padding-bottom: 15px; margin-bottom: 15px;
   }
   .queue-table td[data-label="委託人資訊"]::before { display: none; }
   .queue-table td[data-label="委託人資訊"] .cell-content { flex-direction: column; align-items: flex-start; }
 
-  /* 其他欄位：標題在左，內容靠右對齊 */
   .queue-table td {
     padding: 10px 0; border: none; display: flex; justify-content: space-between; align-items: center;
   }
   .queue-table td::before { content: attr(data-label); font-weight: bold; color: #A0978D; font-size: 13px; }
 
   .cell-content {
-    display: flex; flex-direction: column; align-items: flex-end; /* 內容全部靠右 */
-    width: 200px; /* 固定內容寬度，確保右側切齊 */
+    display: flex; flex-direction: column; align-items: flex-end;
+    width: 200px; 
   }
 
   .dropdown-container, .date-input, .payment-select { width: 100% !important; }
@@ -167,7 +158,6 @@
   .desktop-only { display: none !important; }
 }
 
-/* 小裝飾 */
 .client-name-row { font-size: 15px; font-weight: bold; color: #5D4A3E; margin-bottom: 4px; }
 .client-sub-text { font-size: 13px; color: #A0978D; font-weight: normal; margin-left: 5px; }
 .project-name-row { font-size: 14px; color: #7A7269; }

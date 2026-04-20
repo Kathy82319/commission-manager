@@ -219,7 +219,6 @@ const statusMap: any = {
         </table>
       </div>
 
-      {/* 分頁 */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -232,7 +231,6 @@ const statusMap: any = {
   );
 }
 
-// --- 樣式設定 ---
 const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold' };
 const tdStyle = { padding: '16px', fontSize: '14px', verticalAlign: 'top' as const };
 const actionLinkStyle = { background: 'none', border: 'none', color: '#2563EB', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline', padding: 0, fontWeight: 'bold' };

@@ -166,7 +166,6 @@ export function QuoteBuilder() {
   return (
     <div className="quote-page">
       
-      {/* Header Section */}
       <div className="quote-header">
         <div>
           <h2 className="quote-header-title">產出新委託單</h2>
@@ -195,7 +194,6 @@ export function QuoteBuilder() {
         </div>
       </div>
 
-      {/* Main Grid */}
       <div className="quote-grid" style={{ 
         filter: isQuotaExceeded ? 'blur(6px)' : 'none',
         pointerEvents: isQuotaExceeded ? 'none' : 'auto',
@@ -203,7 +201,6 @@ export function QuoteBuilder() {
         transition: 'all 0.3s ease'
       }}>
         
-        {/* Left Column: Basic Info */}
         <div className="quote-card">
           <h3 className="quote-card-title">基本資訊設定</h3>
           
@@ -243,7 +240,6 @@ export function QuoteBuilder() {
           </div>
         </div>
 
-        {/* Middle Column: Specs */}
         <div className="quote-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #F0ECE7', paddingBottom: '12px' }}>
             <h3 className="quote-card-title" style={{ borderBottom: 'none', paddingBottom: 0 }}>委託規格參數</h3>
@@ -326,7 +322,6 @@ export function QuoteBuilder() {
               </div>
             </div>
 
-            {/* 🌟 將快速標籤移至規格參數的最後，並改為緊湊排版 */}
             <div className="form-grid-full" style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px dashed #EAE6E1' }}>
               <label className="form-label">快速標籤{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
               <div className="addon-tags-container" style={{ alignItems: 'center' }}>
@@ -349,7 +344,6 @@ export function QuoteBuilder() {
                   );
                 })}
                 
-                {/* 輸入框變得小巧並緊跟在標籤後方 */}
                 {customAddOns.length < 5 && (
                   <div className="flex-input-group" style={{ marginLeft: '4px' }}>
                     <input type="text" value={newCustomAddOn} onChange={e => setNewCustomAddOn(e.target.value)} 
@@ -366,7 +360,6 @@ export function QuoteBuilder() {
           </div>
         </div>
 
-        {/* Right Column: Tags & Rich Text ( spans full width on mobile, falls into grid on desktop ) */}
         <div className="quote-card form-grid-full">
           <h3 className="quote-card-title">協議書內容與備註</h3>
 
@@ -400,7 +393,6 @@ export function QuoteBuilder() {
           </div>
         </div>
 
-        {/* Quota Exceeded Modal */}
         {isQuotaExceeded && (
           <div className="quota-modal-overlay">
             <div className="quota-modal-box">

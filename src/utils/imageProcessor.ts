@@ -1,12 +1,11 @@
 // src/utils/imageProcessor.ts
 
-// 輔助函式：將網址或 Base64 轉換為 Image 物件
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener('load', () => resolve(image));
     image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous'); // 避免 CORS 問題
+    image.setAttribute('crossOrigin', 'anonymous'); 
     image.src = url;
   });
 
@@ -21,13 +20,10 @@ interface ProcessOptions {
   withWatermark?: boolean;
   watermarkText?: string;
   outputFormat?: 'image/jpeg' | 'image/webp';
-  quality?: number; // 0 到 1 之間
-  maxWidth?: number; // 🌟 新增：最大寬度限制 (用於縮圖)
+  quality?: number;
+  maxWidth?: number; 
 }
 
-/**
- * 核心：根據使用者的裁切範圍，擷取圖片並可選加上浮水印與縮圖
- */
 export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: PixelCrop,
@@ -38,7 +34,7 @@ export default async function getCroppedImg(
     watermarkText = "SAMPLE",
     outputFormat = 'image/jpeg',
     quality = 0.8,
-    maxWidth = 0 // 0 代表不限制
+    maxWidth = 0 
   } = options;
 
   const image = await createImage(imageSrc);
@@ -49,17 +45,14 @@ export default async function getCroppedImg(
     throw new Error('無法建立 Canvas 內容');
   }
 
-  // 🌟 計算縮放比例
   let scale = 1;
   if (maxWidth > 0 && pixelCrop.width > maxWidth) {
     scale = maxWidth / pixelCrop.width;
   }
 
-  // 設定 Canvas 尺寸為縮放後的尺寸
   canvas.width = pixelCrop.width * scale;
   canvas.height = pixelCrop.height * scale;
 
-  // 1. 將圖片的「裁切區域」畫到 Canvas 上 (同時處理縮放)
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -72,22 +65,18 @@ export default async function getCroppedImg(
     canvas.height
   );
 
-  // 2. 如果需要浮水印，全圖平鋪
   if (withWatermark) {
     ctx.save();
     
-    // 設定浮水印樣式 (根據縮放後的寬度調整字體)
     const fontSize = Math.floor(canvas.width / 12); 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // 半透明白色
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // 加上陰影
     ctx.shadowColor = 'rgba(0,0,0,0.3)';
     ctx.shadowBlur = 8;
 
-    // 定義平鋪間距
     const stepX = fontSize * 5; 
     const stepY = fontSize * 4;
 
@@ -104,7 +93,6 @@ export default async function getCroppedImg(
     ctx.restore();
   }
 
-  // 3. 將 Canvas 輸出為 Blob
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {

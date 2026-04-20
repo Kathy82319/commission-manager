@@ -1,6 +1,5 @@
 import type { Fetcher, D1Database, R2Bucket } from '@cloudflare/workers-types';
 
-// Cloudflare Worker 的環境變數定義
 export interface Env {
   ASSETS: Fetcher;
   commission_db: D1Database;
@@ -20,7 +19,6 @@ export interface Env {
   NEWEBPAY_HASH_IV: string;
 }
 
-// 建立委託單的請求格式
 export interface CreateCommissionBody {
   total_price: number;
   is_external?: boolean;

@@ -3,7 +3,6 @@ import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
 export const commController = {
-  // 取得委託單列表
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
       SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name,
@@ -38,14 +37,12 @@ export const commController = {
     return new Response(JSON.stringify({ success: true, data: commission }), { status: 200, headers: corsHeaders });
   },
 
-  // 建立新委託單
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role, trial_start_at, trial_end_at, pro_expires_at, custom_quota FROM Users WHERE id = ?").bind(currentUserId).all();
     const user = userRes[0] as any;
     
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
 
-    // 🌟 防護機制：異常使用防範 (Rate Limiting) - 檢查過去 1 分鐘內的建單數量
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentOrders } = await env.commission_db.prepare(`
       SELECT COUNT(*) as recent_count 
@@ -55,17 +52,15 @@ export const commController = {
 
     const recentCount = (recentOrders[0]?.recent_count as number) || 0;
 
-    // 如果 1 分鐘內建單超過 5 筆，視為惡意操作
     if (recentCount >= 5) {
       return new Response(JSON.stringify({ 
         success: false, 
         error: "系統偵測到異常的建單頻率，為保護伺服器資源，請稍後再試。" 
       }), { 
-        status: 429, // 429 Too Many Requests
+        status: 429, 
         headers: corsHeaders 
       });
     }
-    // 🌟 防護機制結束
 
     const now = new Date();
     let maxQuota = 0;
@@ -104,7 +99,6 @@ export const commController = {
       if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id}-${Date.now().toString().slice(-3)}`;
     }
     
-    // 🌟 補全：建立委託單時同時寫入 ActionLog
     await env.commission_db.batch([
       env.commission_db.prepare(`
         INSERT INTO Commissions (
@@ -130,7 +124,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true, id: newOrderId }), { status: 200, headers: corsHeaders });
   },
 
-  // 更新/綁定委託單
   async update(request: Request, id: string, currentUserId: string | null, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: Record<string, any> = await request.json();
     const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
@@ -183,7 +176,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 取得進度與歷程
   async getDeliverables(id: string, pathType: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
     if (check[0]?.client_id && currentUserId !== check[0]?.client_id && currentUserId !== check[0]?.artist_id) {
@@ -202,7 +194,6 @@ export const commController = {
     }
   },
 
-  // 上傳稿件 (Submit)
   async submitArtwork(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { stage: string; file_url: string } = await request.json();
     if (!isValidSafeUrl(body.file_url) && !body.file_url.includes('|')) return new Response(JSON.stringify({ success: false, error: "不安全的檔案網址" }), { status: 400, headers: corsHeaders });
@@ -225,7 +216,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 審閱稿件 (Review)
   async reviewArtwork(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
     const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
@@ -255,7 +245,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 🌟 補全：異動申請 (Change Request)
   async changeRequest(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { changes } = await request.json() as any;
     await env.commission_db.batch([
@@ -265,7 +254,6 @@ export const commController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 🌟 補全：回應異動 (Change Response)
   async respondToChange(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { action } = await request.json() as any;
     const { results } = await env.commission_db.prepare("SELECT pending_changes FROM Commissions WHERE id = ?").bind(id).all();
@@ -303,7 +291,6 @@ export const commController = {
   async postMessage(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { sender_role: string; content: string } = await request.json();
     
-    // 🌟 防護機制：聊天室防洗頻 (1 分鐘內最多 30 則訊息)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentMsgs } = await env.commission_db.prepare(`
       SELECT COUNT(*) as count FROM Messages 
@@ -326,7 +313,6 @@ export const commController = {
   async postPayment(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { record_date: string; item_name: string; amount: number } = await request.json();
     
-    // 🌟 防護機制：記帳防呆與防刷 (1 分鐘內最多 5 筆帳目)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentPayments } = await env.commission_db.prepare(`
       SELECT COUNT(*) as count FROM PaymentRecords 

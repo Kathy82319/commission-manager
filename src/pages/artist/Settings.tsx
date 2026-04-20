@@ -430,7 +430,6 @@ export function Settings() {
         
         {settings.splash_enabled && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* 動畫時長：滑動長條 */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label className="form-label" style={{ margin: 0 }}>動畫停留時長</label>

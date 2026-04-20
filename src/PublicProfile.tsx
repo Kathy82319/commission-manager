@@ -65,7 +65,6 @@ export function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('');
   
-  // 🌟 預設為 true，但在 Fetch 結束時會立刻校正
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
@@ -88,13 +87,11 @@ export function PublicProfile() {
               parsedSettings.portfolio = parsedSettings.portfolio.slice(0, 6);
             }
             
-            // 🌟 關鍵修正：在停止 Loading 的同一刻，決定是否要顯示 Splash
             if (parsedSettings.splash_enabled === false) {
               setShowSplash(false);
             }
             setSettings(parsedSettings);
           } else {
-            // 沒有設定檔也直接關閉 Splash
             setShowSplash(false);
           }
         }
@@ -109,7 +106,6 @@ export function PublicProfile() {
   }, [currentArtistId]);
 
   useEffect(() => {
-    // 只有在啟用且資料載入完成時才啟動計時器
     if (!loading && settings?.splash_enabled !== false && showSplash) {
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
       let removeTimer: ReturnType<typeof setTimeout>;
@@ -173,7 +169,6 @@ export function PublicProfile() {
 
   return (
     <div className="public-profile-container">
-      {/* 開場動畫層 */}
       {showSplash && (
         <div 
           className={`splash-screen ${isSplashClosing ? 'hide' : ''}`}
@@ -192,7 +187,6 @@ export function PublicProfile() {
         </div>
       )}
 
-      {/* 🌟 主內容層：當動畫正在顯示且尚未開始關閉時，將其隱藏 (避免閃爍) */}
       <div className="content-wrapper" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1, transition: 'opacity 0.5s' }}>
         <div className="sidebar">
           <div className="avatar-container">

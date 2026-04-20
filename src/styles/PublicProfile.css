@@ -8,7 +8,6 @@
   color: #f2f4f6;
 }
 
-/* 滿版過場動畫 (Splash Screen) - 轉為主題色系背景 */
 .splash-screen {
   position: fixed;
   top: 0;
@@ -58,7 +57,6 @@
   font-weight: 300;
 }
 
-/* 內容區塊排版 */
 .content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
@@ -68,7 +66,6 @@
   align-items: flex-start;
 }
 
-/* 左側固定卡片 */
 .sidebar {
   width: 320px;
   position: sticky;
@@ -97,7 +94,7 @@
 
 .artist-name {
   margin: 0;
-  font-size: 26px; /* 稍微調整字體大小 */
+  font-size: 26px;
   font-weight: bold;
   color: #5D4A3E;
   letter-spacing: 1px;
@@ -129,7 +126,6 @@
   filter: brightness(1.1);
 }
 
-/* 關於我卡片  */
 .about-card {
   background-color: rgba(167,187,203,0.18);
   padding: 28px;
@@ -155,7 +151,6 @@
   white-space: pre-wrap;
 }
 
-/* 右側主內容區 */
 .main-content {
   flex: 1;
   display: flex;
@@ -205,7 +200,7 @@
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
-  background-color: rgba(226,236,244,0.92); /* 作品格子保持柔和氛圍，突顯圖片 */
+  background-color: rgba(226,236,244,0.92);  
   border: 1px solid rgba(197,210,222,0.55);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
 }
@@ -267,7 +262,6 @@
   color: #A05C5C;
 }
 
-/* Lightbox 燈箱背景 */
 .lightbox-overlay {
   position: fixed;
   top: 0;
@@ -278,12 +272,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000; /* 確保在最上層 */
+  z-index: 2000; 
   cursor: zoom-out;
   backdrop-filter: blur(8px);
 }
 
-/* 圖片容器 */
 .lightbox-content {
   position: relative;
   max-width: 90%;
@@ -301,7 +294,6 @@
   border-radius: 4px;
 }
 
-/* 頁數計數器 */
 .lightbox-counter {
   color: white;
   margin-top: 15px;
@@ -311,7 +303,6 @@
   border-radius: 20px;
 }
 
-/* 關閉按鈕 */
 .lightbox-close {
   position: absolute;
   top: 20px;
@@ -326,7 +317,6 @@
   transition: opacity 0.2s;
 }
 
-/* 左右切換按鈕 */
 .lightbox-nav {
   position: absolute;
   top: 50%;
@@ -349,7 +339,6 @@
 .lightbox-nav.prev { left: 30px; }
 .lightbox-nav.next { right: 30px; }
 
-/* 手機版適應 */
 @media (max-width: 768px) {
   .content-wrapper {
     flex-direction: column;

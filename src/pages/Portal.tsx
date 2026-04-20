@@ -1,7 +1,7 @@
 // src/pages/Portal.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Portal.css'; // 🌟 引入標準化樣式
+import '../styles/Portal.css'; 
 
 interface UserProfile {
   display_name: string;
@@ -61,7 +61,6 @@ export function Portal() {
             <p className="card-desc">查看委託進度、審閱稿件或下載原檔。</p>
           </div>
 
-          {/* 繪師選項 */}
           <div 
             onClick={() => navigate('/artist/notebook')}
             className="portal-card card-artist"
@@ -72,7 +71,6 @@ export function Portal() {
           </div>
         </div>
         
-        {/* 系統管理員按鈕 */}
         {user?.role === 'admin' && (
           <div className="admin-section">
             <button

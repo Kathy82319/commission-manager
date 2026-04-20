@@ -7,7 +7,6 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  /* 🌟 統一加上與 Login 相同的背景色，否則白色文字會看不見 */
   background-color: #778ca4; 
   font-family: sans-serif;
   box-sizing: border-box;
@@ -63,7 +62,6 @@
   gap: 20px;
 }
 
-/* 卡片容器：預設手機版直向排列 */
 .portal-cards-container {
   display: flex;
   flex-direction: column;
@@ -91,7 +89,6 @@
   box-shadow: 0 15px 35px rgba(0,0,0,0.15);
 }
 
-/* 委託人卡片樣式 */
 .card-client {
   background-color: #FAFAFA;
 }
@@ -114,7 +111,6 @@
   margin: 0;
 }
 
-/* 繪師卡片樣式 */
 .card-artist {
   background-color: #5D4A3E;
 }
@@ -137,7 +133,6 @@
   margin: 0;
 }
 
-/* 系統管理員區塊 */
 .admin-section {
   width: 100%;
   display: flex;
@@ -166,7 +161,6 @@
   background-color: #1f2937;
 }
 
-/* === 電腦版排版 (取代原本的 md:flex-row) === */
 @media (min-width: 768px) {
   .portal-cards-container {
     flex-direction: row;

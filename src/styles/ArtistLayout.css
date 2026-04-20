@@ -1,6 +1,5 @@
 /* src/styles/ArtistLayout.css */
 
-/* 1. 全局底層容器 */
 .artist-layout-wrapper {
   min-height: 100vh;
   background-color: #FBFBF9;
@@ -8,7 +7,6 @@
   font-family: sans-serif;
 }
 
-/* 2. 手機版專屬頂部列 */
 .mobile-app-bar {
   display: flex;
   align-items: center;
@@ -39,7 +37,6 @@
   flex-direction: column;
 }
 
-/* 3. 側邊欄 (預設手機抽屜模式) */
 .app-sidebar {
   position: fixed;
   top: 0;
@@ -48,14 +45,13 @@
   width: 260px;
   background-color: #FFFFFF;
   border-right: 1px solid #EAE6E1;
-  z-index: 200; /* 必須是全站最高，蓋過所有內容 */
+  z-index: 200; 
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%); /* 預設隱藏在畫面左外側 */
+  transform: translateX(-100%); 
   transition: transform 0.3s ease-in-out;
 }
 
-/* 當手機選單開啟時滑入 */
 .app-sidebar.open {
   transform: translateX(0);
 }
@@ -124,12 +120,11 @@
   color: #7A7269;
 }
 
-/* 4. 手機版遮罩層 */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 150; /* 介於主內容(1)跟側邊欄(200)之間 */
+  z-index: 150;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
@@ -140,13 +135,12 @@
   visibility: visible;
 }
 
-/* 5. 主內容區 */
 .app-main-content {
   width: 100%;
   min-height: calc(100vh - 64px);
   transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
   box-sizing: border-box;
-  overflow-x: hidden; /* 防呆機制：絕不允許出現橫向滑動 */
+  overflow-x: hidden; 
 }
 
 .content-wrapper {
@@ -178,22 +172,20 @@
   font-weight: bold;
 }
 
-/* === 6. 電腦版 (1024px 以上) 佈局魔法 === */
 @media (min-width: 1024px) {
   .mobile-app-bar {
-    display: none; /* 隱藏手機頂部列 */
+    display: none;
   }
   
   .sidebar-overlay {
-    display: none !important; /* 電腦版不需要遮罩 */
+    display: none !important; 
   }
 
   .app-sidebar {
-    transform: translateX(0); /* 永遠顯示側邊欄 */
+    transform: translateX(0); 
   }
 
   .app-main-content {
-    /* 🌟 最關鍵的一行：硬生生把畫面左邊 260px 空出來給浮空的側邊欄，絕不互擠 */
     margin-left: 260px; 
     width: calc(100% - 260px);
     min-height: 100vh;

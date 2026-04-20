@@ -92,27 +92,23 @@ export function ClientLayout() {
   return (
     <div className="client-layout-container">
       
-      {/* 頂部導覽列 */}
       <header className="client-header">
         <div className="header-logo">
           Arti 繪師小幫手
           <div className="header-subtitle">委託管理 (委託方)</div>
         </div>
         
-        {/* 電腦版選單 */}
         <nav className="desktop-nav">
           <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
           </button>
         </nav>
 
-        {/* 手機版漢堡按鈕 */}
         <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? '✕' : '☰'}
         </button>
       </header>
 
-      {/* 手機版下拉選單 */}
       {isMobileMenuOpen && (
         <div className="mobile-menu">
           <button onClick={handleSwitchToArtist} className="switch-btn">
@@ -121,7 +117,6 @@ export function ClientLayout() {
         </div>
       )}
 
-      {/* 跑馬燈通知 */}
       {notifications.length > 0 && (
         <div className="notification-bar">
           <div className="marquee-content">
@@ -132,12 +127,10 @@ export function ClientLayout() {
         </div>
       )}
 
-      {/* 主內容區 */}
       <main className="client-main">
         <Outlet />
       </main>
 
-      {/* 頁尾 */}
       <footer className="client-footer">
         <div className="footer-links">
           <Link to="/terms">服務條款</Link>

@@ -14,12 +14,10 @@
   margin: 0 auto;
 }
 
-/* === 核心切換邏輯 === */
 .mobile-hide {
   display: none !important;
 }
 
-/* === 左側：委託單列表 (手機版預設高度) === */
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 90px);
@@ -73,7 +71,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* 左側卡片樣式 */
 .sidebar-card {
   padding: 16px;
   margin-bottom: 8px;
@@ -177,11 +174,10 @@
 }
 
 
-/* === 🌟 右側：詳情區塊 (手機版設定) === */
 .notebook-main {
   width: 100%;
   min-height: 100vh;
-  height: auto; /* 手機版不限制高度 */
+  height: auto; 
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
@@ -189,7 +185,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: visible; /* 手機版允許溢出以供視窗捲動 */
+  overflow: visible;
 }
 
 .main-empty {
@@ -202,7 +198,7 @@
 .main-content-wrapper {
   display: flex;
   flex-direction: column;
-  height: auto; /* 手機版不鎖死 */
+  height: auto; 
   min-width: 0;
 }
 
@@ -348,13 +344,12 @@
   border-bottom: 2px solid #DED9D3;
 }
 
-/* === 🌟 內容區域 (手機版隨內容撐開) === */
 .tab-content-area {
   padding: 20px;
   flex: 1;
   min-width: 0;
-  height: auto; /* 手機版內容直接長出來 */
-  overflow-y: visible; /* 手機版不使用內部捲軸 */
+  height: auto; 
+  overflow-y: visible; 
 }
 
 .tab-details-container {
@@ -531,20 +526,18 @@
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
 
-/* === 🌟 網頁版 (1024px 以上) 強勢鎖死高度 === */
 @media (min-width: 1024px) {
   .mobile-hide { display: flex !important; }
   .mobile-back-btn { display: none !important; }
 
-  /* 1. 鎖死最外層頁面，確保完全等於視窗可用空間 */
+
   .notebook-page { 
-    height: calc(100vh - 80px); /* 扣掉 Header 高度 */
+    height: calc(100vh - 80px); 
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* 防止整個視窗出現捲軸 */
+    overflow: hidden;
   }
   
-  /* 2. 鎖死左右並列容器 */
   .notebook-container { 
     flex: 1;
     min-height: 0; 
@@ -554,22 +547,20 @@
     align-items: stretch;
   }
   
-  /* 3. 左側列表鎖死 */
   .notebook-sidebar { 
     width: 300px; 
     height: 100%; 
   }
   
-  /* 4. 右側詳情區強力鎖死 100% 高度，不准被子元素撐大 */
+
   .notebook-main {
     flex: 1;
     min-width: 0;
     min-height: 0; 
     height: 100% !important; 
-    overflow: hidden; /* 超出框架的部分切掉，交給內層捲動 */
+    overflow: hidden; 
   }
   
-  /* 5. 白色包裝層也要 100% */
   .main-content-wrapper {
     flex: 1;
     min-height: 0;
@@ -578,10 +569,9 @@
     flex-direction: column;
   }
   
-  /* 6. 🌟 關鍵修正：內容區塊接管捲動權限 */
   .tab-content-area { 
     flex: 1;
-    overflow-y: auto; /* 內容多時在這裡產生捲軸 */
+    overflow-y: auto; 
     min-height: 0; 
     height: 100%;
   }
@@ -596,7 +586,6 @@
     flex: none; 
   }
 
-  /* 導覽按鈕排版微調 */
   .scroll-tabs .tab-btn {
     border-right: none !important;
     margin-right: 0 !important;

@@ -1,7 +1,7 @@
 // src/pages/auth/Onboarding.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../styles/Auth.css'; // 🌟 引入相同的 Auth.css
+import '../../styles/Auth.css';  
 
 export function Onboarding() {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ export function Onboarding() {
 
         const data = await res.json();
         if (data.success && data.data) {
-          // 如果已經有身分，直接導向
           if (data.data.role === 'artist') navigate('/artist/queue');
           else if (data.data.role === 'client') navigate('/client/orders');
           
@@ -49,7 +48,6 @@ export function Onboarding() {
       return;
     }
 
-    // 🌟 資安補強：限制暱稱長度，防止異常字串攻擊
     if (trimmedName.length > 50) {
       alert('暱稱長度請限制在 50 字以內。');
       return;

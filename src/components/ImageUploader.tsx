@@ -7,7 +7,7 @@ import type { PixelCrop } from '../utils/imageProcessor';
 interface ImageUploaderProps {
   onUpload: (blobs: { preview: Blob; original?: Blob }, previewUrl: string) => void;
   aspectRatio?: number;
-  targetWidth?: number; // 🌟 新增：目標縮圖寬度
+  targetWidth?: number; 
   withWatermark?: boolean;
   watermarkText?: string;
   shape?: 'rect' | 'round';
@@ -24,7 +24,7 @@ interface ImageUploaderProps {
 export function ImageUploader({
   onUpload,
   aspectRatio = undefined,
-  targetWidth = 0, // 預設 0 代表不限制
+  targetWidth = 0, 
   withWatermark = false,
   watermarkText = "SAMPLE",
   shape = 'rect',
@@ -101,7 +101,6 @@ export function ImageUploader({
     if (!imageSrc || !croppedAreaPixels || !selectedFile) return;
     setIsProcessing(true);
     try {
-      // 🌟 呼叫處理器時傳入 targetWidth 實現縮圖功能
       const previewBlob = await getCroppedImg(imageSrc, croppedAreaPixels, {
         withWatermark,
         watermarkText,

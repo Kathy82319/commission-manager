@@ -1,9 +1,7 @@
 // worker/services/line.ts
 import type { Env } from "../shared/types";
 
-/**
- * 產生 LINE Login 的授權網址
- */
+
 export function getLineLoginUrl(env: Env, state: string): string {
   if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
     throw new Error("LINE 環境變數未設定");
@@ -11,9 +9,7 @@ export function getLineLoginUrl(env: Env, state: string): string {
   return `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${env.LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(env.LINE_REDIRECT_URI)}&state=${state}&scope=profile%20openid`;
 }
 
-/**
- * 透過 Authorization Code 換取 LINE Access Token
- */
+
 export async function getLineToken(code: string, env: Env): Promise<string> {
   const tokenRes = await fetch("https://api.line.me/oauth2/v2.1/token", {
     method: "POST",
@@ -35,9 +31,7 @@ export async function getLineToken(code: string, env: Env): Promise<string> {
   return tokenData.access_token;
 }
 
-/**
- * 透過 Access Token 取得使用者的 LINE Profile (包含 userId, displayName, pictureUrl)
- */
+
 export async function getLineProfile(accessToken: string): Promise<any> {
   const profileRes = await fetch("https://api.line.me/v2/profile", { 
     headers: { Authorization: `Bearer ${accessToken}` } 

@@ -78,7 +78,6 @@ export function Queue() {
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   
-  // 🌟 核心：追蹤哪個選單被打開，用來動態提升該行的 z-index
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);

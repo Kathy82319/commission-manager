@@ -3,13 +3,10 @@ import type { Env } from "../shared/types";
 import { generateUploadUrl, generateDownloadUrl } from "../services/r2";
 
 export const r2Controller = {
-  /**
-   * 取得上傳用預簽章網址
-   */
+
   async getUploadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { contentType, bucketType, originalName, folder } = await request.json() as any;
     
-    // 🌟 修正：改用 WebhookLogs 進行查詢 (避開 ActionLogs 的外鍵限制)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const rateLimitKey = `req_upload_${currentUserId}`; 
     
@@ -25,7 +22,6 @@ export const r2Controller = {
       }), { status: 429, headers: corsHeaders });
     }
 
-    // 白名單分流防護 (公開桶僅限圖片)
     if (bucketType !== 'private') {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(contentType)) {
@@ -47,21 +43,17 @@ export const r2Controller = {
     try {
       const uploadUrl = await generateUploadUrl(env, bucketName, safeFileName, contentType);
       
-      // 🌟 修正：成功後寫入 WebhookLogs (注意：WebhookLogs 的 ID 是自增的，不需傳 UUID)
       await env.commission_db.prepare(
         "INSERT INTO WebhookLogs (commission_id, actor_role, action_type, message) VALUES (?, 'user', 'request_upload', ?)"
       ).bind(rateLimitKey, `索取上傳網址 (${folder || 'commissions'})`).run();
 
       return new Response(JSON.stringify({ success: true, uploadUrl, fileName: safeFileName }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
-      // 若進入此區塊，通常代表 R2 服務或上述 SQL 寫入失敗
       return new Response(JSON.stringify({ success: false, error: "無法生成上傳通行證" }), { status: 500, headers: corsHeaders });
     }
   },
 
-  /**
-   * 取得下載用預簽章網址
-   */
+
   async getDownloadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { commissionId, fileName, bucketType } = await request.json() as any;
     const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
@@ -82,7 +74,6 @@ export const r2Controller = {
       return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
-    // 🌟 下載部分因為有真實的 commissionId，可以使用 ActionLogs
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentDls } = await env.commission_db.prepare(`
       SELECT COUNT(*) as count FROM ActionLogs 

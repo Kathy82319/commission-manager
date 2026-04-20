@@ -390,7 +390,6 @@ export function Notebook() {
   
     return (
       <div className="stage-box">
-        {/* 🌟 修正了標題與狀態標籤的排版，確保手機版不會擠壓重疊 */}
         <div className={`stage-box-header ${headerClass}`}>
           <span>{title}</span> <span className="stage-status">{statusTag}</span>
         </div>
@@ -452,7 +451,6 @@ export function Notebook() {
     <div className="notebook-page">
       <div className="notebook-container">
         
-        {/* === 左側：委託單清單區 === */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div className="sidebar-header">
             <span className="sidebar-title">委託單列表</span>
@@ -505,14 +503,12 @@ export function Notebook() {
           </div>
         </div>
 
-        {/* === 右側：詳情區塊 === */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
             <div className="main-empty">請由列表選擇委託單以檢視詳情</div> 
           ) : (
             <div className="main-content-wrapper">
               
-              {/* 詳情頭部 */}
               <div className="main-header">
                 <div className="main-header-info">
                   
@@ -550,20 +546,17 @@ export function Notebook() {
                 </div>
               </div>
 
-              {/* RWD Tab 導覽區 */}
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>委託單細項</button>
                 <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
                 <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
               </div>
 
-              {/* 內容顯示區 */}
               <div className="tab-content-area">
                 
                 {activeTab === 'details' && (
                   <div className="tab-details-container">
                     
-                    {/* 財務區塊 */}
                     <div className="section-card">
                       <div className="section-header">
                         <h3 className="section-title">財務與收款狀態</h3>
@@ -605,7 +598,6 @@ export function Notebook() {
                       </div>
                     </div>
 
-                    {/* 委託細項區塊 */}
                     <div className="section-card">
                       <div className="section-header-no-border">
                         <h3 className="section-title">委託單細項</h3>

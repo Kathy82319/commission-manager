@@ -64,16 +64,14 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* 🌟 表單雙欄 Grid 佈局 */
 .quote-grid {
   display: grid;
-  grid-template-columns: 1fr; /* 手機版單欄 */
+  grid-template-columns: 1fr; 
   gap: 24px;
   align-items: start;
   position: relative;
 }
 
-/* 🌟 標準化白色卡片 */
 .quote-card {
   background-color: #FFFFFF;
   border-radius: 16px;
@@ -83,7 +81,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-width: 0; /* 防護罩 */
+  min-width: 0; 
 }
 
 .quote-card-title {
@@ -94,7 +92,6 @@
   padding-bottom: 12px;
 }
 
-/* 表單內部微型 Grid */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -105,7 +102,6 @@
   grid-column: 1 / -1;
 }
 
-/* 輸入框共用樣式 */
 .form-label {
   display: block;
   font-weight: bold;
@@ -161,7 +157,6 @@
   gap: 8px;
 }
 
-/* 標籤按鈕 (Add-ons) */
 .addon-tags-container {
   display: flex;
   flex-wrap: wrap;
@@ -195,7 +190,6 @@
   color: #4A7294;
 }
 
-/* Quill 編輯器包裝 */
 .quote-quill-wrapper {
   border: 1px solid #DED9D3;
   border-radius: 8px;
@@ -228,7 +222,6 @@
   line-height: 1.5;
 }
 
-/* 提交按鈕 */
 .submit-btn {
   width: 100%;
   padding: 16px;
@@ -244,7 +237,6 @@
 }
 .submit-btn:hover { opacity: 0.9; }
 
-/* 鎖定遮罩 */
 .quota-modal-overlay {
   position: absolute;
   inset: 0;
@@ -267,7 +259,6 @@
   border: 1px solid #EAE6E1;
 }
 
-/* === 電腦版佈局 === */
 @media (min-width: 768px) {
   .quote-header {
     flex-direction: row;
@@ -281,6 +272,6 @@
 
 @media (min-width: 1024px) {
   .quote-grid {
-    grid-template-columns: 1fr 1fr; /* 電腦版改為左右兩大欄 */
+    grid-template-columns: 1fr 1fr; 
   }
 }

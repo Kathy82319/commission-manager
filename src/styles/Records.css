@@ -12,7 +12,6 @@
   gap: 24px;
 }
 
-/* === 左側選單 / 手機版頂部橫向滑動列 === */
 .records-sidebar {
   display: flex;
   flex-direction: column;
@@ -26,7 +25,6 @@
   font-weight: bold;
 }
 
-/* 年份區塊橫向滑動 (手機版) */
 .year-scroll-wrapper {
   display: flex;
   overflow-x: auto;
@@ -68,7 +66,6 @@
   transition: transform 0.2s ease;
 }
 
-/* 月份按鈕群 */
 .month-list {
   display: flex;
   gap: 8px;
@@ -94,13 +91,12 @@
   font-weight: bold;
 }
 
-/* === 右側內容區 === */
 .records-content-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-width: 0; /* 🌟 防護罩：防止內部卡片撐破畫面 */
+  min-width: 0; 
 }
 
 .summary-card {
@@ -171,7 +167,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 0; /* 確保長標題會被截斷，不會撐破卡片 */
+  min-width: 0; 
 }
 
 .record-header-tags {
@@ -220,7 +216,7 @@
   font-size: 20px;
   font-weight: 900;
   color: #4E7A5A;
-  flex-shrink: 0; /* 確保價錢區塊不會被壓縮 */
+  flex-shrink: 0; 
   margin-left: 16px;
 }
 
@@ -237,7 +233,6 @@
   display: none;
 }
 
-/* === 電腦版 (1024px 以上) 雙欄排版 === */
 @media (min-width: 1024px) {
   .records-layout {
     flex-direction: row;
@@ -266,7 +261,7 @@
   
   .month-list {
     flex-direction: column;
-    padding-left: 12px; /* 電腦版子選單內縮 */
+    padding-left: 12px;
   }
   
   .month-chip {
@@ -287,6 +282,6 @@
   }
 
   .desktop-only {
-    display: inline; /* 電腦版顯示額外資訊 */
+    display: inline;
   }
 }

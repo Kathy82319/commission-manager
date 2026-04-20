@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 
-// 🌟 安全解碼器：還原後端因防護而轉碼的 HTML 實體 (如 &lt;p&gt; 轉回 <p>)
 const decodeHTML = (html?: string) => {
   if (!html) return '';
   const txt = document.createElement("textarea");
@@ -61,7 +60,6 @@ export function ClientForm() {
         const data = await res.json();
         if (data.success) {
           setOrder(data.data);
-          // 🌟 修正：移除舊版的靜默自動綁定，將掌控權還給按鈕。
         } else {
           setErrorMsg(data.error || '找不到這筆委託單，或連結已失效。');
         }
@@ -89,7 +87,7 @@ export function ClientForm() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          status: 'unpaid', // 變更狀態觸發後端綁定邏輯
+          status: 'unpaid', 
           agreed_tos_snapshot: currentTosSnapshot 
         })
       });
@@ -111,7 +109,6 @@ export function ClientForm() {
     }
   };
 
-  // 🌟 點擊進入工作區（自由模式或已同意狀態下），發送 PATCH 並自動綁定
   const handleBindAndEnter = async () => {
     if (!id || !order) return;
     setIsSubmitting(true);
@@ -126,7 +123,6 @@ export function ClientForm() {
       const data = await res.json();
 
       if (data.success) {
-        // 🌟 修正跳轉：導向 ClientOrders 列表頁，並使用 URL 參數通知開啟特定訂單
         navigate(`/client/orders?open=${order.id}`);
       } else {
         alert('進入工作區失敗：' + data.error);

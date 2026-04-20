@@ -113,7 +113,6 @@ export function ArtistLayout() {
   return (
     <div className="artist-layout-wrapper">
       
-      {/* 1. 手機版 Header */}
       <header className="mobile-app-bar">
         <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">
           ☰
@@ -124,7 +123,6 @@ export function ArtistLayout() {
         </div>
       </header>
 
-      {/* 2. 固定側邊欄 (手機抽屜 / 電腦並排) */}
       <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
@@ -158,13 +156,11 @@ export function ArtistLayout() {
         </div>
       </aside>
 
-      {/* 3. 遮罩層 (僅手機版開啟選單時顯示) */}
       <div 
         className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} 
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      {/* 4. 主內容區 */}
       <main className="app-main-content">
         <div className="content-wrapper">
           {showWarningBanner && (
@@ -179,7 +175,6 @@ export function ArtistLayout() {
             </div>
           )}
           
-          {/* 子頁面渲染入口 */}
           <Outlet />
         </div>
       </main>

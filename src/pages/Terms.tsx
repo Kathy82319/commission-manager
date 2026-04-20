@@ -7,7 +7,7 @@ export function Terms() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#F8F9FA', // 近純白的淺灰色，確保暗色背景下的閱讀舒適度
+    color: '#F8F9FA', 
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 
@@ -21,14 +21,14 @@ export function Terms() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#FFFFFF', // 純白標題
+    color: '#FFFFFF', 
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#E8D5C4', // 奶油金/淺膚色，與標題區隔
+    color: '#E8D5C4',
     display: 'flex',
     alignItems: 'center',
   };
@@ -44,7 +44,7 @@ export function Terms() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#FFFFFF', // 重點文字使用純白
+    color: '#FFFFFF', 
     textDecoration: 'underline',
     textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };
@@ -52,7 +52,7 @@ export function Terms() {
   const nestedListStyle: React.CSSProperties = {
     paddingLeft: '20px',
     marginTop: '4px',
-    color: 'rgba(248, 249, 250, 0.9)', // 嵌套列表稍微降一點亮度增加層次感
+    color: 'rgba(248, 249, 250, 0.9)', 
   };
 
   return (

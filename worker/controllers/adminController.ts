@@ -3,9 +3,7 @@ import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
 export const adminController = {
-  /**
-   * 中間件：檢查是否為管理員
-   */
+
   async checkAdmin(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response | null> {
     const { results } = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUserId).all();
     if (results.length === 0 || results[0].role !== 'admin') {
@@ -14,20 +12,15 @@ export const adminController = {
     return null;
   },
 
-  /**
-   * 取得全站儀表板數據 (營運統計)
-   */
+
   async getDashboardStats(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
 
-    // 1. 各方案用戶分佈
     const { results: userStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, plan_type FROM Users GROUP BY plan_type").all();
     
-    // 2. 本月新增用戶數
     const { results: newUsers } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Users WHERE created_at >= date('now', 'start of month')").all();
     
-    // 3. 委託單狀態分佈
     const { results: commStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, status FROM Commissions GROUP BY status").all();
 
     return new Response(JSON.stringify({ 
@@ -40,9 +33,7 @@ export const adminController = {
     }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 取得使用者清單 (支援搜尋、分頁、計算總訂單數)
-   */
+ 
   async getUsers(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -53,7 +44,6 @@ export const adminController = {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 🌟 核心：使用子查詢算出 total_commissions
     let query = `
       SELECT u.*, 
       (SELECT COUNT(*) FROM Commissions WHERE artist_id = u.id) as total_commissions
@@ -71,7 +61,6 @@ export const adminController = {
 
     const { results } = await env.commission_db.prepare(query).bind(...params).all();
     
-    // 計算總數以利前端分頁
     let countQuery = search ? `SELECT COUNT(*) as total FROM Users WHERE display_name LIKE ? OR public_id LIKE ?` : `SELECT COUNT(*) as total FROM Users`;
     let countParams = search ? [`%${search}%`, `%${search}%`] : [];
     const { results: countRes } = await env.commission_db.prepare(countQuery).bind(...countParams).all();
@@ -83,9 +72,7 @@ export const adminController = {
     }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 取得全站委託單總覽
-   */
+
   async getCommissions(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -131,7 +118,6 @@ export const adminController = {
       }
     }
 
-    // 處理停權備註 (存於 bio)
     if (body.role === 'deleted' && body.ban_reason) {
       updates.push("bio = ?");
       params.push(sanitizeAndLimit(`[封鎖原因: ${body.ban_reason}]`, 500));

@@ -1,16 +1,12 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// 引入 Layouts
 import { PublicLayout } from './layouts/PublicLayout';
 import { ArtistLayout } from './layouts/ArtistLayout';
 import { ClientLayout } from './layouts/ClientLayout';
 
-// 引入 Auth
 import { Login } from './pages/auth/Login';
 import { Onboarding } from './pages/auth/Onboarding';
 
-// 引入繪師端頁面
 import { PublicProfile } from './PublicProfile';
 import { QuoteBuilder } from './pages/artist/QuoteBuilder';
 import { Queue } from './pages/artist/Queue';
@@ -18,12 +14,10 @@ import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 
-// 引入委託人端頁面
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders';
  
 
-// 引入共用頁面
 import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';

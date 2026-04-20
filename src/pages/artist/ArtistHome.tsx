@@ -55,7 +55,6 @@ export function ArtistHome() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
       
-      {/* 🌟 核心 RWD 樣式控制 */}
       <style>{`
         .artist-home-container { display: flex; flex-direction: column; gap: 40px; padding: 40px 0; }
         .artist-sidebar { width: 100%; display: flex; flex-direction: column; gap: 20px; }
@@ -72,7 +71,6 @@ export function ArtistHome() {
 
       <div className="artist-home-container">
         
-        {/* 左側：個人簡介 (手機版置頂) */}
         <aside className="artist-sidebar">
           <div style={{ width: '100%', aspectRatio: '1', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             {artist.avatar_url ? (
@@ -122,7 +120,6 @@ export function ArtistHome() {
             </section>
           )}
 
-          {/* 🌟 富文本區塊 (安全渲染) */}
           {[
             { id: 'process', label: '委託流程說明', content: settings?.process },
             { id: 'payment', label: '付款方式', content: settings?.payment },
@@ -134,7 +131,6 @@ export function ArtistHome() {
             </section>
           ))}
 
-          {/* 自訂區塊 */}
           {settings?.custom_sections?.map((section) => section.content && (
             <section key={section.id}>
               <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>

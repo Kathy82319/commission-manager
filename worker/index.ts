@@ -15,7 +15,6 @@ export default {
     const pathParts = url.pathname.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
-    // 1. 處理藍新支付完成後的跳轉 (ReturnURL)
     if (url.pathname === "/payment/result" && request.method === "POST") {
       const redirectUrl = new URL("/artist/settings", url.origin);
       redirectUrl.searchParams.set("payment", "success");
@@ -37,16 +36,13 @@ export default {
       "Access-Control-Allow-Credentials": "true",
     };
 
-    // 處理 CORS 預檢請求
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // API 路由分發中心
     if (url.pathname.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      // 0. Payment API (藍新金流)
       if (url.pathname === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -56,11 +52,9 @@ export default {
         return paymentController.handleNotify(request, env);
       }
 
-      // 1. Auth API (不需登入)
       if (request.method === "GET" && url.pathname === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
 
-      // 2. Admin API
       if (url.pathname.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -75,7 +69,6 @@ export default {
         }
       }
 
-      // 3. User API
       if (url.pathname.startsWith("/api/users/")) {
         const targetId = pathParts[3];
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
@@ -97,23 +90,19 @@ export default {
         }
       }
 
-      // 4. Commission API
       if (url.pathname.startsWith("/api/commissions")) {
         const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
         
-        const targetId = pathParts[3]; // 這是 ID (例如 12345)
-        const subAction = pathParts[4]; // 這是動作 (例如 submit, review, deliverables)
+        const targetId = pathParts[3]; 
+        const subAction = pathParts[4]; 
 
         if (!targetId) {
-          // 無 ID 的操作
           if (request.method === "GET") return commController.getList(currentUserId!, env, corsHeaders);
           if (request.method === "POST") return commController.create(request, currentUserId!, env, corsHeaders);
         } else if (targetId && !subAction) {
-          // 有 ID 但沒有子動作的操作 (詳情或更新)
           if (request.method === "GET") return commController.getDetail(targetId, currentUserId!, env, corsHeaders);
           if (request.method === "PATCH") return commController.update(request, targetId, currentUserId, env, corsHeaders);
         } else if (targetId && subAction) {
-          // 有子動作的操作
           switch (subAction) {
             case "deliverables":
             case "submissions":
@@ -144,7 +133,6 @@ export default {
         }
       }
 
-      // 5. R2 API
       if (url.pathname.startsWith("/api/r2/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -152,7 +140,6 @@ export default {
         if (request.method === "POST" && url.pathname.endsWith("/download-url")) return r2Controller.getDownloadUrl(request, currentUserId!, env, corsHeaders);
       }
 
-      // 6. Test API
       if (url.pathname.startsWith("/api/test/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -160,11 +147,9 @@ export default {
         if (request.method === "POST" && url.pathname.endsWith("/mock-upgrade")) return testController.mockUpgrade(currentUserId!, env, corsHeaders);
       }
 
-      // 找不到 API 路由
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
-    // 處理 Vite 前端靜態資源
     const assetResponse = await env.ASSETS.fetch(request as any);
     if (assetResponse.status === 404 || url.pathname.includes("@")) {
       const indexRequest = new Request(new URL("/", request.url).toString(), request as any);

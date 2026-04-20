@@ -1,11 +1,7 @@
 // worker/utils/crypto.ts
 
-/**
- * 藍新金流專用加密工具 (Web Crypto API 原生版)
- * 🌟 絕對相容 Cloudflare Workers，不依賴 node:crypto
- */
+
 export const newebpay = {
-  // 將資料加密為藍新要求的 AES 字串
   async encrypt(dataString: string, key: string, iv: string): Promise<string> {
     const encoder = new TextEncoder();
     const keyData = encoder.encode(key);
@@ -26,18 +22,15 @@ export const newebpay = {
       textData
     );
 
-    // 轉換為 Hex 字串
     const hashArray = Array.from(new Uint8Array(encryptedBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   },
 
-  // 將藍新回傳的加密資料解密
   async decrypt(encryptedHex: string, key: string, iv: string): Promise<string> {
     const encoder = new TextEncoder();
     const keyData = encoder.encode(key);
     const ivData = encoder.encode(iv);
 
-    // 將 Hex 字串轉回 Uint8Array
     const encryptedBytes = new Uint8Array(
       encryptedHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
     );
@@ -60,7 +53,6 @@ export const newebpay = {
     return decoder.decode(decryptedBuffer);
   },
 
-  // 產生 SHA256 雜湊 (TradeSha)
   async generateSha(aesString: string, key: string, iv: string): Promise<string> {
     const combinedString = `HashKey=${key}&${aesString}&HashIV=${iv}`;
     const encoder = new TextEncoder();

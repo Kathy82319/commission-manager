@@ -41,7 +41,7 @@ export function ClientOrders() {
   const [logs, setLogs] = useState<ActionLog[]>([]);
   
   const [customTitle, setCustomTitle] = useState('');
-  const [savedTitle, setSavedTitle] = useState(''); 
+  const [, setSavedTitle] = useState(''); 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -318,7 +318,6 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       
-      {/* 異動申請遮罩層保持原樣 */}
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
@@ -335,10 +334,8 @@ export function ClientOrders() {
         </div>
       )}
 
-      {/* 🌟 完全套用 Notebook.css 的標準架構 */}
       <div className="notebook-container">
         
-        {/* 左側：委託單清單區 */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
@@ -380,16 +377,13 @@ export function ClientOrders() {
           </div>
         </div>
 
-        {/* 右側：詳情區塊 */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#A0978D', fontSize: '16px', padding: '40px' }}>請從列表選擇一張委託單以檢視詳情</div> : (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               
-              {/* 詳情頭部 */}
               <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
                 <div style={{ flex: '1 1 250px' }}>
                   
-                  {/* 🌟 返回按鈕 (僅手機版顯示) */}
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
                     ⬅ 返回列表
                   </button>
@@ -419,14 +413,12 @@ export function ClientOrders() {
                 </div>
               </div>
 
-              {/* 🌟 RWD Tab 導覽區 (現代底線分頁) */}
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
                 <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
                 <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
               </div>
 
-              {/* 內容顯示區 */}
               <div className="tab-content-area">
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>

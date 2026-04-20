@@ -7,7 +7,6 @@
   background-color: transparent;
 }
 
-/* 頂部導覽列：手機版預設相對定位 */
 .public-header {
   position: relative;
   display: flex;
@@ -107,7 +106,6 @@
   opacity: 0.5;
 }
 
-/* 電腦版 (768px 以上) 樣式覆蓋 */
 @media (min-width: 768px) {
   .public-header {
     position: absolute;

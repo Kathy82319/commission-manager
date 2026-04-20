@@ -7,7 +7,7 @@ export function Privacy() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#F8F9FA', // 近純白的淺灰色，確保暗色背景下的閱讀舒適度
+    color: '#F8F9FA', 
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 
@@ -44,7 +44,7 @@ export function Privacy() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#FFFFFF', // 重點文字使用純白
+    color: '#FFFFFF',  
     textDecoration: 'underline',
     textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };

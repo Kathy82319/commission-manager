@@ -16,14 +16,12 @@ export function PublicLayout() {
   return (
     <div className="public-layout-container">
       
-      {/* 頂部列：手機版相對定位，電腦版絕對定位 (由 CSS 控制) */}
       <header className="public-header">
         <button onClick={handleLoginClick} className="login-btn">
           登入 / 註冊
         </button>
       </header>
 
-      {/* 主內容區 */}
       <main className={`public-main ${isLegalPage ? 'legal-page' : ''}`}>
         <Outlet />
         
@@ -36,7 +34,6 @@ export function PublicLayout() {
         )}
       </main>
 
-      {/* 頁尾 */}
       <footer className="public-footer">
         <div className="footer-divider" />
         

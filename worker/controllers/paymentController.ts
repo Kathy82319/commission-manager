@@ -2,9 +2,7 @@
 import type { Env } from "../shared/types";
 
 export const paymentController = {
-  /**
-   * 1. 產生藍新支付表單資料 (POST /api/payment/create)
-   */
+
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       if (!env.NEWEBPAY_MERCHANT_ID || !env.commission_db) {
@@ -19,7 +17,6 @@ export const paymentController = {
       const absoluteFrontendUrl = "https://commission-app.pages.dev";
       const backendUrl = env.BACKEND_URL || "https://commission-app.workers.dev";
       
-      // 寫入資料庫待付款紀錄
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
       ).bind(orderId, currentUserId, amount, plan_type).run();
@@ -32,10 +29,10 @@ export const paymentController = {
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
         ItemDesc: "繪師管理系統 - 專業版訂閱 (30天)",
-        Email: "user@example.com", // 建議未來可從資料庫抓取真實 Email
+        Email: "user@example.com", 
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`,
-        NotifyURL: `${absoluteFrontendUrl}/api/payment/notify`, // 直接對接 Cloudflare
+        NotifyURL: `${absoluteFrontendUrl}/api/payment/notify`, 
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       };
 
@@ -63,9 +60,6 @@ export const paymentController = {
     }
   },
 
-  /**
-   * 2. 接收藍新通知 (Webhook) (POST /api/payment/notify)
-   */
   async handleNotify(request: Request, env: Env): Promise<Response> {
     try {
       const rawBody = await request.text();
@@ -91,7 +85,6 @@ export const paymentController = {
 
       const { newebpay } = await import("../utils/crypto");
 
-      // 🛡️ 資安補強：驗證雜湊值，確保資料未被竄改
       const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       if (computedSha !== tradeSha) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
@@ -110,7 +103,6 @@ export const paymentController = {
       if (!order) return new Response("OK");
 
       if (order.status === 'paid') {
-        // 提早攔截：如果已經是 paid 狀態，代表已處理過，直接回傳
         return new Response("OK");
       }
 
@@ -118,8 +110,6 @@ export const paymentController = {
       let newExpiry = new Date();
       newExpiry.setDate(newExpiry.getDate() + 30); 
 
-            // 🌟 關鍵：使用 D1 Batch 進行「原子更新 (Atomic Update)」
-      // 語句 A：更新 User 效期 (關鍵條件：只有當這筆訂單狀態還是 pending 時才加值)
       const updateUserStmt = env.commission_db.prepare(`
         UPDATE Users 
         SET plan_type = 'pro', pro_expires_at = ? 
@@ -128,7 +118,6 @@ export const paymentController = {
         )
       `).bind(newExpiry.toISOString(), userId, orderId);
 
-      // 語句 B：將訂單狀態更新為 paid (關鍵條件：WHERE status = 'pending')
       const updateOrderStmt = env.commission_db.prepare(`
         UPDATE PaymentOrders 
         SET status = 'paid', trade_no = ?, pay_time = ? 
@@ -137,9 +126,7 @@ export const paymentController = {
 
       const batchResults = await env.commission_db.batch([updateUserStmt, updateOrderStmt]);
 
-      // 🌟 檢查是否真的搶到了這筆訂單的處理權
       if (batchResults[1].meta.changes === 0) {
-        // 如果 changes 為 0，代表發生了併發，這筆訂單已經在別的請求中被改成 paid 了
         console.log(`[Idempotency] Order ${orderId} was already processed concurrently.`);
         return new Response("OK");
       }
@@ -152,7 +139,6 @@ export const paymentController = {
       } catch (logError) {
         console.error("WebhookLogs insert failed", logError);
       }
-      // 發生資料庫內部錯誤時，回傳 500，這樣藍新稍後就會自動重試這筆通知
       return new Response("Internal Server Error", { status: 500 });
     }
   }

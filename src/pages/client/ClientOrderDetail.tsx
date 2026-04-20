@@ -225,7 +225,6 @@ return (
 <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px', textAlign: 'left' }}>
 最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})
 </div>
-{/* 🌟 修復 RWD 圖片展示 */}
 <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f1f5f9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
 <img src={sub.file_url.split('|')[0]} alt="稿件預覽" style={{ width: '100%', maxWidth: '400px', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
 </div>
@@ -287,7 +286,6 @@ return (
 .tab-scroll-container { display: flex; overflow-x: auto; background-color: #e8ecf3; border-radius: 16px 16px 0 0; scrollbar-width: none; }
 .tab-scroll-container::-webkit-scrollbar { display: none; }
 `}</style>
-{/* 異動申請彈窗 */}
 {parsedChanges && (
 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
 <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
@@ -314,7 +312,6 @@ style={{ background: 'none', border: 'none', color: '#5D4A3E', padding: '0 0 16p
 >
 ← 返回列表
 </button>
-{/* 🌟 修改：頂部 Header 區域套用 Flex Wrap 適配手機 */}
 <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px 16px 0 0', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', border: '1px solid #EAE6E1', borderBottom: 'none' }}>
 <div style={{ flex: '1 1 200px' }}>
 <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{orderData.client_custom_title || orderData.project_name || '未命名項目'}</h2>
@@ -335,7 +332,6 @@ animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none', flex: '1 1 auto'
 {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
 </button>
 </div>
-{/* 🌟 修改：橫向滾動的 Tabs */}
 <div className="tab-scroll-container">
 <button style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
 <button style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>

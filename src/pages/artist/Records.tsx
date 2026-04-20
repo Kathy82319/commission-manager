@@ -1,15 +1,13 @@
 // src/pages/artist/Records.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import '../../styles/Records.css'; // 🌟 引入標準化樣式
+import '../../styles/Records.css'; 
 
 export function Records() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 記錄選取的月份，格式為 '2024-04'
   const [selectedMonth, setSelectedMonth] = useState<string>(''); 
-  // 記錄哪些年份被展開 (主要用於電腦版)
   const [expandedYears, setExpandedYears] = useState<string[]>([]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -25,22 +23,19 @@ export function Records() {
         if (data.success || data.data) {
            const orders = data.data || data; 
            
-           // 只過濾出已結案的單子
            const completedOrders = orders.filter((o: any) => o.status === 'completed' || o.status === '結案');
            
-           // 依照日期排序 (新到舊)
            completedOrders.sort((a: any, b: any) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
            
            setRecords(completedOrders);
            
-           // 預設選取有資料的最新的月份與年份
            if (completedOrders.length > 0) {
              const firstDate = new Date(completedOrders[0].order_date);
              const firstYear = firstDate.getFullYear().toString();
              const firstMonth = (firstDate.getMonth() + 1).toString().padStart(2, '0');
              
              setSelectedMonth(`${firstYear}-${firstMonth}`);
-             setExpandedYears([firstYear]); // 預設展開最新的一年
+             setExpandedYears([firstYear]); 
            }
         }
       } catch (error) {
@@ -53,7 +48,6 @@ export function Records() {
     fetchRecords();
   }, [API_BASE]);
 
-  // 整理年份與月份結構
   const groupedByYear: Record<string, string[]> = {};
   records.forEach(r => {
     const d = new Date(r.order_date);
@@ -75,7 +69,6 @@ export function Records() {
     );
   };
 
-  // 篩選當前月份
   const currentMonthRecords = records.filter(r => {
     if (!selectedMonth) return false;
     const d = new Date(r.order_date);
@@ -95,7 +88,6 @@ export function Records() {
     <div className="records-page">
       <div className="records-layout">
         
-        {/* 左側選單 / 手機版頂部橫向滑動列 */}
         <aside className="records-sidebar">
           <h2 className="sidebar-title">歷史紀錄</h2>
           
@@ -105,7 +97,6 @@ export function Records() {
             <div className="year-scroll-wrapper">
               {sortedYears.map(year => (
                 <div key={year} className="year-group">
-                  {/* 年份標籤 */}
                   <button onClick={() => toggleYear(year)} className="year-toggle-btn">
                     <span 
                       className="year-toggle-icon"
@@ -116,7 +107,6 @@ export function Records() {
                     {year}年
                   </button>
                   
-                  {/* 月份選單 */}
                   {expandedYears.includes(year) && (
                     <div className="month-list">
                       {groupedByYear[year].map(month => {
@@ -139,10 +129,8 @@ export function Records() {
           )}
         </aside>
 
-        {/* 右側內容區 */}
         <div className="records-content-area">
           
-          {/* 當月統計摘要 */}
           {selectedMonth && (
             <div className="summary-card">
               <div>
@@ -156,7 +144,6 @@ export function Records() {
             </div>
           )}
 
-          {/* 紀錄列表 */}
           <div className="record-list-container">
             {currentMonthRecords.length === 0 ? (
               <div className="empty-state">
@@ -182,7 +169,6 @@ export function Records() {
 
                     <div className="record-meta">
                       <span>單號：{record.id.split('-')[1] || record.id}</span>
-                      {/* 🌟 使用 CSS 類別取代原本的 Tailwind 'hidden md:inline' */}
                       <span className="desktop-only">編號：{record.client_public_id || '未綁定'}</span>
                     </div>
                   </div>

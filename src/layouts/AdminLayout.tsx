@@ -6,7 +6,6 @@ export function AdminLayout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
-      {/* 側邊欄 */}
       <aside style={{ width: '260px', backgroundColor: '#111827', color: '#F9FAFB', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh' }}>
         <div style={{ padding: '32px 24px', fontSize: '20px', fontWeight: '900', color: '#FFF', borderBottom: '1px solid #1F2937' }}>
           <span style={{ color: '#3B82F6' }}>ADMIN</span> PANEL
@@ -41,7 +40,6 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* 主內容區 (加上 marginLeft 避開固定的側邊欄) */}
       <main style={{ flex: 1, marginLeft: '260px', padding: '40px' }}>
         <Outlet />
       </main>

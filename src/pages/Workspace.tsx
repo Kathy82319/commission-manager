@@ -159,7 +159,6 @@ export function Workspace() {
         backgroundColor: '#FBFBF9', 
         position: 'relative' 
       }}>
-        {/* Header 優化：手機版文字縮小 */}
         <header style={{ backgroundColor: '#FFFFFF', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '14px', cursor: 'pointer' }}>
@@ -177,7 +176,6 @@ export function Workspace() {
           </div>
         </header>
 
-        {/* 訊息區域：手機版泡泡寬度增加到 85% */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {messages.map(msg => {
             const isMe = msg.sender_role === role;
@@ -207,7 +205,6 @@ export function Workspace() {
           <div ref={messagesEndRef} />
         </main>
 
-        {/* Footer 優化：按鈕在手機版稍微縮小 */}
         <footer style={{ backgroundColor: '#FFFFFF', padding: '12px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           <textarea 
             value={inputText}

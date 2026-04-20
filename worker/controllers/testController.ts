@@ -2,9 +2,7 @@
 import type { Env } from "../shared/types";
 
 export const testController = {
-  /**
-   * 開啟 15 天試用
-   */
+
   async startTrial(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results: userRes } = await env.commission_db.prepare("SELECT role, plan_type, trial_start_at FROM Users WHERE id = ?").bind(currentUserId).all();
     const user = userRes[0] as any;
@@ -22,9 +20,6 @@ export const testController = {
     return new Response(JSON.stringify({ success: true, message: "15 天專業版試用開啟！" }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 模擬付款，開通 30 天專業版
-   */
   async mockUpgrade(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results: userRes } = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUserId).all();
     if (userRes[0]?.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "此帳號已停用，無法進行付款操作。" }), { status: 403, headers: corsHeaders });

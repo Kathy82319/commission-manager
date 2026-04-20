@@ -35,7 +35,6 @@ export const userController = {
       return new Response(JSON.stringify({ success: false, error: "此帳號已停用或刪除" }), { status: 404, headers: corsHeaders });
     }
 
-    // 將 ArtistProfiles 的大文字覆寫回 profile_settings 給前端使用
     let parsedSettings: any = {};
     try {
       parsedSettings = JSON.parse(user.profile_settings || '{}');
@@ -61,7 +60,6 @@ export const userController = {
 
     user.profile_settings = JSON.stringify(parsedSettings);
     
-    // 清理一下不必要的屬性，保持 API 乾淨
     delete user.tos_content; delete user.about_me; delete user.portfolio_urls;
     delete user.commission_process; delete user.payment_info; delete user.usage_rules;
     delete user.custom_1_title; delete user.custom_1_content; delete user.custom_2_title;
