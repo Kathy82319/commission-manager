@@ -151,9 +151,8 @@ export function Queue() {
   return (
     <div className="queue-container">
       <div className="queue-header">
-        <h2 className="queue-title queue-title-desktop">工作排單表</h2>
+        <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
-          <h2 className="queue-title queue-title-mobile">工作排單表</h2>
           <input placeholder="🔍 搜尋項目/暱稱/單號..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
