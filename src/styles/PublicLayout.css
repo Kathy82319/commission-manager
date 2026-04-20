@@ -4,7 +4,9 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: transparent;
+  /* 這裡的背景色通常是右側大面積區域的顏色，建議設為淺灰色或由變數控制 */
+  background-color: #F2F2F2; 
+  width: 100%;
 }
 
 .public-header {
@@ -18,24 +20,29 @@
 .login-btn {
   padding: 6px 16px;
   background-color: transparent;
-  color: #5D4A3E;
-  border: 2px solid #5D4A3E;
+  /* 使用變數：文字與邊框自動適應使用者選的黑或白 */
+  color: var(--artist-text-color);
+  border: 2px solid var(--artist-text-color);
   border-radius: 24px;
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(93, 74, 62, 0.15);
+  /* 陰影也改為跟隨文字顏色的淡透明色 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease-in-out;
 }
 
 .login-btn:hover {
-  background-color: #5D4A3E;
-  color: #FFFFFF;
+  /* 滑過時：背景變色，文字變回背景色（產生反差但不出格） */
+  background-color: var(--artist-text-color);
+  color: var(--artist-theme-color);
 }
 
 .public-main {
   flex: 1;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .public-main.legal-page {
@@ -54,8 +61,8 @@
   max-width: 200px;
   padding: 10px 30px;
   background-color: transparent;
-  color: #5D4A3E;
-  border: 2px solid #5D4A3E;
+  color: var(--artist-text-color);
+  border: 2px solid var(--artist-text-color);
   border-radius: 24px;
   font-size: 14px;
   font-weight: bold;
@@ -64,8 +71,8 @@
 }
 
 .back-btn:hover {
-  background-color: #5D4A3E;
-  color: #FFFFFF;
+  background-color: var(--artist-text-color);
+  color: var(--artist-theme-color);
 }
 
 .public-footer {
@@ -75,15 +82,10 @@
   padding: 24px 20px;
 }
 
-.footer-divider {
-  width: 60px;
-  margin: 0 auto 16px auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-}
-
 .footer-links {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
+  /* 使用變數並給予適度的透明度，使其不致於太刺眼 */
+  color: var(--artist-text-color);
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -99,7 +101,7 @@
 }
 
 .footer-links a:hover {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .footer-divider-text {

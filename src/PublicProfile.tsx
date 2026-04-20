@@ -1,10 +1,14 @@
-// src/PublicProfile.tsx 完整修正版
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
+
+// 定義回傳給 Layout 的 Context 型別
+interface LayoutContext {
+  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
+}
 
 const decodeHTML = (html?: string) => {
   if (!html) return '';
@@ -39,15 +43,6 @@ interface ShowcaseItem {
   description: string;
 }
 
-const platformStyles: Record<string, { bg: string; text: string }> = {
-  'Facebook': { bg: '#dbdbdb', text: '#000' },
-  'Plurk': { bg: '#dbdbdb', text: '#000' },
-  'Twitter / X': { bg: '#dbdbdb', text: '#000' },
-  'Threads': { bg: '#dbdbdb', text: '#000' },
-  'Instagram': { bg: '#dbdbdb', text: '#000' },
-  '個人網站': { bg: '#dbdbdb', text: '#000' }
-};
-
 const getSocialIcon = (platform: string) => {
   const size = 20; 
   switch (platform) {
@@ -62,6 +57,7 @@ const getSocialIcon = (platform: string) => {
 
 export function PublicProfile() {
   const { artistId } = useParams();
+  const { setTheme } = useOutletContext<LayoutContext>(); // 取得 Layout 的 setTheme
   const currentArtistId = artistId || '';
 
   const [artist, setArtist] = useState<any>(null);
@@ -76,6 +72,16 @@ export function PublicProfile() {
   
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
+
+  // 當資料載入完畢，同步主題色給 PublicLayout
+  useEffect(() => {
+    if (settings) {
+      setTheme({
+        primaryColor: settings.background_color || '#F4F0EB',
+        textColor: settings.theme_mode === 'light' ? 'black' : 'white'
+      });
+    }
+  }, [settings, setTheme]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -178,7 +184,6 @@ export function PublicProfile() {
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
 
-  // 燈箱切換邏輯
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (selectedImgIndex !== null && settings?.portfolio) {
@@ -199,42 +204,46 @@ export function PublicProfile() {
   const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
-  const cardBg = isDarkText ? 'rgba(255, 255, 255, 0.75)' : 'rgba(0, 0, 0, 0.45)';
 
   return (
-    <div 
-      className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{
-        background: `linear-gradient(135deg, ${bgColor}, rgba(0,0,0,0.15))`,
-        color: textColor,
-      }}
-    >
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}>
+      
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={{ backgroundColor: bgColor }}>
           <div className="splash-box">
-            <h1>{settings?.splash_text || artist.display_name}</h1>
+            <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
           </div>
         </div>
       )}
 
-      <div className="content-wrapper" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        <aside className="profile-sidebar" style={{ background: cardBg }}>
-          <div className="sidebar-sticky-content">
+      {/* 這裡是主要的左右佈局容器 */}
+      <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
+        
+        {/* 左側側邊欄 */}
+        <aside className="profile-sidebar">
+          
+          {/* 上半部：對應你的黃色區域 (頭像+暱稱+社群) */}
+          <div className="sidebar-top" style={{ backgroundColor: bgColor, color: textColor }}>
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
             </div>
             
-            <div className="info-section">
+            <div className="name-social-section">
               <h1 className="profile-name">{artist.display_name}</h1>
-              <p className="profile-bio">{artist.bio || '這名繪師還沒有寫下簡介。'}</p>
               <div className="social-links">
                 {settings?.social_links?.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon" 
-                    style={{ backgroundColor: platformStyles[link.platform]?.bg }}>
+                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
                     {getSocialIcon(link.platform)}
                   </a>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* 下半部：對應你的白色區域 (簡介+導覽) */}
+          <div className="sidebar-bottom">
+            <div className="bio-section">
+              <p className="profile-bio">{artist.bio || '這名繪師還沒有寫下簡介。'}</p>
             </div>
 
             <nav className="sidebar-nav">
@@ -243,7 +252,6 @@ export function PublicProfile() {
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)} 
                   className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
-                  style={{ color: currentTab === tab.id ? textColor : 'inherit' }}
                 >
                   {tab.label}
                 </button>
@@ -252,6 +260,7 @@ export function PublicProfile() {
           </div>
         </aside>
 
+        {/* 右側內容區：對應你的灰色區域 */}
         <main className="profile-main-content">
           <div className="tab-content-area">
             {currentTab === 'showcase' && (
@@ -265,9 +274,6 @@ export function PublicProfile() {
                           key={tag} 
                           className={`tag-btn ${isSelected ? 'active' : ''}`} 
                           onClick={() => handleTagClick(tag)}
-                          style={{
-                            borderColor: isSelected ? '#A67B3E' : 'rgba(128,128,128,0.3)', 
-                          }}
                         >
                           {tag}
                         </button>
@@ -279,7 +285,7 @@ export function PublicProfile() {
                   {filteredShowcaseItems.map(item => (
                     <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
                       <img src={item.cover_url} alt={item.title} loading="lazy" />
-                      <div className="floating-info-box" style={{ background: cardBg }}>
+                      <div className="floating-info-box">
                         <div className="item-title">{item.title}</div>
                         <div className="item-price">${item.price_info}</div>
                         <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
@@ -301,13 +307,13 @@ export function PublicProfile() {
             )}
             
             {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-              <div className="rich-text-content" style={{ background: cardBg }} 
+              <div className="rich-text-content" 
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
             )}
 
             {settings?.custom_sections?.map(sec => 
               currentTab === sec.id && (
-                <div key={sec.id} className="rich-text-content" style={{ background: cardBg }} 
+                <div key={sec.id} className="rich-text-content" 
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
               )
             )}
@@ -315,10 +321,11 @@ export function PublicProfile() {
         </main>
       </div>
 
+      {/* Lightbox Overlays 保持不變，但樣式會透過 CSS 調整 */}
       {selectedShowcase && (
         <div className="lightbox-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close"><X size={32}/></button>
-          <div className="showcase-content-box" onClick={e => e.stopPropagation()} style={{ background: isDarkText ? '#FFF' : '#222' }}>
+          <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
             <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
             <div className="showcase-details">
               <h2>{selectedShowcase.title}</h2>
