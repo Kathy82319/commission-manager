@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -57,7 +57,7 @@ const getSocialIcon = (platform: string) => {
 
 export function PublicProfile() {
   const { artistId } = useParams();
-  const { setTheme } = useOutletContext<LayoutContext>(); // 取得 Layout 的 setTheme
+  const { setTheme } = useOutletContext<LayoutContext>();
   const currentArtistId = artistId || '';
 
   const [artist, setArtist] = useState<any>(null);
@@ -73,7 +73,7 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 當資料載入完畢，同步主題色給 PublicLayout
+  // 同步主題設定至 Layout
   useEffect(() => {
     if (settings) {
       setTheme({
@@ -183,6 +183,7 @@ export function PublicProfile() {
   }, [settings, showcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
+  const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -201,10 +202,10 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-const bgColor = settings?.background_color || '#F4F0EB';
+  const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
-const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
+
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}>
       
@@ -218,9 +219,7 @@ const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
-        {/* 修改點：將背景色與文字顏色套用到整個側邊欄 */}
         <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
-          
           <div className="sidebar-top">
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
@@ -260,69 +259,80 @@ const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
           </div>
         </aside>
 
-        {/* 右側內容區：對應你的灰色區域 */}
         <main className="profile-main-content">
-          <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}></div>
-          <div className="tab-content-area">
-            {currentTab === 'showcase' && (
-              <div className="showcase-section">
-                {availableTags.length > 1 && (
-                  <div className="tag-filter-bar">
-                    {availableTags.map(tag => {
-                      const isSelected = selectedTags.includes(tag);
-                      return (
-                        <button 
-                          key={tag} 
-                          className={`tag-btn ${isSelected ? 'active' : ''}`} 
-                          onClick={() => handleTagClick(tag)}
-                        >
-                          {tag}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="masonry-grid">
-                  {filteredShowcaseItems.map(item => (
-                    <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
-                      <img src={item.cover_url} alt={item.title} loading="lazy" />
-                      <div className="floating-info-box">
-                        <div className="item-title">{item.title}</div>
-                        <div className="item-price">${item.price_info}</div>
-                        <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
+          <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
+            <div className="tab-content-area">
+              {currentTab === 'showcase' && (
+                <div className="showcase-section">
+                  {availableTags.length > 1 && (
+                    <div className="tag-filter-bar">
+                      {availableTags.map(tag => {
+                        const isSelected = selectedTags.includes(tag);
+                        return (
+                          <button 
+                            key={tag} 
+                            className={`tag-btn ${isSelected ? 'active' : ''}`} 
+                            onClick={() => handleTagClick(tag)}
+                          >
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="masonry-grid">
+                    {filteredShowcaseItems.map(item => (
+                      <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
+                        <img src={item.cover_url} alt={item.title} loading="lazy" />
+                        <div className="floating-info-box">
+                          <div className="item-title">{item.title}</div>
+                          <div className="item-price">${item.price_info}</div>
+                          <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'portfolio' && (
+                <div className="portfolio-grid">
+                  {settings?.portfolio.map((img, idx) => (
+                    <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                      <img src={img} alt="作品" loading="lazy" />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+              
+              {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
+                <div className="rich-text-content" 
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
+              )}
 
-            {currentTab === 'portfolio' && (
-              <div className="portfolio-grid">
-                {settings?.portfolio.map((img, idx) => (
-                  <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
-                    <img src={img} alt="作品" loading="lazy" />
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-              <div className="rich-text-content" 
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
-            )}
+              {settings?.custom_sections?.map(sec => 
+                currentTab === sec.id && (
+                  <div key={sec.id} className="rich-text-content" 
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
+                )
+              )}
+            </div>
 
-            {settings?.custom_sections?.map(sec => 
-              currentTab === sec.id && (
-                <div key={sec.id} className="rich-text-content" 
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
-              )
-            )}
+            <footer className="profile-internal-footer">
+              <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
+                <Link to="/terms">服務條款</Link>
+                <span>|</span>
+                <Link to="/privacy">隱私權政策</Link>
+                <span>|</span>
+                <Link to="/refund-policy">退款政策</Link>
+                <span>|</span>
+                <span>客服信箱：cath40286@gmail.com</span>
+              </div>
+            </footer>
           </div>
         </main>
       </div>
 
-      {/* Lightbox Overlays 保持不變，但樣式會透過 CSS 調整 */}
       {selectedShowcase && (
         <div className="lightbox-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close"><X size={32}/></button>

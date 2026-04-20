@@ -5,16 +5,12 @@
 .public-profile-container {
   min-height: 100vh;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .profile-layout-root {
   display: flex;
   width: 100%;
   min-height: 100vh;
-  /* 確保根容器不限制寬度，才能達成滿版 */
 }
 
 /* ==========================================================================
@@ -121,14 +117,16 @@
    3. 右側主畫面與分層框架 (Main Content & Wrapper)
    ========================================================================== */
 
+/* 右側主區域：解決顏色覆蓋與擠壓問題 */
 .profile-main-content {
   flex: 1;
-  min-width: 0; /* 關鍵：防止 flex 項目被內容撐開擠壓 */
-  background-color: #F8F9FA; /* 確保主畫面填滿淺灰色 */
+  min-width: 0;
+  background-color: #F8F9FA; /* 全域淺灰色覆蓋 */
   padding: 40px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 讓內層框架水平置中 */
+  align-items: center;
 }
 
 /* 這是你在技術說明中提到的加一層框架解決方案 */
@@ -137,6 +135,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 100%;
 }
 
 /* 展示類分頁：如作品集、徵委託項目，呈現滿一點 */
@@ -152,6 +151,22 @@
 .tab-content-area {
   width: 100%;
 }
+
+/* 內部頁尾樣式 */
+.profile-internal-footer {
+  width: 100%;
+  padding: 60px 0 20px 0;
+  margin-top: auto;
+}
+
+.profile-internal-footer .footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.profile-internal-footer a { color: inherit; text-decoration: none; }
 
 /* ==========================================================================
    4. 徵委託與瀑布流樣式 (Showcase & Masonry)
