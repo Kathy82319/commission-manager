@@ -16,12 +16,14 @@ export default {
     const pathParts = url.pathname.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
+    // 支付結果回傳處理
     if (url.pathname === "/payment/result" && request.method === "POST") {
       const redirectUrl = new URL("/artist/settings", url.origin);
       redirectUrl.searchParams.set("payment", "success");
       return Response.redirect(redirectUrl.toString(), 303);
     }
     
+    // CORS 跨域設定
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
@@ -41,9 +43,11 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // API 路由處理
     if (url.pathname.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
+      // 支付相關 API
       if (url.pathname === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -53,31 +57,29 @@ export default {
         return paymentController.handleNotify(request, env);
       }
 
+      // LINE Auth API
       if (request.method === "GET" && url.pathname === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
 
-// 徵委託項目路由
-if (url.pathname.startsWith("/api/showcase")) {
-  // 私有操作需要驗證權限
-  const authErr = requireAuth(currentUserId, corsHeaders); 
-  if (authErr) return authErr;
+      // 徵委託項目路由 (需要驗證)
+      if (url.pathname.startsWith("/api/showcase")) {
+        const authErr = requireAuth(currentUserId, corsHeaders); 
+        if (authErr) return authErr;
 
-  const targetId = pathParts[3];
-  if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
-  if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
-  if (request.method === "PATCH" && targetId) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
-  if (request.method === "DELETE" && targetId) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
-}
+        const targetId = pathParts[3];
+        if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
+        if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
+        if (request.method === "PATCH" && targetId) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
+        if (request.method === "DELETE" && targetId) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
+      }
 
-// 公開展示接口 (不需驗證)
-if (url.pathname.startsWith("/api/public/showcase/")) {
-  const artistId = pathParts[4];
-  return showcaseController.getPublicList(artistId, env, corsHeaders);
-}
+      // 公開展示接口 (不需驗證)
+      if (url.pathname.startsWith("/api/public/showcase/")) {
+        const artistId = pathParts[4];
+        return showcaseController.getPublicList(artistId, env, corsHeaders);
+      }
 
-
-
-
+      // 管理員 API
       if (url.pathname.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -92,6 +94,7 @@ if (url.pathname.startsWith("/api/public/showcase/")) {
         }
       }
 
+      // 使用者設定與資料 API
       if (url.pathname.startsWith("/api/users/")) {
         const targetId = pathParts[3];
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
@@ -113,6 +116,7 @@ if (url.pathname.startsWith("/api/public/showcase/")) {
         }
       }
 
+      // 委託案管理 API
       if (url.pathname.startsWith("/api/commissions")) {
         const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
         
@@ -156,6 +160,7 @@ if (url.pathname.startsWith("/api/public/showcase/")) {
         }
       }
 
+      // R2 檔案傳輸 API
       if (url.pathname.startsWith("/api/r2/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -163,6 +168,7 @@ if (url.pathname.startsWith("/api/public/showcase/")) {
         if (request.method === "POST" && url.pathname.endsWith("/download-url")) return r2Controller.getDownloadUrl(request, currentUserId!, env, corsHeaders);
       }
 
+      // 測試用途 API
       if (url.pathname.startsWith("/api/test/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -170,13 +176,14 @@ if (url.pathname.startsWith("/api/public/showcase/")) {
         if (request.method === "POST" && url.pathname.endsWith("/mock-upgrade")) return testController.mockUpgrade(currentUserId!, env, corsHeaders);
       }
 
-if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
-  return authController.testingBypass(request, env, corsHeaders);
-}
+      if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
+        return authController.testingBypass(request, env, corsHeaders);
+      }
  
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
+    // 靜態資源處理 (Cloudflare Pages Assets)
     const assetResponse = await env.ASSETS.fetch(request as any);
     if (assetResponse.status === 404 || url.pathname.includes("@")) {
       const indexRequest = new Request(new URL("/", request.url).toString(), request as any);
@@ -184,10 +191,4 @@ if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
     }
     return assetResponse as any;
   }  
-
-
-
-
-  
 };
-
