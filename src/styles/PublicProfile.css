@@ -121,12 +121,11 @@
 .profile-main-content {
   flex: 1;
   min-width: 0;
-  background-color: #F8F9FA; /* 全域淺灰色覆蓋 */
   padding: 40px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* 讓內容容器水平置中 */
 }
 
 /* 這是你在技術說明中提到的加一層框架解決方案 */
