@@ -26,7 +26,6 @@ interface ProfileSettings {
   splash_image?: string;
   splash_duration?: number;
   splash_text?: string;
-  layout_type?: 'blog' | 'gallery';
   background_color?: string;
   theme_mode?: 'light' | 'dark';
 }
@@ -182,7 +181,6 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-  const layoutType = settings?.layout_type || 'blog';
   const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
@@ -190,7 +188,7 @@ export function PublicProfile() {
 
   return (
     <div 
-      className={`public-profile-container layout-${layoutType} theme-${settings?.theme_mode || 'dark'}`}
+      className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
       style={{
         background: `linear-gradient(135deg, ${bgColor}, rgba(0,0,0,0.15))`,
         color: textColor,
@@ -205,7 +203,6 @@ export function PublicProfile() {
       )}
 
       <div className="content-wrapper" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        {/* 統一側邊欄設計 */}
         <aside className="profile-sidebar" style={{ background: cardBg }}>
           <div className="sidebar-sticky-content">
             <div className="avatar-section">
@@ -240,10 +237,8 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        {/* 右側主內容區 */}
         <main className="profile-main-content">
           <div className="tab-content-area">
-            {/* 1. 徵委託項目 (瀑布流) */}
             {currentTab === 'showcase' && (
               <div className="showcase-section">
                 {availableTags.length > 1 && (
@@ -284,7 +279,6 @@ export function PublicProfile() {
               </div>
             )}
 
-            {/* 2. 作品展示 (網格) */}
             {currentTab === 'portfolio' && (
               <div className="portfolio-grid">
                 {settings?.portfolio.map((img, idx) => (
@@ -295,13 +289,11 @@ export function PublicProfile() {
               </div>
             )}
             
-            {/* 3. 富文本分頁內容 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
               <div className="rich-text-content" style={{ background: cardBg }} 
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
             )}
 
-            {/* 4. 自訂區塊 */}
             {settings?.custom_sections?.map(sec => 
               currentTab === sec.id && (
                 <div key={sec.id} className="rich-text-content" style={{ background: cardBg }} 
@@ -312,7 +304,6 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* Showcase 詳細 Modal */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close">✕</button>
@@ -328,7 +319,6 @@ export function PublicProfile() {
         </div>
       )}
 
-      {/* 單張圖片放大 Modal */}
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close">✕</button>

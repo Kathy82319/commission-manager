@@ -1,4 +1,5 @@
-import type { ProfileSettings } from '../Settings/types';
+// src/pages/artist/Settings/ThemeTab.tsx
+import { ProfileSettings } from './types';
 
 interface Props {
   settings: ProfileSettings;
@@ -8,20 +9,7 @@ interface Props {
 export function ThemeTab({ settings, setSettings }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-        <label className="form-label">選擇版面配置模式</label>
-        <select 
-          className="form-input" 
-          value={settings.layout_type || 'blog'} 
-          onChange={e => setSettings({...settings, layout_type: e.target.value as any})}
-        >
-          <option value="blog">📝 部落格模式 (傳統置中，以文字與流程介紹為主)</option>
-          <option value="gallery">🖼️ 藝廊模式 (寬幅瀑布流，以圖片與徵委託項目為主)</option>
-        </select>
-        <p style={{ fontSize: '13px', color: '#7A7269', marginTop: '8px' }}>
-          建議：若您已建立多個「徵委託項目」，強烈建議切換至「藝廊模式」獲得最佳展示效果。
-        </p>
-      </div>
+      {/* 移除原本的「選擇版面配置模式」區塊 */}
 
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <label className="form-label">自訂背景主色</label>

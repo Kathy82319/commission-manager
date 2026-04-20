@@ -13,16 +13,21 @@
 }
 
 .content-wrapper {
+  max-width: 1600px;
   margin: 0 auto;
+  display: flex;
+  gap: 50px;
+  padding: 60px 40px;
+  align-items: flex-start;
   transition: opacity 0.5s ease;
 }
 
-/* 社群連結小圖示 */
-.social-links { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 10px; 
-  margin-bottom: 8px; 
+/* 社群連結 */
+.social-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.social-icon {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  text-decoration: none; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+  transition: transform 0.2s ease;
 }
 
 .social-icon {
@@ -37,10 +42,7 @@
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-.social-icon:hover { 
-  transform: translateY(-3px); 
-  filter: brightness(1.1); 
-}
+.social-icon:hover { transform: translateY(-3px); filter: brightness(1.1); }
 
 /* 富文本內容通用樣式 (詳細介紹、規則等) */
 .rich-text-content {
@@ -73,30 +75,12 @@
 
 /* 圖片放大與詳情彈窗 (Lightbox / Modal) */
 .lightbox-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20000;
-  backdrop-filter: blur(10px);
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.9); display: flex; align-items: center;
+  justify-content: center; z-index: 20000; backdrop-filter: blur(10px);
 }
 
-.lightbox-close { 
-  position: absolute; 
-  top: 20px; 
-  right: 20px; 
-  background: none; 
-  border: none; 
-  color: white; 
-  font-size: 30px; 
-  cursor: pointer; 
-  z-index: 20001; 
-}
+.lightbox-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 30px; cursor: pointer; z-index: 20001; }
 
 .showcase-content-box {
   display: flex;
@@ -108,25 +92,9 @@
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
-.showcase-cover {
-  flex: 1.2;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.showcase-cover img {
-  max-width: 100%;
-  max-height: 85vh;
-  object-fit: contain;
-}
-
-.showcase-details {
-  flex: 1;
-  padding: 40px;
-  overflow-y: auto;
-}
+.showcase-cover { flex: 1.2; background: #000; display: flex; align-items: center; }
+.showcase-cover img { max-width: 100%; max-height: 85vh; object-fit: contain; }
+.showcase-details { flex: 1; padding: 40px; overflow-y: auto; }
 
 .showcase-details h2 { margin: 0 0 12px 0; font-size: 26px; }
 .modal-price { font-size: 22px; font-weight: bold; margin-bottom: 16px; color: #A67B3E; }
@@ -147,20 +115,19 @@
   align-items: flex-start;
 }
 
-/* 藝廊左側側邊欄 */
-.layout-gallery .profile-sidebar {
+/* 側邊欄樣式 - 修正圓角問題 */
+.profile-sidebar {
   width: 280px;
   flex-shrink: 0;
   position: sticky;
   top: 40px;
   padding: 30px;
-  border-radius: 24px;
-  /* 背景與框線交由 TSX 的內聯樣式 (cardBg) 控制 */
-  border: 1px solid rgba(128,128,128,0.1);
+  border-radius: 24px; /* 這裡確保側邊欄有圓角 */
+  border: 1px solid rgba(128, 128, 128, 0.1);
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.layout-gallery .profile-avatar {
+.layout-gallery {
   width: 120px;
   height: 120px;
   border-radius: 20px;
@@ -169,13 +136,25 @@
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-.layout-gallery .profile-name {
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 20px;
+  object-fit: cover;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.layout-gallery {
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 10px;
 }
 
-.layout-gallery .profile-bio {
+.profile-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+.profile-bio { font-size: 14px; line-height: 1.6; opacity: 0.8; margin-bottom: 24px; }
+
+.layout-gallery  {
   font-size: 14px;
   line-height: 1.6;
   opacity: 0.8;
@@ -183,7 +162,7 @@
 }
 
 /* 藝廊選單按鈕 */
-.layout-gallery .sidebar-nav {
+.layout-gallery  {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -192,7 +171,17 @@
   border-top: 1px solid rgba(128,128,128,0.2);
 }
 
-.layout-gallery .nav-item {
+/* 選單導覽 */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(128,128,128,0.2);
+}
+
+.layout-gallery {
   text-align: left;
   padding: 12px 16px;
   background: transparent;
@@ -206,15 +195,33 @@
   font-weight: 500;
 }
 
-.layout-gallery .nav-item:hover {
+.nav-item {
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  color: inherit;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+}
+
+.layout-gallery  {
   opacity: 1;
   background: rgba(128,128,128,0.08);
 }
 
-.layout-gallery .nav-item.active {
+.layout-gallery  {
   opacity: 1;
   background: rgba(128,128,128,0.12);
   padding-left: 20px; /* 選中時稍微右移增加層次感 */
+  font-weight: bold;
+}
+.nav-item:hover, .nav-item.active {
+  opacity: 1;
+  background: rgba(128,128,128,0.12);
   font-weight: bold;
 }
 
@@ -225,14 +232,23 @@
 }
 
 /* 標籤篩選列 */
-.layout-gallery .tag-filter-bar {
+.layout-gallery  {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
   flex-wrap: wrap;
 }
 
-.layout-gallery .tag-btn {
+/* 標籤篩選列 */
+.tag-filter-bar { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+.tag-btn {
+  padding: 6px 18px; border-radius: 30px; background: transparent; color: inherit;
+  font-weight: bold; font-size: 13px; cursor: pointer; transition: all 0.2s ease;
+  opacity: 0.6; border: 2px solid rgba(128,128,128,0.3);
+}
+.tag-btn.active { opacity: 1; border-color: #A67B3E; }
+
+.layout-gallery {
   padding: 6px 18px;
   border-radius: 30px;
   background: transparent;
@@ -250,7 +266,7 @@
   border-color: rgba(128,128,128,0.5);
 }
 
-.layout-gallery .tag-btn.active {
+.layout-gallery  {
   opacity: 1;
   background: transparent !important; 
   /* 選取時的 border-color 由 TSX style 控制為 #A67B3E */
@@ -263,10 +279,12 @@
   width: 100%;
 }
 
-@media (max-width: 1200px) { .layout-gallery .masonry-grid { column-count: 2; } }
-@media (max-width: 700px) { .layout-gallery .masonry-grid { column-count: 1; } }
+/* 瀑布流 */
+.masonry-grid { column-count: 3; column-gap: 20px; width: 100%; }
+@media (max-width: 1200px) { .masonry-grid { column-count: 2; } }
+@media (max-width: 700px) { .masonry-grid { column-count: 1; } }
 
-.layout-gallery .masonry-item {
+.layout-gallery  {
   break-inside: avoid;
   margin-bottom: 20px;
   position: relative;
@@ -276,6 +294,13 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
   background: rgba(128, 128, 128, 0.05);
+}
+
+
+.masonry-item {
+  break-inside: avoid; margin-bottom: 20px; position: relative; border-radius: 16px;
+  overflow: hidden; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
 }
 
 .layout-gallery .masonry-item:hover { transform: translateY(-6px); }
@@ -288,6 +313,24 @@
   border-radius: 24px;
 }
 
+/* 右下角浮動框 - 修正標籤貼地問題 */
+.floating-info-box {
+  position: absolute;
+  bottom: 20px; /* 從 12px 增加到 20px 讓它往上移 */
+  right: 12px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: right;
+  max-width: 85%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
+.item-price { font-weight: 900; font-size: 14px; opacity: 0.9; }
+.item-tags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.item-tags span { font-size: 11px; opacity: 0.8; font-weight: bold; }
 
 /* ==========================================================================
    3. 部落格模式 (Blog Layout)
@@ -326,7 +369,7 @@
   padding-bottom: 0px;
 }
 
-.layout-blog .nav-item {
+.layout-blog {
   padding: 14px 20px;
   border: none;
   background: transparent;
@@ -345,10 +388,14 @@
   font-weight: bold;
 }
 
-.layout-blog .rich-text-content {
+.layout-blog  {
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+}
+.rich-text-content {
+  max-width: 900px; padding: 50px; border-radius: 24px;
+  line-height: 1.9; font-size: 16px;
 }
 
 /* 舊版網格展示 */
@@ -378,12 +425,11 @@
    ========================================================================== */
 
 @media (max-width: 900px) {
-  .layout-gallery .content-wrapper,
-  .layout-blog .content-wrapper {
-    flex-direction: column;
-    padding: 30px 20px;
-    gap: 30px;
-  }
+  .content-wrapper { flex-direction: column; padding: 30px 20px; gap: 30px; }
+  .profile-sidebar { width: 100%; position: relative; top: 0; }
+  .showcase-content-box { flex-direction: column; }
+  .showcase-cover { height: 40vh; flex: none; }
+}
 
   .layout-gallery .profile-sidebar,
   .layout-blog .profile-sidebar {
@@ -392,12 +438,10 @@
     top: 0;
   }
 
-  .showcase-content-box {
-    flex-direction: column;
-  }
+.showcase-content-box {
+  display: flex; width: 90vw; max-width: 1100px; max-height: 85vh;
+  border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
 
-  .showcase-cover {
-    height: 40vh;
-    flex: none;
-  }
+
 }
