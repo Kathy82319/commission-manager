@@ -204,7 +204,7 @@ export function PublicProfile() {
 const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
-
+const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}>
       
@@ -262,6 +262,7 @@ const bgColor = settings?.background_color || '#F4F0EB';
 
         {/* 右側內容區：對應你的灰色區域 */}
         <main className="profile-main-content">
+          <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}></div>
           <div className="tab-content-area">
             {currentTab === 'showcase' && (
               <div className="showcase-section">

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. 基礎佈局與主畫面 (Layout & Main Content)
+   1. 基礎佈局與主畫面背景
    ========================================================================== */
 
 .public-profile-container {
@@ -7,7 +7,6 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #F8F9FA; /* 主畫面背景色：乾淨的淺灰 */
 }
 
 .profile-layout-root {
@@ -16,145 +15,45 @@
   min-height: 100vh;
 }
 
-/* 右側內容區總容器 */
+/* 解決主畫面顏色問題：在這裡設定背景色 */
 .profile-main-content {
   flex: 1;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* 預設置中 */
+  background-color: #F8F9FA; /* 確保主畫面區域是淺灰色 */
+  padding: 40px 20px;
   overflow-y: auto;
-}
-
-/* 內容區域：區分「滿版」與「限寬」 */
-.tab-content-area {
-  width: 100%;
-  transition: all 0.3s ease;
-}
-
-/* 針對作品展示、徵委託：呈現滿一點 */
-.profile-main-content.tab-portfolio .tab-content-area,
-.profile-main-content.tab-showcase .tab-content-area {
-  max-width: 1600px; /* 增加最大寬度 */
-}
-
-/* 針對文字分頁：維持舒適閱讀寬度 */
-.profile-main-content.tab-detailed_intro .tab-content-area,
-.profile-main-content.tab-process .tab-content-area,
-.profile-main-content.tab-payment .tab-content-area,
-.profile-main-content.tab-rules .tab-content-area {
-  max-width: 850px;
+  display: flex;
+  justify-content: center; /* 讓內容容器水平置中 */
 }
 
 /* ==========================================================================
-   2. 側邊欄樣式 (Sidebar)
+   2. 分頁寬度框架 (解決文字頁面拉寬的問題)
    ========================================================================== */
 
-.profile-sidebar {
-  width: 320px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  min-height: 100vh;
-  box-shadow: 6px 0 20px rgba(0,0,0,0.05);
-  z-index: 10;
+.tab-inner-wrapper {
+  width: 100%;
+  transition: max-width 0.3s ease;
 }
 
-.sidebar-top {
-  padding: 30px 20px 10px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* 展示類分頁：寬度較大，呈現滿一點 */
+.tab-inner-wrapper.layout-wide {
+  max-width: 1600px;
 }
 
-.profile-avatar {
-  width: 240px; /* 大頭像尺寸 */
-  height: 240px;
-  border-radius: 20px;
-  object-fit: cover;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  margin-bottom: 12px;
+/* 文字類分頁：限制在 900px，確保閱讀舒適 */
+.tab-inner-wrapper.layout-narrow {
+  max-width: 900px;
 }
 
-.profile-name {
-  font-size: 22px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.social-links {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.social-icon {
-  width: 38px;
-  height: 38px;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s;
-}
-
-.social-icon:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.sidebar-bottom {
-  padding: 0 20px 40px 20px;
-}
-
-.profile-bio {
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: center;
-  margin-bottom: 24px;
-  opacity: 0.9;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.nav-item {
-  text-align: left;
-  padding: 12px 18px;
-  background: transparent;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  color: inherit;
-  opacity: 0.7;
-  transition: all 0.2s;
-}
-
-.nav-item:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.nav-item.active {
-  opacity: 1;
-  background: rgba(0, 0, 0, 0.15);
-  font-weight: 800;
+.tab-content-area {
+  width: 100%;
 }
 
 /* ==========================================================================
-   3. 瀑布流與卡片 (Masonry & Cards)
+   3. 瀑布流與卡片美化 (解決圖三與 CSS 未套用問題)
    ========================================================================== */
 
 .masonry-grid {
-  column-count: 4; /* 增加到 4 欄讓畫面更滿 */
+  column-count: 4;
   column-gap: 24px;
   width: 100%;
 }
@@ -167,15 +66,16 @@
   margin-bottom: 24px;
   border-radius: 16px;
   overflow: hidden;
-  background: #FFF;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: #FFFFFF;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  transition: transform 0.3s ease;
   cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .masonry-item:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
 }
 
 .masonry-item img {
@@ -183,16 +83,16 @@
   display: block;
 }
 
+/* 卡片下方的資訊區 */
 .floating-info-box {
   padding: 16px;
-  background: #FFF;
-  border-top: 1px solid #F0F0F0;
+  background: #FFFFFF;
 }
 
 .item-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 4px; }
 .item-price { font-size: 14px; font-weight: 800; color: #A67B3E; }
 
-/* 標籤列 */
+/* 標籤列美化 */
 .tag-filter-bar {
   display: flex;
   gap: 10px;
@@ -209,7 +109,6 @@
   font-size: 13px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s;
   color: #666;
 }
 
@@ -220,64 +119,33 @@
 }
 
 /* ==========================================================================
-   4. 作品展示網格 (Portfolio Grid)
-   ========================================================================== */
-
-.portfolio-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 更密集的網格 */
-  gap: 20px;
-  width: 100%;
-}
-
-.portfolio-item {
-  aspect-ratio: 1;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  transition: transform 0.3s;
-}
-
-.portfolio-item:hover {
-  transform: scale(1.03);
-}
-
-.portfolio-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ==========================================================================
-   5. 文字內容區 (Rich Text Content)
+   4. 文字內容區 (Rich Text)
    ========================================================================== */
 
 .rich-text-content {
   background: #FFFFFF;
-  padding: 60px;
+  padding: 50px;
   border-radius: 24px;
   box-shadow: 0 4px 30px rgba(0,0,0,0.03);
-  width: 100%;
   line-height: 2;
   color: #444;
 }
 
 /* ==========================================================================
-   6. 燈箱與彈窗美化 (Lightbox & Modals)
+   5. 燈箱與按鈕美化 (解決 <> 與 X 醜陋的問題)
    ========================================================================== */
 
 .lightbox-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgba(0, 0, 0, 0.93);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(15px);
 }
 
-/* 關閉按鈕設計 */
 .lightbox-close {
   position: absolute;
   top: 30px;
@@ -285,8 +153,8 @@
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: #FFF;
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -300,7 +168,6 @@
   transform: rotate(90deg);
 }
 
-/* 左右切換按鈕設計 */
 .lightbox-nav {
   position: absolute;
   top: 50%;
@@ -308,62 +175,55 @@
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: #FFF;
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
-.lightbox-nav:hover { background: rgba(255, 255, 255, 0.25); }
+.lightbox-nav:hover { background: rgba(255, 255, 255, 0.2); }
 .lightbox-nav.prev { left: 40px; }
 .lightbox-nav.next { right: 40px; }
 
-/* 徵委託詳情彈窗 */
+/* 詳情彈窗 */
 .showcase-content-box {
   display: flex;
   width: 90vw;
   max-width: 1200px;
   height: 85vh;
   background: #FFF;
-  border-radius: 30px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 30px 100px rgba(0,0,0,0.5);
 }
 
-.showcase-cover {
-  flex: 1.4;
-  background: #111;
+.showcase-cover { flex: 1.5; background: #000; display: flex; align-items: center; justify-content: center; }
+.showcase-cover img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.showcase-details { flex: 1; padding: 40px; overflow-y: auto; color: #333; }
+
+/* ==========================================================================
+   6. 側邊欄樣式補強 (間距與大頭像)
+   ========================================================================== */
+
+.profile-sidebar {
+  width: 320px;
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 6px 0 20px rgba(0,0,0,0.05);
+  z-index: 10;
 }
 
-.showcase-cover img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.showcase-details {
-  flex: 1;
-  padding: 50px;
-  overflow-y: auto;
-  color: #333;
-}
-
-.showcase-details h2 { font-size: 28px; margin-bottom: 16px; }
-.modal-price { font-size: 20px; font-weight: 800; color: #A67B3E; margin-bottom: 20px; }
-
-/* 行動版適應 */
-@media (max-width: 1100px) {
-  .profile-layout-root { flex-direction: column; }
-  .profile-sidebar { width: 100%; min-height: auto; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-  .profile-avatar { width: 180px; height: 180px; }
-  .showcase-content-box { flex-direction: column; height: 95vh; }
-  .showcase-cover { height: 40vh; flex: none; }
-  .lightbox-nav { display: none; }
+.sidebar-top { padding: 30px 20px 10px 20px; text-align: center; }
+.profile-avatar {
+  width: 240px;
+  height: 240px;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  margin-bottom: 12px;
 }
