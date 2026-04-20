@@ -1,6 +1,6 @@
 // src/layouts/PublicLayout.tsx
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import '../styles/PublicLayout.css'; // 🌟 引入專屬樣式表
+import '../styles/PublicLayout.css'; 
 
 export function PublicLayout() {
   const location = useLocation();
@@ -11,7 +11,10 @@ export function PublicLayout() {
     window.location.href = `${API_BASE}/api/auth/line/login`;
   };
 
-  const isLegalPage = location.pathname === '/terms' || location.pathname === '/privacy';
+  const isLegalPage = 
+    location.pathname === '/terms' || 
+    location.pathname === '/privacy' || 
+    location.pathname === '/refund-policy';
 
   return (
     <div className="public-layout-container">
@@ -41,6 +44,8 @@ export function PublicLayout() {
           <Link to="/terms">服務條款</Link>
           <span className="footer-divider-text">|</span>
           <Link to="/privacy">隱私權政策</Link>
+          <span className="footer-divider-text">|</span>
+          <Link to="/refund-policy">退款政策</Link>
           <span className="footer-divider-text">|</span>
           <span>客服信箱：cath40286@gmail.com</span>
         </div>

@@ -6,6 +6,62 @@ import { getUserById, createNewUser } from "../services/db";
 
 export const authController = {
 
+async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const url = new URL(request.url);
+    const secret = url.searchParams.get("secret");
+
+    // 1. 安全驗證：設定一個只有您跟審核員知道的複雜金鑰
+    // 審核過後，您可以把這段程式碼刪除，或是更改金鑰
+    if (secret !== "NewebPay_Review_Special_2026_XYZ") {
+      return new Response(JSON.stringify({ success: false, error: "Access Denied" }), { status: 403, headers: corsHeaders });
+    }
+
+    try {
+      // 2. 定義審核員專用 ID
+      const testUserId = "reviewer_newebpay_001";
+      
+      // 3. 確保資料庫有這位使用者，若無則自動建立
+      let user: any = await getUserById(env, testUserId);
+      if (!user) {
+        await createNewUser(env, testUserId, "金流審核員", "https://via.placeholder.com/150");
+      }
+
+      // 4. 產生登入 Session Token (與 LINE callback 邏輯一致)
+      const sessionValue = await generateToken(testUserId, env.ID_SALT, 30);
+
+      // 5. 將審核員直接導向到「付費升級介面」
+      // 假設您的付費按鈕放在設定頁面
+      let baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
+      const targetPath = "/artist/settings"; 
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': `${baseUrl}${targetPath}`,
+          'Set-Cookie': `user_session=${sessionValue}; Path=/; Max-Age=2592000; SameSite=None; Secure; HttpOnly`,
+          ...corsHeaders
+        }
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
       return new Response(JSON.stringify({ success: false, error: "環境變數未設定" }), { status: 500, headers: corsHeaders });

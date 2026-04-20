@@ -26,6 +26,7 @@ import { Portal } from './pages/Portal';
 
 import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
+import { RefundPolicy } from './pages/RefundPolicy';
 
 export function App() {
   const MY_ARTIST_ID = "@User_84448";
@@ -71,6 +72,7 @@ export function App() {
           <Route path="/portal" element={<Portal />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/:artistId" element={<PublicProfile />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
         </Route>
         
         {/* === 新增：管理員後台區 === */}

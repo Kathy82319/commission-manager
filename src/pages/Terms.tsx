@@ -115,13 +115,7 @@ export function Terms() {
         <p style={itemStyle}>4. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定或有異常使用之情事，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」、「永久刪除帳號」或「限制 IP 訪問」等措施。</p>
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={subTitleStyle}>五、 使用者行為規範</h2>
-        <p>
-          <span style={highlightStyle}>識別碼用途限制：</span>
-          系統顯示之委託人識別碼（如 User-XXXXX）係基於 LINE 帳號產生之唯一編號，僅供繪師於本平台內辨識委託對象及信用參考使用，不得將此資料用於非法騷擾或洩露個資之行為。
-        </p>
-      </section>
+
     </div>
   );
 }

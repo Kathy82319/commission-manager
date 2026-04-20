@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; 
 import { ImageUploader } from '../../components/ImageUploader';
-import '../../styles/Settings.css'; // 🌟 引入專屬樣式表
+import '../../styles/Settings.css'; 
 
 interface ProfileSettings {
   portfolio: string[];
@@ -52,6 +52,9 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  
+  // 🌟 恢復的狀態
+  const [isUpgrading, setIsUpgrading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
 
@@ -110,6 +113,63 @@ export function Settings() {
     }
     fetchUserData();
   }, [API_BASE, fetchUserData]);
+
+  // 🌟 恢復的付款與試用邏輯
+  const handleStartTrial = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchUserData();
+      } else alert(data.error);
+    } catch(e) { alert('連線失敗'); }
+  };
+
+  const handleUpgradeClick = async () => {
+    setIsUpgrading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/payment/create`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan_type: "pro" })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = result.data.PayGateWay;
+
+        const params = {
+          MerchantID: result.data.MerchantID,
+          TradeInfo: result.data.TradeInfo,
+          TradeSha: result.data.TradeSha,
+          Version: result.data.Version,
+        };
+
+        for (const [key, value] of Object.entries(params)) {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit(); 
+      } else {
+        alert("訂單建立失敗：" + (result.error || "請稍後再試"));
+        setIsUpgrading(false);
+      }
+    } catch (error) {
+      console.error("升級失敗:", error);
+      alert("系統連線異常");
+      setIsUpgrading(false);
+    }
+  };
 
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
@@ -284,6 +344,7 @@ export function Settings() {
     });
   };
 
+  // 🌟 加入方案與訂閱選單
   const menuItems = [
     { id: 'profile_basic', label: '頭像與簡介' },
     { id: 'portfolio', label: '作品展示區' },
@@ -293,14 +354,12 @@ export function Settings() {
     { id: 'payment', label: '付款方式' },
     { id: 'rules', label: '協議書內容' },
     { id: 'custom', label: '其他 (自訂標題)' },
+    { id: 'subscription', label: '方案與訂閱' }, 
   ];
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
-
-  // 產生 0.5s ~ 10.0s 的選項
-  const durationOptions = Array.from({ length: 20 }, (_, i) => (i + 1) * 0.5);
 
   return (
     <div className="settings-page">
@@ -325,7 +384,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
-            {activeTab !== 'profile_basic' && !isCurrentTabLocked && (
+            {activeTab !== 'profile_basic' && activeTab !== 'subscription' && !isCurrentTabLocked && (
               <button 
                 onClick={()=>toggleVisibility(activeTab)} 
                 style={{ 
@@ -345,7 +404,7 @@ export function Settings() {
               <div style={{ textAlign: 'center', padding: '32px', background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
                 <h4 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '18px' }}>此功能僅限專業版</h4>
-                <button onClick={() => alert('方案升級即將開放')} style={{ padding: '10px 20px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>查看方案</button>
+                <button onClick={() => setActiveTab('subscription')} style={{ padding: '10px 20px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>查看方案</button>
               </div>
             </div>
           )}
@@ -419,58 +478,58 @@ export function Settings() {
               </div>
             )}
 
-{activeTab === 'splash' && (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
-            <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
-            啟用專屬開場動畫
-          </label>
-        </div>
-        
-        {settings.splash_enabled && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label className="form-label" style={{ margin: 0 }}>動畫停留時長</label>
-                <span style={{ fontWeight: 'bold', color: '#A67B3E', fontSize: '15px' }}>{settings.splash_duration} 秒</span>
-              </div>
-              <input 
-                type="range" 
-                min="0.5" 
-                max="10" 
-                step="0.5" 
-                value={settings.splash_duration} 
-                onChange={e => setSettings({...settings, splash_duration: Number(e.target.value)})}
-                style={{ width: '100%', cursor: 'pointer', accentColor: '#5D4A3E' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginTop: '4px' }}>
-                <span>快 (0.5s)</span>
-                <span>慢 (10s)</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
-              <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
-                <ImageUploader 
-                  onUpload={handleSplashUpload} 
-                  targetWidth={1920} 
-                  aspectRatio={16/9}
-                  withWatermark={false} 
-                  buttonText={isSplashUploading ? "圖片上傳中..." : "上傳全螢幕背景圖"} 
-                  maxSizeMB={3} // 🌟 鎖定為 3MB
-                />
-                <div style={{ marginTop: '12px', fontSize: '13px', color: '#7A7269', lineHeight: '1.6' }}>
-                  <p>📸 <strong>建議規格：</strong> 1920x1080 (比例 16:9)。</p>
-                  <p>🚀 <strong>載入優化：</strong> 檔案限制放寬至 3MB，但系統會自動壓縮。若初次載入全黑，建議先手動壓縮圖檔至 1MB 內。</p>
+            {activeTab === 'splash' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={settings.splash_enabled} onChange={e=>setSettings({...settings, splash_enabled: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+                    啟用專屬開場動畫
+                  </label>
                 </div>
+                
+                {settings.splash_enabled && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label className="form-label" style={{ margin: 0 }}>動畫停留時長</label>
+                        <span style={{ fontWeight: 'bold', color: '#A67B3E', fontSize: '15px' }}>{settings.splash_duration} 秒</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="0.5" 
+                        max="10" 
+                        step="0.5" 
+                        value={settings.splash_duration} 
+                        onChange={e => setSettings({...settings, splash_duration: Number(e.target.value)})}
+                        style={{ width: '100%', cursor: 'pointer', accentColor: '#5D4A3E' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginTop: '4px' }}>
+                        <span>快 (0.5s)</span>
+                        <span>慢 (10s)</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
+                      <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
+                        <ImageUploader 
+                          onUpload={handleSplashUpload} 
+                          targetWidth={1920} 
+                          aspectRatio={16/9}
+                          withWatermark={false} 
+                          buttonText={isSplashUploading ? "圖片上傳中..." : "上傳全螢幕背景圖"} 
+                          maxSizeMB={3}
+                        />
+                        <div style={{ marginTop: '12px', fontSize: '13px', color: '#7A7269', lineHeight: '1.6' }}>
+                          <p>📸 <strong>建議規格：</strong> 1920x1080 (比例 16:9)。</p>
+                          <p>🚀 <strong>載入優化：</strong> 檔案限制放寬至 3MB，但系統會自動壓縮。若初次載入全黑，建議先手動壓縮圖檔至 1MB 內。</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-    )}
+            )}
 
             {activeTab === 'custom' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -496,11 +555,90 @@ export function Settings() {
               </div>
             )}
             
+            {/* 🌟 恢復的方案與訂閱區塊 */}
+            {activeTab === 'subscription' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                  
+                  <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                      <li>每月最高建立 <strong>3 筆</strong>委託單</li>
+                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
+                      <li>開放編輯「頭像與簡介、作品展示、詳細介紹」</li>
+                      <li>公開頁面最多展示 <strong>前 6 張</strong>作品</li>
+                    </ul>
+                    {quotaInfo?.plan_type === 'free' ? (
+                      <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontWeight: 'bold', backgroundColor: '#F0ECE7', borderRadius: '8px' }}>目前方案</div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>到期後將自動降級至此方案</div>
+                    )}
+                  </div>
+
+                  <div style={{ border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'trial' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', color: '#A67B3E' }}>專業版 (15天試用)</h4>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
+                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                      <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
+                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
+                      <li>解鎖編輯「所有」進階區塊編輯權限</li>
+                      <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
+                      <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>💡 降級保障：方案過期後，已設定的進階區塊與超過 6 張的圖片不會刪除且持續展示，僅鎖定後台編輯權限。</li>
+                    </ul>
+                    {quotaInfo?.plan_type === 'trial' ? (
+                       <div style={{ textAlign: 'center', padding: '12px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '8px' }}>試用中</div>
+                    ) : quotaInfo?.trial_start_at ? (
+                       <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
+                    ) : (
+                      <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>開啟 15 天試用</button>
+                    )}
+                  </div>
+
+                  <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+                    <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+                      <li><strong>無限制建立委託單數量</strong></li>
+                      <li>解鎖編輯「所有」進階區塊編輯權限</li>
+                      <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
+                      <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
+                      <li>享有未來所有進階功能更新</li>
+                    </ul>
+                    {quotaInfo?.plan_type === 'pro' ? (
+                       <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button 
+                          onClick={handleUpgradeClick} 
+                          disabled={isUpgrading}
+                          style={{ 
+                            padding: '12px', backgroundColor: isUpgrading ? '#C4BDB5' : '#4E7A5A', color: '#FFF', 
+                            border: 'none', borderRadius: '8px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
+                            fontWeight: 'bold', transition: 'opacity 0.2s', width: '100%'
+                          }} 
+                          onMouseEnter={e => !isUpgrading && (e.currentTarget.style.opacity='0.9')} 
+                          onMouseLeave={e => !isUpgrading && (e.currentTarget.style.opacity='1')}
+                        >
+                          {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
+                        </button>
+                        {/* 🌟 藍新金流要求的退款政策明確宣告 */}
+                        <div style={{ fontSize: '12px', color: '#A05C5C', textAlign: 'center', lineHeight: '1.4' }}>
+                          點擊按鈕即代表同意<a href="/refund-policy" target="_blank" style={{ color: '#A05C5C', textDecoration: 'underline' }}>退款政策</a>，<br/>數位內容一經啟用恕不退費。
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
           </div>
 
           <div className="save-action-bar">
             {message && <span style={{ color: message.includes('失敗') || message.includes('錯誤') ? '#A05C5C' : '#4E7A5A', fontWeight: 'bold', fontSize: '14px' }}>{message}</span>}
-            <button onClick={handleSave} disabled={isSaving} style={{ padding: '12px 32px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: isSaving ? 0.7 : 1, transition: 'opacity 0.2s', fontSize: '15px' }}>
+            <button onClick={handleSave} disabled={isSaving || activeTab === 'subscription'} style={{ padding: '12px 32px', background: activeTab === 'subscription' ? '#DED9D3' : '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: activeTab === 'subscription' ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, transition: 'opacity 0.2s', fontSize: '15px' }}>
               {isSaving ? '儲存中...' : '儲存變更'}
             </button>
           </div>
