@@ -318,3 +318,218 @@
     flex: none; 
   }
 }
+
+
+/* src/styles/PublicProfile.css - 完整優化修正版 */
+
+/* ==========================================================================
+   1. 基礎佈局 (Layout)
+   ========================================================================== */
+
+.public-profile-container {
+  min-height: 100vh;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.content-wrapper {
+  max-width: 1400px; /* 控制整體寬度，確保內容看起來是居中的 */
+  margin: 0 auto;
+  display: flex;
+  gap: 30px;           /* 縮小間距，視覺上更緊湊 */
+  padding: 40px 20px;  /* 上下 40px，兩側 20px */
+  align-items: flex-start; /* 關鍵：確保左右兩個區塊頂部對齊 */
+}
+
+/* ==========================================================================
+   2. 側邊欄樣式 (Sidebar)
+   ========================================================================== */
+
+.profile-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 40px;      /* 滾動到距離頂部 40px 時固定 */
+  padding: 30px;
+  border-radius: 24px;
+  border: 1px solid rgba(128, 128, 128, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  /* 確保內容水平置中 */
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+}
+
+.avatar-section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.info-section {
+  text-align: center;
+  width: 100%;
+}
+
+.profile-name { font-size: 22px; font-weight: bold; margin: 0 0 10px 0; }
+.profile-bio { font-size: 14px; line-height: 1.6; opacity: 0.8; margin-bottom: 20px; }
+
+/* 側邊導覽選單 */
+.sidebar-nav {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(128,128,128,0.2);
+}
+
+.nav-item {
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  color: inherit;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover, .nav-item.active {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.1);
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   3. 主內容展示區 (Gallery & Masonry)
+   ========================================================================== */
+
+.profile-main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 瀑布牆 (徵委託) */
+.masonry-grid { column-count: 3; column-gap: 20px; }
+@media (max-width: 1200px) { .masonry-grid { column-count: 2; } }
+@media (max-width: 700px) { .masonry-grid { column-count: 1; } }
+
+.masonry-item {
+  break-inside: avoid; margin-bottom: 20px; position: relative; border-radius: 16px;
+  overflow: hidden; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+.masonry-item img { width: 100%; display: block; height: auto; }
+
+/* 修正標籤定位：不貼合底部照片邊緣 */
+.floating-info-box {
+  position: absolute;
+  bottom: 24px;  /* 增加距離，讓它看起來是浮動的 */
+  right: 16px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-align: right;
+  max-width: 85%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.item-title { font-weight: bold; font-size: 16px; margin-bottom: 2px; }
+.item-price { font-weight: 900; font-size: 14px; opacity: 0.9; color: #A67B3E; }
+.item-tags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.item-tags span { font-size: 11px; font-weight: bold; opacity: 0.8; }
+
+/* 作品展示 (原本的網格) - 恢復 CSS */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.portfolio-item {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  border: 1px solid rgba(128,128,128,0.1);
+}
+
+.portfolio-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.portfolio-item:hover img { transform: scale(1.08); }
+
+/* 文字分頁容器：優化居中感，避免整體畫面靠左 */
+.rich-text-content {
+  max-width: 850px;     /* 限制文字寬度以提升閱讀舒適度 */
+  margin: 0 auto;       /* 在右側主區域內水平置中 */
+  padding: 40px;
+  border-radius: 24px;
+  line-height: 1.9;
+  font-size: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+}
+
+/* ==========================================================================
+   4. 互動燈箱與彈窗 (Lightbox / Modal)
+   ========================================================================== */
+
+.lightbox-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.9); display: flex; align-items: center;
+  justify-content: center; z-index: 20000; backdrop-filter: blur(15px);
+}
+
+.lightbox-close { 
+  position: absolute; top: 20px; right: 20px; background: none; border: none; 
+  color: white; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;
+}
+
+.lightbox-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.05); border: none; color: white;
+  padding: 20px 10px; cursor: pointer; border-radius: 12px; transition: all 0.2s;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.15); }
+.lightbox-nav.prev { left: 30px; }
+.lightbox-nav.next { right: 30px; }
+
+.lightbox-content {
+  position: relative; max-width: 85vw; max-height: 85vh;
+  display: flex; flex-direction: column; align-items: center;
+}
+.lightbox-content img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+.lightbox-counter { margin-top: 15px; font-size: 14px; opacity: 0.6; color: white; }
+
+/* 徵委託詳情彈窗 */
+.showcase-content-box {
+  display: flex; width: 90vw; max-width: 1100px; max-height: 85vh;
+  border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+}
+
+.showcase-cover { flex: 1.2; background: #111; display: flex; align-items: center; justify-content: center; }
+.showcase-cover img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.showcase-details { flex: 1; padding: 40px; overflow-y: auto; }
+
+/* 行動裝置適應 */
+@media (max-width: 900px) {
+  .content-wrapper { flex-direction: column; padding: 20px; gap: 30px; }
+  .profile-sidebar { width: 100%; position: relative; top: 0; }
+  .showcase-content-box { flex-direction: column; }
+  .showcase-cover { height: 40vh; flex: none; }
+  .lightbox-nav { display: none; } /* 手機端建議滑動或隱藏按鈕 */
+}

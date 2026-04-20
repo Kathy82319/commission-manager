@@ -1,9 +1,9 @@
-// src/PublicProfile.tsx
+// src/PublicProfile.tsx 完整修正版
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe } from 'lucide-react';
+import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
@@ -178,6 +178,21 @@ export function PublicProfile() {
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
 
+  // 燈箱切換邏輯
+  const handlePrevImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length);
+    }
+  };
+
+  const handleNextImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedImgIndex !== null && settings?.portfolio) {
+      setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length);
+    }
+  };
+
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
@@ -251,11 +266,7 @@ export function PublicProfile() {
                           className={`tag-btn ${isSelected ? 'active' : ''}`} 
                           onClick={() => handleTagClick(tag)}
                           style={{
-                            background: 'transparent',
-                            color: textColor,
                             borderColor: isSelected ? '#A67B3E' : 'rgba(128,128,128,0.3)', 
-                            borderWidth: '2px',
-                            borderStyle: 'solid'
                           }}
                         >
                           {tag}
@@ -305,8 +316,8 @@ export function PublicProfile() {
       </div>
 
       {selectedShowcase && (
-        <div className="lightbox-overlay showcase-modal" onClick={() => setSelectedShowcase(null)}>
-          <button className="lightbox-close">✕</button>
+        <div className="lightbox-overlay" onClick={() => setSelectedShowcase(null)}>
+          <button className="lightbox-close"><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()} style={{ background: isDarkText ? '#FFF' : '#222' }}>
             <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
             <div className="showcase-details">
@@ -321,13 +332,13 @@ export function PublicProfile() {
 
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
-          <button className="lightbox-close">✕</button>
-          <button className="lightbox-nav prev" onClick={(e) => { e.stopPropagation(); setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length); }}>❮</button>
-          <div className="lightbox-content">
+          <button className="lightbox-close"><X size={32}/></button>
+          <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
+          <div className="lightbox-content" onClick={e => e.stopPropagation()}>
             <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" />
             <div className="lightbox-counter">{selectedImgIndex + 1} / {settings.portfolio.length}</div>
           </div>
-          <button className="lightbox-nav next" onClick={(e) => { e.stopPropagation(); setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length); }}>❯</button>
+          <button className="lightbox-nav next" onClick={handleNextImg}><ChevronRight size={48}/></button>
         </div>
       )}
     </div>
