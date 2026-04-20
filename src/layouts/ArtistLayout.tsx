@@ -147,10 +147,13 @@ export function ArtistLayout() {
           <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
           <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
           
+          {/* 🌟 這裡新增了退款政策的連結 */}
           <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
             <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
             <span style={{ margin: '0 4px' }}>|</span>
             <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+            <span style={{ margin: '0 4px' }}>|</span>
+            <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
             <div style={{ marginTop: '4px' }}>客服：cath40286@gmail.com</div>
           </div>
         </div>
