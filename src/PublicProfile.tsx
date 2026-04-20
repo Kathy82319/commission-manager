@@ -201,7 +201,7 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-  const bgColor = settings?.background_color || '#F4F0EB';
+const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
 
@@ -216,14 +216,12 @@ export function PublicProfile() {
         </div>
       )}
 
-      {/* 這裡是主要的左右佈局容器 */}
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
-        {/* 左側側邊欄 */}
-        <aside className="profile-sidebar">
+        {/* 修改點：將背景色與文字顏色套用到整個側邊欄 */}
+        <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
           
-          {/* 上半部：對應你的黃色區域 (頭像+暱稱+社群) */}
-          <div className="sidebar-top" style={{ backgroundColor: bgColor, color: textColor }}>
+          <div className="sidebar-top">
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
             </div>
@@ -240,10 +238,11 @@ export function PublicProfile() {
             </div>
           </div>
 
-          {/* 下半部：對應你的白色區域 (簡介+導覽) */}
           <div className="sidebar-bottom">
             <div className="bio-section">
-              <p className="profile-bio">{artist.bio || '這名繪師還沒有寫下簡介。'}</p>
+              <p className="profile-bio" style={{ color: textColor, opacity: 0.8 }}>
+                {artist.bio || '這名繪師還沒有寫下簡介。'}
+              </p>
             </div>
 
             <nav className="sidebar-nav">
@@ -252,6 +251,7 @@ export function PublicProfile() {
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)} 
                   className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
+                  style={{ color: currentTab === tab.id ? bgColor : textColor }}
                 >
                   {tab.label}
                 </button>
