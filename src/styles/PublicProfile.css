@@ -84,10 +84,13 @@
   background: rgba(128, 128, 128, 0.1);
 }
 
+/* 修改 .tag-btn.active，移除背景反轉效果 */
 .tag-btn.active {
   opacity: 1;
-  background: currentColor;
-  filter: invert(1); /* 自動根據文字顏色反轉背景 */
+  background: transparent !important; /* 確保背景維持透明 */
+  filter: none !important;            /* 移除反轉濾鏡 */
+  /* 選取時的框線顏色由 TSX 內的 style 控制，或在此處統一設定 */
+  border-color: #A67B3E; 
 }
 
 /* --- 3. 瀑布流佈局 (Masonry Grid) --- */

@@ -71,12 +71,14 @@ export function PublicProfile() {
   const [loading, setLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<string>('');
-  const [activeTag, setActiveTag] = useState<string>('全部');
   const [selectedShowcase, setSelectedShowcase] = useState<ShowcaseItem | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
-  
+
+  // 1. 標籤複選狀態
+  const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
+
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -137,10 +139,26 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
+  // 2. 複選切換邏輯
+  const handleTagClick = (tag: string) => {
+    setSelectedTags(prev => {
+      if (tag === '全部') return ['全部'];
+      const filters = prev.filter(t => t !== '全部');
+      if (filters.includes(tag)) {
+        const next = filters.filter(t => t !== tag);
+        return next.length === 0 ? ['全部'] : next;
+      }
+      return [...filters, tag];
+    });
+  };
+
+  // 3. 多重過濾邏輯
   const filteredShowcaseItems = useMemo(() => {
-    if (activeTag === '全部') return showcaseItems;
-    return showcaseItems.filter(item => item.tags.includes(activeTag));
-  }, [showcaseItems, activeTag]);
+    if (selectedTags.includes('全部')) return showcaseItems;
+    return showcaseItems.filter(item => 
+      item.tags.some(tag => selectedTags.includes(tag))
+    );
+  }, [showcaseItems, selectedTags]);
 
   const availableTabs = useMemo(() => {
     if (!settings) return [];
@@ -209,11 +227,25 @@ export function PublicProfile() {
 
             {availableTags.length > 1 && (
               <div className="gallery-tag-filter">
-                {availableTags.map(tag => (
-                  <button key={tag} className={`tag-btn ${activeTag === tag ? 'active' : ''}`} onClick={() => setActiveTag(tag)}>
-                    {tag}
-                  </button>
-                ))}
+                {availableTags.map(tag => {
+                  const isSelected = selectedTags.includes(tag);
+                  return (
+                    <button 
+                      key={tag} 
+                      className={`tag-btn ${isSelected ? 'active' : ''}`} 
+                      onClick={() => handleTagClick(tag)}
+                      style={{
+                        background: 'transparent',
+                        color: textColor,
+                        borderColor: isSelected ? '#A67B3E' : 'rgba(128,128,128,0.3)', 
+                        borderWidth: '2px',
+                        borderStyle: 'solid'
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -228,7 +260,7 @@ export function PublicProfile() {
                     <img src={item.cover_url} alt={item.title} loading="lazy" />
                     <div className="floating-info-box" style={{ background: cardBg }}>
                       <div className="item-title">{item.title}</div>
-                      <div className="item-price">{item.price_info}</div>
+                      <div className="item-price">${item.price_info}</div>
                       <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
                     </div>
                   </div>
@@ -275,7 +307,7 @@ export function PublicProfile() {
                         <img src={item.cover_url} alt={item.title} loading="lazy" />
                         <div className="floating-info-box" style={{ background: cardBg }}>
                           <div className="item-title">{item.title}</div>
-                          <div className="item-price">{item.price_info}</div>
+                          <div className="item-price">${item.price_info}</div>
                           <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
                         </div>
                       </div>
@@ -315,7 +347,7 @@ export function PublicProfile() {
             <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
             <div className="showcase-details">
               <h2>{selectedShowcase.title}</h2>
-              <div className="modal-price">{selectedShowcase.price_info}</div>
+              <div className="modal-price">${selectedShowcase.price_info}</div>
               <div className="modal-tags">{selectedShowcase.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
               <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
             </div>
