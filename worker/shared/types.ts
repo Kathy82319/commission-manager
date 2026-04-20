@@ -37,3 +37,16 @@ export interface CreateCommissionBody {
   client_id?: string;
   agreed_tos_snapshot?: string;
 }
+
+export interface ShowcaseItem {
+  id: string;
+  artist_id: string;
+  title: string;
+  cover_url: string;
+  price_info: string;
+  tags: string; 
+  description: string;
+  is_active: number;
+  sort_order: number;
+  created_at: string;
+}

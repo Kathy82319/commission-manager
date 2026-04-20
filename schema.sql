@@ -186,6 +186,22 @@ CREATE TABLE WebhookLogs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE ShowcaseItems (
+    id TEXT PRIMARY KEY,
+    artist_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    cover_url TEXT NOT NULL,
+    price_info TEXT,
+    tags TEXT DEFAULT '[]',
+    description TEXT DEFAULT '',
+    is_active INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (artist_id) REFERENCES Users(id)
+);
+
+
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

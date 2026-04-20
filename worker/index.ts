@@ -8,6 +8,7 @@ import { r2Controller } from "./controllers/r2Controller";
 import { testController } from "./controllers/testController";
 import { adminController } from "./controllers/adminController";
 import { paymentController } from "./controllers/paymentController";
+import { showcaseController } from "./controllers/showcaseController";
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -54,6 +55,22 @@ export default {
 
       if (request.method === "GET" && url.pathname === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
+
+if (url.pathname.startsWith("/api/showcase")) {
+  const targetId = pathParts[3];
+  if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
+  if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
+  if (request.method === "PATCH" && targetId) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
+  if (request.method === "DELETE" && targetId) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
+}
+// 公開接口
+if (url.pathname.startsWith("/api/public/showcase/")) {
+  const artistId = pathParts[4];
+  return showcaseController.getPublicList(artistId, env, corsHeaders);
+}
+
+
+
 
       if (url.pathname.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
@@ -161,4 +178,10 @@ if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
     }
     return assetResponse as any;
   }  
+
+
+
+
+  
 };
+
