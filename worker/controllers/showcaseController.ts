@@ -2,8 +2,24 @@
 import { Env } from "../shared/types";
 
 export const showcaseController = {
-  // 獲取清單 (公開)
-  async getPublicList(artistId: string, env: Env, headers: any) {
+  // 獲取清單 (公開) - 修正：支援 Handle (@username) 查詢
+  async getPublicList(artistIdOrHandle: string, env: Env, headers: any) {
+    let artistId = artistIdOrHandle;
+
+    // 如果傳入的是 @username，先去 Users 表找出對應的 UUID
+    if (artistIdOrHandle.startsWith('@')) {
+      const handle = artistIdOrHandle.substring(1);
+      const user = await env.commission_db
+        .prepare("SELECT id FROM Users WHERE handle = ?")
+        .bind(handle)
+        .first<{ id: string }>();
+      
+      if (!user) {
+        return new Response(JSON.stringify({ success: false, error: "User not found" }), { status: 404, headers });
+      }
+      artistId = user.id;
+    }
+
     const { results } = await env.commission_db
       .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC")
       .bind(artistId)

@@ -56,14 +56,20 @@ export default {
       if (request.method === "GET" && url.pathname === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && url.pathname === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
 
+// 徵委託項目路由
 if (url.pathname.startsWith("/api/showcase")) {
+  // 私有操作需要驗證權限
+  const authErr = requireAuth(currentUserId, corsHeaders); 
+  if (authErr) return authErr;
+
   const targetId = pathParts[3];
   if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
   if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
   if (request.method === "PATCH" && targetId) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
   if (request.method === "DELETE" && targetId) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
 }
-// 公開接口
+
+// 公開展示接口 (不需驗證)
 if (url.pathname.startsWith("/api/public/showcase/")) {
   const artistId = pathParts[4];
   return showcaseController.getPublicList(artistId, env, corsHeaders);
