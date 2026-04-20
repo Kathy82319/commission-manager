@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. 基礎佈局架構 (Root Layout) - 達成左右滿版
+   1. 基礎佈局 (Root Layout)
    ========================================================================== */
 
 .public-profile-container {
@@ -7,9 +7,9 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* 左右分欄容器 */
 .profile-layout-root {
   display: flex;
   width: 100%;
@@ -18,22 +18,25 @@
 }
 
 /* ==========================================================================
-   2. 左側側邊欄 (Sidebar) - 黃色與白色區塊
+   2. 側邊欄樣式 (Sidebar) - 修正比例、間距與顏色
    ========================================================================== */
 
 .profile-sidebar {
-  width: 320px; /* 稍微縮小側邊欄寬度以騰出空間給內容 */
+  width: 320px; /* 固定寬度 */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  position: relative; /* 移除內部捲軸，讓它隨頁面捲動 */
   min-height: 100vh;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.05);
+  box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
-  /* 移除 overflow-y，不使用內部滾輪 */
+  /* 注意：背景色現在由 PublicProfile.tsx 的 inline-style 控制，
+     這裡確保沒有任何子區塊會覆蓋掉它 */
 }
 
+/* 上半部：頭像、暱稱、社群 (間距縮短) */
 .sidebar-top {
-  padding: 30px 20px 10px 20px; /* 間距縮短一半 (原 60 40 40) */
+  padding: 30px 20px 10px 20px; /* 物件與邊框間距縮短 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -41,129 +44,140 @@
 }
 
 .avatar-section {
-  margin-bottom: 12px; /* 間距縮短一半 (原 24) */
+  margin-bottom: 12px; /* 間距縮短一半 */
 }
 
 .profile-avatar {
-  width: 240px;  /* 大頭像增加 1/2 (原 160) */
+  width: 240px; /* 大頭像增加 1/2 (原本為 160px) */
   height: 240px;
   border-radius: 20px;
   object-fit: cover;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.name-social-section {
+  width: 100%;
 }
 
 .profile-name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  margin-bottom: 8px; /* 間距縮短一半 (原 16) */
+  margin-bottom: 8px; /* 間距縮短一半 */
+  letter-spacing: 0.5px;
 }
 
 .social-links {
   display: flex;
   justify-content: center;
-  gap: 8px; /* 縮小圖示間距 */
+  gap: 8px; /* 圖示間距縮短 */
   flex-wrap: wrap;
 }
 
 .social-icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
 }
 
-/* 下半部簡介與導覽 */
+.social-icon:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* 下半部：簡介與導覽 (移除白色背景，確保背景色貫穿) */
 .sidebar-bottom {
-  padding: 10px 20px 30px 20px; /* 元件與邊框間距縮短 */
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  padding: 10px 20px 40px 20px; /* 物件與邊框間距縮短 */
+  background-color: transparent; /* 關鍵：確保這裏不會變成白的 */
 }
 
 .bio-section {
-  margin-bottom: 20px; /* 縮減間距 */
+  margin-bottom: 25px; /* 縮減空間 */
 }
 
 .profile-bio {
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   text-align: center;
+  margin: 0;
 }
 
+/* 側邊導覽選單 */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px; /* 縮小導覽項目的間距 */
+  gap: 4px; /* 選單項目的間距縮小 */
 }
 
 .nav-item {
   text-align: left;
-  padding: 10px 16px;
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 15px;
   font-weight: 600;
-  opacity: 0.7;
-  transition: all 0.2s;
+  color: inherit; /* 跟隨側邊欄文字色 */
+  opacity: 0.6;
+  transition: all 0.2s ease;
 }
 
 .nav-item:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .nav-item.active {
   opacity: 1;
-  background: #333; /* 這裡可改為 var(--artist-text-color) */
-  color: white !important;
+  background: rgba(0, 0, 0, 0.15); /* 活耀狀態：稍深一點的透明塊 */
+  font-weight: 800;
 }
 
 /* ==========================================================================
-   3. 右側內容區 (Main Content) - 對應灰色區域
+   3. 右側內容區 (Main Content) - 灰色背景與內容置中
    ========================================================================== */
 
 .profile-main-content {
   flex: 1;
-  background-color: #F8F8F8;
-  padding: 40px; /* 縮減 padding 以釋放更多內容空間 */
+  background-color: #F2F2F2; /* 灰色背景 */
+  padding: 40px 60px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 為了讓內容能置中 */
+  align-items: center; /* 讓內部所有區塊預設水平置中 */
 }
 
 .tab-content-area {
   width: 100%;
-  max-width: 1200px; /* 限制最大寬度以維持美感 */
+  max-width: 1100px; /* 限制寬度確保大螢幕不散亂 */
 }
 
-/* 文字類分頁的特殊置中處理 */
-.tab-detailed_intro, .tab-process, .tab-payment, .tab-rules {
-  justify-content: center;
-}
-
-/* 標籤樣式強化 (圖三修正) */
+/* 標籤篩選列 (圖三修正) */
 .tag-filter-bar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 30px;
   flex-wrap: wrap;
   justify-content: center; /* 標籤列置中 */
 }
 
 .tag-btn {
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 8px 18px;
+  border-radius: 30px;
   background: #FFFFFF;
-  color: #666;
-  border: 1px solid #DDD;
+  color: #555;
+  border: 1px solid #E0E0E0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: all 0.2s;
 }
 
 .tag-btn.active {
@@ -172,60 +186,92 @@
   border-color: #333;
 }
 
-/* 作品集卡片與其它樣式保持簡單俐落 */
+/* 瀑布牆 */
+.masonry-grid {
+  column-count: 3;
+  column-gap: 20px;
+  width: 100%;
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.masonry-item img {
+  width: 100%;
+  display: block;
+}
+
+/* 純文字分頁內容區 (圖二修正：置中呈現) */
 .rich-text-content {
   background: #FFFFFF;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: 50px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  max-width: 800px; /* 限制文字寬度提升閱讀感 */
+  margin: 0 auto;   /* 水平置中 */
+  line-height: 1.9;
+  color: #333;
+}
+
+/* 作品展示網格 */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
   width: 100%;
-  max-width: 800px; /* 文字寬度不宜過長，利於閱讀 */
 }
 
-/* 移除瀑布流的 margin-bottom 以減少空白感 */
-.masonry-grid {
-  column-gap: 16px;
+.portfolio-item {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+.portfolio-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 /* ==========================================================================
-   4. 燈箱與響應式 (Lightbox & Mobile)
+   4. 互動組件 (Lightbox & Overlays)
    ========================================================================== */
 
 .lightbox-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.95);
+  background: rgba(0,0,0,0.92);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10000;
   backdrop-filter: blur(10px);
 }
 
-/* 響應式調整 */
+/* 行動版適應 */
 @media (max-width: 1100px) {
   .profile-layout-root {
     flex-direction: column;
   }
   .profile-sidebar {
     width: 100%;
-    height: auto;
-    position: relative;
+    min-height: auto;
   }
-  .sidebar-top {
-    padding: 40px 20px;
+  .profile-avatar {
+    width: 180px;
+    height: 180px;
   }
   .profile-main-content {
     padding: 30px 20px;
   }
   .masonry-grid {
     column-count: 2;
-  }
-}
-
-@media (max-width: 600px) {
-  .masonry-grid {
-    column-count: 1;
   }
 }
