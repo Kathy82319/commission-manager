@@ -147,11 +147,10 @@ export default {
         if (request.method === "POST" && url.pathname.endsWith("/mock-upgrade")) return testController.mockUpgrade(currentUserId!, env, corsHeaders);
       }
 
-      // 攔截測試用繞過登入路由
 if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
   return authController.testingBypass(request, env, corsHeaders);
 }
-
+ 
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
