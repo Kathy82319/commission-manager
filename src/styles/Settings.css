@@ -4,6 +4,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 20px 0;
 }
 
 .settings-layout {
@@ -12,56 +13,68 @@
   gap: 20px;
 }
 
+/* --- 側邊欄與導覽 --- */
 .settings-sidebar {
   display: flex;
   overflow-x: auto; 
   -webkit-overflow-scrolling: touch; 
-  gap: 24px;
+  gap: 12px;
   border-bottom: 2px solid #EAE6E1; 
-  padding-bottom: 0; 
+  padding-bottom: 8px;
   scrollbar-width: none; 
-  flex-shrink: 0;
 }
 
 .settings-sidebar::-webkit-scrollbar {
   display: none;
 }
 
-.sidebar-title {
+/* 行動版隱藏分類標籤，保持水平切換感 */
+.group-label {
   display: none;
 }
 
 .tab-btn {
   white-space: nowrap; 
-  padding: 14px 4px;
+  padding: 10px 16px;
   border: none;
-  background-color: transparent !important; 
+  background-color: transparent; 
   color: #A0978D;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
-  border-bottom: 2px solid transparent; 
-  margin-bottom: -2px; 
+  border-radius: 8px;
 }
 
 .tab-btn:hover:not(.active) {
   color: #7A7269;
-  border-bottom: 2px solid #DED9D3;
+  background-color: #F5F2EF;
 }
 
 .tab-btn.active {
   color: #5D4A3E;
   font-weight: bold;
-  border-bottom: 2px solid #5D4A3E; 
+  background-color: #EAE6E1;
 }
 
+/* 特別處理「管理自定義區塊」按鈕 */
+.tab-btn.manage-btn {
+  color: #A67B3E;
+  border: 1px dashed #DED9D3;
+}
+
+.tab-btn.manage-btn:hover {
+  background-color: #FDF9F3;
+  border-color: #A67B3E;
+}
+
+/* --- 內容區域 --- */
 .settings-content-area {
   flex: 1;
   background-color: #FFFFFF;
   border-radius: 16px;
   border: 1px solid #EAE6E1;
-  padding: 20px;
+  padding: 24px;
   position: relative;
   min-height: 600px;
   display: flex;
@@ -74,9 +87,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 10px;
+  margin-bottom: 32px;
   padding-bottom: 16px;
   border-bottom: 1px solid #F0ECE7;
 }
@@ -84,124 +95,172 @@
 .settings-header h3 {
   margin: 0;
   color: #5D4A3E;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* 顯示/隱藏切換鈕 */
+.visibility-toggle {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+/* --- 鎖定功能 (Pro Only) --- */
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(6px);
+  border-radius: 16px;
+}
+
+.lock-card {
+  text-align: center;
+  padding: 40px;
+  background: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(93, 74, 62, 0.1);
+  max-width: 300px;
+}
+
+.lock-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.lock-card h4 {
+  margin: 0 0 16px 0;
+  color: #5D4A3E;
   font-size: 18px;
 }
 
-.tab-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0; 
-}
-
-.custom-quill-wrapper {
-  border: 1px solid #DED9D3;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #FFF;
-  display: flex;
-  flex-direction: column;
-}
-
-.custom-quill-wrapper .ql-toolbar {
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  background-color: #FAFAFA;
-}
-
-.custom-quill-wrapper .ql-container {
+.lock-card button {
+  padding: 10px 24px;
+  background: #A67B3E;
+  color: #FFF;
   border: none;
-  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
 }
 
-.custom-quill-wrapper .ql-editor {
-  min-height: 300px;
-  font-size: 15px;
-  line-height: 1.6;
+.lock-card button:hover {
+  background: #8E6834;
 }
 
+/* --- 底部儲存列 --- */
 .save-action-bar {
-  margin-top: 32px;
-  border-top: 1px solid #EAE6E1;
-  padding-top: 20px;
+  margin-top: auto; /* 推到底部 */
+  padding-top: 32px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #DED9D3;
-  box-sizing: border-box;
-  border-radius: 8px;
-  background-color: #FBFBF9;
-  color: #5D4A3E;
-  outline: none;
-  transition: all 0.2s ease;
-  font-size: 15px;
-  font-family: inherit;
-}
-
-.form-input:focus {
-  border-color: #A67B3E;
-  box-shadow: 0 0 0 2px rgba(166,123,62,0.1);
-}
-
-.form-label {
-  font-size: 13px;
+.save-msg {
+  font-size: 14px;
   font-weight: bold;
-  display: block;
-  margin-bottom: 6px;
-  color: #7A7269;
+  animation: fadeIn 0.3s ease;
 }
 
+.save-msg.ok { color: #4E7A5A; }
+.save-msg.err { color: #A05C5C; }
+
+.main-save-btn {
+  padding: 14px 40px;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(93, 74, 62, 0.15);
+}
+
+.main-save-btn:hover:not(:disabled) {
+  background-color: #4A3B31;
+  transform: translateY(-1px);
+}
+
+.main-save-btn:disabled {
+  background-color: #DED9D3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- 響應式佈局 (Desktop) --- */
 @media (min-width: 1024px) {
   .settings-layout {
     flex-direction: row;
     align-items: flex-start;
+    gap: 40px;
   }
   
   .settings-sidebar {
     flex-direction: column;
-    width: 220px;
+    width: 240px;
     border-bottom: none;
-    border-right: 2px solid #EAE6E1; 
+    border-right: none;
     padding-bottom: 0;
-    overflow-x: visible; 
+    overflow-x: visible;
+    gap: 0;
   }
-  
+
+  .sidebar-group {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .group-label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #A0978D;
+    margin-bottom: 12px;
+    padding-left: 12px;
+    font-weight: bold;
+  }
+
   .sidebar-title {
     display: block; 
-    font-size: 18px;
+    font-size: 22px;
     color: #5D4A3E;
-    margin-bottom: 16px;
+    margin-bottom: 32px;
     font-weight: bold;
-    padding-left: 16px;
+    padding-left: 12px;
   }
 
   .tab-btn {
     text-align: left; 
     padding: 12px 16px;
-    border-bottom: none !important; 
-    border-right: 2px solid transparent;
-    margin-bottom: 0;
-    margin-right: -2px; 
-  }
-
-  .tab-btn:hover:not(.active) {
-    border-right: 2px solid #DED9D3;
+    margin-bottom: 4px;
+    font-size: 15px;
+    border-radius: 10px;
   }
 
   .tab-btn.active {
-    border-right: 2px solid #5D4A3E;
-    background-color: transparent !important;
+    background-color: #F4F0EB;
+    color: #5D4A3E;
   }
-  
-  .settings-content-area {
-    padding: 32px 40px; 
-  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
