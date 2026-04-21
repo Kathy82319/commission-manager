@@ -5,15 +5,31 @@ import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
 import { SplashTab } from './Settings/SplashTab';
 import { CustomSectionsTab } from './Settings/CustomSectionsTab';
+// 具名匯入修正
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
+// Toast 組件
+function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast-message ${type === 'err' ? 'error' : 'success'}`}>
+      <div className="toast-icon">{type === 'err' ? '[警告]' : '[成功]'}</div>
+      <div className="toast-content">{message}</div>
+    </div>
+  );
+}
+
 interface MenuItem {
   id: string;
   label: string;
-  isAction?: boolean; 
+  isAction?: boolean;
   isCustom?: boolean;
   index?: number;
 }
@@ -27,43 +43,40 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState('profile_basic');
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
+  const [hideGlobalSave, setHideGlobalSave] = useState(false);
+  const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
+
   const [settings, setSettings] = useState<ProfileSettings>({
-    portfolio: [], 
-    detailed_intro: '', 
-    process: '', 
-    payment: '', 
-    rules: '', 
-    custom_sections: [], 
-    social_links: [], 
+    portfolio: [],
+    detailed_intro: '',
+    process: '',
+    payment: '',
+    rules: '',
+    custom_sections: [],
+    social_links: [],
     hidden_sections: [],
-    splash_enabled: true, 
-    splash_image: '', 
-    splash_duration: 2, 
+    splash_enabled: true,
+    splash_image: '',
+    splash_duration: 2,
     splash_text: '',
-    layout_type: 'blog', 
-    background_color: '#F4F0EB', 
+    layout_type: 'blog',
+    background_color: '#F4F0EB',
     theme_mode: 'dark'
   });
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
+  const showToast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
+    setToast({ msg, type });
+  }, []);
+
   const categories: MenuCategory[] = [
-    {
-      title: '個人資訊',
-      items: [{ id: 'profile_basic', label: '頭像與簡介' }]
-    },
-    {
-      title: '頁面外觀',
-      items: [
-        { id: 'theme', label: '背景與版型設定' },
-        { id: 'splash', label: '開場動畫設定' }
-      ]
-    },
-    {
-      title: '內容管理',
+    { title: '個人資訊', items: [{ id: 'profile_basic', label: '頭像與簡介' }] },
+    { title: '頁面外觀', items: [{ id: 'theme', label: '背景與版型設定' }, { id: 'splash', label: '開場動畫設定' }] },
+    { 
+      title: '內容管理', 
       items: [
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
@@ -73,10 +86,7 @@ export function Settings() {
         { id: 'rules', label: '協議書範本' },
       ]
     },
-    {
-      title: '訂閱方案',
-      items: [{ id: 'subscription', label: '方案查看與升級' }]
-    }
+    { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
   const menuGroups = useMemo(() => {
@@ -124,12 +134,11 @@ export function Settings() {
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
   const handleSave = async () => {
-    setIsSaving(true); 
-    setMessage('');
+    setIsSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PATCH', 
-        credentials: 'include', 
+        method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: formData.display_name,
@@ -140,15 +149,14 @@ export function Settings() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage('所有變更已成功儲存');
+        showToast('所有變更已成功儲存', 'ok');
       } else {
-        setMessage('儲存失敗：' + data.error);
+        showToast('儲存失敗：' + data.error, 'err');
       }
     } catch (error) {
-      setMessage('系統發生錯誤');
+      showToast('系統發生錯誤', 'err');
     } finally {
-      setIsSaving(false); 
-      setTimeout(() => setMessage(''), 3000);
+      setIsSaving(false);
     }
   };
 
@@ -166,12 +174,12 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme'];
-  
-  // 修改：將自定義分頁與管理頁面列入鎖定範圍
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
   return (
     <div className="settings-page">
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="settings-layout">
         <aside className="settings-sidebar">
           <div className="sidebar-title">個人頁編輯</div>
@@ -180,11 +188,13 @@ export function Settings() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label">
                 {group.title}
-                {/* 修改：將齒輪改為文字按鈕 */}
                 {group.title.includes('內容管理') && (
                   <button 
                     className="add-page-btn" 
-                    onClick={() => setActiveTab('custom_manage')}
+                    onClick={() => {
+                      setActiveTab('custom_manage');
+                      setHideGlobalSave(false);
+                    }}
                   >
                     + 新增分頁
                   </button>
@@ -197,9 +207,12 @@ export function Settings() {
                   <button 
                     key={item.id} 
                     className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setHideGlobalSave(false);
+                    }}
                   >
-                    {item.label} {isLocked && '🔒'}
+                    {item.label} {isLocked && '(專業版限定)'}
                   </button>
                 );
               })}
@@ -212,16 +225,15 @@ export function Settings() {
             <h3>內容編輯</h3>
             {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
-                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
+                {settings.hidden_sections.includes(activeTab) ? '目前已隱藏' : '公開顯示中'}
               </button>
             )}
           </div>
 
-          {/* 專業版鎖定遮罩 */}
           {isCurrentTabLocked && (
             <div className="lock-overlay">
               <div className="lock-card">
-                <div className="lock-icon">🔒</div>
+                <div className="lock-icon">[已鎖定]</div>
                 <h4>此功能僅限專業版</h4>
                 <p>升級專業版即可解鎖更多自定義區塊與進階功能</p>
                 <button onClick={() => setActiveTab('subscription')}>查看方案</button>
@@ -235,28 +247,47 @@ export function Settings() {
             )}
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
+            
+            {activeTab === 'subscription' && (
+              <SubscriptionTab 
+                quotaInfo={quotaInfo} 
+                fetchUserData={fetchUserData} 
+                onToast={showToast} 
+              />
+            )}
+            
+            {activeTab === 'showcase' && (
+              <ShowcaseTab 
+                onToggleGlobalSave={setHideGlobalSave} 
+                onToast={showToast} 
+                quotaInfo={quotaInfo}
+              />
+            )}
+
+            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />}
+            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
+            
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} onSave={handleSave} />
             )}
             {activeTab.startsWith('custom_') && !activeTab.includes('manage') && (
-              <RichTextTab isCustom customIndex={parseInt(activeTab.split('_')[1])} settings={settings} setSettings={setSettings} onSave={handleSave} />
+              <RichTextTab 
+                isCustom 
+                customIndex={parseInt(activeTab.split('_')[1])} 
+                settings={settings} 
+                setSettings={setSettings} 
+                onSave={handleSave}
+              />
             )}
-            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'showcase' && <ShowcaseTab />}
-            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} />}
           </div>
 
-          <div className="save-action-bar">
-            {message && (
-              <span className={`save-msg ${message.includes('失敗') ? 'err' : 'ok'}`}>
-                {message}
-              </span>
-            )}
-            <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
-              {isSaving ? '儲存中...' : '儲存所有變更'}
-            </button>
-          </div>
+          {!hideGlobalSave && (
+            <div className="save-action-bar">
+              <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
+                {isSaving ? '儲存中...' : '儲存所有變更'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

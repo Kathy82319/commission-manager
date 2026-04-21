@@ -4,9 +4,11 @@ import type { QuotaInfo } from '../Settings/types';
 interface Props {
   quotaInfo: QuotaInfo | null;
   fetchUserData: () => void;
+  onToast: (msg: string, type: 'ok' | 'err') => void;
 }
 
-export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
+// 關鍵修正：確保這裡有 export 關鍵字
+export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -15,13 +17,13 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
       const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        onToast(data.message || '15 天試用已開啟', 'ok');
         fetchUserData();
       } else {
-        alert(data.error);
+        onToast(data.error || '啟動試用失敗', 'err');
       }
     } catch(e) { 
-      alert('連線失敗'); 
+      onToast('連線失敗', 'err'); 
     }
   };
 
@@ -60,12 +62,12 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
         document.body.appendChild(form);
         form.submit(); 
       } else {
-        alert("訂單建立失敗：" + (result.error || "請稍後再試"));
+        onToast("訂單建立失敗：" + (result.error || "請稍後再試"), 'err');
         setIsUpgrading(false);
       }
     } catch (error) {
       console.error("升級失敗:", error);
-      alert("系統連線異常");
+      onToast("系統連線異常", 'err');
       setIsUpgrading(false);
     }
   };
@@ -74,6 +76,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
         
+        {/* 基礎免費版 */}
         <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
           <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
@@ -90,6 +93,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
           )}
         </div>
 
+        {/* 專業版 (15天試用) */}
         <div style={{ border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'trial' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
           <h4 style={{ margin: 0, fontSize: '18px', color: '#A67B3E' }}>專業版 (15天試用)</h4>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
@@ -106,10 +110,11 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
           ) : quotaInfo?.trial_start_at ? (
               <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
           ) : (
-            <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity='0.9'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>開啟 15 天試用</button>
+            <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }}>開啟 15 天試用</button>
           )}
         </div>
 
+        {/* 專業版 */}
         <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
           <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
@@ -136,8 +141,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
                   border: 'none', borderRadius: '8px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
                   fontWeight: 'bold', transition: 'opacity 0.2s', width: '100%'
                 }} 
-                onMouseEnter={e => !isUpgrading && (e.currentTarget.style.opacity='0.9')} 
-                onMouseLeave={e => !isUpgrading && (e.currentTarget.style.opacity='1')}
               >
                 {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
               </button>
