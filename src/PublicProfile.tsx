@@ -77,20 +77,28 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 1. 計算背景樣式 (修正漸層消失問題)
+  // 1. 計算背景樣式 (處理單色與漸層)
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#f4f0eb67';
-    
-    // 修正：只要有啟用漸層即可，不需要檢查第二色
     if (settings?.gradient_enabled) {
       const direction = settings.gradient_direction || 'to bottom right';
-      // 直接套用你原本在 ThemeTab 預覽區塊寫好的透明黑 #00000015 作為漸層尾色
       return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
     }
-    
-    // 若無漸層，回傳純色背景
     return { background: baseColor };
   }, [settings]);
+
+  // 新增：計算開場動畫的專屬背景 (優先套用背景圖，沒圖則回退到 backgroundStyle)
+  const splashBgStyle = useMemo(() => {
+    if (settings?.splash_image) {
+      return { 
+        backgroundImage: `url(${settings.splash_image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    }
+    return backgroundStyle;
+  }, [settings?.splash_image, backgroundStyle]);
 
   // 設定主題顏色
   useEffect(() => {
@@ -256,11 +264,11 @@ export function PublicProfile() {
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={backgroundStyle} // 這裡應用漸層背景
+      style={backgroundStyle} 
     >
-      {/* 1. Splash Screen */}
+      {/* 1. Splash Screen (套用 splashBgStyle，支援背景圖) */}
       {showSplash && (
-        <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={backgroundStyle}>
+        <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
           <div className="splash-box">
             <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
           </div>

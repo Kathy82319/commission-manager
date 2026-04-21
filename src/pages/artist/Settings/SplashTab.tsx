@@ -88,7 +88,7 @@ export function SplashTab({ settings, setSettings }: Props) {
             </div>
           </div>
 
-          <div>
+<div>
             <label className="form-label" style={{ marginBottom: '12px' }}>開場背景圖設定</label>
             <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
               <ImageUploader 
@@ -103,6 +103,26 @@ export function SplashTab({ settings, setSettings }: Props) {
                 <p>建議規格： 1920x1080 (比例 16:9)。</p>
                 <p>載入優化： 檔案限制放寬至 3MB，但系統會自動壓縮。若初次載入全黑，建議先手動壓縮圖檔至 1MB 內。</p>
               </div>
+              
+              {/* 加入這段：如果 settings 裡有圖片網址，就顯示預覽 */}
+              {settings.splash_image && (
+                <div style={{ marginTop: '20px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                  <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px', fontWeight: 'bold' }}>目前設定的開場圖：</div>
+                  <img 
+                    src={settings.splash_image} 
+                    alt="Splash Preview" 
+                    style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '16/9' }} 
+                  />
+                  {/* 可選：加入刪除按鈕 */}
+                  <button 
+                    onClick={() => setSettings(prev => ({ ...prev, splash_image: '' }))}
+                    style={{ marginTop: '10px', padding: '8px 16px', background: '#ffebee', color: '#d93025', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                  >
+                    移除圖片
+                  </button>
+                </div>
+              )}
+              
             </div>
           </div>
         </div>
