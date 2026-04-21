@@ -4,7 +4,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { ImageUploader } from '../../../components/ImageUploader';
 import type { QuotaInfo } from '../Settings/types';
 
-// Quill 模組設定 (保留原設計)
+// Quill 模組設定
 const customQuillModules = {
   toolbar: [
     [{ 'header': [1, 2, 3, false] }], 
@@ -45,20 +45,14 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 計算方案配額上限 (資安結構：前端攔截與進度顯示)
+  // 1. 計算方案配額上限
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 10;
     return 0;
   }, [quotaInfo]);
 
-  // 2. 監聽表單開啟狀態，自動隱藏/顯示外層全域儲存按鈕
-  useEffect(() => {
-    onToggleGlobalSave(isFormOpen);
-    return () => onToggleGlobalSave(false);
-  }, [isFormOpen, onToggleGlobalSave]);
-
-  // 3. 讀取列表資料 (健全的 JSON 解析邏輯，防止 tags 導致崩潰)
+  // 2. 取得列表資料 (資安強化：增加防護性解析)
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,7 +74,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
         setItems(safeItems);
       }
     } catch (error) {
-      onToast("讀取資料失敗", "err");
+      onToast("讀取展示項目失敗", "err");
     } finally {
       setLoading(false);
     }
@@ -88,7 +82,13 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
-  // 4. 處理圖片上傳至 R2 (維持原稿設計之 Uploader 邏輯)
+  // 3. 連動控制外層全域儲存按鈕的顯示 (進入表單時隱藏)
+  useEffect(() => {
+    onToggleGlobalSave(isFormOpen);
+    return () => onToggleGlobalSave(false);
+  }, [isFormOpen, onToggleGlobalSave]);
+
+  // 4. 處理圖片上傳至 R2
   const handleCoverUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -112,12 +112,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     }
   };
 
-  // 5. 處理標籤管理 (原稿功能)
+  // 5. 標籤管理邏輯
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed) return;
-    if (editingItem.tags.includes(trimmed)) { onToast("標籤已存在", "err"); return; }
-    if (editingItem.tags.length >= 5) { onToast("最多設定 5 個標籤", "err"); return; }
+    if (editingItem.tags.includes(trimmed)) { onToast("此標籤已存在", "err"); return; }
+    if (editingItem.tags.length >= 5) { onToast("最多只能設定 5 個標籤", "err"); return; }
     setEditingItem(prev => ({ ...prev, tags: [...prev.tags, trimmed] }));
     setTagInput('');
   };
@@ -126,13 +126,31 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     setEditingItem(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
-  // 6. 項目儲存邏輯 (對接 API 並使用 Toast)
+  // 6. 核心功能：開啟表單
+  const openNewForm = () => {
+    if (items.length >= limit) {
+      onToast(`已達到當前方案的展示上限 (${limit} 個)`, "err");
+      return;
+    }
+    setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1 });
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (item: ShowcaseItem) => {
+    setEditingItem(item);
+    setIsFormOpen(true);
+  };
+
+  // 7. 儲存與刪除處理
   const handleSaveItem = async () => {
     if (!editingItem.title || !editingItem.cover_url) {
-      onToast("請填寫品名並上傳封面圖", "err"); return;
+      onToast("請填寫品名並上傳封面圖", "err");
+      return;
     }
+
     const url = editingItem.id ? `${API_BASE}/api/showcase/${editingItem.id}` : `${API_BASE}/api/showcase`;
     const method = editingItem.id ? 'PATCH' : 'POST';
+
     try {
       const res = await fetch(url, {
         method, credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -140,13 +158,15 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
       });
       const data = await res.json();
       if (data.success) {
-        onToast("項目已成功儲存", "ok");
+        onToast("項目儲存成功", "ok");
         setIsFormOpen(false);
         fetchItems();
       } else {
         onToast("儲存失敗: " + data.error, "err");
       }
-    } catch (error) { onToast("系統連線發生錯誤", "err"); }
+    } catch (error) {
+      onToast("系統連線發生錯誤", "err");
+    }
   };
 
   const handleDeleteItem = async (id: string) => {
@@ -158,19 +178,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
         onToast("項目已刪除", "ok");
         fetchItems();
       }
-    } catch (error) { onToast("刪除失敗", "err"); }
-  };
-
-  const openNewForm = () => {
-    if (items.length >= limit) {
-      onToast(`已達到當前方案上限 (${limit} 個)，請升級解鎖。`, "err"); return;
+    } catch (error) {
+      onToast("刪除失敗", "err");
     }
-    setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1 });
-    setIsFormOpen(true);
   };
 
-  // --- UI 渲染：恢復原本設計的排版框架 ---
-
+  // --- UI 渲染：恢復 Inline Page 排版 ---
   if (isFormOpen) {
     return (
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -250,11 +263,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     );
   }
 
-  function openEditForm(_item: ShowcaseItem): void {
-    throw new Error('Function not implemented.');
-  }
-
-  // --- 列表模式 (原本設計的卡片風格) ---
+  // --- 列表模式：恢復原本設計的卡片風格與按鈕 CSS ---
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,7 +274,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#7A7269' }}>載入中...</div>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#A0978D' }}>載入中...</div>
       ) : items.length === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center', background: '#FAFAFA', border: '2px dashed #DED9D3', borderRadius: '12px', color: '#7A7269' }}>
           目前尚未新增任何項目。<br/>點擊右上方按鈕開始建立您的第一個徵稿/販售展示！
@@ -290,6 +299,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
                   {item.tags?.length > 3 && <span style={{ fontSize: '12px', color: '#A0978D' }}>+{item.tags.length - 3}</span>}
                 </div>
               </div>
+              {/* 恢復原始按鈕設計與 CSS */}
               <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
                 <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'background 0.2s' }}>編輯</button>
                 <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C', transition: 'background 0.2s' }}>刪除</button>
