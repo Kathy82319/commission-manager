@@ -41,6 +41,7 @@
   gap: 12px;
   border-radius: 16px 16px 0 0;
   box-sizing: border-box;
+  flex: 0 0 auto; /* 確保標題區塊固定高度，不會往下異常拉伸產生空白 */
 }
 
 .sidebar-title {
@@ -54,25 +55,25 @@
   gap: 8px;
   width: 100%;
   align-items: center;
-  padding: 8px 12px;
-  font-size: 13px;
-  flex: 1 1 auto;
-  min-width: 100px;
+  box-sizing: border-box;
+  /* 已移除干擾版面的 padding 與 flex-grow */
 }
 
-/* 透過結構層級提高權重，覆寫 .form-input 帶來的 100% 寬度 */
+/* 透過結構層級提高權重，並加入 min-width: 0 進行防呆防護 */
 .sidebar-controls .sidebar-search-input {
-  flex: 1;
-  width: auto;
+  flex: 1 1 auto;
+  min-width: 0; /* 關鍵資安與防呆佈局：防止 input 內容過長時撐破父容器造成 X 軸溢出 */
   padding: 8px 12px;
   font-size: 13px;
+  box-sizing: border-box;
 }
 
 .sidebar-controls .sidebar-filter {
+  flex: 0 0 auto; /* 讓下拉選單保持自身內容所需的寬度，不被過度擠壓或拉伸 */
   width: auto;
   padding: 8px 12px;
-  flex-shrink: 0;
   font-size: 13px;
+  box-sizing: border-box;
 }
 
 .sidebar-list-container {
