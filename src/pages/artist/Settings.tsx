@@ -29,7 +29,6 @@ export function Settings() {
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   
-  // 狀態提升：全域設定草稿
   const [settings, setSettings] = useState<ProfileSettings>({
     portfolio: [], 
     detailed_intro: '', 
@@ -52,8 +51,7 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 定義靜態分類結構
-  // 1. 重新定義分類結構 (移除「分類一」字樣，標題加冒號)
+  // 1. 定義靜態分類結構 (已更名為 徵稿/販售區)
   const categories: MenuCategory[] = [
     {
       title: '個人資訊',
@@ -71,7 +69,7 @@ export function Settings() {
       items: [
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
-        { id: 'showcase', label: '徵委託項目管理' },
+        { id: 'showcase', label: '徵稿/販售區' }, 
         { id: 'process', label: '委託流程' },
         { id: 'payment', label: '付款方式' },
         { id: 'rules', label: '協議書範本' },
@@ -83,7 +81,6 @@ export function Settings() {
     }
   ];
 
-  // 2. 動態合併自定義區塊 (移除管理按鈕)
   const menuGroups = useMemo(() => {
     return categories.map(group => {
       if (group.title.includes('內容管理')) {
@@ -93,15 +90,12 @@ export function Settings() {
           isCustom: true,
           index: index
         }));
-        
-        // 這裡已經移除了 manageItem
         return { ...group, items: [...group.items, ...dynamicItems] };
       }
       return group;
     });
   }, [settings.custom_sections]);
 
-  // 取得使用者原始資料
   const fetchUserData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
@@ -133,7 +127,6 @@ export function Settings() {
 
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
-  // 全域儲存變更：一次儲存所有分頁內容
   const handleSave = async () => {
     setIsSaving(true); 
     setMessage('');
@@ -176,21 +169,20 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
+  // 修改點：將 showcase 從允許清單移除，使其對免費版上鎖
+  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab) && !activeTab.startsWith('custom_');
 
   return (
     <div className="settings-page">
       <div className="settings-layout">
         <aside className="settings-sidebar">
-          {/* 1. 調整標題大小與位置，對齊 Workspace 樣式 */}
           <div className="sidebar-title">個人頁編輯</div>
           
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
               <div className="group-label">
                 {group.title}
-                {/* 2. 在內容管理旁邊增加一個小按鈕來進入管理頁面 */}
                 {group.title.includes('內容管理') && (
                   <button 
                     className="manage-entry-btn" 
@@ -202,7 +194,6 @@ export function Settings() {
                 )}
               </div>
               {group.items.map((item: MenuItem) => {
-                // 過濾掉原本在清單中的管理項，保持選單純淨
                 if (item.id === 'custom_manage') return null;
 
                 const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id) && !item.id.startsWith('custom_');
@@ -220,7 +211,6 @@ export function Settings() {
           ))}
         </aside>
 
-        {/* 內容編輯區 */}
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
@@ -231,7 +221,6 @@ export function Settings() {
             )}
           </div>
 
-          {/* 專業版鎖定提示 */}
           {isCurrentTabLocked && (
             <div className="lock-overlay">
               <div className="lock-card">
@@ -255,7 +244,6 @@ export function Settings() {
               <SplashTab settings={settings} setSettings={setSettings} />
             )}
             
-            {/* 固定富文本分頁 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <RichTextTab 
                 field={activeTab} 
@@ -265,7 +253,6 @@ export function Settings() {
               />
             )}
             
-            {/* 動態富文本分頁 (自定義區塊) */}
             {activeTab.startsWith('custom_') && !activeTab.includes('manage') && (
               <RichTextTab 
                 isCustom 
@@ -291,7 +278,6 @@ export function Settings() {
             )}
           </div>
 
-          {/* 底部固定儲存按鈕列 */}
           <div className="save-action-bar">
             {message && (
               <span className={`save-msg ${message.includes('失敗') ? 'err' : 'ok'}`}>

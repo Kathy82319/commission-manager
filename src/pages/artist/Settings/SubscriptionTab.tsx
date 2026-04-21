@@ -97,7 +97,8 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
             <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
             <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
             <li>解鎖編輯「所有」進階區塊編輯權限</li>
-            <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
+            <li>解鎖最高 <strong>20 張</strong>作品展示上限</li>
+            <li>解鎖「徵稿/販售區」開放展示 <strong>10 個</strong>項目</li>
             <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>降級保障：方案過期後，已設定的進階區塊與超過 6 張的圖片不會刪除且持續展示，僅鎖定後台編輯權限。</li>
           </ul>
           {quotaInfo?.plan_type === 'trial' ? (
@@ -117,6 +118,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData }: Props) {
             <li>解鎖編輯「所有」進階區塊編輯權限</li>
             <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
             <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
+            <li>「徵稿/販售區」開放展示 <strong>30 個</strong>項目</li>
             <li>享有未來所有進階功能更新</li>
           </ul>
           {quotaInfo?.plan_type === 'pro' ? (
