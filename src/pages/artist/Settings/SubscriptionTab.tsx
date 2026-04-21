@@ -7,7 +7,7 @@ interface Props {
   onToast: (msg: string, type: 'ok' | 'err') => void;
 }
 
-// 關鍵修正：確保這裡有 export 關鍵字
+// 具名匯出 SubscriptionTab，確保 Settings.tsx 能正確引用
 export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -20,7 +20,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
         onToast(data.message || '15 天試用已開啟', 'ok');
         fetchUserData();
       } else {
-        onToast(data.error || '啟動試用失敗', 'err');
+        onToast(data.error || '開啟試用失敗', 'err');
       }
     } catch(e) { 
       onToast('連線失敗', 'err'); 

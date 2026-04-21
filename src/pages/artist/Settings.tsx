@@ -5,13 +5,13 @@ import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
 import { SplashTab } from './Settings/SplashTab';
 import { CustomSectionsTab } from './Settings/CustomSectionsTab';
-// 具名匯入修正
+// 確保 SubscriptionTab 是具名匯出 (Named Export)
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
-// Toast 組件
+// Toast 全域提示組件
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -20,6 +20,7 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 
   return (
     <div className={`toast-message ${type === 'err' ? 'error' : 'success'}`}>
+      <div className="toast-icon">{type === 'err' ? '⚠️' : '✅'}</div>
       <div className="toast-content">{message}</div>
     </div>
   );
@@ -28,7 +29,7 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 interface MenuItem {
   id: string;
   label: string;
-  isAction?: boolean;
+  isAction?: boolean; 
   isCustom?: boolean;
   index?: number;
 }
@@ -42,40 +43,51 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState('profile_basic');
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   
+  // UI 控制狀態
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
   const [settings, setSettings] = useState<ProfileSettings>({
-    portfolio: [],
-    detailed_intro: '',
-    process: '',
-    payment: '',
-    rules: '',
-    custom_sections: [],
-    social_links: [],
+    portfolio: [], 
+    detailed_intro: '', 
+    process: '', 
+    payment: '', 
+    rules: '', 
+    custom_sections: [], 
+    social_links: [], 
     hidden_sections: [],
-    splash_enabled: true,
-    splash_image: '',
-    splash_duration: 2,
+    splash_enabled: true, 
+    splash_image: '', 
+    splash_duration: 2, 
     splash_text: '',
-    layout_type: 'blog',
-    background_color: '#F4F0EB',
+    layout_type: 'blog', 
+    background_color: '#F4F0EB', 
     theme_mode: 'dark'
   });
 
+  const [isSaving, setIsSaving] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const showToast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
   }, []);
 
+  // 1. 定義分類結構 (更名：徵稿/販售區)
   const categories: MenuCategory[] = [
-    { title: '個人資訊', items: [{ id: 'profile_basic', label: '頭像與簡介' }] },
-    { title: '頁面外觀', items: [{ id: 'theme', label: '背景與版型設定' }, { id: 'splash', label: '開場動畫設定' }] },
-    { 
-      title: '內容管理', 
+    {
+      title: '個人資訊',
+      items: [{ id: 'profile_basic', label: '頭像與簡介' }]
+    },
+    {
+      title: '頁面外觀',
+      items: [
+        { id: 'theme', label: '背景與版型設定' },
+        { id: 'splash', label: '開場動畫設定' }
+      ]
+    },
+    {
+      title: '內容管理',
       items: [
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
@@ -85,7 +97,10 @@ export function Settings() {
         { id: 'rules', label: '協議書範本' },
       ]
     },
-    { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
+    {
+      title: '訂閱方案',
+      items: [{ id: 'subscription', label: '方案查看與升級' }]
+    }
   ];
 
   const menuGroups = useMemo(() => {
@@ -113,11 +128,13 @@ export function Settings() {
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
         });
+        
         setQuotaInfo({
           plan_type: data.data.plan_type || 'free',
           used_quota: data.data.used_quota || 0,
           max_quota: 3,
         });
+
         if (data.data.profile_settings) {
           const parsed = typeof data.data.profile_settings === 'string' 
             ? JSON.parse(data.data.profile_settings) 
@@ -133,11 +150,11 @@ export function Settings() {
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
   const handleSave = async () => {
-    setIsSaving(true);
+    setIsSaving(true); 
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PATCH',
-        credentials: 'include',
+        method: 'PATCH', 
+        credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: formData.display_name,
@@ -155,7 +172,7 @@ export function Settings() {
     } catch (error) {
       showToast('系統發生錯誤', 'err');
     } finally {
-      setIsSaving(false);
+      setIsSaving(false); 
     }
   };
 
@@ -172,6 +189,7 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
+  // 修正：從允許清單移除 'showcase'，使其對免費版上鎖
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
@@ -187,6 +205,7 @@ export function Settings() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label">
                 {group.title}
+                {/* 文字按鈕替換齒輪圖示 */}
                 {group.title.includes('內容管理') && (
                   <button 
                     className="add-page-btn" 
@@ -201,6 +220,7 @@ export function Settings() {
               </div>
               {group.items.map((item: MenuItem) => {
                 if (item.id === 'custom_manage') return null;
+
                 const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
                 return (
                   <button 
@@ -211,7 +231,7 @@ export function Settings() {
                       setHideGlobalSave(false);
                     }}
                   >
-                    {item.label} {isLocked && '(專業版限定)'}
+                    {item.label} {isLocked && '🔒'}
                   </button>
                 );
               })}
@@ -224,7 +244,7 @@ export function Settings() {
             <h3>內容編輯</h3>
             {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
-                {settings.hidden_sections.includes(activeTab) ? '目前已隱藏' : '公開顯示中'}
+                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
               </button>
             )}
           </div>
@@ -232,7 +252,7 @@ export function Settings() {
           {isCurrentTabLocked && (
             <div className="lock-overlay">
               <div className="lock-card">
-                <div className="lock-icon">[已鎖定]</div>
+                <div className="lock-icon">🔒</div>
                 <h4>此功能僅限專業版</h4>
                 <p>升級專業版即可解鎖更多自定義區塊與進階功能</p>
                 <button onClick={() => setActiveTab('subscription')}>查看方案</button>
@@ -244,31 +264,24 @@ export function Settings() {
             {activeTab === 'profile_basic' && (
               <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />
             )}
-            {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
-            {activeTab === 'subscription' && (
-              <SubscriptionTab 
-                quotaInfo={quotaInfo} 
-                fetchUserData={fetchUserData} 
-                onToast={showToast} 
-              />
+            {activeTab === 'theme' && (
+              <ThemeTab settings={settings} setSettings={setSettings} />
             )}
             
-            {activeTab === 'showcase' && (
-              <ShowcaseTab 
-                onToggleGlobalSave={setHideGlobalSave} 
-                onToast={showToast} 
-                quotaInfo={quotaInfo}
-              />
+            {activeTab === 'splash' && (
+              <SplashTab settings={settings} setSettings={setSettings} />
             )}
-
-            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
             
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
-              <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} onSave={handleSave} />
+              <RichTextTab 
+                field={activeTab} 
+                settings={settings} 
+                setSettings={setSettings} 
+                onSave={handleSave} 
+              />
             )}
+            
             {activeTab.startsWith('custom_') && !activeTab.includes('manage') && (
               <RichTextTab 
                 isCustom 
@@ -278,8 +291,29 @@ export function Settings() {
                 onSave={handleSave}
               />
             )}
+
+            {activeTab === 'custom_manage' && (
+              <CustomSectionsTab settings={settings} setSettings={setSettings} />
+            )}
+            
+            {activeTab === 'showcase' && (
+              <ShowcaseTab 
+                onToggleGlobalSave={setHideGlobalSave} 
+                onToast={showToast} 
+                quotaInfo={quotaInfo}
+              />
+            )}
+            
+            {activeTab === 'portfolio' && (
+              <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />
+            )}
+            
+            {activeTab === 'subscription' && (
+              <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />
+            )}
           </div>
 
+          {/* 根據 hideGlobalSave 決定是否顯示全域儲存列 */}
           {!hideGlobalSave && (
             <div className="save-action-bar">
               <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
