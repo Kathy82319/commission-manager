@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
@@ -72,6 +72,7 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
+  // 設定主題顏色
   useEffect(() => {
     if (settings) {
       setTheme({
@@ -81,6 +82,7 @@ export function PublicProfile() {
     }
   }, [settings, setTheme]);
 
+  // 1. 抓取資料與資料清洗 (資安強化：防護型 JSON 解析)
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -94,20 +96,36 @@ export function PublicProfile() {
         if (userData.success && userData.data) {
           setArtist(userData.data);
           if (userData.data.profile_settings) {
-            const decodedSettings = decodeHTML(userData.data.profile_settings);
-            const parsedSettings = JSON.parse(decodedSettings);
-            if (parsedSettings.splash_enabled === false) setShowSplash(false);
-            setSettings(parsedSettings);
+            try {
+              const decodedSettings = decodeHTML(userData.data.profile_settings);
+              const parsedSettings = JSON.parse(decodedSettings);
+              if (parsedSettings.splash_enabled === false) setShowSplash(false);
+              setSettings(parsedSettings);
+            } catch (e) {
+              console.error("解析設定檔失敗", e);
+              setShowSplash(false);
+            }
           } else {
             setShowSplash(false);
           }
         }
 
         if (showcaseData.success) {
-          const formattedItems = showcaseData.data.map((item: any) => ({
-            ...item,
-            tags: typeof item.tags === 'string' ? JSON.parse(item.tags) : (item.tags || [])
-          }));
+          // 核心修正：強制確保 tags 絕對是陣列型別
+          const formattedItems = (showcaseData.data || []).map((item: any) => {
+            let safeTags: string[] = [];
+            try {
+              if (Array.isArray(item.tags)) {
+                safeTags = item.tags;
+              } else if (typeof item.tags === 'string' && item.tags.trim() !== '') {
+                const parsed = JSON.parse(item.tags);
+                safeTags = Array.isArray(parsed) ? parsed : [];
+              }
+            } catch (e) {
+              safeTags = [];
+            }
+            return { ...item, tags: safeTags };
+          });
           setShowcaseItems(formattedItems);
         }
       } catch (error) {
@@ -120,6 +138,7 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
+  // 2. Splash Screen 倒數邏輯
   useEffect(() => {
     if (!loading && settings?.splash_enabled !== false && showSplash) {
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
@@ -135,9 +154,17 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
+  // 3. 標籤清單彙整 (修正 forEach 崩潰問題)
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    showcaseItems.forEach(item => item.tags.forEach(t => tags.add(t)));
+    showcaseItems.forEach(item => {
+      // 資安防護：確保 item.tags 為陣列才執行 forEach
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach(t => {
+          if (t) tags.add(t);
+        });
+      }
+    });
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
@@ -156,7 +183,7 @@ export function PublicProfile() {
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return showcaseItems;
     return showcaseItems.filter(item => 
-      item.tags.some(tag => selectedTags.includes(tag))
+      Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
     );
   }, [showcaseItems, selectedTags]);
 
@@ -166,7 +193,8 @@ export function PublicProfile() {
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵委託項目' });
+    // 命名一致化：改為 徵稿/販售項目
+    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
@@ -292,7 +320,9 @@ export function PublicProfile() {
                         <div className="floating-info-box">
                           <div className="item-title">{item.title}</div>
                           <div className="item-price">${item.price_info}</div>
-                          <div className="item-tags">{item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}</div>
+                          <div className="item-tags">
+                            {Array.isArray(item.tags) && item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -338,7 +368,7 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* 3. Lightbox & Modals (置於最後確保正確浮動層級) */}
+      {/* 3. Lightbox & Modals */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
@@ -352,7 +382,7 @@ export function PublicProfile() {
                 <div className="modal-price">${selectedShowcase.price_info}</div>
               </div>
               <div className="modal-tags">
-                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
+                {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
               </div>
               <div className="description-scroll-area">
                 <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
