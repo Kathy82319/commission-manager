@@ -5,8 +5,9 @@ import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/re
 import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
 
+// 定義回傳給 Layout 的 Context 型別
 interface LayoutContext {
-  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black'; gradientDirection: string }) => void;
+  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
 const decodeHTML = (html?: string) => {
@@ -31,7 +32,6 @@ interface ProfileSettings {
   splash_text?: string;
   background_color?: string;
   theme_mode?: 'light' | 'dark';
-  gradient_direction?: string; // 確保設定中有這個欄位
 }
 
 interface ShowcaseItem {
@@ -73,12 +73,12 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
+  // 同步主題設定至 Layout
   useEffect(() => {
     if (settings) {
       setTheme({
         primaryColor: settings.background_color || '#F4F0EB',
-        textColor: settings.theme_mode === 'light' ? 'black' : 'white',
-        gradientDirection: settings.gradient_direction || 'to bottom right' // 傳遞方向
+        textColor: settings.theme_mode === 'light' ? 'black' : 'white'
       });
     }
   }, [settings, setTheme]);
@@ -209,7 +209,7 @@ export function PublicProfile() {
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{ background: 'var(--artist-main-gradient)', minHeight: '100vh' }}
+      style={{ backgroundColor: bgColor, minHeight: '100vh' }}
     >
       
       {showSplash && (
@@ -222,7 +222,7 @@ export function PublicProfile() {
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
-        <aside className="profile-sidebar" style={{ background: 'var(--artist-sidebar-gradient)', color: textColor }}>
+        <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
           <div className="sidebar-top">
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
@@ -262,9 +262,10 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        <main className="profile-main-content">
+        <main className="profile-main-content" style={{ backgroundColor: 'transparent' }}>
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
+              
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
                   {availableTags.length > 1 && (
@@ -322,7 +323,7 @@ export function PublicProfile() {
             </div>
 
             <footer className="profile-internal-footer">
-              <div className="footer-links" style={{ color: isDarkText ? '#333' : 'rgba(255,255,255,0.7)' }}>
+              <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
                 <Link to="/terms">服務條款</Link>
                 <span>|</span>
                 <Link to="/privacy">隱私權政策</Link>
@@ -344,16 +345,12 @@ export function PublicProfile() {
               <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
             </div>
             <div className="showcase-details">
-              <div className="showcase-header">
-                <h2>{selectedShowcase.title}</h2>
-                <div className="modal-price">${selectedShowcase.price_info}</div>
-              </div>
+              <h2>{selectedShowcase.title}</h2>
+              <div className="modal-price">${selectedShowcase.price_info}</div>
               <div className="modal-tags">
-                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
+                {selectedShowcase.tags.map(tag => <span key={tag}>#{tag}</span>)}
               </div>
-              <div className="description-scroll-area">
-                <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
-              </div>
+              <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
             </div>
           </div>
         </div>
