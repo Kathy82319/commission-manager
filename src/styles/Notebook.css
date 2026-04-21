@@ -1,5 +1,8 @@
 /* src/styles/Notebook.css */
 
+/* ==========================================
+   1. 基礎佈局與容器 (Layout & Containers)
+========================================== */
 .notebook-page {
   padding: 0;
   width: 100%;
@@ -14,10 +17,9 @@
   margin: 0 auto;
 }
 
-.mobile-hide {
-  display: none !important;
-}
-
+/* ==========================================
+   2. 側邊欄 (Sidebar)
+========================================== */
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 90px);
@@ -52,72 +54,69 @@
   gap: 8px;
   width: 100%;
   align-items: center;
-}
-
-/* 提升選擇器權重 (.sidebar-controls .class名稱) 
-   以此精準覆寫 .form-input 帶來的 width: 100% 災難 */
-.sidebar-controls  {
   padding: 8px 12px;
   font-size: 13px;
-  flex: 1 1 auto; /* 允許彈性伸縮，佔滿剩餘空間 */
+  flex: 1 1 auto;
+  min-width: 100px;
+}
+
+/* 透過結構層級提高權重，覆寫 .form-input 帶來的 100% 寬度 */
+.sidebar-controls .sidebar-search-input {
+  flex: 1;
   width: auto;
-  min-width: 100px; /* 給予基本底線，防止再次被擠壓到消失 */
-}
-
-.sidebar-search-input {
-  flex: 1 !important;      /* 讓搜尋框佔據剩餘空間 */
-  width: auto !important;  /* 防止 width: 100% 破壞佈局 */
   padding: 8px 12px;
   font-size: 13px;
 }
 
-.sidebar-filter {
-  width: auto !important;  /* 根據內容自適應寬度 */
+.sidebar-controls .sidebar-filter {
+  width: auto;
   padding: 8px 12px;
-  flex-shrink: 0;          /* 防止下拉選單被擠壓 */
+  flex-shrink: 0;
   font-size: 13px;
-}
-
-.sidebar-controls {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  align-items: center;
 }
 
 .sidebar-list-container {
   overflow-y: auto;
   flex: 1;
-  padding: 10px 0; /* 修改：取消左右內距以貼合亮燈線條 */
+  padding: 10px 0;
   -webkit-overflow-scrolling: touch;
 }
 
-/* --- 2. 側邊欄卡片：【手術修改區 - 實作電梯亮燈】 --- */
-.sidebar-card {
-  padding: 16px 16px 16px 24px; /* 修改：增加左側縮排空間 */
+.sidebar-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #C4BDB5;
+}
+
+/* --- 側邊欄卡片 (Sidebar Cards) --- */
+.sidebar-list-container .sidebar-card {
+  padding: 16px 16px 16px 24px;
   margin-bottom: 8px;
   cursor: pointer;
   background-color: #FFFFFF;
   transition: all 0.2s ease;
-  /* 修改：徹底移除原本的邊框，改用左側亮燈線 */
-  border: none !important; 
-  border-left: 4px solid transparent !important; 
-  border-radius: 0 12px 12px 0 !important; /* 僅保留右側圓角 */
+  border: none;
+  border-left: 4px solid transparent;
+  border-radius: 0 12px 12px 0;
 }
 
-.sidebar-card.selected {
-  /* 修改：確保沒有底線或其他邊框，只亮起左側直線 */
-  border: none !important;
-  border-left: 4px solid #5D4A3E !important; 
-  background-color: #F9F7F5 !important;
+.sidebar-list-container .sidebar-card.selected {
+  border-left-color: #5D4A3E;
+  background-color: #F9F7F5;
 }
 
-.sidebar-card:hover:not(.selected) {
-  border-left: 4px solid #DED9D3 !important;
+.sidebar-list-container .sidebar-card:hover:not(.selected) {
+  border-left-color: #DED9D3;
   background-color: #FDFBFA;
 }
 
-.card-meta-row, .card-project-row, .card-info-row {
+.sidebar-list-container .sidebar-card.cancelled {
+  opacity: 0.6;
+}
+
+.card-meta-row, 
+.card-project-row, 
+.card-info-row {
   display: flex;
   justify-content: space-between;
   margin-bottom: 8px;
@@ -132,23 +131,6 @@
 
 .card-info-row {
   margin-bottom: 10px;
-}
-
-.card-mode-badge {
-  font-size: 11px;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.mode-free {
-  background-color: #FDF4E6;
-  color: #A67B3E;
-}
-
-.mode-standard {
-  background-color: #E8F3EB;
-  color: #4E7A5A;
 }
 
 .card-title-row {
@@ -194,13 +176,9 @@
   font-weight: bold;
 }
 
-.sidebar-empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: #C4BDB5;
-}
-
-
+/* ==========================================
+   3. 主內容區塊 (Main Content)
+========================================== */
 .notebook-main {
   width: 100%;
   min-height: 100vh;
@@ -244,25 +222,6 @@
 .main-header-info {
   flex: 1 1 250px;
   min-width: 0;
-}
-
-.mobile-back-btn {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 8px 16px;
-  background-color: #F4F0EB;
-  color: #5D4A3E;
-  border: 1px solid #DED9D3;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.mobile-back-btn:hover {
-  background-color: #EAE6E1;
 }
 
 .main-title {
@@ -314,6 +273,28 @@
   margin-top: 12px;
 }
 
+/* ==========================================
+   4. 按鈕元件 (Buttons)
+========================================== */
+.mobile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  background-color: #F4F0EB;
+  color: #5D4A3E;
+  border: 1px solid #DED9D3;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mobile-back-btn:hover {
+  background-color: #EAE6E1;
+}
+
 .action-btn {
   flex: 1 1 calc(50% - 8px); 
   text-align: center;
@@ -331,7 +312,11 @@
 .btn-outline-danger { background-color: #FFFFFF; border: 1px solid #DED9D3; color: #A05C5C; }
 .btn-outline-default { background-color: #FFFFFF; border: 1px solid #DED9D3; color: #5D4A3E; }
 .btn-danger { background-color: #A05C5C; color: #FFFFFF; border: none; }
+.btn-save { padding: 10px 24px; }
 
+/* ==========================================
+   5. 標籤列 (Tabs)
+========================================== */
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -343,14 +328,16 @@
   border-bottom: 2px solid #EAE6E1;
 }
 
-.scroll-tabs::-webkit-scrollbar { display: none; }
+.scroll-tabs::-webkit-scrollbar { 
+  display: none; 
+}
 
-.tab-btn {
+.scroll-tabs .tab-btn {
   white-space: nowrap;
   padding: 14px 4px;
   cursor: pointer;
   border: none;
-  background-color: transparent !important;
+  background-color: transparent;
   font-size: 15px;
   color: #A0978D;
   transition: all 0.2s ease;
@@ -360,13 +347,13 @@
   outline: none;
 }
 
-.tab-btn.active {
+.scroll-tabs .tab-btn.active {
   border-bottom: 2px solid #5D4A3E;
   font-weight: bold;
   color: #5D4A3E;
 }
 
-.tab-btn:hover:not(.active) {
+.scroll-tabs .tab-btn:hover:not(.active) {
   color: #7A7269;
   border-bottom: 2px solid #DED9D3;
 }
@@ -386,6 +373,9 @@
   min-width: 0;
 }
 
+/* ==========================================
+   6. 卡片與細項表單 (Cards & Details Form)
+========================================== */
 .section-card {
   background-color: #FBFBF9;
   padding: 20px;
@@ -421,47 +411,57 @@
   color: #5D4A3E;
 }
 
-.payment-status-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 
-.payment-status-label {
-  font-size: 13px;
-  color: #7A7269;
-  font-weight: bold;
+.form-input {
+  color: #5D4A3E;
+  border: 1px solid #DED9D3;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #FBFBF9;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.select-status {
-  width: auto;
-  padding: 8px 12px;
-  font-weight: bold;
+.textarea-large {
+  min-height: 100px;
+  white-space: pre-wrap;
+  resize: vertical;
 }
 
+.request-field { display: flex; flex-direction: column; min-width: 0; }
+.field-label { color: #7A7269; font-weight: bold; margin-bottom: 6px; font-size: 13px; }
+.field-display { padding: 10px; background-color: #FBFBF9; border: 1px solid #EAE6E1; border-radius: 8px; min-height: 19px; display: flex; align-items: center; word-break: break-word; }
+.field-strikethrough { text-decoration: line-through; color: #C4BDB5; margin-right: 8px; }
+.field-pending { color: #A05C5C; font-weight: bold; }
+.field-value { color: #5D4A3E; }
+
+.detailed-settings-wrapper { display: flex; flex-direction: column; margin-bottom: 24px; margin-top: 20px; }
+.tos-snapshot-wrapper { display: flex; flex-direction: column; margin-bottom: 24px; padding: 16px; background-color: #FAFAFA; border-radius: 8px; border: 1px dashed #DED9D3; }
+.label-note { font-weight: normal; color: #A0978D; margin-left: 6px; }
+.tos-content { color: #5D4A3E; font-size: 13px; line-height: 1.6; max-height: 150px; overflow-y: auto; }
+.details-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 20px; }
+
+/* ==========================================
+   7. 記帳與表格 (Payments & Tables)
+========================================== */
+.payment-status-wrapper { display: flex; align-items: center; gap: 10px; }
+.payment-status-label { font-size: 13px; color: #7A7269; font-weight: bold; }
+.select-status { width: auto; padding: 8px 12px; font-weight: bold; }
 .payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 .btn-add-payment { padding: 10px 20px; white-space: nowrap; }
 
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  table-layout: auto;
-}
-
-.custom-table th, .custom-table td {
-  padding: 12px 8px;
-  word-break: break-word; 
-}
-
-.table-responsive { 
-  width: 100%; 
-  overflow-x: auto; 
-  -webkit-overflow-scrolling: touch; 
-}
-
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.custom-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; }
+.custom-table th, .custom-table td { padding: 12px 8px; word-break: break-word; }
 .table-empty { text-align: center; padding: 15px; color: #A0978D; }
 .table-row { border-bottom: 1px dashed #EAE6E1; }
+
 .col-date { color: #A0978D; }
 .col-item { color: #5D4A3E; font-weight: 500; }
 .col-amount { text-align: right; font-weight: bold; color: #4E7A5A; }
@@ -482,35 +482,15 @@
 .summary-val.paid { color: #4E7A5A; }
 .summary-val.unpaid { color: #A05C5C; }
 
-.details-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-
-.form-input {
-  color: #5D4A3E; border: 1px solid #DED9D3; padding: 10px;
-  border-radius: 8px; background-color: #FBFBF9; outline: none;
-  width: 100%; box-sizing: border-box;
-}
-
-.textarea-large { min-height: 100px; white-space: pre-wrap; resize: vertical; }
-
+/* ==========================================
+   8. 狀態與徽章標籤 (Badges & Tags)
+========================================== */
 .mode-badges { display: flex; gap: 8px; }
+.card-mode-badge { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
+.mode-free { background-color: #FDF4E6; color: #A67B3E; }
+.mode-standard { background-color: #E8F3EB; color: #4E7A5A; }
 .badge-edit-mode { color: #A05C5C; font-size: 12px; font-weight: bold; background-color: #F5EBEB; padding: 6px 12px; border-radius: 6px; }
 .badge-free-mode { color: #A67B3E; font-size: 12px; font-weight: bold; background-color: #FDF4E6; padding: 6px 12px; border-radius: 6px; }
-
-.request-field { display: flex; flex-direction: column; min-width: 0; }
-.field-label { color: #7A7269; font-weight: bold; margin-bottom: 6px; font-size: 13px; }
-.field-display { padding: 10px; background-color: #FBFBF9; border: 1px solid #EAE6E1; border-radius: 8px; min-height: 19px; display: flex; align-items: center; word-break: break-word; }
-.field-strikethrough { text-decoration: line-through; color: #C4BDB5; margin-right: 8px; }
-.field-pending { color: #A05C5C; font-weight: bold; }
-.field-value { color: #5D4A3E; }
-
-.detailed-settings-wrapper { display: flex; flex-direction: column; margin-bottom: 24px; margin-top: 20px; }
-
-.tos-snapshot-wrapper { display: flex; flex-direction: column; margin-bottom: 24px; padding: 16px; background-color: #FAFAFA; border-radius: 8px; border: 1px dashed #DED9D3; }
-.label-note { font-weight: normal; color: #A0978D; margin-left: 6px; }
-.tos-content { color: #5D4A3E; font-size: 13px; line-height: 1.6; max-height: 150px; overflow-y: auto; }
-
-.details-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 20px; }
-.btn-save { padding: 10px 24px; }
 
 .badge-paid { background-color: #E8F3EB; color: #4E7A5A; }
 .badge-partial { background-color: #FDF4E6; color: #A67B3E; }
@@ -518,10 +498,12 @@
 
 .badge-completed { background-color: #E8F3EB; color: #4E7A5A; border-color: rgba(78, 122, 90, 0.2); }
 .badge-cancelled { background-color: #F5EBEB; color: #A05C5C; border-color: rgba(160, 92, 92, 0.2); }
-
 .badge-queue { background-color: #F0ECE7; color: #5D4A3E; }
 .badge-new-msg { background-color: #F5EBEB; color: #A05C5C; }
 
+/* ==========================================
+   9. 檔案交付區 (Delivery Stages)
+========================================== */
 .fade-in { animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -532,15 +514,25 @@
 .stage-box-header { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-weight: bold; font-size: 14px; transition: all 0.3s; }
 .stage-box-content { padding: 20px; }
 
-.stage-empty { background-color: #FCFAF8; } .stage-empty .stage-status { color: #A0978D; }
-.stage-passed { background-color: #E8F3EB; } .stage-passed .stage-status { color: #4E7A5A; }
-.stage-unbound { background-color: #F0ECE7; } .stage-unbound .stage-status { color: #A05C5C; }
-.stage-reviewing { background-color: #FDF4E6; } .stage-reviewing .stage-status { color: #A67B3E; }
-.stage-rejected { background-color: #fce8e6; } .stage-rejected .stage-status { color: #d93025; }
+.stage-pending { background-color: #F4F0EB; } 
+.stage-pending .stage-status { color: #8A7A7A; }
+.stage-empty { background-color: #FCFAF8; } 
+.stage-empty .stage-status { color: #A0978D; }
+.stage-passed { background-color: #E8F3EB; } 
+.stage-passed .stage-status { color: #4E7A5A; }
+.stage-unbound { background-color: #F0ECE7; } 
+.stage-unbound .stage-status { color: #A05C5C; }
+.stage-reviewing { background-color: #FDF4E6; } 
+.stage-reviewing .stage-status { color: #A67B3E; }
+.stage-rejected { background-color: #fce8e6; } 
+.stage-rejected .stage-status { color: #d93025; }
 
 .stage-notice { font-size: 12px; color: #A05C5C; background-color: #F5EBEB; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
 .stage-loading { text-align: center; padding: 30px; color: #4A7294; font-weight: bold; }
 
+/* ==========================================
+   10. 歷程紀錄 (Logs)
+========================================== */
 .logs-title { margin: 0 0 20px 0; }
 .logs-empty { text-align: center; color: #A0978D; padding: 40px; }
 .logs-list { display: flex; flex-direction: column; gap: 12px; }
@@ -552,11 +544,16 @@
 .log-meta { font-size: 12px; color: #A0978D; margin-bottom: 8px; }
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
+/* ==========================================
+   11. 響應式設計 (Media Queries)
+========================================== */
+@media (max-width: 1023px) {
+  /* 將 !important 的處理移入正確的斷點控制中 */
+  .mobile-hide { display: none; }
+}
 
 @media (min-width: 1024px) {
-  .mobile-hide { display: flex !important; }
-  .mobile-back-btn { display: none !important; }
-
+  .mobile-back-btn { display: none; }
 
   .notebook-page { 
     height: calc(100vh - 80px); 
@@ -578,20 +575,19 @@
     width: 300px; 
     height: 100%; 
   }
-  
 
   .notebook-main {
     flex: 1;
     min-width: 0;
     min-height: 0; 
-    height: 100% !important; 
+    height: 100%; 
     overflow: hidden; 
   }
   
   .main-content-wrapper {
     flex: 1;
     min-height: 0;
-    height: 100% !important;
+    height: 100%;
     display: flex;
     flex-direction: column;
   }
@@ -614,14 +610,14 @@
   }
 
   .scroll-tabs .tab-btn {
-    border-right: none !important;
-    margin-right: 0 !important;
-    padding: 14px 4px !important;
-    border-bottom: 2px solid transparent !important;
+    border-right: none;
+    margin-right: 0;
+    padding: 14px 4px;
+    border-bottom: 2px solid transparent;
   }
   
   .scroll-tabs .tab-btn.active {
-    border-bottom: 2px solid #5D4A3E !important;
+    border-bottom: 2px solid #5D4A3E;
   }
 }
 
