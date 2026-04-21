@@ -30,11 +30,7 @@ interface ProfileSettings {
   splash_duration?: number;
   splash_text?: string;
   background_color?: string;
-  // 漸層相關欄位
-  gradient_enabled?: boolean;
-  gradient_type?: string; 
   gradient_direction?: string;
-  secondary_color?: string; 
   theme_mode?: 'light' | 'dark';
 }
 
@@ -77,19 +73,11 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 1. 計算背景樣式 (修正漸層消失問題)
+  // 1. 計算背景樣式
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#f4f0eb67';
-    
-    // 修正：只要有啟用漸層即可，不需要檢查第二色
-    if (settings?.gradient_enabled) {
-      const direction = settings.gradient_direction || 'to bottom right';
-      // 直接套用你原本在 ThemeTab 預覽區塊寫好的透明黑 #00000015 作為漸層尾色
-      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
-    }
-    
-    // 若無漸層，回傳純色背景
-    return { background: baseColor };
+    const baseColor = settings?.background_color || '#F4F0EB';
+    const direction = settings?.gradient_direction || 'to bottom right';
+    return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
   }, [settings]);
 
   // 設定主題顏色
@@ -105,7 +93,11 @@ export function PublicProfile() {
   // 2. 抓取資料與資料清洗
   useEffect(() => {
     const fetchArtistData = async () => {
-      if (!currentArtistId) return;
+      if (!currentArtistId) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const userRes = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
@@ -157,6 +149,7 @@ export function PublicProfile() {
 
   // 3. Splash Screen 倒數邏輯
   useEffect(() => {
+    // 必須等 loading 結束才開始倒數
     if (!loading && settings?.splash_enabled !== false && showSplash) {
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
       let removeTimer: ReturnType<typeof setTimeout>;
@@ -171,13 +164,11 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 核心邏輯：計算降級展示後的項目
   const displayShowcaseItems = useMemo(() => {
     const isFree = artist?.plan_type === 'free';
     return isFree ? showcaseItems.slice(0, 6) : showcaseItems;
   }, [showcaseItems, artist?.plan_type]);
 
-  // 4. 標籤清單彙整
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     displayShowcaseItems.forEach(item => {
@@ -202,7 +193,6 @@ export function PublicProfile() {
     });
   };
 
-  // 5. 過濾後的展示項目
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return displayShowcaseItems;
     return displayShowcaseItems.filter(item => 
@@ -247,150 +237,159 @@ export function PublicProfile() {
     }
   };
 
-  if (loading) return <div className="loading-state">載入中...</div>;
-  if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
-
+  // 文字顏色動態判定，確保在載入狀態中文字也能看清楚
   const isDarkText = settings?.theme_mode === 'light';
-  const textColor = isDarkText ? '#333333' : '#FFFFFF';
+  const textColor = settings ? (isDarkText ? '#333333' : '#FFFFFF') : '#5D4A3E';
 
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={backgroundStyle} // 這裡應用漸層背景
+      style={backgroundStyle} 
     >
-      {/* 1. Splash Screen */}
-      {showSplash && (
+      {/* 1. 將載入中狀態與 Splash Screen 完美結合 */}
+      {(loading || showSplash) && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={backgroundStyle}>
           <div className="splash-box">
-            <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
+            <h1 style={{ color: textColor }}>
+              {loading ? '載入中...' : (settings?.splash_text || artist?.display_name)}
+            </h1>
           </div>
         </div>
       )}
 
-      {/* 2. Main Layout Area */}
-      <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        
-        {/* Sidebar */}
-        <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
-          <div className="sidebar-top">
-            <div className="avatar-section">
-              <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
-            </div>
-            
-            <div className="name-social-section">
-              <h1 className="profile-name">{artist.display_name}</h1>
-              <div className="social-links">
-                {settings?.social_links?.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
-                    {getSocialIcon(link.platform)}
-                  </a>
-                ))}
+      {/* 若載入完畢且找不到繪師資料的錯誤畫面 */}
+      {!loading && !artist && (
+        <div style={{ padding: '100px', textAlign: 'center', fontSize: '18px', color: textColor }}>
+          找不到該繪師的資料，請確認網址是否正確。
+        </div>
+      )}
+
+      {/* 2. 實際的 Main Layout Area (只有在資料載入完畢且存在時才渲染) */}
+      {!loading && artist && (
+        <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
+          
+          {/* Sidebar */}
+          <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
+            <div className="sidebar-top">
+              <div className="avatar-section">
+                <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
+              </div>
+              
+              <div className="name-social-section">
+                <h1 className="profile-name">{artist.display_name}</h1>
+                <div className="social-links">
+                  {settings?.social_links?.map((link, idx) => (
+                    <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
+                      {getSocialIcon(link.platform)}
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="sidebar-bottom">
-            <div className="bio-section">
-              <p className="profile-bio" style={{ color: textColor }}>
-                {artist.bio || '這名繪師還沒有寫下簡介。'}
-              </p>
+            <div className="sidebar-bottom">
+              <div className="bio-section">
+                <p className="profile-bio" style={{ color: textColor }}>
+                  {artist.bio || '這名繪師還沒有寫下簡介。'}
+                </p>
+              </div>
+
+              <nav className="sidebar-nav">
+                {availableTabs.map((tab: any) => (
+                  <button 
+                    key={tab.id} 
+                    onClick={() => setActiveTab(tab.id)} 
+                    className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
+                    style={{ color: textColor }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
             </div>
+          </aside>
 
-            <nav className="sidebar-nav">
-              {availableTabs.map((tab: any) => (
-                <button 
-                  key={tab.id} 
-                  onClick={() => setActiveTab(tab.id)} 
-                  className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
-                  style={{ color: textColor }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        {/* Content Main */}
-        <main className="profile-main-content">
-          <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
-            <div className="tab-content-area">
-              
-              {currentTab === 'showcase' && (
-                <div className="showcase-section">
-                  {availableTags.length > 1 && (
-                    <div className="tag-filter-bar">
-                      {availableTags.map(tag => {
-                        const isSelected = selectedTags.includes(tag);
-                        return (
-                          <button 
-                            key={tag} 
-                            className={`tag-btn ${isSelected ? 'active' : ''}`} 
-                            onClick={() => handleTagClick(tag)}
-                          >
-                            {tag}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div className="masonry-grid">
-                    {filteredShowcaseItems.map(item => (
-                      <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
-                        <img src={item.cover_url} alt={item.title} loading="lazy" />
-                        <div className="floating-info-box">
-                          <div className="item-title">{item.title}</div>
-                          <div className="item-price">${item.price_info}</div>
-                          <div className="item-tags">
-                            {Array.isArray(item.tags) && item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}
+          {/* Content Main */}
+          <main className="profile-main-content">
+            <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
+              <div className="tab-content-area">
+                
+                {currentTab === 'showcase' && (
+                  <div className="showcase-section">
+                    {availableTags.length > 1 && (
+                      <div className="tag-filter-bar">
+                        {availableTags.map(tag => {
+                          const isSelected = selectedTags.includes(tag);
+                          return (
+                            <button 
+                              key={tag} 
+                              className={`tag-btn ${isSelected ? 'active' : ''}`} 
+                              onClick={() => handleTagClick(tag)}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="masonry-grid">
+                      {filteredShowcaseItems.map(item => (
+                        <div key={item.id} className="masonry-item" onClick={() => setSelectedShowcase(item)}>
+                          <img src={item.cover_url} alt={item.title} loading="lazy" />
+                          <div className="floating-info-box">
+                            <div className="item-title">{item.title}</div>
+                            <div className="item-price">${item.price_info}</div>
+                            <div className="item-tags">
+                              {Array.isArray(item.tags) && item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {currentTab === 'portfolio' && (
+                  <div className="portfolio-grid">
+                    {settings?.portfolio.map((img, idx) => (
+                      <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                        <img src={img} alt="作品" loading="lazy" />
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+                
+                {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
+                  <div className="rich-text-content" 
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
+                )}
 
-              {currentTab === 'portfolio' && (
-                <div className="portfolio-grid">
-                  {settings?.portfolio.map((img, idx) => (
-                    <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
-                      <img src={img} alt="作品" loading="lazy" />
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
-                <div className="rich-text-content" 
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
-              )}
-
-              {settings?.custom_sections?.map(sec => 
-                currentTab === sec.id && (
-                  <div key={sec.id} className="rich-text-content" 
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
-                )
-              )}
-            </div>
-
-            <footer className="profile-internal-footer">
-              <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
-                <Link to="/terms">服務條款</Link>
-                <span>|</span>
-                <Link to="/privacy">隱私權政策</Link>
-                <span>|</span>
-                <Link to="/refund-policy">退款政策</Link>
-                <span>|</span>
-                <span>客服信箱：cath40286@gmail.com</span>
+                {settings?.custom_sections?.map(sec => 
+                  currentTab === sec.id && (
+                    <div key={sec.id} className="rich-text-content" 
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
+                  )
+                )}
               </div>
-            </footer>
-          </div>
-        </main>
-      </div>
 
-      {/* 3. Lightbox & Modals */}
-      {selectedShowcase && (
+              <footer className="profile-internal-footer">
+                <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
+                  <Link to="/terms">服務條款</Link>
+                  <span>|</span>
+                  <Link to="/privacy">隱私權政策</Link>
+                  <span>|</span>
+                  <Link to="/refund-policy">退款政策</Link>
+                  <span>|</span>
+                  <span>客服信箱：cath40286@gmail.com</span>
+                </div>
+              </footer>
+            </div>
+          </main>
+        </div>
+      )}
+
+      {/* 3. Lightbox & Modals (確保載入完畢才渲染) */}
+      {!loading && selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
@@ -413,7 +412,7 @@ export function PublicProfile() {
         </div>
       )}
 
-      {selectedImgIndex !== null && settings?.portfolio && (
+      {!loading && selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}><X size={32}/></button>
           <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
