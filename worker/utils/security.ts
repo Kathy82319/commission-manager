@@ -48,7 +48,6 @@ export function sanitizeAndLimit(str: string | undefined | null, maxLength: numb
 export function limitRichText(str: string | undefined | null, maxLength: number): string {
   if (!str) return '';
   const limitedStr = str.substring(0, maxLength); 
-  // 移除 <script>...</script>，保留其餘 HTML 排版
   return limitedStr.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 }
 

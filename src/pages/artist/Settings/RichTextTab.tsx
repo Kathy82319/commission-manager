@@ -14,18 +14,16 @@ const customQuillModules = {
 };
 
 interface Props {
-  // 可能是固定欄位名稱，也可能是自定義區塊
   field?: string; 
   isCustom?: boolean;
   customIndex?: number;
   settings: ProfileSettings;
   setSettings: React.Dispatch<React.SetStateAction<ProfileSettings>>;
-  onSave?: () => Promise<void>; // 接收來自父組件的儲存函式
+  onSave?: () => Promise<void>; 
 }
 
 export function RichTextTab({ field, isCustom, customIndex, settings, setSettings }: Props) {
   
-  // 決定目前編輯的內容值
   const getValue = () => {
     if (isCustom && customIndex !== undefined) {
       return settings.custom_sections[customIndex]?.content || '';
@@ -36,10 +34,8 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
     return '';
   };
 
-  // 處理內容變動
   const handleChange = (value: string) => {
     if (isCustom && customIndex !== undefined) {
-      // 複製一份新的自定義區塊陣列
       const newSections = [...settings.custom_sections];
       if (newSections[customIndex]) {
         newSections[customIndex] = { ...newSections[customIndex], content: value };

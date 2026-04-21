@@ -69,7 +69,7 @@ export default async function getCroppedImg(
     ctx.save();
     
     const fontSize = Math.floor(canvas.width / 12); 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // 半透明白色
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; 
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

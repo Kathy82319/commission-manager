@@ -7,7 +7,6 @@ interface Props {
   onToast: (msg: string, type: 'ok' | 'err') => void;
 }
 
-// 具名匯出 SubscriptionTab，確保 Settings.tsx 能正確引用
 export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';

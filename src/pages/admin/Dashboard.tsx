@@ -56,7 +56,6 @@ export function Dashboard() {
     }
   };
 
-  // --- 狀態中文化對照 ---
 const statusMap: any = {
   'quote_created': '📑 報價已發出 (待綁定)',
   'unpaid': '🔴 待支付 (已綁定)',
@@ -128,7 +127,6 @@ const statusMap: any = {
             {dataList.map((item) => (
               <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: updatingId === item.id ? '#F0F9FF' : 'transparent', transition: 'background-color 0.2s' }}>
                 {view === 'users' ? (
-                  // --- 用戶管理分頁 ---
                   <>
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 'bold', color: item.role === 'deleted' ? '#EF4444' : '#111827' }}>
@@ -182,7 +180,6 @@ const statusMap: any = {
                     </td>
                   </>
                 ) : (
-                  // --- 委託總覽分頁 ---
                   <>
                     <td style={tdStyle}>
                       <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}># {item.id}</div>

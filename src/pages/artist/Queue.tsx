@@ -22,7 +22,6 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
 
-// 🌟 修改 Dropdown 接收 onToggle 狀態
 function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [newVal, setNewVal] = useState('');
@@ -178,7 +177,6 @@ export function Queue() {
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                // 🌟 當選單開啟時套用 active-row 類別來提升 z-index
                 className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''}`}
               >
                 <td data-label="日期">

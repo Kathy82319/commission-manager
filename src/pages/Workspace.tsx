@@ -72,7 +72,7 @@ export function Workspace() {
                }
                return data.data;
            }
-           return prev; // 無變化時不觸發 re-render
+           return prev;
         });
       }
     } catch (error) {
@@ -96,7 +96,6 @@ export function Workspace() {
     return () => clearInterval(intervalId);
   }, [id, role]);
 
-  // 🌟【修復 Bug 3】等畫面載入完成後，確保延遲 0.15 秒讓文字 DOM 長好才滾動
   useEffect(() => {
     if (!loading && messages.length > 0) {
       const timer = setTimeout(() => {
@@ -153,7 +152,7 @@ export function Workspace() {
     <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9' }}>
       <div style={{ 
         width: '100%', 
-        maxWidth: '800px', // 電腦版稍微寬一點
+        maxWidth: '800px',
         display: 'flex', 
         flexDirection: 'column', 
         backgroundColor: '#FBFBF9', 
@@ -186,7 +185,7 @@ export function Workspace() {
                   <span style={{ color: '#C4BDB5' }}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <div style={{ 
-                  maxWidth: '85%', // 手機版建議加寬，避免長字串被擠壓
+                  maxWidth: '85%', 
                   padding: '10px 14px', 
                   fontSize: '15px',
                   backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',

@@ -96,7 +96,6 @@ export function Notebook() {
       setCommissions(data.data);
       
       if (isInitialLoad) {
-        // 嘗試找網址指定的 ID，若沒有指定，則在「電腦版」預設選取第一筆資料
         const target = initialSelectedId 
           ? data.data.find((c: Commission) => c.id === initialSelectedId)
           : (window.innerWidth >= 1024 && data.data.length > 0 ? data.data[0] : null);

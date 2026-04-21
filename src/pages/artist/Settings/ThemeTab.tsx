@@ -6,13 +6,11 @@ interface Props {
 }
 
 export function ThemeTab({ settings, setSettings }: Props) {
-  // 動態計算預覽區塊的背景，與前端 PublicProfile.tsx 邏輯保持一致 (單色 + 半透明黑)
   const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* 背景主色設定區塊 */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>自訂背景主色</label>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>

@@ -4,7 +4,6 @@ import 'react-quill-new/dist/quill.snow.css';
 import { ImageUploader } from '../../../components/ImageUploader';
 import type { QuotaInfo } from '../Settings/types';
 
-// Quill 模組設定
 const customQuillModules = {
   toolbar: [
     [{ 'header': [1, 2, 3, false] }], 
@@ -30,7 +29,7 @@ interface ShowcaseTabProps {
   onToggleGlobalSave: (hide: boolean) => void;
   onToast: (msg: string, type: 'ok' | 'err') => void;
   quotaInfo: QuotaInfo | null;
-  isReadOnly?: boolean; // 新增：用於判斷是否為免費版/降級狀態
+  isReadOnly?: boolean; 
 }
 
 export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly }: ShowcaseTabProps) {
@@ -46,14 +45,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 計算方案配額上限
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 10;
-    return 6; // 修改：免費版/降級後的上限調整為 6 (對應前台展示)
+    return 6; 
   }, [quotaInfo]);
 
-  // 2. 取得列表資料 (資安強化：防護型解析)
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
@@ -83,15 +80,13 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
-  // 3. 連動控制外層全域儲存按鈕
   useEffect(() => {
     onToggleGlobalSave(isFormOpen);
     return () => onToggleGlobalSave(false);
   }, [isFormOpen, onToggleGlobalSave]);
 
-  // 4. 處理圖片上傳
   const handleCoverUpload = async (resultBlobs: { preview: Blob }) => {
-    if (isReadOnly) return; // 資安攔截
+    if (isReadOnly) return; 
     setIsUploading(true);
     try {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
@@ -114,7 +109,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     }
   };
 
-  // 5. 標籤管理
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed) return;
@@ -128,7 +122,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     setEditingItem(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
-  // 6. 開啟表單邏輯
   const openNewForm = () => {
     if (isReadOnly) {
       onToast("免費版無法新增項目，請升級專業版以解除限制。", "err");
@@ -151,7 +144,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     setIsFormOpen(true);
   };
 
-  // 7. 儲存與刪除 (包含資安檢核)
   const handleSaveItem = async () => {
     if (isReadOnly) {
       onToast("目前為唯讀模式，無法儲存變更。", "err");
@@ -197,7 +189,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     }
   };
 
-  // --- UI 渲染 ---
   if (isFormOpen) {
     return (
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

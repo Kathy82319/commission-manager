@@ -40,12 +40,10 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate]);
 
-  // 切換路由時，自動關閉手機版抽屜選單
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // 避免在開啟選單時，底下的主畫面還能被使用者亂滑
   useEffect(() => {
     if (isMobileMenuOpen && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden';

@@ -5,13 +5,11 @@ import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
 import { SplashTab } from './Settings/SplashTab';
 import { CustomSectionsTab } from './Settings/CustomSectionsTab';
-// 確保 SubscriptionTab 是具名匯出 (Named Export)
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
-// Toast 全域提示組件
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -44,7 +42,6 @@ export function Settings() {
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   
-  // UI 控制狀態
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
@@ -63,7 +60,6 @@ export function Settings() {
     splash_text: '',
     layout_type: 'blog', 
     background_color: '#F4F0EB', 
-    // 修正：補足漸層相關初始欄位，確保 ThemeTab 能正確讀取與更新
     gradient_direction: 'to bottom right',
     theme_mode: 'dark'
   });
@@ -75,7 +71,6 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
-  // 1. 定義分類結構 (更名：徵稿/販售區)
   const categories: MenuCategory[] = [
     {
       title: '個人資訊',
@@ -141,7 +136,6 @@ export function Settings() {
           const parsed = typeof data.data.profile_settings === 'string' 
             ? JSON.parse(data.data.profile_settings) 
             : data.data.profile_settings;
-          // 使用 spread operator 合併，確保漸層資料被正確載入
           setSettings(prev => ({ ...prev, ...parsed }));
         }
       }
@@ -163,7 +157,6 @@ export function Settings() {
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
           bio: formData.bio,
-          // 這裡會將包含漸層設定的整個 settings 物件序列化儲存
           profile_settings: JSON.stringify(settings)
         })
       });
@@ -194,7 +187,6 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 修改點：將 'showcase' 加入白名單，讓免費版也能點擊進入檢視
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 

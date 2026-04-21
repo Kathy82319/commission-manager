@@ -30,7 +30,6 @@ interface ProfileSettings {
   splash_duration?: number;
   splash_text?: string;
   background_color?: string;
-  // 漸層相關欄位
   gradient_enabled?: boolean;
   gradient_type?: string; 
   gradient_direction?: string;
@@ -77,7 +76,6 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 1. 計算背景樣式 (處理單色與漸層)
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#f4f0eb67';
     if (settings?.gradient_enabled) {
@@ -87,7 +85,6 @@ export function PublicProfile() {
     return { background: baseColor };
   }, [settings]);
 
-  // 新增：計算開場動畫的專屬背景 (優先套用背景圖，沒圖則回退到 backgroundStyle)
   const splashBgStyle = useMemo(() => {
     if (settings?.splash_image) {
       return { 
@@ -100,7 +97,6 @@ export function PublicProfile() {
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
 
-  // 設定主題顏色
   useEffect(() => {
     if (settings) {
       setTheme({
@@ -110,7 +106,6 @@ export function PublicProfile() {
     }
   }, [settings, setTheme]);
 
-  // 2. 抓取資料與資料清洗
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -163,7 +158,6 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 3. Splash Screen 倒數邏輯
   useEffect(() => {
     if (!loading && settings?.splash_enabled !== false && showSplash) {
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
@@ -179,13 +173,11 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 核心邏輯：計算降級展示後的項目
   const displayShowcaseItems = useMemo(() => {
     const isFree = artist?.plan_type === 'free';
     return isFree ? showcaseItems.slice(0, 6) : showcaseItems;
   }, [showcaseItems, artist?.plan_type]);
 
-  // 4. 標籤清單彙整
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     displayShowcaseItems.forEach(item => {
@@ -210,7 +202,6 @@ export function PublicProfile() {
     });
   };
 
-  // 5. 過濾後的展示項目
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return displayShowcaseItems;
     return displayShowcaseItems.filter(item => 
@@ -266,7 +257,6 @@ export function PublicProfile() {
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
       style={backgroundStyle} 
     >
-      {/* 1. Splash Screen (套用 splashBgStyle，支援背景圖) */}
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
           <div className="splash-box">
@@ -319,7 +309,6 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        {/* Content Main */}
         <main className="profile-main-content">
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
@@ -397,7 +386,6 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* 3. Lightbox & Modals */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
