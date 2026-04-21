@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, ChevronRight, User, Palette, FileText, creditCard } from 'lucide-react';
-import './styles/ArtistSettings.css';
+import { Save, Plus, Trash2, User, Palette, FileText, CreditCard } from 'lucide-react';
+import '../../styles/ArtistSettings.css';
 
-// 定義資料型別
+// 定義型別，確保與 settings 屬性完全對齊
 interface CustomSection {
   id: string;
   title: string;
@@ -33,13 +33,11 @@ interface ProfileSettings {
   gradient_direction: string;
 }
 
-export function ArtistSettings() {
-  // 1. 中央狀態管理：所有分頁共享這一份 tempSettings
+export default function Settings() {
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [activeTab, setActiveTab] = useState('personal-info');
   const [isSaving, setIsSaving] = useState(false);
 
-  // 初始化讀取資料
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -52,27 +50,24 @@ export function ArtistSettings() {
           setSettings(data.data);
         }
       } catch (error) {
-        console.error("無法讀取設定", error);
+        console.error("讀取設定失敗", error);
       }
     };
     fetchSettings();
   }, []);
 
-  // 統一修改 Function
   const updateValue = (key: keyof ProfileSettings, value: any) => {
     setSettings(prev => prev ? { ...prev, [key]: value } : null);
   };
 
-  // 處理自定義區塊的新增
   const addCustomSection = () => {
     const newId = `custom_${Date.now()}`;
-    const newSection: CustomSection = { id: newId, title: '新自定義區塊', content: '' };
+    const newSection: CustomSection = { id: newId, title: '新子分類', content: '' };
     const updatedSections = [...(settings?.custom_sections || []), newSection];
     updateValue('custom_sections', updatedSections);
-    setActiveTab(newId); // 新增後直接跳轉至該子分頁
+    setActiveTab(newId);
   };
 
-  // 儲存所有變更
   const handleSaveAll = async () => {
     if (!settings) return;
     setIsSaving(true);
@@ -87,11 +82,9 @@ export function ArtistSettings() {
         body: JSON.stringify(settings)
       });
       const data = await res.json();
-      if (data.success) {
-        alert('所有變更已儲存成功');
-      }
+      if (data.success) alert('儲存成功');
     } catch (error) {
-      alert('儲存失敗，請檢查網路連線');
+      alert('儲48存失敗');
     } finally {
       setIsSaving(false);
     }
@@ -101,110 +94,98 @@ export function ArtistSettings() {
 
   return (
     <div className="settings-layout">
-      {/* 左側導航欄 */}
+      {/* 側邊導覽 */}
       <aside className="settings-sidebar">
         <div className="sidebar-header">
-          <h2>後台設定</h2>
+          <h2>設定管理</h2>
         </div>
         
         <nav className="sidebar-menu">
-          {/* 分類一 */}
           <div className="menu-group">
-            <div className="group-label"><User size={16}/> 個人資訊</div>
+            <div className="group-label"><User size={14}/> 個人資訊</div>
             <button className={`menu-item ${activeTab === 'personal-info' ? 'active' : ''}`} onClick={() => setActiveTab('personal-info')}>基本資料</button>
             <button className={`menu-item ${activeTab === 'social-links' ? 'active' : ''}`} onClick={() => setActiveTab('social-links')}>社群連結</button>
           </div>
 
-          {/* 分類二 */}
           <div className="menu-group">
-            <div className="group-label"><Palette size={16}/> 頁面外觀</div>
-            <button className={`menu-item ${activeTab === 'appearance-bg' ? 'active' : ''}`} onClick={() => setActiveTab('appearance-bg')}>背景底色與漸層</button>
+            <div className="group-label"><Palette size={14}/> 頁面外觀</div>
+            <button className={`menu-item ${activeTab === 'appearance-bg' ? 'active' : ''}`} onClick={() => setActiveTab('appearance-bg')}>背景設定</button>
             <button className={`menu-item ${activeTab === 'appearance-splash' ? 'active' : ''}`} onClick={() => setActiveTab('appearance-splash')}>開場動畫</button>
           </div>
 
-          {/* 分類三 */}
           <div className="menu-group">
-            <div className="group-label"><FileText size={16}/> 內容管理</div>
-            <button className={`menu-item ${activeTab === 'portfolio' ? 'active' : ''}`} onClick={() => setActiveTab('portfolio')}>作品集管理</button>
+            <div className="group-label"><FileText size={14}/> 內容管理</div>
+            <button className={`menu-item ${activeTab === 'portfolio' ? 'active' : ''}`} onClick={() => setActiveTab('portfolio')}>作品集</button>
             <button className={`menu-item ${activeTab === 'detailed_intro' ? 'active' : ''}`} onClick={() => setActiveTab('detailed_intro')}>詳細介紹</button>
             <button className={`menu-item ${activeTab === 'process' ? 'active' : ''}`} onClick={() => setActiveTab('process')}>委託流程</button>
             <button className={`menu-item ${activeTab === 'payment' ? 'active' : ''}`} onClick={() => setActiveTab('payment')}>付款方式</button>
-            <button className={`menu-item ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveTab('rules')}>委託規範範本</button>
+            <button className={`menu-item ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveTab('rules')}>委託規範</button>
             
-            {/* 動態生成的自定義子分類 */}
             {settings.custom_sections.map(section => (
               <button 
                 key={section.id} 
-                className={`menu-item custom-tab ${activeTab === section.id ? 'active' : ''}`} 
+                className={`menu-item custom-sub-item ${activeTab === section.id ? 'active' : ''}`} 
                 onClick={() => setActiveTab(section.id)}
               >
                 {section.title}
               </button>
             ))}
             
-            <button className="add-section-btn" onClick={addCustomSection}>
-              <Plus size={14}/> 新增子分類
+            <button className="add-sub-btn" onClick={addCustomSection}>
+              <Plus size={12}/> 新增自定義項目
             </button>
           </div>
 
-          {/* 分類四 */}
           <div className="menu-group">
-            <div className="group-label"><creditCard size={16}/> 訂閱方案</div>
-            <button className={`menu-item ${activeTab === 'subscription' ? 'active' : ''}`} onClick={() => setActiveTab('subscription')}>目前方案</button>
+            <div className="group-label"><CreditCard size={14}/> 帳戶</div>
+            <button className={`menu-item ${activeTab === 'subscription' ? 'active' : ''}`} onClick={() => setActiveTab('subscription')}>訂閱方案</button>
           </div>
         </nav>
       </aside>
 
-      {/* 右側內容區 */}
+      {/* 編輯區 */}
       <main className="settings-main">
-        <div className="content-container">
+        <div className="settings-content-body">
           {activeTab === 'personal-info' && (
-            <div className="tab-pane">
+            <div className="edit-pane">
               <h3>基本資料</h3>
-              <div className="input-field">
+              <div className="field-row">
                 <label>藝師暱稱</label>
                 <input type="text" value={settings.display_name} onChange={(e) => updateValue('display_name', e.target.value)} />
               </div>
-              <div className="input-field">
+              <div className="field-row">
                 <label>個人簡介</label>
-                <textarea rows={6} value={settings.bio} onChange={(e) => updateValue('bio', e.target.value)} placeholder="支援換行，請直接輸入..." />
+                <textarea rows={6} value={settings.bio} onChange={(e) => updateValue('bio', e.target.value)} />
               </div>
             </div>
           )}
 
           {activeTab === 'appearance-bg' && (
-            <div className="tab-pane">
-              <h3>背景底色與漸層</h3>
-              <div className="input-field">
-                <label>主要背景顏色</label>
+            <div className="edit-pane">
+              <h3>背景設定</h3>
+              <div className="field-row">
+                <label>背景主色</label>
                 <input type="color" value={settings.background_color} onChange={(e) => updateValue('background_color', e.target.value)} />
-              </div>
-              <div className="input-field">
-                <label>漸層方向</label>
-                <select value={settings.gradient_direction} onChange={(e) => updateValue('gradient_direction', e.target.value)}>
-                  <option value="to bottom right">對角線 (左上到右下)</option>
-                  <option value="to right">由左至右</option>
-                  <option value="to bottom">由上至下</option>
-                </select>
               </div>
             </div>
           )}
 
-          {/* 自定義區塊的編輯頁面 */}
           {settings.custom_sections.map(section => activeTab === section.id && (
-            <div className="tab-pane" key={section.id}>
-              <div className="tab-header-flex">
+            <div className="edit-pane" key={section.id}>
+              <div className="pane-header">
                 <h3>編輯：{section.title}</h3>
-                <button className="delete-btn" onClick={() => {
-                  if(confirm('確定要刪除此分類嗎？')) {
+                <button className="text-danger-btn" onClick={() => {
+                  if (window.confirm('確定要刪除嗎？')) {
                     const filtered = settings.custom_sections.filter(s => s.id !== section.id);
                     updateValue('custom_sections', filtered);
-                    setActiveTab('portfolio');
+                    setActiveTab('personal-info');
                   }
-                }}>刪除分類</button>
+                }}>
+                  <Trash2 size={16}/> 刪除
+                </button>
               </div>
-              <div className="input-field">
-                <label>分類標題</label>
+              <div className="field-row">
+                <label>項目名稱</label>
                 <input 
                   type="text" 
                   value={section.title} 
@@ -214,7 +195,7 @@ export function ArtistSettings() {
                   }} 
                 />
               </div>
-              <div className="input-field">
+              <div className="field-row">
                 <label>內容</label>
                 <textarea 
                   rows={10} 
@@ -227,17 +208,14 @@ export function ArtistSettings() {
               </div>
             </div>
           ))}
-
-          {/* 其他 Tab 依此類推... */}
         </div>
 
-        {/* 底部全域儲存欄 */}
-        <div className="settings-footer">
-          <p className="footer-hint">所有分頁的改動將在儲存後一併生效</p>
-          <button className="save-all-btn" onClick={handleSaveAll} disabled={isSaving}>
+        <footer className="settings-action-bar">
+          <div className="info-text">變更會跨分頁保留，儲存後正式生效。</div>
+          <button className="save-all-trigger" onClick={handleSaveAll} disabled={isSaving}>
             <Save size={18}/> {isSaving ? '儲存中...' : '儲存所有變更'}
           </button>
-        </div>
+        </footer>
       </main>
     </div>
   );

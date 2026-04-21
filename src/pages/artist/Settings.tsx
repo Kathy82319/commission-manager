@@ -1,184 +1,227 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { ProfileSettings, QuotaInfo, FormDataState } from './Settings/types';
-import { BasicInfoTab } from './Settings/BasicInfoTab';
-import { PortfolioTab } from './Settings/PortfolioTab';
-import { RichTextTab } from './Settings/RichTextTab';
-import { SplashTab } from './Settings/SplashTab';
-import { CustomSectionsTab } from './Settings/CustomSectionsTab';
-import { SubscriptionTab } from './Settings/SubscriptionTab';
-import { ThemeTab } from './Settings/ThemeTab';
-import { ShowcaseTab } from './Settings/ShowcaseTab';
-import '../../styles/Settings.css'; 
+import { useState, useEffect } from 'react';
+import { Save, Plus, Trash2, User, Palette, FileText, CreditCard } from 'lucide-react';
+import '../../styles/ArtistSettings.css';
 
-export function Settings() {
-  const [activeTab, setActiveTab] = useState('profile_basic');
-  const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
-  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
-  const [settings, setSettings] = useState<ProfileSettings>({
-    portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
-    splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: '',
-    layout_type: 'blog', background_color: '#F4F0EB', theme_mode: 'dark'
-    
-  });
+// 1. 直接在這裡定義型別，解決 "沒有屬性" 或 "匯入錯誤" 的問題
+interface CustomSection {
+  id: string;
+  title: string;
+  content: string;
+}
 
+interface SocialLink {
+  platform: string;
+  url: string;
+}
+
+interface ProfileSettings {
+  display_name: string;   // 確保這裡有 display_name
+  bio: string;            // 確保這裡有 bio
+  avatar_url: string;
+  portfolio: string[];
+  detailed_intro: string;
+  process: string;
+  payment: string;
+  rules: string;
+  custom_sections: CustomSection[];
+  social_links: SocialLink[];
+  splash_enabled: boolean;
+  splash_text: string;
+  splash_duration: number;
+  background_color: string;
+  theme_mode: 'light' | 'dark';
+  gradient_direction: string;
+}
+
+export default function Settings() {
+  const [settings, setSettings] = useState<ProfileSettings | null>(null);
+  const [activeTab, setActiveTab] = useState('personal-info');
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
-
-  const fetchUserData = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setFormData({
-          display_name: data.data.display_name || '',
-          avatar_url: data.data.avatar_url || '',
-          bio: data.data.bio || '',
-        });
-        
-        setQuotaInfo({
-          plan_type: data.data.plan_type || 'free',
-          used_quota: data.data.used_quota || 0,
-          max_quota: data.data.max_quota || 3,
-          trial_start_at: data.data.trial_start_at,
-          trial_end_at: data.data.trial_end_at,
-          pro_expires_at: data.data.pro_expires_at,
-        });
-
-        if (data.data.profile_settings) {
-          try {
-            const parsed = JSON.parse(data.data.profile_settings);
-            setSettings(prev => ({ ...prev, ...parsed }));
-          } catch (e) {
-            console.error("解析 profile_settings 失敗");
-          }
-        }
-      }
-    } catch (error) {
-      console.error("讀取設定失敗", error);
-    }
-  }, [API_BASE]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment') === 'success') {
-      alert("🎉 恭喜！您已成功升級為專業版。");
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    fetchUserData();
-  }, [API_BASE, fetchUserData]);
+    const fetchAllSettings = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/artist/settings`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSettings(data.data);
+        }
+      } catch (error) {
+        console.error("無法讀取設定資料", error);
+      }
+    };
+    fetchAllSettings();
+  }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true); setMessage('');
+  const updateValue = (key: keyof ProfileSettings, value: any) => {
+    setSettings(prev => prev ? { ...prev, [key]: value } : null);
+  };
+
+  const addCustomSection = () => {
+    const newId = `custom_${Date.now()}`;
+    const newSection: CustomSection = { id: newId, title: '新自定義項目', content: '' };
+    const updatedSections = [...(settings?.custom_sections || []), newSection];
+    updateValue('custom_sections', updatedSections);
+    setActiveTab(newId);
+  };
+
+  const handleSaveAll = async () => {
+    if (!settings) return;
+    setIsSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          display_name: formData.display_name,
-          avatar_url: formData.avatar_url,
-          bio: formData.bio,
-          profile_settings: JSON.stringify(settings)
-        })
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${API_BASE}/api/artist/settings`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify(settings)
       });
       const data = await res.json();
-      if (data.success) setMessage('個人頁面已成功更新');
-      else setMessage('儲存失敗：' + data.error);
+      if (data.success) alert('所有分頁變更已儲存成功！');
     } catch (error) {
-      setMessage('系統發生錯誤');
+      alert('儲存失敗');
     } finally {
-      setIsSaving(false); setTimeout(() => setMessage(''), 3000);
+      setIsSaving(false);
     }
   };
 
-  const toggleVisibility = (sectionId: string) => {
-    setSettings(prev => {
-      const isHidden = prev.hidden_sections.includes(sectionId);
-      return { ...prev, hidden_sections: isHidden ? prev.hidden_sections.filter(id => id !== sectionId) : [...prev.hidden_sections, sectionId] };
-    });
-  };
-
-  const menuItems = [
-    { id: 'profile_basic', label: '頭像與簡介' },
-    { id: 'theme', label: '外觀與版型設定' }, // 🌟 新增外觀設定
-    { id: 'showcase', label: '徵委託項目管理' }, // 🌟 新增徵委託管理
-    { id: 'portfolio', label: '舊版作品展示區' },
-    { id: 'detailed_intro', label: '詳細介紹' },
-    { id: 'splash', label: '開場動畫設定' },
-    { id: 'process', label: '委託流程' },
-    { id: 'payment', label: '付款方式' },
-    { id: 'rules', label: '協議書內容' },
-    { id: 'custom', label: '其他 (自訂標題)' },
-    { id: 'subscription', label: '方案與訂閱' }, 
-  ];
-
-  const isFreePlan = quotaInfo?.plan_type === 'free';
-  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
-  const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
+  if (!settings) return <div className="loading">載入中...</div>;
 
   return (
-    <div className="settings-page">
-      <div className="settings-layout">
-        <aside className="settings-sidebar">
-          <div className="sidebar-title">個人頁編輯</div>
-          {menuItems.map(item => {
-            const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
-            return (
-              <button key={item.id} className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} onClick={() => setActiveTab(item.id)}>
-                {item.label} {isLocked && '🔒'}
-              </button>
-            );
-          })}
-        </aside>
-
-        <div className="settings-content-area">
-          <div className="settings-header">
-            <h3>{menuItems.find(m=>m.id===activeTab)?.label}</h3>
-            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules', 'custom'].includes(activeTab) && !isCurrentTabLocked && (
-              <button 
-                onClick={()=>toggleVisibility(activeTab)} 
-                style={{ 
-                  fontSize: '12px', padding: '6px 12px', borderRadius: '20px', border: 'none', 
-                  backgroundColor: settings.hidden_sections.includes(activeTab) ? '#F5EBEB' : '#E8F3EB', 
-                  color: settings.hidden_sections.includes(activeTab) ? '#A05C5C' : '#4E7A5A', 
-                  cursor: 'pointer', fontWeight: 'bold' 
-                }}
-              >
-                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
-              </button>
-            )}
+    <div className="settings-layout">
+      <aside className="settings-sidebar">
+        <div className="sidebar-header">
+          <h2>繪師後台設定</h2>
+        </div>
+        
+        <nav className="sidebar-menu">
+          <div className="menu-group">
+            <div className="group-label"><User size={14}/> 個人資訊</div>
+            <button className={`menu-item ${activeTab === 'personal-info' ? 'active' : ''}`} onClick={() => setActiveTab('personal-info')}>基本標籤與頭像</button>
+            <button className={`menu-item ${activeTab === 'social-links' ? 'active' : ''}`} onClick={() => setActiveTab('social-links')}>社群連結管理</button>
           </div>
 
-          {isCurrentTabLocked && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)', borderRadius: '16px' }}>
-              <div style={{ textAlign: 'center', padding: '32px', background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
-                <h4 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '18px' }}>此功能僅限專業版</h4>
-                <button onClick={() => setActiveTab('subscription')} style={{ padding: '10px 20px', background: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>查看方案</button>
+          <div className="menu-group">
+            <div className="group-label"><Palette size={14}/> 頁面外觀</div>
+            <button className={`menu-item ${activeTab === 'appearance-bg' ? 'active' : ''}`} onClick={() => setActiveTab('appearance-bg')}>背景底色與漸層</button>
+            <button className={`menu-item ${activeTab === 'appearance-splash' ? 'active' : ''}`} onClick={() => setActiveTab('appearance-splash')}>開場動畫設定</button>
+          </div>
+
+          <div className="menu-group">
+            <div className="group-label"><FileText size={14}/> 內容管理</div>
+            <button className={`menu-item ${activeTab === 'portfolio' ? 'active' : ''}`} onClick={() => setActiveTab('portfolio')}>作品集管理</button>
+            <button className={`menu-item ${activeTab === 'detailed_intro' ? 'active' : ''}`} onClick={() => setActiveTab('detailed_intro')}>詳細介紹</button>
+            <button className={`menu-item ${activeTab === 'process' ? 'active' : ''}`} onClick={() => setActiveTab('process')}>委託流程</button>
+            <button className={`menu-item ${activeTab === 'payment' ? 'active' : ''}`} onClick={() => setActiveTab('payment')}>付款方式</button>
+            <button className={`menu-item ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveTab('rules')}>委託規範範本</button>
+            
+            {settings.custom_sections.map(section => (
+              <button 
+                key={section.id} 
+                className={`menu-item custom-sub-item ${activeTab === section.id ? 'active' : ''}`} 
+                onClick={() => setActiveTab(section.id)}
+              >
+                {section.title}
+              </button>
+            ))}
+            
+            <button className="add-sub-btn" onClick={addCustomSection}>
+              <Plus size={12}/> 新增自定義項目
+            </button>
+          </div>
+
+          <div className="menu-group">
+            {/* 修正：這裡的大小寫已經改為 CreditCard */}
+            <div className="group-label"><CreditCard size={14}/> 帳戶與訂閱</div>
+            <button className={`menu-item ${activeTab === 'subscription' ? 'active' : ''}`} onClick={() => setActiveTab('subscription')}>我的訂閱方案</button>
+          </div>
+        </nav>
+      </aside>
+
+      <main className="settings-main">
+        <div className="settings-content-body">
+          {activeTab === 'personal-info' && (
+            <div className="edit-pane">
+              <h3>基本資料</h3>
+              <div className="field-row">
+                <label>藝師顯示名稱</label>
+                <input type="text" value={settings.display_name} onChange={(e) => updateValue('display_name', e.target.value)} />
+              </div>
+              <div className="field-row">
+                <label>個人簡介</label>
+                <textarea rows={6} value={settings.bio} onChange={(e) => updateValue('bio', e.target.value)} />
               </div>
             </div>
           )}
 
-          <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(4px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
-            {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'showcase' && <ShowcaseTab />}
-            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />}
-            {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'custom' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} />}
-          </div>
+          {activeTab === 'appearance-bg' && (
+            <div className="edit-pane">
+              <h3>背景底色與漸層</h3>
+              <div className="field-row">
+                <label>頁面背景主色</label>
+                <input type="color" value={settings.background_color} onChange={(e) => updateValue('background_color', e.target.value)} />
+              </div>
+              <div className="field-row">
+                <label>漸層方向</label>
+                <select value={settings.gradient_direction} onChange={(e) => updateValue('gradient_direction', e.target.value)}>
+                  <option value="to bottom right">對角線 (左上到右下)</option>
+                  <option value="to right">由左至右</option>
+                  <option value="to bottom">由上至下</option>
+                </select>
+              </div>
+            </div>
+          )}
 
-          <div className="save-action-bar">
-            {message && <span style={{ color: message.includes('失敗') || message.includes('錯誤') ? '#A05C5C' : '#4E7A5A', fontWeight: 'bold', fontSize: '14px' }}>{message}</span>}
-            <button onClick={handleSave} disabled={isSaving || activeTab === 'subscription' || activeTab === 'showcase'} style={{ padding: '12px 32px', background: activeTab === 'subscription' || activeTab === 'showcase' ? '#DED9D3' : '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: activeTab === 'subscription' || activeTab === 'showcase' ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, transition: 'opacity 0.2s', fontSize: '15px' }}>
-              {isSaving ? '儲存中...' : (activeTab === 'showcase' ? '展示項目會自動儲存' : '儲存變更')}
-            </button>
-          </div>
-
-          
+          {settings.custom_sections.map(section => activeTab === section.id && (
+            <div className="edit-pane" key={section.id}>
+              <div className="pane-header">
+                <h3>編輯自定義項目：{section.title}</h3>
+                <button className="text-danger-btn" onClick={() => {
+                  if(window.confirm('確定刪除此子分類？')) {
+                    const filtered = settings.custom_sections.filter(s => s.id !== section.id);
+                    updateValue('custom_sections', filtered);
+                    setActiveTab('personal-info');
+                  }
+                }}><Trash2 size={16}/> 刪除此項</button>
+              </div>
+              <div className="field-row">
+                <label>子分類名稱 (會顯示在側邊欄)</label>
+                <input 
+                  type="text" 
+                  value={section.title} 
+                  onChange={(e) => {
+                    const updated = settings.custom_sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s);
+                    updateValue('custom_sections', updated);
+                  }} 
+                />
+              </div>
+              <div className="field-row">
+                <label>內容詳情</label>
+                <textarea 
+                  rows={10} 
+                  value={section.content} 
+                  onChange={(e) => {
+                    const updated = settings.custom_sections.map(s => s.id === section.id ? { ...s, content: e.target.value } : s);
+                    updateValue('custom_sections', updated);
+                  }} 
+                />
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+
+        <footer className="settings-action-bar">
+          <div className="info-text">提示：您可以切換不同分頁修改，最後再統一儲存。</div>
+          <button className="save-all-trigger" onClick={handleSaveAll} disabled={isSaving}>
+            <Save size={18}/> {isSaving ? '儲存中...' : '儲存所有變更'}
+          </button>
+        </footer>
+      </main>
     </div>
   );
 }
