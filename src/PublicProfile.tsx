@@ -79,7 +79,7 @@ export function PublicProfile() {
 
   // 1. 計算背景樣式 (修正漸層消失問題)
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#F4F0EB';
+    const baseColor = settings?.background_color || '#f4f0eb67';
     
     // 如果啟用了漸層且設定了第二色
     if (settings?.gradient_enabled && settings?.secondary_color) {

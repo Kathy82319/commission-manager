@@ -1,5 +1,4 @@
 import type { ProfileSettings } from '../Settings/types';
-// src/pages/artist/Settings/ThemeTab.tsx
 
 interface Props {
   settings: ProfileSettings;
@@ -7,6 +6,11 @@ interface Props {
 }
 
 export function ThemeTab({ settings, setSettings }: Props) {
+  // 動態計算預覽區塊的背景，與前端 PublicProfile.tsx 邏輯保持一致
+  const previewBackground = (settings.gradient_enabled && settings.secondary_color)
+    ? `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, ${settings.secondary_color})`
+    : (settings.background_color || '#F4F0EB');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
@@ -30,20 +34,58 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      {/* 漸層方向設定區塊 - 新整合內容 */}
+      {/* 漸層設定區塊 (新增啟用開關與第二顏色) */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-        <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>漸層方向</label>
-        <select 
-          value={settings.gradient_direction || 'to bottom right'} 
-          onChange={(e) => setSettings({ ...settings, gradient_direction: e.target.value })}
-          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none' }}
-        >
-          <option value="to bottom right">對角線 (左上到右下)</option>
-          <option value="to right">由左至右</option>
-          <option value="to left">由右至左</option>
-          <option value="to bottom">由上至下</option>
-          <option value="to top">由下至上</option>
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '10px' }}>
+          <input 
+            type="checkbox" 
+            id="gradientToggle"
+            checked={settings.gradient_enabled || false}
+            onChange={(e) => setSettings({ ...settings, gradient_enabled: e.target.checked })}
+            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+          />
+          <label htmlFor="gradientToggle" style={{ fontWeight: 'bold', cursor: 'pointer' }}>啟用漸層背景</label>
+        </div>
+
+        {/* 只有啟用漸層時才顯示詳細設定 */}
+        {settings.gradient_enabled && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #DED9D3' }}>
+            
+            <div>
+              <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>漸層尾色 (第二色)</label>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <input 
+                  type="color" 
+                  value={settings.secondary_color || '#EAE6E1'} 
+                  onChange={e => setSettings({...settings, secondary_color: e.target.value})}
+                  style={{ width: '50px', height: '50px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                />
+                <input 
+                  className="form-input" 
+                  value={settings.secondary_color || '#EAE6E1'} 
+                  onChange={e => setSettings({...settings, secondary_color: e.target.value})}
+                  placeholder="#HEXCODE"
+                  style={{ width: '120px' }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>漸層方向</label>
+              <select 
+                value={settings.gradient_direction || 'to bottom right'} 
+                onChange={(e) => setSettings({ ...settings, gradient_direction: e.target.value })}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none' }}
+              >
+                <option value="to bottom right">對角線 (左上到右下)</option>
+                <option value="to right">由左至右</option>
+                <option value="to left">由右至左</option>
+                <option value="to bottom">由上至下</option>
+                <option value="to top">由下至上</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 介面文字對比模式區塊 */}
@@ -65,11 +107,11 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      {/* 漸層背景預覽區塊 - 已同步 gradient_direction */}
+      {/* 漸層背景預覽區塊 - 已套用真實邏輯 */}
       <div style={{ 
         padding: '40px 24px', 
         borderRadius: '12px', 
-        background: `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`, 
+        background: previewBackground, 
         color: settings.theme_mode === 'dark' ? '#FFF' : '#333', 
         border: '1px solid #EAE6E1', 
         textAlign: 'center', 
@@ -77,7 +119,7 @@ export function ThemeTab({ settings, setSettings }: Props) {
         fontSize: '18px',
         transition: 'all 0.3s ease'
       }}>
-        🎨 漸層背景預覽區塊
+        背景實際預覽區塊
       </div>
     </div>
   );

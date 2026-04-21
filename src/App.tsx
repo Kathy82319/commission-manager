@@ -29,7 +29,7 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
 
 export function App() {
-  const MY_ARTIST_ID = "@User_84448";
+  const MY_ARTIST_ID = "User_84448";
   
   return (
     <BrowserRouter>
