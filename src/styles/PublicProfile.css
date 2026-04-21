@@ -9,7 +9,6 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  /* 漸層由 TSX style 屬性傳入 var(--artist-main-gradient) */
   transition: background 0.5s ease;
 }
 
@@ -21,7 +20,7 @@
 }
 
 /* ==========================================================================
-   2. 側邊欄樣式 (Sidebar) - 調整對齊與間距
+   2. 側邊欄樣式 (Sidebar)
    ========================================================================== */
 
 .profile-sidebar {
@@ -29,20 +28,19 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  position: sticky; /* 改為 sticky 讓側邊欄固定，瀏覽內容時更方便 */
+  position: sticky; 
   top: 0;
   height: 100vh;
   box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
-  /* 背景由 TSX 傳入 var(--artist-sidebar-gradient) */
 }
 
 .sidebar-top {
-  padding: 40px 30px 10px 30px; /* 增加側邊內縮，優化靠左視覺 */
+  padding: 40px 30px 10px 30px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 修正：內容全部靠左 */
-  text-align: left; /* 修正：文字靠左 */
+  align-items: flex-start; 
+  text-align: left; 
 }
 
 .profile-avatar {
@@ -51,7 +49,7 @@
   border-radius: 24px;
   object-fit: cover;
   box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-  margin-bottom: 8px; /* 修正：縮短與暱稱的距離（原 20px 縮減一半以上） */
+  margin-bottom: 8px; 
   border: 4px solid rgba(255,255,255,0.1);
 }
 
@@ -63,13 +61,13 @@
 .profile-name {
   font-size: 24px;
   font-weight: 900;
-  margin-bottom: 4px; /* 縮短與社群連結距離 */
+  margin-bottom: 4px; 
   letter-spacing: -0.5px;
 }
 
 .social-links {
   display: flex;
-  justify-content: flex-start; /* 修正：社群圖示靠左 */
+  justify-content: flex-start; 
   gap: 10px;
   margin-bottom: 15px;
 }
@@ -96,15 +94,14 @@
 }
 
 .bio-section {
-  margin-bottom: 20px; /* 往上移 */
+  margin-bottom: 20px;
 }
 
 .profile-bio {
   font-size: 14px;
   line-height: 1.6;
-  text-align: left; /* 修正：靠左 */
+  text-align: left; 
   opacity: 0.9;
-  /* 修正：支援斷句與換行 */
   white-space: pre-wrap; 
   word-break: break-word;
 }
@@ -112,12 +109,12 @@
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px; /* 修正：分頁之間的間隔縮小（原 8px） */
+  gap: 4px; 
 }
 
 .nav-item {
   text-align: left;
-  padding: 10px 16px; /* 稍微縮小內縮讓視覺更緊湊 */
+  padding: 10px 16px; 
   background: transparent;
   border: none;
   border-radius: 10px;
@@ -131,14 +128,14 @@
 
 .nav-item:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.473);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .nav-item.active {
   background: rgba(0, 0, 0, 0.15); 
-  opacity: 1; /* 強制不透明 */
-  color: inherit; /* 確保文字使用側邊欄設定的對比色 */
-  font-weight: 900; /* 加粗文字提升辨識度 */
+  opacity: 1; 
+  color: inherit; 
+  font-weight: 900; 
 }
 
 /* ==========================================================================
@@ -158,7 +155,7 @@
 
 .tab-inner-wrapper {
   width: 100%;
-  flex: 1; /* 關鍵：接通 Flex 鏈條，確保 Footer 置底 */
+  flex: 1; 
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -176,7 +173,7 @@
 .profile-internal-footer {
   width: 100%;
   padding: 60px 0 30px 0;
-  margin-top: auto !important; /* 強制推到底部 */
+  margin-top: auto !important; 
   text-align: center;
 }
 
@@ -189,7 +186,7 @@
 }
 
 /* ==========================================================================
-   4. 徵委託與瀑布流 (右下角浮動資訊)
+   4. 徵委託與瀑布流
    ========================================================================== */
 
 .masonry-grid {
@@ -214,9 +211,7 @@
   border: 1px solid rgba(0,0,0,0.05);
 }
 
-.masonry-item:hover {
-  transform: translateY(-8px);
-}
+.masonry-item:hover { transform: translateY(-8px); }
 
 .masonry-item img {
   width: 100%;
@@ -229,16 +224,17 @@
   bottom: 12px;
   right: 12px;
   max-width: 85%;
-  padding: 14px 20px; /* 稍微加大內距 */
+  padding: 14px 20px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 24px; /* 增加圓潤感 */
+  border-radius: 24px; 
   border: 1px solid rgba(255, 255, 255, 0.4);
   text-align: right;
   z-index: 2;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
+
 .item-title { font-size: 15px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
 .item-price { font-size: 14px; font-weight: 900; color: #A67B3E; }
 .item-tags { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
@@ -260,20 +256,26 @@
 .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%; }
 .portfolio-item {
   cursor: pointer !important;
-  pointer-events: auto !important; /* 防止被層級遮擋點擊事件 */
+  pointer-events: auto !important; 
   z-index: 5;
-   aspect-ratio: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: transform 0.4s ease; }
+  aspect-ratio: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: transform 0.4s ease; 
+}
 .portfolio-item:hover { transform: scale(1.04); }
 .portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ==========================================================================
-   6. 徵委託詳情彈窗 (設計升級：不再白成一片)
+   6. 徵委託詳情彈窗 (設計升級)
    ========================================================================== */
 
 .showcase-modal-overlay {
   background: rgba(0, 0, 0, 0.85) !important;
   backdrop-filter: blur(10px);
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000;
+  position: fixed !important; 
+  inset: 0 !important; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 90000 !important;
 }
 
 .showcase-content-box {
@@ -290,26 +292,23 @@
 .showcase-cover {
   flex: 1.3;
   background: #000;
-  border-right: 1px solid #eee; /* 增加左圖片、右文字的分割線 */
+  border-right: 1px solid #eee; 
 }
 
 .showcase-cover img { width: 100%; height: 100%; object-fit: contain; }
 
-/* 1. 右側總容器：增加高級感背景色 */
 .showcase-details {
   flex: 1;
   padding: 50px;
   background: #fdfdfd;
   display: flex;
   flex-direction: column;
-  /* 讓子元素之間有統一的間隔 */
   gap: 24px; 
 }
 
-/* 2. 標題與價格區域：增加底部裝飾線 */
 .showcase-header {
   padding-bottom: 24px;
-  border-bottom: 1.5px dashed #ddd; /* 使用虛線增加設計感 */
+  border-bottom: 1.5px dashed #ddd; 
 }
 
 .showcase-details h2 {
@@ -318,11 +317,10 @@
   margin-bottom: 12px;
 }
 
-/* 3. 價格標籤：改為精緻的 Badge 樣式 */
 .modal-price {
   font-size: 20px;
   font-weight: 900;
-  color: #A67B3E; /* 使用金色系增加質感 */
+  color: #A67B3E; 
   background: #ffffff;
   padding: 10px 20px;
   border-radius: 12px;
@@ -337,65 +335,87 @@
   color: #888;
   background: #f0f0f0;
   padding: 6px 14px;
-  border-radius: 50px; /* 膠囊感 */
+  border-radius: 50px; 
   transition: all 0.2s;
 }
 
-/* 標籤區 */
 .modal-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   padding-bottom: 24px;
-  border-bottom: 1.5px dashed #eee; /* 第二道細虛線 */
+  border-bottom: 1.5px dashed #eee; 
 }
 
-/* 5. 詳細內容區塊：實現你要求的「圓潤外框」 */
 .description-scroll-area {
   flex: 1;
-  background: #ffffff; /* 純白背景讓文字好閱讀 */
-  border-radius: 20px; /* 圓潤外框 */
-  border: 1px solid #eeeeee; /* 淺色外框 */
+  background: #ffffff; 
+  border-radius: 20px; 
+  border: 1px solid #eeeeee; 
   padding: 24px;
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); /* 內陰影增加深度 */
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); 
   overflow-y: auto;
 }
 
-/* 圓潤的描述外框（如果你仍需要的話） */
+/* 修正點：取消繼承自 .rich-text-content 的兩層框感 */
 .rich-text-content.description {
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
   font-size: 15px;
   line-height: 1.8;
   color: #444;
 }
 
 /* ==========================================================================
-   7. 燈箱按鈕與響應式
+   7. 燈箱元件 (Lightbox) - 修正放大後跑到視窗下方的問題
    ========================================================================== */
+
+.lightbox-overlay {
+  position: fixed !important; 
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999 !important; 
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 100000;
+}
+
+.lightbox-content img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  box-shadow: 0 0 50px rgba(0,0,0,0.5);
+}
 
 .lightbox-close {
   position: absolute; top: 30px; right: 30px; background: rgba(255, 255, 255, 0.15);
   border: none; color: #FFF; width: 56px; height: 56px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
-  z-index: 10001;
+  z-index: 100001;
 }
 
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
 
-@media (max-width: 1100px) {
-  .profile-layout-root { flex-direction: column; }
-  .profile-sidebar { width: 100%; height: auto; position: relative; }
-  .sidebar-top { align-items: center; text-align: center; } /* 手機版維持居中較美觀 */
-  .social-links { justify-content: center; }
-  .profile-bio { text-align: center; }
-  .showcase-content-box { flex-direction: column; height: 95vh; }
-  .showcase-cover { height: 40vh; flex: none; }
-  .showcase-details { padding: 30px; }
-}
+/* ==========================================================================
+   8. 標籤與響應式
+   ========================================================================== */
 
-/* 修正徵委託頁面上方的標籤按鈕 (Filter Bar) */
 .tag-filter-bar {
   display: flex;
   gap: 10px;
@@ -406,7 +426,7 @@
 
 .tag-btn {
   padding: 10px 24px;
-  border-radius: 50px; /* 圓潤膠囊形狀 */
+  border-radius: 50px; 
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ddd;
   font-size: 14px;
@@ -417,16 +437,19 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 }
 
-.tag-btn:hover {
-  background: #fff;
-  border-color: #bbb;
-  transform: translateY(-2px);
-}
-
-/* 點選狀態：深色背景 */
 .tag-btn.active {
   background: #1a1a1a;
   color: #ffffff;
   border-color: #1a1a1a;
-  transform: scale(1.05);
+}
+
+@media (max-width: 1100px) {
+  .profile-layout-root { flex-direction: column; }
+  .profile-sidebar { width: 100%; height: auto; position: relative; }
+  .sidebar-top { align-items: center; text-align: center; } 
+  .social-links { justify-content: center; }
+  .profile-bio { text-align: center; }
+  .showcase-content-box { flex-direction: column; height: 95vh; }
+  .showcase-cover { height: 40vh; flex: none; }
+  .showcase-details { padding: 30px; }
 }

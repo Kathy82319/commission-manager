@@ -5,7 +5,6 @@ import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/re
 import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
 
-// 定義回傳給 Layout 的 Context 型別
 interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
@@ -208,9 +207,9 @@ export function PublicProfile() {
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{ backgroundColor: bgColor, minHeight: '100vh' }}
+      style={{ backgroundColor: bgColor }}
     >
-      
+      {/* 1. Splash Screen */}
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={{ backgroundColor: bgColor }}>
           <div className="splash-box">
@@ -219,17 +218,19 @@ export function PublicProfile() {
         </div>
       )}
 
+      {/* 2. Main Layout Area */}
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
+        {/* Sidebar */}
         <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
-          <div className="sidebar-top" style={{ paddingBottom: '10px' }}>
-            <div className="avatar-section" style={{ marginBottom: '10px' }}>
+          <div className="sidebar-top">
+            <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
             </div>
             
-            <div className="name-social-section" style={{ textAlign: 'left', width: '100%', paddingLeft: '20px' }}>
-              <h1 className="profile-name" style={{ marginBottom: '4px', textAlign: 'left' }}>{artist.display_name}</h1>
-              <div className="social-links" style={{ justifyContent: 'flex-start', gap: '8px' }}>
+            <div className="name-social-section">
+              <h1 className="profile-name">{artist.display_name}</h1>
+              <div className="social-links">
                 {settings?.social_links?.map((link, idx) => (
                   <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
                     {getSocialIcon(link.platform)}
@@ -239,21 +240,20 @@ export function PublicProfile() {
             </div>
           </div>
 
-          <div className="sidebar-bottom" style={{ paddingTop: '0' }}>
-            <div className="bio-section" style={{ marginTop: '0', marginBottom: '20px' }}>
-              {/* 加入 whiteSpace: 'pre-wrap' 確保 Enter 換行生效 */}
-              <p className="profile-bio" style={{ color: textColor, opacity: 0.8, textAlign: 'left', paddingLeft: '20px', whiteSpace: 'pre-wrap' }}>
+          <div className="sidebar-bottom">
+            <div className="bio-section">
+              <p className="profile-bio" style={{ color: textColor }}>
                 {artist.bio || '這名繪師還沒有寫下簡介。'}
               </p>
             </div>
 
-            <nav className="sidebar-nav" style={{ gap: '4px', paddingLeft: '10px' }}>
+            <nav className="sidebar-nav">
               {availableTabs.map((tab: any) => (
                 <button 
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)} 
                   className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
-                  style={{ color: textColor, textAlign: 'left', width: '100%' }}
+                  style={{ color: textColor }}
                 >
                   {tab.label}
                 </button>
@@ -262,7 +262,8 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        <main className="profile-main-content" style={{ backgroundColor: 'transparent' }}>
+        {/* Content Main */}
+        <main className="profile-main-content">
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
@@ -302,16 +303,8 @@ export function PublicProfile() {
               {currentTab === 'portfolio' && (
                 <div className="portfolio-grid">
                   {settings?.portfolio.map((img, idx) => (
-                    <div 
-                      key={idx} 
-                      className="portfolio-item" 
-                      onClick={() => {
-                        console.log("點擊了第", idx, "張作品");
-                        setSelectedImgIndex(idx);
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <img src={img} alt="作品" loading="lazy" style={{ pointerEvents: 'none' }} />
+                    <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
+                      <img src={img} alt="作品" loading="lazy" />
                     </div>
                   ))}
                 </div>
@@ -330,7 +323,7 @@ export function PublicProfile() {
               )}
             </div>
 
-            <footer className="profile-internal-footer" style={{ marginTop: 'auto' }}>
+            <footer className="profile-internal-footer">
               <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
                 <Link to="/terms">服務條款</Link>
                 <span>|</span>
@@ -345,23 +338,24 @@ export function PublicProfile() {
         </main>
       </div>
 
+      {/* 3. Lightbox & Modals (置於最後確保正確浮動層級) */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            <div className="showcase-cover" style={{ borderRight: '1px solid #eee' }}>
+            <div className="showcase-cover">
               <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
             </div>
-            <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="showcase-header" style={{ borderBottom: '1px dashed #ddd', paddingBottom: '20px' }}>
-                <h2 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '10px' }}>{selectedShowcase.title}</h2>
-                <div className="modal-price" style={{ fontSize: '22px', color: '#A67B3E', fontWeight: '900' }}>${selectedShowcase.price_info}</div>
+            <div className="showcase-details">
+              <div className="showcase-header">
+                <h2>{selectedShowcase.title}</h2>
+                <div className="modal-price">${selectedShowcase.price_info}</div>
               </div>
-              <div className="modal-tags" style={{ borderBottom: '1px dashed #eee', paddingBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip" style={{ background: '#f0f0f0', padding: '6px 12px', borderRadius: '8px', fontSize: '13px' }}>#{tag}</span>)}
+              <div className="modal-tags">
+                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
               </div>
-              <div className="description-scroll-area" style={{ flex: 1, overflowY: 'auto' }}>
-                <div className="rich-text-content description" style={{ background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid #eee' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              <div className="description-scroll-area">
+                <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
               </div>
             </div>
           </div>
@@ -369,7 +363,7 @@ export function PublicProfile() {
       )}
 
       {selectedImgIndex !== null && settings?.portfolio && (
-        <div className="lightbox-overlay" style={{ zIndex: 20000 }} onClick={() => setSelectedImgIndex(null)}>
+        <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}><X size={32}/></button>
           <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
