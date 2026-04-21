@@ -42,6 +42,7 @@ export function ThemeTab({ settings, setSettings }: Props) {
           <option value="to right">由左至右</option>
           <option value="to left">由右至左</option>
           <option value="to bottom">由上至下</option>
+          <option value="to top">由下至上</option>
         </select>
       </div>
 

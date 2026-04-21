@@ -210,50 +210,79 @@
     gap: 40px;
   }
   
+/* --- 側邊欄與導覽 --- */
+.settings-sidebar {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  border-bottom: 2px solid #EAE6E1;
+  padding-bottom: 8px;
+}
+
+/* 分類標題 */
+.group-label {
+  display: block;
+  font-size: 15px;
+  color: #5D4A3E;
+  margin-bottom: 4px; /* 縮短與下方選項距離 */
+  font-weight: bold;
+  padding-left: 12px;
+}
+
+.sidebar-group {
+  margin-bottom: 12px; /* 縮短分類之間的距離 */
+}
+
+/* 分頁按鈕基礎樣式 */
+.tab-btn {
+  white-space: nowrap;
+  padding: 8px 16px; /* 縮小上下內距 */
+  border: none;
+  background-color: transparent;
+  color: #A0978D;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  border-left: 3px solid transparent; /* 預留左側線條位置 */
+}
+
+@media (min-width: 1024px) {
+  .settings-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+  }
+  
   .settings-sidebar {
     flex-direction: column;
     width: 240px;
     border-bottom: none;
-    border-right: none;
-    padding-bottom: 0;
-    overflow-x: visible;
     gap: 0;
   }
 
-  .sidebar-group {
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .group-label {
-    display: block;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #A0978D;
-    margin-bottom: 12px;
-    padding-left: 12px;
-    font-weight: bold;
-  }
-
-  .sidebar-title {
-    display: block; 
-    font-size: 22px;
-    color: #5D4A3E;
-    margin-bottom: 32px;
-    font-weight: bold;
-    padding-left: 12px;
-  }
-
+  /* 實作縮排效果 */
   .tab-btn {
-    text-align: left; 
-    padding: 12px 16px;
-    margin-bottom: 4px;
-    font-size: 15px;
-    border-radius: 10px;
+    padding-left: 32px; /* 增加左側縮排，達成項目符號感 */
+    margin-bottom: 2px; /* 選項之間的極短間距 */
   }
 
+  /* 電梯亮燈樣式 */
+  .tab-btn.active {
+    background-color: #F9F7F5;
+    color: #5D4A3E;
+    font-weight: bold;
+    border-left: 4px solid #5D4A3E; /* 左側亮燈直線 */
+    border-radius: 0 8px 8px 0; /* 右側圓角 */
+  }
+
+  .tab-btn:hover:not(.active) {
+    background-color: #FDFBFA;
+    border-left: 4px solid #DED9D3;
+  }
+}
   .tab-btn.active {
     background-color: #F4F0EB;
     color: #5D4A3E;

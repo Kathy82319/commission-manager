@@ -11,7 +11,6 @@ export interface ProfileSettings {
   splash_image: string;
   splash_duration: number;
   splash_text: string;
-  // 🌟 新增：外觀與版型設定
   layout_type?: 'blog' | 'gallery';
   background_color?: string;
   theme_mode?: 'light' | 'dark';

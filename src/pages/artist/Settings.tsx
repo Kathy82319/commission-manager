@@ -53,39 +53,40 @@ export function Settings() {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   // 1. 定義靜態分類結構
+  // 1. 重新定義分類結構 (移除「分類一」字樣，標題加冒號)
   const categories: MenuCategory[] = [
     {
-      title: '分類一：個人資訊',
+      title: '個人資訊',
       items: [{ id: 'profile_basic', label: '頭像與簡介' }]
     },
     {
-      title: '分類二：頁面外觀',
+      title: '頁面外觀',
       items: [
         { id: 'theme', label: '背景與版型設定' },
         { id: 'splash', label: '開場動畫設定' }
       ]
     },
     {
-      title: '分類三：內容管理',
+      title: '內容管理',
       items: [
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '徵委託項目管理' },
         { id: 'process', label: '委託流程' },
         { id: 'payment', label: '付款方式' },
-        { id: 'rules', label: '協議書範本' }, // 已更名
+        { id: 'rules', label: '協議書範本' },
       ]
     },
     {
-      title: '分類四：訂閱方案',
+      title: '訂閱方案',
       items: [{ id: 'subscription', label: '方案查看與升級' }]
     }
   ];
 
-  // 2. 動態合併自定義區塊到選單中
+  // 2. 動態合併自定義區塊 (移除管理按鈕)
   const menuGroups = useMemo(() => {
     return categories.map(group => {
-      if (group.title.includes('分類三')) {
+      if (group.title.includes('內容管理')) {
         const dynamicItems: MenuItem[] = settings.custom_sections.map((section, index) => ({
           id: `custom_${index}`,
           label: section.title || `自定義區塊 ${index + 1}`,
@@ -93,13 +94,8 @@ export function Settings() {
           index: index
         }));
         
-        const manageItem: MenuItem = { 
-          id: 'custom_manage', 
-          label: '＋ 管理自定義區塊', 
-          isAction: true 
-        };
-        
-        return { ...group, items: [...group.items, ...dynamicItems, manageItem] };
+        // 這裡已經移除了 manageItem
+        return { ...group, items: [...group.items, ...dynamicItems] };
       }
       return group;
     });
@@ -198,7 +194,7 @@ export function Settings() {
                 return (
                   <button 
                     key={item.id} 
-                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isAction ? 'manage-btn' : ''}`} 
+                    className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
                     onClick={() => setActiveTab(item.id)}
                   >
                     {item.label} {isLocked && '🔒'}
