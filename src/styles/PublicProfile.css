@@ -135,10 +135,10 @@
 }
 
 .nav-item.active {
-  background: rgba(0, 0, 0, 0.12);
-  opacity: 1;
-  font-weight: 800;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.15); 
+  opacity: 1; /* 強制不透明 */
+  color: inherit; /* 確保文字使用側邊欄設定的對比色 */
+  font-weight: 900; /* 加粗文字提升辨識度 */
 }
 
 /* ==========================================================================
@@ -229,16 +229,16 @@
   bottom: 12px;
   right: 12px;
   max-width: 85%;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.75);
+  padding: 14px 20px; /* 稍微加大內距 */
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px; /* 增加圓潤感 */
+  border: 1px solid rgba(255, 255, 255, 0.4);
   text-align: right;
   z-index: 2;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
-
 .item-title { font-size: 15px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
 .item-price { font-size: 14px; font-weight: 900; color: #A67B3E; }
 .item-tags { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
@@ -296,7 +296,7 @@
   flex: 1;
   padding: 50px;
   overflow-y: auto;
-  background: #fdfdfd; /* 稍微與純白區隔 */
+  background: #ffe9c7; /* 稍微與純白區隔 */
   display: flex;
   flex-direction: column;
 }
@@ -357,4 +357,40 @@
   .showcase-content-box { flex-direction: column; height: 95vh; }
   .showcase-cover { height: 40vh; flex: none; }
   .showcase-details { padding: 30px; }
+}
+
+/* 修正徵委託頁面上方的標籤按鈕 (Filter Bar) */
+.tag-filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tag-btn {
+  padding: 10px 24px;
+  border-radius: 50px; /* 圓潤膠囊形狀 */
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.tag-btn:hover {
+  background: #fff;
+  border-color: #bbb;
+  transform: translateY(-2px);
+}
+
+/* 點選狀態：深色背景 */
+.tag-btn.active {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+  transform: scale(1.05);
 }
