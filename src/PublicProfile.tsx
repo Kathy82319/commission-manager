@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
@@ -79,12 +79,13 @@ export function PublicProfile() {
 
   // 1. 計算背景樣式 (修正漸層消失問題)
   const backgroundStyle = useMemo(() => {
-        const baseColor = settings?.background_color || '#F4F0EB';
+    const baseColor = settings?.background_color || '#f4f0eb67';
     
-    // 如果啟用了漸層且設定了第二色
-    if (settings?.gradient_enabled && settings?.secondary_color) {
-      const direction = settings.gradient_direction || 'to bottom';
-      return { background: `linear-gradient(${direction}, ${baseColor}, ${settings.secondary_color})` };
+    // 修正：只要有啟用漸層即可，不需要檢查第二色
+    if (settings?.gradient_enabled) {
+      const direction = settings.gradient_direction || 'to bottom right';
+      // 直接套用你原本在 ThemeTab 預覽區塊寫好的透明黑 #00000015 作為漸層尾色
+      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
     }
     
     // 若無漸層，回傳純色背景
@@ -118,7 +119,6 @@ export function PublicProfile() {
             try {
               const decodedSettings = decodeHTML(userData.data.profile_settings);
               const parsedSettings = JSON.parse(decodedSettings);
-              console.log("前端收到的設定檔：", parsedSettings); // 加入這行
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
               setSettings(parsedSettings);
             } catch (e) {
