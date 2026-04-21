@@ -9,7 +9,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  /* 漸層由 TSX style 屬性傳入 */
+  /* 漸層由 TSX style 屬性傳入 var(--artist-main-gradient) */
   transition: background 0.5s ease;
 }
 
@@ -21,7 +21,7 @@
 }
 
 /* ==========================================================================
-   2. 側邊欄樣式 (Sidebar)
+   2. 側邊欄樣式 (Sidebar) - 調整對齊與間距
    ========================================================================== */
 
 .profile-sidebar {
@@ -29,18 +29,20 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  position: relative;
-  min-height: 100vh;
+  position: sticky; /* 改為 sticky 讓側邊欄固定，瀏覽內容時更方便 */
+  top: 0;
+  height: 100vh;
   box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
+  /* 背景由 TSX 傳入 var(--artist-sidebar-gradient) */
 }
 
 .sidebar-top {
-  padding: 40px 20px 10px 20px;
+  padding: 40px 30px 10px 30px; /* 增加側邊內縮，優化靠左視覺 */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start; /* 修正：內容全部靠左 */
+  text-align: left; /* 修正：文字靠左 */
 }
 
 .profile-avatar {
@@ -49,67 +51,78 @@
   border-radius: 24px;
   object-fit: cover;
   box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-  margin-bottom: 20px;
+  margin-bottom: 8px; /* 修正：縮短與暱稱的距離（原 20px 縮減一半以上） */
   border: 4px solid rgba(255,255,255,0.1);
+}
+
+.name-social-section {
+  width: 100%;
+  text-align: left;
 }
 
 .profile-name {
   font-size: 24px;
   font-weight: 900;
-  margin-bottom: 12px;
+  margin-bottom: 4px; /* 縮短與社群連結距離 */
   letter-spacing: -0.5px;
 }
 
 .social-links {
   display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  justify-content: flex-start; /* 修正：社群圖示靠左 */
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .social-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .social-icon:hover {
-  transform: translateY(-4px) scale(1.1);
+  transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.4);
 }
 
 .sidebar-bottom {
-  padding: 0 24px 40px 24px;
+  padding: 0 30px 40px 30px;
   flex: 1;
 }
 
+.bio-section {
+  margin-bottom: 20px; /* 往上移 */
+}
+
 .profile-bio {
-  font-size: 15px;
-  line-height: 1.7;
-  text-align: center;
-  margin-bottom: 30px;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left; /* 修正：靠左 */
   opacity: 0.9;
+  /* 修正：支援斷句與換行 */
+  white-space: pre-wrap; 
+  word-break: break-word;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px; /* 修正：分頁之間的間隔縮小（原 8px） */
 }
 
 .nav-item {
   text-align: left;
-  padding: 14px 20px;
+  padding: 10px 16px; /* 稍微縮小內縮讓視覺更緊湊 */
   background: transparent;
   border: none;
-  border-radius: 14px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: inherit;
   opacity: 0.6;
@@ -145,7 +158,7 @@
 
 .tab-inner-wrapper {
   width: 100%;
-  flex: 1; 
+  flex: 1; /* 關鍵：接通 Flex 鏈條，確保 Footer 置底 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -162,8 +175,8 @@
 
 .profile-internal-footer {
   width: 100%;
-  padding: 80px 0 40px 0;
-  margin-top: auto; 
+  padding: 60px 0 30px 0;
+  margin-top: auto; /* 核心置底邏輯 */
   text-align: center;
 }
 
@@ -175,11 +188,8 @@
   font-weight: 600;
 }
 
-.profile-internal-footer a { color: inherit; text-decoration: none; opacity: 0.6; }
-.profile-internal-footer a:hover { opacity: 1; }
-
 /* ==========================================================================
-   4. 徵委託與瀑布流 (重要修正：右下角浮動資訊)
+   4. 徵委託與瀑布流 (右下角浮動資訊)
    ========================================================================== */
 
 .masonry-grid {
@@ -196,7 +206,7 @@
   margin-bottom: 24px;
   border-radius: 20px;
   overflow: hidden;
-  position: relative; /* 關鍵：讓資訊盒能定位在內部 */
+  position: relative;
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -205,8 +215,7 @@
 }
 
 .masonry-item:hover {
-  transform: translateY(-12px);
-  box-shadow: 0 20px 45px rgba(0,0,0,0.15);
+  transform: translateY(-8px);
 }
 
 .masonry-item img {
@@ -215,17 +224,11 @@
   transition: transform 0.5s ease;
 }
 
-.masonry-item:hover img {
-  transform: scale(1.05);
-}
-
 .floating-info-box {
   position: absolute;
   bottom: 12px;
   right: 12px;
-  left: 12px; 
-  max-width: fit-content;
-  margin-left: auto;
+  max-width: 85%;
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
@@ -233,61 +236,13 @@
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   text-align: right;
-  pointer-events: none; 
   z-index: 2;
 }
 
-.item-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #1a1a1a;
-  margin-bottom: 4px;
-}
-
-.item-price {
-  font-size: 14px;
-  font-weight: 900;
-  color: #A67B3E;
-}
-
-.item-tags {
-  display: flex;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.item-tags span {
-  font-size: 10px;
-  font-weight: bold;
-  color: #666;
-  background: rgba(0,0,0,0.05);
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-
-.tag-filter-bar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.tag-btn {
-  padding: 10px 24px;
-  border-radius: 50px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #eee;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-  transition: all 0.2s;
-}
-
-.tag-btn.active { background: #1a1a1a; color: #fff; transform: scale(1.05); }
+.item-title { font-size: 15px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
+.item-price { font-size: 14px; font-weight: 900; color: #A67B3E; }
+.item-tags { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+.item-tags span { font-size: 10px; font-weight: bold; color: #666; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px; }
 
 /* ==========================================================================
    5. 文字與作品網格樣式
@@ -295,177 +250,111 @@
 
 .rich-text-content {
   background: #FFFFFF;
-  padding: 60px;
+  padding: 50px;
   border-radius: 28px;
   box-shadow: 0 4px 30px rgba(0,0,0,0.03);
   width: 100%;
   line-height: 2;
-  color: #444;
 }
 
-.portfolio-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  width: 100%;
-}
-
-.portfolio-item {
-  aspect-ratio: 1;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  transition: transform 0.4s ease;
-}
-
+.portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%; }
+.portfolio-item { aspect-ratio: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: transform 0.4s ease; }
 .portfolio-item:hover { transform: scale(1.04); }
 .portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ==========================================================================
-   6. 徵委託詳情彈窗 (設計升級)
+   6. 徵委託詳情彈窗 (設計升級：不再白成一片)
    ========================================================================== */
 
 .showcase-modal-overlay {
   background: rgba(0, 0, 0, 0.85) !important;
   backdrop-filter: blur(10px);
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000;
 }
 
 .showcase-content-box {
   display: flex;
-  width: 90vw;
+  width: 92vw;
   max-width: 1100px;
   height: 80vh;
   background: #FFFFFF;
   border-radius: 32px;
   overflow: hidden;
   box-shadow: 0 50px 100px rgba(0,0,0,0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .showcase-cover {
   flex: 1.3;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  position: relative;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.showcase-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; 
-}
+.showcase-cover img { width: 100%; height: 100%; object-fit: contain; }
 
+/* 詳細資訊區塊：加入層次感背景 */
 .showcase-details {
   flex: 1;
-  padding: 40px 50px;
+  padding: 50px;
   overflow-y: auto;
-  background: #fafafa;
+  background: #fdfdfd; /* 稍微與純白區隔 */
   display: flex;
   flex-direction: column;
 }
 
-.showcase-details h2 {
-  font-size: 28px;
-  font-weight: 900;
-  color: #1a1a1a;
-  margin-bottom: 12px;
-  line-height: 1.2;
+.showcase-header {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
 }
 
+.showcase-details h2 { font-size: 32px; font-weight: 900; color: #1a1a1a; margin-bottom: 10px; }
+
 .modal-price {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   color: #A67B3E;
-  margin-bottom: 24px;
-  padding: 8px 16px;
   background: rgba(166, 123, 62, 0.08);
-  border-radius: 12px;
+  padding: 8px 20px;
+  border-radius: 14px;
   width: fit-content;
 }
 
-.modal-tags {
-  margin-bottom: 30px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.modal-tags { margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tag-chip {
+  font-size: 13px; font-weight: bold; color: #777;
+  padding: 6px 14px; background: #f0f0f0; border-radius: 10px;
 }
 
-.modal-tags span, .tag-chip {
-  font-size: 12px;
-  font-weight: bold;
-  color: #666;
-  padding: 6px 14px;
-  background: #eee;
-  border-radius: 8px;
+.description-scroll-area {
+  flex: 1;
 }
 
 .rich-text-content.description {
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-  font-size: 16px;
-  line-height: 1.8;
-  color: #333;
+  background: transparent; padding: 0; box-shadow: none;
+  font-size: 16px; line-height: 1.8; color: #444;
 }
 
 /* ==========================================================================
-   7. 燈箱元件樣式
+   7. 燈箱按鈕與響應式
    ========================================================================== */
 
-.lightbox-overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95);
-  display: flex; align-items: center; justify-content: center; z-index: 10000;
-}
-
 .lightbox-close {
-  position: absolute; top: 30px; right: 30px; background: rgba(255, 255, 255, 0.1);
+  position: absolute; top: 30px; right: 30px; background: rgba(255, 255, 255, 0.15);
   border: none; color: #FFF; width: 56px; height: 56px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
   z-index: 10001;
 }
 
-.lightbox-close:hover { background: rgba(255, 255, 255, 0.25); transform: rotate(90deg); }
-
-.lightbox-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: #FFF;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s;
-}
-
-.lightbox-nav:hover { background: rgba(255, 255, 255, 0.25); }
-.lightbox-nav.prev { left: 40px; }
-.lightbox-nav.next { right: 40px; }
-
-/* ==========================================================================
-   8. 行動版響應式 (Responsive)
-   ========================================================================== */
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
 
 @media (max-width: 1100px) {
   .profile-layout-root { flex-direction: column; }
-  .profile-sidebar { width: 100%; min-height: auto; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-  .profile-avatar { width: 180px; height: 180px; }
-  .profile-main-content { padding: 30px 20px; }
-  
+  .profile-sidebar { width: 100%; height: auto; position: relative; }
+  .sidebar-top { align-items: center; text-align: center; } /* 手機版維持居中較美觀 */
+  .social-links { justify-content: center; }
+  .profile-bio { text-align: center; }
   .showcase-content-box { flex-direction: column; height: 95vh; }
   .showcase-cover { height: 40vh; flex: none; }
   .showcase-details { padding: 30px; }
-  
-  .lightbox-nav { display: none; }
 }

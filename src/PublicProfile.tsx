@@ -44,7 +44,7 @@ interface ShowcaseItem {
 }
 
 const getSocialIcon = (platform: string) => {
-  const size = 20; 
+  const size = 18; // 稍微調小一點以符合更緊湊的版面
   switch (platform) {
     case 'Facebook': return <SiFacebook size={size} color="#1877F2" />;
     case 'Twitter / X': return <SiX size={size} color="#000000" />;
@@ -73,7 +73,6 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 同步主題設定至 Layout
   useEffect(() => {
     if (settings) {
       setTheme({
@@ -242,6 +241,7 @@ export function PublicProfile() {
 
           <div className="sidebar-bottom">
             <div className="bio-section">
+              {/* 修改點：簡介文字保持原始格式，以便後續用 CSS 處理斷句 */}
               <p className="profile-bio" style={{ color: textColor, opacity: 0.8 }}>
                 {artist.bio || '這名繪師還沒有寫下簡介。'}
               </p>
@@ -344,13 +344,18 @@ export function PublicProfile() {
             <div className="showcase-cover">
               <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
             </div>
+            {/* 修改點：優化資訊層級結構 */}
             <div className="showcase-details">
-              <h2>{selectedShowcase.title}</h2>
-              <div className="modal-price">${selectedShowcase.price_info}</div>
-              <div className="modal-tags">
-                {selectedShowcase.tags.map(tag => <span key={tag}>#{tag}</span>)}
+              <div className="showcase-header">
+                <h2>{selectedShowcase.title}</h2>
+                <div className="modal-price">${selectedShowcase.price_info}</div>
               </div>
-              <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              <div className="modal-tags">
+                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
+              </div>
+              <div className="description-scroll-area">
+                <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              </div>
             </div>
           </div>
         </div>
