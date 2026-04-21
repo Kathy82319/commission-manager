@@ -82,7 +82,7 @@ export function PublicProfile() {
     }
   }, [settings, setTheme]);
 
-  // 1. 抓取資料與資料清洗 (資安強化：防護型 JSON 解析)
+  // 1. 抓取資料與資料清洗
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -111,7 +111,6 @@ export function PublicProfile() {
         }
 
         if (showcaseData.success) {
-          // 核心修正：強制確保 tags 絕對是陣列型別
           const formattedItems = (showcaseData.data || []).map((item: any) => {
             let safeTags: string[] = [];
             try {
@@ -121,9 +120,7 @@ export function PublicProfile() {
                 const parsed = JSON.parse(item.tags);
                 safeTags = Array.isArray(parsed) ? parsed : [];
               }
-            } catch (e) {
-              safeTags = [];
-            }
+            } catch (e) { safeTags = []; }
             return { ...item, tags: safeTags };
           });
           setShowcaseItems(formattedItems);
@@ -154,11 +151,17 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 3. 標籤清單彙整 (修正 forEach 崩潰問題)
+  // 核心邏輯：計算降級展示後的項目 (業界資安結構：在 useMemo 階段完成裁切)
+  const displayShowcaseItems = useMemo(() => {
+    const isFree = artist?.plan_type === 'free';
+    // 如果是免費版，僅選取前 6 筆進行展示與後續標籤運算
+    return isFree ? showcaseItems.slice(0, 6) : showcaseItems;
+  }, [showcaseItems, artist?.plan_type]);
+
+  // 3. 標籤清單彙整 (改為使用 displayShowcaseItems 以維持標籤過濾的一致性)
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    showcaseItems.forEach(item => {
-      // 資安防護：確保 item.tags 為陣列才執行 forEach
+    displayShowcaseItems.forEach(item => {
       if (Array.isArray(item.tags)) {
         item.tags.forEach(t => {
           if (t) tags.add(t);
@@ -166,7 +169,7 @@ export function PublicProfile() {
       }
     });
     return ['全部', ...Array.from(tags)];
-  }, [showcaseItems]);
+  }, [displayShowcaseItems]);
 
   const handleTagClick = (tag: string) => {
     setSelectedTags(prev => {
@@ -180,12 +183,13 @@ export function PublicProfile() {
     });
   };
 
+  // 4. 過濾後的展示項目
   const filteredShowcaseItems = useMemo(() => {
-    if (selectedTags.includes('全部')) return showcaseItems;
-    return showcaseItems.filter(item => 
+    if (selectedTags.includes('全部')) return displayShowcaseItems;
+    return displayShowcaseItems.filter(item => 
       Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
     );
-  }, [showcaseItems, selectedTags]);
+  }, [displayShowcaseItems, selectedTags]);
 
   const availableTabs = useMemo(() => {
     if (!settings) return [];
@@ -193,8 +197,8 @@ export function PublicProfile() {
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    // 命名一致化：改為 徵稿/販售項目
-    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
+    // 修正：檢查 displayShowcaseItems 並更新標籤名稱
+    if (!isHidden('showcase') && displayShowcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
@@ -206,7 +210,7 @@ export function PublicProfile() {
       });
     }
     return tabs;
-  }, [settings, showcaseItems]);
+  }, [settings, displayShowcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
   const isWideTab = ['portfolio', 'showcase'].includes(currentTab);

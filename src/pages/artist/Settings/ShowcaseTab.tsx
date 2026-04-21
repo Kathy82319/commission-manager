@@ -30,9 +30,10 @@ interface ShowcaseTabProps {
   onToggleGlobalSave: (hide: boolean) => void;
   onToast: (msg: string, type: 'ok' | 'err') => void;
   quotaInfo: QuotaInfo | null;
+  isReadOnly?: boolean; // 新增：用於判斷是否為免費版/降級狀態
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly }: ShowcaseTabProps) {
   const [items, setItems] = useState<ShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -49,10 +50,10 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 10;
-    return 0;
+    return 6; // 修改：免費版/降級後的上限調整為 6 (對應前台展示)
   }, [quotaInfo]);
 
-  // 2. 取得列表資料 (資安強化：增加防護性解析)
+  // 2. 取得列表資料 (資安強化：防護型解析)
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
@@ -82,14 +83,15 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
-  // 3. 連動控制外層全域儲存按鈕的顯示 (進入表單時隱藏)
+  // 3. 連動控制外層全域儲存按鈕
   useEffect(() => {
     onToggleGlobalSave(isFormOpen);
     return () => onToggleGlobalSave(false);
   }, [isFormOpen, onToggleGlobalSave]);
 
-  // 4. 處理圖片上傳至 R2
+  // 4. 處理圖片上傳
   const handleCoverUpload = async (resultBlobs: { preview: Blob }) => {
+    if (isReadOnly) return; // 資安攔截
     setIsUploading(true);
     try {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
@@ -112,7 +114,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     }
   };
 
-  // 5. 標籤管理邏輯
+  // 5. 標籤管理
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed) return;
@@ -126,8 +128,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     setEditingItem(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
-  // 6. 核心功能：開啟表單
+  // 6. 開啟表單邏輯
   const openNewForm = () => {
+    if (isReadOnly) {
+      onToast("免費版無法新增項目，請升級專業版以解除限制。", "err");
+      return;
+    }
     if (items.length >= limit) {
       onToast(`已達到當前方案的展示上限 (${limit} 個)`, "err");
       return;
@@ -137,12 +143,20 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
   };
 
   const openEditForm = (item: ShowcaseItem) => {
+    if (isReadOnly) {
+      onToast("免費版無法編輯現有項目。", "err");
+      return;
+    }
     setEditingItem(item);
     setIsFormOpen(true);
   };
 
-  // 7. 儲存與刪除處理
+  // 7. 儲存與刪除 (包含資安檢核)
   const handleSaveItem = async () => {
+    if (isReadOnly) {
+      onToast("目前為唯讀模式，無法儲存變更。", "err");
+      return;
+    }
     if (!editingItem.title || !editingItem.cover_url) {
       onToast("請填寫品名並上傳封面圖", "err");
       return;
@@ -183,7 +197,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     }
   };
 
-  // --- UI 渲染：恢復 Inline Page 排版 ---
+  // --- UI 渲染 ---
   if (isFormOpen) {
     return (
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -193,7 +207,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
         </div>
 
         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-          {/* 左側：圖片與基本資訊 */}
           <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label className="form-label">項目封面圖 (必填)</label>
@@ -203,7 +216,9 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
                     <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', display: 'block' }} />
                   </div>
                 )}
-                <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
+                {!isReadOnly && (
+                  <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
+                )}
               </div>
             </div>
 
@@ -216,7 +231,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
             </div>
           </div>
 
-          {/* 右側：文字資訊與標籤 */}
           <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 2 }}>
@@ -230,7 +244,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
             </div>
 
             <div>
-              <label className="form-label">作品標籤 (最多 5 個，按 Enter 新增)</label>
+              <label className="form-label">作品標籤 (最多 5 個)</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 {editingItem.tags.map(tag => (
                   <span key={tag} style={{ padding: '6px 12px', background: '#E8F3EB', color: '#4E7A5A', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -240,7 +254,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
                 ))}
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤，如：Live2D" disabled={editingItem.tags.length >= 5} />
+                <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤..." disabled={editingItem.tags.length >= 5} />
                 <button onClick={handleAddTag} disabled={editingItem.tags.length >= 5} style={{ padding: '0 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>新增</button>
               </div>
             </div>
@@ -263,21 +277,28 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
     );
   }
 
-  // --- 列表模式：恢復原本設計的卡片風格與按鈕 CSS ---
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>徵稿/販售區管理 <span style={{ fontSize: '13px', color: '#A0978D', marginLeft: '12px', fontWeight: 'normal' }}>({items.length} / {limit})</span></h3>
-        <button onClick={openNewForm} style={{ padding: '10px 20px', background: items.length >= limit ? '#C4BDB5' : '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-          + 新增項目
-        </button>
+        <h3 style={{ margin: 0 }}>
+          徵稿/販售區管理 
+          <span style={{ fontSize: '13px', color: '#A0978D', marginLeft: '12px', fontWeight: 'normal' }}>
+            ({items.length} / {limit})
+          </span>
+        </h3>
+        {/* 唯讀模式下隱藏新增按鈕 */}
+        {!isReadOnly && (
+          <button onClick={openNewForm} style={{ padding: '10px 20px', background: items.length >= limit ? '#C4BDB5' : '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+            + 新增項目
+          </button>
+        )}
       </div>
 
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: '#A0978D' }}>載入中...</div>
       ) : items.length === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center', background: '#FAFAFA', border: '2px dashed #DED9D3', borderRadius: '12px', color: '#7A7269' }}>
-          目前尚未新增任何項目。<br/>點擊右上方按鈕開始建立您的第一個徵稿/販售展示！
+          目前尚未新增任何項目。
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
@@ -296,12 +317,13 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo }: Showcase
                   {Array.isArray(item.tags) && item.tags.slice(0, 3).map((tag, idx) => (
                     <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
                   ))}
-                  {item.tags?.length > 3 && <span style={{ fontSize: '12px', color: '#A0978D' }}>+{item.tags.length - 3}</span>}
                 </div>
               </div>
-              {/* 恢復原始按鈕設計與 CSS */}
               <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
-                <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'background 0.2s' }}>編輯</button>
+                {/* 唯讀模式下隱藏編輯按鈕，僅保留刪除 */}
+                {!isReadOnly && (
+                  <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'background 0.2s' }}>編輯</button>
+                )}
                 <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C', transition: 'background 0.2s' }}>刪除</button>
               </div>
             </div>

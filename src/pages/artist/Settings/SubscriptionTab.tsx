@@ -13,6 +13,9 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const handleStartTrial = async () => {
+    // 功能目前暫停開放
+    onToast('試用功能維護中，暫不開放開啟', 'err');
+    /* 原有邏輯保留備用
     try {
       const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
       const data = await res.json();
@@ -25,9 +28,13 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
     } catch(e) { 
       onToast('連線失敗', 'err'); 
     }
+    */
   };
 
   const handleUpgradeClick = async () => {
+    // 功能目前暫停開放
+    onToast('升級功能維護中，暫不開放訂閱', 'err');
+    /* 原有邏輯保留備用
     setIsUpgrading(true);
     try {
       const response = await fetch(`${API_BASE}/api/payment/create`, {
@@ -36,21 +43,17 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: "pro" })
       });
-
       const result = await response.json();
-
       if (result.success && result.data) {
         const form = document.createElement("form");
         form.method = "POST";
         form.action = result.data.PayGateWay;
-
         const params = {
           MerchantID: result.data.MerchantID,
           TradeInfo: result.data.TradeInfo,
           TradeSha: result.data.TradeSha,
           Version: result.data.Version,
         };
-
         for (const [key, value] of Object.entries(params)) {
           const input = document.createElement("input");
           input.type = "hidden";
@@ -58,7 +61,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           input.value = value as string;
           form.appendChild(input);
         }
-
         document.body.appendChild(form);
         form.submit(); 
       } else {
@@ -70,6 +72,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
       onToast("系統連線異常", 'err');
       setIsUpgrading(false);
     }
+    */
   };
 
   return (
@@ -100,17 +103,23 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
             <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
             <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-            <li>解鎖編輯「所有」進階區塊編輯權限</li>
+            <li>解鎖編輯所有區塊權限</li>
             <li>解鎖最高 <strong>20 張</strong>作品展示上限</li>
+            <li>解鎖最高 <strong>10 個</strong>徵稿/販售項目</li>
             <li>解鎖「徵稿/販售區」開放展示 <strong>10 個</strong>項目</li>
-            <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>降級保障：方案過期後，已設定的進階區塊與超過 6 張的圖片不會刪除且持續展示，僅鎖定後台編輯權限。</li>
+            <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>降級保障：方案過期後，已設定的進階區塊與超過 6張的作品和徵稿不會刪除會持續展示，僅鎖定後台編輯權限。</li>
           </ul>
           {quotaInfo?.plan_type === 'trial' ? (
               <div style={{ textAlign: 'center', padding: '12px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '8px' }}>試用中</div>
           ) : quotaInfo?.trial_start_at ? (
               <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
           ) : (
+            <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', backgroundColor: '#F0ECE7', borderRadius: '8px', fontSize: '14px' }}>
+              試用功能暫未開放
+            </div>
+            /* 暫時隱藏按鈕
             <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }}>開啟 15 天試用</button>
+            */
           )}
         </div>
 
@@ -130,6 +139,13 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
               <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', backgroundColor: '#F0ECE7', borderRadius: '8px', fontSize: '14px' }}>
+                訂閱功能升級中，暫不開放
+              </div>
+              <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center', lineHeight: '1.4' }}>
+                目前系統正在進行金流模組維護。
+              </div>
+              {/* 暫時隱藏按鈕與政策連結
               <div style={{ fontSize: '12px', color: '#A05C5C', textAlign: 'center', lineHeight: '1.4' }}>
                 點擊按鈕即代表同意<a href="/refund-policy" target="_blank" rel="noreferrer" style={{ color: '#A05C5C', textDecoration: 'underline' }}>退款政策</a>，<br/>數位內容一經啟用恕不退費。
               </div>                        
@@ -144,6 +160,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
               >
                 {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
               </button>
+              */}
             </div>
           )}
         </div>

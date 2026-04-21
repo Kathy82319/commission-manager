@@ -189,8 +189,9 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  // 修正：從允許清單移除 'showcase'，使其對免費版上鎖
-  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme'];
+  
+  // 修改點：將 'showcase' 加入白名單，讓免費版也能點擊進入檢視
+  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
   return (
@@ -301,6 +302,7 @@ export function Settings() {
                 onToggleGlobalSave={setHideGlobalSave} 
                 onToast={showToast} 
                 quotaInfo={quotaInfo}
+                isReadOnly={isFreePlan} // 關鍵：將唯讀權限傳入 ShowcaseTab
               />
             )}
             
