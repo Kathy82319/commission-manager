@@ -253,7 +253,7 @@ export function PublicProfile() {
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)} 
                   className={`nav-item ${currentTab === tab.id ? 'active' : ''}`}
-                  style={{ color: currentTab === tab.id ? bgColor : textColor }}
+                  style={{ color: textColor }}
                 >
                   {tab.label}
                 </button>
