@@ -30,6 +30,11 @@ interface ProfileSettings {
   splash_duration?: number;
   splash_text?: string;
   background_color?: string;
+  // 漸層相關欄位
+  gradient_enabled?: boolean;
+  gradient_type?: string; 
+  gradient_direction?: string;
+  secondary_color?: string; 
   theme_mode?: 'light' | 'dark';
 }
 
@@ -72,6 +77,20 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
+  // 1. 計算背景樣式 (修正漸層消失問題)
+  const backgroundStyle = useMemo(() => {
+    const baseColor = settings?.background_color || '#F4F0EB';
+    
+    // 如果啟用了漸層且設定了第二色
+    if (settings?.gradient_enabled && settings?.secondary_color) {
+      const direction = settings.gradient_direction || 'to bottom';
+      return { background: `linear-gradient(${direction}, ${baseColor}, ${settings.secondary_color})` };
+    }
+    
+    // 若無漸層，回傳純色背景
+    return { background: baseColor };
+  }, [settings]);
+
   // 設定主題顏色
   useEffect(() => {
     if (settings) {
@@ -82,7 +101,7 @@ export function PublicProfile() {
     }
   }, [settings, setTheme]);
 
-  // 1. 抓取資料與資料清洗
+  // 2. 抓取資料與資料清洗
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -135,7 +154,7 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 2. Splash Screen 倒數邏輯
+  // 3. Splash Screen 倒數邏輯
   useEffect(() => {
     if (!loading && settings?.splash_enabled !== false && showSplash) {
       const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
@@ -151,14 +170,13 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 核心邏輯：計算降級展示後的項目 (業界資安結構：在 useMemo 階段完成裁切)
+  // 核心邏輯：計算降級展示後的項目
   const displayShowcaseItems = useMemo(() => {
     const isFree = artist?.plan_type === 'free';
-    // 如果是免費版，僅選取前 6 筆進行展示與後續標籤運算
     return isFree ? showcaseItems.slice(0, 6) : showcaseItems;
   }, [showcaseItems, artist?.plan_type]);
 
-  // 3. 標籤清單彙整 (改為使用 displayShowcaseItems 以維持標籤過濾的一致性)
+  // 4. 標籤清單彙整
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     displayShowcaseItems.forEach(item => {
@@ -183,7 +201,7 @@ export function PublicProfile() {
     });
   };
 
-  // 4. 過濾後的展示項目
+  // 5. 過濾後的展示項目
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return displayShowcaseItems;
     return displayShowcaseItems.filter(item => 
@@ -197,7 +215,6 @@ export function PublicProfile() {
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    // 修正：檢查 displayShowcaseItems 並更新標籤名稱
     if (!isHidden('showcase') && displayShowcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
@@ -232,18 +249,17 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-  const bgColor = settings?.background_color || '#F4F0EB';
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
 
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{ backgroundColor: bgColor }}
+      style={backgroundStyle} // 這裡應用漸層背景
     >
       {/* 1. Splash Screen */}
       {showSplash && (
-        <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={{ backgroundColor: bgColor }}>
+        <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={backgroundStyle}>
           <div className="splash-box">
             <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
           </div>
@@ -254,7 +270,7 @@ export function PublicProfile() {
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
         {/* Sidebar */}
-        <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
+        <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
           <div className="sidebar-top">
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
