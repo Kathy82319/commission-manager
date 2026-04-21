@@ -7,10 +7,8 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  /* 漸層背景：接收來自 TSX 的 var(--artist-gradient) */
-  background: var(--artist-gradient);
+  /* 漸層由 TSX style 屬性傳入 */
   transition: background 0.5s ease;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .profile-layout-root {
@@ -28,12 +26,12 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  position: sticky; /* 讓側邊欄固定在螢幕上 */
+  position: sticky;
   top: 0;
   height: 100vh;
   box-shadow: 10px 0 30px rgba(0,0,0,0.05);
   z-index: 10;
-  /* 背景色與文字顏色由 TSX inline style 控制 */
+  /* 背景漸層由 TSX 傳入 var(--artist-sidebar-gradient) */
 }
 
 .sidebar-top {
@@ -45,7 +43,7 @@
 }
 
 .profile-avatar {
-  width: 240px; /* 依照需求的大尺寸 */
+  width: 240px;
   height: 240px;
   border-radius: 24px;
   object-fit: cover;

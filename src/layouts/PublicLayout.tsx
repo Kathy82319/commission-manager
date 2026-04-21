@@ -5,6 +5,7 @@ import '../styles/PublicLayout.css';
 interface ThemeSettings {
   primaryColor?: string;
   textColor?: 'white' | 'black';
+  gradientDirection?: string; // 新增方向屬性
 }
 
 export function PublicLayout() {
@@ -13,7 +14,8 @@ export function PublicLayout() {
   
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
-    textColor: 'black'
+    textColor: 'black',
+    gradientDirection: 'to bottom right' // 預設方向
   });
 
   const handleLoginClick = () => {
@@ -26,14 +28,24 @@ export function PublicLayout() {
     location.pathname === '/privacy' || 
     location.pathname === '/refund-policy';
 
-  // 根據主色調計算漸層結束色
-  // 若為黑字模式(淺色背景)，漸層向白色靠攏；若為白字模式(深色背景)，漸層向黑色靠攏
-  const gradientEnd = theme.textColor === 'white' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)';
+  // 顏色計算邏輯
+  const color = theme.primaryColor || '#ffffff';
+  const isWhiteText = theme.textColor === 'white';
+  
+  // 主背景漸層：從主色到淡化色
+  const mainGradientEnd = isWhiteText ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)';
+  
+  // 側邊欄漸層：稍微加深或加亮，做出區隔感
+  const sidebarGradientStart = color;
+  const sidebarGradientEnd = isWhiteText ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)';
 
   const dynamicStyles = {
-    '--artist-theme-color': theme.primaryColor,
-    '--artist-text-color': theme.textColor === 'white' ? '#ffffff' : '#1a1a1a',
-    '--artist-gradient': `linear-gradient(135deg, ${theme.primaryColor} 0%, ${gradientEnd} 100%)`,
+    '--artist-theme-color': color,
+    '--artist-text-color': isWhiteText ? '#ffffff' : '#1a1a1a',
+    // 主畫面漸層
+    '--artist-main-gradient': `linear-gradient(${theme.gradientDirection}, ${color} 0%, ${mainGradientEnd} 100%)`,
+    // 側邊欄漸層
+    '--artist-sidebar-gradient': `linear-gradient(to bottom, ${sidebarGradientStart} 0%, ${sidebarGradientEnd} 100%)`,
   } as React.CSSProperties;
 
   return (

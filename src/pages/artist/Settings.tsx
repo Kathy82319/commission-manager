@@ -18,6 +18,7 @@ export function Settings() {
     portfolio: [], detailed_intro: '', process: '', payment: '', rules: '', custom_sections: [], social_links: [], hidden_sections: [],
     splash_enabled: true, splash_image: '', splash_duration: 2, splash_text: '',
     layout_type: 'blog', background_color: '#F4F0EB', theme_mode: 'dark'
+    
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -174,6 +175,8 @@ export function Settings() {
               {isSaving ? '儲存中...' : (activeTab === 'showcase' ? '展示項目會自動儲存' : '儲存變更')}
             </button>
           </div>
+
+          
         </div>
       </div>
     </div>

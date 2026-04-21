@@ -15,6 +15,7 @@ export interface ProfileSettings {
   layout_type?: 'blog' | 'gallery';
   background_color?: string;
   theme_mode?: 'light' | 'dark';
+  gradient_direction?: string;
 }
 
 export interface QuotaInfo {

@@ -6,7 +6,7 @@ import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
 
 interface LayoutContext {
-  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
+  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black'; gradientDirection: string }) => void;
 }
 
 const decodeHTML = (html?: string) => {
@@ -31,6 +31,7 @@ interface ProfileSettings {
   splash_text?: string;
   background_color?: string;
   theme_mode?: 'light' | 'dark';
+  gradient_direction?: string; // 確保設定中有這個欄位
 }
 
 interface ShowcaseItem {
@@ -76,7 +77,8 @@ export function PublicProfile() {
     if (settings) {
       setTheme({
         primaryColor: settings.background_color || '#F4F0EB',
-        textColor: settings.theme_mode === 'light' ? 'black' : 'white'
+        textColor: settings.theme_mode === 'light' ? 'black' : 'white',
+        gradientDirection: settings.gradient_direction || 'to bottom right' // 傳遞方向
       });
     }
   }, [settings, setTheme]);
@@ -207,7 +209,7 @@ export function PublicProfile() {
   return (
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{ background: 'var(--artist-gradient)', minHeight: '100vh' }}
+      style={{ background: 'var(--artist-main-gradient)', minHeight: '100vh' }}
     >
       
       {showSplash && (
@@ -220,7 +222,7 @@ export function PublicProfile() {
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         
-        <aside className="profile-sidebar" style={{ backgroundColor: bgColor, color: textColor }}>
+        <aside className="profile-sidebar" style={{ background: 'var(--artist-sidebar-gradient)', color: textColor }}>
           <div className="sidebar-top">
             <div className="avatar-section">
               <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />

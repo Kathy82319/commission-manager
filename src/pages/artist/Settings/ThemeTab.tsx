@@ -9,10 +9,10 @@ interface Props {
 export function ThemeTab({ settings, setSettings }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* 移除原本的「選擇版面配置模式」區塊 */}
-
+      
+      {/* 背景主色設定區塊 */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-        <label className="form-label">自訂背景主色</label>
+        <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>自訂背景主色</label>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <input 
             type="color" 
@@ -30,8 +30,24 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
+      {/* 漸層方向設定區塊 - 新整合內容 */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-        <label className="form-label">介面文字對比模式</label>
+        <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>漸層方向</label>
+        <select 
+          value={settings.gradient_direction || 'to bottom right'} 
+          onChange={(e) => setSettings({ ...settings, gradient_direction: e.target.value })}
+          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none' }}
+        >
+          <option value="to bottom right">對角線 (左上到右下)</option>
+          <option value="to right">由左至右</option>
+          <option value="to left">由右至左</option>
+          <option value="to bottom">由上至下</option>
+        </select>
+      </div>
+
+      {/* 介面文字對比模式區塊 */}
+      <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+        <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>介面文字對比模式</label>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
             onClick={() => setSettings({...settings, theme_mode: 'light'})}
@@ -48,7 +64,18 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      <div style={{ padding: '24px', borderRadius: '12px', background: `linear-gradient(135deg, ${settings.background_color || '#F4F0EB'}, #00000015)`, color: settings.theme_mode === 'dark' ? '#FFF' : '#333', border: '1px solid #EAE6E1', textAlign: 'center', fontWeight: 'bold', fontSize: '18px' }}>
+      {/* 漸層背景預覽區塊 - 已同步 gradient_direction */}
+      <div style={{ 
+        padding: '40px 24px', 
+        borderRadius: '12px', 
+        background: `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`, 
+        color: settings.theme_mode === 'dark' ? '#FFF' : '#333', 
+        border: '1px solid #EAE6E1', 
+        textAlign: 'center', 
+        fontWeight: 'bold', 
+        fontSize: '18px',
+        transition: 'all 0.3s ease'
+      }}>
         🎨 漸層背景預覽區塊
       </div>
     </div>
