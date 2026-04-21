@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. 基礎佈局與漸層背景
+   1. 基礎佈局與漸層背景 (Layout Root)
    ========================================================================== */
 
 .public-profile-container {
@@ -7,18 +7,20 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  /* 漸層由 TSX style 屬性傳入 var(--artist-gradient) */
+  /* 漸層背景：接收來自 TSX 的 var(--artist-gradient) */
+  background: var(--artist-gradient);
   transition: background 0.5s ease;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .profile-layout-root {
   display: flex;
   width: 100%;
-  flex: 1;
+  flex: 1; /* 確保內容撐開，讓頁尾能正確計算位置 */
 }
 
 /* ==========================================================================
-   2. 側邊欄與分層框架
+   2. 側邊欄樣式 (Sidebar)
    ========================================================================== */
 
 .profile-sidebar {
@@ -26,11 +28,12 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: sticky; /* 讓側邊欄固定在螢幕上 */
   top: 0;
   height: 100vh;
   box-shadow: 10px 0 30px rgba(0,0,0,0.05);
   z-index: 10;
+  /* 背景色與文字顏色由 TSX inline style 控制 */
 }
 
 .sidebar-top {
@@ -42,7 +45,7 @@
 }
 
 .profile-avatar {
-  width: 240px;
+  width: 240px; /* 依照需求的大尺寸 */
   height: 240px;
   border-radius: 24px;
   object-fit: cover;
@@ -91,6 +94,7 @@
   line-height: 1.7;
   text-align: center;
   margin-bottom: 30px;
+  opacity: 0.9;
 }
 
 .sidebar-nav {
@@ -121,11 +125,12 @@
 .nav-item.active {
   background: rgba(0, 0, 0, 0.12);
   opacity: 1;
+  font-weight: 800;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
 }
 
 /* ==========================================================================
-   3. 右側主內容與卡片樣式
+   3. 右側內容與分層框架 (Main Content)
    ========================================================================== */
 
 .profile-main-content {
@@ -134,22 +139,53 @@
   padding: 40px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* 水平置中 */
   overflow-y: auto;
+  background-color: transparent !important; /* 確保透出漸層底色 */
 }
 
 .tab-inner-wrapper {
   width: 100%;
+  flex: 1; /* 關鍵：撐開高度讓 Footer 能置底 */
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100%;
 }
 
-.tab-inner-wrapper.layout-wide { max-width: 1500px; }
+/* 展示類分頁：如作品集、徵委託項目，寬度較大 */
+.tab-inner-wrapper.layout-wide { max-width: 1600px; }
+
+/* 文字類分頁：限制寬度提升閱讀感 */
 .tab-inner-wrapper.layout-narrow { max-width: 850px; }
 
-.tab-content-area { flex: 1; width: 100%; }
+.tab-content-area {
+  flex: 1;
+  width: 100%;
+}
+
+/* 置底頁尾樣式 */
+.profile-internal-footer {
+  width: 100%;
+  padding: 80px 0 40px 0;
+  margin-top: auto; /* 核心置底邏輯 */
+  text-align: center;
+}
+
+.profile-internal-footer .footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-internal-footer a { color: inherit; text-decoration: none; opacity: 0.6; }
+.profile-internal-footer a:hover { opacity: 1; }
+
+/* ==========================================================================
+   4. 徵委託與瀑布流 (Showcase & Masonry)
+   ========================================================================== */
 
 .masonry-grid {
   column-count: 4;
@@ -157,7 +193,7 @@
 }
 
 @media (max-width: 1400px) { .masonry-grid { column-count: 3; } }
-@media (max-width: 1000px) { .masonry-grid { column-count: 2; } }
+@media (max-width: 900px) { .masonry-grid { column-count: 2; } }
 
 .masonry-item {
   break-inside: avoid;
@@ -168,12 +204,15 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .masonry-item:hover {
   transform: translateY(-12px);
   box-shadow: 0 20px 45px rgba(0,0,0,0.15);
 }
+
+.masonry-item img { width: 100%; display: block; }
 
 .floating-info-box {
   padding: 20px;
@@ -183,6 +222,14 @@
 .item-title { font-size: 17px; font-weight: 800; color: #1a1a1a; margin-bottom: 6px; }
 .item-price { font-size: 15px; font-weight: 900; color: #A67B3E; letter-spacing: 0.5px; }
 
+.tag-filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .tag-btn {
   padding: 10px 24px;
   border-radius: 50px;
@@ -191,23 +238,57 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
   box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  transition: all 0.2s;
 }
 
-.tag-btn.active {
-  background: #1a1a1a;
-  color: #fff;
-  transform: scale(1.05);
-}
+.tag-btn.active { background: #1a1a1a; color: #fff; transform: scale(1.05); }
 
 /* ==========================================================================
-   4. 徵委託詳情彈窗 (精緻化設計)
+   5. 文字與作品網格樣式
+   ========================================================================== */
+
+.rich-text-content {
+  background: #FFFFFF;
+  padding: 60px;
+  border-radius: 28px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.03);
+  width: 100%;
+  line-height: 2;
+  color: #444;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.portfolio-item {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transition: transform 0.4s ease;
+}
+
+.portfolio-item:hover { transform: scale(1.04); }
+.portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ==========================================================================
+   6. 徵委託詳情彈窗 (精緻化設計)
    ========================================================================== */
 
 .showcase-modal-overlay {
   background: rgba(0, 0, 0, 0.85) !important;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px); /* 毛玻璃特效 */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
 }
 
 .showcase-content-box {
@@ -219,9 +300,9 @@
   border-radius: 32px;
   overflow: hidden;
   box-shadow: 0 50px 100px rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* 彈窗左側：圖片區 */
 .showcase-cover {
   flex: 1.5;
   background: #0a0a0a;
@@ -237,21 +318,17 @@
   object-fit: contain;
 }
 
+/* 彈窗右側：詳情區 */
 .showcase-details {
   flex: 1;
   padding: 60px;
   display: flex;
   flex-direction: column;
   background: #fdfdfd;
+  overflow-y: auto;
 }
 
-.showcase-header {
-  margin-bottom: 24px;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 24px;
-}
-
-.showcase-header h2 {
+.showcase-details h2 {
   font-size: 32px;
   font-weight: 900;
   color: #1a1a1a;
@@ -264,54 +341,39 @@
   color: #A67B3E;
   background: rgba(166, 123, 62, 0.1);
   display: inline-block;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.modal-tags {
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .tag-chip {
-  display: inline-block;
   background: #f0f0f0;
   color: #666;
   padding: 6px 14px;
   border-radius: 8px;
-  margin-right: 8px;
   font-size: 13px;
   font-weight: 700;
 }
 
-.description-scroll-area {
-  flex: 1;
-  overflow-y: auto;
-  padding-top: 20px;
-  margin-top: 20px;
-}
-
 .rich-text-content.description {
-  line-height: 1.8;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
   font-size: 16px;
+  line-height: 1.8;
   color: #444;
 }
 
 /* ==========================================================================
-   5. 頁尾與燈箱細節
+   7. 燈箱按鈕美化
    ========================================================================== */
-
-.profile-internal-footer {
-  width: 100%;
-  padding: 80px 0 40px 0;
-  margin-top: auto;
-}
-
-.profile-internal-footer .footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.profile-internal-footer a { color: inherit; text-decoration: none; opacity: 0.8; }
-.profile-internal-footer a:hover { opacity: 1; text-decoration: underline; }
 
 .lightbox-close {
   position: absolute;
@@ -328,15 +390,45 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
+  z-index: 10001;
 }
 
 .lightbox-close:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
 
-/* 行動版適應 */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #FFF;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lightbox-nav:hover { background: rgba(255,255,255,0.25); }
+.lightbox-nav.prev { left: 40px; }
+.lightbox-nav.next { right: 40px; }
+
+/* ==========================================================================
+   8. 行動版響應式 (Responsive)
+   ========================================================================== */
+
 @media (max-width: 1100px) {
   .profile-layout-root { flex-direction: column; }
   .profile-sidebar { width: 100%; height: auto; position: relative; }
+  .profile-avatar { width: 180px; height: 180px; }
+  .profile-main-content { padding: 30px 20px; }
+  
   .showcase-content-box { flex-direction: column; height: 95vh; }
   .showcase-cover { height: 40vh; flex: none; }
   .showcase-details { padding: 30px; }
+  
+  .lightbox-nav { display: none; }
 }
