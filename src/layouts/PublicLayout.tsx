@@ -26,9 +26,14 @@ export function PublicLayout() {
     location.pathname === '/privacy' || 
     location.pathname === '/refund-policy';
 
+  // 根據主色調計算漸層結束色
+  // 若為黑字模式(淺色背景)，漸層向白色靠攏；若為白字模式(深色背景)，漸層向黑色靠攏
+  const gradientEnd = theme.textColor === 'white' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)';
+
   const dynamicStyles = {
     '--artist-theme-color': theme.primaryColor,
     '--artist-text-color': theme.textColor === 'white' ? '#ffffff' : '#1a1a1a',
+    '--artist-gradient': `linear-gradient(135deg, ${theme.primaryColor} 0%, ${gradientEnd} 100%)`,
   } as React.CSSProperties;
 
   return (
@@ -50,7 +55,7 @@ export function PublicLayout() {
         <Outlet context={{ setTheme }} />
         
         {isLegalPage && (
-          <>
+          <div className="legal-page-wrapper">
             <div className="back-btn-container">
               <button onClick={() => navigate(-1)} className="back-btn">
                 回上一頁
@@ -67,7 +72,7 @@ export function PublicLayout() {
                 <span className="footer-contact">客服信箱：cath40286@gmail.com</span>
               </div>
             </footer>
-          </>
+          </div>
         )}
       </main>
     </div>

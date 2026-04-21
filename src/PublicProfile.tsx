@@ -5,7 +5,6 @@ import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/re
 import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import './styles/PublicProfile.css';
 
-// 定義回傳給 Layout 的 Context 型別
 interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
@@ -73,7 +72,6 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 同步主題設定至 Layout
   useEffect(() => {
     if (settings) {
       setTheme({
@@ -207,10 +205,9 @@ export function PublicProfile() {
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
 
   return (
-    /* 修正 1：將背景色套用在最外層，確保覆蓋 index.css 的底色，並強制最小高度為 100vh */
     <div 
       className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={{ backgroundColor: bgColor, minHeight: '100vh' }}
+      style={{ background: 'var(--artist-gradient)', minHeight: '100vh' }}
     >
       
       {showSplash && (
@@ -263,12 +260,9 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        {/* 修正 2：主畫面區域設定為透明，讓最外層的 bgColor 透出來 */}
-        <main className="profile-main-content" style={{ backgroundColor: 'transparent' }}>
-          {/* 修正 3：確保 wrapper 包裹了內容區與 footer，並透過 CSS 撐開高度 */}
+        <main className="profile-main-content">
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
-              
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
                   {availableTags.length > 1 && (
@@ -325,9 +319,8 @@ export function PublicProfile() {
               )}
             </div>
 
-            {/* 修正 4：Footer 放在這個內層框架的底部 */}
             <footer className="profile-internal-footer">
-              <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
+              <div className="footer-links" style={{ color: isDarkText ? '#333' : 'rgba(255,255,255,0.7)' }}>
                 <Link to="/terms">服務條款</Link>
                 <span>|</span>
                 <Link to="/privacy">隱私權政策</Link>
@@ -342,15 +335,23 @@ export function PublicProfile() {
       </div>
 
       {selectedShowcase && (
-        <div className="lightbox-overlay" onClick={() => setSelectedShowcase(null)}>
+        <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close"><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
+            <div className="showcase-cover">
+              <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
+            </div>
             <div className="showcase-details">
-              <h2>{selectedShowcase.title}</h2>
-              <div className="modal-price">${selectedShowcase.price_info}</div>
-              <div className="modal-tags">{selectedShowcase.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
-              <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              <div className="showcase-header">
+                <h2>{selectedShowcase.title}</h2>
+                <div className="modal-price">${selectedShowcase.price_info}</div>
+              </div>
+              <div className="modal-tags">
+                {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
+              </div>
+              <div className="description-scroll-area">
+                <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              </div>
             </div>
           </div>
         </div>
