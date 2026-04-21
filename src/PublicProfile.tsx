@@ -118,6 +118,7 @@ export function PublicProfile() {
             try {
               const decodedSettings = decodeHTML(userData.data.profile_settings);
               const parsedSettings = JSON.parse(decodedSettings);
+              console.log("前端收到的設定檔：", parsedSettings); // 加入這行
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
               setSettings(parsedSettings);
             } catch (e) {
