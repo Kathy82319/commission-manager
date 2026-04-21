@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import '../../styles/Notebook.css'; // 🌟 確保套用標準化架構
+import '../../styles/Notebook.css'; 
 
 interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
@@ -196,7 +196,7 @@ export function ClientOrders() {
       comment = window.prompt("請輸入需要修改的意見：") || '';
       if (!comment.trim()) return alert("必須輸入意見才能退回。");
     } else {
-      if (!window.confirm('⚠️ 注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？')) return;
+      if (!window.confirm('注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？')) return;
     }
     setIsProcessing(true);
     try {
@@ -255,16 +255,16 @@ export function ClientOrders() {
   }, [orders, filter, searchTerm]);
 
   const getStatusDisplay = (status: string, stage: string) => {
-    if (status === 'completed') return <span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>✓ 已結案</span>;
+    if (status === 'completed') return <span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>已結案</span>;
     if (status === 'cancelled') return <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>作廢</span>;
-    if (stage.includes('reviewing')) return <span style={{ color: '#d93025', fontWeight: 'bold' }}>👀 待審閱</span>;
-    return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>✍️ 安排中</span>;
+    if (stage.includes('reviewing')) return <span style={{ color: '#d93025', fontWeight: 'bold' }}>待審閱</span>;
+    return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>安排中</span>;
   };
 
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
-    let statusText = isPassed ? (isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段') : (isReviewing ? '👀 繪師已交付，請確認' : '⏳ 尚未交付');
+    let statusText = isPassed ? (isFinal ? '已同意，合約結案' : '繪師已推進下一階段') : (isReviewing ? '繪師已交付，請確認' : '尚未交付');
     return (
       <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
         <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#FBFBF9'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E', borderBottom: '1px solid #EAE6E1' }}>
@@ -280,17 +280,17 @@ export function ClientOrders() {
                </div>
 
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統已自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
+                 {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>本階段請過目即可，系統已自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
                  {isReviewing && isFinal && (
                    <>
-                     <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
+                     <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>同意後將結案並解鎖原檔下載。</div>
                      <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #EAE6E1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', flex: '1 1 auto' }}>退回修改</button>
-                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', flex: '1 1 auto' }}>✓ 同意完稿</button>
+                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', flex: '1 1 auto' }}>同意完稿</button>
                    </>
                  )}
                  {isPassed && isFinal && selectedOrder?.status === 'completed' && (
                    <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                     {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
+                     {isProcessing ? '正在獲取安全連結...' : '下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
                </div>
@@ -321,7 +321,7 @@ export function ClientOrders() {
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
-            <h3 style={{ color: '#e11d48', marginTop: 0 }}>⚠️ 繪師提出了規格異動申請</h3>
+            <h3 style={{ color: '#e11d48', marginTop: 0 }}>繪師提出了規格異動申請</h3>
             <p style={{ color: '#7A7269', fontSize: '14px', marginBottom: '12px' }}>繪師希望調整委託單內容，請確認以下項目：</p>
             <div style={{ backgroundColor: '#FAFAFA', padding: '16px', borderRadius: '12px', fontSize: '14px', color: '#5D4A3E', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
               {Object.keys(parsedChanges).map(key => (<div key={key} style={{ marginBottom: '6px' }}><span style={{ fontWeight: 'bold' }}>• {fieldMap[key] || key}：</span><span>{parsedChanges![key]}</span></div>))}
@@ -345,7 +345,7 @@ export function ClientOrders() {
           </div>
 
           <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
           <div className="sidebar-list-container">
@@ -361,14 +361,23 @@ export function ClientOrders() {
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} style={{ position: 'relative', padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
                     {showDot && (
-                      <div style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#e11d48', color: '#FFF', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>🔔</div>
+                      <div style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#e11d48', color: '#FFF', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>通知</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
                       <span>{new Date(order.order_date).toLocaleDateString()}</span>
-                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
+                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>急件</span>)}
                     </div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.client_custom_title || order.project_name || '未命名項目'}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: '12px', color: '#7A7269', fontFamily: 'monospace' }}>單號：{order.id}</span><span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '14px' }}>NT$ {order.total_price}</span></div>
+                    
+                    {/* 調整這裡的 lineHeight 和 paddingBottom 避免文字上下被裁切 */}
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px', lineHeight: '1.4', paddingBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {order.client_custom_title || order.project_name || '未命名項目'}
+                    </div>
+                    
+                    {/* 調整 gap 和 flexShrink 避免單號和金額互擠 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#7A7269', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>單號：{order.id}</span>
+                      <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '14px', whiteSpace: 'nowrap', flexShrink: 0 }}>NT$ {order.total_price}</span>
+                    </div>
                     <div style={{ marginTop: '8px', fontSize: '12px' }}>{getStatusDisplay(order.status, order.current_stage)}</div>
                   </div>
                 );
@@ -385,7 +394,7 @@ export function ClientOrders() {
                 <div style={{ flex: '1 1 250px' }}>
                   
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
-                    ⬅ 返回列表
+                    返回列表
                   </button>
 
                   <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
@@ -408,7 +417,7 @@ export function ClientOrders() {
                       fontSize: '14px', animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none'
                     }}
                   >
-                    {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
+                    {hasNewMessage ? '有新訊息！' : '進入聊天室'}
                   </button>
                 </div>
               </div>
@@ -428,7 +437,7 @@ export function ClientOrders() {
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />
                         <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#4E7A5A' : '#5D4A3E', flexShrink: 0 }}>
-                          {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
+                          {saveStatus === 'saving' ? '儲存中...' : saveStatus === 'success' ? '成功' : '儲存'}
                         </button>
                       </div>
                     </div>
