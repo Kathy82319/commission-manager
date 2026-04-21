@@ -182,14 +182,29 @@ export function Settings() {
   return (
     <div className="settings-page">
       <div className="settings-layout">
-        
-        {/* 側邊導覽列 */}
         <aside className="settings-sidebar">
+          {/* 1. 調整標題大小與位置，對齊 Workspace 樣式 */}
           <div className="sidebar-title">個人頁編輯</div>
+          
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
-              <div className="group-label">{group.title}</div>
+              <div className="group-label">
+                {group.title}
+                {/* 2. 在內容管理旁邊增加一個小按鈕來進入管理頁面 */}
+                {group.title.includes('內容管理') && (
+                  <button 
+                    className="manage-entry-btn" 
+                    onClick={() => setActiveTab('custom_manage')}
+                    title="管理區塊"
+                  >
+                    ⚙️
+                  </button>
+                )}
+              </div>
               {group.items.map((item: MenuItem) => {
+                // 過濾掉原本在清單中的管理項，保持選單純淨
+                if (item.id === 'custom_manage') return null;
+
                 const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id) && !item.id.startsWith('custom_');
                 return (
                   <button 

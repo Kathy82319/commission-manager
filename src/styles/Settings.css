@@ -28,10 +28,27 @@
   display: none;
 }
 
-/* 行動版隱藏分類標籤，保持水平切換感 */
 .group-label {
-  display: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  color: #5D4A3E;
+  margin-bottom: 12px;   /* 標題與下方按鈕的距離 */
+  font-weight: bold;
+  padding-left: 0;
 }
+
+/* 小型的管理入口按鈕 */
+.manage-entry-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.manage-entry-btn:hover { opacity: 1; }
 
 .tab-btn {
   white-space: nowrap; 
@@ -212,12 +229,9 @@
   
 /* --- 側邊欄與導覽 --- */
 .settings-sidebar {
-  display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  border-bottom: 2px solid #EAE6E1;
-  padding-bottom: 8px;
-}
+    border-bottom: none; /* 移除整體容器的底線 */
+    border-right: none;  /* 移除整體容器的右線 */
+  }
 
 /* 分類標題 */
 .group-label {
@@ -229,25 +243,30 @@
   padding-left: 12px;
 }
 
+/* 1. 調整側邊欄總標題：參考工作排單表 (Workspace) 的樣式 */
+.sidebar-title {
+  display: block; 
+  font-size: 24px;       /* 放大字體 */
+  color: #5D4A3E;
+  margin-bottom: 40px;   /* 增加與下方第一個分類的間距 */
+  font-weight: bold;
+  padding-left: 0;       /* 移除內縮，與線條對齊 */
+}
+
+/* 2. 調整分類與分類間的距離 */
 .sidebar-group {
-  margin-bottom: 12px; /* 縮短分類之間的距離 */
+  margin-bottom: 24px;   /* 增加分類組之間的呼吸空間 */
 }
 
 /* 分頁按鈕基礎樣式 */
 .tab-btn {
-  white-space: nowrap;
-  padding: 8px 16px; /* 縮小上下內距 */
-  border: none;
-  background-color: transparent;
-  color: #A0978D;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  width: 100%;
-  text-align: left;
-  border-left: 3px solid transparent; /* 預留左側線條位置 */
-}
+    border: none;        /* 移除所有預設邊框 */
+    padding: 10px 16px 10px 24px; /* 調整縮排 */
+    border-left: 4px solid transparent; /* 只保留左側透明佔位 */
+    background-color: transparent;
+    margin-bottom: 4px;
+  }
+
 
 @media (min-width: 1024px) {
   .settings-layout {
@@ -270,12 +289,13 @@
   }
 
   /* 電梯亮燈樣式 */
-  .tab-btn.active {
-    background-color: #F9F7F5;
+.tab-btn.active {
+    border-left: 4px solid #5D4A3E; /* 亮燈效果 */
+    border-bottom: none ; /* 確保絕對沒有底線 */
     color: #5D4A3E;
     font-weight: bold;
-    border-left: 4px solid #5D4A3E; /* 左側亮燈直線 */
-    border-radius: 0 8px 8px 0; /* 右側圓角 */
+    background-color: #F9F7F5 ; /* 淡淡的背景色增加區別感 */
+    border-radius: 0 8px 8px 0; /* 僅右側圓角 */
   }
 
   .tab-btn:hover:not(.active) {
@@ -283,10 +303,7 @@
     border-left: 4px solid #DED9D3;
   }
 }
-  .tab-btn.active {
-    background-color: #F4F0EB;
-    color: #5D4A3E;
-  }
+
 }
 
 @keyframes fadeIn {
