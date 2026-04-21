@@ -325,31 +325,32 @@
 
 .scroll-tabs::-webkit-scrollbar { display: none; }
 
-.tab-btn {
-  white-space: nowrap;
-  padding: 14px 4px;
-  cursor: pointer;
-  border: none;
-  background-color: transparent !important;
-  font-size: 15px;
-  color: #A0978D;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  border-bottom: 2px solid transparent; 
-  margin-bottom: -2px; 
-  outline: none;
-}
+  .tab-btn {
+    text-align: left;
+    padding: 10px 16px 10px 32px; /* 32px 達成縮排效果 */
+    margin-bottom: 4px;
+    border-left: 4px solid transparent; /* 預留亮燈位置 */
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+  }
 
-.tab-btn.active {
-  border-bottom: 2px solid #5D4A3E;
-  font-weight: bold;
-  color: #5D4A3E;
-}
+  /* 電梯亮燈樣式 - Active */
+  .tab-btn.active {
+    background-color: #F9F7F5 !important;
+    color: #5D4A3E;
+    font-weight: bold;
+    border-left: 4px solid #5D4A3E; /* 亮燈直線 */
+    border-bottom: none !important;
+  }
 
-.tab-btn:hover:not(.active) {
-  color: #7A7269;
-  border-bottom: 2px solid #DED9D3;
-}
+  /* Hover 效果 */
+  .tab-btn:hover:not(.active) {
+    background-color: #FDFBFA;
+    border-left: 4px solid #DED9D3;
+    color: #7A7269;
+  }
+
+
 
 .tab-content-area {
   padding: 20px;
