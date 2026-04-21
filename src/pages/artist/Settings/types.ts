@@ -13,6 +13,8 @@ export interface ProfileSettings {
   splash_text: string;
   layout_type?: 'blog' | 'gallery';
   background_color?: string;
+  gradient_enabled?: boolean;
+  secondary_color?: string;
   theme_mode?: 'light' | 'dark';
   gradient_direction?: string;
 }
