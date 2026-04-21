@@ -10,7 +10,6 @@ import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
-// --- TypeScript 型別定義 ---
 interface MenuItem {
   id: string;
   label: string;
@@ -51,7 +50,6 @@ export function Settings() {
   const [message, setMessage] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 定義靜態分類結構 (已更名為 徵稿/販售區)
   const categories: MenuCategory[] = [
     {
       title: '個人資訊',
@@ -69,7 +67,7 @@ export function Settings() {
       items: [
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
-        { id: 'showcase', label: '徵稿/販售區' }, 
+        { id: 'showcase', label: '徵稿/販售區' },
         { id: 'process', label: '委託流程' },
         { id: 'payment', label: '付款方式' },
         { id: 'rules', label: '協議書範本' },
@@ -106,13 +104,11 @@ export function Settings() {
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
         });
-        
         setQuotaInfo({
           plan_type: data.data.plan_type || 'free',
           used_quota: data.data.used_quota || 0,
           max_quota: 3,
         });
-
         if (data.data.profile_settings) {
           const parsed = typeof data.data.profile_settings === 'string' 
             ? JSON.parse(data.data.profile_settings) 
@@ -169,9 +165,10 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  // 修改點：將 showcase 從允許清單移除，使其對免費版上鎖
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme'];
-  const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab) && !activeTab.startsWith('custom_');
+  
+  // 修改：將自定義分頁與管理頁面列入鎖定範圍
+  const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
   return (
     <div className="settings-page">
@@ -183,20 +180,19 @@ export function Settings() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label">
                 {group.title}
+                {/* 修改：將齒輪改為文字按鈕 */}
                 {group.title.includes('內容管理') && (
                   <button 
-                    className="manage-entry-btn" 
+                    className="add-page-btn" 
                     onClick={() => setActiveTab('custom_manage')}
-                    title="管理區塊"
                   >
-                    ⚙️
+                    + 新增分頁
                   </button>
                 )}
               </div>
               {group.items.map((item: MenuItem) => {
                 if (item.id === 'custom_manage') return null;
-
-                const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id) && !item.id.startsWith('custom_');
+                const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
                 return (
                   <button 
                     key={item.id} 
@@ -221,61 +217,34 @@ export function Settings() {
             )}
           </div>
 
+          {/* 專業版鎖定遮罩 */}
           {isCurrentTabLocked && (
             <div className="lock-overlay">
               <div className="lock-card">
                 <div className="lock-icon">🔒</div>
                 <h4>此功能僅限專業版</h4>
+                <p>升級專業版即可解鎖更多自定義區塊與進階功能</p>
                 <button onClick={() => setActiveTab('subscription')}>查看方案</button>
               </div>
             </div>
           )}
 
-          <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(4px)' : 'none' }}>
+          <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && (
               <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />
             )}
-            
-            {activeTab === 'theme' && (
-              <ThemeTab settings={settings} setSettings={setSettings} />
-            )}
-            
-            {activeTab === 'splash' && (
-              <SplashTab settings={settings} setSettings={setSettings} />
-            )}
-            
+            {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
+            {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
-              <RichTextTab 
-                field={activeTab} 
-                settings={settings} 
-                setSettings={setSettings} 
-                onSave={handleSave} 
-              />
+              <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} onSave={handleSave} />
             )}
-            
             {activeTab.startsWith('custom_') && !activeTab.includes('manage') && (
-              <RichTextTab 
-                isCustom 
-                customIndex={parseInt(activeTab.split('_')[1])} 
-                settings={settings} 
-                setSettings={setSettings} 
-                onSave={handleSave}
-              />
+              <RichTextTab isCustom customIndex={parseInt(activeTab.split('_')[1])} settings={settings} setSettings={setSettings} onSave={handleSave} />
             )}
-
-            {activeTab === 'custom_manage' && (
-              <CustomSectionsTab settings={settings} setSettings={setSettings} />
-            )}
-            
+            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'showcase' && <ShowcaseTab />}
-            
-            {activeTab === 'portfolio' && (
-              <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />
-            )}
-            
-            {activeTab === 'subscription' && (
-              <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} />
-            )}
+            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />}
+            {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} />}
           </div>
 
           <div className="save-action-bar">
@@ -284,7 +253,7 @@ export function Settings() {
                 {message}
               </span>
             )}
-            <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
+            <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
               {isSaving ? '儲存中...' : '儲存所有變更'}
             </button>
           </div>
