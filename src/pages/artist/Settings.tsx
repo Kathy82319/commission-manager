@@ -64,9 +64,7 @@ export function Settings() {
     layout_type: 'blog', 
     background_color: '#F4F0EB', 
     // 修正：補足漸層相關初始欄位，確保 ThemeTab 能正確讀取與更新
-    secondary_color: '#EAE6E1',
-    gradient_enabled: false,
-    gradient_direction: 'to bottom',
+    gradient_direction: 'to bottom right',
     theme_mode: 'dark'
   });
 
