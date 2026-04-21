@@ -63,6 +63,10 @@ export function Settings() {
     splash_text: '',
     layout_type: 'blog', 
     background_color: '#F4F0EB', 
+    // 修正：補足漸層相關初始欄位，確保 ThemeTab 能正確讀取與更新
+    secondary_color: '#EAE6E1',
+    gradient_enabled: false,
+    gradient_direction: 'to bottom',
     theme_mode: 'dark'
   });
 
@@ -139,6 +143,7 @@ export function Settings() {
           const parsed = typeof data.data.profile_settings === 'string' 
             ? JSON.parse(data.data.profile_settings) 
             : data.data.profile_settings;
+          // 使用 spread operator 合併，確保漸層資料被正確載入
           setSettings(prev => ({ ...prev, ...parsed }));
         }
       }
@@ -160,6 +165,7 @@ export function Settings() {
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
           bio: formData.bio,
+          // 這裡會將包含漸層設定的整個 settings 物件序列化儲存
           profile_settings: JSON.stringify(settings)
         })
       });
