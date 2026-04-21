@@ -47,6 +47,14 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
+      // --- 新增：藝師全域設定路由 (處理 404 問題) ---
+      if (url.pathname === "/api/artist/settings") {
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+        if (request.method === "GET") return userController.getSettings(currentUserId!, env, corsHeaders);
+        if (request.method === "POST") return userController.updateSettings(request, currentUserId!, env, corsHeaders);
+      }
+
       // 支付相關 API
       if (url.pathname === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
@@ -179,7 +187,7 @@ export default {
       if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
         return authController.testingBypass(request, env, corsHeaders);
       }
- 
+
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 

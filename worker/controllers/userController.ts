@@ -4,7 +4,102 @@ import { sanitizeAndLimit } from "../utils/security";
 
 export const userController = {
   /**
-   * 取得使用者資料 (GET /api/users/:id)
+   * 取得藝師完整設定 (新增加，用於後台 Settings.tsx)
+   */
+  async getSettings(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const { results } = await env.commission_db.prepare(`
+      SELECT display_name, avatar_url, bio, profile_settings FROM Users WHERE id = ?
+    `).bind(currentUserId).all();
+
+    if (results.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: "找不到使用者" }), { status: 404, headers: corsHeaders });
+    }
+
+    const user: any = results[0];
+    let settings = {};
+    try {
+      settings = JSON.parse(user.profile_settings || '{}');
+    } catch (e) {}
+
+    // 合併基本資訊到 settings 中傳給前端
+    const fullData = {
+      ...settings,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url,
+      bio: user.bio
+    };
+
+    return new Response(JSON.stringify({ success: true, data: fullData }), { status: 200, headers: corsHeaders });
+  },
+
+  /**
+   * 儲存藝師完整設定 (新增加，用於後台 Settings.tsx 一鍵儲存)
+   */
+  async updateSettings(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const body: any = await request.json();
+    
+    // 拆分出基本欄位與純設定欄位
+    const { display_name, avatar_url, bio, ...otherSettings } = body;
+
+    // 1. 更新 Users 表
+    const updateUsers = env.commission_db.prepare(`
+      UPDATE Users SET 
+        display_name = ?, 
+        avatar_url = ?, 
+        bio = ?, 
+        profile_settings = ? 
+      WHERE id = ?
+    `).bind(
+      sanitizeAndLimit(display_name, 100),
+      avatar_url || '',
+      sanitizeAndLimit(bio, 500),
+      JSON.stringify(otherSettings),
+      currentUserId
+    );
+
+    // 2. 同步更新 ArtistProfiles 表 (為了個人主頁顯示)
+    const c1 = otherSettings.custom_sections?.[0] || {};
+    const c2 = otherSettings.custom_sections?.[1] || {};
+    const c3 = otherSettings.custom_sections?.[2] || {};
+
+    const updateProfile = env.commission_db.prepare(`
+      INSERT INTO ArtistProfiles (
+        user_id, about_me, tos_content, portfolio_urls, commission_process, 
+        payment_info, usage_rules, custom_1_title, custom_1_content,
+        custom_2_title, custom_2_content, custom_3_title, custom_3_content
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        about_me = excluded.about_me,
+        tos_content = excluded.tos_content,
+        portfolio_urls = excluded.portfolio_urls,
+        commission_process = excluded.commission_process,
+        payment_info = excluded.payment_info,
+        usage_rules = excluded.usage_rules,
+        custom_1_title = excluded.custom_1_title,
+        custom_1_content = excluded.custom_1_content,
+        custom_2_title = excluded.custom_2_title,
+        custom_2_content = excluded.custom_2_content,
+        custom_3_title = excluded.custom_3_title,
+        custom_3_content = excluded.custom_3_content
+    `).bind(
+      currentUserId,
+      otherSettings.detailed_intro || '',
+      otherSettings.rules || '',
+      JSON.stringify(otherSettings.portfolio || []),
+      otherSettings.process || '',
+      otherSettings.payment || '',
+      otherSettings.rules || '',
+      c1.title || '', c1.content || '',
+      c2.title || '', c2.content || '',
+      c3.title || '', c3.content || ''
+    );
+
+    await env.commission_db.batch([updateUsers, updateProfile]);
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+  },
+
+  /**
+   * 取得使用者資料 (GET /api/users/:id) - 原有邏輯保持不變
    */
   async getUser(userIdParam: string, currentUserId: string | null, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const isMe = userIdParam === "me" || userIdParam === currentUserId;
@@ -120,7 +215,7 @@ export const userController = {
   },
 
   /**
-   * 更新使用者設定 (PATCH /api/users/:id)
+   * 更新使用者 (原有邏輯，保留以支援舊有 PATCH 呼叫)
    */
   async updateUser(request: Request, userIdParam: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
@@ -189,9 +284,6 @@ export const userController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 停用/刪除帳號 (DELETE /api/users/me)
-   */
   async deleteUser(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     await env.commission_db.prepare(`
       UPDATE Users 
@@ -212,9 +304,6 @@ export const userController = {
     });
   },
 
-  /**
-   * 完成初始設定 (POST /api/users/me/complete-onboarding)
-   */
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
     const newRole = body.role === 'artist' ? 'artist' : 'client';
