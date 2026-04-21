@@ -56,7 +56,7 @@
 
 /* 提升選擇器權重 (.sidebar-controls .class名稱) 
    以此精準覆寫 .form-input 帶來的 width: 100% 災難 */
-.sidebar-controls .sidebar-search-input {
+.sidebar-controls  {
   padding: 8px 12px;
   font-size: 13px;
   flex: 1 1 auto; /* 允許彈性伸縮，佔滿剩餘空間 */
@@ -64,10 +64,17 @@
   min-width: 100px; /* 給予基本底線，防止再次被擠壓到消失 */
 }
 
-.sidebar-filter {
-  width: auto;
+.sidebar-search-input {
+  flex: 1 !important;      /* 讓搜尋框佔據剩餘空間 */
+  width: auto !important;  /* 防止 width: 100% 破壞佈局 */
   padding: 8px 12px;
-  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.sidebar-filter {
+  width: auto !important;  /* 根據內容自適應寬度 */
+  padding: 8px 12px;
+  flex-shrink: 0;          /* 防止下拉選單被擠壓 */
   font-size: 13px;
 }
 
