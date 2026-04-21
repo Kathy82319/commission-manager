@@ -20,7 +20,6 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 
   return (
     <div className={`toast-message ${type === 'err' ? 'error' : 'success'}`}>
-      <div className="toast-icon">{type === 'err' ? '[警告]' : '[成功]'}</div>
       <div className="toast-content">{message}</div>
     </div>
   );
