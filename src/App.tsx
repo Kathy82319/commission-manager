@@ -13,31 +13,29 @@ import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
+import { Customers } from './pages/artist/Customers'; // 🌟 確保導入
+import { CustomerDetail } from './pages/artist/CustomerDetail'; // 🌟 確保導入
 
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders';
- 
 
 import { Workspace } from './pages/Workspace';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
 import { Portal } from './pages/Portal';
 
-
 import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
-
-import { Customers } from './pages/artist/Customers';
-import { CustomerDetail } from './pages/artist/CustomerDetail';
 
 export function App() {
   const MY_ARTIST_ID = "User_84448";
   
   return (
     <BrowserRouter>
+      {/* 🌟 所有的 <Route> 必須在 <Routes> 裡面 */}
       <Routes>
-        {/* 1. 首頁直接導向您的個人繪師頁面 */}
+        {/* 1. 首頁導向 */}
         <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />
         
         {/* 2. 身分驗證區 */}
@@ -49,6 +47,11 @@ export function App() {
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
           <Route path="quote/new" element={<QuoteBuilder />} />
+          
+          {/* 🌟 這裡：正確嵌套在 ArtistLayout 的 Routes 之下 */}
+          <Route path="customers" element={<Customers />} />
+          <Route path="customer/:id" element={<CustomerDetail />} />
+          
           <Route path="notebook" element={<Notebook />} />
           <Route path="records" element={<Records />} />
           <Route path="settings" element={<Settings />} />
@@ -56,10 +59,8 @@ export function App() {
 
         {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
-          {/* 🌟 將 home 直接導向新的融合版頁面 */}
           <Route path="home" element={<Navigate to="/client/orders" replace />} />
           <Route path="orders" element={<ClientOrders />} />
-          {/* 🌟 舊的 order/:id 已經融合進 orders，可以直接移除或也做重導向 */}
           <Route path="order/:id" element={<Navigate to="/client/orders" replace />} />
           <Route path="form/:id" element={<ClientForm />} />
         </Route>
@@ -69,7 +70,7 @@ export function App() {
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
 
-        {/* 6. 公開頁面 (套用 PublicLayout) - 必須放最後面，因為 /:artistId 會攔截所有東西 */}
+        {/* 6. 公開頁面 */}
         <Route element={<PublicLayout />}>
           <Route path="/terms" element={<Terms />} />
           <Route path="/portal" element={<Portal />} />
@@ -78,26 +79,14 @@ export function App() {
           <Route path="/refund-policy" element={<RefundPolicy />} />
         </Route>
         
-        {/* === 新增：管理員後台區 === */}
+        {/* 管理員後台 */}
         <Route path="/adminbalabababa" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
         </Route>
+
+        {/* 🌟 捕獲未定義路徑，防止出現空白頁 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
-<Route path="/artist" element={<ArtistLayout />}>
-  <Route index element={<Navigate to="queue" replace />} />
-  <Route path="queue" element={<Queue />} />
-  <Route path="quote/new" element={<QuoteBuilder />} />
-  {/* 🌟 新增：客戶管理路由 */}
-  <Route path="customers" element={<Customers />} />
-  <Route path="customer/:id" element={<CustomerDetail />} /> 
-  <Route path="notebook" element={<Notebook />} />
-  <Route path="records" element={<Records />} />
-  <Route path="settings" element={<Settings />} />
-</Route>
-
-
-
     </BrowserRouter>
   );
 }
