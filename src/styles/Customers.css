@@ -115,14 +115,16 @@
 
 /* 🌟 社群文字樣式微調 */
 .crm-social-item-text {
-  font-size: 11px;
+  font-size: 11px; /* 🌟 字小一點 */
+  white-space: normal;
+  word-break: break-all;
+  width: 100%;
   color: #8A7E72;
-  white-space: normal;      /* 允許自然折行 */
-  word-break: break-all;   /* 強制在邊界斷開長網址 */
-  width: 100%;             /* 撐開寬度確保不會無故斷行 */
-  display: block;
-  text-align: left;
-  line-height: 1.4;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .crm-social-summary {
@@ -174,10 +176,9 @@
 .crm-form-input {
   width: 100%;
   padding: 10px;
-  border: 1px solid var(--crm-border);
+  border: 1px solid #DED9D3;
   border-radius: 8px;
-  font-size: 14px;
-  box-sizing: border-box; 
+  box-sizing: border-box;
 }
 
 .crm-tag {
@@ -278,18 +279,16 @@
   cursor: pointer;
 }
 
+/* 🌟 修正：永久刪除按鈕 */
 .crm-delete-btn {
-  background: white;
-  border: 1px solid var(--crm-danger);
-  color: var(--crm-danger);
+  background-color: #FFFFFF;
+  border: 1px solid #C04B4B;
+  color: #C04B4B;
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
-
-.crm-delete-btn:hover {
-  background: #FEEBEB;
-}
+.crm-delete-btn:hover { background-color: #FEEBEB ; }
