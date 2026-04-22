@@ -81,7 +81,7 @@ export function Queue() {
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   
-  // 🌟 新增：控制手機版哪一列被展開的狀態
+  // 控制手機版哪一列被展開的狀態
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -182,14 +182,12 @@ export function Queue() {
           </thead>
           <tbody>
             {filteredCommissions.map((order, idx) => {
-              // 判斷當前列是否展開
               const isExpanded = expandedId === order.id;
               
               return (
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                // 🌟 點擊整列切換展開狀態
                 onClick={() => setExpandedId(isExpanded ? null : order.id)}
                 className={`
                   ${draggedIdx === idx ? 'dragging' : ''} 
@@ -197,7 +195,7 @@ export function Queue() {
                   ${isExpanded ? 'is-expanded' : ''} 
                 `}
               >
-                <td data-label="日期" className="sticky-col sticky-date">
+                <td data-label="日期">
                   <div className="cell-content cell-date">
                     <div 
                       draggable 
@@ -207,18 +205,19 @@ export function Queue() {
                     >
                       <GripVertical size={16} />
                     </div>
-                    <span>{order.order_date.substring(5, 10)}</span>
+                    {/* 左側排單日期維持 MM/DD 格式 */}
+                    <span>{order.order_date.substring(5, 10).replace('-', '/')}</span>
                   </div>
                 </td>
-                <td data-label="委託人資訊" className="sticky-col sticky-client">
+                <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }} className="truncate-text">
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      <span style={{ color: '#A0978D', marginLeft: '3px' }}>
+                      {/* 系統暱稱在未展開時透過 CSS 隱藏，展開時顯示 */}
+                      <span className="client-details-extra" style={{ color: '#A0978D', display: 'inline-block', marginLeft: '3px' }}>
                         ({order.client_name || '無暱稱'} )  
                       </span>
                     </div>
-                    {/* 🌟 展開時才顯示的詳細資訊，透過 CSS 隱藏/顯示 */}
                     <div className="client-details-extra">
                       <div style={{ fontSize: '13px', color: '#7A7269' }}>
                         <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
@@ -232,7 +231,6 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="當前進度">
-                  {/* 🌟 加上 onClick 阻擋事件冒泡，避免操作選單時觸發列收合 */}
                   <div className="cell-content cell-status" onClick={e => e.stopPropagation()}>
                     <div className="workflow-badge-wrapper">
                       <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
@@ -251,7 +249,14 @@ export function Queue() {
                 </td>
                 <td data-label="預計完工">
                   <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
-                    <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
+                    {/* 條件渲染：未展開顯示精簡文字，展開顯示完整日期輸入框 */}
+                    {!isExpanded ? (
+                      <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'bold' }}>
+                        {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
+                      </span>
+                    ) : (
+                      <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
+                    )}
                   </div>
                 </td>
                 <td data-label="付款進度">
@@ -261,7 +266,7 @@ export function Queue() {
                     </select>
                   </div>
                 </td>
-                <td data-label="備註欄位" className="expandable-cell">
+                <td data-label="備註欄位">
                   <div className="cell-content cell-note" onClick={e => e.stopPropagation()}>
                     {order.client_custom_label === '黑名單' && (
                       <span 
@@ -277,7 +282,7 @@ export function Queue() {
                     <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
-                <td data-label="操作管理" className="expandable-cell">
+                <td data-label="操作管理">
                   <div className="cell-content cell-manage" onClick={e => e.stopPropagation()}>
                     <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
                   </div>
