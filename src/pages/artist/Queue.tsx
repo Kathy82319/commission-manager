@@ -1,5 +1,5 @@
 // src/pages/artist/Queue.tsx
-import { useState, useEffect, useRef, useMemo } from 'react'; // 🌟 補上 useMemo
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical } from 'lucide-react';
 import '../../styles/Queue.css';
@@ -12,7 +12,6 @@ interface Commission {
   latest_message_at?: string;
   last_read_at_artist?: string;
   client_public_id?: string;
-  // 🌟 補上後端透傳的 CRM 資訊
   client_custom_label?: string;
   crm_record_id?: string;
 }
@@ -74,13 +73,16 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
 export function Queue() {
   const navigate = useNavigate();
   const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [isSaving, setIsSaving] = useState(false); // 修正變數命名衝突
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  
+  // 🌟 新增：控制手機版哪一列被展開的狀態
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
@@ -138,7 +140,6 @@ export function Queue() {
     setCommissions(newCommissions);
   };
 
-  // 🔍 搜尋邏輯：擴充支援標籤搜尋
   const filteredCommissions = useMemo(() => {
     return commissions.filter(c => {
       if (selectedMonth !== 'all' && !c.order_date.startsWith(selectedMonth)) return false;
@@ -148,7 +149,7 @@ export function Queue() {
         c.contact_memo?.toLowerCase().includes(term) || 
         c.project_name?.toLowerCase().includes(term) ||
         c.id.includes(term) ||
-        c.client_custom_label?.toLowerCase().includes(term) // 🌟 支援搜尋標籤
+        c.client_custom_label?.toLowerCase().includes(term)
       );
     });
   }, [commissions, selectedMonth, searchTerm]);
@@ -180,13 +181,23 @@ export function Queue() {
             </tr>
           </thead>
           <tbody>
-            {filteredCommissions.map((order, idx) => (
+            {filteredCommissions.map((order, idx) => {
+              // 判斷當前列是否展開
+              const isExpanded = expandedId === order.id;
+              
+              return (
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
-                className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''}`}
+                // 🌟 點擊整列切換展開狀態
+                onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                className={`
+                  ${draggedIdx === idx ? 'dragging' : ''} 
+                  ${openDropdownId === order.id ? 'active-row' : ''}
+                  ${isExpanded ? 'is-expanded' : ''} 
+                `}
               >
-                <td data-label="日期">
+                <td data-label="日期" className="sticky-col sticky-date">
                   <div className="cell-content cell-date">
                     <div 
                       draggable 
@@ -199,29 +210,30 @@ export function Queue() {
                     <span>{order.order_date.substring(5, 10)}</span>
                   </div>
                 </td>
-                <td data-label="委託人資訊">
+                <td data-label="委託人資訊" className="sticky-col sticky-client">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                    <div style={{ fontSize: '14px', color: '#5D4A3E' }} className="truncate-text">
                       <strong>委託人：</strong>{order.contact_memo || '未命名'} 
                       <span style={{ color: '#A0978D', marginLeft: '3px' }}>
                         ({order.client_name || '無暱稱'} )  
                       </span>
                     </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
-                      <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
-                      </span>                                    
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                      <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
-                        {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
-                      </span>                                    
+                    {/* 🌟 展開時才顯示的詳細資訊，透過 CSS 隱藏/顯示 */}
+                    <div className="client-details-extra">
+                      <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                        <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#7A7269' }}>
+                        <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
+                          {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
+                        </span>                    
+                      </div>
                     </div>
                   </div>
-                  
                 </td>
                 <td data-label="當前進度">
-                  <div className="cell-content cell-status">
+                  {/* 🌟 加上 onClick 阻擋事件冒泡，避免操作選單時觸發列收合 */}
+                  <div className="cell-content cell-status" onClick={e => e.stopPropagation()}>
                     <div className="workflow-badge-wrapper">
                       <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
                         {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
@@ -238,20 +250,19 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="預計完工">
-                  <div className="cell-content cell-date-input">
+                  <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
                     <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
                   </div>
                 </td>
                 <td data-label="付款進度">
-                  <div className="cell-content cell-payment">
+                  <div className="cell-content cell-payment" onClick={e => e.stopPropagation()}>
                     <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
                       <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
                     </select>
                   </div>
                 </td>
-                <td data-label="備註欄位">
-                  <div className="cell-content cell-note">
-                    {/* 🌟 新增：黑名單標籤（點擊跳轉至 CRM 閱覽）[cite: 1] */}
+                <td data-label="備註欄位" className="expandable-cell">
+                  <div className="cell-content cell-note" onClick={e => e.stopPropagation()}>
                     {order.client_custom_label === '黑名單' && (
                       <span 
                         className="queue-blacklist-tag"
@@ -266,13 +277,13 @@ export function Queue() {
                     <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
-                <td data-label="操作管理">
-                  <div className="cell-content cell-manage">
+                <td data-label="操作管理" className="expandable-cell">
+                  <div className="cell-content cell-manage" onClick={e => e.stopPropagation()}>
                     <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
                   </div>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
