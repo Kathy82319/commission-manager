@@ -2,6 +2,21 @@
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
+// 🌟 修正 1：將同步邏輯移到外部，讓 create 和 update 都能使用
+async function syncToCRM(env: Env, artistId: string, clientId: string, clientNickname: string) {
+  const { results } = await env.commission_db.prepare(
+    "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
+  ).bind(artistId, clientId).all();
+
+  if (results.length === 0) {
+    const newId = crypto.randomUUID();
+    await env.commission_db.prepare(`
+      INSERT INTO CustomerRecords (id, artist_id, client_user_id, nickname, custom_label, short_note)
+      VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
+    `).bind(newId, artistId, clientId, clientNickname).run();
+  }
+}
+
 export const commController = {
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
@@ -51,34 +66,12 @@ export const commController = {
     `).bind(currentUserId, oneMinuteAgo).all();
 
     const recentCount = (recentOrders[0]?.recent_count as number) || 0;
-
     if (recentCount >= 5) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: "系統偵測到異常的建單頻率，為保護伺服器資源，請稍後再試。" 
-      }), { 
-        status: 429, 
-        headers: corsHeaders 
-      });
+        error: "系統偵測到異常的建單頻率，請稍後再試。" 
+      }), { status: 429, headers: corsHeaders });
     }
-
-// 在 commController.ts 內部的輔助邏輯
-async function syncToCRM(env: Env, artistId: string, clientId: string, clientNickname: string) {
-  // 1. 檢查該繪師是否已經紀錄過這位客戶
-  const { results } = await env.commission_db.prepare(
-    "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
-  ).bind(artistId, clientId).all();
-
-  // 2. 如果沒有紀錄，則自動新增一筆「一般」標籤的紀錄
-  if (results.length === 0) {
-    const newId = crypto.randomUUID();
-    await env.commission_db.prepare(`
-      INSERT INTO CustomerRecords (id, artist_id, client_user_id, nickname, custom_label, short_note)
-      VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
-    `).bind(newId, artistId, clientId, clientNickname).run();
-  }
-}
-
 
     const now = new Date();
     let maxQuota = 0;
@@ -186,9 +179,17 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientNic
     if (updates.length > 0) {
       params.push(id);
       const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
+      
+      // 🌟 修正 2：處理綁定時的 CRM 自動同步
       if (isBinding) {
         batch.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'bind', '委託人已成功綁定訂單')").bind(crypto.randomUUID(), id));
+        
+        // 獲取委託人暱稱並進行 CRM 同步
+        const { results: userProfile } = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(currentUserId).all();
+        const clientNickname = userProfile[0]?.display_name || '未知客戶';
+        await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
       }
+      
       await env.commission_db.batch(batch);
     }
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
