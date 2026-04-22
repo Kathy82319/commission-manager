@@ -124,7 +124,7 @@
 .crm-social-item-text {
   font-size: 11px; /* 🌟 字小一點 */
   color: #8A7E72;
-  max-width: 180px;
+  max-width: 290px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
