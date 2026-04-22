@@ -271,30 +271,66 @@
      ======================================= */
   
   .queue-table tr.is-expanded {
-    flex-direction: column; /* 展開後變成上下排版 */
-    align-items: stretch;
+    /* 🌟 核心魔法：解除橫向滑動限制，強制鎖定在螢幕可視範圍內 */
+    position: sticky;
+    left: 0; /* 黏在最左側 */
+    width: calc(100vw - 40px); /* 扣除 queue-container 的 padding */
+    min-width: 0; /* 覆蓋掉摘要列的 500px 限制 */
+    
+    /* 改用網格佈局來達成兩欄式表單 */
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 切分成均等的左右兩欄 */
+    gap: 12px 16px; /* 垂直間距 12px，水平間距 16px */
+    
     border-color: #A67B3E;
     box-shadow: 0 6px 16px rgba(166, 123, 62, 0.1);
-    min-width: 100%; /* 展開時撐滿螢幕，取消橫向滑動的需求 */
     padding: 16px;
+    background: #FFF;
+    z-index: 20; /* 確保展開的卡片在最上層 */
   }
 
-  /* 展開後解除凍結，避免排版破裂 */
+  /* 展開後解除凍結，交給上面的 sticky 統一處理 */
   .queue-table tr.is-expanded td.sticky-col {
     position: static;
     box-shadow: none;
+    padding: 0; /* 清除摘要模式留下的 padding */
+    border: none;
   }
 
-  /* 展開後，讓每個 td 變成區塊，並加上標題 */
+  /* 展開後，讓每個 td 變成內部往上排的區塊 */
   .queue-table tr.is-expanded td {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 8px 0;
+    padding: 0;
     width: 100%;
-    border-bottom: 1px dashed #F0ECE7;
+    border: none;
   }
 
-  .queue-table tr.is-expanded td:last-child { border-bottom: none; }
+  /* 🌟 網格位置分配 (Grid Placement) */
+  /* 委託人資訊與日期通常需要比較寬的空間，讓它們佔滿整列 */
+  .queue-table tr.is-expanded td[data-label="日期"],
+  .queue-table tr.is-expanded td[data-label="委託人資訊"] {
+    grid-column: 1 / -1; 
+  }
+  
+  /* 委託人資訊下方加一條分隔線，區隔上方唯讀資訊與下方編輯表單 */
+  .queue-table tr.is-expanded td[data-label="委託人資訊"] {
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #F0ECE7;
+    margin-bottom: 4px;
+  }
+
+  /* 短內容自動分配到左右兩欄 (當前進度、預計完工、付款進度) */
+  .queue-table tr.is-expanded td[data-label="當前進度"] { grid-column: 1; }
+  .queue-table tr.is-expanded td[data-label="預計完工"] { grid-column: 2; }
+  .queue-table tr.is-expanded td[data-label="付款進度"] { grid-column: 1; }
+
+  /* 長內容與按鈕，強制跨滿整列 */
+  .queue-table tr.is-expanded td[data-label="備註欄位"],
+  .queue-table tr.is-expanded td[data-label="操作管理"] {
+    grid-column: 1 / -1; 
+  }
 
   /* 恢復顯示標題 */
   .queue-table tr.is-expanded td::before {
@@ -305,6 +341,7 @@
     margin-bottom: 6px;
     font-weight: bold;
   }
+  /* 日期與委託人不需重複顯示標題 */
   .queue-table tr.is-expanded td[data-label="日期"]::before,
   .queue-table tr.is-expanded td[data-label="委託人資訊"]::before { display: none; }
 
@@ -331,4 +368,3 @@
   }
   
   .desktop-only { display: none !important; }
-}
