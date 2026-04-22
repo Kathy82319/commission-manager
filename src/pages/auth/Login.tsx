@@ -29,8 +29,8 @@ export function Login() {
 
         <button onClick={handleLineLogin} className="line-login-btn">
           <span className="line-icon-wrapper">
-          </span>
-          透過 LINE 繼續
+            透過 LINE 繼續
+          </span>         
         </button>
 
         <p className="login-footer-text">
