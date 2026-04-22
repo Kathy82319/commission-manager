@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
-// 🌟 定義客戶資料型別：對應資料庫 alias_name
 interface Customer {
   id: string;
   alias_name: string; 
@@ -10,20 +9,18 @@ interface Customer {
   custom_label: string;
   order_count: number;
   short_note: string;
-  platform_name?: string; // 這是 Users 表的 display_name，由後端關聯查詢提供
+  platform_name?: string;
 }
 
 export function Customers() {
   const navigate = useNavigate();
   const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   
-  // 狀態管理
   const [activeTab, setActiveTab] = useState<'all' | 'blacklist'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // 彈窗狀態：統一使用 alias_name
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ 
     alias_name: '', 
@@ -31,13 +28,11 @@ export function Customers() {
     label: '一般' 
   });
 
-  // 顯示通知函式
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 1. 取得客戶列表
   const fetchCustomers = async () => {
     setIsLoading(true);
     try {
@@ -59,7 +54,6 @@ export function Customers() {
     fetchCustomers();
   }, []);
 
-  // 2. 處理行內備註更新 (onBlur)
   const handleNoteBlur = async (customerId: string, content: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/customers/${customerId}`, {
@@ -78,7 +72,6 @@ export function Customers() {
     }
   };
 
-  // 3. 處理手動新增客戶：傳送 alias_name
   const handleCreateCustomer = async () => {
     if (!newCustomer.alias_name.trim()) {
       showToast("請輸入客戶稱呼");
@@ -118,46 +111,57 @@ export function Customers() {
 
   return (
     <div className="customers-container">
-      {/* Toast 通知組件 */}
       {toast && (
         <div className="toast-container">
           <div className="toast">✓ {toast}</div>
         </div>
       )}
 
-      <div className="customers-header">
-        <h2>客戶與誠信管理</h2>
-        <button className="submit-btn" style={{ width: 'auto' }} onClick={() => setIsModalOpen(true)}>
+      <header className="customers-header">
+        <div>
+          <h2>客戶與誠信管理</h2>
+          <div style={{ fontSize: '13px', color: '#A0978D', marginTop: '4px' }}>後台數據管理</div>
+        </div>
+        <button className="submit-btn" onClick={() => setIsModalOpen(true)}>
           + 手動新增紀錄
         </button>
-      </div>
+      </header>
 
-      <div className="tabs-container">
-        <button className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>總客戶名單</button>
-        <button className={`tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單分頁</button>
-      </div>
+      <nav className="tabs-container">
+        <button 
+          className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('all')}
+        >
+          總客戶名單 ({customers.filter(c => c.custom_label !== '黑名單').length})
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('blacklist')}
+        >
+          黑名單封鎖區 ({customers.filter(c => c.custom_label === '黑名單').length})
+        </button>
+      </nav>
 
       <div className="customers-table-wrapper">
         <table className="customers-table">
           <thead>
             <tr>
-              <th>暱稱 / 自訂名稱</th>
+              <th>暱稱 / 自訂稱呼</th>
               <th>平台識別 ID</th>
               <th>目前標籤</th>
               <th>合作次數</th>
-              <th>簡短備註 (點擊編輯)</th>
-              <th>管理</th>
+              <th>管理備註</th>
+              <th style={{ textAlign: 'right' }}>操作</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>數據載入中...</td></tr>
             ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
-                <tr key={customer.id} onClick={() => navigate(`/artist/customer/${customer.id}`)}>
-                  {/* 🌟 優先顯示 alias_name，若無則顯示 platform_name */}
-                  <td style={{ fontWeight: 'bold' }}>{customer.alias_name || customer.platform_name || '未知客戶'}</td>
-                  <td style={{ color: '#64748B', fontFamily: 'monospace' }}>{customer.public_id || '---'}</td>
+                <tr key={customer.id}>
+                  <td style={{ fontWeight: '600' }}>{customer.alias_name || customer.platform_name || '未知客戶'}</td>
+                  <td style={{ color: '#A0978D', fontFamily: 'monospace', fontSize: '13px' }}>{customer.public_id || '---'}</td>
                   <td>
                     <span className={`tag ${
                       customer.custom_label === 'VIP' ? 'tag-vip' : 
@@ -166,44 +170,51 @@ export function Customers() {
                       {customer.custom_label}
                     </span>
                   </td>
-                  <td>{customer.order_count} 次</td>
-                  <td onClick={(e) => e.stopPropagation()}>
+                  <td><span style={{ fontWeight: '500' }}>{customer.order_count}</span> 次</td>
+                  <td onClick={(e) => e.stopPropagation()} style={{ width: '30%' }}>
                     <input 
                       className="inline-note-input"
                       defaultValue={customer.short_note}
                       onBlur={(e) => handleNoteBlur(customer.id, e.target.value)}
-                      placeholder="點擊新增備註..."
+                      placeholder="點擊編輯備註..."
                     />
                   </td>
-                  <td><button className="tab-btn" style={{ padding: '4px 12px', fontSize: '12px' }}>詳情</button></td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button 
+                      className="tab-btn" 
+                      style={{ padding: '4px 12px' }}
+                      onClick={() => navigate(`/artist/customer/${customer.id}`)}
+                    >
+                      詳情
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>{activeTab === 'blacklist' ? "目前沒有黑名單紀錄" : "目前尚無客戶資料"}</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '80px', color: '#A0978D' }}>{activeTab === 'blacklist' ? "目前名單乾淨，尚無黑名單紀錄" : "目前尚無客戶資料，將從第一筆單據開始累積"}</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* 🌟 彈窗結構：確保 alias_name 對應輸入框 */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="onboarding-card" onClick={e => e.stopPropagation()}>
-            <h3 className="onboarding-title">新增客戶紀錄</h3>
-            <p className="onboarding-subtitle">您可以手動紀錄場外交易的對象</p>
+            <h3 className="onboarding-title">新增管理紀錄</h3>
+            <p className="onboarding-subtitle">手動紀錄場外交易或預防性封鎖</p>
             
             <div className="form-section">
-              <label className="form-label">客戶暱稱 / 稱呼</label>
+              <label className="form-label">客戶暱稱 / 自訂稱呼</label>
               <input 
                 className="form-input" 
                 value={newCustomer.alias_name}
                 onChange={e => setNewCustomer({...newCustomer, alias_name: e.target.value})}
-                placeholder="例如：王小明 (FB)"
+                placeholder="例如：王小明 (FB傳訊)"
               />
             </div>
 
             <div className="form-section">
-              <label className="form-label">平台 ID (若有)</label>
+              <label className="form-label">平台公共 ID (選填)</label>
               <input 
                 className="form-input" 
                 value={newCustomer.public_id}
@@ -213,7 +224,7 @@ export function Customers() {
             </div>
 
             <div className="form-section">
-              <label className="form-label">初始分類</label>
+              <label className="form-label">標籤分類</label>
               <select 
                 className="form-input" 
                 value={newCustomer.label}
@@ -221,15 +232,15 @@ export function Customers() {
               >
                 <option value="一般">一般客戶</option>
                 <option value="VIP">VIP 優質客戶</option>
-                <option value="黑名單">黑名單 (拒接)</option>
+                <option value="黑名單">黑名單</option>
               </select>
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-              <button className="submit-btn" style={{ backgroundColor: '#E2E8F0', color: '#475569' }} onClick={() => setIsModalOpen(false)}>
+              <button className="tab-btn" style={{ flex: 1 }} onClick={() => setIsModalOpen(false)}>
                 取消
               </button>
-              <button className="submit-btn" onClick={handleCreateCustomer}>
+              <button className="submit-btn" style={{ flex: 2 }} onClick={handleCreateCustomer}>
                 確認新增
               </button>
             </div>
