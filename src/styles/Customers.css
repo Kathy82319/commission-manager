@@ -1,5 +1,15 @@
 /* src/styles/Customers.css */
 
+/* --- 1. 變數與基礎佈局 --- */
+:root {
+  --crm-primary: #5D4A3E;
+  --crm-secondary: #8A7E72;
+  --crm-bg-light: #FDFBFA;
+  --crm-border: #DED9D3;
+  --crm-danger: #C04B4B;
+  --crm-success: #4E7A5A;
+}
+
 .crm-container {
   padding: 24px;
   max-width: 1200px;
@@ -17,19 +27,19 @@
 
 .crm-header h2 {
   font-size: 24px;
-  color: #5D4A3E;
+  color: var(--crm-primary);
   margin: 0;
 }
 
-/* 搜尋框與按鈕的容器佈局 */
 .customers-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* --- 2. 按鈕與導覽組件 --- */
 .crm-submit-btn {
-  background: #5D4A3E;
+  background: var(--crm-primary);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -37,6 +47,11 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.crm-submit-btn:hover {
+  opacity: 0.9;
 }
 
 .crm-tabs-container {
@@ -48,20 +63,37 @@
 .crm-tab-btn {
   padding: 8px 16px;
   border-radius: 8px;
-  border: 1px solid #DED9D3;
+  border: 1px solid var(--crm-border);
   background: white;
-  color: #8A7E72;
+  color: var(--crm-secondary);
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .crm-tab-btn.crm-active {
-  background: #5D4A3E;
+  background: var(--crm-primary);
   color: white;
-  border-color: #5D4A3E;
+  border-color: var(--crm-primary);
 }
 
+.crm-delete-btn {
+  background: white;
+  border: 1px solid var(--crm-danger);
+  color: var(--crm-danger);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.crm-delete-btn:hover {
+  background: #FEEBEB;
+}
+
+/* --- 3. 表格系統 --- */
 .crm-table-wrapper {
   background: white;
   border-radius: 16px;
@@ -75,16 +107,8 @@
   border-collapse: collapse;
 }
 
-/* 🌟 修正：標題對齊改為 center 以匹配內容 */
-.crm-table th {
-  background: #F9F7F5;
-  padding: 16px;
-  font-size: 13px;
-  color: #A0978D;
-  text-align: center;
-}
-
-/* 🌟 修正：內容全置中對齊 */
+/* 基礎單元格：預設文字置中 */
+.crm-table th, 
 .crm-table td {
   padding: 16px;
   border-bottom: 1px solid #F9F7F5;
@@ -92,55 +116,69 @@
   vertical-align: middle;
 }
 
-.crm-table tr:hover td {
-  background: #FDFBFA;
+.crm-table th {
+  background: #F9F7F5;
+  font-size: 13px;
+  color: #A0978D;
+  font-weight: 600;
 }
 
-/* 識別 ID 與 社群的堆疊容器 */
+/* 🌟 特殊欄位對齊：第二欄 (識別 ID + 社群) 靠左 */
+.crm-table th:nth-child(2),
+.crm-table td:nth-child(2) {
+  text-align: left;
+  padding-left: 24px;
+  min-width: 250px;
+}
+
+.crm-table tr:hover td {
+  background: var(--crm-bg-light);
+}
+
+/* 識別 ID 區塊樣式 */
 .crm-id-social-wrapper {
   display: flex;
-  flex-direction: column; /* 🌟 確保 ID 在上，社群在下逐列顯示 */
-  align-items: center;
-  justify-content: center;
-  gap: 4px; /* 設定行間距 */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .crm-id-box {
-  background: #FDFBFA;
+  background: var(--crm-bg-light);
   padding: 2px 8px;
   border-radius: 4px;
   border: 1px solid #F0ECE7;
-  margin-bottom: 2px;
+  display: inline-flex;
 }
 
-/* 🌟 社群文字樣式微調 */
+.crm-id-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--crm-primary);
+}
+
 .crm-social-item-text {
-  font-size: 11px; /* 🌟 字小一點 */
-  color: #8A7E72;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.2;
+  font-size: 11px;
+  color: var(--crm-secondary);
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
-.crm-social-summary {
+/* --- 4. 標籤與狀態組件 --- */
+.crm-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
   font-size: 12px;
-  color: #8A7E72;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 600;
+  display: inline-block;
 }
 
-/* 操作欄位按鈕置中 */
-.crm-td-action {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
+.crm-tag-vip { background: #E8F3EB; color: var(--crm-success); }
+.crm-tag-blacklisted { background: #FEEBEB; color: var(--crm-danger); }
+.crm-tag-normal { background: #F0ECE7; color: var(--crm-secondary); }
 
-/* 彈窗樣式 */
+/* --- 5. 彈窗與下拉選單 --- */
 .crm-modal-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -161,42 +199,16 @@
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
-.crm-view-row {
-  margin-bottom: 15px;
-  font-size: 15px;
-  color: #5D4A3E;
-  line-height: 1.6;
-}
-
-.crm-form-section { margin-bottom: 20px; }
-.crm-form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #5D4A3E; }
 .crm-form-input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #DED9D3;
+  border: 1px solid var(--crm-border);
   border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box; /* 確保 padding 不撐破寬度 */
 }
 
-.crm-tag {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.crm-tag-vip { background: #E8F3EB; color: #4E7A5A; }
-.crm-tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
-.crm-tag-normal { background: #F0ECE7; color: #8A7E72; }
-
-.crm-id-prefix {
-  background: #F4F0EB;
-  padding: 10px;
-  border-radius: 8px 0 0 8px;
-  border: 1px solid #DED9D3;
-  color: #8A7E72;
-  font-weight: bold;
-}
-
-/* 標籤下拉選單容器 */
+/* 標籤下拉選單 */
 .crm-dropdown-container {
   position: relative;
   width: 100%;
@@ -205,7 +217,7 @@
 .crm-dropdown-button {
   width: 100%;
   padding: 10px;
-  border: 1px solid #DED9D3;
+  border: 1px solid var(--crm-border);
   border-radius: 8px;
   background: white;
   display: flex;
@@ -216,16 +228,14 @@
 
 .crm-dropdown-menu {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  top: 100%; left: 0; right: 0;
   background: white;
-  border: 1px solid #DED9D3;
+  border: 1px solid var(--crm-border);
   border-radius: 8px;
   box-shadow: 0 10px 15px rgba(0,0,0,0.1);
   z-index: 100;
   margin-top: 4px;
-  max-height: 250px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -235,7 +245,6 @@
   align-items: center;
   padding: 10px 12px;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .crm-dropdown-item:hover {
@@ -245,9 +254,8 @@
 .crm-dropdown-item-delete {
   background: none;
   border: none;
-  color: #C04B4B;
+  color: var(--crm-danger);
   font-size: 18px;
-  padding: 0 4px;
   cursor: pointer;
 }
 
@@ -255,22 +263,5 @@
   display: flex;
   padding: 8px;
   border-top: 1px solid #F9F7F5;
-  gap: 4px;
-}
-
-.crm-dropdown-add-input {
-  flex: 1;
-  padding: 6px;
-  border: 1px solid #DED9D3;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.crm-dropdown-add-button {
-  background: #5D4A3E;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0 10px;
-  cursor: pointer;
+  gap: 8px;
 }
