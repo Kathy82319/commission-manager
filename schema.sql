@@ -211,6 +211,7 @@ CREATE TABLE Blacklist (
 
 -- 客戶紀錄表
 CREATE TABLE CustomerRecords (
+    
     id TEXT PRIMARY KEY,
     artist_id TEXT NOT NULL,          
     client_user_id TEXT,              

@@ -2,36 +2,42 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
+// 🌟 定義客戶資料型別：對應資料庫 alias_name
 interface Customer {
   id: string;
-  nickname: string;
+  alias_name: string; 
   public_id: string;
   custom_label: string;
   order_count: number;
   short_note: string;
+  platform_name?: string; // 這是 Users 表的 display_name，由後端關聯查詢提供
 }
 
 export function Customers() {
   const navigate = useNavigate();
   const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   
+  // 狀態管理
   const [activeTab, setActiveTab] = useState<'all' | 'blacklist'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
+  // 彈窗狀態：統一使用 alias_name
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ 
-    nickname: '', 
+    alias_name: '', 
     public_id: '', 
     label: '一般' 
   });
 
+  // 顯示通知函式
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
 
+  // 1. 取得客戶列表
   const fetchCustomers = async () => {
     setIsLoading(true);
     try {
@@ -53,6 +59,7 @@ export function Customers() {
     fetchCustomers();
   }, []);
 
+  // 2. 處理行內備註更新 (onBlur)
   const handleNoteBlur = async (customerId: string, content: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/customers/${customerId}`, {
@@ -71,9 +78,10 @@ export function Customers() {
     }
   };
 
+  // 3. 處理手動新增客戶：傳送 alias_name
   const handleCreateCustomer = async () => {
-    if (!newCustomer.nickname.trim()) {
-      showToast("請輸入客戶暱稱");
+    if (!newCustomer.alias_name.trim()) {
+      showToast("請輸入客戶稱呼");
       return;
     }
 
@@ -82,8 +90,7 @@ export function Customers() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nickname: newCustomer.nickname,
-          alias_name: newCustomer.nickname,
+          alias_name: newCustomer.alias_name,
           client_user_id: null,
           public_id: newCustomer.public_id,
           custom_label: newCustomer.label,
@@ -95,7 +102,7 @@ export function Customers() {
       if (result.success) {
         showToast("新增成功");
         setIsModalOpen(false);
-        setNewCustomer({ nickname: '', public_id: '', label: '一般' });
+        setNewCustomer({ alias_name: '', public_id: '', label: '一般' });
         fetchCustomers();
       } else {
         showToast(result.error || "新增失敗");
@@ -111,6 +118,7 @@ export function Customers() {
 
   return (
     <div className="customers-container">
+      {/* Toast 通知組件 */}
       {toast && (
         <div className="toast-container">
           <div className="toast">✓ {toast}</div>
@@ -147,7 +155,8 @@ export function Customers() {
             ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => (
                 <tr key={customer.id} onClick={() => navigate(`/artist/customer/${customer.id}`)}>
-                  <td style={{ fontWeight: 'bold' }}>{customer.nickname}</td>
+                  {/* 🌟 優先顯示 alias_name，若無則顯示 platform_name */}
+                  <td style={{ fontWeight: 'bold' }}>{customer.alias_name || customer.platform_name || '未知客戶'}</td>
                   <td style={{ color: '#64748B', fontFamily: 'monospace' }}>{customer.public_id || '---'}</td>
                   <td>
                     <span className={`tag ${
@@ -176,7 +185,7 @@ export function Customers() {
         </table>
       </div>
 
-      {/* 🌟 修正後的彈窗結構：確保只有一層 Overlay 和一層 Card */}
+      {/* 🌟 彈窗結構：確保 alias_name 對應輸入框 */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="onboarding-card" onClick={e => e.stopPropagation()}>
@@ -187,8 +196,8 @@ export function Customers() {
               <label className="form-label">客戶暱稱 / 稱呼</label>
               <input 
                 className="form-input" 
-                value={newCustomer.nickname}
-                onChange={e => setNewCustomer({...newCustomer, nickname: e.target.value})}
+                value={newCustomer.alias_name}
+                onChange={e => setNewCustomer({...newCustomer, alias_name: e.target.value})}
                 placeholder="例如：王小明 (FB)"
               />
             </div>

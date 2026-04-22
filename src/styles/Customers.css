@@ -124,19 +124,21 @@
   to { transform: scale(1); opacity: 1; }
 }
 
-/* ... 保持標籤與 Toast 樣式 ... */
 .toast-container {
   position: fixed;
   top: 24px;
   right: 24px;
-  z-index: 9999;
+  /* 🌟 關鍵：必須高於彈窗的 99999 */
+  z-index: 100000; 
   display: flex;
   flex-direction: column;
   gap: 12px;
+  pointer-events: none; /* 確保不擋住下方的點擊 */
 }
 
 .toast {
   background-color: #334155;
+  pointer-events: auto;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;

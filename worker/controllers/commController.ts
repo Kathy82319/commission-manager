@@ -6,19 +6,22 @@ import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/securi
  * 🌟 修正：同步至 CRM 邏輯
  * 確保函式在最外層，方便所有 controller 方法調用
  */
-async function syncToCRM(env: Env, artistId: string, clientId: string, clientNickname: string) {
-  // 1. 檢查該繪師是否已經紀錄過這位客戶
-  const { results } = await env.commission_db.prepare(
-    "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
-  ).bind(artistId, clientId).all();
+async function syncToCRM(env: Env, artistId: string, clientId: string, clientDisplayName: string) {
+  try {
+    const { results } = await env.commission_db.prepare(
+      "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
+    ).bind(artistId, clientId).all();
 
-  // 2. 如果沒有紀錄，則自動新增一筆「一般」標籤的紀錄
-  if (results.length === 0) {
-    const newId = crypto.randomUUID();
-    await env.commission_db.prepare(`
-      INSERT INTO CustomerRecords (id, artist_id, client_user_id, nickname, custom_label, short_note)
-      VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
-    `).bind(newId, artistId, clientId, clientNickname).run();
+    if (results.length === 0) {
+      const newId = crypto.randomUUID();
+      // 🌟 修正點：將 Users 的 display_name 存入 CustomerRecords 的 alias_name
+      await env.commission_db.prepare(`
+        INSERT INTO CustomerRecords (id, artist_id, client_user_id, alias_name, custom_label, short_note)
+        VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
+      `).bind(newId, artistId, clientId, clientDisplayName).run();
+    }
+  } catch (err) {
+    console.error("CRM 同步靜默失敗:", err);
   }
 }
 
