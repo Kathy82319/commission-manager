@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
@@ -16,8 +16,12 @@ interface Customer {
   contact_methods: string; // 資料庫存儲為 JSON 字串
 }
 
+// 預設標籤選項
+const DEFAULT_LABELS = ['一般', 'VIP'];
+
 export function Customers() {
   const navigate = useNavigate();
+  const location = useLocation();
   const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   
   const [activeTab, setActiveTab] = useState<'all' | 'blacklist'>('all');
@@ -32,29 +36,19 @@ export function Customers() {
   const [history, setHistory] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<Customer[]>([]);
 
+  // --- 🌟 標籤分類功能狀態 ---
+  const [labelOptions, setLabelOptions] = useState<string[]>(() => {
+    const saved = localStorage.getItem('artist_custom_labels');
+    return saved ? JSON.parse(saved) : DEFAULT_LABELS;
+  });
+  const [isLabelDropdownOpen, setIsLabelDropdownOpen] = useState(false);
+  const [newLabelInput, setNewLabelInput] = useState('');
+  const labelDropdownRef = useRef<HTMLDivElement>(null);
+
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
-
-  useEffect(() => {
-    // 1. 從網址取得 id 參數
-    const queryParams = new URLSearchParams(location.search);
-    const targetId = queryParams.get('id');
-
-    // 2. 只有在「資料已載入」且「參數存在」時才執行
-    if (targetId && !isLoading && customers.length > 0) {
-      const targetCustomer = customers.find(c => c.id === targetId);
-      
-      if (targetCustomer) {
-        // 3. 呼叫您現有的開啟閱覽視窗邏輯
-        openViewModal(targetCustomer);
-        
-        // 🌟 資安/UX 建議：開啟後清除網址參數，避免下次重新整理又跳出來
-        window.history.replaceState(null, '', '/artist/customers');
-      }
-    }
-  }, [location.search, isLoading, customers]);
 
   // 🛡️ 安全解析：將資料庫 JSON 轉為陣列供介面使用
   const parseSocialMethods = (jsonStr: string | undefined): string[] => {
@@ -81,6 +75,37 @@ export function Customers() {
   };
 
   useEffect(() => { fetchCustomers(); }, []);
+
+  // 🌟 黑名單跳轉：進入頁面後根據網址 id 自動開啟閱覽
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const targetId = queryParams.get('id');
+
+    if (targetId && !isLoading && customers.length > 0) {
+      const targetCustomer = customers.find(c => c.id === targetId);
+      if (targetCustomer) {
+        openViewModal(targetCustomer);
+        // 清除網址參數防止重複彈出
+        window.history.replaceState(null, '', '/artist/customers');
+      }
+    }
+  }, [location.search, isLoading, customers]);
+
+  // 🌟 點擊外部關閉標籤下拉選單
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
+        setIsLabelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 🌟 標籤變動時保存至 localStorage
+  useEffect(() => {
+    localStorage.setItem('artist_custom_labels', JSON.stringify(labelOptions));
+  }, [labelOptions]);
 
   // 🔍 搜尋與頁籤過濾邏輯
   const displayCustomers = useMemo(() => {
@@ -140,7 +165,7 @@ export function Customers() {
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
     const method = isEdit ? 'PATCH' : 'POST';
 
-    // 🌟 修正：確保 contact_methods 在送出前是乾淨的陣列 (後端會負責 JSON 轉換)
+    // 確保 contact_methods 在送出前是乾淨的陣列
     const cleanedMethods = Array.isArray(selectedCust.contact_methods) 
       ? selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
       : [];
@@ -151,7 +176,7 @@ export function Customers() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          contact_methods: cleanedMethods // 送出陣列，交給後端規範化處理
+          contact_methods: cleanedMethods 
         }),
         credentials: 'include'
       });
@@ -170,7 +195,7 @@ export function Customers() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("確定要刪除這筆手動紀錄嗎？")) return;
+    if (!window.confirm("確定要刪除這筆紀錄嗎？")) return;
     try {
       const res = await fetch(`${API_BASE}/api/customers/${selectedCust.id}`, {
         method: 'DELETE',
@@ -198,6 +223,28 @@ export function Customers() {
     setSelectedCust({ ...cust, contact_methods: methods }); 
     setModalTab('overview');
     setModalMode('view');
+  };
+
+  // --- 🌟 標籤增減處理 ---
+  const handleAddLabel = () => {
+    const val = newLabelInput.trim();
+    if (!val) return;
+    if (val === '黑名單') return showToast("標籤已存在");
+    if (!labelOptions.includes(val)) {
+      setLabelOptions([...labelOptions, val]);
+    }
+    setSelectedCust({ ...selectedCust, custom_label: val });
+    setNewLabelInput('');
+    setIsLabelDropdownOpen(false);
+  };
+
+  const handleDeleteLabel = (e: React.MouseEvent, label: string) => {
+    e.stopPropagation();
+    if (label === '黑名單' || label === '一般') return;
+    setLabelOptions(labelOptions.filter(l => l !== label));
+    if (selectedCust.custom_label === label) {
+      setSelectedCust({ ...selectedCust, custom_label: '一般' });
+    }
   };
 
   return (
@@ -228,60 +275,60 @@ export function Customers() {
         <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
       </div>
 
-<div className="crm-table-wrapper">
-  <table className="crm-table">
-    <thead>
-      <tr>
-        <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
-        <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
-        <th style={{ textAlign: 'center' }}>標籤</th>
-        <th style={{ textAlign: 'center' }}>合作次數</th>
-        <th style={{ textAlign: 'center' }}>備註</th>
-        <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
-      </tr>
-    </thead>
-    <tbody>
-      {isLoading ? (
-        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-      ) : displayCustomers.map(c => {
-        const socialArr = parseSocialMethods(c.contact_methods);
-        return (
-          <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-            <td style={{ fontWeight: '600', textAlign: 'center' }}>
-              {c.alias_name || c.platform_name || '未命名'}
-            </td>
+      <div className="crm-table-wrapper">
+        <table className="crm-table">
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
+              <th style={{ textAlign: 'left', paddingLeft: '24px' }}>識別 ID + 社群</th>
+              <th style={{ textAlign: 'center' }}>標籤</th>
+              <th style={{ textAlign: 'center' }}>合作次數</th>
+              <th style={{ textAlign: 'center' }}>備註</th>
+              <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+            ) : displayCustomers.map(c => {
+              const socialArr = parseSocialMethods(c.contact_methods);
+              return (
+                <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
+                  <td style={{ fontWeight: '600', textAlign: 'center' }}>
+                    {c.alias_name || c.platform_name || '未命名'}
+                  </td>
 
-            <td style={{ textAlign: 'center' }}>
-              <div className="crm-id-social-wrapper">
-                <div className="crm-id-box">
-                  <span className="crm-id-tag">{c.public_id || '---'}</span>
-                </div>
-                {socialArr.map((method, idx) => (
-                  <div key={idx} className="crm-social-item-text">
-                    {method}
-                  </div>
-                ))}
-              </div>
-            </td>
+                  <td style={{ textAlign: 'left', paddingLeft: '24px' }}>
+                    <div className="crm-id-social-wrapper" style={{ alignItems: 'flex-start' }}>
+                      <div className="crm-id-box">
+                        <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
+                      </div>
+                      {socialArr.map((method, idx) => (
+                        <div key={idx} className="crm-social-item-text" style={{ fontSize: '11px', whiteSpace: 'normal', wordBreak: 'break-all' }}>
+                          {method}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
 
-            <td style={{ textAlign: 'center' }}>
-              <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                {c.custom_label}
-              </span>
-            </td>
-            <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
-            <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
-            <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-              <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
-                編輯
-              </button>
-            </td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-</div>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
+                      {c.custom_label}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
+                  <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
+                  <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
+                      編輯
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {modalMode !== 'none' && selectedCust && (
         <div className="crm-modal-overlay">
@@ -354,6 +401,39 @@ export function Customers() {
                     <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} readOnly={!!selectedCust.client_user_id} />
                   </div>
 
+                  {/* 🌟 標籤分類自定義下拉選單 */}
+                  <div className="crm-form-section">
+                    <label className="crm-form-label">標籤分類</label>
+                    <div ref={labelDropdownRef} className="crm-dropdown-container">
+                      <div className="crm-dropdown-button" onClick={() => setIsLabelDropdownOpen(!isLabelDropdownOpen)}>
+                        <span>{selectedCust.custom_label}</span>
+                        <span>▼</span>
+                      </div>
+                      {isLabelDropdownOpen && (
+                        <div className="crm-dropdown-menu">
+                          {['黑名單', ...labelOptions].map(opt => (
+                            <div key={opt} className="crm-dropdown-item" onClick={() => { setSelectedCust({...selectedCust, custom_label: opt}); setIsLabelDropdownOpen(false); }}>
+                              <span>{opt}</span>
+                              {opt !== '黑名單' && opt !== '一般' && (
+                                <button className="crm-dropdown-item-delete" onClick={(e) => handleDeleteLabel(e, opt)}>×</button>
+                              )}
+                            </div>
+                          ))}
+                          <div className="crm-dropdown-add-container">
+                            <input 
+                              className="crm-dropdown-add-input" 
+                              placeholder="新增標籤..." 
+                              value={newLabelInput} 
+                              onChange={e => setNewLabelInput(e.target.value)} 
+                              onKeyDown={e => e.key === 'Enter' && handleAddLabel()} 
+                            />
+                            <button className="crm-dropdown-add-button" onClick={handleAddLabel}>+</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="crm-form-section">
                     <label className="crm-form-label">社群聯絡方式 (上限 3 個)</label>
                     {selectedCust.contact_methods.map((method: string, index: number) => (
@@ -391,18 +471,9 @@ export function Customers() {
                     <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} />
                   </div>
 
-                  <div className="crm-form-section">
-                    <label className="crm-form-label">標籤分類</label>
-                    <select className="crm-form-input" value={selectedCust.custom_label} onChange={e => setSelectedCust({...selectedCust, custom_label: e.target.value})}>
-                      <option value="一般">一般</option>
-                      <option value="VIP">VIP</option>
-                      <option value="黑名單">黑名單</option>
-                    </select>
-                  </div>
-
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
                     {modalMode === 'edit' && !selectedCust.client_user_id ? (
-                      <button className="crm-delete-btn" onClick={handleDelete}>刪除此紀錄</button>
+                      <button className="crm-delete-btn" onClick={handleDelete}>永久刪除此紀錄</button>
                     ) : <div />}
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <button className="crm-tab-btn" onClick={() => setModalMode('none')}>取消</button>
