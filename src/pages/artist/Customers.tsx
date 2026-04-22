@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
-// 定義客戶資料型別
 interface Customer {
   id: string;
   nickname: string;
@@ -16,13 +15,11 @@ export function Customers() {
   const navigate = useNavigate();
   const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   
-  // 狀態管理
   const [activeTab, setActiveTab] = useState<'all' | 'blacklist'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // 彈窗狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ 
     nickname: '', 
@@ -30,13 +27,11 @@ export function Customers() {
     label: '一般' 
   });
 
-  // 顯示通知函式
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 1. 取得客戶列表
   const fetchCustomers = async () => {
     setIsLoading(true);
     try {
@@ -58,7 +53,6 @@ export function Customers() {
     fetchCustomers();
   }, []);
 
-  // 2. 處理行內備註更新 (onBlur)
   const handleNoteBlur = async (customerId: string, content: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/customers/${customerId}`, {
@@ -70,7 +64,6 @@ export function Customers() {
       const result = await res.json();
       if (result.success) {
         showToast("備註已更新");
-        // 更新本地狀態，避免重新 fetch 整張表
         setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, short_note: content } : c));
       }
     } catch (err) {
@@ -78,7 +71,6 @@ export function Customers() {
     }
   };
 
-  // 3. 處理手動新增客戶
   const handleCreateCustomer = async () => {
     if (!newCustomer.nickname.trim()) {
       showToast("請輸入客戶暱稱");
@@ -92,7 +84,7 @@ export function Customers() {
         body: JSON.stringify({
           nickname: newCustomer.nickname,
           alias_name: newCustomer.nickname,
-          client_user_id: null, // 手動新增預設為外部用戶
+          client_user_id: null,
           public_id: newCustomer.public_id,
           custom_label: newCustomer.label,
           short_note: '手動新增紀錄'
@@ -104,7 +96,7 @@ export function Customers() {
         showToast("新增成功");
         setIsModalOpen(false);
         setNewCustomer({ nickname: '', public_id: '', label: '一般' });
-        fetchCustomers(); // 刷新列表
+        fetchCustomers();
       } else {
         showToast(result.error || "新增失敗");
       }
@@ -113,14 +105,12 @@ export function Customers() {
     }
   };
 
-  // 4. 過濾資料
   const filteredCustomers = customers.filter(c => 
     activeTab === 'blacklist' ? c.custom_label === '黑名單' : c.custom_label !== '黑名單'
   );
 
   return (
     <div className="customers-container">
-      {/* Toast 通知組件 */}
       {toast && (
         <div className="toast-container">
           <div className="toast">✓ {toast}</div>
@@ -129,32 +119,16 @@ export function Customers() {
 
       <div className="customers-header">
         <h2>客戶與誠信管理</h2>
-        <button 
-          className="submit-btn" 
-          style={{ width: 'auto' }} 
-          onClick={() => setIsModalOpen(true)}
-        >
+        <button className="submit-btn" style={{ width: 'auto' }} onClick={() => setIsModalOpen(true)}>
           + 手動新增紀錄
         </button>
       </div>
 
-      {/* 分頁標籤 */}
       <div className="tabs-container">
-        <button 
-          className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          總客戶名單
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`}
-          onClick={() => setActiveTab('blacklist')}
-        >
-          黑名單分頁
-        </button>
+        <button className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>總客戶名單</button>
+        <button className={`tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單分頁</button>
       </div>
 
-      {/* 資料表格 */}
       <div className="customers-table-wrapper">
         <table className="customers-table">
           <thead>
@@ -192,30 +166,20 @@ export function Customers() {
                       placeholder="點擊新增備註..."
                     />
                   </td>
-                  <td>
-                    <button className="tab-btn" style={{ padding: '4px 12px', fontSize: '12px' }}>
-                      詳情
-                    </button>
-                  </td>
+                  <td><button className="tab-btn" style={{ padding: '4px 12px', fontSize: '12px' }}>詳情</button></td>
                 </tr>
               ))
             ) : (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
-                  {activeTab === 'blacklist' ? "目前沒有黑名單紀錄" : "目前尚無客戶資料"}
-                </td>
-              </tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>{activeTab === 'blacklist' ? "目前沒有黑名單紀錄" : "目前尚無客戶資料"}</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* 新增紀錄彈窗 */}
+      {/* 🌟 修正後的彈窗結構：確保只有一層 Overlay 和一層 Card */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-        <div className="onboarding-card" onClick={e => e.stopPropagation()}>
-        <div className="sidebar-overlay visible" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
-          <div className="onboarding-card" style={{ maxWidth: '400px', width: '90%', margin: '0' }} onClick={e => e.stopPropagation()}>
+          <div className="onboarding-card" onClick={e => e.stopPropagation()}>
             <h3 className="onboarding-title">新增客戶紀錄</h3>
             <p className="onboarding-subtitle">您可以手動紀錄場外交易的對象</p>
             
@@ -251,12 +215,14 @@ export function Customers() {
                 <option value="黑名單">黑名單 (拒接)</option>
               </select>
             </div>
-            </div>
-      </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
-              <button className="submit-btn" style={{ backgroundColor: '#E2E8F0', color: '#475569' }} onClick={() => setIsModalOpen(false)}>取消</button>
-              <button className="submit-btn" onClick={handleCreateCustomer}>確認新增</button>
+              <button className="submit-btn" style={{ backgroundColor: '#E2E8F0', color: '#475569' }} onClick={() => setIsModalOpen(false)}>
+                取消
+              </button>
+              <button className="submit-btn" onClick={handleCreateCustomer}>
+                確認新增
+              </button>
             </div>
           </div>
         </div>
