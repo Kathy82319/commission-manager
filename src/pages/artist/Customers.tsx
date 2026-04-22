@@ -298,7 +298,7 @@ export function Customers() {
                     {c.alias_name || c.platform_name || '未命名'}
                   </td>
 
-                  <td style={{ textAlign: 'left', paddingLeft: '24px' }}>
+                  <td style={{ textAlign: 'center'}}>
                     <div className="crm-id-social-wrapper" style={{ alignItems: 'flex-start' }}>
                       <div className="crm-id-box">
                         <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
