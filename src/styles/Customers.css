@@ -238,3 +238,9 @@
 .crm-suggestion-item strong {
   color: #A67B3E;
 }
+
+.crm-table th:last-child,
+.crm-table td:last-child {
+  text-align: right;
+  padding-right: 24px; /* 增加右側內距，讓文字與按鈕右緣垂直切齊 */
+}
