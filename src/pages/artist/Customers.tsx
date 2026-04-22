@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
@@ -12,7 +12,7 @@ interface Customer {
   short_note: string;
   full_note: string;
   platform_name?: string;
-  contact_methods?: string; // JSON 字串
+  contact_methods?: string | string[]; // 支援兩者以利處理
 }
 
 export function Customers() {
@@ -23,6 +23,7 @@ export function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState(""); // 🔍 搜尋狀態
 
   const [modalMode, setModalMode] = useState<'none' | 'add' | 'view' | 'edit'>('none');
   const [modalTab, setModalTab] = useState<'overview' | 'history'>('overview');
@@ -49,6 +50,27 @@ export function Customers() {
   };
 
   useEffect(() => { fetchCustomers(); }, []);
+
+  // 🔍 搜尋與分頁過濾邏輯
+  const displayCustomers = useMemo(() => {
+    let result = customers;
+    
+    // 分頁過濾
+    if (activeTab === 'blacklist') {
+      result = result.filter(c => c.custom_label === '黑名單');
+    }
+
+    // 搜尋字元 >= 2 才開始篩選
+    if (searchTerm.length >= 2) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        (c.alias_name?.toLowerCase().includes(term)) ||
+        (c.public_id?.toLowerCase().includes(term)) ||
+        (c.custom_label?.toLowerCase().includes(term))
+      );
+    }
+    return result;
+  }, [customers, activeTab, searchTerm]);
 
   const fetchHistory = async (id: string) => {
     try {
@@ -96,7 +118,8 @@ export function Customers() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          contact_methods: selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
+          // 確保空字串不會被存入，且轉換為字串存入 DB (資安結構考量)
+          contact_methods: JSON.stringify(selectedCust.contact_methods.filter((m: string) => m.trim() !== ''))
         }),
         credentials: 'include'
       });
@@ -132,18 +155,25 @@ export function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
-    activeTab === 'blacklist' ? c.custom_label === '黑名單' : true
-  );
-
   const openEditModal = (cust: Customer) => {
-    const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
+    let methods = [""];
+    if (cust.contact_methods) {
+      try {
+        methods = typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods;
+        if (methods.length === 0) methods = [""];
+      } catch (e) { methods = [""]; }
+    }
     setSelectedCust({ ...cust, contact_methods: methods });
     setModalMode('edit');
   };
 
   const openViewModal = (cust: Customer) => {
-    const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
+    let methods = [];
+    if (cust.contact_methods) {
+      try {
+        methods = typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods;
+      } catch (e) { methods = []; }
+    }
     setSelectedCust({ ...cust, contact_methods: methods });
     setModalTab('overview');
     setModalMode('view');
@@ -155,11 +185,21 @@ export function Customers() {
 
       <header className="crm-header">
         <h2>顧客管理</h2>
-        <button className="crm-submit-btn" onClick={() => {
-          setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
-          setModalMode('add');
-          setSuggestions([]);
-        }}>+ 新增紀錄</button>
+        <div className="crm-header-actions">
+          {/* 🔍 新增搜尋框 */}
+          <input 
+            type="text" 
+            className="crm-search-input" 
+            placeholder="搜尋 ID、暱稱、標籤..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button className="crm-submit-btn" onClick={() => {
+            setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
+            setModalMode('add');
+            setSuggestions([]);
+          }}>+ 新增紀錄</button>
+        </div>
       </header>
 
       <div className="crm-tabs-container">
@@ -175,14 +215,14 @@ export function Customers() {
               <th>識別 ID + 社群</th>
               <th>標籤</th>
               <th>合作次數</th>
-              <th>備註</th> {/* 🌟 補回備註欄位 */}
-              <th className="crm-th-action">操作</th>            
+              <th>備註</th>
+              <th className="crm-th-action">操作</th>            
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-            ) : filteredCustomers.map(c => (
+            ) : displayCustomers.map(c => (
               <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
                 <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
                 <td>
@@ -192,12 +232,15 @@ export function Customers() {
                 </td>
                 <td><span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{c.custom_label}</span></td>
                 <td>{c.order_count} 次</td>
-                <td className="crm-td-note">{c.short_note || '---'}</td> {/* 🌟 顯示簡短備註 */}
+                <td className="crm-td-note">{c.short_note || '---'}</td>
                 <td className="crm-td-action">
                   <button className="crm-tab-btn" onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>編輯</button>
                 </td>
               </tr>
             ))}
+            {!isLoading && displayCustomers.length === 0 && (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#8A7E72' }}>找不到符合條件的顧客</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -220,7 +263,7 @@ export function Customers() {
                     <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ fontSize: '13px', color: '#8A7E72' }}>(平台名: {selectedCust.platform_name})</span>}</div>
                     <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#5D4A3E' }}>{selectedCust.public_id || '無識別 ID'}</span></div>
                     <div className="crm-view-row"><strong>標籤分類：</strong><span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span></div>
-                    <div className="crm-view-row"><strong>社群資訊：</strong>{selectedCust.contact_methods?.join(' / ') || '無紀錄'}</div>
+                    <div className="crm-view-row"><strong>社群資訊：</strong>{Array.isArray(selectedCust.contact_methods) ? selectedCust.contact_methods.filter((m:string)=>m).join(' / ') : '無紀錄'}</div>
                     <div className="crm-view-row"><strong>簡短備註：</strong>{selectedCust.short_note || '無'}</div>
                     <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>{selectedCust.full_note || '尚無內容'}</p></div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '30px', justifyContent: 'flex-end' }}>
@@ -287,8 +330,16 @@ export function Customers() {
                             setSelectedCust({...selectedCust, contact_methods: newMethods});
                           }} 
                         />
+                        {/* 🌟 只有最後一格且未滿 3 格時顯示新增按鈕 */}
                         {index === selectedCust.contact_methods.length - 1 && selectedCust.contact_methods.length < 3 && (
                           <button className="crm-tab-btn" onClick={() => setSelectedCust({...selectedCust, contact_methods: [...selectedCust.contact_methods, '']})}>+</button>
+                        )}
+                        {/* 🌟 多於一格時顯示刪除按鈕，維持編輯功能的靈活性 */}
+                        {selectedCust.contact_methods.length > 1 && (
+                          <button className="crm-tab-btn" style={{color: '#E53E3E'}} onClick={() => {
+                            const newMethods = selectedCust.contact_methods.filter((_:any, i:number) => i !== index);
+                            setSelectedCust({...selectedCust, contact_methods: newMethods});
+                          }}>-</button>
                         )}
                       </div>
                     ))}

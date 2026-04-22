@@ -36,7 +36,7 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
     const newId = crypto.randomUUID();
     await env.commission_db.prepare(`
       INSERT INTO CustomerRecords (id, artist_id, client_user_id, public_id, alias_name, custom_label, short_note)
-      VALUES (?, ?, ?, ?, ?, '一般', '系統自動匯入')
+      VALUES (?, ?, ?, ?, ?, '一般')
     `).bind(newId, artistId, clientId, clientPublicId, clientDisplayName).run();
     
   } catch (err) {

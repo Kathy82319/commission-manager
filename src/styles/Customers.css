@@ -239,8 +239,49 @@
   color: #A67B3E;
 }
 
-.crm-table th:last-child,
-.crm-table td:last-child {
-  text-align: right;
-  padding-right: 24px; /* 增加右側內距，讓文字與按鈕右緣垂直切齊 */
+
+/* 搜尋框與按鈕的容器佈局 */
+.customers-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 240px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #94a3b8;
+}
+
+/* 修正對齊問題：統一操作欄位居中 */
+.customers-table th:last-child,
+.customers-table td:last-child {
+  text-align: center; /* 解決靠右對齊的偏移問題 */
+  width: 80px;
+}
+
+/* 確保按鈕在容器中不會產生額外偏移 */
+.edit-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edit-btn:hover {
+  background: #f8fafc;
 }
