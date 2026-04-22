@@ -14,6 +14,9 @@ interface Commission {
   type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
   client_public_id?: string;
   agreed_tos_snapshot?: string; 
+  // 🌟 補上後端透傳的 CRM 資訊[cite: 1]
+  client_custom_label?: string;
+  crm_record_id?: string;
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
@@ -367,7 +370,7 @@ export function Notebook() {
   };
 
   const isStageActuallyReviewed = (stageNameCH: string) => {
-    return logs.some(log => log.actor_role === 'client' && (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`已同意 ${stageNameCH}`)));
+    return logs.some(log => log.actor_role === 'client' && (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`檢視 ${stageNameCH}`) || log.content.includes(`同意 ${stageNameCH}`)));
   };
 
   const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
@@ -477,6 +480,10 @@ export function Notebook() {
                     <span className={`card-mode-badge ${order.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
                       {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                     </span>
+                    {/* 🌟 列表新增黑名單標籤[cite: 1] */}
+                    {order.client_custom_label === '黑名單' && (
+                      <span className="card-mode-badge mode-blacklist">黑名單</span>
+                    )}
                   </div>
                   <div className="card-title-row">
                     <span className="card-client-name" title={getDualName(order)}>{getDualName(order)}</span>
@@ -515,7 +522,20 @@ export function Notebook() {
                     ⬅ 返回列表
                   </button>
 
-                  <h2 className="main-title">{getDualName(selectedOrder)}</h2>
+                  <div className="main-title-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <h2 className="main-title" style={{ margin: 0 }}>{getDualName(selectedOrder)}</h2>
+                    {/* 🌟 詳情頁名稱旁新增黑名單原因查看[cite: 1] */}
+                    {selectedOrder.client_custom_label === '黑名單' && (
+                      <span 
+                        className="blacklist-alert-tag" 
+                        onClick={() => navigate(`/artist/customers?id=${selectedOrder.crm_record_id}`)}
+                        style={{ cursor: 'pointer', background: '#2D231C', color: '#FF4D4D', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FF4D4D' }}
+                      >
+                        黑名單-查看黑單原因
+                      </span>
+                    )}
+                  </div>
+
                   <div className="main-subtitle">項目：{selectedOrder.project_name || '未命名項目'}</div>
                   <div className="main-meta-row">
                     <span>日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>

@@ -1,5 +1,5 @@
 // src/pages/artist/Queue.tsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react'; // 🌟 補上 useMemo
 import { useNavigate } from 'react-router-dom';
 import { GripVertical } from 'lucide-react';
 import '../../styles/Queue.css';
@@ -12,6 +12,9 @@ interface Commission {
   latest_message_at?: string;
   last_read_at_artist?: string;
   client_public_id?: string;
+  // 🌟 補上後端透傳的 CRM 資訊
+  client_custom_label?: string;
+  crm_record_id?: string;
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -71,7 +74,8 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
 export function Queue() {
   const navigate = useNavigate();
   const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdating, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // 修正變數命名衝突
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
@@ -113,13 +117,13 @@ export function Queue() {
   }, [commissions]);
   
   const handleUpdateField = async (id: string, field: string, value: string) => {
-    setIsUpdating(true);
+    setIsSaving(true);
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/commissions/${id}`, {
       method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value })
     });
     setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-    setIsUpdating(false);
+    setIsSaving(false);
   };
   
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -135,28 +139,32 @@ export function Queue() {
     setCommissions(newCommissions);
   };
 
-  const filteredCommissions = commissions.filter(c => {
-    if (selectedMonth !== 'all' && !c.order_date.startsWith(selectedMonth)) return false;
-    const term = searchTerm.toLowerCase();
-    return (
-      c.client_name?.toLowerCase().includes(term) || 
-      c.contact_memo?.toLowerCase().includes(term) || 
-      c.project_name?.toLowerCase().includes(term) ||
-      c.id.includes(term)
-    );
-  });
+  // 🔍 搜尋邏輯：擴充支援標籤搜尋
+  const filteredCommissions = useMemo(() => {
+    return commissions.filter(c => {
+      if (selectedMonth !== 'all' && !c.order_date.startsWith(selectedMonth)) return false;
+      const term = searchTerm.toLowerCase();
+      return (
+        c.client_name?.toLowerCase().includes(term) || 
+        c.contact_memo?.toLowerCase().includes(term) || 
+        c.project_name?.toLowerCase().includes(term) ||
+        c.id.includes(term) ||
+        c.client_custom_label?.toLowerCase().includes(term) // 🌟 支援搜尋標籤
+      );
+    });
+  }, [commissions, selectedMonth, searchTerm]);
 
   return (
     <div className="queue-container">
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
-          <input placeholder="🔍 搜尋項目/暱稱/單號..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
+          <input placeholder="🔍 搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          {isUpdating && <span className="updating-hint">儲存中...</span>}
+          {isSaving && <span className="updating-hint">儲存中...</span>}
         </div>
       </div>
       <div className="queue-table-wrapper">
@@ -203,12 +211,12 @@ export function Queue() {
                     <div style={{ fontSize: '13px', color: '#7A7269' }}>
                       <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
                       <span style={{ color: '#A0978D', marginLeft: '8px', fontSize: '11px', fontFamily: 'monospace' }}>
-                      </span>                     
+                      </span>                                    
                     </div>
                     <div style={{ fontSize: '13px', color: '#7A7269' }}>
                       <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
                         {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
-                      </span>                     
+                      </span>                                    
                     </div>
                   </div>
                   
@@ -244,6 +252,17 @@ export function Queue() {
                 </td>
                 <td data-label="備註欄位">
                   <div className="cell-content cell-note">
+                    {/* 🌟 新增：黑名單標籤（點擊跳轉至 CRM 閱覽）[cite: 1] */}
+                    {order.client_custom_label === '黑名單' && (
+                      <span 
+                        className="queue-blacklist-tag"
+                        onClick={() => navigate(`/artist/customers?id=${order.crm_record_id}`)}
+                        title="點擊查看黑名單原因"
+                        style={{ cursor: 'pointer', background: '#2D231C', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}
+                      >
+                        黑名單
+                      </span>
+                    )}
                     {order.is_rush === '是' && <span className="rush-badge">急單</span>}
                     <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>

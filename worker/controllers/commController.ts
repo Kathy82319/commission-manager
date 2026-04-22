@@ -48,12 +48,20 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
 
 export const commController = {
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🌟 修正：LEFT JOIN CustomerRecords 以獲取黑名單標籤與 CRM ID
     const query = `
-      SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name,
-      (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
+      SELECT 
+        c.*, 
+        u.display_name AS client_name, 
+        u.public_id AS client_public_id, 
+        t.name AS type_name,
+        cr.custom_label AS client_custom_label,
+        cr.id AS crm_record_id,
+        (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
       FROM Commissions c
       LEFT JOIN Users u ON c.client_id = u.id
       LEFT JOIN CommissionTypes t ON c.type_id = t.id
+      LEFT JOIN CustomerRecords cr ON (c.artist_id = cr.artist_id AND c.client_id = cr.client_user_id)
       WHERE c.artist_id = ? OR c.client_id = ?
       ORDER BY c.order_date DESC
     `;
@@ -62,13 +70,23 @@ export const commController = {
   },
 
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🌟 修正：LEFT JOIN CustomerRecords 獲取黑名單標籤、CRM ID 與備註
     const { results } = await env.commission_db.prepare(`
-      SELECT c.*, u.display_name AS client_name, u.public_id AS client_public_id, t.name AS type_name, a.profile_settings AS artist_settings,
-      (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
+      SELECT 
+        c.*, 
+        u.display_name AS client_name, 
+        u.public_id AS client_public_id, 
+        t.name AS type_name, 
+        a.profile_settings AS artist_settings,
+        cr.custom_label AS client_custom_label,
+        cr.id AS crm_record_id,
+        cr.short_note AS client_crm_note,
+        (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
       FROM Commissions c
       LEFT JOIN Users u ON c.client_id = u.id
       LEFT JOIN Users a ON c.artist_id = a.id
       LEFT JOIN CommissionTypes t ON c.type_id = t.id
+      LEFT JOIN CustomerRecords cr ON (c.artist_id = cr.artist_id AND c.client_id = cr.client_user_id)
       WHERE c.id = ?
     `).bind(id).all();
 
