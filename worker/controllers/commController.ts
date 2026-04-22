@@ -3,23 +3,42 @@ import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
 /**
- * 🌟 修正：同步至 CRM 邏輯
- * 確保函式在最外層，方便所有 controller 方法調用
+ * 🌟 修正：強化版 CRM 認領邏輯
+ * 1. 優先搜尋繪師名下是否有相同 client_user_id 的紀錄
+ * 2. 若無，搜尋是否有相同 public_id 的手動預防性紀錄
+ * 3. 若有手動紀錄，則「認領」它並更新 client_user_id
+ * 4. 若皆無，才新增紀錄
  */
 async function syncToCRM(env: Env, artistId: string, clientId: string, clientDisplayName: string) {
   try {
-    const { results } = await env.commission_db.prepare(
-      "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
-    ).bind(artistId, clientId).all();
+    // 取得該客戶的真實 public_id (User_ 格式)
+    const clientInfo = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).first<{ public_id: string }>();
+    const clientPublicId = clientInfo?.public_id || '';
 
-    if (results.length === 0) {
-      const newId = crypto.randomUUID();
-      // 🌟 修正點：將 Users 的 display_name 存入 CustomerRecords 的 alias_name
-      await env.commission_db.prepare(`
-        INSERT INTO CustomerRecords (id, artist_id, client_user_id, alias_name, custom_label, short_note)
-        VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
-      `).bind(newId, artistId, clientId, clientDisplayName).run();
+    // 🌟 搜尋現有名單 (支援認領手動預防紀錄)
+    const existing = await env.commission_db.prepare(`
+      SELECT id, client_user_id FROM CustomerRecords 
+      WHERE artist_id = ? AND (client_user_id = ? OR (public_id = ? AND client_user_id IS NULL))
+    `).bind(artistId, clientId, clientPublicId).first<any>();
+
+    if (existing) {
+      // 若找到且 client_user_id 為空，執行認領
+      if (!existing.client_user_id) {
+        await env.commission_db.prepare(
+          "UPDATE CustomerRecords SET client_user_id = ? WHERE id = ?"
+        ).bind(clientId, existing.id).run();
+        console.log(`[CRM] 已成功認領手動預防紀錄: ${clientPublicId}`);
+      }
+      return; // 已有紀錄且已綁定，跳過新增
     }
+
+    // 真的完全沒紀錄，才執行新增
+    const newId = crypto.randomUUID();
+    await env.commission_db.prepare(`
+      INSERT INTO CustomerRecords (id, artist_id, client_user_id, public_id, alias_name, custom_label, short_note)
+      VALUES (?, ?, ?, ?, ?, '一般', '系統自動匯入')
+    `).bind(newId, artistId, clientId, clientPublicId, clientDisplayName).run();
+    
   } catch (err) {
     console.error("CRM 同步靜默失敗:", err);
   }

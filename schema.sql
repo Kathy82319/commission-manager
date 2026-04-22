@@ -214,7 +214,8 @@ CREATE TABLE CustomerRecords (
     
     id TEXT PRIMARY KEY,
     artist_id TEXT NOT NULL,          
-    client_user_id TEXT,              
+    client_user_id TEXT,            
+    public_id TEXT,  
     alias_name TEXT DEFAULT '',       
     custom_label TEXT DEFAULT '一般', 
     short_note TEXT DEFAULT '',      
@@ -234,3 +235,4 @@ VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 
 
 INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
+

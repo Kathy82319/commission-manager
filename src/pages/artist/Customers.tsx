@@ -12,7 +12,7 @@ interface Customer {
   short_note: string;
   full_note: string;
   platform_name?: string;
-  contact_methods?: string; // 資料庫存的是 JSON 字串
+  contact_methods?: string; // JSON 字串
 }
 
 export function Customers() {
@@ -24,11 +24,13 @@ export function Customers() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
-  // 彈窗狀態機: 'none' | 'add' | 'view' | 'edit'
   const [modalMode, setModalMode] = useState<'none' | 'add' | 'view' | 'edit'>('none');
   const [modalTab, setModalTab] = useState<'overview' | 'history'>('overview');
   const [selectedCust, setSelectedCust] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+
+  // 🌟 新增：過濾後的建議清單狀態
+  const [suggestions, setSuggestions] = useState<Customer[]>([]);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -60,23 +62,33 @@ export function Customers() {
     }
   };
 
-  // 核心：即時比對邏輯 (在輸入時觸發)
-  const handleInputChange = (idNum: string) => {
-    const fullID = `User_${idNum}`;
+  // 🌟 修正：輸入邏輯與建議清單過濾 (限制 5 碼)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 僅允許數字，且長度限制為 5
+    const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+    const fullID = `User_${val}`;
     
-    // 比對現有名單
-    const found = customers.find(c => c.public_id === fullID);
-    
-    if (found) {
-      // 發現重複 ID，自動切換至編輯模式
-      const methods = found.contact_methods ? (typeof found.contact_methods === 'string' ? JSON.parse(found.contact_methods) : found.contact_methods) : [""];
-      setSelectedCust({ ...found, contact_methods: methods });
-      setModalMode('edit');
-      showToast("已匹配到現有客戶資料");
+    // 更新當前選取的 ID
+    setSelectedCust({ ...selectedCust, public_id: fullID });
+
+    if (val.length >= 1) {
+      // 從已有名單中找尋開頭符合的 (例如輸入 84，找 84448)
+      const matches = customers.filter(c => 
+        c.public_id && c.public_id.replace('User_', '').startsWith(val)
+      );
+      setSuggestions(matches);
     } else {
-      // 若沒匹配到，維持在新增/目前編輯內容，僅更新 ID 欄位
-      setSelectedCust({ ...selectedCust, public_id: fullID });
+      setSuggestions([]);
     }
+  };
+
+  // 🌟 新增：從建議清單點選
+  const handleSelectSuggestion = (cust: Customer) => {
+    const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
+    setSelectedCust({ ...cust, contact_methods: methods });
+    setModalMode('edit'); // 自動轉為編輯模式
+    setSuggestions([]); // 關閉清單
+    showToast("已帶入現有紀錄");
   };
 
   const handleSave = async () => {
@@ -106,12 +118,12 @@ export function Customers() {
         showToast(result.error || "儲存失敗");
       }
     } catch (err) {
-      showToast("連線異常");
+      showToast("連連線異常");
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("確定要刪除這筆手動紀錄嗎？刪除後將無法追蹤此 ID 的預警資訊。")) return;
+    if (!window.confirm("確定要刪除這筆手動紀錄嗎？刪除後將無法追蹤預警資訊。")) return;
     try {
       const res = await fetch(`${API_BASE}/api/customers/${selectedCust.id}`, {
         method: 'DELETE',
@@ -148,16 +160,13 @@ export function Customers() {
         <button className="crm-submit-btn" onClick={() => {
           setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
           setModalMode('add');
+          setSuggestions([]);
         }}>+ 新增紀錄</button>
       </header>
 
       <div className="crm-tabs-container">
-        <button className={`crm-tab-btn ${activeTab === 'all' ? 'crm-active' : ''}`} onClick={() => setActiveTab('all')}>
-          總名單 ({customers.length})
-        </button>
-        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>
-          黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})
-        </button>
+        <button className={`crm-tab-btn ${activeTab === 'all' ? 'crm-active' : ''}`} onClick={() => setActiveTab('all')}>總名單 ({customers.length})</button>
+        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
       </div>
 
       <div className="crm-table-wrapper">
@@ -174,34 +183,19 @@ export function Customers() {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-            ) : filteredCustomers.length > 0 ? (
-              filteredCustomers.map(c => (
-                <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontFamily: 'monospace', color: '#5D4A3E', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
-                      {c.contact_methods && (
-                        <span style={{ fontSize: '11px', color: '#A0978D' }}>
-                            {(typeof c.contact_methods === 'string' ? JSON.parse(c.contact_methods) : c.contact_methods)[0]}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                      {c.custom_label}
-                    </span>
-                  </td>
-                  <td>{c.order_count} 次</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button className="crm-tab-btn" onClick={(e) => { e.stopPropagation(); openViewModal(c); }}>詳情</button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '60px', color: '#A0978D' }}>目前尚無對應資料</td></tr>
-            )}
+            ) : filteredCustomers.map(c => (
+              <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
+                <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
+                <td>
+                  <div className="crm-id-box">
+                    <span className="crm-id-tag">{c.public_id || '---'}</span>
+                  </div>
+                </td>
+                <td><span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{c.custom_label}</span></td>
+                <td>{c.order_count} 次</td>
+                <td style={{ textAlign: 'right' }}><button className="crm-tab-btn">詳情</button></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -221,13 +215,12 @@ export function Customers() {
               {modalMode === 'view' ? (
                 modalTab === 'overview' ? (
                   <div className="crm-view-mode">
-                    <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ color: '#A0978D', fontSize: '13px' }}>(平台名: {selectedCust.platform_name})</span>}</div>
-                    <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{selectedCust.public_id}</span></div>
-                    <div className="crm-view-row"><strong>標籤分類：</strong>
-                      <span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span>
-                    </div>
+                    {/* 🌟 修正：確保識別 ID 顯示 */}
+                    <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ fontSize: '13px', color: '#8A7E72' }}>(平台名: {selectedCust.platform_name})</span>}</div>
+                    <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#5D4A3E' }}>{selectedCust.public_id || '無識別 ID'}</span></div>
+                    <div className="crm-view-row"><strong>標籤分類：</strong><span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span></div>
                     <div className="crm-view-row"><strong>社群資訊：</strong>{selectedCust.contact_methods?.join(' / ') || '無紀錄'}</div>
-                    <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px' }}>{selectedCust.full_note || '尚無內容'}</p></div>
+                    <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>{selectedCust.full_note || '尚無內容'}</p></div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '30px', justifyContent: 'flex-end' }}>
                       <button className="crm-tab-btn" onClick={() => setModalMode('none')}>關閉</button>
                       <button className="crm-submit-btn" onClick={() => setModalMode('edit')}>編輯詳情</button>
@@ -238,16 +231,10 @@ export function Customers() {
                     <div className="crm-history-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                       {history.length > 0 ? history.map(h => (
                         <div key={h.id} className="crm-history-item" onClick={() => navigate(`/artist/notebook?id=${h.id}`)}>
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{h.project_name || '未命名項目'}</div>
-                            <div style={{ fontSize: '12px', color: '#A0978D' }}>{h.order_date.substring(0, 10)}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ color: '#5D4A3E', fontWeight: 'bold' }}>${h.total_price}</div>
-                            <div style={{ fontSize: '11px' }}>{h.status}</div>
-                          </div>
+                          <div><strong>{h.project_name || '未命名'}</strong><br/><small>{h.order_date.substring(0, 10)}</small></div>
+                          <div style={{ textAlign: 'right' }}>${h.total_price}<br/><small>{h.status}</small></div>
                         </div>
-                      )) : <div style={{ textAlign: 'center', padding: '40px', color: '#A0978D' }}>尚未有正式交易紀錄</div>}
+                      )) : <div style={{ textAlign: 'center', padding: '40px', color: '#A0978D' }}>尚未與此客戶有過委託</div>}
                     </div>
                     <button className="crm-tab-btn" style={{ width: '100%', marginTop: '20px' }} onClick={() => setModalMode('none')}>關閉</button>
                   </div>
@@ -256,49 +243,46 @@ export function Customers() {
                 <div className="crm-edit-mode">
                   <h3 style={{ marginBottom: '20px', color: '#5D4A3E' }}>{modalMode === 'add' ? '新增紀錄' : '編輯詳情'}</h3>
                   
-                  <div className="crm-form-section">
-                    <label className="crm-form-label">識別 ID (輸入數字)</label>
+                  {/* 🌟 修正：建議選單容器 */}
+                  <div className="crm-form-section" style={{ position: 'relative' }}>
+                    <label className="crm-form-label">識別 ID (輸入 5 位數字)</label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <span className="crm-id-prefix">User_</span>
                       <input 
                         className="crm-form-input" 
                         style={{ borderRadius: '0 8px 8px 0', borderLeft: 'none' }}
-                        placeholder="輸入數字即時比對"
+                        placeholder="例如: 84448"
                         value={selectedCust.public_id?.replace('User_', '') || ''}
-                        onChange={(e) => handleInputChange(e.target.value)}
+                        onChange={handleInputChange}
                       />
                     </div>
-                  </div>
-
-                  <div className="crm-form-section">
-                    <label className="crm-form-label">
-                      {selectedCust.client_user_id ? '系統帳號名稱 (正式交易後鎖定)' : '名稱 / 暱稱'}
-                    </label>
-                    {selectedCust.client_user_id ? (
-                      <>
-                        <input className="crm-form-input" value={selectedCust.platform_name || ''} readOnly style={{ background: '#F9F7F5', color: '#A0978D' }} />
-                        <label className="crm-form-label" style={{ marginTop: '12px', fontSize: '12px', color: '#8A7E72' }}>自定義稱呼 (繪師專屬備註)</label>
-                        <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} />
-                      </>
-                    ) : (
-                      <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} placeholder="請輸入對方的稱呼" />
+                    
+                    {/* 🌟 建議清單：使用 absolute 定位防止推擠 */}
+                    {suggestions.length > 0 && (
+                      <div className="crm-suggestions-list">
+                        {suggestions.map(s => (
+                          <div key={s.id} className="crm-suggestion-item" onClick={() => handleSelectSuggestion(s)}>
+                            <strong>{s.public_id}</strong> - {s.alias_name || s.platform_name || '現有客戶'}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">社群聯絡方式 (最多 3 組)</label>
+                    <label className="crm-form-label">{selectedCust.client_user_id ? '系統名稱 (鎖定)' : '稱呼 / 暱稱'}</label>
+                    <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} readOnly={!!selectedCust.client_user_id} />
+                  </div>
+
+                  <div className="crm-form-section">
+                    <label className="crm-form-label">社群聯絡方式 (上限 3 個)</label>
                     {selectedCust.contact_methods.map((method: string, index: number) => (
                       <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        <input 
-                          className="crm-form-input" 
-                          value={method} 
-                          placeholder="例如: Twitter @ID"
-                          onChange={(e) => {
-                            const newMethods = [...selectedCust.contact_methods];
-                            newMethods[index] = e.target.value;
-                            setSelectedCust({...selectedCust, contact_methods: newMethods});
-                          }} 
-                        />
+                        <input className="crm-form-input" value={method} onChange={(e) => {
+                          const newMethods = [...selectedCust.contact_methods];
+                          newMethods[index] = e.target.value;
+                          setSelectedCust({...selectedCust, contact_methods: newMethods});
+                        }} />
                         {index === selectedCust.contact_methods.length - 1 && selectedCust.contact_methods.length < 3 && (
                           <button className="crm-tab-btn" onClick={() => setSelectedCust({...selectedCust, contact_methods: [...selectedCust.contact_methods, '']})}>+</button>
                         )}
@@ -308,7 +292,7 @@ export function Customers() {
 
                   <div className="crm-form-section">
                     <label className="crm-form-label">詳細合作筆記</label>
-                    <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} placeholder="在此紀錄黑名單原因或合作喜好..." />
+                    <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} />
                   </div>
 
                   <div className="crm-form-section">
@@ -321,7 +305,6 @@ export function Customers() {
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
-                    {/* 修正：僅在編輯模式且「沒有 client_user_id」時顯示刪除 */}
                     {modalMode === 'edit' && !selectedCust.client_user_id ? (
                       <button className="crm-delete-btn" onClick={handleDelete}>永久刪除此紀錄</button>
                     ) : <div></div>}
