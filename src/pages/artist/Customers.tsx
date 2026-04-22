@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
 interface Customer {
   id: string;
+  artist_id: string;
   alias_name: string;
   public_id: string;
   client_user_id?: string;
@@ -12,7 +13,7 @@ interface Customer {
   short_note: string;
   full_note: string;
   platform_name?: string;
-  contact_methods?: string; // 資料庫存儲的 JSON 字串
+  contact_methods: string; // 資料庫存儲為 JSON 字串
 }
 
 export function Customers() {
@@ -23,6 +24,7 @@ export function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState(""); // 搜尋框狀態
 
   const [modalMode, setModalMode] = useState<'none' | 'add' | 'view' | 'edit'>('none');
   const [modalTab, setModalTab] = useState<'overview' | 'history'>('overview');
@@ -35,17 +37,14 @@ export function Customers() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 🛡️ 安全解析社群聯絡方式：確保回傳為有效內容陣列[cite: 1, 2]
-  const parseContacts = (methodsJson: string | undefined): string[] => {
-    if (!methodsJson) return [];
+  // 🛡️ 資安與穩定性：安全解析社群資訊 JSON[cite: 1, 2]
+  const parseSocialMethods = (jsonStr: string | undefined): string[] => {
+    if (!jsonStr) return [];
     try {
-      const parsed = typeof methodsJson === 'string' ? JSON.parse(methodsJson) : methodsJson;
-      if (Array.isArray(parsed)) {
-        return parsed.filter(item => item && item.trim() !== ""); // 僅保留非空內容
-      }
-      return [];
+      const parsed = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      return Array.isArray(parsed) ? parsed.filter(s => s && s.trim() !== "") : [];
     } catch (e) {
-      console.error("解析社群資訊失敗:", e);
+      console.error("解析社群資料失敗", e);
       return [];
     }
   };
@@ -64,6 +63,23 @@ export function Customers() {
   };
 
   useEffect(() => { fetchCustomers(); }, []);
+
+  // 🔍 搜尋與頁籤過濾邏輯[cite: 1, 2]
+  const displayCustomers = useMemo(() => {
+    let list = customers;
+    if (activeTab === 'blacklist') {
+      list = list.filter(c => c.custom_label === '黑名單');
+    }
+    if (searchTerm.length >= 2) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(c => 
+        c.alias_name?.toLowerCase().includes(term) ||
+        c.public_id?.toLowerCase().includes(term) ||
+        c.custom_label?.toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [customers, activeTab, searchTerm]);
 
   const fetchHistory = async (id: string) => {
     try {
@@ -91,7 +107,7 @@ export function Customers() {
   };
 
   const handleSelectSuggestion = (cust: Customer) => {
-    const methods = parseContacts(cust.contact_methods);
+    const methods = parseSocialMethods(cust.contact_methods);
     setSelectedCust({ ...cust, contact_methods: methods.length > 0 ? methods : [""] });
     setModalMode('edit');
     setSuggestions([]);
@@ -105,18 +121,14 @@ export function Customers() {
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
     const method = isEdit ? 'PATCH' : 'POST';
 
-    // 🔐 資安處理：儲存前清理資料[cite: 2]
-    const cleanContacts = Array.isArray(selectedCust.contact_methods) 
-      ? selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
-      : [];
-
     try {
       const res = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          contact_methods: JSON.stringify(cleanContacts)
+          // 儲存前過濾掉空字串並轉回 JSON 字串[cite: 2]
+          contact_methods: JSON.stringify(selectedCust.contact_methods.filter((m: string) => m.trim() !== ''))
         }),
         credentials: 'include'
       });
@@ -153,21 +165,17 @@ export function Customers() {
   };
 
   const openEditModal = (cust: Customer) => {
-    const methods = parseContacts(cust.contact_methods);
+    const methods = parseSocialMethods(cust.contact_methods);
     setSelectedCust({ ...cust, contact_methods: methods.length > 0 ? methods : [""] });
     setModalMode('edit');
   };
 
   const openViewModal = (cust: Customer) => {
-    const methods = parseContacts(cust.contact_methods);
-    setSelectedCust({ ...cust, contact_methods: methods }); // 🛠️ 確保設為陣列供閱覽使用[cite: 1, 2]
+    const methods = parseSocialMethods(cust.contact_methods);
+    setSelectedCust({ ...cust, contact_methods: methods }); // 確保閱覽模式能拿到陣列格式[cite: 1, 2]
     setModalTab('overview');
     setModalMode('view');
   };
-
-  const filteredCustomers = customers.filter(c => 
-    activeTab === 'blacklist' ? c.custom_label === '黑名單' : true
-  );
 
   return (
     <div className="crm-container">
@@ -175,11 +183,22 @@ export function Customers() {
 
       <header className="crm-header">
         <h2>顧客管理</h2>
-        <button className="crm-submit-btn" onClick={() => {
-          setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
-          setModalMode('add');
-          setSuggestions([]);
-        }}>+ 新增紀錄</button>
+        <div className="customers-header-actions">
+          {/* 🔍 搜尋框功能[cite: 1] */}
+          <input 
+            type="text" 
+            className="crm-form-input" 
+            style={{ width: '220px' }}
+            placeholder="搜尋 ID、暱稱、標籤..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button className="crm-submit-btn" onClick={() => {
+            setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
+            setModalMode('add');
+            setSuggestions([]);
+          }}>+ 新增紀錄</button>
+        </div>
       </header>
 
       <div className="crm-tabs-container">
@@ -202,32 +221,29 @@ export function Customers() {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-            ) : filteredCustomers.map(c => {
-              const contacts = parseContacts(c.contact_methods);
+            ) : displayCustomers.map(c => {
+              const socialArr = parseSocialMethods(c.contact_methods);
               return (
                 <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
                   <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
                   <td>
-                    <div className="crm-id-social-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                    {/* 🌟 識別 ID 與社群並列顯示邏輯[cite: 1, 2] */}
+                    <div className="crm-id-social-wrapper">
                       <div className="crm-id-box">
                         <span className="crm-id-tag">{c.public_id || '---'}</span>
                       </div>
-                      {/* 🌟 並排顯示社群內容摘要[cite: 1, 2] */}
-                      {contacts.length > 0 && (
-                        <div className="crm-social-summary" style={{ color: '#8A7E72', fontSize: '13px' }}>
-                          | {contacts.join(' / ')}
+                      {socialArr.length > 0 && (
+                        <div className="crm-social-summary">
+                          {socialArr.join(' / ')}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td>
-                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                      {c.custom_label}
-                    </span>
-                  </td>
+                  <td><span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{c.custom_label}</span></td>
                   <td>{c.order_count} 次</td>
                   <td className="crm-td-note">{c.short_note || '---'}</td>
                   <td className="crm-td-action" onClick={(e) => e.stopPropagation()}>
+                    {/* 🌟 修正編輯按鈕跳轉問題：增加 e.stopPropagation()[cite: 1] */}
                     <button className="crm-tab-btn" onClick={() => openEditModal(c)}>編輯</button>
                   </td>
                 </tr>
@@ -255,7 +271,7 @@ export function Customers() {
                     <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ fontSize: '13px', color: '#8A7E72' }}>(平台名: {selectedCust.platform_name})</span>}</div>
                     <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#5D4A3E' }}>{selectedCust.public_id || '無識別 ID'}</span></div>
                     <div className="crm-view-row"><strong>標籤分類：</strong><span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span></div>
-                    {/* 🛠️ 修復社群資訊顯示：確保渲染陣列內容[cite: 1, 2] */}
+                    {/* 🌟 修正閱覽模式社群資訊空值問題[cite: 1, 2] */}
                     <div className="crm-view-row"><strong>社群資訊：</strong>{Array.isArray(selectedCust.contact_methods) && selectedCust.contact_methods.length > 0 ? selectedCust.contact_methods.join(' / ') : '無紀錄'}</div>
                     <div className="crm-view-row"><strong>簡短備註：</strong>{selectedCust.short_note || '無'}</div>
                     <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>{selectedCust.full_note || '尚無內容'}</p></div>
@@ -281,8 +297,7 @@ export function Customers() {
                 <div className="crm-edit-mode">
                   <h3 style={{ marginBottom: '20px', color: '#5D4A3E' }}>{modalMode === 'add' ? '新增紀錄' : '編輯詳情'}</h3>
                   
-                  {/* ... 編輯表單維持不變，確保 handleSave 會正確處理 contact_methods 為 JSON ... */}
-                  <div className="crm-form-section">
+                  <div className="crm-form-section" style={{ position: 'relative' }}>
                     <label className="crm-form-label">識別 ID (輸入 5 位數字)</label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <span className="crm-id-prefix">User_</span>
@@ -294,6 +309,15 @@ export function Customers() {
                         onChange={handleInputChange}
                       />
                     </div>
+                    {suggestions.length > 0 && (
+                      <div className="crm-suggestions">
+                        {suggestions.map(s => (
+                          <div key={s.id} className="crm-suggestion-item" onClick={() => handleSelectSuggestion(s)}>
+                            <strong>{s.public_id}</strong> - {s.alias_name || s.platform_name || '現有客戶'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="crm-form-section">
@@ -315,26 +339,47 @@ export function Customers() {
                             setSelectedCust({...selectedCust, contact_methods: newMethods});
                           }} 
                         />
+                        {/* 🌟 動態增減社群欄位邏輯修正[cite: 1] */}
                         {index === selectedCust.contact_methods.length - 1 && selectedCust.contact_methods.length < 3 && (
                           <button className="crm-tab-btn" onClick={() => setSelectedCust({...selectedCust, contact_methods: [...selectedCust.contact_methods, '']})}>+</button>
+                        )}
+                        {selectedCust.contact_methods.length > 1 && (
+                          <button className="crm-tab-btn" style={{ color: '#C04B4B' }} onClick={() => {
+                            const newMethods = selectedCust.contact_methods.filter((_:any, i:number) => i !== index);
+                            setSelectedCust({...selectedCust, contact_methods: newMethods});
+                          }}>-</button>
                         )}
                       </div>
                     ))}
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">簡短備註</label>
-                    <input className="crm-form-input" value={selectedCust.short_note} onChange={e => setSelectedCust({...selectedCust, short_note: e.target.value})} />
+                    <label className="crm-form-label">簡短備註 (顯示於列表)</label>
+                    <input className="crm-form-input" value={selectedCust.short_note} onChange={e => setSelectedCust({...selectedCust, short_note: e.target.value})} placeholder="例如: 某平台大戶、不擅長溝通等" />
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">詳細筆記</label>
+                    <label className="crm-form-label">詳細合作筆記</label>
                     <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '30px' }}>
-                    <button className="crm-tab-btn" onClick={() => setModalMode('none')}>取消</button>
-                    <button className="crm-submit-btn" onClick={handleSave}>儲存資料</button>
+                  <div className="crm-form-section">
+                    <label className="crm-form-label">標籤分類</label>
+                    <select className="crm-form-input" value={selectedCust.custom_label} onChange={e => setSelectedCust({...selectedCust, custom_label: e.target.value})}>
+                      <option value="一般">一般</option>
+                      <option value="VIP">VIP</option>
+                      <option value="黑名單">黑名單</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                    {modalMode === 'edit' && !selectedCust.client_user_id ? (
+                      <button className="crm-delete-btn" onClick={handleDelete}>永久刪除此紀錄</button>
+                    ) : <div></div>}
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button className="crm-tab-btn" onClick={() => setModalMode('none')}>取消</button>
+                      <button className="crm-submit-btn" onClick={handleSave}>儲存資料</button>
+                    </div>
                   </div>
                 </div>
               )}
