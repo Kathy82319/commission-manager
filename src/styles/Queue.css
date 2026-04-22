@@ -160,128 +160,131 @@
   .queue-controls { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
   .queue-search, .queue-select { max-width: 100%; width: 100%; box-sizing: border-box; }
 
-  /* 隱藏預設表格標頭，我們將用 CSS 偽元素生成更適合手機的小標題 */
-  .queue-table thead { display: none; }
-  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td { display: block; width: 100%; box-sizing: border-box; }
-  
-  /* --- 卡片網格佈局 (雙層摘要列) --- */
-  .queue-table tr {
+  /* --- 恢復標題列 (Thead) --- */
+  .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
+  .queue-table thead tr {
     display: grid;
-    /* 切分三個主要區塊：日期(固定寬) | 彈性區塊(委託人/進度) | 狀態/收款(靠右) */
-    grid-template-columns: 50px 1fr auto; 
-    gap: 8px 12px;
-    margin-bottom: 16px;
+    /* 5 欄配置：日期 | 委託人(自動伸展) | 進度 | 完工 | 收款 */
+    grid-template-columns: 40px 1fr 65px 40px 50px;
+    gap: 4px;
+    padding: 0 12px;
+    border: none;
+    background: transparent;
+  }
+  .queue-table th {
+    padding: 0;
+    font-size: 11px;
+    color: #A0978D;
+    text-align: center;
+    border: none;
+    background: transparent;
+  }
+  .queue-table th:nth-child(2) { text-align: left; padding-left: 4px; } /* 委託人標題靠左 */
+
+  /* --- 基本表格容器 --- */
+  .queue-table, .queue-table tbody { display: block; width: 100%; box-sizing: border-box; }
+  
+  /* --- 卡片網格佈局 (單行摘要列) --- */
+  .queue-table tbody tr {
+    display: grid;
+    /* 與 Thead 完全相同的 5 欄配置，確保對齊 */
+    grid-template-columns: 40px 1fr 65px 40px 50px; 
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 8px;
     border: 1px solid #EAE6E1;
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 10px 8px;
     background: #FFF;
-    box-shadow: 0 4px 12px rgba(93, 74, 62, 0.05);
+    box-shadow: 0 2px 8px rgba(93, 74, 62, 0.04);
     cursor: pointer;
     transition: all 0.3s ease;
   }
 
-  /* 展開時的高亮樣式 */
-  .queue-table tr.is-expanded {
-    border-color: #A67B3E;
-    box-shadow: 0 8px 24px rgba(166, 123, 62, 0.12);
-    cursor: default;
-    
-    /* 🌟 展開後，改變網格結構變成兩欄式表單 */
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .queue-table td {
-    padding: 0; border: none; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-  }
-
-  /* 隱藏拖曳把手 */
+  /* 隱藏拖曳把手與不必要的欄位 */
   .desktop-only { display: none !important; }
-
+  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
 
   /* =======================================
-     狀態 A：未展開 (摘要模式)
+     狀態 A：未展開 (單行摘要模式)
      ======================================= */
   
-  /* 隱藏下方編輯區域與長條資訊 */
+  /* 隱藏下方編輯區域 */
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
   .queue-table tr:not(.is-expanded) .client-details-extra {
     display: none;
   }
 
-  /* 封鎖點擊事件，避免在收合狀態下誤觸修改 */
-  .queue-table tr:not(.is-expanded) .cell-content { pointer-events: none; width: 100%; }
+  /* 封鎖點擊事件 */
+  .queue-table tr:not(.is-expanded) .cell-content,
+  .queue-table tr:not(.is-expanded) .cell-content-right { 
+    pointer-events: none; width: 100%; align-items: center; justify-content: center;
+  }
 
-  /* 網格位置分配 (摘要狀態) */
-  /* 第 1 列 (日期跨兩行靠左) */
-  .queue-table tr:not(.is-expanded) td[data-label="日期"] { 
-    grid-column: 1; grid-row: 1 / 3; align-items: center; justify-content: flex-start;
-  }
-  .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
-    font-size: 13px; font-weight: bold; color: #7A7269; text-align: center; line-height: 1.2;
-  }
-  
-  /* 第 1 列上方 (委託人) */
+  /* 限制委託人名字過長自動換行，不撐破網格 */
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] { 
-    grid-column: 2; grid-row: 1; align-items: flex-start;
+    min-width: 0; padding: 0 4px; align-items: flex-start;
   }
-  
-  /* 第 1 列右方 (付款進度) */
-  .queue-table tr:not(.is-expanded) td[data-label="付款進度"] { 
-    grid-column: 3; grid-row: 1; align-items: flex-end;
+  .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] > div {
+    width: 100%; word-break: break-all; white-space: normal; line-height: 1.3;
   }
 
-  /* 第 2 列下方 (當前進度 + 預計完工) */
-  /* 將這兩個放在同一個 grid cell 裡橫向排列 */
-  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] { 
-    grid-column: 2; grid-row: 2; flex-direction: row; align-items: center; gap: 8px;
-  }
-  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] { 
-    grid-column: 3; grid-row: 2; align-items: flex-end;
+  /* 隱藏預設標籤 */
+  .queue-table tr:not(.is-expanded) td::before { display: none; }
+  
+  /* 日期文字 */
+  .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
+    font-size: 11px; font-weight: bold; color: #7A7269; text-align: center;
   }
 
   /* 樣式簡化：讓輸入框看起來像純文字或小標籤 */
   .queue-table tr:not(.is-expanded) .dropdown-button {
-    min-height: 0; padding: 4px 8px; border-radius: 6px; border: none; background-color: #F4F0EB; font-size: 12px; width: auto;
+    min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: #F4F0EB; font-size: 11px; width: 100%; justify-content: center; text-align: center;
   }
   .queue-table tr:not(.is-expanded) .dropdown-arrow,
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; }
   
-  /* 日期只顯示 MM/DD */
   .queue-table tr:not(.is-expanded) .date-input {
-    border: none; background: transparent; padding: 0; height: auto; color: #A0978D; font-size: 12px; text-align: right; width: auto;
+    border: none; background: transparent; padding: 0; height: auto; color: #A0978D; font-size: 11px; text-align: center; width: 100%;
   }
-  .queue-table tr:not(.is-expanded) .date-input::-webkit-calendar-picker-indicator { display: none; }
-
-  /* 隱藏原生的 value，用 CSS 偽元素顯示截斷後的日期 (這需要一點小技巧，但能達到你要的效果) */
-  .queue-table tr:not(.is-expanded) .date-input { color: transparent; text-shadow: 0 0 0 #A0978D; width: 45px; overflow: hidden; }
 
   /* 付款進度變小膠囊 */
   .queue-table tr:not(.is-expanded) .payment-select {
-    appearance: none; -webkit-appearance: none; padding: 4px 10px; height: auto; font-size: 11px; border-radius: 20px; text-align: center; border: none;
+    appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
-
 
   /* =======================================
      狀態 B：展開後 (兩欄式表單模式)
      ======================================= */
   
-  .queue-table tr.is-expanded .cell-content { width: 100%; pointer-events: auto; }
+  .queue-table tbody tr.is-expanded {
+    /* 展開時改變網格，變成兩欄表單 */
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 16px;
+    border-color: #A67B3E;
+    box-shadow: 0 6px 16px rgba(166, 123, 62, 0.12);
+    cursor: default;
+  }
 
-  /* 標題顯示邏輯 */
+  .queue-table tr.is-expanded .cell-content,
+  .queue-table tr.is-expanded .cell-content-right { 
+    width: 100%; pointer-events: auto; align-items: flex-start;
+  }
+
+  /* 展開狀態下恢復顯示標籤標題 */
   .queue-table tr.is-expanded td::before {
-    content: attr(data-label); font-size: 12px; color: #A0978D; margin-bottom: 6px; display: block; font-weight: bold;
+    content: attr(data-label); font-size: 12px; color: #A0978D; margin-bottom: 6px; display: block; font-weight: bold; text-align: left; width: 100%;
   }
   .queue-table tr.is-expanded td[data-label="委託人資訊"]::before,
   .queue-table tr.is-expanded td[data-label="日期"]::before { display: none; }
 
   /* 網格位置分配 (展開狀態) */
-  .queue-table tr.is-expanded td[data-label="日期"] { display: none; /* 展開後通常不需要再看左側的大日期 */ }
+  .queue-table tr.is-expanded td[data-label="日期"] { display: none; /* 展開後不需看大日期 */ }
   
   .queue-table tr.is-expanded td[data-label="委託人資訊"] { 
-    grid-column: 1 / -1; padding-bottom: 12px; border-bottom: 1px dashed #F0ECE7; margin-bottom: 8px;
+    grid-column: 1 / -1; padding-bottom: 12px; border-bottom: 1px dashed #F0ECE7; margin-bottom: 4px;
   }
   
   .queue-table tr.is-expanded td[data-label="當前進度"] { grid-column: 1; }
@@ -291,7 +294,7 @@
   .queue-table tr.is-expanded td[data-label="備註欄位"],
   .queue-table tr.is-expanded td[data-label="操作管理"] { grid-column: 1 / -1; }
 
-  /* 恢復輸入框樣式 */
+  /* 恢復輸入框滿版樣式 */
   .queue-table tr.is-expanded .dropdown-button,
   .queue-table tr.is-expanded .date-input,
   .queue-table tr.is-expanded .payment-select {

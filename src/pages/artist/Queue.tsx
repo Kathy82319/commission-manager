@@ -80,8 +80,6 @@ export function Queue() {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  
-  // 控制手機版哪一列被展開的狀態
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -170,14 +168,15 @@ export function Queue() {
       <div className="queue-table-wrapper">
         <table className="queue-table">
           <thead>
+            {/* 🌟 修改了表頭，隱藏手機不需顯示的欄位 */}
             <tr>
               <th style={{ width: '100px' }}>日期</th>
-              <th>委託人資訊</th>
-              <th>當前進度</th>
-              <th>預計完工</th>
-              <th>付款進度</th>
-              <th>備註欄位</th>
-              <th>操作</th>
+              <th>委託人</th>
+              <th>進度</th>
+              <th>完工</th>
+              <th>收款</th>
+              <th className="desktop-only">備註欄位</th>
+              <th className="desktop-only">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -205,18 +204,22 @@ export function Queue() {
                     >
                       <GripVertical size={16} />
                     </div>
-                    {/* 左側排單日期維持 MM/DD 格式 */}
                     <span>{order.order_date.substring(5, 10).replace('-', '/')}</span>
                   </div>
                 </td>
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E' }} className="truncate-text">
-                      <strong>委託人：</strong>{order.contact_memo || '未命名'} 
-                      {/* 系統暱稱在未展開時透過 CSS 隱藏，展開時顯示 */}
-                      <span className="client-details-extra" style={{ color: '#A0978D', display: 'inline-block', marginLeft: '3px' }}>
-                        ({order.client_name || '無暱稱'} )  
+                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                      {/* 🌟 修改點：未展開時只顯示名稱，展開後才顯示「委託人：」前綴與系統暱稱 */}
+                      {isExpanded && <strong>委託人：</strong>}
+                      <span style={{ fontWeight: !isExpanded ? 'bold' : 'normal' }}>
+                        {order.contact_memo || '未命名'}
                       </span>
+                      {isExpanded && (
+                        <span style={{ color: '#A0978D', marginLeft: '3px' }}>
+                          ({order.client_name || '無暱稱'} )  
+                        </span>
+                      )}
                     </div>
                     <div className="client-details-extra">
                       <div style={{ fontSize: '13px', color: '#7A7269' }}>
@@ -249,7 +252,6 @@ export function Queue() {
                 </td>
                 <td data-label="預計完工">
                   <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
-                    {/* 條件渲染：未展開顯示精簡文字，展開顯示完整日期輸入框 */}
                     {!isExpanded ? (
                       <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'bold' }}>
                         {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
