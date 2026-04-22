@@ -493,9 +493,7 @@ export function Notebook() {
                   <div className="card-info-row">
                     <span>單號：{order.id.split('-')[1] || order.id}</span>
                     <span>委託人：{order.client_public_id || '未綁定'}</span>
-                      <span className={`card-mode-badge ${order.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
-                      {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
-                    </span>
+                    
                   </div>
                   <div className="card-tags-row">
                     <span className={`card-tag ${payBadge.className}`}>{payBadge.text}</span>
@@ -525,14 +523,13 @@ export function Notebook() {
 
                   <div className="main-title-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <h2 className="main-title" style={{ margin: 0 }}>{getDualName(selectedOrder)}</h2>
-                    {/* 🌟 詳情頁名稱旁新增黑名單原因查看[cite: 1] */}
                     {selectedOrder.client_custom_label === '黑名單' && (
                       <span 
                         className="blacklist-alert-tag" 
                         onClick={() => navigate(`/artist/customers?id=${selectedOrder.crm_record_id}`)}
-                        style={{ cursor: 'pointer', background: '#2D231C', color: '#FF4D4D', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FF4D4D' }}
+                        style={{ cursor: 'pointer', color: '#FF4D4D', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FF4D4D' }}
                       >
-                        黑名單-查看黑單原因
+                        查看黑單原因
                       </span>
                     )}
                   </div>
@@ -542,6 +539,9 @@ export function Notebook() {
                     <span>日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
+                      <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
+                      {selectedOrder.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                    </span>
                   </div>
                   {getStatusBadge(selectedOrder.status) && (
                     <div className="main-status-wrapper">
