@@ -62,32 +62,32 @@ export function Customers() {
     }
   };
 
-  // ID 搜尋與自動代出邏輯
+  // ID 搜尋與自動代出邏輯 (僅搜尋本人的現有名單，不搜尋全平台)
   const handleIDSearch = (idNum: string) => {
-    if (!idNum) return;
+    if (!idNum || idNum === "") return;
     setIsSearching(true);
     const fullID = `User_${idNum}`;
     
-    // 模擬搜尋感並從現有名單比對
+    // 從現有名單比對是否已有紀錄 (含手動黑單)
     setTimeout(() => {
       const found = customers.find(c => c.public_id === fullID);
       if (found) {
-        const methods = found.contact_methods ? JSON.parse(found.contact_methods) : [""];
+        const methods = found.contact_methods ? (typeof found.contact_methods === 'string' ? JSON.parse(found.contact_methods) : found.contact_methods) : [""];
         setSelectedCust({ ...found, contact_methods: methods });
-        setModalMode('edit'); // 搜到現有的就改為編輯模式
-        showToast("已找到現有客戶並自動帶入");
+        setModalMode('edit'); // 發現已存在，轉為編輯模式
+        showToast("已帶出現有紀錄，您可直接修改內容");
       } else {
+        // 若沒找到，僅更新目前選取的 ID，保持在新增模式
         setSelectedCust({ ...selectedCust, public_id: fullID, client_user_id: null });
-        showToast("未找到現有客戶，將建立新紀錄");
+        showToast("未有重複紀錄，可繼續填寫");
       }
       setIsSearching(false);
-    }, 600);
+    }, 400);
   };
 
   // 處理儲存
   const handleSave = async () => {
-    // 檢查必填
-    if (!selectedCust.alias_name.trim()) return showToast("請輸入名稱或稱呼");
+    if (!selectedCust.alias_name.trim() && !selectedCust.platform_name) return showToast("請輸入名稱或稱呼");
 
     const isEdit = modalMode === 'edit';
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
@@ -99,7 +99,6 @@ export function Customers() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          // 過濾空社群欄位
           contact_methods: selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
         }),
         credentials: 'include'
@@ -107,7 +106,7 @@ export function Customers() {
       
       const result = await res.json();
       if (result.success) {
-        showToast(isEdit ? "資料更新成功" : "新增成功");
+        showToast(isEdit ? "更新成功" : "新增成功");
         setModalMode('none');
         fetchCustomers();
       } else {
@@ -118,9 +117,9 @@ export function Customers() {
     }
   };
 
-  // 刪除邏輯：僅限手動紀錄 (client_user_id 為空)
+  // 刪除邏輯：僅限手動紀錄 (沒有與系統用戶綁定時)
   const handleDelete = async () => {
-    if (!window.confirm("確定要刪除這筆手動紀錄嗎？刪除後無法復原。")) return;
+    if (!window.confirm("確定要刪除這筆紀錄嗎？一旦刪除，未來的自動預警功能將失效。")) return;
     try {
       const res = await fetch(`${API_BASE}/api/customers/${selectedCust.id}`, {
         method: 'DELETE',
@@ -128,14 +127,12 @@ export function Customers() {
       });
       const result = await res.json();
       if (result.success) {
-        showToast("紀錄已刪除");
+        showToast("紀錄已成功移除");
         setModalMode('none');
         fetchCustomers();
-      } else {
-        showToast("刪除失敗");
       }
     } catch (err) {
-      showToast("API 路由異常，請檢查後端設定");
+      showToast("刪除失敗");
     }
   };
 
@@ -144,7 +141,7 @@ export function Customers() {
   );
 
   const openViewModal = (cust: Customer) => {
-    const methods = cust.contact_methods ? JSON.parse(cust.contact_methods) : [""];
+    const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
     setSelectedCust({ ...cust, contact_methods: methods });
     setModalTab('overview');
     setModalMode('view');
@@ -157,17 +154,17 @@ export function Customers() {
       <header className="crm-header">
         <h2>顧客管理</h2>
         <button className="crm-submit-btn" onClick={() => {
-          setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '' });
+          setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
           setModalMode('add');
         }}>+ 新增紀錄</button>
       </header>
 
       <div className="crm-tabs-container">
         <button className={`crm-tab-btn ${activeTab === 'all' ? 'crm-active' : ''}`} onClick={() => setActiveTab('all')}>
-          總顧客名單 ({customers.length})
+          總名單 ({customers.length})
         </button>
         <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>
-          黑名單封鎖區 ({customers.filter(c => c.custom_label === '黑名單').length})
+          黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})
         </button>
       </div>
 
@@ -176,7 +173,7 @@ export function Customers() {
           <thead>
             <tr>
               <th>暱稱 / 自訂稱呼</th>
-              <th>平台識別 ID / 社群</th>
+              <th>識別 ID / 社群</th>
               <th>標籤</th>
               <th>合作次數</th>
               <th style={{ textAlign: 'right' }}>操作</th>
@@ -184,16 +181,18 @@ export function Customers() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>數據同步中...</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
             ) : filteredCustomers.length > 0 ? (
               filteredCustomers.map(c => (
                 <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name}</td>
+                  <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontFamily: 'monospace', color: '#5D4A3E' }}>{c.public_id || '---'}</span>
-                      {c.contact_methods && JSON.parse(c.contact_methods)[0] && (
-                        <span style={{ fontSize: '11px', color: '#A0978D' }}>{JSON.parse(c.contact_methods)[0]}</span>
+                      {c.contact_methods && (
+                        <span style={{ fontSize: '11px', color: '#A0978D' }}>
+                            {(typeof c.contact_methods === 'string' ? JSON.parse(c.contact_methods) : c.contact_methods)[0]}
+                        </span>
                       )}
                     </div>
                   </td>
@@ -202,7 +201,7 @@ export function Customers() {
                       {c.custom_label}
                     </span>
                   </td>
-                  <td><span style={{ fontWeight: '500' }}>{c.order_count}</span> 次</td>
+                  <td>{c.order_count} 次</td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="crm-tab-btn" onClick={(e) => { e.stopPropagation(); openViewModal(c); }}>詳情</button>
                   </td>
@@ -215,12 +214,10 @@ export function Customers() {
         </table>
       </div>
 
-      {/* CRM 綜合彈窗系統 */}
       {modalMode !== 'none' && selectedCust && (
         <div className="crm-modal-overlay" onClick={() => setModalMode('none')}>
           <div className="crm-modal-card" style={{ maxWidth: modalMode === 'view' ? '650px' : '520px' }} onClick={e => e.stopPropagation()}>
             
-            {/* 閱覽模式的分頁切換 */}
             {modalMode === 'view' && (
               <div className="crm-tabs-container" style={{ borderBottom: '1px solid #F0ECE7', marginBottom: '20px', paddingBottom: '10px' }}>
                 <button className={`crm-tab-btn ${modalTab === 'overview' ? 'crm-active' : ''}`} onClick={() => setModalTab('overview')}>資料閱覽</button>
@@ -232,15 +229,15 @@ export function Customers() {
               {modalMode === 'view' ? (
                 modalTab === 'overview' ? (
                   <div className="crm-view-mode">
-                    <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ color: '#A0978D', fontSize: '13px' }}>(平台名: {selectedCust.platform_name})</span>}</div>
+                    <div className="crm-view-row"><strong>顯示稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ color: '#A0978D', fontSize: '13px' }}>(平台名: {selectedCust.platform_name})</span>}</div>
                     <div className="crm-view-row"><strong>識別 ID：</strong>{selectedCust.public_id}</div>
                     <div className="crm-view-row"><strong>標籤分類：</strong>
                       <span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span>
                     </div>
                     <div className="crm-view-row"><strong>社群資訊：</strong>{selectedCust.contact_methods?.join(' / ') || '無紀錄'}</div>
-                    <div className="crm-view-row"><strong>管理筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px' }}>{selectedCust.full_note || '尚無內容'}</p></div>
+                    <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px' }}>{selectedCust.full_note || '尚無內容'}</p></div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '30px', justifyContent: 'flex-end' }}>
-                      <button className="crm-tab-btn" onClick={() => setModalMode('none')}>關閉</button>
+                      <button className="crm-tab-btn" onClick={() => setModalMode('none')}>關閉視窗</button>
                       <button className="crm-submit-btn" onClick={() => setModalMode('edit')}>編輯詳情</button>
                     </div>
                   </div>
@@ -260,13 +257,12 @@ export function Customers() {
                         </div>
                       )) : <div style={{ textAlign: 'center', padding: '40px', color: '#A0978D' }}>尚未與此客戶完成過任何委託</div>}
                     </div>
-                    <button className="crm-tab-btn" style={{ width: '100%', marginTop: '20px' }} onClick={() => setModalMode('none')}>關閉視窗</button>
+                    <button className="crm-tab-btn" style={{ width: '100%', marginTop: '20px' }} onClick={() => setModalMode('none')}>關閉</button>
                   </div>
                 )
               ) : (
-                /* 新增與編輯模式的統一表單 */
                 <div className="crm-edit-mode">
-                  <h3 style={{ marginBottom: '20px', color: '#5D4A3E' }}>{modalMode === 'add' ? '新增客戶紀錄' : '編輯客戶詳情'}</h3>
+                  <h3 style={{ marginBottom: '20px', color: '#5D4A3E' }}>{modalMode === 'add' ? '新增預防性紀錄' : '編輯詳細內容'}</h3>
                   
                   <div className="crm-form-section">
                     <label className="crm-form-label">識別 ID (User_ 數字)</label>
@@ -275,25 +271,24 @@ export function Customers() {
                       <input 
                         className="crm-form-input" 
                         style={{ borderRadius: '0 8px 8px 0', borderLeft: 'none' }}
-                        placeholder="輸入數字"
-                        defaultValue={selectedCust.public_id?.replace('User_', '')}
+                        placeholder="輸入數字後離開焦點自動查詢"
+                        value={selectedCust.public_id?.replace('User_', '')}
+                        onChange={e => setSelectedCust({...selectedCust, public_id: `User_${e.target.value}`})}
                         onBlur={(e) => handleIDSearch(e.target.value)}
                       />
                       <button className="crm-tab-btn" style={{ marginLeft: '8px', minWidth: '80px' }} onClick={() => handleIDSearch(selectedCust.public_id?.replace('User_', ''))}>
-                        {isSearching ? "..." : "🔍 搜尋"}
+                        {isSearching ? "..." : "🔍 查詢"}
                       </button>
                     </div>
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">
-                      {selectedCust.platform_name ? '平台顯示名稱 (不可改)' : '稱呼 / 暱稱'}
-                    </label>
-                    {selectedCust.platform_name ? (
+                    <label className="crm-form-label">{selectedCust.client_user_id ? '平台名稱 (正式交易後鎖定)' : '名稱 / 暱稱'}</label>
+                    {selectedCust.client_user_id ? (
                       <>
-                        <input className="crm-form-input" value={selectedCust.platform_name} readOnly style={{ background: '#F9F7F5', color: '#A0978D' }} />
+                        <input className="crm-form-input" value={selectedCust.platform_name || ''} readOnly style={{ background: '#F9F7F5', color: '#A0978D' }} />
                         <label className="crm-form-label" style={{ marginTop: '12px', fontSize: '12px', color: '#8A7E72' }}>自定義稱呼 (方便您辨識)</label>
-                        <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} placeholder="例如: 某某的大力贊助人" />
+                        <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} />
                       </>
                     ) : (
                       <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} placeholder="請輸入對方的稱呼" />
@@ -307,7 +302,7 @@ export function Customers() {
                         <input 
                           className="crm-form-input" 
                           value={method} 
-                          placeholder="例如: Twitter @ID 或 FB 連結"
+                          placeholder="例如: Twitter @ID"
                           onChange={(e) => {
                             const newMethods = [...selectedCust.contact_methods];
                             newMethods[index] = e.target.value;
@@ -325,24 +320,24 @@ export function Customers() {
                     <label className="crm-form-label">標籤分類</label>
                     <select className="crm-form-input" value={selectedCust.custom_label} onChange={e => setSelectedCust({...selectedCust, custom_label: e.target.value})}>
                       <option value="一般">一般客戶</option>
-                      <option value="VIP">VIP 優質大戶</option>
-                      <option value="黑名單">黑名單 (拒絕接單)</option>
+                      <option value="VIP">VIP 優質</option>
+                      <option value="黑名單">黑名單 (預防或拒接)</option>
                     </select>
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">詳細合作筆記</label>
-                    <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} placeholder="紀錄此人的委託喜好、地雷或合作心得..." />
+                    <label className="crm-form-label">詳細筆記</label>
+                    <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} />
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
-                    {/* 只有非系統用戶的手動紀錄才顯示刪除 */}
+                    {/* 關鍵：只有「沒有 client_user_id」的手動紀錄，才提供刪除按鈕 */}
                     {modalMode === 'edit' && !selectedCust.client_user_id ? (
-                      <button className="crm-delete-btn" onClick={handleDelete}>永久刪除紀錄</button>
+                      <button className="crm-delete-btn" onClick={handleDelete}>永久刪除此紀錄</button>
                     ) : <div></div>}
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <button className="crm-tab-btn" onClick={() => modalMode === 'add' ? setModalMode('none') : setModalMode('view')}>取消</button>
-                      <button className="crm-submit-btn" onClick={handleSave}>儲存資料</button>
+                      <button className="crm-submit-btn" onClick={handleSave}>儲存變更</button>
                     </div>
                   </div>
                 </div>

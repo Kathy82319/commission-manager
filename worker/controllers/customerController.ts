@@ -51,7 +51,7 @@ export const customerController = {
     }
   },
 
-  // 🌟 3. 補回遺失的 getDetail (修復報錯的關鍵)
+  // 3. 詳情讀取
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const customer = await env.commission_db.prepare(`
@@ -78,6 +78,12 @@ export const customerController = {
       const updates: string[] = [];
       const params: any[] = [];
 
+      // 安全檢查：先讀取目前狀態
+      const current = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")
+        .bind(id, currentUserId).first<any>();
+      
+      if (!current) return new Response(JSON.stringify({ success: false, error: "找不到紀錄" }), { status: 404, headers: corsHeaders });
+
       const fields: Record<string, number> = {
         alias_name: 50,
         custom_label: 20,
@@ -87,6 +93,7 @@ export const customerController = {
 
       for (const [field, limit] of Object.entries(fields)) {
         if (body[field] !== undefined) {
+          // 如果已經是系統用戶，且試圖更改 alias_name，我們允許更改，因為這是繪師的自訂稱呼
           updates.push(`${field} = ?`);
           params.push(sanitizeAndLimit(body[field], limit));
         }
@@ -131,13 +138,31 @@ export const customerController = {
     }
   },
 
-  // 6. 刪除客戶紀錄
+  // 🌟 6. 刪除客戶紀錄 (加入防護邏輯)
   async delete(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
+      // 1. 檢查該紀錄是否綁定了系統用戶 (client_user_id 是否有值)
+      const record = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")
+        .bind(id, currentUserId).first<any>();
+
+      if (!record) {
+        return new Response(JSON.stringify({ success: false, error: "找不到該紀錄" }), { status: 404, headers: corsHeaders });
+      }
+
+      // 2. 如果已綁定系統用戶，拒絕刪除
+      if (record.client_user_id) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "此客戶已有正式交易紀錄，為確保數據一致性，系統用戶紀錄不可刪除。" 
+        }), { status: 403, headers: corsHeaders });
+      }
+
+      // 3. 只有手動預防紀錄 (client_user_id 為空) 才執行刪除
       await env.commission_db.prepare("DELETE FROM CustomerRecords WHERE id = ? AND artist_id = ?").bind(id, currentUserId).run();
+      
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
-      return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: "刪除失敗: " + err.message }), { status: 500, headers: corsHeaders });
     }
   }
 };

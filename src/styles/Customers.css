@@ -201,3 +201,40 @@
   border-color: #5D4A3E;
   background: #F9F7F5;
 }
+
+/* 建議選單容器 */
+.crm-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #DED9D3;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.crm-suggestion-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #5D4A3E;
+  transition: background 0.2s;
+  border-bottom: 1px solid #F9F7F5;
+}
+
+.crm-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.crm-suggestion-item:hover {
+  background: #F4F0EB;
+}
+
+.crm-suggestion-item strong {
+  color: #A67B3E;
+}
