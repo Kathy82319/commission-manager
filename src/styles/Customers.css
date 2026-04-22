@@ -247,41 +247,46 @@
   gap: 12px;
 }
 
-.search-input {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  width: 240px;
-  outline: none;
-  transition: border-color 0.2s;
+/* 基礎表格置中設定 */
+.crm-table th, 
+.crm-table td {
+  text-align: center !important; /* 確保欄位對齊表格中心 */
+  vertical-align: middle;
+  padding: 12px 8px;
 }
 
-.search-input:focus {
-  border-color: #94a3b8;
-}
-
-/* 修正對齊問題：統一操作欄位居中 */
-.customers-table th:last-child,
-.customers-table td:last-child {
-  text-align: center; /* 解決靠右對齊的偏移問題 */
-  width: 80px;
-}
-
-/* 確保按鈕在容器中不會產生額外偏移 */
-.edit-btn {
-  display: inline-flex;
-  justify-content: center;
+/* 識別 ID 與 社群的並列容器 */
+.crm-id-social-wrapper {
+  display: flex;
+  flex-direction: column; /* 手機端建議垂直，PC端可維持垂直排列或橫向 */
   align-items: center;
-  padding: 6px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
+  gap: 4px;
 }
 
-.edit-btn:hover {
-  background: #f8fafc;
+.crm-id-box {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.crm-social-summary {
+  font-size: 12px;
+  color: #8A7E72;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 操作欄位按鈕居中 */
+.crm-td-action {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 備註欄位限制寬度並置中 */
+.crm-td-note {
+  max-width: 200px;
+  margin: 0 auto;
 }
