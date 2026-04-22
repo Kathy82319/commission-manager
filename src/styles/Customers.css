@@ -162,3 +162,42 @@
 .crm-tag-vip { background: #E8F3EB; color: #4E7A5A; }
 .crm-tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
 .crm-tag-normal { background: #F0ECE7; color: #8A7E72; }
+.crm-id-prefix {
+  background: #F4F0EB;
+  padding: 10px;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid #DED9D3;
+  color: #8A7E72;
+  font-weight: bold;
+}
+
+.crm-delete-btn {
+  background: #FFF;
+  border: 1px solid #C04B4B;
+  color: #C04B4B;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.crm-delete-btn:hover {
+  background: #FEEBEB;
+}
+
+.crm-history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #FDFBFA;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.crm-history-item:hover {
+  border-color: #5D4A3E;
+  background: #F9F7F5;
+}

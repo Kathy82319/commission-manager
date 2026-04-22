@@ -25,7 +25,7 @@ export const customerController = {
     }
   },
 
-  // 2. 新增客戶紀錄 (支援 ID 搜尋與社群陣列)
+  // 2. 新增客戶紀錄
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
@@ -51,7 +51,27 @@ export const customerController = {
     }
   },
 
-  // 3. 更新紀錄
+  // 🌟 3. 補回遺失的 getDetail (修復報錯的關鍵)
+  async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      const customer = await env.commission_db.prepare(`
+        SELECT cr.*, u.display_name as platform_name, u.public_id
+        FROM CustomerRecords cr
+        LEFT JOIN Users u ON cr.client_user_id = u.id
+        WHERE cr.id = ? AND cr.artist_id = ?
+      `).bind(id, currentUserId).first<any>();
+
+      if (!customer) {
+        return new Response(JSON.stringify({ success: false, error: "找不到該客戶" }), { status: 404, headers: corsHeaders });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: customer }), { status: 200, headers: corsHeaders });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ success: false, error: "讀取詳情失敗: " + err.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 4. 更新紀錄
   async update(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
@@ -88,7 +108,7 @@ export const customerController = {
     }
   },
 
-  // 4. 取得過往委託紀錄 (CRM 詳情分頁使用)
+  // 5. 取得過往委託紀錄
   async getHistory(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const record = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")
@@ -111,7 +131,7 @@ export const customerController = {
     }
   },
 
-  // 5. 刪除客戶紀錄
+  // 6. 刪除客戶紀錄
   async delete(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       await env.commission_db.prepare("DELETE FROM CustomerRecords WHERE id = ? AND artist_id = ?").bind(id, currentUserId).run();
