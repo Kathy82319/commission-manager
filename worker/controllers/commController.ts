@@ -62,6 +62,24 @@ export const commController = {
       });
     }
 
+// 在 commController.ts 內部的輔助邏輯
+async function syncToCRM(env: Env, artistId: string, clientId: string, clientNickname: string) {
+  // 1. 檢查該繪師是否已經紀錄過這位客戶
+  const { results } = await env.commission_db.prepare(
+    "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
+  ).bind(artistId, clientId).all();
+
+  // 2. 如果沒有紀錄，則自動新增一筆「一般」標籤的紀錄
+  if (results.length === 0) {
+    const newId = crypto.randomUUID();
+    await env.commission_db.prepare(`
+      INSERT INTO CustomerRecords (id, artist_id, client_user_id, nickname, custom_label, short_note)
+      VALUES (?, ?, ?, ?, '一般', '系統自動匯入')
+    `).bind(newId, artistId, clientId, clientNickname).run();
+  }
+}
+
+
     const now = new Date();
     let maxQuota = 0;
     let usedQuota = 0;
