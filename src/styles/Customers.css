@@ -1,12 +1,14 @@
 /* src/styles/Customers.css */
-.customers-container {
+/* 採用 crm- 前綴確保樣式隔離 */
+
+.crm-container {
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* 標題與按鈕對齊 Queue.css 邏輯 */
-.customers-header {
+/* 標題簡化與佈局修正 */
+.crm-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -15,14 +17,14 @@
   padding-bottom: 16px;
 }
 
-.customers-header h2 {
+.crm-header h2 {
   font-size: 24px;
   color: #5D4A3E;
   margin: 0;
 }
 
-/* 修正按鈕寬度，不讓其橫向延展 */
-.submit-btn {
+/* 修正按鈕寬度，防止橫向展延 */
+.crm-submit-btn {
   background: #5D4A3E;
   color: white;
   border: none;
@@ -30,23 +32,24 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  width: auto; /* 確保按鈕寬度由內容決定 */
+  width: auto; /* 強制寬度自適應內容 */
+  white-space: nowrap;
   transition: transform 0.1s, background 0.2s;
 }
 
-.submit-btn:hover {
+.crm-submit-btn:hover {
   background: #4A3B31;
   transform: translateY(-1px);
 }
 
-/* Tab 樣式對齊排單表與設置頁 */
-.tabs-container {
+/* 嚴格隔離的 Tab 樣式 */
+.crm-tabs-container {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.tab-btn {
+.crm-tab-btn {
   padding: 8px 16px;
   border-radius: 8px;
   border: 1px solid #DED9D3;
@@ -57,20 +60,20 @@
   transition: all 0.2s;
 }
 
-.tab-btn:hover:not(.active) {
+.crm-tab-btn:hover:not(.crm-active) {
   background: #F4F0EB;
   color: #5D4A3E;
 }
 
-.tab-btn.active {
+.crm-tab-btn.crm-active {
   background: #5D4A3E;
   color: white;
   border-color: #5D4A3E;
   font-weight: 600;
 }
 
-/* 表格容器對齊 queue-table-wrapper */
-.customers-table-wrapper {
+/* 表格隔離樣式 */
+.crm-table-wrapper {
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(93, 74, 62, 0.08);
@@ -78,12 +81,12 @@
   overflow: hidden;
 }
 
-.customers-table {
+.crm-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.customers-table th {
+.crm-table th {
   background: #F9F7F5;
   padding: 16px;
   font-size: 13px;
@@ -92,30 +95,32 @@
   border-bottom: 1px solid #F0ECE7;
 }
 
-.customers-table td {
+.crm-table td {
   padding: 16px;
   border-bottom: 1px solid #F9F7F5;
   color: #5D4A3E;
   font-size: 14px;
+  vertical-align: middle;
 }
 
-.customers-table tr:hover td {
+.crm-table tr:hover td {
   background-color: #FDFBFA;
 }
 
-/* 標籤 Pill 樣式 */
-.tag {
+/* 標籤 Pill 隔離樣式 */
+.crm-tag {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+  display: inline-block;
 }
-.tag-vip { background: #E8F3EB; color: #4E7A5A; }
-.tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
-.tag-normal { background: #F0ECE7; color: #8A7E72; }
+.crm-tag-vip { background: #E8F3EB; color: #4E7A5A; }
+.crm-tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
+.crm-tag-normal { background: #F0ECE7; color: #8A7E72; }
 
-/* 彈窗 UI */
-.modal-overlay {
+/* 彈窗隔離樣式 */
+.crm-modal-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
@@ -127,24 +132,42 @@
   z-index: 9999;
 }
 
-.onboarding-card {
+.crm-modal-card {
   background: white;
   padding: 32px;
   border-radius: 20px;
   width: 90%;
-  max-width: 480px;
+  max-width: 500px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
-.form-section { margin-bottom: 16px; }
-.form-label { display: block; margin-bottom: 6px; font-weight: 600; color: #5D4A3E; font-size: 14px; }
-.form-input {
+.crm-form-section { margin-bottom: 16px; }
+.crm-form-label { display: block; margin-bottom: 6px; font-weight: 600; color: #5D4A3E; font-size: 14px; }
+.crm-form-input {
   width: 100%;
   padding: 10px;
   border: 1px solid #DED9D3;
   border-radius: 8px;
   background: #FDFBFA;
+  color: #5D4A3E;
 }
 
-.toast-container { position: fixed; top: 24px; right: 24px; z-index: 10000; }
-.toast { background: #334155; color: white; padding: 12px 24px; border-radius: 12px; }
+.crm-form-input:focus {
+  border-color: #5D4A3E;
+  outline: none;
+}
+
+/* Toast 隔離樣式 */
+.crm-toast-container { 
+  position: fixed; 
+  top: 24px; 
+  right: 24px; 
+  z-index: 10000; 
+}
+.crm-toast { 
+  background: #334155; 
+  color: white; 
+  padding: 12px 24px; 
+  border-radius: 12px; 
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
