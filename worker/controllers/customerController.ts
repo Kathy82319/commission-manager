@@ -25,28 +25,24 @@ export const customerController = {
     }
   },
 
-  // 2. 新增客戶紀錄 (修正欄位名為 alias_name)
+  // 2. 新增客戶紀錄 (支援 ID 搜尋與社群陣列)
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
-      
-      // 使用 alias_name 儲存
-      const alias_name = sanitizeAndLimit(body.alias_name || "新客戶", 50);
-      const short_note = sanitizeAndLimit(body.short_note || "", 100);
-      const custom_label = sanitizeAndLimit(body.custom_label || "一般", 20);
-
       const id = crypto.randomUUID();
       
       await env.commission_db.prepare(`
-        INSERT INTO CustomerRecords (id, artist_id, client_user_id, alias_name, custom_label, short_note)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO CustomerRecords (id, artist_id, client_user_id, alias_name, custom_label, short_note, full_note, contact_methods)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         id, 
         currentUserId, 
         body.client_user_id || null, 
-        alias_name, 
-        custom_label, 
-        short_note
+        sanitizeAndLimit(body.alias_name || "新客戶", 50), 
+        body.custom_label || '一般', 
+        sanitizeAndLimit(body.short_note || "", 100),
+        sanitizeAndLimit(body.full_note || "", 5000),
+        JSON.stringify(body.contact_methods || [])
       ).run();
       
       return new Response(JSON.stringify({ success: true, id }), { status: 200, headers: corsHeaders });
@@ -55,20 +51,13 @@ export const customerController = {
     }
   },
 
-  // 3. 更新紀錄 (修正欄位名)
+  // 3. 更新紀錄
   async update(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
-      const record = await env.commission_db.prepare("SELECT artist_id FROM CustomerRecords WHERE id = ?").bind(id).first<any>();
-      
-      if (!record || record.artist_id !== currentUserId) {
-        return new Response(JSON.stringify({ success: false, error: "無權限" }), { status: 403, headers: corsHeaders });
-      }
-
       const updates: string[] = [];
       const params: any[] = [];
 
-      // 嚴格對應資料庫欄位
       const fields: Record<string, number> = {
         alias_name: 50,
         custom_label: 20,
@@ -83,10 +72,15 @@ export const customerController = {
         }
       }
 
+      if (body.contact_methods) {
+        updates.push("contact_methods = ?");
+        params.push(JSON.stringify(body.contact_methods));
+      }
+
       if (updates.length === 0) return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
 
-      params.push(id);
-      await env.commission_db.prepare(`UPDATE CustomerRecords SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
+      params.push(id, currentUserId);
+      await env.commission_db.prepare(`UPDATE CustomerRecords SET ${updates.join(", ")} WHERE id = ? AND artist_id = ?`).bind(...params).run();
       
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
@@ -94,32 +88,36 @@ export const customerController = {
     }
   },
 
-  // 4. 詳情
-  async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+  // 4. 取得過往委託紀錄 (CRM 詳情分頁使用)
+  async getHistory(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
-      const customer = await env.commission_db.prepare(`
-        SELECT cr.*, u.display_name as platform_name, u.public_id
-        FROM CustomerRecords cr
-        LEFT JOIN Users u ON cr.client_user_id = u.id
-        WHERE cr.id = ? AND cr.artist_id = ?
-      `).bind(id, currentUserId).first<any>();
-
-      if (!customer) return new Response(JSON.stringify({ success: false, error: "找不到客戶" }), { status: 404, headers: corsHeaders });
-
-      let transactions: any[] = [];
-      if (customer.client_user_id) {
-        const { results } = await env.commission_db.prepare(`
-          SELECT id, project_name, total_price, order_date, status
-          FROM Commissions
-          WHERE artist_id = ? AND client_id = ?
-          ORDER BY order_date DESC
-        `).bind(currentUserId, customer.client_user_id).all();
-        transactions = results;
+      const record = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")
+        .bind(id, currentUserId).first<any>();
+      
+      if (!record || !record.client_user_id) {
+        return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: corsHeaders });
       }
 
-      return new Response(JSON.stringify({ success: true, data: { ...customer, transactions } }), { status: 200, headers: corsHeaders });
+      const { results } = await env.commission_db.prepare(`
+        SELECT id, project_name, total_price, order_date, status
+        FROM Commissions
+        WHERE artist_id = ? AND client_id = ?
+        ORDER BY order_date DESC
+      `).bind(currentUserId, record.client_user_id).all();
+
+      return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
     } catch (err: any) {
-      return new Response(JSON.stringify({ success: false, error: "讀取失敗: " + err.message }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 5. 刪除客戶紀錄
+  async delete(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      await env.commission_db.prepare("DELETE FROM CustomerRecords WHERE id = ? AND artist_id = ?").bind(id, currentUserId).run();
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
     }
   }
 };

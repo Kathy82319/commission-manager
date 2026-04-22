@@ -1,5 +1,4 @@
 /* src/styles/Customers.css */
-/* 採用 crm- 前綴確保樣式隔離 */
 
 .crm-container {
   padding: 24px;
@@ -7,7 +6,6 @@
   margin: 0 auto;
 }
 
-/* 標題簡化與佈局修正 */
 .crm-header {
   display: flex;
   justify-content: space-between;
@@ -23,7 +21,6 @@
   margin: 0;
 }
 
-/* 修正按鈕寬度，防止橫向展延 */
 .crm-submit-btn {
   background: #5D4A3E;
   color: white;
@@ -32,17 +29,9 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  width: auto; /* 強制寬度自適應內容 */
   white-space: nowrap;
-  transition: transform 0.1s, background 0.2s;
 }
 
-.crm-submit-btn:hover {
-  background: #4A3B31;
-  transform: translateY(-1px);
-}
-
-/* 嚴格隔離的 Tab 樣式 */
 .crm-tabs-container {
   display: flex;
   gap: 12px;
@@ -60,19 +49,12 @@
   transition: all 0.2s;
 }
 
-.crm-tab-btn:hover:not(.crm-active) {
-  background: #F4F0EB;
-  color: #5D4A3E;
-}
-
 .crm-tab-btn.crm-active {
   background: #5D4A3E;
   color: white;
   border-color: #5D4A3E;
-  font-weight: 600;
 }
 
-/* 表格隔離樣式 */
 .crm-table-wrapper {
   background: white;
   border-radius: 16px;
@@ -92,34 +74,18 @@
   font-size: 13px;
   color: #A0978D;
   text-align: left;
-  border-bottom: 1px solid #F0ECE7;
 }
 
 .crm-table td {
   padding: 16px;
   border-bottom: 1px solid #F9F7F5;
-  color: #5D4A3E;
-  font-size: 14px;
-  vertical-align: middle;
 }
 
 .crm-table tr:hover td {
-  background-color: #FDFBFA;
+  background: #FDFBFA;
 }
 
-/* 標籤 Pill 隔離樣式 */
-.crm-tag {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-block;
-}
-.crm-tag-vip { background: #E8F3EB; color: #4E7A5A; }
-.crm-tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
-.crm-tag-normal { background: #F0ECE7; color: #8A7E72; }
-
-/* 彈窗隔離樣式 */
+/* 彈窗樣式 */
 .crm-modal-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -137,37 +103,62 @@
   padding: 32px;
   border-radius: 20px;
   width: 90%;
-  max-width: 500px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
-.crm-form-section { margin-bottom: 16px; }
-.crm-form-label { display: block; margin-bottom: 6px; font-weight: 600; color: #5D4A3E; font-size: 14px; }
+.crm-view-row {
+  margin-bottom: 15px;
+  font-size: 15px;
+  color: #5D4A3E;
+  line-height: 1.6;
+}
+
+.crm-view-row strong {
+  color: #8A7E72;
+  margin-right: 8px;
+}
+
+.crm-form-section { margin-bottom: 20px; }
+.crm-form-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #5D4A3E; }
 .crm-form-input {
   width: 100%;
   padding: 10px;
   border: 1px solid #DED9D3;
   border-radius: 8px;
-  background: #FDFBFA;
-  color: #5D4A3E;
 }
 
-.crm-form-input:focus {
-  border-color: #5D4A3E;
-  outline: none;
+/* 歷史紀錄項 */
+.crm-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #F9F7F5;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-/* Toast 隔離樣式 */
-.crm-toast-container { 
-  position: fixed; 
-  top: 24px; 
-  right: 24px; 
-  z-index: 10000; 
+.crm-history-item:hover { background: #F9F7F5; }
+
+/* 刪除按鈕 */
+.crm-delete-btn {
+  background: none;
+  border: 1px solid #C04B4B;
+  color: #C04B4B;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
 }
-.crm-toast { 
-  background: #334155; 
-  color: white; 
-  padding: 12px 24px; 
-  border-radius: 12px; 
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+
+.crm-delete-btn:hover { background: #FEEBEB; }
+
+.crm-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
 }
+.crm-tag-vip { background: #E8F3EB; color: #4E7A5A; }
+.crm-tag-blacklisted { background: #FEEBEB; color: #C04B4B; }
+.crm-tag-normal { background: #F0ECE7; color: #8A7E72; }
