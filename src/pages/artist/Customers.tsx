@@ -280,7 +280,7 @@ export function Customers() {
           <thead>
             <tr>
               <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
-              <th style={{ textAlign: 'left', paddingLeft: '24px' }}>識別 ID + 社群</th>
+              <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
               <th style={{ textAlign: 'center' }}>標籤</th>
               <th style={{ textAlign: 'center' }}>合作次數</th>
               <th style={{ textAlign: 'center' }}>備註</th>
