@@ -9,6 +9,7 @@ import { testController } from "./controllers/testController";
 import { adminController } from "./controllers/adminController";
 import { paymentController } from "./controllers/paymentController";
 import { showcaseController } from "./controllers/showcaseController";
+import { customerController } from "./controllers/customerController";
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -44,11 +45,29 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
+      // --- 修正：將 /api/customers 移到這裡，確保變數已定義 ---
+      if (url.pathname.startsWith("/api/customers")) {
+        const authErr = requireAuth(currentUserId, corsHeaders); 
+        if (authErr) return authErr;
+
+        const targetId = pathParts[3]; 
+
+        if (!targetId) {
+          if (request.method === "GET") return customerController.getList(currentUserId!, env, corsHeaders);
+          if (request.method === "POST") return customerController.create(request, currentUserId!, env, corsHeaders);
+        } else {
+          if (request.method === "GET") return customerController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (request.method === "PATCH") return customerController.update(request, targetId, currentUserId!, env, corsHeaders);
+        }
+      }
+
+      // --- 其他 API 路由 ---
       if (url.pathname === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
         return paymentController.createOrder(request, currentUserId!, env, corsHeaders);
       }
+      
       if (url.pathname === "/api/payment/notify" && request.method === "POST") {
         return paymentController.handleNotify(request, env);
       }
@@ -59,7 +78,6 @@ export default {
       if (url.pathname.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
-
         const targetId = pathParts[3];
         if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
         if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
@@ -75,11 +93,9 @@ export default {
       if (url.pathname.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
-        
         if (request.method === "GET" && url.pathname === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
         if (request.method === "GET" && url.pathname === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
         if (request.method === "GET" && url.pathname === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
-        
         if (request.method === "PATCH" && pathParts[3] === "users" && pathParts.length === 5) {
           const targetId = pathParts[4];
           return adminController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
@@ -89,7 +105,6 @@ export default {
       if (url.pathname.startsWith("/api/users/")) {
         const targetId = pathParts[3];
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
-        
         if (request.method === "PATCH") {
           const authErr = requireAuth(currentUserId, corsHeaders); 
           if (authErr) return authErr;
@@ -108,11 +123,10 @@ export default {
       }
 
       if (url.pathname.startsWith("/api/commissions")) {
-        const authErr = requireAuth(currentUserId, corsHeaders); if (authErr) return authErr;
-        
+        const authErr = requireAuth(currentUserId, corsHeaders); 
+        if (authErr) return authErr;
         const targetId = pathParts[3]; 
         const subAction = pathParts[4]; 
-
         if (!targetId) {
           if (request.method === "GET") return commController.getList(currentUserId!, env, corsHeaders);
           if (request.method === "POST") return commController.create(request, currentUserId!, env, corsHeaders);
@@ -167,7 +181,7 @@ export default {
       if (request.method === "GET" && url.pathname === "/api/auth/testing-bypass") {
         return authController.testingBypass(request, env, corsHeaders);
       }
- 
+
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
@@ -177,5 +191,5 @@ export default {
       return env.ASSETS.fetch(indexRequest as any);
     }
     return assetResponse as any;
-  }  
+  }   
 };

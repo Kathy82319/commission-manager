@@ -1,0 +1,130 @@
+/* src/styles/Customers.css */
+
+.customers-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.customers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* 分頁切換 */
+.tabs-container {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  color: #64748B;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: #5D4A3E;
+  border-bottom-color: #5D4A3E;
+  font-weight: bold;
+}
+
+/* 表格樣式 */
+.customers-table-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.customers-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.customers-table th {
+  background-color: #F8FAFC;
+  padding: 16px;
+  font-size: 14px;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.customers-table td {
+  padding: 16px;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.customers-table tr:hover td {
+  background-color: #F8FAFC;
+}
+
+/* 系統決定標籤顏色 */
+.tag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tag-vip { background-color: #FEF3C7; color: #D97706; } /* 金色 */
+.tag-normal { background-color: #F1F5F9; color: #64748B; } /* 灰色 */
+.tag-warning { background-color: #FFEDD5; color: #EA580C; } /* 橘色 */
+.tag-blacklisted { background-color: #000000; color: #FFFFFF; } /* 黑色 */
+
+/* 備註輸入框 */
+.inline-note-input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+}
+
+.inline-note-input:focus {
+  background: white;
+  border-color: #DED9D3;
+  outline: none;
+}
+
+/* Toast 彈窗樣式 */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  background-color: #334155;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

@@ -202,13 +202,27 @@ CREATE TABLE ShowcaseItems (
 
 CREATE TABLE Blacklist (
     id TEXT PRIMARY KEY,
-    artist_id TEXT NOT NULL, -- 誰建立的
-    target_line_id TEXT NOT NULL, -- 封鎖對象的 LINE ID
-    reason TEXT, -- 避雷原因 (僅繪師自見)
+    artist_id TEXT NOT NULL,
+    target_line_id TEXT NOT NULL,
+    reason TEXT, 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (artist_id) REFERENCES Users(id)
 );
 
+-- 客戶紀錄表
+CREATE TABLE CustomerRecords (
+    id TEXT PRIMARY KEY,
+    artist_id TEXT NOT NULL,          
+    client_user_id TEXT,              
+    alias_name TEXT DEFAULT '',       
+    custom_label TEXT DEFAULT '一般', 
+    short_note TEXT DEFAULT '',      
+    full_note TEXT DEFAULT '',       
+    contact_methods TEXT DEFAULT '[]',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (artist_id) REFERENCES Users(id),
+    FOREIGN KEY (client_user_id) REFERENCES Users(id)
+);
 
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)

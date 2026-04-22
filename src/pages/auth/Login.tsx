@@ -3,7 +3,6 @@ import '../../styles/Auth.css';
 
 export function Login() {
   const handleLineLogin = () => {
-    // 導向後端 LINE OAuth 流程
     window.location.href = '/api/auth/line/login';
   };
 
@@ -12,7 +11,6 @@ export function Login() {
       <div className="login-card">
         <h2 className="login-title">開始使用 Arti</h2>
         
-        {/* 🌟 登入中繼說明區塊 */}
         <div className="login-gateway-info">
           <h3>關於您的隱私與身分</h3>
           <ul>
@@ -29,8 +27,9 @@ export function Login() {
 
         <button onClick={handleLineLogin} className="line-login-btn">
           <span className="line-icon-wrapper">
-            透過 LINE 繼續
-          </span>         
+            <img src="/line-icon.svg" alt="LINE" className="line-icon-img" />
+          </span>
+          透過 LINE 繼續
         </button>
 
         <p className="login-footer-text">

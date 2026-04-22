@@ -28,6 +28,9 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
 
+import { Customers } from './pages/artist/Customers';
+import { CustomerDetail } from './pages/artist/CustomerDetail';
+
 export function App() {
   const MY_ARTIST_ID = "User_84448";
   
@@ -79,9 +82,22 @@ export function App() {
         <Route path="/adminbalabababa" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
         </Route>
-
-
       </Routes>
+
+<Route path="/artist" element={<ArtistLayout />}>
+  <Route index element={<Navigate to="queue" replace />} />
+  <Route path="queue" element={<Queue />} />
+  <Route path="quote/new" element={<QuoteBuilder />} />
+  {/* 🌟 新增：客戶管理路由 */}
+  <Route path="customers" element={<Customers />} />
+  <Route path="customer/:id" element={<CustomerDetail />} /> 
+  <Route path="notebook" element={<Notebook />} />
+  <Route path="records" element={<Records />} />
+  <Route path="settings" element={<Settings />} />
+</Route>
+
+
+
     </BrowserRouter>
   );
 }
