@@ -155,151 +155,118 @@
    手機與平板版響應式設計 (Max Width: 1023px) 
    ========================================= */
 @media (max-width: 1023px) {
-  /* 頂部控制列：改為垂直排列滿版，方便點擊 */
-  .queue-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  
-  .queue-controls {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    gap: 12px;
-  }
-
-  .queue-search, .queue-select {
-    max-width: 100%;
-    width: 100%;
-    box-sizing: border-box;
-  }
+  /* --- 頂部控制列 --- */
+  .queue-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .queue-controls { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+  .queue-search, .queue-select { max-width: 100%; width: 100%; box-sizing: border-box; }
 
   /* 隱藏預設表格標頭 */
-  .queue-table thead {
-    display: none;
-  }
+  .queue-table thead { display: none; }
+  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td { display: block; width: 100%; box-sizing: border-box; }
   
-  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  /* 單筆訂單卡片化 */
+  /* --- 卡片網格佈局 (黑魔法就在這) --- */
   .queue-table tr {
-    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: 1fr auto; /* 左邊彈性延展，右邊根據內容自適應 */
+    gap: 12px 8px; /* 垂直間距 12px，水平間距 8px */
+    margin-bottom: 16px;
     border: 1px solid #EAE6E1;
     border-radius: 16px;
-    padding: 20px 16px;
+    padding: 16px;
     background: #FFF;
     box-shadow: 0 4px 12px rgba(93, 74, 62, 0.08);
     position: relative;
+    cursor: pointer; /* 提示使用者這整塊可以點擊展開 */
+    transition: all 0.3s ease;
   }
 
-  /* 日期與委託人資訊：作為卡片的頭部 */
-  .queue-table td[data-label="日期"],
-  .queue-table td[data-label="委託人資訊"] {
-    border-bottom: 1px solid #F0ECE7;
-    padding: 0 0 12px 0;
-    margin-bottom: 12px;
+  /* 🌟 展開時的高亮樣式 */
+  .queue-table tr.is-expanded {
+    border-color: #A67B3E;
+    box-shadow: 0 8px 24px rgba(166, 123, 62, 0.12);
+    cursor: default; /* 展開後不需要再提示點擊 */
   }
 
-  .queue-table td[data-label="日期"]::before,
-  .queue-table td[data-label="委託人資訊"]::before {
-    display: none; /* 隱藏這兩個欄位的標題，讓視覺更像卡片標題 */
-  }
-
-  .queue-table td[data-label="日期"] .cell-content {
-    color: #A0978D;
-    font-size: 13px;
-    font-weight: bold;
-  }
-
-  /* 一般欄位：改為「標題在上，內容滿版在下」 */
   .queue-table td {
-    padding: 10px 0;
-    border: none;
-    display: flex;
-    flex-direction: column; /* 上下排列 */
-    align-items: flex-start;
+    padding: 0; border: none; display: flex; flex-direction: column; align-items: flex-start;
   }
 
-  .queue-table td::before {
-    content: attr(data-label);
-    font-weight: bold;
-    color: #A0978D;
-    font-size: 13px;
-    margin-bottom: 8px; /* 與下方的輸入框拉開距離 */
-  }
-
-  /* 解除固定寬度，確保內容區塊可以延展 */
-  .cell-content, 
-  .cell-content-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%; 
-  }
-
-  /* 將所有輸入元件設定為滿版，適合單手點擊 */
-  .dropdown-container, 
-  .date-input, 
-  .payment-select {
-    width: 100% !important;
-    box-sizing: border-box;
-  }
-
-  /* 修正狀態標籤在手機版重疊的問題 */
-  .cell-status {
-    width: 100%;
+  /* 網格定位分配 */
+  /* 第1行：日期 (左) | 付款進度 (右) */
+  .queue-table td[data-label="日期"] { grid-column: 1; grid-row: 1; justify-content: center; }
+  .queue-table td[data-label="付款進度"] { grid-column: 2; grid-row: 1; align-items: flex-end; justify-content: center; }
+  
+  /* 第2行：委託人 (橫跨左右) */
+  .queue-table td[data-label="委託人資訊"] { 
+    grid-column: 1 / -1; grid-row: 2; 
+    padding-bottom: 12px; border-bottom: 1px dashed #F0ECE7; margin-bottom: 4px; 
   }
   
-  .workflow-badge-wrapper {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    margin-bottom: 8px;
-    display: block;
+  /* 第3行：當前進度 (左) | 預計完工 (右) */
+  .queue-table td[data-label="當前進度"] { grid-column: 1; grid-row: 3; justify-content: center; }
+  .queue-table td[data-label="預計完工"] { grid-column: 2; grid-row: 3; align-items: flex-end; justify-content: center; }
+
+  /* 第4、5行 (展開時才顯示的編輯區)：備註欄位 | 操作管理 */
+  .queue-table td[data-label="備註欄位"] { grid-column: 1 / -1; grid-row: 4; margin-top: 12px; }
+  .queue-table td[data-label="操作管理"] { grid-column: 1 / -1; grid-row: 5; border-top: 1px solid #F0ECE7; padding-top: 16px; margin-top: 8px; }
+
+  /* 欄位標題顯示邏輯 */
+  .queue-table td::before {
+    content: attr(data-label); font-size: 11px; color: #A0978D; margin-bottom: 4px; display: block;
+  }
+  /* 這三個資訊很直覺，不需要標題佔空間 */
+  .queue-table td[data-label="日期"]::before,
+  .queue-table td[data-label="委託人資訊"]::before,
+  .queue-table td[data-label="付款進度"]::before { display: none; }
+
+
+  /* =======================================
+     狀態 A：未展開 (摘要模式)
+     ======================================= */
+  .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
+  .queue-table tr:not(.is-expanded) td[data-label="操作管理"] {
+    display: none; /* 隱藏下方區域 */
   }
 
-  /* 備註輸入框設定 */
+  /* 封鎖點擊事件，避免在收合狀態下誤觸修改 */
+  .queue-table tr:not(.is-expanded) .cell-content { pointer-events: none; }
+
+  /* 讓下拉選單變成「小標籤」 */
+  .queue-table tr:not(.is-expanded) .dropdown-button {
+    min-height: 0; padding: 4px 8px; border-radius: 6px; border: none; background-color: #F4F0EB; font-size: 12px;
+  }
+  .queue-table tr:not(.is-expanded) .dropdown-arrow { display: none; }
+  .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; } /* 摘要時隱藏標準/自由委託字眼 */
+  
+  /* 讓日期輸入框變成「純文字」 */
+  .queue-table tr:not(.is-expanded) .date-input {
+    border: none; background: transparent; padding: 0; height: auto; color: #5D4A3E; font-weight: bold; font-size: 13px; text-align: right;
+  }
+  .queue-table tr:not(.is-expanded) .date-input::-webkit-calendar-picker-indicator { display: none; }
+
+  /* 讓付款選單變成「膠囊標籤」 */
+  .queue-table tr:not(.is-expanded) .payment-select {
+    appearance: none; -webkit-appearance: none; padding: 4px 10px; height: auto; font-size: 11px; border-radius: 20px;
+  }
+
+
+  /* =======================================
+     狀態 B：展開後 (編輯模式)
+     ======================================= */
+  /* 恢復所有輸入框為原本的滿版大按鈕，方便手指點擊 */
+  .queue-table tr.is-expanded .dropdown-button,
+  .queue-table tr.is-expanded .date-input,
+  .queue-table tr.is-expanded .payment-select {
+    width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3;
+  }
+  .queue-table tr.is-expanded .workflow-badge-wrapper { position: relative; bottom: auto; display: block; margin-bottom: 4px; }
+  
+  .queue-table tr.is-expanded .cell-content { width: 100%; pointer-events: auto; } /* 解除點擊封鎖 */
+
   .note-input {
-    text-align: left;
-    width: 100%;
-    background-color: #FBFBF9;
-    padding: 10px;
-    border: 1px solid #DED9D3;
-    border-radius: 8px;
-    box-sizing: border-box;
+    text-align: left; width: 100%; background-color: #FBFBF9; padding: 12px; border: 1px solid #DED9D3; border-radius: 8px; box-sizing: border-box;
   }
-
-  /* 備註欄位內如果有黑名單或急單標籤，先換行再顯示輸入框 */
-  .cell-note {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* 操作按鈕區域 */
-  .queue-table td[data-label="操作管理"] {
-    margin-top: 12px;
-    padding-top: 16px;
-    border-top: 1px solid #F0ECE7;
-  }
-
-  .queue-table td[data-label="操作管理"]::before {
-    display: none;
-  }
-
-  .manage-button {
-    width: 100%;
-    margin-top: 0;
-    height: 48px;
-    font-size: 16px;
-    border-radius: 12px;
-  }
-
-  .desktop-only {
-    display: none !important;
-  }
+  .cell-note { flex-wrap: wrap; gap: 8px; }
+  .manage-button { width: 100%; height: 48px; font-size: 16px; border-radius: 12px; margin-top: 0; }
+  .desktop-only { display: none !important; }
 }
