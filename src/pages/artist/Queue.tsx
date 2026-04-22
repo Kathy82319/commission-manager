@@ -257,7 +257,7 @@ export function Queue() {
                         className="queue-blacklist-tag"
                         onClick={() => navigate(`/artist/customers?id=${order.crm_record_id}`)}
                         title="點擊查看黑名單原因"
-                        style={{ cursor: 'pointer', background: '#2D231C', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}
+                        style={{ cursor: 'pointer', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}
                       >
                         黑名單
                       </span>

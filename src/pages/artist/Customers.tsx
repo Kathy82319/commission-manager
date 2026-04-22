@@ -211,7 +211,7 @@ export function Customers() {
             type="text" 
             className="crm-form-input" 
             style={{ width: '220px' }}
-            placeholder="搜尋 ID、暱稱、標籤..."
+            placeholder="搜尋 ID、暱稱、標籤、社群..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -251,7 +251,6 @@ export function Customers() {
               {c.alias_name || c.platform_name || '未命名'}
             </td>
 
-            {/* 這裡是你修改後的欄位內容 */}
             <td style={{ textAlign: 'center' }}>
               <div className="crm-id-social-wrapper">
                 <div className="crm-id-box">
@@ -383,12 +382,12 @@ export function Customers() {
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">簡短備註 (顯示於列表)</label>
-                    <input className="crm-form-input" value={selectedCust.short_note} onChange={e => setSelectedCust({...selectedCust, short_note: e.target.value})} placeholder="例如: 某平台大戶、不擅長溝通等" />
+                    <label className="crm-form-label">簡短備註</label>
+                    <input className="crm-form-input" value={selectedCust.short_note} onChange={e => setSelectedCust({...selectedCust, short_note: e.target.value})} placeholder="顯示於列表" />
                   </div>
 
                   <div className="crm-form-section">
-                    <label className="crm-form-label">詳細合作筆記</label>
+                    <label className="crm-form-label">詳細備註</label>
                     <textarea className="crm-form-input" style={{ height: '80px', resize: 'none' }} value={selectedCust.full_note} onChange={e => setSelectedCust({...selectedCust, full_note: e.target.value})} />
                   </div>
 
