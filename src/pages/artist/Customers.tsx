@@ -317,7 +317,7 @@ export function Customers() {
               )}
             </div>
           </div>
-        </div>
+        </div>  
       )}
     </div>
   );
