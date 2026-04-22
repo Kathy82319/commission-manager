@@ -634,7 +634,6 @@
 
 /* 黑名單標籤樣式 */
 .card-mode-badge.mode-blacklist {
-  background: #2D231C; /* 深黑底 */
   color: #FF4D4D;      /* 鮮紅字 */
   border: 1px solid #FF4D4D;
   margin-left: 6px;

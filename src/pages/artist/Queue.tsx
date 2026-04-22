@@ -74,7 +74,6 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
 export function Queue() {
   const navigate = useNavigate();
   const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [isUpdating, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // 修正變數命名衝突
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');

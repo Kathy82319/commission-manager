@@ -477,13 +477,11 @@ export function Notebook() {
                 <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
-                    <span className={`card-mode-badge ${order.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
-                      {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
-                    </span>
                     {/* 🌟 列表新增黑名單標籤[cite: 1] */}
                     {order.client_custom_label === '黑名單' && (
                       <span className="card-mode-badge mode-blacklist">黑名單</span>
                     )}
+                   
                   </div>
                   <div className="card-title-row">
                     <span className="card-client-name" title={getDualName(order)}>{getDualName(order)}</span>
@@ -495,6 +493,9 @@ export function Notebook() {
                   <div className="card-info-row">
                     <span>單號：{order.id.split('-')[1] || order.id}</span>
                     <span>委託人：{order.client_public_id || '未綁定'}</span>
+                      <span className={`card-mode-badge ${order.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
+                      {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                    </span>
                   </div>
                   <div className="card-tags-row">
                     <span className={`card-tag ${payBadge.className}`}>{payBadge.text}</span>
