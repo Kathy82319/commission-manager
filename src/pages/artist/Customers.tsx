@@ -144,6 +144,15 @@ export function Customers() {
     activeTab === 'blacklist' ? c.custom_label === '黑名單' : true
   );
 
+
+// 🌟 直接進入編輯模式的函式
+  const openEditModal = (cust: Customer) => {
+    const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
+    setSelectedCust({ ...cust, contact_methods: methods });
+    setModalMode('edit');
+  };
+
+  // 點擊行依然可以進入閱覽模式
   const openViewModal = (cust: Customer) => {
     const methods = cust.contact_methods ? (typeof cust.contact_methods === 'string' ? JSON.parse(cust.contact_methods) : cust.contact_methods) : [""];
     setSelectedCust({ ...cust, contact_methods: methods });
@@ -177,8 +186,8 @@ export function Customers() {
               <th>識別 ID + 社群</th>
               <th>標籤</th>
               <th>合作次數</th>
-              <th style={{ textAlign: 'right' }}>操作</th>
-            </tr>
+              <th style={{ textAlign: 'right', paddingRight: '20px' }}>操作</th>            
+              </tr>
           </thead>
           <tbody>
             {isLoading ? (
@@ -193,7 +202,9 @@ export function Customers() {
                 </td>
                 <td><span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{c.custom_label}</span></td>
                 <td>{c.order_count} 次</td>
-                <td style={{ textAlign: 'right' }}><button className="crm-tab-btn">詳情</button></td>
+                <td style={{ textAlign: 'right', paddingRight: '20px' }}>
+                  <button className="crm-tab-btn" onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>編輯</button>
+                </td>
               </tr>
             ))}
           </tbody>
