@@ -42,18 +42,19 @@
 
 /* 🌟 表格響應式優化：避免在大螢幕被壓縮 */
 .customers-table-wrapper {
+  width: 100%;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  overflow-x: auto; /* 寬度不足時允許橫向滾動 */
-  width: 100%;
+  /* 🌟 重要：解決表格被切掉或消失的問題 */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .customers-table {
   width: 100%;
+  min-width: 700px; /* 強制最小寬度，防止解析度改變時擠壓變形 */
   border-collapse: collapse;
-  text-align: left;
-  min-width: 800px; /* 確保內容不會縮得太醜 */
 }
 
 /* ... 保持原本的 th, td 樣式 ... */
@@ -88,13 +89,34 @@
   backdrop-filter: blur(4px); /* 磨砂玻璃效果，增加視覺區隔 */
 }
 
-/* 🌟 彈窗本體 */
+/* 🌟 強制彈窗跳脫父容器限制 */
+.modal-overlay {
+  position: fixed; /* 必須使用 fixed 才能無視父層 overflow */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 🌟 關鍵：這個數值必須大於 ArtistLayout 側邊欄的 z-index */
+  z-index: 99999; 
+  backdrop-filter: blur(4px);
+}
+
+/* 🌟 彈窗主體卡片 */
 .onboarding-card {
   background: white;
   padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  animation: modalPop 0.3s ease-out;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  /* 防止彈窗在手機版過長 */
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
 }
 
 @keyframes modalPop {

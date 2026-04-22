@@ -212,6 +212,8 @@ export function Customers() {
 
       {/* 新增紀錄彈窗 */}
       {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+        <div className="onboarding-card" onClick={e => e.stopPropagation()}>
         <div className="sidebar-overlay visible" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
           <div className="onboarding-card" style={{ maxWidth: '400px', width: '90%', margin: '0' }} onClick={e => e.stopPropagation()}>
             <h3 className="onboarding-title">新增客戶紀錄</h3>
@@ -249,6 +251,8 @@ export function Customers() {
                 <option value="黑名單">黑名單 (拒接)</option>
               </select>
             </div>
+            </div>
+      </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '32px' }}>
               <button className="submit-btn" style={{ backgroundColor: '#E2E8F0', color: '#475569' }} onClick={() => setIsModalOpen(false)}>取消</button>
