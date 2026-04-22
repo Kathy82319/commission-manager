@@ -314,3 +314,90 @@
   from { top: -60px; opacity: 0; }
   to { top: 20px; opacity: 1; }
 }
+
+/* =========================================
+   手機與平板版響應式設計 (Max Width: 1023px) 
+   ========================================= */
+@media (max-width: 1023px) {
+  .settings-layout {
+    gap: 16px;
+  }
+
+  /* 在手機版隱藏側邊欄總標題，節省上方空間 */
+  .sidebar-title {
+    display: none; 
+  }
+
+  /* 側邊欄容器微調，確保滑動順暢 */
+  .settings-sidebar {
+    padding: 0 4px 12px 4px;
+    align-items: center;
+  }
+
+  /* 將每個分類群組變成橫向排列 */
+  .sidebar-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-right: 16px; /* 每個群組之間的間距 */
+  }
+
+  /* 分類標題與新增按鈕的容器 */
+  .group-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+    font-size: 14px;
+    padding-right: 12px;
+    border-right: 1px solid #EAE6E1; /* 加上右側分隔線區分不同群組 */
+    gap: 8px; /* 標題與新增按鈕的間距 */
+  }
+
+  /* 手機版分頁按鈕改為膠囊狀，更適合水平滑動且明確呈現點擊範圍 */
+  .tab-btn {
+    background-color: #F9F7F5;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+  }
+
+  /* 手機版當前選中狀態 */
+  .tab-btn.active {
+    background-color: #5D4A3E !important;
+    color: #FFFFFF;
+    border-left: none; /* 移除電腦版的左側亮燈線 */
+  }
+
+  /* 內容編輯區塊大幅縮減內距 */
+  .settings-content-area {
+    padding: 20px 16px;
+    min-height: calc(100vh - 200px); 
+    border-radius: 12px;
+  }
+
+  /* 標題與公開狀態按鈕改為上下排列 */
+  .settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+  }
+
+  .save-action-bar {
+    padding-top: 24px;
+    justify-content: center;
+  }
+
+  /* 儲存按鈕在手機版改為滿版寬度，方便單手操作 */
+  .main-save-btn {
+    width: 100%; 
+    padding: 14px;
+  }
+
+  /* 鎖定畫面的彈窗縮小 */
+  .lock-card {
+    width: 85%;
+    padding: 24px;
+  }
+}
