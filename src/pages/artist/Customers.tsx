@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
 
 interface Customer {
@@ -36,6 +36,25 @@ export function Customers() {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
+
+  useEffect(() => {
+    // 1. 從網址取得 id 參數
+    const queryParams = new URLSearchParams(location.search);
+    const targetId = queryParams.get('id');
+
+    // 2. 只有在「資料已載入」且「參數存在」時才執行
+    if (targetId && !isLoading && customers.length > 0) {
+      const targetCustomer = customers.find(c => c.id === targetId);
+      
+      if (targetCustomer) {
+        // 3. 呼叫您現有的開啟閱覽視窗邏輯
+        openViewModal(targetCustomer);
+        
+        // 🌟 資安/UX 建議：開啟後清除網址參數，避免下次重新整理又跳出來
+        window.history.replaceState(null, '', '/artist/customers');
+      }
+    }
+  }, [location.search, isLoading, customers]);
 
   // 🛡️ 安全解析：將資料庫 JSON 轉為陣列供介面使用
   const parseSocialMethods = (jsonStr: string | undefined): string[] => {
