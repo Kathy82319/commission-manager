@@ -120,7 +120,7 @@
   word-break: break-all;
   width: 100%;
   color: #8A7E72;
-  max-width: 180px;
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
