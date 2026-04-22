@@ -266,7 +266,7 @@ export function Customers() {
 </div>
 
       {modalMode !== 'none' && selectedCust && (
-        <div className="crm-modal-overlay" onClick={() => setModalMode('none')}>
+        <div className="crm-modal-overlay">
           <div className="crm-modal-card" style={{ maxWidth: modalMode === 'view' ? '650px' : '520px' }} onClick={e => e.stopPropagation()}>
             
             {modalMode === 'view' && (
@@ -384,8 +384,8 @@ export function Customers() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
                     {modalMode === 'edit' && !selectedCust.client_user_id ? (
-                      <button className="crm-delete-btn" onClick={handleDelete}>永久刪除此紀錄</button>
-                    ) : <div></div>}
+                      <button className="crm-delete-btn" onClick={handleDelete}>刪除此紀錄</button>
+                    ) : <div />}
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <button className="crm-tab-btn" onClick={() => setModalMode('none')}>取消</button>
                       <button className="crm-submit-btn" onClick={handleSave}>儲存資料</button>
