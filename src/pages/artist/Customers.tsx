@@ -74,7 +74,8 @@ export function Customers() {
       list = list.filter(c => 
         c.alias_name?.toLowerCase().includes(term) ||
         c.public_id?.toLowerCase().includes(term) ||
-        c.custom_label?.toLowerCase().includes(term)
+        c.custom_label?.toLowerCase().includes(term) ||
+        c.contact_methods?.toLowerCase().includes(term)
       );
     }
     return list;
@@ -208,55 +209,61 @@ export function Customers() {
         <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
       </div>
 
-      <div className="crm-table-wrapper">
-        <table className="crm-table">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
-              <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
-              <th style={{ textAlign: 'center' }}>標籤</th>
-              <th style={{ textAlign: 'center' }}>合作次數</th>
-              <th style={{ textAlign: 'center' }}>備註</th>
-              <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-            ) : displayCustomers.map(c => {
-              const socialArr = parseSocialMethods(c.contact_methods);
-              return (
-                <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontWeight: '600', textAlign: 'center' }}>{c.alias_name || c.platform_name || '未命名'}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    {/* 🌟 並列顯示 ID 與社群 */}
-                    <div className="crm-id-social-container" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                      <div className="crm-id-box" style={{ background: '#FDFBFA', padding: '2px 6px', borderRadius: '4px', border: '1px solid #F0ECE7' }}>
-                        <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
-                      </div>
-                      {socialArr.length > 0 && (
-                        <div className="crm-social-summary" style={{ fontSize: '13px', color: '#8A7E72' }}>
-                          | {socialArr.join(' / ')}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                      {c.custom_label}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
-                  <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
-                  <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                    <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>編輯</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+<div className="crm-table-wrapper">
+  <table className="crm-table">
+    <thead>
+      <tr>
+        <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
+        <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
+        <th style={{ textAlign: 'center' }}>標籤</th>
+        <th style={{ textAlign: 'center' }}>合作次數</th>
+        <th style={{ textAlign: 'center' }}>備註</th>
+        <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
+      </tr>
+    </thead>
+    <tbody>
+      {isLoading ? (
+        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+      ) : displayCustomers.map(c => {
+        const socialArr = parseSocialMethods(c.contact_methods);
+        return (
+          <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
+            <td style={{ fontWeight: '600', textAlign: 'center' }}>
+              {c.alias_name || c.platform_name || '未命名'}
+            </td>
+
+            {/* 這裡是你修改後的欄位內容 */}
+            <td style={{ textAlign: 'center' }}>
+              <div className="crm-id-social-wrapper">
+                <div className="crm-id-box">
+                  <span className="crm-id-tag">{c.public_id || '---'}</span>
+                </div>
+                {socialArr.map((method, idx) => (
+                  <div key={idx} className="crm-social-item-text">
+                    {method}
+                  </div>
+                ))}
+              </div>
+            </td>
+
+            <td style={{ textAlign: 'center' }}>
+              <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
+                {c.custom_label}
+              </span>
+            </td>
+            <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
+            <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
+            <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+              <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
+                編輯
+              </button>
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
 
       {modalMode !== 'none' && selectedCust && (
         <div className="crm-modal-overlay" onClick={() => setModalMode('none')}>
