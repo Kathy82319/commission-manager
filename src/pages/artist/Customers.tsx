@@ -87,7 +87,7 @@ export function Customers() {
           client_user_id: null,
           public_id: newCustomer.public_id,
           custom_label: newCustomer.label,
-          short_note: '手動新增紀錄'
+          short_note: '新增紀錄'
         }),
         credentials: 'include'
       });
@@ -119,8 +119,7 @@ export function Customers() {
 
       <header className="customers-header">
         <div>
-          <h2>客戶與誠信管理</h2>
-          <div style={{ fontSize: '13px', color: '#A0978D', marginTop: '4px' }}>後台數據管理</div>
+          <h2>客戶管理</h2>
         </div>
         <button className="submit-btn" onClick={() => setIsModalOpen(true)}>
           + 手動新增紀錄
@@ -138,7 +137,7 @@ export function Customers() {
           className={`tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`} 
           onClick={() => setActiveTab('blacklist')}
         >
-          黑名單封鎖區 ({customers.filter(c => c.custom_label === '黑名單').length})
+          黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})
         </button>
       </nav>
 
