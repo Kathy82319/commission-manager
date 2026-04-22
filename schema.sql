@@ -200,6 +200,14 @@ CREATE TABLE ShowcaseItems (
     FOREIGN KEY (artist_id) REFERENCES Users(id)
 );
 
+CREATE TABLE Blacklist (
+    id TEXT PRIMARY KEY,
+    artist_id TEXT NOT NULL, -- 誰建立的
+    target_line_id TEXT NOT NULL, -- 封鎖對象的 LINE ID
+    reason TEXT, -- 避雷原因 (僅繪師自見)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (artist_id) REFERENCES Users(id)
+);
 
 
 -- ==========================================
