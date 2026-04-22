@@ -67,12 +67,15 @@
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(93, 74, 62, 0.08);
   border: 1px solid #F0ECE7;
-  overflow: hidden;
+  /* 將 hidden 改為 auto，讓表格過寬時可以左右滑動 */
+  overflow-x: auto; 
 }
 
 .crm-table {
   width: 100%;
   border-collapse: collapse;
+  /* 確保表格在手機上有最小寬度，不會縮到內容擠在一起 */
+  min-width: 800px; 
 }
 
 /* 🌟 修正：標題對齊改為 center 以匹配內容 */
@@ -292,3 +295,49 @@
   transition: all 0.2s;
 }
 .crm-delete-btn:hover { background-color: #FEEBEB ; }
+
+
+/* =========================================
+   手機版響應式設計 (Mobile Responsive) 
+   ========================================= */
+@media (max-width: 768px) {
+  .crm-container {
+    padding: 12px; /* 縮小外部間距 */
+  }
+
+  .crm-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  /* 讓搜尋框或按鈕在手機上可以撐滿寬度或換行 */
+  .customers-header-actions {
+    width: 100%;
+    flex-wrap: wrap; 
+  }
+
+  .crm-submit-btn {
+    width: 100%; /* 手機上按鈕滿版比較好按 */
+    text-align: center;
+  }
+
+  /* 處理頁籤在手機上過多的問題：改為可左右滑動 */
+  .crm-tabs-container {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */
+  }
+
+  .crm-tab-btn {
+    white-space: nowrap; /* 確保頁籤文字不換行 */
+  }
+
+  /* 彈窗在手機上的調整 */
+  .crm-modal-card {
+    padding: 20px;
+    width: 95%;
+    max-height: 90vh; /* 避免彈窗過高超出螢幕 */
+    overflow-y: auto;
+  }
+}
