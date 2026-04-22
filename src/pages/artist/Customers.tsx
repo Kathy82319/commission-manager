@@ -24,7 +24,7 @@ export function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState(""); // 搜尋框狀態
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   const [modalMode, setModalMode] = useState<'none' | 'add' | 'view' | 'edit'>('none');
   const [modalTab, setModalTab] = useState<'overview' | 'history'>('overview');
@@ -37,14 +37,13 @@ export function Customers() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 🛡️ 資安與穩定性：安全解析社群資訊 JSON[cite: 1, 2]
+  // 🛡️ 安全解析：將資料庫 JSON 轉為陣列供介面使用
   const parseSocialMethods = (jsonStr: string | undefined): string[] => {
     if (!jsonStr) return [];
     try {
       const parsed = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
       return Array.isArray(parsed) ? parsed.filter(s => s && s.trim() !== "") : [];
     } catch (e) {
-      console.error("解析社群資料失敗", e);
       return [];
     }
   };
@@ -64,7 +63,7 @@ export function Customers() {
 
   useEffect(() => { fetchCustomers(); }, []);
 
-  // 🔍 搜尋與頁籤過濾邏輯[cite: 1, 2]
+  // 🔍 搜尋與頁籤過濾邏輯
   const displayCustomers = useMemo(() => {
     let list = customers;
     if (activeTab === 'blacklist') {
@@ -121,14 +120,18 @@ export function Customers() {
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
     const method = isEdit ? 'PATCH' : 'POST';
 
+    // 🌟 修正：確保 contact_methods 在送出前是乾淨的陣列 (後端會負責 JSON 轉換)
+    const cleanedMethods = Array.isArray(selectedCust.contact_methods) 
+      ? selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
+      : [];
+
     try {
       const res = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          // 儲存前過濾掉空字串並轉回 JSON 字串[cite: 2]
-          contact_methods: JSON.stringify(selectedCust.contact_methods.filter((m: string) => m.trim() !== ''))
+          contact_methods: cleanedMethods // 送出陣列，交給後端規範化處理
         }),
         credentials: 'include'
       });
@@ -172,7 +175,7 @@ export function Customers() {
 
   const openViewModal = (cust: Customer) => {
     const methods = parseSocialMethods(cust.contact_methods);
-    setSelectedCust({ ...cust, contact_methods: methods }); // 確保閱覽模式能拿到陣列格式[cite: 1, 2]
+    setSelectedCust({ ...cust, contact_methods: methods }); 
     setModalTab('overview');
     setModalMode('view');
   };
@@ -184,7 +187,6 @@ export function Customers() {
       <header className="crm-header">
         <h2>顧客管理</h2>
         <div className="customers-header-actions">
-          {/* 🔍 搜尋框功能[cite: 1] */}
           <input 
             type="text" 
             className="crm-form-input" 
@@ -210,12 +212,12 @@ export function Customers() {
         <table className="crm-table">
           <thead>
             <tr>
-              <th>暱稱 / 自訂稱呼</th>
-              <th>識別 ID + 社群</th>
-              <th>標籤</th>
-              <th>合作次數</th>
-              <th>備註</th>
-              <th className="crm-th-action">操作</th>            
+              <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
+              <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
+              <th style={{ textAlign: 'center' }}>標籤</th>
+              <th style={{ textAlign: 'center' }}>合作次數</th>
+              <th style={{ textAlign: 'center' }}>備註</th>
+              <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
             </tr>
           </thead>
           <tbody>
@@ -225,26 +227,29 @@ export function Customers() {
               const socialArr = parseSocialMethods(c.contact_methods);
               return (
                 <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
-                  <td>
-                    {/* 🌟 識別 ID 與社群並列顯示邏輯[cite: 1, 2] */}
-                    <div className="crm-id-social-wrapper">
-                      <div className="crm-id-box">
-                        <span className="crm-id-tag">{c.public_id || '---'}</span>
+                  <td style={{ fontWeight: '600', textAlign: 'center' }}>{c.alias_name || c.platform_name || '未命名'}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    {/* 🌟 並列顯示 ID 與社群 */}
+                    <div className="crm-id-social-container" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="crm-id-box" style={{ background: '#FDFBFA', padding: '2px 6px', borderRadius: '4px', border: '1px solid #F0ECE7' }}>
+                        <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
                       </div>
                       {socialArr.length > 0 && (
-                        <div className="crm-social-summary">
-                          {socialArr.join(' / ')}
+                        <div className="crm-social-summary" style={{ fontSize: '13px', color: '#8A7E72' }}>
+                          | {socialArr.join(' / ')}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td><span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{c.custom_label}</span></td>
-                  <td>{c.order_count} 次</td>
-                  <td className="crm-td-note">{c.short_note || '---'}</td>
-                  <td className="crm-td-action" onClick={(e) => e.stopPropagation()}>
-                    {/* 🌟 修正編輯按鈕跳轉問題：增加 e.stopPropagation()[cite: 1] */}
-                    <button className="crm-tab-btn" onClick={() => openEditModal(c)}>編輯</button>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
+                      {c.custom_label}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
+                  <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
+                  <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>編輯</button>
                   </td>
                 </tr>
               );
@@ -271,7 +276,6 @@ export function Customers() {
                     <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ fontSize: '13px', color: '#8A7E72' }}>(平台名: {selectedCust.platform_name})</span>}</div>
                     <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#5D4A3E' }}>{selectedCust.public_id || '無識別 ID'}</span></div>
                     <div className="crm-view-row"><strong>標籤分類：</strong><span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span></div>
-                    {/* 🌟 修正閱覽模式社群資訊空值問題[cite: 1, 2] */}
                     <div className="crm-view-row"><strong>社群資訊：</strong>{Array.isArray(selectedCust.contact_methods) && selectedCust.contact_methods.length > 0 ? selectedCust.contact_methods.join(' / ') : '無紀錄'}</div>
                     <div className="crm-view-row"><strong>簡短備註：</strong>{selectedCust.short_note || '無'}</div>
                     <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>{selectedCust.full_note || '尚無內容'}</p></div>
@@ -339,7 +343,6 @@ export function Customers() {
                             setSelectedCust({...selectedCust, contact_methods: newMethods});
                           }} 
                         />
-                        {/* 🌟 動態增減社群欄位邏輯修正[cite: 1] */}
                         {index === selectedCust.contact_methods.length - 1 && selectedCust.contact_methods.length < 3 && (
                           <button className="crm-tab-btn" onClick={() => setSelectedCust({...selectedCust, contact_methods: [...selectedCust.contact_methods, '']})}>+</button>
                         )}

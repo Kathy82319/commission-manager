@@ -32,12 +32,14 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
       return; // 已有紀錄且已綁定，跳過新增
     }
 
-    // 真的完全沒紀錄，才執行新增
+    // 真的完全沒紀錄，才執行新增 (🌟 修正：補齊欄位，確保資料庫結構完整)
     const newId = crypto.randomUUID();
+    const safeDisplayName = sanitizeAndLimit(clientDisplayName, 50);
+    
     await env.commission_db.prepare(`
-      INSERT INTO CustomerRecords (id, artist_id, client_user_id, public_id, alias_name, custom_label, short_note)
-      VALUES (?, ?, ?, ?, ?, '一般')
-    `).bind(newId, artistId, clientId, clientPublicId, clientDisplayName).run();
+      INSERT INTO CustomerRecords (id, artist_id, client_user_id, public_id, alias_name, custom_label, short_note, full_note, contact_methods)
+      VALUES (?, ?, ?, ?, ?, '一般', '', '', '[]')
+    `).bind(newId, artistId, clientId, clientPublicId, safeDisplayName).run();
     
   } catch (err) {
     console.error("CRM 同步靜默失敗:", err);
@@ -182,10 +184,6 @@ export const commController = {
       if (isBinding) {
         batch.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'bind', '委託人已成功綁定訂單')").bind(crypto.randomUUID(), id));
         
-        /**
-         * 🌟 修正：綁定時同步至 CRM
-         * 使用 .first<{ display_name: string }>() 確保類型正確
-         */
         const userProfile = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?")
           .bind(currentUserId)
           .first<{ display_name: string }>();

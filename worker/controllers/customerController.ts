@@ -2,13 +2,32 @@
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
+/**
+ * 輔助函數：規範化社群聯絡方式格式 (避免雙重字串化)
+ */
+function normalizeContactMethods(data: any): string {
+  try {
+    let arrayData = data;
+    if (typeof data === 'string') {
+      arrayData = JSON.parse(data);
+    }
+    if (Array.isArray(arrayData)) {
+      // 僅保留有意義的字串，過濾掉空值
+      return JSON.stringify(arrayData.filter(m => m && typeof m === 'string' && m.trim() !== ""));
+    }
+    return "[]";
+  } catch (e) {
+    return "[]";
+  }
+}
+
 export const customerController = {
   // 1. 取得客戶列表
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
       SELECT 
         cr.*, 
-        COALESCE(u.public_id, cr.public_id) as public_id, -- 🌟 優先讀取本地儲存的 ID
+        COALESCE(u.public_id, cr.public_id) as public_id, -- 優先讀取本地儲存的 ID
         u.display_name as platform_name,
         (SELECT COUNT(*) FROM Commissions WHERE artist_id = cr.artist_id AND client_id = cr.client_user_id) as order_count
       FROM CustomerRecords cr
@@ -25,12 +44,18 @@ export const customerController = {
     }
   },
 
-  // 2. 新增客戶紀錄 (🌟 修正：加入 public_id 寫入)
+  // 2. 新增客戶紀錄 (🌟 修正：確保 contact_methods 格式正確)
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
       const id = crypto.randomUUID();
       
+      const safeAlias = sanitizeAndLimit(body.alias_name || "新客戶", 50);
+      const safeShortNote = sanitizeAndLimit(body.short_note || "", 100);
+      const safeFullNote = sanitizeAndLimit(body.full_note || "", 5000);
+      const safePublicId = sanitizeAndLimit(body.public_id || "", 50);
+      const formattedContacts = normalizeContactMethods(body.contact_methods);
+
       await env.commission_db.prepare(`
         INSERT INTO CustomerRecords (id, artist_id, client_user_id, public_id, alias_name, custom_label, short_note, full_note, contact_methods)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -38,12 +63,12 @@ export const customerController = {
         id, 
         currentUserId, 
         body.client_user_id || null, 
-        body.public_id || null, // 🌟 儲存手動輸入的 User_ 數字
-        sanitizeAndLimit(body.alias_name || "新客戶", 50), 
+        safePublicId || null, 
+        safeAlias, 
         body.custom_label || '一般', 
-        sanitizeAndLimit(body.short_note || "", 100),
-        sanitizeAndLimit(body.full_note || "", 5000),
-        JSON.stringify(body.contact_methods || [])
+        safeShortNote,
+        safeFullNote,
+        formattedContacts
       ).run();
       
       return new Response(JSON.stringify({ success: true, id }), { status: 200, headers: corsHeaders });
@@ -52,7 +77,7 @@ export const customerController = {
     }
   },
 
-  // 3. 詳情讀取 (🌟 修正：讀取本地 public_id)
+  // 3. 詳情讀取 (讀取本地 public_id)
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const customer = await env.commission_db.prepare(`
@@ -72,7 +97,7 @@ export const customerController = {
     }
   },
 
-  // 4. 更新紀錄 (🌟 修正：允許更新 public_id)
+  // 4. 更新紀錄 (🌟 修正：確保更新時 contact_methods 欄位不遺失)
   async update(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
@@ -84,7 +109,7 @@ export const customerController = {
         custom_label: 20,
         short_note: 100,
         full_note: 5000,
-        public_id: 50 // 🌟 允許更新手動輸入的 ID
+        public_id: 50 
       };
 
       for (const [field, limit] of Object.entries(fields)) {
@@ -94,9 +119,10 @@ export const customerController = {
         }
       }
 
-      if (body.contact_methods) {
+      // 🌟 獨立處理社群聯絡方式，確保規範化
+      if (body.contact_methods !== undefined) {
         updates.push("contact_methods = ?");
-        params.push(JSON.stringify(body.contact_methods));
+        params.push(normalizeContactMethods(body.contact_methods));
       }
 
       if (updates.length === 0) return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
