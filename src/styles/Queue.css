@@ -123,40 +123,7 @@
 
 .manage-button { padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
 
-@media (max-width: 1023px) {
-  .queue-header { flex-direction: column; align-items: flex-start; }
-  .queue-controls { justify-content: flex-start; width: 100%; }
-  .queue-search, .queue-select { max-width: none; }
-  .queue-table thead { display: none; }
-  
-  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td { display: block; width: 100%; }
-  
-  .queue-table tr {
-    margin-bottom: 24px; border: 1px solid #EAE6E1; border-radius: 20px;
-    padding: 20px; background: #FFF; box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-  }
-  
-  .queue-table td[data-label="委託人資訊"] {
-    border-bottom: 1px solid #F0ECE7; padding-bottom: 15px; margin-bottom: 15px;
-  }
-  .queue-table td[data-label="委託人資訊"]::before { display: none; }
-  .queue-table td[data-label="委託人資訊"] .cell-content { flex-direction: column; align-items: flex-start; }
 
-  .queue-table td {
-    padding: 10px 0; border: none; display: flex; justify-content: space-between; align-items: center;
-  }
-  .queue-table td::before { content: attr(data-label); font-weight: bold; color: #A0978D; font-size: 13px; }
-
-  .cell-content {
-    display: flex; flex-direction: column; align-items: flex-end;
-    width: 200px; 
-  }
-
-  .dropdown-container, .date-input, .payment-select { width: 100% !important; }
-  .note-input { text-align: right; }
-  .manage-button { width: 100%; margin-top: 10px; height: 42px; font-size: 15px; }
-  .desktop-only { display: none !important; }
-}
 
 .client-name-row { font-size: 15px; font-weight: bold; color: #5D4A3E; margin-bottom: 4px; }
 .client-sub-text { font-size: 13px; color: #A0978D; font-weight: normal; margin-left: 5px; }
@@ -182,4 +149,157 @@
 
 .note-input {
   flex-grow: 1;
+}
+
+/* =========================================
+   手機與平板版響應式設計 (Max Width: 1023px) 
+   ========================================= */
+@media (max-width: 1023px) {
+  /* 頂部控制列：改為垂直排列滿版，方便點擊 */
+  .queue-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .queue-controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .queue-search, .queue-select {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 隱藏預設表格標頭 */
+  .queue-table thead {
+    display: none;
+  }
+  
+  .queue-table, .queue-table tbody, .queue-table tr, .queue-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* 單筆訂單卡片化 */
+  .queue-table tr {
+    margin-bottom: 24px;
+    border: 1px solid #EAE6E1;
+    border-radius: 16px;
+    padding: 20px 16px;
+    background: #FFF;
+    box-shadow: 0 4px 12px rgba(93, 74, 62, 0.08);
+    position: relative;
+  }
+
+  /* 日期與委託人資訊：作為卡片的頭部 */
+  .queue-table td[data-label="日期"],
+  .queue-table td[data-label="委託人資訊"] {
+    border-bottom: 1px solid #F0ECE7;
+    padding: 0 0 12px 0;
+    margin-bottom: 12px;
+  }
+
+  .queue-table td[data-label="日期"]::before,
+  .queue-table td[data-label="委託人資訊"]::before {
+    display: none; /* 隱藏這兩個欄位的標題，讓視覺更像卡片標題 */
+  }
+
+  .queue-table td[data-label="日期"] .cell-content {
+    color: #A0978D;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  /* 一般欄位：改為「標題在上，內容滿版在下」 */
+  .queue-table td {
+    padding: 10px 0;
+    border: none;
+    display: flex;
+    flex-direction: column; /* 上下排列 */
+    align-items: flex-start;
+  }
+
+  .queue-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    color: #A0978D;
+    font-size: 13px;
+    margin-bottom: 8px; /* 與下方的輸入框拉開距離 */
+  }
+
+  /* 解除固定寬度，確保內容區塊可以延展 */
+  .cell-content, 
+  .cell-content-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%; 
+  }
+
+  /* 將所有輸入元件設定為滿版，適合單手點擊 */
+  .dropdown-container, 
+  .date-input, 
+  .payment-select {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* 修正狀態標籤在手機版重疊的問題 */
+  .cell-status {
+    width: 100%;
+  }
+  
+  .workflow-badge-wrapper {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* 備註輸入框設定 */
+  .note-input {
+    text-align: left;
+    width: 100%;
+    background-color: #FBFBF9;
+    padding: 10px;
+    border: 1px solid #DED9D3;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  /* 備註欄位內如果有黑名單或急單標籤，先換行再顯示輸入框 */
+  .cell-note {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 操作按鈕區域 */
+  .queue-table td[data-label="操作管理"] {
+    margin-top: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #F0ECE7;
+  }
+
+  .queue-table td[data-label="操作管理"]::before {
+    display: none;
+  }
+
+  .manage-button {
+    width: 100%;
+    margin-top: 0;
+    height: 48px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
 }
