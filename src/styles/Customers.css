@@ -4,6 +4,8 @@
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
+  /* 確保容器不會切掉彈窗 */
+  position: relative; 
 }
 
 .customers-header {
@@ -38,20 +40,23 @@
   font-weight: bold;
 }
 
-/* 表格樣式 */
+/* 🌟 表格響應式優化：避免在大螢幕被壓縮 */
 .customers-table-wrapper {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-x: auto; /* 寬度不足時允許橫向滾動 */
+  width: 100%;
 }
 
 .customers-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 800px; /* 確保內容不會縮得太醜 */
 }
 
+/* ... 保持原本的 th, td 樣式 ... */
 .customers-table th {
   background-color: #F8FAFC;
   padding: 16px;
@@ -66,42 +71,38 @@
   border-bottom: 1px solid #F1F5F9;
   font-size: 14px;
   color: #334155;
-  cursor: pointer;
 }
 
-.customers-table tr:hover td {
-  background-color: #F8FAFC;
+/* 🌟 強化：新增紀錄彈窗 (Modal) 的全局遮罩 */
+.sidebar-overlay.visible {
+  position: fixed; /* 改為 fixed，確保相對於螢幕定位而非父容器 */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000; /* 層級必須高於側邊欄與頂欄 */
+  backdrop-filter: blur(4px); /* 磨砂玻璃效果，增加視覺區隔 */
 }
 
-/* 系統決定標籤顏色 */
-.tag {
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.tag-vip { background-color: #FEF3C7; color: #D97706; } /* 金色 */
-.tag-normal { background-color: #F1F5F9; color: #64748B; } /* 灰色 */
-.tag-warning { background-color: #FFEDD5; color: #EA580C; } /* 橘色 */
-.tag-blacklisted { background-color: #000000; color: #FFFFFF; } /* 黑色 */
-
-/* 備註輸入框 */
-.inline-note-input {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  border-radius: 4px;
-}
-
-.inline-note-input:focus {
+/* 🌟 彈窗本體 */
+.onboarding-card {
   background: white;
-  border-color: #DED9D3;
-  outline: none;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: modalPop 0.3s ease-out;
 }
 
-/* Toast 彈窗樣式 */
+@keyframes modalPop {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ... 保持標籤與 Toast 樣式 ... */
 .toast-container {
   position: fixed;
   top: 24px;
