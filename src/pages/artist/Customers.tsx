@@ -35,13 +35,17 @@ export function Customers() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 安全解析社群聯絡方式[cite: 1, 2]
+  // 🛡️ 安全解析社群聯絡方式：確保回傳為有效內容陣列[cite: 1, 2]
   const parseContacts = (methodsJson: string | undefined): string[] => {
     if (!methodsJson) return [];
     try {
       const parsed = typeof methodsJson === 'string' ? JSON.parse(methodsJson) : methodsJson;
-      return Array.isArray(parsed) ? parsed : [];
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => item && item.trim() !== ""); // 僅保留非空內容
+      }
+      return [];
     } catch (e) {
+      console.error("解析社群資訊失敗:", e);
       return [];
     }
   };
@@ -101,13 +105,18 @@ export function Customers() {
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
     const method = isEdit ? 'PATCH' : 'POST';
 
+    // 🔐 資安處理：儲存前清理資料[cite: 2]
+    const cleanContacts = Array.isArray(selectedCust.contact_methods) 
+      ? selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
+      : [];
+
     try {
       const res = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...selectedCust,
-          contact_methods: JSON.stringify(selectedCust.contact_methods.filter((m: string) => m.trim() !== ''))
+          contact_methods: JSON.stringify(cleanContacts)
         }),
         credentials: 'include'
       });
@@ -151,7 +160,7 @@ export function Customers() {
 
   const openViewModal = (cust: Customer) => {
     const methods = parseContacts(cust.contact_methods);
-    setSelectedCust({ ...cust, contact_methods: methods });
+    setSelectedCust({ ...cust, contact_methods: methods }); // 🛠️ 確保設為陣列供閱覽使用[cite: 1, 2]
     setModalTab('overview');
     setModalMode('view');
   };
@@ -199,14 +208,14 @@ export function Customers() {
                 <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
                   <td style={{ fontWeight: '600' }}>{c.alias_name || c.platform_name || '未命名'}</td>
                   <td>
-                    <div className="crm-id-social-wrapper">
+                    <div className="crm-id-social-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                       <div className="crm-id-box">
                         <span className="crm-id-tag">{c.public_id || '---'}</span>
                       </div>
-                      {/* 🌟 這裡顯示並列的社群內容摘要 */}
+                      {/* 🌟 並排顯示社群內容摘要[cite: 1, 2] */}
                       {contacts.length > 0 && (
-                        <div className="crm-social-summary">
-                          {contacts.join(' / ')}
+                        <div className="crm-social-summary" style={{ color: '#8A7E72', fontSize: '13px' }}>
+                          | {contacts.join(' / ')}
                         </div>
                       )}
                     </div>
@@ -228,7 +237,6 @@ export function Customers() {
         </table>
       </div>
 
-      {/* Modal 渲染邏輯部分維持原架構，但確保 contact_methods 使用新的陣列處理方式 */}
       {modalMode !== 'none' && selectedCust && (
         <div className="crm-modal-overlay" onClick={() => setModalMode('none')}>
           <div className="crm-modal-card" style={{ maxWidth: modalMode === 'view' ? '650px' : '520px' }} onClick={e => e.stopPropagation()}>
@@ -247,7 +255,8 @@ export function Customers() {
                     <div className="crm-view-row"><strong>主要稱呼：</strong>{selectedCust.alias_name} {selectedCust.platform_name && <span style={{ fontSize: '13px', color: '#8A7E72' }}>(平台名: {selectedCust.platform_name})</span>}</div>
                     <div className="crm-view-row"><strong>識別 ID：</strong><span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#5D4A3E' }}>{selectedCust.public_id || '無識別 ID'}</span></div>
                     <div className="crm-view-row"><strong>標籤分類：</strong><span className={`crm-tag crm-tag-${selectedCust.custom_label === 'VIP' ? 'vip' : selectedCust.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>{selectedCust.custom_label}</span></div>
-                    <div className="crm-view-row"><strong>社群資訊：</strong>{selectedCust.contact_methods?.join(' / ') || '無紀錄'}</div>
+                    {/* 🛠️ 修復社群資訊顯示：確保渲染陣列內容[cite: 1, 2] */}
+                    <div className="crm-view-row"><strong>社群資訊：</strong>{Array.isArray(selectedCust.contact_methods) && selectedCust.contact_methods.length > 0 ? selectedCust.contact_methods.join(' / ') : '無紀錄'}</div>
                     <div className="crm-view-row"><strong>簡短備註：</strong>{selectedCust.short_note || '無'}</div>
                     <div className="crm-view-row"><strong>詳細筆記：</strong><p style={{ whiteSpace: 'pre-wrap', color: '#64748B', background: '#FDFBFA', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>{selectedCust.full_note || '尚無內容'}</p></div>
                     <div style={{ display: 'flex', gap: '12px', marginTop: '30px', justifyContent: 'flex-end' }}>
@@ -272,6 +281,7 @@ export function Customers() {
                 <div className="crm-edit-mode">
                   <h3 style={{ marginBottom: '20px', color: '#5D4A3E' }}>{modalMode === 'add' ? '新增紀錄' : '編輯詳情'}</h3>
                   
+                  {/* ... 編輯表單維持不變，確保 handleSave 會正確處理 contact_methods 為 JSON ... */}
                   <div className="crm-form-section">
                     <label className="crm-form-label">識別 ID (輸入 5 位數字)</label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
