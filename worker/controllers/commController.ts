@@ -2,12 +2,17 @@
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
-// 🌟 修正 1：將同步邏輯移到外部，讓 create 和 update 都能使用
+/**
+ * 🌟 修正：同步至 CRM 邏輯
+ * 確保函式在最外層，方便所有 controller 方法調用
+ */
 async function syncToCRM(env: Env, artistId: string, clientId: string, clientNickname: string) {
+  // 1. 檢查該繪師是否已經紀錄過這位客戶
   const { results } = await env.commission_db.prepare(
     "SELECT id FROM CustomerRecords WHERE artist_id = ? AND client_user_id = ?"
   ).bind(artistId, clientId).all();
 
+  // 2. 如果沒有紀錄，則自動新增一筆「一般」標籤的紀錄
   if (results.length === 0) {
     const newId = crypto.randomUUID();
     await env.commission_db.prepare(`
@@ -69,36 +74,8 @@ export const commController = {
     if (recentCount >= 5) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: "系統偵測到異常的建單頻率，請稍後再試。" 
+        error: "系統偵測到異常的建單頻率，為保護伺服器資源，請稍後再試。" 
       }), { status: 429, headers: corsHeaders });
-    }
-
-    const now = new Date();
-    let maxQuota = 0;
-    let usedQuota = 0;
-    let isUnlimited = false;
-
-    if (user.custom_quota !== null) {
-      maxQuota = user.custom_quota;
-      if (maxQuota === -1) isUnlimited = true;
-      const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
-      usedQuota = countRes[0].count as number;
-    } else {
-      if (user.plan_type === 'pro') isUnlimited = true;
-      else if (user.plan_type === 'trial') {
-        maxQuota = 20;
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
-        usedQuota = countRes[0].count as number;
-      } else {
-        maxQuota = 3;
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)").bind(currentUserId, startOfMonth).all();
-        usedQuota = countRes[0].count as number;
-      }
-    }
-
-    if (!isUnlimited && usedQuota >= maxQuota) {
-      return new Response(JSON.stringify({ success: false, error: `配額不足 (${usedQuota}/${maxQuota})` }), { status: 403, headers: corsHeaders });
     }
 
     const body: CreateCommissionBody = await request.json();
@@ -107,7 +84,7 @@ export const commController = {
 
     if (!body.is_external && clientId) {
       const { results: publicRes } = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).all();
-      if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id}-${Date.now().toString().slice(-3)}`;
+      if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id as string}-${Date.now().toString().slice(-3)}`;
     }
     
     await env.commission_db.batch([
@@ -176,17 +153,22 @@ export const commController = {
         if (body[key] !== undefined) { updates.push(`${key} = ?`); params.push(body[key]); }
     }
 
-    if (updates.length > 0) {
+    if (updates.length > 0 || isBinding) {
       params.push(id);
       const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
       
-      // 🌟 修正 2：處理綁定時的 CRM 自動同步
       if (isBinding) {
         batch.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'bind', '委託人已成功綁定訂單')").bind(crypto.randomUUID(), id));
         
-        // 獲取委託人暱稱並進行 CRM 同步
-        const { results: userProfile } = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(currentUserId).all();
-        const clientNickname = userProfile[0]?.display_name || '未知客戶';
+        /**
+         * 🌟 修正：綁定時同步至 CRM
+         * 使用 .first<{ display_name: string }>() 確保類型正確
+         */
+        const userProfile = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?")
+          .bind(currentUserId)
+          .first<{ display_name: string }>();
+        
+        const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
       }
       
@@ -223,7 +205,7 @@ export const commController = {
     
     const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
     const version = ((results[0]?.count as number) || 0) + 1;
-    const newStageStatus = comm[0].workflow_mode === 'free' ? comm[0].current_stage : `${body.stage}_reviewing`; 
+    const newStageStatus = (comm[0] as any).workflow_mode === 'free' ? (comm[0] as any).current_stage : `${body.stage}_reviewing`; 
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
     await env.commission_db.batch([
@@ -316,7 +298,7 @@ export const commController = {
       WHERE commission_id = ? AND sender_role = ? AND datetime(created_at) >= datetime(?)
     `).bind(id, body.sender_role, oneMinuteAgo).all();
 
-    if ((recentMsgs[0]?.count as number) >= 30) {
+    if (((recentMsgs[0]?.count as number) || 0) >= 30) {
       return new Response(JSON.stringify({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }), { status: 429, headers: corsHeaders });
     }
 
@@ -338,7 +320,7 @@ export const commController = {
       WHERE commission_id = ? AND datetime(created_at) >= datetime(?)
     `).bind(id, oneMinuteAgo).all();
 
-    if ((recentPayments[0]?.count as number) >= 5) {
+    if (((recentPayments[0]?.count as number) || 0) >= 5) {
       return new Response(JSON.stringify({ success: false, error: "新增帳目頻率過高，請稍後再試。" }), { status: 429, headers: corsHeaders });
     }
 

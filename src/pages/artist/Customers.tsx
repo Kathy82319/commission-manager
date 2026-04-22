@@ -91,6 +91,7 @@ export function Customers() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nickname: newCustomer.nickname,
+          alias_name: newCustomer.nickname,
           client_user_id: null, // 手動新增預設為外部用戶
           public_id: newCustomer.public_id,
           custom_label: newCustomer.label,
