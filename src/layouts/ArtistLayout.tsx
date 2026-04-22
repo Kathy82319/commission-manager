@@ -98,10 +98,11 @@ export function ArtistLayout() {
     }
   }
 
-  const navItems = [
-    { path: '/artist/quote/new', label: '產出委託單' },
+const navItems = [
     { path: '/artist/queue', label: '排單表' },
     { path: '/artist/notebook', label: '委託單管理' },
+    { path: '/artist/customers', label: '客戶管理' }, 
+    { path: '/artist/quote/new', label: '建立委託單' },
     { path: '/artist/records', label: '結案紀錄' },
     { path: '/artist/settings', label: '個人設定' }
   ];
