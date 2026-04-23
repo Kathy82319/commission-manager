@@ -518,3 +518,147 @@
   background-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.3);
 }
+
+/* ==========================================================================
+   9. 手機版深度優化 (Mobile Deep Optimization) - 斷點 768px
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* 側邊欄改為頂部區塊，解除固定高度 */
+  .profile-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  }
+
+  .sidebar-top {
+    padding: 30px 20px 10px 20px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* 縮小手機版大頭貼 */
+  .profile-avatar {
+    width: 140px;
+    height: 140px;
+    border-radius: 20px; /* 保持與電腦版一致的圓角風格 */
+  }
+
+  /* 名字與社群居中 */
+  .name-social-section {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .profile-name {
+    font-size: 20px;
+  }
+
+  .social-links {
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .sidebar-bottom {
+    padding: 0 20px 20px 20px;
+  }
+
+  /* 🌟 重點修正：導覽列改為橫向滾動，節省垂直空間 */
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 5px 0;
+    gap: 8px;
+    /* 隱藏滾動條但保持功能 */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-item {
+    white-space: nowrap; /* 防止文字換行 */
+    padding: 8px 16px;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.05); /* 給個淡底色讓它像標籤 */
+  }
+
+  /* 主內容區縮減邊距 */
+  .profile-main-content {
+    padding: 20px 15px;
+  }
+
+  /* 富文本內容在手機版不要 50px 這麼寬的內距 */
+  .rich-text-content {
+    padding: 20px;
+    border-radius: 16px;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* 瀑布流改為單欄或兩欄 */
+  .masonry-grid {
+    column-count: 1; /* 螢幕太小時建議一欄，若想兩欄可改為 2 */
+    column-gap: 15px;
+  }
+
+  .masonry-item {
+    margin-bottom: 15px;
+  }
+
+  /* 作品網格改為兩欄 */
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* 彈窗細節優化 */
+  .showcase-content-box {
+    width: 95vw;
+    height: 90vh;
+    flex-direction: column;
+  }
+
+  .showcase-cover {
+    height: 35vh; /* 圖片佔比縮小，留給文字 */
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+  }
+
+  .showcase-details {
+    padding: 20px;
+    gap: 15px;
+  }
+
+  .showcase-details h2 {
+    font-size: 22px;
+  }
+
+  /* 燈箱關閉按鈕移到更顯眼位置，防止手指按不到 */
+  .lightbox-close {
+    top: 15px;
+    right: 15px;
+    width: 44px;
+    height: 44px;
+  }
+
+  /* 頁腳橫向排列 */
+  .profile-internal-footer .footer-links {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+}
+
+/* 針對極小螢幕 (如 iPhone SE) */
+@media (max-width: 380px) {
+  .portfolio-grid {
+    grid-template-columns: 1fr; /* 寬度太小時作品改為一欄 */
+  }
+  .splash-box h1 {
+    font-size: 2rem;
+  }
+}
