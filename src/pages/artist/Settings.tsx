@@ -1,3 +1,4 @@
+// Settings.tsx 完整修正版
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ProfileSettings, QuotaInfo, FormDataState } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
@@ -186,7 +187,7 @@ export function Settings() {
     });
   };
 
-  // 🌟 邏輯計算區：定義白名單與鎖定狀態
+  // 🌟 核心計算區：確保變數在此處宣告，防止「找不到名稱」錯誤
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
@@ -252,18 +253,15 @@ export function Settings() {
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
-{['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
-  <RichTextTab 
-    key={activeTab}  /* 🌟 關鍵修正：加入這行，強迫切換分頁時重整編輯器 */
-    field={activeTab} 
-    settings={settings} 
-    setSettings={setSettings} 
-  />
-)}
+            {/* 🌟 核心修正：加入 key={activeTab} 強迫編輯器重新載入內容 */}
+            {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+              <RichTextTab key={activeTab} field={activeTab} settings={settings} setSettings={setSettings} />
+            )}
             
-            {/* 🌟 自定義分頁區塊 */}
+            {/* 🌟 核心修正：自定義分頁也加入 key={activeTab} */}
             {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
               <RichTextTab 
+                key={activeTab}
                 isCustom 
                 customIndex={parseInt(activeTab.split('_')[1])} 
                 settings={settings} 
