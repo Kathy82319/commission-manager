@@ -39,6 +39,16 @@ CREATE TABLE ArtistProfiles (
     FOREIGN KEY (user_id) REFERENCES Users(id)
 );
 
+-- 3. 服務項目表
+CREATE TABLE CommissionTypes (
+    id TEXT PRIMARY KEY,
+    artist_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    base_price INTEGER NOT NULL,
+    estimated_days INTEGER NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    FOREIGN KEY (artist_id) REFERENCES Users(id)
+);
 
 -- 4. 委託單主表
 CREATE TABLE Commissions (
@@ -195,5 +205,13 @@ CREATE TABLE CustomerRecords (
     FOREIGN KEY (client_user_id) REFERENCES Users(id)
 );
 
+-- ==========================================
+-- 寫入預設開發資料 (Seed Data)
+-- ==========================================
 
+INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role, plan_type) 
+VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 'artist', 'pro');
+
+INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
+VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 

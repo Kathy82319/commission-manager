@@ -181,7 +181,6 @@ export function Settings() {
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
       } else {
-        // 對接後端「免費版本已達上限」等錯誤訊息
         showToast(data.error || '儲存失敗', 'err');
       }
     } catch (error) {

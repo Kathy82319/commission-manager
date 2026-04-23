@@ -12,7 +12,7 @@ export const showcaseController = {
       return new Response(JSON.stringify({ success: true, data: [] }), { headers });
     }
 
-    // 資安強化：針對免費版用戶落實後端物理裁切 (LIMIT 6)
+    // 資安強化：落實後端物理裁切
     let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
     if (user.plan_type === 'free') {
       query += " LIMIT 6";
@@ -27,8 +27,9 @@ export const showcaseController = {
   },
 
   async getMyItems(userId: string, env: Env, headers: any) {
+    // 🌟 修正點：統一排序邏輯為 sort_order ASC, created_at DESC
     const { results } = await env.commission_db
-      .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC")
+      .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC, created_at DESC")
       .bind(userId)
       .all();
     return new Response(JSON.stringify({ success: true, data: results }), { headers });
@@ -47,7 +48,6 @@ export const showcaseController = {
 
     const totalCount = (countRes[0]?.total as number) || 0;
 
-    // 後端配額守衛：免費版展示項目上限設為 6 筆
     if (user?.plan_type === 'free' && totalCount >= 6) {
       return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers });
     }

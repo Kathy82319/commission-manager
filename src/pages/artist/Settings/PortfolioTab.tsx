@@ -28,7 +28,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
       return;
     }
     if (settings.portfolio.length >= portfolioLimit) {
-      alert("免費版本已達上限");
+      alert("已達此版本上限");
       return;
     }
 

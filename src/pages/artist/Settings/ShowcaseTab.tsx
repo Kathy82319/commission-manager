@@ -125,7 +125,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   const openNewForm = () => {
     if (items.length >= limit) {
-      onToast("免費版本已達上限", "err");
+      onToast("已達此版本上限", "err");
       return;
     }
     setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1 });
@@ -139,7 +139,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   const handleSaveItem = async () => {
     if (!editingItem.id && items.length >= limit) {
-      onToast("免費版本已達上限", "err");
+      onToast("已達此版本上限", "err");
       return;
     }
 
