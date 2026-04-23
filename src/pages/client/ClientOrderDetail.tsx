@@ -337,7 +337,12 @@ export function ClientOrderDetail() {
         </div>
 
         <div className="tab-scroll-container">
-          <button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
+          <button 
+  className={`detail-tab ${activeTab === 'main' ? 'this-is-my-selected-tab' : ''}`} 
+  onClick={() => setActiveTab('main')}
+>
+  詳細內容
+</button>
           <button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
           <button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
         </div>

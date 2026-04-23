@@ -131,3 +131,9 @@
     padding: 24px;
   }
 }
+
+.detail-tab.this-is-my-selected-tab {
+  border-bottom: 3px solid #4A7294;
+  color: #4A7294;
+  background-color: #FFFFFF;
+}
