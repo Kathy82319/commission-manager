@@ -148,34 +148,71 @@ export function Workspace() {
     </div>
   );
 
-    return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9' }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '800px',
-        display: 'flex', 
-        flexDirection: 'column', 
-        backgroundColor: '#FBFBF9', 
-        position: 'relative' 
-      }}>
-        <header style={{ backgroundColor: '#FFFFFF', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '14px', cursor: 'pointer' }}>
-              ←
+  return (
+    <div className="workspace-container">
+      {/* 內嵌 CSS 處理響應式誤差 */}
+      <style>{`
+        .workspace-container {
+          height: 100vh;
+          height: 100dvh; /* 支援動態高度，解決手機瀏覽器導覽列問題 */
+          display: flex;
+          justify-content: center;
+          backgroundColor: #FBFBF9;
+          overflow: hidden;
+        }
+        .chat-wrapper {
+          width: 100%;
+          maxWidth: 800px;
+          display: flex;
+          flexDirection: column;
+          backgroundColor: #FBFBF9;
+          position: relative;
+        }
+        .chat-main {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px 15px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          /* 確保內容不被底部輸入框完全擋住 */
+          padding-bottom: 30px;
+        }
+        .chat-footer {
+          backgroundColor: #FFFFFF;
+          padding: 12px;
+          /* 處理 iOS Home Bar 安全區域 */
+          padding-bottom: calc(12px + env(safe-area-inset-bottom));
+          border-top: 1px solid #EAE6E1;
+          display: flex;
+          gap: 8px;
+          align-items: flex-end;
+        }
+        @media (max-width: 640px) {
+          .chat-header h2 { font-size: 14px !important; }
+          .message-bubble { max-width: 90% !important; }
+        }
+      `}</style>
+
+      <div className="chat-wrapper">
+        <header className="chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={() => navigate(-1)} style={{ background: '#F4F4F2', border: 'none', color: '#5D4A3E', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', fontSize: '18px' }}>
+              ‹
             </button>
             <div>
-              <h2 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }} className="md:text-lg">
-                {order.client_name || '未命名委託人'} 的聊天室
+              <h2 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>
+                {order.client_name || '未命名委託人'}
               </h2>
-              <div style={{ fontSize: '11px', color: '#A0978D' }}>ID: {order.id}</div>
+              <div style={{ fontSize: '10px', color: '#A0978D' }}>訂單單號: {order.id}</div>
             </div>
           </div>
-          <div style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7' }}>
+          <div style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7', color: '#5D4A3E' }}>
             {role === 'artist' ? '🎨 繪師' : '👤 委託人'}
           </div>
         </header>
 
-        <main style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <main className="chat-main">
           {messages.map(msg => {
             const isMe = msg.sender_role === role;
             return (
@@ -184,18 +221,19 @@ export function Workspace() {
                   <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
                   <span style={{ color: '#C4BDB5' }}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <div style={{ 
+                <div className="message-bubble" style={{ 
                   maxWidth: '85%', 
                   padding: '10px 14px', 
                   fontSize: '15px',
                   backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
                   color: isMe ? '#FFFFFF' : '#4A4A4A',
                   borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                   border: isMe ? 'none' : '1px solid #EAE6E1',
                   wordBreak: 'break-word',
-                  whiteSpace: 'pre-wrap'
-                }} className="md:max-w-3/4">
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: '1.4'
+                }}>
                   {msg.content}
                 </div>
               </div>
@@ -204,7 +242,7 @@ export function Workspace() {
           <div ref={messagesEndRef} />
         </main>
 
-        <footer style={{ backgroundColor: '#FFFFFF', padding: '12px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+        <footer className="chat-footer">
           <textarea 
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -217,26 +255,34 @@ export function Workspace() {
               } 
             }}
             placeholder="請輸入訊息..."
+            rows={1}
             style={{ 
               flex: 1, padding: '10px 14px', borderRadius: '20px', 
-              border: focusedField ? '2px solid #5D4A3E' : '1px solid #DED9D3',
-              backgroundColor: '#FBFBF9', fontSize: '15px', minHeight: '40px', maxHeight: '100px', outline: 'none'
+              border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3',
+              backgroundColor: '#FBFBF9', fontSize: '15px', minHeight: '40px', maxHeight: '120px', outline: 'none',
+              resize: 'none'
             }}
           />
           <button 
             onClick={handleSendMessage}
             disabled={!inputText.trim()}
             style={{ 
-              padding: '10px 20px', 
+              width: '45px',
+              height: '40px',
               borderRadius: '20px', 
               backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3',
               color: '#FFFFFF',
               border: 'none',
               fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexShrink: 0
             }}
           >
-            傳送
+            {/* 使用箭頭符號代替文字，在手機版更省空間 */}
+            <span style={{ fontSize: '18px' }}>▲</span>
           </button>
         </footer>
       </div>
