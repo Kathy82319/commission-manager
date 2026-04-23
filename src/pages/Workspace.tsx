@@ -30,6 +30,18 @@ export function Workspace() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesLengthRef = useRef<number>(0); 
 
+  // 🌟 新增：統一的時間轉換函式，確保將資料庫的 UTC 時間轉為本地時間
+  const formatLocalTime = (dateStr: string) => {
+    if (!dateStr) return '';
+    // 如果字串中沒有 T 或 Z，手動補上以確保瀏覽器將其視為 UTC
+    const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+    return new Date(utcStr).toLocaleTimeString('zh-TW', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false // 使用 24 小時制，若要 12 小時制可改為 true 或移除
+    });
+  };
+
   const updateReadTime = async () => {
     if (!id) return;
     const field = role === 'artist' ? 'last_read_at_artist' : 'last_read_at_client';
@@ -151,13 +163,11 @@ export function Workspace() {
   return (
     <div style={{ 
       height: '100vh', 
-      height: '100dvh', // 使用 dvh 解決手機版高度問題
       display: 'flex', 
       justifyContent: 'center', 
       backgroundColor: '#FBFBF9',
-      overflow: 'hidden' // 防止外層出現奇怪的捲軸
+      overflow: 'hidden' 
     }}>
-      {/* 這裡插入一個簡單的 style 標籤來微調手機版的 padding 與寬度，不破壞 inline style 結構 */}
       <style>{`
         @media (max-width: 600px) {
           .chat-main-area { padding: 15px 10px !important; }
@@ -171,10 +181,9 @@ export function Workspace() {
         maxWidth: '800px',
         display: 'flex', 
         flexDirection: 'column', 
-        backgroundColor: '#FFFFFF', // 手機版改為純白背景，看起來更像聊天 App
+        backgroundColor: '#FFFFFF', 
         position: 'relative' 
       }}>
-        {/* Header */}
         <header style={{ 
           backgroundColor: '#FFFFFF', 
           padding: '10px 16px', 
@@ -212,7 +221,6 @@ export function Workspace() {
           </div>
         </header>
 
-        {/* 聊天內容區 */}
         <main className="chat-main-area" style={{ 
           flex: 1, 
           overflowY: 'auto', 
@@ -235,8 +243,9 @@ export function Workspace() {
                   flexDirection: isMe ? 'row-reverse' : 'row' 
                 }}>
                   <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
+                  {/* 🌟 這裡使用了修正後的本地時間轉換函式 */}
                   <span style={{ color: '#C4BDB5' }}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatLocalTime(msg.created_at)}
                   </span>
                 </div>
                 <div className="message-wrapper" style={{ 
@@ -260,10 +269,9 @@ export function Workspace() {
           <div ref={messagesEndRef} />
         </main>
 
-        {/* Footer 輸入區 */}
         <footer style={{ 
           backgroundColor: '#FFFFFF', 
-          padding: '12px 12px 24px 12px', // 底部留白多一點，防止手機 Home Bar 遮擋
+          padding: '12px 12px 24px 12px', 
           borderTop: '1px solid #EAE6E1', 
           display: 'flex', 
           gap: '8px', 
@@ -306,8 +314,7 @@ export function Workspace() {
               border: 'none',
               fontWeight: 'bold',
               cursor: 'pointer',
-              marginBottom: '2px', // 微調與輸入框對齊
-              transition: 'background-color 0.2s'
+              marginBottom: '2px'
             }}
           >
             傳送
