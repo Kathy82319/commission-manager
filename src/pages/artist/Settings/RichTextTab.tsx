@@ -1,3 +1,4 @@
+// RichTextTab.tsx 修正版
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import type { ProfileSettings } from '../Settings/types';
@@ -26,7 +27,8 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
   
   const getValue = () => {
     if (isCustom && customIndex !== undefined) {
-      return settings.custom_sections[customIndex]?.content || '';
+      // 修正：使用可選鏈防止存取不存在的索引
+      return settings.custom_sections?.[customIndex]?.content || '';
     }
     if (field) {
       return (settings[field as keyof ProfileSettings] as string) || '';
@@ -35,15 +37,18 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
   };
 
   const handleChange = (value: string) => {
-    if (isCustom && customIndex !== undefined) {
-      const newSections = [...settings.custom_sections];
-      if (newSections[customIndex]) {
-        newSections[customIndex] = { ...newSections[customIndex], content: value };
-        setSettings({ ...settings, custom_sections: newSections });
+    setSettings(prev => {
+      if (isCustom && customIndex !== undefined) {
+        const newSections = [...(prev.custom_sections || [])];
+        if (newSections[customIndex]) {
+          newSections[customIndex] = { ...newSections[customIndex], content: value };
+          return { ...prev, custom_sections: newSections };
+        }
+      } else if (field) {
+        return { ...prev, [field]: value };
       }
-    } else if (field) {
-      setSettings({ ...settings, [field]: value });
-    }
+      return prev;
+    });
   };
 
   return (
