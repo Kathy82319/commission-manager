@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
+import '../../styles/ClientOrderDetail.css';
 interface CommissionDetail {
 id: string;
 status: string;
@@ -350,9 +351,9 @@ animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none', flex: '1 1 auto'
 </button>
 </div>
 <div className="tab-scroll-container">
-<button style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
-<button style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>
-<button style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</button>
+<button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
+<button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>
+<button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</button>
 </div>
 <div style={{ backgroundColor: '#e8ecf3', padding: '20px', borderRadius: '0 0 16px 16px', minHeight: '400px' }}>
 {activeTab === 'main' && (

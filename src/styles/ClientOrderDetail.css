@@ -18,6 +18,18 @@
 .tab-scroll-container::-webkit-scrollbar { 
   display: none; 
 }
+.tab-scroll-container .detail-tab {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.tab-scroll-container .detail-tab:focus,
+.tab-scroll-container .detail-tab:active {
+  outline: none;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
 
 /* 3. 分頁按鈕樣式 (對應原本的 tabStyle) */
 /* 基礎樣式：電腦與手機通用 */
