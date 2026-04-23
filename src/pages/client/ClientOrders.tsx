@@ -318,8 +318,36 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       <style>{`
-        /* 手機版樣式保持 */
+        /* 全域溢出防止 */
+        .notebook-page { overflow-x: hidden; width: 100%; }
+
+        /* 手機版樣式修正 */
         @media (max-width: 1024px) {
+          .notebook-container {
+            width: 100vw !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .notebook-sidebar {
+            width: 100% !important;
+            box-sizing: border-box;
+          }
+          /* 搜尋與篩選同行 */
+          .mobile-controls-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #FAFAFA;
+            border-bottom: 1px solid #EAE6E1;
+          }
+          .mobile-controls-row .form-input {
+            margin: 0 !important;
+            height: 38px;
+          }
+          .mobile-controls-row input { flex: 2; }
+          .mobile-controls-row select { flex: 1; min-width: 90px; }
+
           .notebook-page .scroll-tabs .tab-btn.active {
             background-color: #5D4A3E; 
             color: #FFFFFF;          
@@ -331,24 +359,24 @@ export function ClientOrders() {
             position: relative;
             z-index: 5;
           }
-          .notebook-page .scroll-tabs .tab-btn.active::before,
-          .notebook-page .scroll-tabs .tab-btn.active::after {
-            display: none;
+          .sidebar-list-container {
+            padding: 10px 15px !important;
+            box-sizing: border-box;
           }
         }
 
-        /* 🌟 電腦版寬度與拉軸修正 */
+        /* 電腦版樣式保持不變 */
         @media (min-width: 1025px) {
           .notebook-container {
-            max-width: 1300px !important; /* 加寬主容器 */
+            max-width: 1300px !important;
             width: 95%;
             margin: 0 auto;
             display: flex;
-            height: calc(100vh - 120px); /* 讓高度固定，內部長內容才捲動 */
-            overflow: hidden; /* 防止外層出現橫向拉軸 */
+            height: calc(100vh - 120px);
+            overflow: hidden;
           }
           .notebook-sidebar {
-            width: 350px !important; /* 固定寬度，不隨內容擠壓 */
+            width: 350px !important;
             flex-shrink: 0;
             border-right: 1px solid #EAE6E1;
             display: flex;
@@ -358,7 +386,7 @@ export function ClientOrders() {
           .sidebar-list-container {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden !important; /* 徹底殺掉側邊欄的橫向拉軸 */
+            overflow-x: hidden !important;
             padding: 16px;
           }
           .notebook-main {
@@ -387,17 +415,32 @@ export function ClientOrders() {
 
       <div className="notebook-container">
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          {/* 電腦版與手機版通用的標題欄 */}
+          <div style={{ padding: '20px 20px 10px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid transparent' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-            <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
-              <option value="all">全部</option><option value="working">進行中</option><option value="completed">已結單</option>
-            </select>
           </div>
 
-          
+          {/* 手機版並排控制欄 / 電腦版也會套用此佈局 */}
+          <div className="mobile-controls-row">
+            <input 
+              type="text" 
+              className="form-input" 
+              style={{ padding: '8px 12px', fontSize: '13px' }} 
+              placeholder="🔍 搜尋暱稱/單號..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+            />
+            <select 
+              className="form-input" 
+              style={{ padding: '6px 8px', fontSize: '13px' }} 
+              value={filter} 
+              onChange={e => setFilter(e.target.value as any)}
+            >
+              <option value="all">全部</option>
+              <option value="working">進行中</option>
+              <option value="completed">已結單</option>
+            </select>
+          </div>
 
           <div className="sidebar-list-container">
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
