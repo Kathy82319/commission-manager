@@ -314,7 +314,6 @@ export function ClientOrderDetail() {
         }
         .tab-scroll-container::-webkit-scrollbar { display: none; }
 
-        /* 分頁按鈕的 CSS 類別，加入 !important 防止全域污染，並重置原生按鈕渲染 */
         .detail-tab {
           flex: 1; 
           padding: 10px 16px; 
@@ -324,20 +323,36 @@ export function ClientOrderDetail() {
           cursor: pointer;
           border: none;
           border-radius: 20px; 
-          color: #8A7E72; 
-          background-color: transparent;
+          color: #8A7E72 !important; 
+          background-color: transparent !important;
           transition: all 0.2s; 
           outline: none; 
           white-space: nowrap;
           appearance: none;
           -webkit-appearance: none;
           font-size: 14px;
-          line-height: 1.5;
+          position: relative;
+          z-index: 1; /* 建立堆疊上下文 */
         }
 
+        /* 🌟 強力重置 active 狀態，防止被偽元素遮蓋 */
         .detail-tab.active {
           background-color: #5D4A3E !important;
           color: #FFFFFF !important;
+          -webkit-text-fill-color: #FFFFFF !important;
+        }
+
+        /* 🌟 鎮壓所有可能的偽元素背景 */
+        .detail-tab::before, .detail-tab::after {
+          content: none !important;
+          display: none !important;
+          z-index: -1 !important;
+        }
+
+        .detail-tab-text {
+          position: relative;
+          z-index: 10; /* 強制文字在最頂層 */
+          pointer-events: none;
         }
       `}</style>
 
@@ -393,9 +408,15 @@ export function ClientOrderDetail() {
         </div>
 
         <div className="tab-scroll-container">
-          <button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
-          <button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
-          <button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
+          <button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
+            <span className="detail-tab-text">詳細內容</span>
+          </button>
+          <button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>
+            <span className="detail-tab-text">稿件審閱</span>
+          </button>
+          <button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+            <span className="detail-tab-text">歷程紀錄</span>
+          </button>
         </div>
 
         <div style={{ backgroundColor: '#FDFBFA', padding: '20px', borderRadius: '0 0 16px 16px', border: '1px solid #EAE6E1', borderTop: 'none', minHeight: '400px' }}>
