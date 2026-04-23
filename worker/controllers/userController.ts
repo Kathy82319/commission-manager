@@ -87,19 +87,18 @@ export const userController = {
 
     if (isMe) {
       let usedQuota = 0;
-      let maxQuota = 3;
+      let maxQuota = 3; // 預設 3[cite: 1]
+
+      const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(user.id).all();
+      usedQuota = countRes[0].count as number;
 
       if (user.plan_type === 'trial') {
         maxQuota = 20; 
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(user.id).all();
-        usedQuota = countRes[0].count as number;
       } else if (user.plan_type === 'pro') {
         maxQuota = -1; 
       } else {
-        // 修正：基礎免費版配額設為 3
+        // 🌟 修正：確保基礎免費版正確顯示 3 筆限制[cite: 1]
         maxQuota = 3; 
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(user.id).all();
-        usedQuota = countRes[0].count as number;
       }
 
       user.used_quota = usedQuota;
@@ -119,6 +118,9 @@ export const userController = {
     return new Response(JSON.stringify({ success: true, data: user }), { status: 200, headers: corsHeaders });
   },
 
+  /**
+   * 更新使用者設定 (PATCH /api/users/:id)
+   */
   async updateUser(request: Request, userIdParam: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
 
@@ -126,7 +128,7 @@ export const userController = {
       return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
-    const { results: userBase } = await env.commission_db.prepare("SELECT plan_type FROM Users WHERE id = ?").bind(targetId).all();
+    const { results: userBase } = await env.commission_db.prepare("SELECT id, plan_type FROM Users WHERE id = ?").bind(targetId).all();
     const userPlan = userBase[0]?.plan_type || 'free';
 
     const body: any = await request.json();
@@ -139,13 +141,16 @@ export const userController = {
       settings = {};
     }
 
+    // 🌟 修正：嚴格配額攔截 (不裁切，超額則拒絕寫入)[cite: 1]
     const limits: Record<string, number> = { free: 6, trial: 20, pro: 30 };
     const currentLimit = limits[userPlan as string] || 6;
 
     if (Array.isArray(settings.portfolio)) {
+      // 系統極限保護 (防止惡意注入)[cite: 1]
       if (settings.portfolio.length > 40) {
         return new Response(JSON.stringify({ success: false, error: "系統容量極限為 40 張" }), { status: 403, headers: corsHeaders });
       }
+      // 方案上限攔截[cite: 1]
       if (settings.portfolio.length > currentLimit) {
         return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
       }

@@ -86,18 +86,17 @@ export const commController = {
   },
 
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: userRes } = await env.commission_db.prepare("SELECT id, plan_type, role FROM Users WHERE id = ?").bind(currentUserId).all();
-    const user = userRes[0] as any;
+    // 🌟 資安強化：確保 user 存在[cite: 1]
+    const user = await env.commission_db.prepare("SELECT id, plan_type, role FROM Users WHERE id = ?").bind(currentUserId).first<any>();
     
-    // 🌟 資安強化：檢查使用者是否存在，防止 500 崩潰
     if (!user) return new Response(JSON.stringify({ success: false, error: "找不到使用者資料" }), { status: 404, headers: corsHeaders });
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
 
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
 
-    // 🌟 修正：根據討論結果調整配額 (Free: 3, Trial: 20)
-    const planLimits: Record<string, number> = { free: 3, trial: 20, pro: 999999 };
+    // 🌟 修正：基礎免費版配額對齊為 3 筆[cite: 1]
+    const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
     const currentLimit = planLimits[user.plan_type as string] || 3;
 
     if (user.plan_type !== 'pro' && totalCount >= currentLimit) {
@@ -117,6 +116,17 @@ export const commController = {
     }
 
     const body: CreateCommissionBody = await request.json();
+
+    // 🌟 修正 500 錯誤：自動尋找該繪師有效的委託類型 ID，防止違反 FK 約束[cite: 1]
+    const typeRecord = await env.commission_db.prepare(
+      "SELECT id FROM CommissionTypes WHERE artist_id = ? OR id = 'type-01' LIMIT 1"
+    ).bind(currentUserId).first<any>();
+    
+    const realTypeId = typeRecord?.id;
+    if (!realTypeId) {
+      return new Response(JSON.stringify({ success: false, error: "請先至設定頁面建立至少一種『委託類型』" }), { status: 400, headers: corsHeaders });
+    }
+
     let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `${Date.now().toString().slice(-6)}`;
     const clientId = body.client_id || '';
 
@@ -125,7 +135,6 @@ export const commController = {
       if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id as string}-${Date.now().toString().slice(-3)}`;
     }
     
-    // 💡 提示：若此處回傳 500，請檢查資料庫是否有 'type-01' 的 CommissionTypes 紀錄
     await env.commission_db.batch([
       env.commission_db.prepare(`
         INSERT INTO Commissions (
@@ -135,7 +144,7 @@ export const commController = {
           draw_scope, char_count, bg_type, add_ons, detailed_settings, workflow_mode, agreed_tos_snapshot
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        newOrderId, currentUserId, 'type-01', clientId || null, 0,
+        newOrderId, currentUserId, realTypeId, clientId || null, 0,
         '', sanitizeAndLimit(body.client_name || '未知', 100), body.total_price || 0,
         body.workflow_mode === 'free' ? 'unpaid' : (body.is_external ? 'paid' : 'quote_created'),
         body.is_external ? 'paid' : 'unpaid', 'sketch_drawing', body.is_external ? 1 : 0,
