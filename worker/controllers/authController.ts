@@ -3,13 +3,11 @@ import { getLineLoginUrl, getLineToken, getLineProfile } from "../services/line"
 import { generateToken, sanitizeAndLimit } from "../utils/security";
 import { getUserById, createNewUser } from "../services/db";
 
-
 const SESSION_COOKIE_OPTIONS = "Path=/; Max-Age=2592000; SameSite=Lax; Secure; HttpOnly";
 const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnly";
 
 export const authController = {
 
- 
   async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
@@ -30,7 +28,7 @@ export const authController = {
       }
 
       const sessionValue = await generateToken(testUserId, env.ID_SALT, 30);
-      let baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
+      const baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
 
       return new Response(null, {
         status: 302,
@@ -41,15 +39,12 @@ export const authController = {
         }
       });
     } catch (e) {
-      console.error("Bypass Error:", e);
       return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { 
         status: 500, 
         headers: corsHeaders 
       });
     }
   },
-
-
 
   async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
@@ -102,16 +97,19 @@ export const authController = {
       const sessionValue = await generateToken(userId, env.ID_SALT, 30);
       const user: any = await getUserById(env, userId);
       
-      let targetPath = "/artist/queue";
+      let targetPath = "/portal";
 
       if (!user) {
         const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
         await createNewUser(env, userId, safeDisplayName, "");
         targetPath = "/onboarding"; 
-      } else if (user.role === 'deleted' || user.role === 'pending') {
-        targetPath = "/onboarding";
+      } else if (user.role === 'deleted') {
+        return new Response(JSON.stringify({ success: false, error: "帳號已被停用" }), { 
+          status: 401, 
+          headers: corsHeaders 
+        });
       } else {
-        targetPath = "/portal";
+        targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
       await env.commission_db.prepare(
@@ -120,24 +118,22 @@ export const authController = {
 
       const baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
       
+      const responseHeaders = new Headers(corsHeaders);
+      responseHeaders.set('Location', `${baseUrl}${targetPath}`);
+      responseHeaders.append('Set-Cookie', `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`);
+      responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly`);
+
       return new Response(null, {
         status: 302,
-        headers: {
-          'Location': `${baseUrl}${targetPath}`,
-          'Set-Cookie': `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`,
-          'Set-Cookie-2': `oauth_state=; Path=/; Max-Age=0; HttpOnly; SameSite=None; Secure`, 
-          ...corsHeaders
-        }
+        headers: responseHeaders
       });
     } catch (e) {
-      console.error("Callback Error:", e);
       return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { 
         status: 500, 
         headers: corsHeaders 
       });
     }
   },
-
 
   async logout(_request: Request, _env: Env, corsHeaders: HeadersInit): Promise<Response> {
     return new Response(JSON.stringify({ success: true }), {
