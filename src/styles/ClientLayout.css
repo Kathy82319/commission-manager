@@ -40,23 +40,7 @@
   align-items: center;
 }
 
-.mobile-nav-toggle {
-  display: none;
-  background: none;
-  border: none;
-  color: #FFFFFF;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.mobile-menu {
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(90, 110, 133, 0.98);
-  padding: 16px;
-  gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+/* 已清除漢堡選單的無用樣式 */
 
 .switch-btn {
   background: none;
@@ -70,12 +54,6 @@
 
 .switch-btn:hover {
   opacity: 0.8;
-}
-
-.mobile-menu .switch-btn {
-  text-align: left;
-  padding: 10px 0;
-  font-size: 16px;
 }
 
 .notification-bar {
@@ -133,12 +111,15 @@
   color: #FFFFFF;
 }
 
+/* 僅針對手機版的修改 */
 @media (max-width: 768px) {
-  .desktop-nav {
-    display: none;
-  }
-  .mobile-nav-toggle {
-    display: block;
+  /* 在手機版幫按鈕加個外框背景，避免誤觸，並微調大小適應螢幕 */
+  .switch-btn {
+    background: rgba(250, 204, 21, 0.15);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
   }
 }
 

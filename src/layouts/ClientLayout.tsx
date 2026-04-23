@@ -8,7 +8,7 @@ export function ClientLayout() {
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // 已移除 isMobileMenuOpen 狀態
 
   useEffect(() => {
     const checkClientAuth = async () => {
@@ -98,24 +98,14 @@ export function ClientLayout() {
           <div className="header-subtitle">委託管理 (委託方)</div>
         </div>
         
+        {/* 保持原本的 desktop-nav 類別，只透過 CSS 讓它在手機版也顯示 */}
         <nav className="desktop-nav">
-          <button onClick={handleSwitchToArtist} className="switch-btn">
-            {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
-          </button>
-        </nav>
-
-        <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? '✕' : '☰'}
-        </button>
-      </header>
-
-      {isMobileMenuOpen && (
-        <div className="mobile-menu">
           <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '進入繪師後台' : '開通繪師管理頁'}
           </button>
-        </div>
-      )}
+        </nav>
+        {/* 已移除 mobile-nav-toggle 與 mobile-menu 區塊 */}
+      </header>
 
       {notifications.length > 0 && (
         <div className="notification-bar">
