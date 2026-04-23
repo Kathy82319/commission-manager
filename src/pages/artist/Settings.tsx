@@ -1,4 +1,3 @@
-// Settings.tsx 修正版
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ProfileSettings, QuotaInfo, FormDataState } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
@@ -51,7 +50,7 @@ export function Settings() {
     detailed_intro: '', 
     process: '', 
     payment: '', 
-    rules: '', // 🌟 加回協議書範本欄位
+    rules: '', 
     custom_sections: [], 
     social_links: [], 
     hidden_sections: [],
@@ -84,7 +83,7 @@ export function Settings() {
         { id: 'showcase', label: '徵稿/販售區' },
         { id: 'process', label: '委託流程' },
         { id: 'payment', label: '付款方式' },
-        { id: 'rules', label: '協議書範本' }, // 🌟 後台保留此分頁
+        { id: 'rules', label: '協議書範本' },
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
@@ -187,8 +186,12 @@ export function Settings() {
     });
   };
 
+  // 🌟 邏輯計算區：定義白名單與鎖定狀態
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase', 'custom_manage', 'rules'];
+  const freeAllowedTabs = [
+    'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
+    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment'
+  ];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
@@ -249,13 +252,13 @@ export function Settings() {
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
-            {/* 🌟 核心修正：明確包含 rules */}
+            {/* 🌟 富文本區塊：包含所有基礎文字頁面 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} />
             )}
             
-            {/* 🌟 核心修正：嚴格限定 activeTab 開頭且排除非數字頁面 */}
-            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash'].includes(activeTab) && (
+            {/* 🌟 自定義分頁區塊 */}
+            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
               <RichTextTab 
                 isCustom 
                 customIndex={parseInt(activeTab.split('_')[1])} 
