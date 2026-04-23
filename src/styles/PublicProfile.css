@@ -532,12 +532,9 @@
     width: 100%;
     height: auto;
     position: relative;
-    /* 預留頂部空間：為右上角的「登入/註冊」按鈕留白，避免重疊 */
-    padding-top: 72px; 
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
 
-  /* 核心：分割左右兩塊，左邊大頭照、右邊資訊與社群 */
   .sidebar-top {
     padding: 0 24px;
     display: flex;
@@ -547,7 +544,6 @@
     text-align: left;
   }
 
-  /* 左區塊：大頭照 */
   .avatar-section {
     flex-shrink: 0;
   }
@@ -561,14 +557,13 @@
     border-width: 2px;
   }
 
-  /* 右區塊：名稱、社群 */
   .name-social-section {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    min-width: 0; /* 避免文字過長撐破 Flex 容器 */
+    min-width: 0; /
   }
 
   .profile-name {
@@ -577,7 +572,7 @@
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* 名字過長時顯示點點點 */
+    text-overflow: ellipsis;
   }
 
   .social-links {
@@ -609,7 +604,6 @@
     opacity: 0.9;
   }
 
-  /* 導覽列改為橫向滑動 */
   .sidebar-nav {
     display: flex;
     flex-direction: row;
@@ -617,12 +611,12 @@
     overflow-y: hidden;
     padding: 4px 0 8px 0;
     gap: 10px;
-    -webkit-overflow-scrolling: touch; /* 提升 iOS 滑動順暢度 */
-    scrollbar-width: none; /* Firefox 隱藏捲軸 */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
 
   .sidebar-nav::-webkit-scrollbar {
-    display: none; /* Chrome/Safari 隱藏捲軸 */
+    display: none; 
   }
 
   .nav-item {
@@ -633,18 +627,15 @@
     text-align: center;
   }
 
-  /* 主內容區微調 */
   .profile-main-content {
     padding: 24px 16px;
   }
 
-  /* 作品展示：手機版改為雙欄網格 */
   .portfolio-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 
-  /* 徵稿/販售項目：手機版瀑布流改為雙欄 */
   .masonry-grid {
     column-count: 2;
     column-gap: 12px;
@@ -656,7 +647,6 @@
   }
 }
 
-/* 針對小螢幕 (如 iPhone SE) 進一步優化 */
 @media (max-width: 500px) {
   .sidebar-top {
     padding: 0 16px;
@@ -683,8 +673,7 @@
   }
 }
 
-/* 針對文字頁面區塊的間距優化 */
   .rich-text-content {
-    padding: 24px 16px; /* 大幅縮小左右內距，讓文字展開 */
-    border-radius: 20px; /* 稍微縮小圓角以符合手機版比例 */
+    padding: 24px 16px; 
+    border-radius: 20px;
   }
