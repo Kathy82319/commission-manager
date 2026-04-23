@@ -9,8 +9,9 @@ interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
+// 🌟 修正點 1：強化解碼防禦，防止 undefined 或 null 導致渲染崩潰
 const decodeHTML = (html?: string) => {
-  if (!html) return '';
+  if (!html || typeof html !== 'string') return ''; 
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
@@ -21,7 +22,8 @@ interface ProfileSettings {
   detailed_intro: string;
   process: string;
   payment: string;
-  custom_sections: { id: string; title: string; content: string }[];
+  // 配合數據庫結構，id 改為選擇性
+  custom_sections: { id?: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
   splash_enabled?: boolean;
@@ -172,21 +174,15 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  const displayShowcaseItems = useMemo(() => {
-    return showcaseItems;
-  }, [showcaseItems]);
-
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    displayShowcaseItems.forEach(item => {
+    showcaseItems.forEach(item => {
       if (Array.isArray(item.tags)) {
-        item.tags.forEach(t => {
-          if (t) tags.add(t);
-        });
+        item.tags.forEach(t => { if (t) tags.add(t); });
       }
     });
     return ['全部', ...Array.from(tags)];
-  }, [displayShowcaseItems]);
+  }, [showcaseItems]);
 
   const handleTagClick = (tag: string) => {
     setSelectedTags(prev => {
@@ -201,30 +197,36 @@ export function PublicProfile() {
   };
 
   const filteredShowcaseItems = useMemo(() => {
-    if (selectedTags.includes('全部')) return displayShowcaseItems;
-    return displayShowcaseItems.filter(item => 
+    if (selectedTags.includes('全部')) return showcaseItems;
+    return showcaseItems.filter(item => 
       Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
     );
-  }, [displayShowcaseItems, selectedTags]);
+  }, [showcaseItems, selectedTags]);
 
+  // 🌟 修正點 2：availableTabs 徹底移除 rules，並修正自定義分頁 ID 同步
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    if (!isHidden('showcase') && displayShowcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
+    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
-    if (settings.custom_sections) {
-      settings.custom_sections.forEach(sec => {
-        if (!isHidden(sec.id) && sec.content) tabs.push({ id: sec.id, label: sec.title || '未命名區塊' });
+    // 依要求：不顯示 'rules' 標籤
+
+    if (Array.isArray(settings.custom_sections)) {
+      settings.custom_sections.forEach((sec, index) => {
+        const generatedId = `custom_${index}`; // 同步後台邏輯
+        if (!isHidden(generatedId) && sec.content) {
+          tabs.push({ id: generatedId, label: sec.title || `區塊 ${index + 1}` });
+        }
       });
     }
     return tabs;
-  }, [settings, displayShowcaseItems]);
+  }, [settings, showcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
   const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
@@ -250,10 +252,7 @@ export function PublicProfile() {
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
 
   return (
-    <div 
-      className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`}
-      style={backgroundStyle} 
-    >
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={backgroundStyle}>
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
           <div className="splash-box">
@@ -320,11 +319,7 @@ export function PublicProfile() {
                       {availableTags.map(tag => {
                         const isSelected = selectedTags.includes(tag);
                         return (
-                          <button 
-                            key={tag} 
-                            className={`tag-btn ${isSelected ? 'active' : ''}`} 
-                            onClick={() => handleTagClick(tag)}
-                          >
+                          <button key={tag} className={`tag-btn ${isSelected ? 'active' : ''}`} onClick={() => handleTagClick(tag)}>
                             {tag}
                           </button>
                         );
@@ -358,17 +353,20 @@ export function PublicProfile() {
                 </div>
               )}
               
+              {/* 🌟 修正點 3：渲染邏輯排除 rules */}
               {['detailed_intro', 'process', 'payment'].includes(currentTab) && settings && (
                 <div className="rich-text-content" 
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
               )}
 
-              {settings?.custom_sections?.map(sec => 
-                currentTab === sec.id && (
-                  <div key={sec.id} className="rich-text-content" 
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content)) }} />
-                )
-              )}
+              {/* 🌟 修正點 4：自定義分頁渲染同步 ID */}
+              {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec, index) => {
+                const generatedId = `custom_${index}`;
+                return currentTab === generatedId && (
+                  <div key={generatedId} className="rich-text-content" 
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content || '')) }} />
+                );
+              })}
             </div>
 
             <footer className="profile-internal-footer">
@@ -388,13 +386,12 @@ export function PublicProfile() {
         </main>
       </div>
 
+      {/* Lightbox Modals 保持不變 ... */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            <div className="showcase-cover">
-              <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
-            </div>
+            <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
             <div className="showcase-details">
               <div className="showcase-header">
                 <h2>{selectedShowcase.title}</h2>
