@@ -61,29 +61,30 @@
   border-bottom: 1px solid #F0ECE7;
 }
 
-.sidebar-nav {
+.app-sidebar .sidebar-nav {
   flex: 1;
   padding: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 強制覆蓋，確保維持直向排列 */
   gap: 8px;
   overflow-y: auto;
 }
 
-.nav-link {
+.app-sidebar .nav-link {
   text-decoration: none;
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 15px;
   color: #7A7269;
   transition: background-color 0.2s, color 0.2s;
+  display: block; /* 確保直向排列時佔滿寬度 */
 }
 
-.nav-link:hover {
+.app-sidebar .nav-link:hover {
   background-color: #FBFBF9;
 }
 
-.nav-link.active {
+.app-sidebar .nav-link.active {
   background-color: #F4F0EB;
   color: #5D4A3E;
   font-weight: bold;
