@@ -317,24 +317,54 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
-      {/* 🌟 插入局部樣式修正分頁問題 */}
       <style>{`
+        /* 手機版樣式保持 */
         @media (max-width: 1024px) {
           .notebook-page .scroll-tabs .tab-btn.active {
-            background-color: #5D4A3E !important; /* 強制咖啡色背景 */
-            color: #FFFFFF !important;           /* 強制文字白色 */
-            border-radius: 20px !important;      /* 確保膠囊外觀 */
-            border: none !important;
+            background-color: #5D4A3E; 
+            color: #FFFFFF;          
+            border-radius: 20px;     
+            border: none;
           }
           .notebook-page .scroll-tabs .tab-btn.active .tab-text {
-            color: #FFFFFF !important;
+            color: #FFFFFF;
             position: relative;
             z-index: 5;
           }
-          /* 防止可能的偽元素遮擋 */
           .notebook-page .scroll-tabs .tab-btn.active::before,
           .notebook-page .scroll-tabs .tab-btn.active::after {
-            display: none !important;
+            display: none;
+          }
+        }
+
+        /* 🌟 電腦版寬度與拉軸修正 */
+        @media (min-width: 1025px) {
+          .notebook-container {
+            max-width: 1300px !important; /* 加寬主容器 */
+            width: 95%;
+            margin: 0 auto;
+            display: flex;
+            height: calc(100vh - 120px); /* 讓高度固定，內部長內容才捲動 */
+            overflow: hidden; /* 防止外層出現橫向拉軸 */
+          }
+          .notebook-sidebar {
+            width: 350px !important; /* 固定寬度，不隨內容擠壓 */
+            flex-shrink: 0;
+            border-right: 1px solid #EAE6E1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+          .sidebar-list-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden !important; /* 徹底殺掉側邊欄的橫向拉軸 */
+            padding: 16px;
+          }
+          .notebook-main {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #FDFDFB;
           }
         }
       `}</style>
@@ -356,9 +386,8 @@ export function ClientOrders() {
       )}
 
       <div className="notebook-container">
-        
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderRadius: '16px 16px 0 0' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
             <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
               <option value="all">全部</option><option value="working">進行中</option><option value="completed">已結單</option>
@@ -409,13 +438,9 @@ export function ClientOrders() {
           {!selectedOrder ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#A0978D', fontSize: '16px', padding: '40px' }}>請從列表選擇一張委託單以檢視詳情</div> : (
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               
-              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
+              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
                 <div style={{ flex: '1 1 250px' }}>
-                  
-                  <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
-                    ⬅ 返回列表
-                  </button>
-
+                  <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   <div style={{ color: '#7A7269', fontSize: '13px', marginBottom: '4px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
                   <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
@@ -453,10 +478,9 @@ export function ClientOrders() {
                 </button>
               </div>
 
-              <div className="tab-content-area">
+              <div className="tab-content-area" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
-                    
                     <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

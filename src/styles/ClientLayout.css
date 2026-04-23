@@ -14,11 +14,12 @@
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.08);
+  /* 如果不跟著跑，其實可以拿掉模糊效果，或者保留作為設計風格 */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
+  /* --- 修正處：改為 relative 讓它隨捲動往上捲走 --- */
+  position: relative; 
   z-index: 100;
 }
 
@@ -39,8 +40,6 @@
   gap: 20px;
   align-items: center;
 }
-
-/* 已清除漢堡選單的無用樣式 */
 
 .switch-btn {
   background: none;
@@ -111,9 +110,7 @@
   color: #FFFFFF;
 }
 
-/* 僅針對手機版的修改 */
 @media (max-width: 768px) {
-  /* 在手機版幫按鈕加個外框背景，避免誤觸，並微調大小適應螢幕 */
   .switch-btn {
     background: rgba(250, 204, 21, 0.15);
     border: 1px solid rgba(250, 204, 21, 0.3);
@@ -131,4 +128,3 @@
     padding: 24px;
   }
 }
-
