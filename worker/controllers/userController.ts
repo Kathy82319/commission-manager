@@ -1,10 +1,8 @@
+// worker/controllers/userController.ts
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
 export const userController = {
-  /**
-   * 取得使用者資料 (GET /api/users/:id)
-   */
   async getUser(userIdParam: string, currentUserId: string | null, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const isMe = userIdParam === "me" || userIdParam === currentUserId;
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
@@ -90,20 +88,20 @@ export const userController = {
 
       if (user.plan_type === 'trial') {
         maxQuota = 20; 
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?) AND datetime(order_date) <= datetime(?)").bind(user.id, user.trial_start_at, user.trial_end_at).all();
+        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(user.id).all();
         usedQuota = countRes[0].count as number;
       } else if (user.plan_type === 'pro') {
         maxQuota = -1; 
       } else {
-        maxQuota = 3; 
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ? AND datetime(order_date) >= datetime(?)").bind(user.id, startOfMonth).all();
+        maxQuota = 20; // 根據討論，免費版暫定 20 上限
+        const { results: countRes } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Commissions WHERE artist_id = ?").bind(user.id).all();
         usedQuota = countRes[0].count as number;
       }
 
       user.used_quota = usedQuota;
       user.max_quota = maxQuota;
     } else {
+      // 公開頁面依舊維持顯示裁切邏輯，確保資安，但不影響資料庫寫入
       if (user.plan_type === 'free' && user.profile_settings) {
         try {
           const settings = JSON.parse(user.profile_settings);
@@ -118,9 +116,6 @@ export const userController = {
     return new Response(JSON.stringify({ success: true, data: user }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 更新使用者設定 (PATCH /api/users/:id)
-   */
   async updateUser(request: Request, userIdParam: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
 
@@ -141,13 +136,18 @@ export const userController = {
       settings = {};
     }
 
-    if (userPlan === 'free') {
-      if (Array.isArray(settings.portfolio) && settings.portfolio.length > 6) {
-        settings.portfolio = settings.portfolio.slice(0, 6);
+    // 嚴格配額攔截 (不裁切，超額則拒絕寫入)
+    const limits: Record<string, number> = { free: 6, trial: 20, pro: 30 };
+    const currentLimit = limits[userPlan as string] || 6;
+
+    if (Array.isArray(settings.portfolio)) {
+      // 系統極限保護 (防止惡意注入)
+      if (settings.portfolio.length > 40) {
+        return new Response(JSON.stringify({ success: false, error: "系統容量極限為 40 張" }), { status: 403, headers: corsHeaders });
       }
-    } else if (userPlan === 'trial') {
-      if (Array.isArray(settings.portfolio) && settings.portfolio.length > 20) {
-        settings.portfolio = settings.portfolio.slice(0, 20);
+      // 方案上限攔截
+      if (settings.portfolio.length > currentLimit) {
+        return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
       }
     }
 
@@ -201,9 +201,6 @@ export const userController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 停用/刪除帳號 (DELETE /api/users/me)
-   */
   async deleteUser(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     await env.commission_db.prepare(`
       UPDATE Users 
@@ -224,9 +221,6 @@ export const userController = {
     });
   },
 
-  /**
-   * 完成初始設定 (POST /api/users/me/complete-onboarding)
-   */
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
     const newRole = body.role === 'artist' ? 'artist' : 'client';

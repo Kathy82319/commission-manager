@@ -45,9 +45,10 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
+  // 1. 修正配額限制邏輯 (免費6, 試用20, 專業30)
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
-    if (quotaInfo?.plan_type === 'trial') return 10;
+    if (quotaInfo?.plan_type === 'trial') return 20;
     return 6; 
   }, [quotaInfo]);
 
@@ -90,9 +91,10 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     setIsUploading(true);
     try {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
+      const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: 'cover.jpg', folder: 'showcase' }) 
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `cover.${fileExt}`, folder: 'showcase' }) 
       });
       const ticketData = await ticketRes.json();
       if (!ticketData.success) throw new Error(ticketData.error || "無法取得通行證");
@@ -127,8 +129,9 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
       onToast("免費版無法新增項目，請升級專業版以解除限制。", "err");
       return;
     }
+    // 前端配額檢查
     if (items.length >= limit) {
-      onToast(`已達到當前方案的展示上限 (${limit} 個)`, "err");
+      onToast("免費版本已達上限", "err");
       return;
     }
     setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1 });
@@ -137,7 +140,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   const openEditForm = (item: ShowcaseItem) => {
     if (isReadOnly) {
-      onToast("免費版無法編輯現有項目。", "err");
+      onToast("目前為唯讀模式，無法編輯現有項目。", "err");
       return;
     }
     setEditingItem(item);
@@ -149,6 +152,13 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
       onToast("目前為唯讀模式，無法儲存變更。", "err");
       return;
     }
+
+    // 2. 修正：寫入前的最終配額攔截 (僅限新增時)
+    if (!editingItem.id && items.length >= limit) {
+      onToast("免費版本已達上限", "err");
+      return;
+    }
+
     if (!editingItem.title || !editingItem.cover_url) {
       onToast("請填寫品名並上傳封面圖", "err");
       return;
@@ -163,12 +173,14 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         body: JSON.stringify(editingItem)
       });
       const data = await res.json();
+      
       if (data.success) {
         onToast("項目儲存成功", "ok");
         setIsFormOpen(false);
         fetchItems();
       } else {
-        onToast("儲存失敗: " + data.error, "err");
+        // 3. 修正：對接後端具體的錯誤攔截訊息
+        onToast(data.error || "儲存失敗", "err");
       }
     } catch (error) {
       onToast("系統連線發生錯誤", "err");
@@ -270,6 +282,14 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* 4. 修正：新增公開狀態提示區塊 */}
+      {!isFormOpen && (
+        <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
+          📢 目前您的方案僅公開前 6 項項目。 (目前數量: {items.length} / 配額: {limit})
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0 }}>
           徵稿/販售區管理 
@@ -277,10 +297,21 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             ({items.length} / {limit})
           </span>
         </h3>
-        {/* 唯讀模式下隱藏新增按鈕 */}
         {!isReadOnly && (
-          <button onClick={openNewForm} style={{ padding: '10px 20px', background: items.length >= limit ? '#C4BDB5' : '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-            + 新增項目
+          <button 
+            onClick={openNewForm} 
+            disabled={items.length >= limit}
+            style={{ 
+              padding: '10px 20px', 
+              background: items.length >= limit ? '#C4BDB5' : '#5D4A3E', 
+              color: '#FFF', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: items.length >= limit ? 'not-allowed' : 'pointer', 
+              fontWeight: 'bold' 
+            }}
+          >
+            {items.length >= limit ? '已達上限' : '+ 新增項目'}
           </button>
         )}
       </div>
@@ -293,12 +324,20 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {items.map(item => (
-            <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column' }}>
+          {items.map((item, index) => (
+            <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              
+              {/* 公開中標籤 (前6名) */}
+              {index < 6 && (
+                <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  公開展示中
+                </div>
+              )}
+
               <div style={{ height: '180px', background: '#F4F0EB', position: 'relative' }}>
                 <img src={item.cover_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 {!item.is_active && (
-                  <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', color: '#FFF', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已隱藏</div>
+                  <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>已手動隱藏</div>
                 )}
               </div>
               <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -311,7 +350,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                 </div>
               </div>
               <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
-                {/* 唯讀模式下隱藏編輯按鈕，僅保留刪除 */}
                 {!isReadOnly && (
                   <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', transition: 'background 0.2s' }}>編輯</button>
                 )}

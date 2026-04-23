@@ -1,7 +1,7 @@
+// worker/controllers/showcaseController.ts
 import { Env } from "../shared/types";
 
 export const showcaseController = {
-
   async getPublicList(identifier: string, env: Env, headers: any) {
     const user = await env.commission_db
       .prepare("SELECT id, plan_type FROM Users WHERE id = ? OR public_id = ?")
@@ -12,8 +12,8 @@ export const showcaseController = {
       return new Response(JSON.stringify({ success: true, data: [] }), { headers });
     }
 
+    // 資安強化：針對免費版用戶落實後端物理裁切 (LIMIT 6)
     let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
-    
     if (user.plan_type === 'free') {
       query += " LIMIT 6";
     }
@@ -47,8 +47,9 @@ export const showcaseController = {
 
     const totalCount = (countRes[0]?.total as number) || 0;
 
+    // 後端配額守衛：免費版展示項目上限設為 6 筆
     if (user?.plan_type === 'free' && totalCount >= 6) {
-      return new Response(JSON.stringify({ success: false, error: "發現bug不要太超過><" }), { status: 403, headers });
+      return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers });
     }
 
     const body: any = await request.json();

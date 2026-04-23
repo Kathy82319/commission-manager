@@ -42,6 +42,7 @@ export function Settings() {
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   
+  const [isLoading, setIsLoading] = useState(true); // 新增載入狀態控制
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
@@ -116,8 +117,16 @@ export function Settings() {
   }, [settings.custom_sections]);
 
   const fetchUserData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
+      
+      // 資安強化：處理 Session 過期
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
       const data = await res.json();
       if (data.success && data.data) {
         setFormData({
@@ -141,6 +150,8 @@ export function Settings() {
       }
     } catch (error) {
       console.error("讀取設定失敗", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [API_BASE]);
 
@@ -160,11 +171,18 @@ export function Settings() {
           profile_settings: JSON.stringify(settings)
         })
       });
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
       } else {
-        showToast('儲存失敗：' + data.error, 'err');
+        // 對接後端「免費版本已達上限」等錯誤訊息
+        showToast(data.error || '儲存失敗', 'err');
       }
     } catch (error) {
       showToast('系統發生錯誤', 'err');
@@ -189,6 +207,8 @@ export function Settings() {
   
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
+
+  if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
   return (
     <div className="settings-page">
@@ -303,7 +323,7 @@ export function Settings() {
             )}
             
             {activeTab === 'portfolio' && (
-              <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} />
+              <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} quotaInfo={quotaInfo} />
             )}
             
             {activeTab === 'subscription' && (

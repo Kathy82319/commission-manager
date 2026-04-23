@@ -1,3 +1,4 @@
+// worker/controllers/commController.ts
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
@@ -29,7 +30,7 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
     `).bind(newId, artistId, clientId, clientPublicId, safeDisplayName).run();
     
   } catch (err) {
-    console.error(err);
+    console.error("CRM 同步靜默失敗:", err);
   }
 }
 
@@ -93,8 +94,9 @@ export const commController = {
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
 
-    if (user.plan_type === 'free' && totalCount >= 20) {
-      return new Response(JSON.stringify({ success: false, error: "發現bug不要太超過><" }), { status: 403, headers: corsHeaders });
+    // 後端配額守衛：非專業版用戶上限設為 20 筆
+    if (user.plan_type !== 'pro' && totalCount >= 20) {
+      return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
     }
 
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -108,7 +110,7 @@ export const commController = {
     if (recentCount >= 5) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: "系統偵測到異常的建單頻率，為保護伺服器資源，請稍後再試。" 
+        error: "系統偵測到異常的建單頻率，請稍後再試。" 
       }), { status: 429, headers: corsHeaders });
     }
 
