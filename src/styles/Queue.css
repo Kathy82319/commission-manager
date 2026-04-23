@@ -119,7 +119,10 @@
 
 .rush-badge { background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; white-space: nowrap; }
 
-.date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; height: 38px; }
+/* 🌟 全域/網頁版預設顯示邏輯 */
+.date-text-display { display: none; }
+.date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; height: 38px; display: block; width: 100%; box-sizing: border-box; }
+
 .payment-select { padding: 8px 12px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; height: 38px; }
 .note-input { border: none; border-bottom: 1px solid #EAE6E1; background: transparent; outline: none; padding: 4px 0; color: #5D4A3E; width: 100%; min-width: 100px; }
 
@@ -149,7 +152,9 @@
   flex-grow: 1;
 }
 
-
+/* ========================================================= */
+/* 🌟 手機版樣式區塊 (@media max-width: 1023px) */
+/* ========================================================= */
 @media (max-width: 1023px) {
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   
@@ -201,8 +206,9 @@
   .queue-hide-mobile { display: none !important; }
   .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
 
-
-  
+  /* --------------------------------------------------------- */
+  /* [手機版] "未展開" 狀態的顯示邏輯 */
+  /* --------------------------------------------------------- */
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
   .queue-table tr:not(.is-expanded) .client-details-extra {
@@ -239,7 +245,10 @@
   .queue-table tr:not(.is-expanded) .dropdown-arrow,
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; }
   
-  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] span {
+  /* 🌟 手機版未展開：隱藏日曆 input，顯示純文字，且隱藏括號真名 */
+  .queue-table tr:not(.is-expanded) .date-input { display: none !important; }
+  .queue-table tr:not(.is-expanded) .client-real-name { display: none; }
+  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] .date-text-display {
     font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%; display: block;
   }
 
@@ -247,7 +256,9 @@
     appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
 
-  
+  /* --------------------------------------------------------- */
+  /* [手機版] "已展開" 狀態的顯示邏輯 */
+  /* --------------------------------------------------------- */
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
@@ -281,10 +292,13 @@
   .queue-table tr.is-expanded td[data-label="備註欄位"],
   .queue-table tr.is-expanded td[data-label="操作管理"] { grid-column: 1 / -1; }
 
+  /* 🌟 手機版展開：隱藏純文字，顯示日曆 input */
+  .queue-table tr.is-expanded .date-text-display { display: none !important; }
+  
   .queue-table tr.is-expanded .dropdown-button,
   .queue-table tr.is-expanded .date-input,
   .queue-table tr.is-expanded .payment-select {
-    width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3; background: #FBFBF9;
+    width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3; background: #FBFBF9; display: block !important;
   }
   
   .queue-table tr.is-expanded .workflow-badge-wrapper { position: relative; bottom: auto; display: block; margin-bottom: 4px; }

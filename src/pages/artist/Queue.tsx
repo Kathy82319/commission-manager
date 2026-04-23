@@ -1,4 +1,3 @@
-// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical } from 'lucide-react';
@@ -209,15 +208,13 @@ export function Queue() {
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
-                      {isExpanded && <strong>委託人：</strong>}
-                      <span style={{ fontWeight: !isExpanded ? 'bold' : 'normal' }}>
+                      {/* 🌟 移除委託人字樣，單純顯示名字與真名 */}
+                      <span style={{ fontWeight: 'bold' }}>
                         {order.contact_memo || '未命名'}
                       </span>
-                      {isExpanded && (
-                        <span style={{ color: '#A0978D', marginLeft: '3px' }}>
-                          ({order.client_name || '無暱稱'} )  
-                        </span>
-                      )}
+                      <span className="client-real-name" style={{ color: '#A0978D', marginLeft: '4px' }}>
+                        ({order.client_name || '無暱稱'})  
+                      </span>
                     </div>
                     <div className="client-details-extra">
                       <div style={{ fontSize: '13px', color: '#7A7269' }}>
@@ -250,13 +247,16 @@ export function Queue() {
                 </td>
                 <td data-label="預計完工">
                   <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
-                    {!isExpanded ? (
-                      <span style={{ color: '#A0978D', fontSize: '12px', fontWeight: 'bold' }}>
-                        {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
-                      </span>
-                    ) : (
-                      <input type="date" defaultValue={order.end_date} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
-                    )}
+                    {/* 🌟 同時渲染這兩個，交給 CSS 控制顯示時機 */}
+                    <span className="date-text-display">
+                      {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
+                    </span>
+                    <input 
+                      type="date" 
+                      defaultValue={order.end_date} 
+                      onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} 
+                      className="date-input" 
+                    />
                   </div>
                 </td>
                 <td data-label="付款進度">
