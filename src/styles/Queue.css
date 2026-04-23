@@ -62,6 +62,9 @@
     text-align: left; background-color: #FBFBF9;
     color: #7A7269; font-size: 13px;
   }
+  
+  /* 確保電腦版第一欄寬度不受移除行內樣式影響 */
+  .queue-table th:first-child { width: 100px; }
 
   .queue-table td {
     padding: 15px 12px;
@@ -123,8 +126,6 @@
 
 .manage-button { padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
 
-
-
 .client-name-row { font-size: 15px; font-weight: bold; color: #5D4A3E; margin-bottom: 4px; }
 .client-sub-text { font-size: 13px; color: #A0978D; font-weight: normal; margin-left: 5px; }
 .project-name-row { font-size: 14px; color: #7A7269; }
@@ -132,14 +133,12 @@
 
 .drag-handle { cursor: grab; color: #C4BDB5; padding-right: 12px; }
 
-/* 黑名單標籤懸停效果[cite: 2] */
 .queue-blacklist-tag:hover {
   filter: brightness(1.2);
   transform: scale(1.05);
   transition: all 0.2s ease-in-out;
 }
 
-/* 確保備註欄位容器可以容納標籤與 input[cite: 2] */
 .cell-note {
   display: flex;
   align-items: center;
@@ -155,31 +154,34 @@
    手機與平板版響應式設計 (Max Width: 1023px) 
    ========================================= */
 @media (max-width: 1023px) {
-  /* --- 頂部控制列 --- */
-  .queue-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .queue-controls { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
-  .queue-search, .queue-select { max-width: 100%; width: 100%; box-sizing: border-box; }
+  .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  
+  /* 搜尋框與篩選列水平排列 */
+  .queue-controls { flex-direction: row; align-items: center; width: 100%; gap: 8px; flex-wrap: nowrap; }
+  .queue-search { flex: 1; min-width: 0; box-sizing: border-box; }
+  .queue-select { width: auto; flex-shrink: 0; box-sizing: border-box; }
 
-  /* --- 恢復標題列 (Thead) --- */
+  /* --- 恢復標題列 (Thead) 並設定網格對齊 --- */
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    /* 5 欄配置：日期 | 委託人(自動伸展) | 進度 | 完工 | 收款 */
-    grid-template-columns: 40px 1fr 65px 40px 50px;
+    /* 5 欄配置：微調各欄位寬度以確保不重疊 */
+    grid-template-columns: 42px 1fr 75px 42px 50px;
     gap: 4px;
-    padding: 0 12px;
+    padding: 0 10px; /* 必須與 tbody 內距相同才能上下對齊 */
     border: none;
     background: transparent;
   }
   .queue-table th {
-    padding: 0;
+    padding: 0 !important; /* 蓋掉桌機版的寬內距 */
     font-size: 11px;
     color: #A0978D;
     text-align: center;
     border: none;
     background: transparent;
+    width: auto !important; /* 確保不被行內樣式干擾 */
   }
-  .queue-table th:nth-child(2) { text-align: left; padding-left: 4px; } /* 委託人標題靠左 */
+  .queue-table th:nth-child(2) { text-align: left; padding-left: 4px; }
 
   /* --- 基本表格容器 --- */
   .queue-table, .queue-table tbody { display: block; width: 100%; box-sizing: border-box; }
@@ -187,21 +189,19 @@
   /* --- 卡片網格佈局 (單行摘要列) --- */
   .queue-table tbody tr {
     display: grid;
-    /* 與 Thead 完全相同的 5 欄配置，確保對齊 */
-    grid-template-columns: 40px 1fr 65px 40px 50px; 
+    grid-template-columns: 42px 1fr 75px 42px 50px; 
     gap: 4px;
     align-items: center;
     margin-bottom: 8px;
     border: 1px solid #EAE6E1;
     border-radius: 8px;
-    padding: 10px 8px;
+    padding: 10px;
     background: #FFF;
     box-shadow: 0 2px 8px rgba(93, 74, 62, 0.04);
     cursor: pointer;
     transition: all 0.3s ease;
   }
 
-  /* 隱藏拖曳把手與不必要的欄位 */
   .desktop-only { display: none !important; }
   .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
 
@@ -209,20 +209,17 @@
      狀態 A：未展開 (單行摘要模式)
      ======================================= */
   
-  /* 隱藏下方編輯區域 */
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
   .queue-table tr:not(.is-expanded) .client-details-extra {
     display: none;
   }
 
-  /* 封鎖點擊事件 */
   .queue-table tr:not(.is-expanded) .cell-content,
   .queue-table tr:not(.is-expanded) .cell-content-right { 
     pointer-events: none; width: 100%; align-items: center; justify-content: center;
   }
 
-  /* 限制委託人名字過長自動換行，不撐破網格 */
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] { 
     min-width: 0; padding: 0 4px; align-items: flex-start;
   }
@@ -230,15 +227,12 @@
     width: 100%; word-break: break-all; white-space: normal; line-height: 1.3;
   }
 
-  /* 隱藏預設標籤 */
   .queue-table tr:not(.is-expanded) td::before { display: none; }
   
-  /* 日期文字 */
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
     font-size: 11px; font-weight: bold; color: #7A7269; text-align: center;
   }
 
-  /* 樣式簡化：讓輸入框看起來像純文字或小標籤 */
   .queue-table tr:not(.is-expanded) .dropdown-button {
     min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: #F4F0EB; font-size: 11px; width: 100%; justify-content: center; text-align: center;
   }
@@ -249,7 +243,6 @@
     border: none; background: transparent; padding: 0; height: auto; color: #A0978D; font-size: 11px; text-align: center; width: 100%;
   }
 
-  /* 付款進度變小膠囊 */
   .queue-table tr:not(.is-expanded) .payment-select {
     appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
@@ -259,7 +252,6 @@
      ======================================= */
   
   .queue-table tbody tr.is-expanded {
-    /* 展開時改變網格，變成兩欄表單 */
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     padding: 16px;
@@ -273,15 +265,13 @@
     width: 100%; pointer-events: auto; align-items: flex-start;
   }
 
-  /* 展開狀態下恢復顯示標籤標題 */
   .queue-table tr.is-expanded td::before {
     content: attr(data-label); font-size: 12px; color: #A0978D; margin-bottom: 6px; display: block; font-weight: bold; text-align: left; width: 100%;
   }
   .queue-table tr.is-expanded td[data-label="委託人資訊"]::before,
   .queue-table tr.is-expanded td[data-label="日期"]::before { display: none; }
 
-  /* 網格位置分配 (展開狀態) */
-  .queue-table tr.is-expanded td[data-label="日期"] { display: none; /* 展開後不需看大日期 */ }
+  .queue-table tr.is-expanded td[data-label="日期"] { display: none; }
   
   .queue-table tr.is-expanded td[data-label="委託人資訊"] { 
     grid-column: 1 / -1; padding-bottom: 12px; border-bottom: 1px dashed #F0ECE7; margin-bottom: 4px;
@@ -294,7 +284,6 @@
   .queue-table tr.is-expanded td[data-label="備註欄位"],
   .queue-table tr.is-expanded td[data-label="操作管理"] { grid-column: 1 / -1; }
 
-  /* 恢復輸入框滿版樣式 */
   .queue-table tr.is-expanded .dropdown-button,
   .queue-table tr.is-expanded .date-input,
   .queue-table tr.is-expanded .payment-select {
