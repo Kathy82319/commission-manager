@@ -8,6 +8,14 @@ interface Props {
 export function ThemeTab({ settings, setSettings }: Props) {
   const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`;
 
+  const updateTheme = (updates: Partial<ProfileSettings>) => {
+    setSettings(prev => ({
+      ...prev,
+      ...updates,
+      gradient_enabled: true 
+    }));
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
@@ -17,26 +25,25 @@ export function ThemeTab({ settings, setSettings }: Props) {
           <input 
             type="color" 
             value={settings.background_color || '#F4F0EB'} 
-            onChange={e => setSettings({...settings, background_color: e.target.value})}
+            onChange={e => updateTheme({ background_color: e.target.value })}
             style={{ width: '50px', height: '50px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
           />
           <input 
             className="form-input" 
             value={settings.background_color || '#F4F0EB'} 
-            onChange={e => setSettings({...settings, background_color: e.target.value})}
+            onChange={e => updateTheme({ background_color: e.target.value })}
             placeholder="#HEXCODE"
             style={{ width: '120px' }}
           />
         </div>
       </div>
 
-      {/* 漸層設定區塊 (移除啟用開關與第二顏色，只保留方向設定) */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>漸層方向</label>
         <select 
           value={settings.gradient_direction || 'to bottom right'} 
-          onChange={(e) => setSettings({ ...settings, gradient_direction: e.target.value })}
-          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none' }}
+          onChange={(e) => updateTheme({ gradient_direction: e.target.value })}
+          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', background: '#FFF' }}
         >
           <option value="to bottom right">對角線 (左上到右下)</option>
           <option value="to right">由左至右</option>
@@ -46,18 +53,17 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </select>
       </div>
 
-      {/* 介面文字對比模式區塊 */}
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>介面文字對比模式</label>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
-            onClick={() => setSettings({...settings, theme_mode: 'light'})}
+            onClick={() => updateTheme({ theme_mode: 'light' })}
             style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'light' ? '2px solid #5D4A3E' : '1px solid #DED9D3', background: '#FFF', color: '#333', fontWeight: 'bold', cursor: 'pointer' }}
           >
             深色文字 (適合淺色背景)
           </button>
           <button 
-            onClick={() => setSettings({...settings, theme_mode: 'dark'})}
+            onClick={() => updateTheme({ theme_mode: 'dark' })}
             style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'dark' ? '2px solid #A67B3E' : '1px solid #DED9D3', background: '#333', color: '#FFF', fontWeight: 'bold', cursor: 'pointer' }}
           >
             淺色文字 (適合深色背景)
@@ -65,7 +71,6 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      {/* 漸層背景預覽區塊 - 已套用真實邏輯 */}
       <div style={{ 
         padding: '40px 24px', 
         borderRadius: '12px', 
