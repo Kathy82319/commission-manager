@@ -532,6 +532,7 @@
     width: 100%;
     height: auto;
     position: relative;
+    padding-top: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
 
