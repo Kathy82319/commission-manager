@@ -155,7 +155,6 @@
 @media (max-width: 1023px) {
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   
-  /* 搜尋框與篩選列水平排列 */
   .queue-controls { flex-direction: row; align-items: center; width: 100%; gap: 8px; flex-wrap: nowrap; }
   .queue-search { flex: 1; min-width: 0; box-sizing: border-box; }
   .queue-select { width: auto; flex-shrink: 0; box-sizing: border-box; }
@@ -164,23 +163,28 @@
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    /* 5 欄精準配置對齊 (日期 | 委託人 | 進度 | 完工 | 收款) */
-    grid-template-columns: 45px 1fr 75px 45px 50px;
+    /* 5 欄配置：微調各欄位寬度以確保不重疊 */
+    grid-template-columns: 40px 1fr 75px 46px 48px;
     gap: 4px;
-    padding: 0 10px; /* 與 tbody 的左右 padding 完全一致 */
+    padding: 0 10px;
     border: none;
     background: transparent;
   }
+
+  /* 🌟 精準控制各個標題的對齊方向 */
   .queue-table th {
     padding: 0 !important;
     font-size: 11px;
     color: #A0978D;
-    text-align: center;
     border: none;
     background: transparent;
     width: auto !important; 
   }
-  .queue-table th:nth-child(2) { text-align: left; padding-left: 4px; } /* 委託人標題靠左 */
+  .queue-table th:nth-child(1) { text-align: left; } /* 日期靠左 */
+  .queue-table th:nth-child(2) { text-align: left; padding-left: 2px; } /* 委託人靠左 */
+  .queue-table th:nth-child(3) { text-align: center; } /* 進度置中 */
+  .queue-table th:nth-child(4) { text-align: center; } /* 完工置中 */
+  .queue-table th:nth-child(5) { text-align: center; } /* 收款置中 */
 
   /* --- 基本表格容器 --- */
   .queue-table, .queue-table tbody { display: block; width: 100%; box-sizing: border-box; }
@@ -188,8 +192,8 @@
   /* --- 卡片網格佈局 (單行摘要列) --- */
   .queue-table tbody tr {
     display: grid;
-    /* 與 Thead 的 5 欄配置必須 100% 相同 */
-    grid-template-columns: 45px 1fr 75px 45px 50px; 
+    /* 必須與 Thead 寬度完全一致 */
+    grid-template-columns: 40px 1fr 75px 46px 48px; 
     gap: 4px;
     align-items: center;
     margin-bottom: 8px;
@@ -202,7 +206,6 @@
     transition: all 0.3s ease;
   }
 
-  /* 專屬隱藏類別 (取代原本的 desktop-only 以免全域衝突) */
   .queue-hide-mobile { display: none !important; }
   .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
 
@@ -216,12 +219,17 @@
     display: none;
   }
 
-  /* 取消內部元素的固定寬度，釋放空間給網格系統 */
   .queue-table tr:not(.is-expanded) .cell-content,
   .queue-table tr:not(.is-expanded) .cell-content-right { 
     pointer-events: none; width: 100%; align-items: center; justify-content: center;
   }
-  .queue-table tr:not(.is-expanded) .cell-date { min-width: 0; }
+
+  /* 🌟 精準控制內容格子的對齊，呼應標題的排版 */
+  .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-content { justify-content: flex-start; }
+  .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] .cell-content-right { justify-content: flex-start; }
+  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { justify-content: center; }
+  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] .cell-content { justify-content: center; }
+  .queue-table tr:not(.is-expanded) td[data-label="付款進度"] .cell-content { justify-content: center; }
 
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] { 
     min-width: 0; padding: 0 4px; align-items: flex-start; justify-content: center;
@@ -232,8 +240,9 @@
 
   .queue-table tr:not(.is-expanded) td::before { display: none; }
   
+  /* 日期文字靠左 */
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
-    font-size: 11px; font-weight: bold; color: #7A7269; text-align: center;
+    font-size: 11px; font-weight: bold; color: #7A7269; text-align: left; width: 100%;
   }
 
   .queue-table tr:not(.is-expanded) .dropdown-button {
@@ -242,8 +251,9 @@
   .queue-table tr:not(.is-expanded) .dropdown-arrow,
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; }
   
-  .queue-table tr:not(.is-expanded) .date-input {
-    border: none; background: transparent; padding: 0; height: auto; color: #A0978D; font-size: 11px; text-align: center; width: 100%;
+  /* 完工日期強制置中並撐滿格寬 */
+  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] span {
+    font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%; display: block;
   }
 
   .queue-table tr:not(.is-expanded) .payment-select {
