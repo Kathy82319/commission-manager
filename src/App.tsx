@@ -13,8 +13,8 @@ import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
-import { Customers } from './pages/artist/Customers'; // 🌟 確保導入
-import { CustomerDetail } from './pages/artist/CustomerDetail'; // 🌟 確保導入
+import { Customers } from './pages/artist/Customers'; 
+import { CustomerDetail } from './pages/artist/CustomerDetail'; 
 
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders';

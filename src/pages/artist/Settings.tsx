@@ -252,10 +252,14 @@ export function Settings() {
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
-            {/* 🌟 富文本區塊：包含所有基礎文字頁面 */}
-            {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
-              <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} />
-            )}
+{['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+  <RichTextTab 
+    key={activeTab}  /* 🌟 關鍵修正：加入這行，強迫切換分頁時重整編輯器 */
+    field={activeTab} 
+    settings={settings} 
+    setSettings={setSettings} 
+  />
+)}
             
             {/* 🌟 自定義分頁區塊 */}
             {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
