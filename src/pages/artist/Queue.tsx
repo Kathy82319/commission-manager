@@ -157,7 +157,7 @@ export function Queue() {
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
-          <input placeholder="🔍 搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
+          <input placeholder="搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
@@ -168,9 +168,8 @@ export function Queue() {
       <div className="queue-table-wrapper">
         <table className="queue-table">
           <thead>
-            {/* 🌟 修改了表頭，隱藏手機不需顯示的欄位 */}
             <tr>
-              <th style={{ width: '100px' }}>日期</th>
+              <th>日期</th>
               <th>委託人</th>
               <th>進度</th>
               <th>完工</th>
@@ -210,7 +209,6 @@ export function Queue() {
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
-                      {/* 🌟 修改點：未展開時只顯示名稱，展開後才顯示「委託人：」前綴與系統暱稱 */}
                       {isExpanded && <strong>委託人：</strong>}
                       <span style={{ fontWeight: !isExpanded ? 'bold' : 'normal' }}>
                         {order.contact_memo || '未命名'}
