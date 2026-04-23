@@ -51,8 +51,8 @@ export function Settings() {
     detailed_intro: '', 
     process: '', 
     payment: '', 
-    rules: '', 
-    custom_sections: [], // 確保初始為空陣列
+    rules: '', // 🌟 加回協議書範本欄位
+    custom_sections: [], 
     social_links: [], 
     hidden_sections: [],
     splash_enabled: true, 
@@ -84,16 +84,15 @@ export function Settings() {
         { id: 'showcase', label: '徵稿/販售區' },
         { id: 'process', label: '委託流程' },
         { id: 'payment', label: '付款方式' },
-        { id: 'rules', label: '協議書範本' },
+        { id: 'rules', label: '協議書範本' }, // 🌟 後台保留此分頁
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
-  // 修正點 1：加入安全存取，防止 custom_sections 缺失導致 map 崩潰
   const menuGroups = useMemo(() => {
     return categories.map(group => {
       if (group.title.includes('內容管理')) {
-        const sections = settings.custom_sections || []; // 防呆處理
+        const sections = settings.custom_sections || [];
         const dynamicItems: MenuItem[] = sections.map((section, index) => ({
           id: `custom_${index}`,
           label: section.title || `自定義區塊 ${index + 1}`,
@@ -133,7 +132,6 @@ export function Settings() {
             ? JSON.parse(data.data.profile_settings) 
             : data.data.profile_settings;
           
-          // 修正點 2：合併資料時確保 custom_sections 永遠是陣列
           setSettings(prev => ({ 
             ...prev, 
             ...parsed,
@@ -164,12 +162,6 @@ export function Settings() {
           profile_settings: JSON.stringify(settings)
         })
       });
-
-      if (res.status === 401) {
-        window.location.href = '/login';
-        return;
-      }
-
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
@@ -196,12 +188,7 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  
-  // 修正點 3：將 custom_manage 加入白名單，避免 Pro 使用者新增分頁時被誤擋
-  const freeAllowedTabs = [
-    'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'theme', 'showcase', 'custom_manage'
-  ];
+  const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase', 'custom_manage', 'rules'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
@@ -217,15 +204,7 @@ export function Settings() {
               <div className="group-label">
                 {group.title}
                 {group.title.includes('內容管理') && (
-                  <button 
-                    className="add-page-btn" 
-                    onClick={() => {
-                      setActiveTab('custom_manage');
-                      setHideGlobalSave(false);
-                    }}
-                  >
-                    + 新增分頁
-                  </button>
+                  <button className="add-page-btn" onClick={() => { setActiveTab('custom_manage'); setHideGlobalSave(false); }}>+ 新增分頁</button>
                 )}
               </div>
               {group.items.map((item: MenuItem) => {
@@ -235,10 +214,7 @@ export function Settings() {
                   <button 
                     key={item.id} 
                     className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setHideGlobalSave(false);
-                    }}
+                    onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
                   >
                     {item.label} {isLocked && '🔒'}
                   </button>
@@ -251,7 +227,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
-            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment'].includes(activeTab) && (
+            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
               </button>
@@ -263,7 +239,6 @@ export function Settings() {
               <div className="lock-card">
                 <div className="lock-icon">🔒</div>
                 <h4>此功能僅限專業版</h4>
-                <p>升級專業版即可解鎖更多自定義區塊與進階功能</p>
                 <button onClick={() => setActiveTab('subscription')}>查看方案</button>
               </div>
             </div>
@@ -274,11 +249,13 @@ export function Settings() {
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
+            {/* 🌟 核心修正：明確包含 rules */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <RichTextTab field={activeTab} settings={settings} setSettings={setSettings} />
             )}
             
-            {activeTab.startsWith('custom_') && !activeTab.includes('manage') && (
+            {/* 🌟 核心修正：嚴格限定 activeTab 開頭且排除非數字頁面 */}
+            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash'].includes(activeTab) && (
               <RichTextTab 
                 isCustom 
                 customIndex={parseInt(activeTab.split('_')[1])} 
