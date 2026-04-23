@@ -10,8 +10,6 @@ import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -39,40 +37,11 @@ interface MenuCategory {
   items: MenuItem[];
 }
 
-const BASE_CATEGORIES: MenuCategory[] = [
-  {
-    title: '個人資訊',
-    items: [{ id: 'profile_basic', label: '頭像與簡介' }]
-  },
-  {
-    title: '頁面外觀',
-    items: [
-      { id: 'theme', label: '背景與版型設定' },
-      { id: 'splash', label: '開場動畫設定' }
-    ]
-  },
-  {
-    title: '內容管理',
-    items: [
-      { id: 'detailed_intro', label: '詳細介紹' },
-      { id: 'portfolio', label: '作品展示區' },
-      { id: 'showcase', label: '徵稿/販售區' },
-      { id: 'process', label: '委託流程' },
-      { id: 'payment', label: '付款方式' },
-      { id: 'rules', label: '協議書範本' },
-    ]
-  },
-  {
-    title: '訂閱方案',
-    items: [{ id: 'subscription', label: '方案查看與升級' }]
-  }
-];
-
 export function Settings() {
   const [activeTab, setActiveTab] = useState('profile_basic');
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
@@ -96,13 +65,43 @@ export function Settings() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const showToast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
   }, []);
 
+  const categories: MenuCategory[] = [
+    {
+      title: '個人資訊',
+      items: [{ id: 'profile_basic', label: '頭像與簡介' }]
+    },
+    {
+      title: '頁面外觀',
+      items: [
+        { id: 'theme', label: '背景與版型設定' },
+        { id: 'splash', label: '開場動畫設定' }
+      ]
+    },
+    {
+      title: '內容管理',
+      items: [
+        { id: 'detailed_intro', label: '詳細介紹' },
+        { id: 'portfolio', label: '作品展示區' },
+        { id: 'showcase', label: '徵稿/販售區' },
+        { id: 'process', label: '委託流程' },
+        { id: 'payment', label: '付款方式' },
+        { id: 'rules', label: '協議書範本' },
+      ]
+    },
+    {
+      title: '訂閱方案',
+      items: [{ id: 'subscription', label: '方案查看與升級' }]
+    }
+  ];
+
   const menuGroups = useMemo(() => {
-    return BASE_CATEGORIES.map(group => {
+    return categories.map(group => {
       if (group.title.includes('內容管理')) {
         const dynamicItems: MenuItem[] = settings.custom_sections.map((section, index) => ({
           id: `custom_${index}`,
@@ -119,12 +118,6 @@ export function Settings() {
   const fetchUserData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
-      
-      if (res.status === 401) {
-        window.location.href = '/login';
-        return;
-      }
-
       const data = await res.json();
       if (data.success && data.data) {
         setFormData({
@@ -147,11 +140,9 @@ export function Settings() {
         }
       }
     } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+      console.error("讀取設定失敗", error);
     }
-  }, []);
+  }, [API_BASE]);
 
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
@@ -169,17 +160,11 @@ export function Settings() {
           profile_settings: JSON.stringify(settings)
         })
       });
-
-      if (res.status === 401) {
-        window.location.href = '/login';
-        return;
-      }
-
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
       } else {
-        showToast(data.error || '儲存失敗', 'err');
+        showToast('儲存失敗：' + data.error, 'err');
       }
     } catch (error) {
       showToast('系統發生錯誤', 'err');
@@ -200,16 +185,10 @@ export function Settings() {
     });
   };
 
-  const isFreePlan = !quotaInfo || quotaInfo.plan_type === 'free';
+  const isFreePlan = quotaInfo?.plan_type === 'free';
+  
   const freeAllowedTabs = ['profile_basic', 'portfolio', 'detailed_intro', 'subscription', 'theme', 'showcase'];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
-
-  const canShowVisibilityToggle = useMemo(() => {
-    const staticTabs = ['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'];
-    return staticTabs.includes(activeTab) || activeTab.startsWith('custom_');
-  }, [activeTab]);
-
-  if (isLoading) return <div className="loading-screen">載入中...</div>;
 
   return (
     <div className="settings-page">
@@ -223,6 +202,7 @@ export function Settings() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label">
                 {group.title}
+                {/* 文字按鈕替換齒輪圖示 */}
                 {group.title.includes('內容管理') && (
                   <button 
                     className="add-page-btn" 
@@ -237,6 +217,7 @@ export function Settings() {
               </div>
               {group.items.map((item: MenuItem) => {
                 if (item.id === 'custom_manage') return null;
+
                 const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
                 return (
                   <button 
@@ -258,7 +239,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
-            {canShowVisibilityToggle && (
+            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
               </button>
@@ -317,7 +298,7 @@ export function Settings() {
                 onToggleGlobalSave={setHideGlobalSave} 
                 onToast={showToast} 
                 quotaInfo={quotaInfo}
-                isReadOnly={isFreePlan}
+                isReadOnly={isFreePlan} // 關鍵：將唯讀權限傳入 ShowcaseTab
               />
             )}
             
@@ -330,6 +311,7 @@ export function Settings() {
             )}
           </div>
 
+          {/* 根據 hideGlobalSave 決定是否顯示全域儲存列 */}
           {!hideGlobalSave && (
             <div className="save-action-bar">
               <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">

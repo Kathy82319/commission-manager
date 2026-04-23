@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-// 修改：加入 User 圖標用於預設頭像
 import { Globe, ChevronLeft, ChevronRight, X, User } from 'lucide-react';
 import './styles/PublicProfile.css';
 
@@ -126,7 +125,7 @@ export function PublicProfile() {
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
               setSettings(parsedSettings);
             } catch (e) {
-              console.error("解析設定檔失敗", e);
+              console.error(e);
               setShowSplash(false);
             }
           } else {
@@ -150,7 +149,7 @@ export function PublicProfile() {
           setShowcaseItems(formattedItems);
         }
       } catch (error) {
-        console.error("讀取失敗", error);
+        console.error(error);
         setShowSplash(false);
       } finally {
         setLoading(false);
@@ -266,18 +265,14 @@ export function PublicProfile() {
         </div>
       )}
 
-      {/* 2. Main Layout Area */}
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        
-        {/* Sidebar */}
         <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
           <div className="sidebar-top">
             <div className="avatar-section">
-              {/* 修改：判斷是否有頭像網址，若無則顯示灰色人偶 */}
               {artist.avatar_url ? (
                 <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
               ) : (
-                <div className="profile-avatar default-avatar-placeholder">
+                <div className="profile-avatar default-avatar-placeholder" style={{ backgroundColor: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
                   <User size={48} strokeWidth={1.5} />
                 </div>
               )}
@@ -381,6 +376,8 @@ export function PublicProfile() {
 
             <footer className="profile-internal-footer">
               <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
+                <Link to="/login">管理登入</Link>
+                <span>|</span>
                 <Link to="/terms">服務條款</Link>
                 <span>|</span>
                 <Link to="/privacy">隱私權政策</Link>
