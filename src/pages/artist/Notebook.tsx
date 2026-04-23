@@ -14,7 +14,7 @@ interface Commission {
   type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
   client_public_id?: string;
   agreed_tos_snapshot?: string; 
-  // 🌟 補上後端透傳的 CRM 資訊[cite: 1]
+  // 🌟 補上後端透傳的 CRM 資訊
   client_custom_label?: string;
   crm_record_id?: string;
 }
@@ -22,6 +22,24 @@ interface Commission {
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
+
+// 🌟 新增：時間格式化輔助函式 (含時分秒)
+const formatLocalTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).toLocaleString('zh-TW', { 
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+};
+
+// 🌟 新增：日期格式化輔助函式 (僅日期)
+const formatLocalDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).toLocaleDateString('zh-TW');
+};
 
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
@@ -405,7 +423,7 @@ export function Notebook() {
             <ImageUploader 
               onUpload={(blobs) => handleR2FileUpload(stageKey, blobs)}
               withWatermark={!isFreeMode} watermarkText="SAMPLE" existingUrl={sub?.file_url?.split('|')[0]} isFinal={isFinal} 
-              metadata={sub ? { version: sub.version, date: new Date(sub.created_at).toLocaleDateString() } : undefined}
+              metadata={sub ? { version: sub.version, date: formatLocalDate(sub.created_at) } : undefined}
               buttonText={sub ? "重新交付 (覆蓋版本)" : "點擊上傳圖檔"}
             />
           )}
@@ -469,7 +487,7 @@ export function Notebook() {
             {filteredOrders.map(order => {
               const payBadge = getPaymentBadge(order.payment_status);
               const statusBadge = getStatusBadge(order.status);
-              const dateStr = order.order_date ? new Date(order.order_date).toLocaleDateString() : '';
+              const dateStr = formatLocalDate(order.order_date); // 🌟 使用修正後的日期顯示
               const isSelected = selectedId === order.id;
               const hasNewMsg = parseTime(order.latest_message_at) > parseTime(order.last_read_at_artist);
               
@@ -477,7 +495,7 @@ export function Notebook() {
                 <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
-                    {/* 🌟 列表新增黑名單標籤[cite: 1] */}
+                    {/* 列表新增黑名單標籤 */}
                     {order.client_custom_label === '黑名單' && (
                       <span className="card-mode-badge mode-blacklist">黑名單</span>
                     )}
@@ -536,7 +554,7 @@ export function Notebook() {
 
                   <div className="main-subtitle">項目：{selectedOrder.project_name || '未命名項目'}</div>
                   <div className="main-meta-row">
-                    <span>日期：{selectedOrder.order_date ? new Date(selectedOrder.order_date).toLocaleDateString() : '未知'}</span>
+                    <span>日期：{formatLocalDate(selectedOrder.order_date)}</span> {/* 🌟 修正後的日期顯示 */}
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                       <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
@@ -695,7 +713,8 @@ export function Notebook() {
                         {logs.map(log => (
                           <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : 'log-client'}`}>
                             <div className="log-meta">
-                              {new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '委託人'}
+                              {/* 🌟 修正點：使用 formatLocalTime 強制顯示台灣在地時間 */}
+                              {formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '委託人'}
                             </div>
                             <div className="log-content">
                               {log.content}

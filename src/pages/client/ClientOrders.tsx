@@ -17,6 +17,24 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
+// 🌟 新增：時間格式化輔助函式 (含時分秒)
+const formatLocalTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).toLocaleString('zh-TW', { 
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+};
+
+// 🌟 新增：日期格式化輔助函式 (僅日期)
+const formatLocalDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).toLocaleDateString('zh-TW');
+};
+
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -273,7 +291,8 @@ export function ClientOrders() {
         <div style={{ padding: '20px', textAlign: 'center' }}>
           {!sub ? <div style={{ color: '#A0978D', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
             <div>
-               <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{new Date(sub.created_at).toLocaleString('zh-TW')} (v{sub.version})</div>
+               {/* 🌟 修正：稿件更新時間 */}
+               <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{formatLocalTime(sub.created_at)} (v{sub.version})</div>
                
                <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
                  <img src={sub.file_url.split('|')[0]} alt="稿件預覽" style={{ width: '100%', maxWidth: '400px', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
@@ -415,12 +434,10 @@ export function ClientOrders() {
 
       <div className="notebook-container">
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          {/* 電腦版與手機版通用的標題欄 */}
           <div style={{ padding: '20px 20px 10px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid transparent' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
           </div>
 
-          {/* 手機版並排控制欄 / 電腦版也會套用此佈局 */}
           <div className="mobile-controls-row">
             <input 
               type="text" 
@@ -458,7 +475,8 @@ export function ClientOrders() {
                       <div style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#e11d48', color: '#FFF', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>🔔</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
-                      <span>{new Date(order.order_date).toLocaleDateString()}</span>
+                      {/* 🌟 修正：列表日期 */}
+                      <span>{formatLocalDate(order.order_date)}</span>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
                     </div>
                     
@@ -536,7 +554,7 @@ export function ClientOrders() {
                     </div>
 
                     <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 16px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
+                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 12px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '20px', fontSize: '14px', color: '#5D4A3E' }}>
                         <div><strong style={{ color: '#7A7269' }}>委託用途：</strong>{selectedOrder.usage_type || '未提供'}</div>
                         <div><strong style={{ color: '#7A7269' }}>是否急件：</strong>{selectedOrder.is_rush === '是' || selectedOrder.is_rush === '1' || selectedOrder.is_rush === 1 ? '是' : '否'}</div>
@@ -576,7 +594,8 @@ export function ClientOrders() {
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                          {logs.map(log => (
                            <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
-                             <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>{new Date(log.created_at).toLocaleString('zh-TW')} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
+                             {/* 🌟 修正：歷程紀錄時間 */}
+                             <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>{formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
                              <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}>{log.content}</div>
                            </div>
                          ))}
