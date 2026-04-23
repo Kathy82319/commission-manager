@@ -11,7 +11,7 @@
   color: #FFFFFF;
 }
 
-/* 🌟 新增：登入卡片容器，增加專業感與閱讀舒適度 */
+/* 新增：登入卡片容器，增加專業感與閱讀舒適度 */
 .login-card {
   max-width: 450px;
   width: 90%;
@@ -33,7 +33,7 @@
   color: #5D4A3E; /* 統一使用 onboarding 的主色調 */
 }
 
-/* 🌟 新增：隱私說明區塊，消除用戶對個資的顧慮 */
+/* 新增：隱私說明區塊，消除用戶對個資的顧慮 */
 .login-gateway-info {
   text-align: left;
   background-color: #F8FAFC;
@@ -85,7 +85,7 @@
   box-shadow: 0 6px 16px rgba(6, 199, 85, 0.3);
 }
 
-/* 🌟 調整：配合新的圖標包裝容器 */
+/* 調整：配合新的圖標包裝容器 */
 .line-icon-wrapper {
   width: 24px;
   height: 24px;
@@ -261,4 +261,24 @@
   .role-card {
     min-width: auto;
   }
+}
+
+/* 新增：預設灰色大頭照樣式 */
+.default-avatar {
+  background-color: #E2E8F0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* 寬高可由前端組件行內樣式或額外 class 覆蓋，此為基礎設定 */
+  width: 40px; 
+  height: 40px;
+}
+
+.default-avatar svg {
+  width: 65%;
+  height: 65%;
+  color: #94A3B8;
+  margin-top: 15%; /* 微調讓頭像看起來像半身照沉在底部 */
 }

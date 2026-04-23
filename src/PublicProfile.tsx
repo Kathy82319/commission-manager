@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X } from 'lucide-react';
+// 修改：加入 User 圖標用於預設頭像
+import { Globe, ChevronLeft, ChevronRight, X, User } from 'lucide-react';
 import './styles/PublicProfile.css';
 
 interface LayoutContext {
@@ -272,7 +273,14 @@ export function PublicProfile() {
         <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
           <div className="sidebar-top">
             <div className="avatar-section">
-              <img src={artist.avatar_url || '/default-avatar.png'} alt="Avatar" className="profile-avatar" />
+              {/* 修改：判斷是否有頭像網址，若無則顯示灰色人偶 */}
+              {artist.avatar_url ? (
+                <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
+              ) : (
+                <div className="profile-avatar default-avatar-placeholder">
+                  <User size={48} strokeWidth={1.5} />
+                </div>
+              )}
             </div>
             
             <div className="name-social-section">

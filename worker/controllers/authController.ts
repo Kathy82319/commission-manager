@@ -1,4 +1,3 @@
-// worker/controllers/authController.ts
 import type { Env } from "../shared/types";
 import { getLineLoginUrl, getLineToken, getLineProfile } from "../services/line";
 import { generateToken, sanitizeAndLimit } from "../utils/security";
@@ -6,7 +5,7 @@ import { getUserById, createNewUser } from "../services/db";
 
 export const authController = {
 
-async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+  async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
 
@@ -19,7 +18,8 @@ async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promi
       
       let user: any = await getUserById(env, testUserId);
       if (!user) {
-        await createNewUser(env, testUserId, "金流審核員", "https://via.placeholder.com/150");
+        // 修改：移除預設的 placeholder 圖片，改為空字串
+        await createNewUser(env, testUserId, "金流審核員", "");
       }
 
       const sessionValue = await generateToken(testUserId, env.ID_SALT, 30);
@@ -41,21 +41,6 @@ async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promi
     }
   },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
       return new Response(JSON.stringify({ success: false, error: "環境變數未設定" }), { status: 500, headers: corsHeaders });
@@ -74,7 +59,6 @@ async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promi
     });
   },
 
- 
   async callback(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
@@ -102,7 +86,8 @@ async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promi
 
       if (!user) {
         const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
-        await createNewUser(env, userId, safeDisplayName, profile.pictureUrl || '');
+        // 修改：停止存取 profile.pictureUrl，一律存入空字串
+        await createNewUser(env, userId, safeDisplayName, "");
         targetPath = "/onboarding"; 
       } else {
         if (user.role === 'deleted') {
@@ -111,7 +96,6 @@ async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promi
           targetPath = user.role === 'pending' ? "/onboarding" : "/portal"; 
         }
       }
-
 
       await env.commission_db.prepare(
         "UPDATE Users SET plan_type = 'pro', pro_expires_at = '2099-12-31 23:59:59' WHERE id = ?"
