@@ -21,7 +21,6 @@ interface ProfileSettings {
   detailed_intro: string;
   process: string;
   payment: string;
-  rules: string;
   custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
@@ -218,7 +217,6 @@ export function PublicProfile() {
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
-    if (!isHidden('rules') && settings.rules) tabs.push({ id: 'rules', label: '委託規範' });
     
     if (settings.custom_sections) {
       settings.custom_sections.forEach(sec => {
@@ -360,7 +358,7 @@ export function PublicProfile() {
                 </div>
               )}
               
-              {['detailed_intro', 'process', 'payment', 'rules'].includes(currentTab) && settings && (
+              {['detailed_intro', 'process', 'payment'].includes(currentTab) && settings && (
                 <div className="rich-text-content" 
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
               )}

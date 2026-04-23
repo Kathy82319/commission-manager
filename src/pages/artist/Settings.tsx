@@ -251,7 +251,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
-            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
               </button>
