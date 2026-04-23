@@ -389,14 +389,15 @@ export function ClientOrders() {
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
+            <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
+            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
             <select className="form-input" style={{ width: 'auto', padding: '6px 12px' }} value={filter} onChange={e => setFilter(e.target.value as any)}>
               <option value="all">全部</option><option value="working">進行中</option><option value="completed">已結單</option>
             </select>
           </div>
 
-          <div style={{ padding: '10px 20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FAFAFA' }}>
-            <input type="text" className="form-input" style={{ padding: '8px 12px', fontSize: '13px' }} placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          </div>
+          
 
           <div className="sidebar-list-container">
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
