@@ -33,22 +33,17 @@ export function App() {
   
   return (
     <BrowserRouter>
-      {/* 🌟 所有的 <Route> 必須在 <Routes> 裡面 */}
       <Routes>
-        {/* 1. 首頁導向 */}
         <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />
         
-        {/* 2. 身分驗證區 */}
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         
-        {/* 3. 繪師私密後台區 */}
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
           <Route path="quote/new" element={<QuoteBuilder />} />
           
-          {/* 🌟 這裡：正確嵌套在 ArtistLayout 的 Routes 之下 */}
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerDetail />} />
           
@@ -57,7 +52,6 @@ export function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* 4. 委託方後台區 */}
         <Route path="/client" element={<ClientLayout />}>
           <Route path="home" element={<Navigate to="/client/orders" replace />} />
           <Route path="orders" element={<ClientOrders />} />
@@ -65,12 +59,10 @@ export function App() {
           <Route path="form/:id" element={<ClientForm />} />
         </Route>
 
-        {/* 5. 委託單確認與共用工作區 */}
         <Route path="/quote/:id" element={<ClientForm />} />
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
 
-        {/* 6. 公開頁面 */}
         <Route element={<PublicLayout />}>
           <Route path="/terms" element={<Terms />} />
           <Route path="/portal" element={<Portal />} />
@@ -79,12 +71,10 @@ export function App() {
           <Route path="/refund-policy" element={<RefundPolicy />} />
         </Route>
         
-        {/* 管理員後台 */}
         <Route path="/adminbalabababa" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
         </Route>
 
-        {/* 🌟 捕獲未定義路徑，防止出現空白頁 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

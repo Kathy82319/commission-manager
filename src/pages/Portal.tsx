@@ -48,10 +48,8 @@ export function Portal() {
 
       <div className="portal-content">
         
-        {/* 卡片容器：由 CSS 處理手機版直向與電腦版橫向 */}
         <div className="portal-cards-container">
           
-          {/* 委託人選項 */}
           <div 
             onClick={() => navigate('/client/orders')}
             className="portal-card card-client"

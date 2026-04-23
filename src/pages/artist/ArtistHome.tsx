@@ -99,10 +99,8 @@ export function ArtistHome() {
           </div>
         </aside>
 
-        {/* 右側：詳細內容區 */}
         <main className="artist-content">
           
-          {/* 作品展示區 */}
           {settings?.portfolio && settings.portfolio.length > 0 && (
             <section>
               <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#5D4A3E', borderBottom: '3px solid #5D4A3E', paddingBottom: '8px', display: 'inline-block' }}>

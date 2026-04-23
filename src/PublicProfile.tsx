@@ -9,7 +9,6 @@ interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
-// 🌟 僅在渲染階段使用，不可用於 JSON 解析前
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
   const txt = document.createElement("textarea");
@@ -120,7 +119,6 @@ export function PublicProfile() {
         if (userData.success && userData.data) {
           setArtist(userData.data);
           
-          // 🌟 直接解析原始 JSON，不對整個字串進行解碼，防止語法錯誤
           if (userData.data.profile_settings) {
             try {
               const rawSettings = userData.data.profile_settings;
@@ -176,7 +174,7 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 取得所有項目中出現過的標籤
+  
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     showcaseItems.forEach(item => {
@@ -187,7 +185,6 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
-  // 🌟 現在此函式已被 UI 正確呼叫，解決 TypeScript 錯誤
   const handleTagClick = (tag: string) => {
     setSelectedTags(prev => {
       if (tag === '全部') return ['全部'];
@@ -218,7 +215,6 @@ export function PublicProfile() {
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
-    // 依要求：不顯示 rules
 
     if (Array.isArray(settings.custom_sections)) {
       settings.custom_sections.forEach((sec, index) => {

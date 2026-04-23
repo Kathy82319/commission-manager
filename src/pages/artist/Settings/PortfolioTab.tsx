@@ -6,7 +6,7 @@ interface Props {
   formData: FormDataState;
   settings: ProfileSettings;
   setSettings: React.Dispatch<React.SetStateAction<ProfileSettings>>;
-  quotaInfo: QuotaInfo | null; // 需從 Settings.tsx 傳入
+  quotaInfo: QuotaInfo | null; 
 }
 
 export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Props) {
@@ -14,7 +14,6 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 1. 根據方案決定配額 (免費6, 試用20, 專業30)
   const portfolioLimit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 20;
@@ -22,7 +21,6 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
   }, [quotaInfo]);
 
   const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
-    // 2. 資安與配額守衛：系統寫入極限為 40 張，或超過目前方案配額則攔截
     if (settings.portfolio.length >= 40) {
       alert("已達系統儲存上限 (40張)");
       return;
@@ -74,7 +72,6 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* 3. 修正：動態方案提醒區塊文字 */}
       <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
         {quotaInfo?.plan_type === 'free' 
           ? `📢 目前您的方案僅公開前 6 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
@@ -95,7 +92,6 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
         {settings.portfolio.map((img, i) => {
-          // 4. 修正：動態判斷公開標籤。免費版僅限前 6，其餘版本標註所有配額內項目
           const isPublic = quotaInfo?.plan_type === 'free' ? i < 6 : i < portfolioLimit;
 
           return (

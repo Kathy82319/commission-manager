@@ -253,12 +253,10 @@ export function Settings() {
             {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
             {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
             
-            {/* 🌟 核心修正：加入 key={activeTab} 強迫編輯器重新載入內容 */}
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <RichTextTab key={activeTab} field={activeTab} settings={settings} setSettings={setSettings} />
             )}
             
-            {/* 🌟 核心修正：自定義分頁也加入 key={activeTab} */}
             {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
               <RichTextTab 
                 key={activeTab}

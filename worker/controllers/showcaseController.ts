@@ -12,7 +12,6 @@ export const showcaseController = {
       return new Response(JSON.stringify({ success: true, data: [] }), { headers });
     }
 
-    // 資安強化：落實後端物理裁切
     let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
     if (user.plan_type === 'free') {
       query += " LIMIT 6";
@@ -27,7 +26,6 @@ export const showcaseController = {
   },
 
   async getMyItems(userId: string, env: Env, headers: any) {
-    // 🌟 修正點：統一排序邏輯為 sort_order ASC, created_at DESC
     const { results } = await env.commission_db
       .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC, created_at DESC")
       .bind(userId)

@@ -194,7 +194,6 @@ export function QuoteBuilder() {
         </div>
       </div>
 
-      {/* 模糊效果僅套用到表單網格容器 */}
       <div className="quote-grid" style={{ 
         filter: isQuotaExceeded ? 'blur(6px)' : 'none',
         pointerEvents: isQuotaExceeded ? 'none' : 'auto',
@@ -394,7 +393,6 @@ export function QuoteBuilder() {
         </div>
       </div>
 
-      {/* 關鍵點：將額度限制 Modal 移出被模糊的容器之外 */}
       {isQuotaExceeded && (
         <div className="quota-modal-overlay">
           <div className="quota-modal-box">

@@ -17,7 +17,6 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 時間格式化輔助函式 (含時分秒)
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -28,7 +27,6 @@ const formatLocalTime = (dateStr: string) => {
   });
 };
 
-// 🌟 日期格式化輔助函式 (僅日期)
 const formatLocalDate = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -336,10 +334,8 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       <style>{`
-        /* 全域溢出防止 */
         .notebook-page { overflow-x: hidden; width: 100%; }
 
-        /* 🌟 手機版樣式修正 (小於 1024px) */
         @media (max-width: 1024px) {
           .notebook-container {
             width: 100vw !important;
@@ -350,7 +346,6 @@ export function ClientOrders() {
             width: 100% !important;
             box-sizing: border-box;
           }
-          /* 手機版：搜尋與篩選同行 */
           .controls-wrapper {
             display: flex;
             gap: 8px;
@@ -379,7 +374,6 @@ export function ClientOrders() {
           }
         }
 
-        /* 🌟 電腦版樣式修正 (大於 1025px) */
         @media (min-width: 1025px) {
           .notebook-container {
             max-width: 1300px !important;
@@ -397,7 +391,6 @@ export function ClientOrders() {
             flex-direction: column;
             overflow: hidden;
           }
-          /* 電腦版：維持上下兩行，不使用 Flex 排成一列 */
           .controls-wrapper {
             display: block; 
             padding: 10px 20px;
@@ -443,7 +436,6 @@ export function ClientOrders() {
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
           </div>
 
-          {/* 🌟 統一容器，透過 CSS Media Query 控制排列方式 */}
           <div className="controls-wrapper">
             <input 
               type="text" 

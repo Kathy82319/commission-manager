@@ -14,11 +14,9 @@
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.08);
-  /* 如果不跟著跑，其實可以拿掉模糊效果，或者保留作為設計風格 */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  /* --- 修正處：改為 relative 讓它隨捲動往上捲走 --- */
   position: relative; 
   z-index: 100;
 }

@@ -13,10 +13,10 @@ interface Customer {
   short_note: string;
   full_note: string;
   platform_name?: string;
-  contact_methods: string; // 資料庫存儲為 JSON 字串
+  contact_methods: string;  
 }
 
-// 預設標籤選項
+
 const DEFAULT_LABELS = ['一般', 'VIP'];
 
 export function Customers() {
@@ -36,7 +36,6 @@ export function Customers() {
   const [history, setHistory] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<Customer[]>([]);
 
-  // --- 🌟 標籤分類功能狀態 ---
   const [labelOptions, setLabelOptions] = useState<string[]>(() => {
     const saved = localStorage.getItem('artist_custom_labels');
     return saved ? JSON.parse(saved) : DEFAULT_LABELS;
@@ -50,7 +49,6 @@ export function Customers() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 🛡️ 安全解析：將資料庫 JSON 轉為陣列供介面使用
   const parseSocialMethods = (jsonStr: string | undefined): string[] => {
     if (!jsonStr) return [];
     try {
@@ -76,7 +74,6 @@ export function Customers() {
 
   useEffect(() => { fetchCustomers(); }, []);
 
-  // 🌟 黑名單跳轉：進入頁面後根據網址 id 自動開啟閱覽
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const targetId = queryParams.get('id');
@@ -85,13 +82,11 @@ export function Customers() {
       const targetCustomer = customers.find(c => c.id === targetId);
       if (targetCustomer) {
         openViewModal(targetCustomer);
-        // 清除網址參數防止重複彈出
         window.history.replaceState(null, '', '/artist/customers');
       }
     }
   }, [location.search, isLoading, customers]);
 
-  // 🌟 點擊外部關閉標籤下拉選單
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
@@ -102,12 +97,10 @@ export function Customers() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 🌟 標籤變動時保存至 localStorage
   useEffect(() => {
     localStorage.setItem('artist_custom_labels', JSON.stringify(labelOptions));
   }, [labelOptions]);
 
-  // 🔍 搜尋與頁籤過濾邏輯
   const displayCustomers = useMemo(() => {
     let list = customers;
     if (activeTab === 'blacklist') {
@@ -165,7 +158,6 @@ export function Customers() {
     const endpoint = isEdit ? `${API_BASE}/api/customers/${selectedCust.id}` : `${API_BASE}/api/customers`;
     const method = isEdit ? 'PATCH' : 'POST';
 
-    // 確保 contact_methods 在送出前是乾淨的陣列
     const cleanedMethods = Array.isArray(selectedCust.contact_methods) 
       ? selectedCust.contact_methods.filter((m: string) => m.trim() !== '')
       : [];
@@ -225,7 +217,6 @@ export function Customers() {
     setModalMode('view');
   };
 
-  // --- 🌟 標籤增減處理 ---
   const handleAddLabel = () => {
     const val = newLabelInput.trim();
     if (!val) return;
@@ -401,7 +392,6 @@ export function Customers() {
                     <input className="crm-form-input" value={selectedCust.alias_name} onChange={e => setSelectedCust({...selectedCust, alias_name: e.target.value})} readOnly={!!selectedCust.client_user_id} />
                   </div>
 
-                  {/* 🌟 標籤分類自定義下拉選單 */}
                   <div className="crm-form-section">
                     <label className="crm-form-label">標籤分類</label>
                     <div ref={labelDropdownRef} className="crm-dropdown-container">

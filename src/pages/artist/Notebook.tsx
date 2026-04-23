@@ -14,7 +14,6 @@ interface Commission {
   type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
   client_public_id?: string;
   agreed_tos_snapshot?: string; 
-  // 🌟 補上後端透傳的 CRM 資訊
   client_custom_label?: string;
   crm_record_id?: string;
 }
@@ -23,7 +22,6 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
-// 🌟 新增：時間格式化輔助函式 (含時分秒)
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -34,7 +32,6 @@ const formatLocalTime = (dateStr: string) => {
   });
 };
 
-// 🌟 新增：日期格式化輔助函式 (僅日期)
 const formatLocalDate = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -495,7 +492,6 @@ export function Notebook() {
                 <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
-                    {/* 列表新增黑名單標籤 */}
                     {order.client_custom_label === '黑名單' && (
                       <span className="card-mode-badge mode-blacklist">黑名單</span>
                     )}
@@ -713,7 +709,6 @@ export function Notebook() {
                         {logs.map(log => (
                           <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : 'log-client'}`}>
                             <div className="log-meta">
-                              {/* 🌟 修正點：使用 formatLocalTime 強制顯示台灣在地時間 */}
                               {formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '委託人'}
                             </div>
                             <div className="log-content">

@@ -14,7 +14,6 @@ import { customerController } from "./controllers/customerController";
 export default {
   async fetch(request: any, env: Env): Promise<any> {
     const url = new URL(request.url);
-    // 規範化路徑：移除末端斜槓並切割
     const sanitizedPath = url.pathname.replace(/\/$/, "");
     const pathParts = sanitizedPath.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
@@ -47,30 +46,25 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      // --- 1. 顧客管理路由 (修正重點) ---
       if (sanitizedPath.startsWith("/api/customers")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
 
         const targetId = pathParts[3]; 
-        const subAction = pathParts[4]; // 取得 /history 等子動作
+        const subAction = pathParts[4]; 
 
         if (!targetId) {
-          // 路徑: /api/customers
           if (request.method === "GET") return customerController.getList(currentUserId!, env, corsHeaders);
           if (request.method === "POST") return customerController.create(request, currentUserId!, env, corsHeaders);
         } else if (targetId && subAction === "history") {
-          // 路徑: /api/customers/:id/history
           if (request.method === "GET") return customerController.getHistory(targetId, currentUserId!, env, corsHeaders);
         } else {
-          // 路徑: /api/customers/:id
           if (request.method === "GET") return customerController.getDetail(targetId, currentUserId!, env, corsHeaders);
           if (request.method === "PATCH") return customerController.update(request, targetId, currentUserId!, env, corsHeaders);
           if (request.method === "DELETE") return customerController.delete(targetId, currentUserId!, env, corsHeaders);
         }
       }
 
-      // --- 2. 支付相關 ---
       if (sanitizedPath === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -80,12 +74,10 @@ export default {
         return paymentController.handleNotify(request, env);
       }
 
-      // --- 3. 認證與登入 ---
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
 
-      // --- 4. 櫥窗管理 ---
       if (sanitizedPath.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -100,7 +92,6 @@ export default {
         return showcaseController.getPublicList(artistId, env, corsHeaders);
       }
 
-      // --- 5. 管理員專區 ---
       if (sanitizedPath.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -112,7 +103,6 @@ export default {
         }
       }
 
-      // --- 6. 用戶資料 ---
       if (sanitizedPath.startsWith("/api/users/")) {
         const targetId = pathParts[3];
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
@@ -125,7 +115,6 @@ export default {
         if (request.method === "POST" && sanitizedPath.endsWith("/complete-onboarding")) return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
       }
 
-      // --- 7. 委託單系統 ---
       if (sanitizedPath.startsWith("/api/commissions")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -168,7 +157,6 @@ export default {
         }
       }
 
-      // --- 8. 儲存與測試 ---
       if (sanitizedPath.startsWith("/api/r2/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -185,7 +173,6 @@ export default {
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
-    // SPA 回退邏輯
     const assetResponse = await env.ASSETS.fetch(request as any);
     if (assetResponse.status === 404 || sanitizedPath.includes("@")) {
       const indexRequest = new Request(new URL("/", request.url).toString(), request as any);

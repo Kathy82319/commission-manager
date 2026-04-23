@@ -30,15 +30,13 @@ export function Workspace() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesLengthRef = useRef<number>(0); 
 
-  // 🌟 新增：統一的時間轉換函式，確保將資料庫的 UTC 時間轉為本地時間
   const formatLocalTime = (dateStr: string) => {
     if (!dateStr) return '';
-    // 如果字串中沒有 T 或 Z，手動補上以確保瀏覽器將其視為 UTC
     const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
     return new Date(utcStr).toLocaleTimeString('zh-TW', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: false // 使用 24 小時制，若要 12 小時制可改為 true 或移除
+      hour12: false
     });
   };
 
@@ -243,7 +241,6 @@ export function Workspace() {
                   flexDirection: isMe ? 'row-reverse' : 'row' 
                 }}>
                   <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
-                  {/* 🌟 這裡使用了修正後的本地時間轉換函式 */}
                   <span style={{ color: '#C4BDB5' }}>
                     {formatLocalTime(msg.created_at)}
                   </span>

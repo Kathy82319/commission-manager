@@ -149,9 +149,7 @@
   flex-grow: 1;
 }
 
-/* =========================================
-   手機與平板版響應式設計 (Max Width: 1023px) 
-   ========================================= */
+
 @media (max-width: 1023px) {
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   
@@ -159,11 +157,9 @@
   .queue-search { flex: 1; min-width: 0; box-sizing: border-box; }
   .queue-select { width: auto; flex-shrink: 0; box-sizing: border-box; }
 
-  /* --- 恢復標題列 (Thead) 並設定網格對齊 --- */
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    /* 5 欄配置：微調各欄位寬度以確保不重疊 */
     grid-template-columns: 40px 1fr 75px 46px 48px;
     gap: 4px;
     padding: 0 10px;
@@ -171,7 +167,6 @@
     background: transparent;
   }
 
-  /* 🌟 精準控制各個標題的對齊方向 */
   .queue-table th {
     padding: 0 !important;
     font-size: 11px;
@@ -180,19 +175,16 @@
     background: transparent;
     width: auto !important; 
   }
-  .queue-table th:nth-child(1) { text-align: left; } /* 日期靠左 */
-  .queue-table th:nth-child(2) { text-align: left; padding-left: 2px; } /* 委託人靠左 */
-  .queue-table th:nth-child(3) { text-align: center; } /* 進度置中 */
-  .queue-table th:nth-child(4) { text-align: center; } /* 完工置中 */
-  .queue-table th:nth-child(5) { text-align: center; } /* 收款置中 */
+  .queue-table th:nth-child(1) { text-align: left; } 
+  .queue-table th:nth-child(2) { text-align: left; padding-left: 2px; } 
+  .queue-table th:nth-child(3) { text-align: center; } 
+  .queue-table th:nth-child(4) { text-align: center; } 
+  .queue-table th:nth-child(5) { text-align: center; } 
 
-  /* --- 基本表格容器 --- */
   .queue-table, .queue-table tbody { display: block; width: 100%; box-sizing: border-box; }
   
-  /* --- 卡片網格佈局 (單行摘要列) --- */
   .queue-table tbody tr {
     display: grid;
-    /* 必須與 Thead 寬度完全一致 */
     grid-template-columns: 40px 1fr 75px 46px 48px; 
     gap: 4px;
     align-items: center;
@@ -209,9 +201,7 @@
   .queue-hide-mobile { display: none !important; }
   .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
 
-  /* =======================================
-     狀態 A：未展開 (單行摘要模式)
-     ======================================= */
+
   
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
@@ -224,7 +214,6 @@
     pointer-events: none; width: 100%; align-items: center; justify-content: center;
   }
 
-  /* 🌟 精準控制內容格子的對齊，呼應標題的排版 */
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-content { justify-content: flex-start; }
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] .cell-content-right { justify-content: flex-start; }
   .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { justify-content: center; }
@@ -240,7 +229,6 @@
 
   .queue-table tr:not(.is-expanded) td::before { display: none; }
   
-  /* 日期文字靠左 */
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
     font-size: 11px; font-weight: bold; color: #7A7269; text-align: left; width: 100%;
   }
@@ -251,7 +239,6 @@
   .queue-table tr:not(.is-expanded) .dropdown-arrow,
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; }
   
-  /* 完工日期強制置中並撐滿格寬 */
   .queue-table tr:not(.is-expanded) td[data-label="預計完工"] span {
     font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%; display: block;
   }
@@ -260,9 +247,6 @@
     appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
 
-  /* =======================================
-     狀態 B：展開後 (兩欄式表單模式)
-     ======================================= */
   
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;

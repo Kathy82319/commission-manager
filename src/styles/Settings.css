@@ -13,7 +13,6 @@
   gap: 20px;
 }
 
-/* --- 側邊欄基礎樣式 (手機版預設) --- */
 .settings-sidebar {
   display: flex;
   overflow-x: auto; 
@@ -28,7 +27,6 @@
   display: none;
 }
 
-/* 分類標題樣式 */
 .group-label {
   display: flex;
   justify-content: space-between;
@@ -40,7 +38,6 @@
   padding-left: 0;
 }
 
-/* 小型的管理入口按鈕 (齒輪) */
 .manage-entry-btn {
   background: none;
   border: none;
@@ -51,7 +48,6 @@
 }
 .manage-entry-btn:hover { opacity: 1; }
 
-/* 按鈕基礎樣式 */
 .tab-btn {
   white-space: nowrap; 
   padding: 10px 16px;
@@ -63,70 +59,63 @@
   transition: all 0.2s ease;
   font-family: inherit;
   border-radius: 8px;
-  border-bottom: none !important; /* 強制移除底線 */
+  border-bottom: none !important; 
 }
 
-/* --- 電腦版佈局 (修正嵌套錯誤) --- */
 @media (min-width: 1024px) {
   .settings-layout {
     flex-direction: row;
     align-items: flex-start;
-    gap: 60px; /* 增加側邊欄與內容的間距 */
+    gap: 60px; 
   }
   
   .settings-sidebar {
     display: flex;
-    flex-direction: column; /* 強制垂直排列 */
+    flex-direction: column; 
     width: 240px;
     border-bottom: none;
     padding-bottom: 0;
     overflow-x: visible;
   }
 
-  /* 側邊欄總標題 */
   .sidebar-title {
     display: block; 
     font-size: 24px;
     color: #5D4A3E;
-    margin-bottom: 40px; /* 增加下方間距 */
+    margin-bottom: 40px; 
     font-weight: bold;
     padding-left: 0;
   }
 
-  /* 分類組間距 */
   .sidebar-group {
     display: flex;
-    flex-direction: column; /* 確保組內按鈕垂直排列，解決兩行問題 */
+    flex-direction: column;
     margin-bottom: 32px;
   }
 
-  /* 分類小標題 */
   .group-label {
     font-size: 15px;
     margin-bottom: 8px;
     padding-left: 0;
   }
 
-  /* 分頁按鈕電腦版樣式 */
   .tab-btn {
     text-align: left;
-    padding: 10px 16px 10px 32px; /* 32px 達成縮排效果 */
+    padding: 10px 16px 10px 32px;
     margin-bottom: 4px;
-    border-left: 4px solid transparent; /* 預留亮燈位置 */
+    border-left: 4px solid transparent; 
     border-radius: 0 8px 8px 0;
     font-size: 15px;
   }
 
-  /* 電梯亮燈樣式 - Active */
   .tab-btn.active {
     background-color: #F9F7F5 !important;
     color: #5D4A3E;
     font-weight: bold;
-    border-left: 4px solid #5D4A3E; /* 亮燈直線 */
+    border-left: 4px solid #5D4A3E;
     border-bottom: none !important;
   }
 
-  /* Hover 效果 */
   .tab-btn:hover:not(.active) {
     background-color: #FDFBFA;
     border-left: 4px solid #DED9D3;
@@ -134,7 +123,6 @@
   }
 }
 
-/* --- 內容區域樣式 --- */
 .settings-content-area {
   flex: 1;
   background-color: #FFFFFF;
@@ -175,20 +163,19 @@
   transition: all 0.2s ease;
 }
 
-/* --- 鎖定與儲存列 --- */
 .lock-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.3); /* 半透明背景 */
-  z-index: 100; /* 確保在最上層 */
+  background-color: rgba(255, 255, 255, 0.3); 
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  backdrop-filter: blur(2px); /* 額外的背景模糊 */
+  backdrop-filter: blur(2px);
 }
 
 .lock-card {
@@ -234,7 +221,6 @@
   transform: translateY(-2px);
 }
 
-/* 新增分頁文字按鈕樣式 */
 .add-page-btn {
   background: none;
   border: none;
@@ -290,7 +276,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Toast 樣式 */
 .toast-message {
   position: fixed;
   top: 20px;
@@ -315,45 +300,37 @@
   to { top: 20px; opacity: 1; }
 }
 
-/* =========================================
-   手機與平板版響應式設計 (Max Width: 1023px) 
-   ========================================= */
 @media (max-width: 1023px) {
   .settings-layout {
     gap: 16px;
   }
 
-  /* 在手機版隱藏側邊欄總標題，節省上方空間 */
   .sidebar-title {
     display: none; 
   }
 
-  /* 側邊欄容器微調，確保滑動順暢 */
   .settings-sidebar {
     padding: 0 4px 12px 4px;
     align-items: center;
   }
 
-  /* 將每個分類群組變成橫向排列 */
   .sidebar-group {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    margin-right: 16px; /* 每個群組之間的間距 */
+    margin-right: 16px;
   }
 
-  /* 分類標題與新增按鈕的容器 */
   .group-label {
     margin-bottom: 0;
     white-space: nowrap;
     font-size: 14px;
     padding-right: 12px;
-    border-right: 1px solid #EAE6E1; /* 加上右側分隔線區分不同群組 */
-    gap: 8px; /* 標題與新增按鈕的間距 */
+    border-right: 1px solid #EAE6E1; 
+    gap: 8px; 
   }
 
-  /* 手機版分頁按鈕改為膠囊狀，更適合水平滑動且明確呈現點擊範圍 */
   .tab-btn {
     background-color: #F9F7F5;
     padding: 8px 16px;
@@ -361,21 +338,18 @@
     font-size: 13px;
   }
 
-  /* 手機版當前選中狀態 */
   .tab-btn.active {
     background-color: #5D4A3E !important;
     color: #FFFFFF;
-    border-left: none; /* 移除電腦版的左側亮燈線 */
+    border-left: none; 
   }
 
-  /* 內容編輯區塊大幅縮減內距 */
   .settings-content-area {
     padding: 20px 16px;
     min-height: calc(100vh - 200px); 
     border-radius: 12px;
   }
 
-  /* 標題與公開狀態按鈕改為上下排列 */
   .settings-header {
     flex-direction: column;
     align-items: flex-start;
@@ -389,13 +363,11 @@
     justify-content: center;
   }
 
-  /* 儲存按鈕在手機版改為滿版寬度，方便單手操作 */
   .main-save-btn {
     width: 100%; 
     padding: 14px;
   }
 
-  /* 鎖定畫面的彈窗縮小 */
   .lock-card {
     width: 85%;
     padding: 24px;

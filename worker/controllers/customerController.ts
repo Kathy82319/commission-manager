@@ -2,9 +2,7 @@
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
-/**
- * 輔助函數：規範化社群聯絡方式格式 (避免雙重字串化)
- */
+
 function normalizeContactMethods(data: any): string {
   try {
     let arrayData = data;
@@ -12,7 +10,6 @@ function normalizeContactMethods(data: any): string {
       arrayData = JSON.parse(data);
     }
     if (Array.isArray(arrayData)) {
-      // 僅保留有意義的字串，過濾掉空值
       return JSON.stringify(arrayData.filter(m => m && typeof m === 'string' && m.trim() !== ""));
     }
     return "[]";
@@ -22,7 +19,6 @@ function normalizeContactMethods(data: any): string {
 }
 
 export const customerController = {
-  // 1. 取得客戶列表
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
       SELECT 
@@ -44,7 +40,6 @@ export const customerController = {
     }
   },
 
-  // 2. 新增客戶紀錄 (🌟 修正：確保 contact_methods 格式正確)
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
@@ -77,7 +72,6 @@ export const customerController = {
     }
   },
 
-  // 3. 詳情讀取 (讀取本地 public_id)
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const customer = await env.commission_db.prepare(`
@@ -97,7 +91,6 @@ export const customerController = {
     }
   },
 
-  // 4. 更新紀錄 (🌟 修正：確保更新時 contact_methods 欄位不遺失)
   async update(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();
@@ -119,7 +112,6 @@ export const customerController = {
         }
       }
 
-      // 🌟 獨立處理社群聯絡方式，確保規範化
       if (body.contact_methods !== undefined) {
         updates.push("contact_methods = ?");
         params.push(normalizeContactMethods(body.contact_methods));
@@ -136,7 +128,6 @@ export const customerController = {
     }
   },
 
-  // 5. 取得過往委託紀錄
   async getHistory(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const record = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")
@@ -159,7 +150,6 @@ export const customerController = {
     }
   },
 
-  // 6. 刪除客戶紀錄
   async delete(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const record = await env.commission_db.prepare("SELECT client_user_id FROM CustomerRecords WHERE id = ? AND artist_id = ?")

@@ -1,8 +1,5 @@
 /* src/styles/Notebook.css */
 
-/* ==========================================
-   1. 基礎佈局與容器 (Layout & Containers)
-========================================== */
 .notebook-page {
   padding: 0;
   width: 100%;
@@ -17,9 +14,7 @@
   margin: 0 auto;
 }
 
-/* ==========================================
-   2. 側邊欄 (Sidebar)
-========================================== */
+
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 90px);
@@ -41,14 +36,13 @@
   gap: 12px;
   border-radius: 16px 16px 0 0;
   box-sizing: border-box;
-  flex: 0 0 auto; /* 確保標題區塊固定高度，不會往下異常拉伸產生空白 */
+  flex: 0 0 auto;
 }
 
 .sidebar-title {
   font-weight: bold;
   color: #5D4A3E;
   font-size: 16px;
-  /* 強制覆寫全域樣式 */
   margin: 0 !important; 
   padding: 0 !important;
   line-height: 1.2;
@@ -61,20 +55,19 @@
   width: 100%;
   align-items: center;
   box-sizing: border-box;
-  /* 已移除干擾版面的 padding 與 flex-grow */
+  
 }
 
-/* 透過結構層級提高權重，並加入 min-width: 0 進行防呆防護 */
 .sidebar-controls .sidebar-search-input {
   flex: 1 1 auto;
-  min-width: 0; /* 關鍵資安與防呆佈局：防止 input 內容過長時撐破父容器造成 X 軸溢出 */
+  min-width: 0; 
   padding: 8px 12px;
   font-size: 13px;
   box-sizing: border-box;
 }
 
 .sidebar-controls .sidebar-filter {
-  flex: 0 0 auto; /* 讓下拉選單保持自身內容所需的寬度，不被過度擠壓或拉伸 */
+  flex: 0 0 auto;
   width: auto;
   padding: 8px 12px;
   font-size: 13px;
@@ -94,7 +87,6 @@
   color: #C4BDB5;
 }
 
-/* --- 側邊欄卡片 (Sidebar Cards) --- */
 .sidebar-list-container .sidebar-card {
   padding: 16px 16px 16px 24px;
   margin-bottom: 8px;
@@ -320,9 +312,7 @@
 .btn-danger { background-color: #A05C5C; color: #FFFFFF; border: none; }
 .btn-save { padding: 10px 24px; }
 
-/* ==========================================
-   5. 標籤列 (Tabs)
-========================================== */
+
 .scroll-tabs {
   display: flex;
   overflow-x: auto;
@@ -554,7 +544,6 @@
    11. 響應式設計 (Media Queries)
 ========================================== */
 @media (max-width: 1023px) {
-  /* 將 !important 的處理移入正確的斷點控制中 */
   .mobile-hide { display: none; }
 }
 
@@ -634,7 +623,7 @@
 
 /* 黑名單標籤樣式 */
 .card-mode-badge.mode-blacklist {
-  color: #FF4D4D;      /* 鮮紅字 */
+  color: #FF4D4D;   
   border: 1px solid #FF4D4D;
   margin-left: 6px;
 }

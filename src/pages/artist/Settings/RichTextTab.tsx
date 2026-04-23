@@ -1,4 +1,3 @@
-// RichTextTab.tsx 修正版
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import type { ProfileSettings } from '../Settings/types';
@@ -27,7 +26,6 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
   
   const getValue = () => {
     if (isCustom && customIndex !== undefined) {
-      // 修正：使用可選鏈防止存取不存在的索引
       return settings.custom_sections?.[customIndex]?.content || '';
     }
     if (field) {

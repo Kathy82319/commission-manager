@@ -94,7 +94,6 @@ export const commController = {
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
 
-    // 🌟 修正點 1：精確對齊免費版 3 筆限制
     const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
     const currentLimit = planLimits[user.plan_type as string] || 3;
 
@@ -104,7 +103,6 @@ export const commController = {
 
     const body: CreateCommissionBody = await request.json();
 
-    // 🌟 修正點 2：移除報錯邏輯，直接靜默使用 type-01 滿足 FK 約束
     const legacyTypeId = 'type-01';
 
     let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `${Date.now().toString().slice(-6)}`;

@@ -11,7 +11,6 @@
   color: #FFFFFF;
 }
 
-/* 新增：登入卡片容器，增加專業感與閱讀舒適度 */
 .login-card {
   max-width: 450px;
   width: 90%;
@@ -19,7 +18,7 @@
   background-color: #FFFFFF;
   border-radius: 24px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  color: #333333; /* 改為深色文字以在白底上閱讀 */
+  color: #333333;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,10 +29,9 @@
   margin-bottom: 24px;
   letter-spacing: 2px;
   font-size: 24px;
-  color: #5D4A3E; /* 統一使用 onboarding 的主色調 */
+  color: #5D4A3E;
 }
 
-/* 新增：隱私說明區塊，消除用戶對個資的顧慮 */
 .login-gateway-info {
   text-align: left;
   background-color: #F8FAFC;
@@ -66,7 +64,7 @@
   background-color: #06C755; 
   color: white;
   border: none;
-  padding: 12px 32px; /* 稍微增加寬度 */
+  padding: 12px 32px; 
   border-radius: 12px;
   font-size: 16px;
   font-weight: bold;
@@ -77,7 +75,7 @@
   gap: 12px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 12px rgba(6, 199, 85, 0.2);
-  width: 100%; /* 讓按鈕在手機版更好按 */
+  width: 100%;
 }
 
 .line-login-btn:hover {
@@ -85,7 +83,6 @@
   box-shadow: 0 6px 16px rgba(6, 199, 85, 0.3);
 }
 
-/* 調整：配合新的圖標包裝容器 */
 .line-icon-wrapper {
   width: 24px;
   height: 24px;
@@ -102,7 +99,7 @@
 .login-footer-text {
   margin-top: 24px;
   font-size: 13px;
-  color: #94A3B8; /* 配合卡片底色調整 */
+  color: #94A3B8;  
 }
 
 .login-footer-text a {
@@ -110,7 +107,6 @@
   text-decoration: underline;
 }
 
-/* --- 以下 Onboarding 樣式保持不變 --- */
 
 .onboarding-page {
   background-color: #FBFBF9;
@@ -263,7 +259,6 @@
   }
 }
 
-/* 新增：預設灰色大頭照樣式 */
 .default-avatar {
   background-color: #E2E8F0;
   border-radius: 50%;
@@ -271,7 +266,6 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* 寬高可由前端組件行內樣式或額外 class 覆蓋，此為基礎設定 */
   width: 40px; 
   height: 40px;
 }
@@ -280,5 +274,5 @@
   width: 65%;
   height: 65%;
   color: #94A3B8;
-  margin-top: 15%; /* 微調讓頭像看起來像半身照沉在底部 */
+  margin-top: 15%;
 }

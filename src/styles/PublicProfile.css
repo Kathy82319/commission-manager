@@ -357,7 +357,6 @@
   overflow-y: auto;
 }
 
-/* 修正點：取消繼承自 .rich-text-content 的兩層框感 */
 .rich-text-content.description {
   background: transparent !important;
   padding: 0 !important;
@@ -464,11 +463,10 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 9999; /* 確保蓋在所有東西最上層 */
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 配合 React 裡面的 isSplashClosing 狀態做淡出動畫 */
   transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 
@@ -484,9 +482,7 @@
 .splash-box h1 {
   font-size: 3rem;
   margin: 0;
-  /* 加上一點文字陰影，避免背景圖太亮導致文字看不清楚 */
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-  /* 簡單的文字浮現動畫 */
   animation: splashTextFadeIn 1s ease-out forwards;
 }
 
@@ -502,25 +498,22 @@
 }
 
 
-/* 新增：預設頭像佔位符樣式 */
 .default-avatar-placeholder {
-  background-color: #E2E8F0; /* 基礎灰色背景 */
+  background-color: #E2E8F0; 
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94A3B8; /* 圖標顏色 */
+  color: #94A3B8;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* 確保 profile-avatar 的基礎定義包含這兩個類別 */
 .profile-avatar {
-  width: 120px; /* 根據您現有 CSS 調整 */
+  width: 120px;
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-/* 針對不同主題微調佔位符背景 (選用) */
 .theme-dark .default-avatar-placeholder {
   background-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.3);
