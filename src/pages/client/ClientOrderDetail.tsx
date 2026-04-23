@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import '../../styles/ClientOrderDetail.css';
 interface CommissionDetail {
 id: string;
 status: string;
@@ -256,17 +255,12 @@ return (
 };
 if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF', flex: 1, height: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)' }}>載入中...</div>;
 if (!orderData) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF', flex: 1, height: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)' }}>找不到此委託單</div>;
-const tabStyle = (tabName: string): React.CSSProperties => ({
+const tabStyle = (tabName: string) => ({
 flex: 1, padding: '12px 16px', textAlign: 'center' as const, fontWeight: 'bold', cursor: 'pointer',
 borderBottom: activeTab === tabName ? '3px solid #4A7294' : '3px solid transparent',
 color: activeTab === tabName ? '#4A7294' : '#556577',
 backgroundColor: activeTab === tabName ? '#FFFFFF' : '#e8ecf3',
-transition: 'all 0.2s', outline: 'none', whiteSpace: 'nowrap' as const,
-WebkitTapHighlightColor: 'transparent' as const,
-MozAppearance: 'none' as const,
-WebkitAppearance: 'none' as const,
-appearance: 'none' as const,
-touchAction: 'manipulation' as const
+transition: 'all 0.2s', outline: 'none', whiteSpace: 'nowrap' as const
 });
 const sectionBoxStyle = { backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #d0d8e4' };
 const isSavedAndNotEmpty = customTitle.trim() !== '' && customTitle === savedTitle;
@@ -291,18 +285,6 @@ return (
 }
 .tab-scroll-container { display: flex; overflow-x: auto; background-color: #e8ecf3; border-radius: 16px 16px 0 0; scrollbar-width: none; }
 .tab-scroll-container::-webkit-scrollbar { display: none; }
-.tab-scroll-container button {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-.tab-scroll-container button:focus,
-.tab-scroll-container button:active {
-  outline: none;
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
 `}</style>
 {parsedChanges && (
 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
@@ -351,9 +333,9 @@ animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none', flex: '1 1 auto'
 </button>
 </div>
 <div className="tab-scroll-container">
-<button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
-<button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>
-<button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</button>
+<button style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
+<button style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>
+<button style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</button>
 </div>
 <div style={{ backgroundColor: '#e8ecf3', padding: '20px', borderRadius: '0 0 16px 16px', minHeight: '400px' }}>
 {activeTab === 'main' && (
