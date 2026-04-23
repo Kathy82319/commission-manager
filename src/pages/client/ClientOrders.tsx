@@ -17,7 +17,7 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 新增：時間格式化輔助函式 (含時分秒)
+// 🌟 時間格式化輔助函式 (含時分秒)
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -28,7 +28,7 @@ const formatLocalTime = (dateStr: string) => {
   });
 };
 
-// 🌟 新增：日期格式化輔助函式 (僅日期)
+// 🌟 日期格式化輔助函式 (僅日期)
 const formatLocalDate = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -291,7 +291,6 @@ export function ClientOrders() {
         <div style={{ padding: '20px', textAlign: 'center' }}>
           {!sub ? <div style={{ color: '#A0978D', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
             <div>
-               {/* 🌟 修正：稿件更新時間 */}
                <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{formatLocalTime(sub.created_at)} (v{sub.version})</div>
                
                <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
@@ -340,7 +339,7 @@ export function ClientOrders() {
         /* 全域溢出防止 */
         .notebook-page { overflow-x: hidden; width: 100%; }
 
-        /* 手機版樣式修正 */
+        /* 🌟 手機版樣式修正 (小於 1024px) */
         @media (max-width: 1024px) {
           .notebook-container {
             width: 100vw !important;
@@ -351,8 +350,8 @@ export function ClientOrders() {
             width: 100% !important;
             box-sizing: border-box;
           }
-          /* 搜尋與篩選同行 */
-          .mobile-controls-row {
+          /* 手機版：搜尋與篩選同行 */
+          .controls-wrapper {
             display: flex;
             gap: 8px;
             align-items: center;
@@ -360,12 +359,8 @@ export function ClientOrders() {
             background-color: #FAFAFA;
             border-bottom: 1px solid #EAE6E1;
           }
-          .mobile-controls-row .form-input {
-            margin: 0 !important;
-            height: 38px;
-          }
-          .mobile-controls-row input { flex: 2; }
-          .mobile-controls-row select { flex: 1; min-width: 90px; }
+          .controls-wrapper input { flex: 2; height: 38px; }
+          .controls-wrapper select { flex: 1; min-width: 90px; height: 38px; }
 
           .notebook-page .scroll-tabs .tab-btn.active {
             background-color: #5D4A3E; 
@@ -384,7 +379,7 @@ export function ClientOrders() {
           }
         }
 
-        /* 電腦版樣式保持不變 */
+        /* 🌟 電腦版樣式修正 (大於 1025px) */
         @media (min-width: 1025px) {
           .notebook-container {
             max-width: 1300px !important;
@@ -402,6 +397,16 @@ export function ClientOrders() {
             flex-direction: column;
             overflow: hidden;
           }
+          /* 電腦版：維持上下兩行，不使用 Flex 排成一列 */
+          .controls-wrapper {
+            display: block; 
+            padding: 10px 20px;
+            background-color: #FAFAFA;
+            border-bottom: 1px solid #EAE6E1;
+          }
+          .controls-wrapper input { width: 100%; margin-bottom: 8px; height: 36px; }
+          .controls-wrapper select { width: 100%; height: 36px; }
+
           .sidebar-list-container {
             flex: 1;
             overflow-y: auto;
@@ -434,22 +439,21 @@ export function ClientOrders() {
 
       <div className="notebook-container">
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          <div style={{ padding: '20px 20px 10px 20px', backgroundColor: '#FFFFFF', borderBottom: '1px solid transparent' }}>
+          <div style={{ padding: '20px 20px 10px 20px', backgroundColor: '#FFFFFF' }}>
             <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
           </div>
 
-          <div className="mobile-controls-row">
+          {/* 🌟 統一容器，透過 CSS Media Query 控制排列方式 */}
+          <div className="controls-wrapper">
             <input 
               type="text" 
               className="form-input" 
-              style={{ padding: '8px 12px', fontSize: '13px' }} 
               placeholder="🔍 搜尋暱稱/單號..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
             <select 
               className="form-input" 
-              style={{ padding: '6px 8px', fontSize: '13px' }} 
               value={filter} 
               onChange={e => setFilter(e.target.value as any)}
             >
@@ -475,7 +479,6 @@ export function ClientOrders() {
                       <div style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#e11d48', color: '#FFF', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>🔔</div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
-                      {/* 🌟 修正：列表日期 */}
                       <span>{formatLocalDate(order.order_date)}</span>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
                     </div>
@@ -594,7 +597,6 @@ export function ClientOrders() {
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                          {logs.map(log => (
                            <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
-                             {/* 🌟 修正：歷程紀錄時間 */}
                              <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>{formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
                              <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}>{log.content}</div>
                            </div>
