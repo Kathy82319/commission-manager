@@ -174,8 +174,8 @@ export function Queue() {
               <th>進度</th>
               <th>完工</th>
               <th>收款</th>
-              <th className="desktop-only">備註欄位</th>
-              <th className="desktop-only">操作</th>
+              <th className="queue-hide-mobile">備註欄位</th>
+              <th className="queue-hide-mobile">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -199,7 +199,7 @@ export function Queue() {
                       draggable 
                       onDragStart={() => handleDragStart(idx)}
                       onDragEnd={() => setDraggedIdx(null)}
-                      className="drag-handle desktop-only"
+                      className="drag-handle queue-hide-mobile"
                     >
                       <GripVertical size={16} />
                     </div>
