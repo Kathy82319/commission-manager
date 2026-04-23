@@ -20,6 +20,7 @@
 }
 
 /* 3. 分頁按鈕樣式 (對應原本的 tabStyle) */
+/* 基礎樣式：電腦與手機通用 */
 .detail-tab {
   flex: 1;
   padding: 12px 16px;
@@ -35,11 +36,42 @@
   white-space: nowrap;
 }
 
-/* 選中狀態 */
+/* 基礎 Active 樣式 */
 .detail-tab.active {
   border-bottom: 3px solid #4A7294;
   color: #4A7294;
   background-color: #FFFFFF;
+}
+
+/* =========================================
+   手機版測試區 (Max Width: 1023px)
+   ========================================= */
+@media (max-width: 1023px) {
+  /* 測試 1：使用父元素路徑來提升權重，觀察是否能撥開色塊 */
+  .tab-scroll-container .detail-tab.active {
+    /* 如果它是邊框爆炸，我們先把所有邊框清空 */
+    border: none;
+    border-bottom: 2px solid #4A7294;
+    
+    /* 如果它是背景覆蓋，我們先強制設為白色觀察文字是否出現 */
+    background-color: #FFFFFF;
+    color: #4A7294;
+    
+    /* 清除可能導致色塊的陰影或外框 */
+    box-shadow: none;
+    outline: none;
+    
+    /* 確保文字不會被縮排踢走 */
+    text-indent: 0;
+    font-size: 14px;
+  }
+
+  /* 測試 2：偵測色塊是否由偽元素 (::before / ::after) 產生 */
+  .tab-scroll-container .detail-tab.active::before,
+  .tab-scroll-container .detail-tab.active::after {
+    content: none;
+    display: none;
+  }
 }
 
 /* 4. 內容區塊樣式 (對應原本的 sectionBoxStyle) */
