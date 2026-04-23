@@ -279,23 +279,6 @@ export function ClientOrderDetail() {
   if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF', flex: 1, height: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)' }}>載入中...</div>;
   if (!orderData) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#FFF', flex: 1, height: '100vh', background: 'linear-gradient(135deg, #778ca4 0%, #5a6e85 100%)' }}>找不到此委託單</div>;
 
-  // 🌟 修改點：將分頁統一改為咖啡色主題的膠囊狀，確保字體為白色不被吃掉
-  const tabStyle = (tabName: string) => ({
-    flex: 1, 
-    padding: '10px 16px', 
-    margin: '0 4px',
-    textAlign: 'center' as const, 
-    fontWeight: 'bold', 
-    cursor: 'pointer',
-    border: 'none',
-    borderRadius: '20px', 
-    color: activeTab === tabName ? '#FFFFFF' : '#8A7E72', 
-    backgroundColor: activeTab === tabName ? '#5D4A3E' : 'transparent',
-    transition: 'all 0.2s', 
-    outline: 'none', 
-    whiteSpace: 'nowrap' as const
-  });
-
   const sectionBoxStyle = { backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #EAE6E1' };
 
   const isSavedAndNotEmpty = customTitle.trim() !== '' && customTitle === savedTitle;
@@ -321,7 +304,6 @@ export function ClientOrderDetail() {
           70% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); border: 2px solid rgba(250, 204, 21, 1); }
           100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); border: 2px solid rgba(250, 204, 21, 1); }
         }
-        /* 🌟 修改分頁容器的底色，使其融入整體風格 */
         .tab-scroll-container { 
           display: flex; 
           overflow-x: auto; 
@@ -331,6 +313,32 @@ export function ClientOrderDetail() {
           scrollbar-width: none; 
         }
         .tab-scroll-container::-webkit-scrollbar { display: none; }
+
+        /* 分頁按鈕的 CSS 類別，加入 !important 防止全域污染，並重置原生按鈕渲染 */
+        .detail-tab {
+          flex: 1; 
+          padding: 10px 16px; 
+          margin: 0 4px;
+          text-align: center; 
+          font-weight: bold; 
+          cursor: pointer;
+          border: none;
+          border-radius: 20px; 
+          color: #8A7E72; 
+          background-color: transparent;
+          transition: all 0.2s; 
+          outline: none; 
+          white-space: nowrap;
+          appearance: none;
+          -webkit-appearance: none;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .detail-tab.active {
+          background-color: #5D4A3E !important;
+          color: #FFFFFF !important;
+        }
       `}</style>
 
       {parsedChanges && (
@@ -374,7 +382,7 @@ export function ClientOrderDetail() {
             }} 
             style={{ 
               padding: '10px 20px', 
-              backgroundColor: '#5D4A3E', /* 🌟 同步把「進入聊天室」按鈕改為主題色 */
+              backgroundColor: '#5D4A3E',
               color: '#FFFFFF', border: 'none', borderRadius: '8px', 
               fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: 'all 0.3s', 
               animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none', flex: '1 1 auto', minWidth: '120px'
@@ -385,12 +393,11 @@ export function ClientOrderDetail() {
         </div>
 
         <div className="tab-scroll-container">
-          <button style={tabStyle('main')} onClick={() => setActiveTab('main')}>詳細內容</button>
-          <button style={tabStyle('review')} onClick={() => setActiveTab('review')}>稿件審閱</button>
-          <button style={tabStyle('history')} onClick={() => setActiveTab('history')}>歷程紀錄</button>
+          <button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
+          <button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
+          <button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
         </div>
 
-        {/* 🌟 修改下方內容區塊的底色，使其過渡更自然 */}
         <div style={{ backgroundColor: '#FDFBFA', padding: '20px', borderRadius: '0 0 16px 16px', border: '1px solid #EAE6E1', borderTop: 'none', minHeight: '400px' }}>
           
           {activeTab === 'main' && (
