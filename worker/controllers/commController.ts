@@ -86,8 +86,7 @@ export const commController = {
   },
 
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    // 🌟 資安強化：確保 user 存在[cite: 1]
-    const user = await env.commission_db.prepare("SELECT id, plan_type, role FROM Users WHERE id = ?").bind(currentUserId).first<any>();
+    const user = await env.commission_db.prepare("SELECT plan_type, role FROM Users WHERE id = ?").bind(currentUserId).first<any>();
     
     if (!user) return new Response(JSON.stringify({ success: false, error: "找不到使用者資料" }), { status: 404, headers: corsHeaders });
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
@@ -95,7 +94,7 @@ export const commController = {
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
 
-    // 🌟 修正：基礎免費版配額對齊為 3 筆[cite: 1]
+    // 🌟 修正點 1：精確對齊免費版 3 筆限制
     const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
     const currentLimit = planLimits[user.plan_type as string] || 3;
 
@@ -117,15 +116,8 @@ export const commController = {
 
     const body: CreateCommissionBody = await request.json();
 
-    // 🌟 修正 500 錯誤：自動尋找該繪師有效的委託類型 ID，防止違反 FK 約束[cite: 1]
-    const typeRecord = await env.commission_db.prepare(
-      "SELECT id FROM CommissionTypes WHERE artist_id = ? OR id = 'type-01' LIMIT 1"
-    ).bind(currentUserId).first<any>();
-    
-    const realTypeId = typeRecord?.id;
-    if (!realTypeId) {
-      return new Response(JSON.stringify({ success: false, error: "請先至設定頁面建立至少一種『委託類型』" }), { status: 400, headers: corsHeaders });
-    }
+    // 🌟 修正點 2：移除報錯邏輯，直接靜默使用 type-01 滿足 FK 約束
+    const legacyTypeId = 'type-01';
 
     let newOrderId = body.is_external ? `EX-${Date.now().toString().slice(-6)}` : `${Date.now().toString().slice(-6)}`;
     const clientId = body.client_id || '';
@@ -144,7 +136,7 @@ export const commController = {
           draw_scope, char_count, bg_type, add_ons, detailed_settings, workflow_mode, agreed_tos_snapshot
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        newOrderId, currentUserId, realTypeId, clientId || null, 0,
+        newOrderId, currentUserId, legacyTypeId, clientId || null, 0,
         '', sanitizeAndLimit(body.client_name || '未知', 100), body.total_price || 0,
         body.workflow_mode === 'free' ? 'unpaid' : (body.is_external ? 'paid' : 'quote_created'),
         body.is_external ? 'paid' : 'unpaid', 'sketch_drawing', body.is_external ? 1 : 0,

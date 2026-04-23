@@ -39,16 +39,6 @@ CREATE TABLE ArtistProfiles (
     FOREIGN KEY (user_id) REFERENCES Users(id)
 );
 
--- 3. 服務項目表
-CREATE TABLE CommissionTypes (
-    id TEXT PRIMARY KEY,
-    artist_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    base_price INTEGER NOT NULL,
-    estimated_days INTEGER NOT NULL,
-    is_active INTEGER DEFAULT 1,
-    FOREIGN KEY (artist_id) REFERENCES Users(id)
-);
 
 -- 4. 委託單主表
 CREATE TABLE Commissions (
