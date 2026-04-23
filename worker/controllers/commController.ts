@@ -86,18 +86,21 @@ export const commController = {
   },
 
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role FROM Users WHERE id = ?").bind(currentUserId).all();
+    const { results: userRes } = await env.commission_db.prepare("SELECT id, plan_type, role FROM Users WHERE id = ?").bind(currentUserId).all();
     const user = userRes[0] as any;
     
+    // 🌟 資安強化：檢查使用者是否存在，防止 500 崩潰
+    if (!user) return new Response(JSON.stringify({ success: false, error: "找不到使用者資料" }), { status: 404, headers: corsHeaders });
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
 
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
-    // 修正：動態配額守衛
+
+    // 🌟 修正：根據討論結果調整配額 (Free: 3, Trial: 20)
     const planLimits: Record<string, number> = { free: 3, trial: 20, pro: 999999 };
     const currentLimit = planLimits[user.plan_type as string] || 3;
-    // 後端配額守衛：非專業版用戶上限設為 20 筆
-    if (user.plan_type !== 'pro' && totalCount >= 20) {
+
+    if (user.plan_type !== 'pro' && totalCount >= currentLimit) {
       return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
     }
 
@@ -110,10 +113,7 @@ export const commController = {
 
     const recentCount = (recentOrders[0]?.recent_count as number) || 0;
     if (recentCount >= 5) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: "系統偵測到異常的建單頻率，請稍後再試。" 
-      }), { status: 429, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: "建單頻率過高，請稍後再試。" }), { status: 429, headers: corsHeaders });
     }
 
     const body: CreateCommissionBody = await request.json();
@@ -125,6 +125,7 @@ export const commController = {
       if (publicRes.length > 0) newOrderId = `${publicRes[0].public_id as string}-${Date.now().toString().slice(-3)}`;
     }
     
+    // 💡 提示：若此處回傳 500，請檢查資料庫是否有 'type-01' 的 CommissionTypes 紀錄
     await env.commission_db.batch([
       env.commission_db.prepare(`
         INSERT INTO Commissions (
