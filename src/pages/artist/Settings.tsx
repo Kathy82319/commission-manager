@@ -318,7 +318,7 @@ export function Settings() {
                 onToggleGlobalSave={setHideGlobalSave} 
                 onToast={showToast} 
                 quotaInfo={quotaInfo}
-                isReadOnly={isFreePlan} // 關鍵：將唯讀權限傳入 ShowcaseTab
+                isReadOnly={false} 
               />
             )}
             

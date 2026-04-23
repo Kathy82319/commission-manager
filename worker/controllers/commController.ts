@@ -93,7 +93,9 @@ export const commController = {
 
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
-
+    // 修正：動態配額守衛
+    const planLimits: Record<string, number> = { free: 3, trial: 20, pro: 999999 };
+    const currentLimit = planLimits[user.plan_type as string] || 3;
     // 後端配額守衛：非專業版用戶上限設為 20 筆
     if (user.plan_type !== 'pro' && totalCount >= 20) {
       return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
