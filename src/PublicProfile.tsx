@@ -174,9 +174,8 @@ export function PublicProfile() {
   }, [loading, settings, showSplash]);
 
   const displayShowcaseItems = useMemo(() => {
-    const isFree = artist?.plan_type === 'free';
-    return isFree ? showcaseItems.slice(0, 6) : showcaseItems;
-  }, [showcaseItems, artist?.plan_type]);
+    return showcaseItems;
+  }, [showcaseItems]);
 
   const availableTags = useMemo(() => {
     const tags = new Set<string>();

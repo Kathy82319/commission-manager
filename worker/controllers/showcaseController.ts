@@ -1,27 +1,30 @@
-// worker/controllers/showcaseController.ts
 import { Env } from "../shared/types";
 
 export const showcaseController = {
 
   async getPublicList(identifier: string, env: Env, headers: any) {
-
     const user = await env.commission_db
-      .prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?")
+      .prepare("SELECT id, plan_type FROM Users WHERE id = ? OR public_id = ?")
       .bind(identifier, identifier)
-      .first<{ id: string }>();
+      .first<{ id: string, plan_type: string }>();
     
     if (!user) {
       return new Response(JSON.stringify({ success: true, data: [] }), { headers });
     }
 
+    let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
+    
+    if (user.plan_type === 'free') {
+      query += " LIMIT 6";
+    }
+
     const { results } = await env.commission_db
-      .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC")
+      .prepare(query)
       .bind(user.id)
       .all();
 
     return new Response(JSON.stringify({ success: true, data: results }), { headers });
   },
-
 
   async getMyItems(userId: string, env: Env, headers: any) {
     const { results } = await env.commission_db
@@ -32,6 +35,22 @@ export const showcaseController = {
   },
 
   async create(request: Request, userId: string, env: Env, headers: any) {
+    const user = await env.commission_db
+      .prepare("SELECT plan_type FROM Users WHERE id = ?")
+      .bind(userId)
+      .first<{ plan_type: string }>();
+
+    const { results: countRes } = await env.commission_db
+      .prepare("SELECT COUNT(*) as total FROM ShowcaseItems WHERE artist_id = ?")
+      .bind(userId)
+      .all();
+
+    const totalCount = (countRes[0]?.total as number) || 0;
+
+    if (user?.plan_type === 'free' && totalCount >= 6) {
+      return new Response(JSON.stringify({ success: false, error: "發現bug不要太超過><" }), { status: 403, headers });
+    }
+
     const body: any = await request.json();
     const id = `sc-${Date.now()}`;
     await env.commission_db

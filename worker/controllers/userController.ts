@@ -1,4 +1,3 @@
-// worker/controllers/userController.ts
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
@@ -129,6 +128,9 @@ export const userController = {
       return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
     }
 
+    const { results: userBase } = await env.commission_db.prepare("SELECT plan_type FROM Users WHERE id = ?").bind(targetId).all();
+    const userPlan = userBase[0]?.plan_type || 'free';
+
     const body: any = await request.json();
     let settings: any = {};
     try {
@@ -137,6 +139,16 @@ export const userController = {
         : (body.profile_settings || {});
     } catch (e) {
       settings = {};
+    }
+
+    if (userPlan === 'free') {
+      if (Array.isArray(settings.portfolio) && settings.portfolio.length > 6) {
+        settings.portfolio = settings.portfolio.slice(0, 6);
+      }
+    } else if (userPlan === 'trial') {
+      if (Array.isArray(settings.portfolio) && settings.portfolio.length > 20) {
+        settings.portfolio = settings.portfolio.slice(0, 20);
+      }
     }
 
     const updateUsers = env.commission_db.prepare(`

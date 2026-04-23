@@ -1,38 +1,25 @@
-// worker/controllers/commController.ts
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
-/**
- * 🌟 修正：強化版 CRM 認領邏輯
- * 1. 優先搜尋繪師名下是否有相同 client_user_id 的紀錄
- * 2. 若無，搜尋是否有相同 public_id 的手動預防性紀錄
- * 3. 若有手動紀錄，則「認領」它並更新 client_user_id
- * 4. 若皆無，才新增紀錄
- */
 async function syncToCRM(env: Env, artistId: string, clientId: string, clientDisplayName: string) {
   try {
-    // 取得該客戶的真實 public_id (User_ 格式)
     const clientInfo = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).first<{ public_id: string }>();
     const clientPublicId = clientInfo?.public_id || '';
 
-    // 🌟 搜尋現有名單 (支援認領手動預防紀錄)
     const existing = await env.commission_db.prepare(`
       SELECT id, client_user_id FROM CustomerRecords 
       WHERE artist_id = ? AND (client_user_id = ? OR (public_id = ? AND client_user_id IS NULL))
     `).bind(artistId, clientId, clientPublicId).first<any>();
 
     if (existing) {
-      // 若找到且 client_user_id 為空，執行認領
       if (!existing.client_user_id) {
         await env.commission_db.prepare(
           "UPDATE CustomerRecords SET client_user_id = ? WHERE id = ?"
         ).bind(clientId, existing.id).run();
-        console.log(`[CRM] 已成功認領手動預防紀錄: ${clientPublicId}`);
       }
-      return; // 已有紀錄且已綁定，跳過新增
+      return;
     }
 
-    // 真的完全沒紀錄，才執行新增 (🌟 修正：補齊欄位，確保資料庫結構完整)
     const newId = crypto.randomUUID();
     const safeDisplayName = sanitizeAndLimit(clientDisplayName, 50);
     
@@ -42,13 +29,12 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
     `).bind(newId, artistId, clientId, clientPublicId, safeDisplayName).run();
     
   } catch (err) {
-    console.error("CRM 同步靜默失敗:", err);
+    console.error(err);
   }
 }
 
 export const commController = {
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    // 🌟 修正：LEFT JOIN CustomerRecords 以獲取黑名單標籤與 CRM ID
     const query = `
       SELECT 
         c.*, 
@@ -70,7 +56,6 @@ export const commController = {
   },
 
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    // 🌟 修正：LEFT JOIN CustomerRecords 獲取黑名單標籤、CRM ID 與備註
     const { results } = await env.commission_db.prepare(`
       SELECT 
         c.*, 
@@ -100,10 +85,17 @@ export const commController = {
   },
 
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role, trial_start_at, trial_end_at, pro_expires_at, custom_quota FROM Users WHERE id = ?").bind(currentUserId).all();
+    const { results: userRes } = await env.commission_db.prepare("SELECT plan_type, role FROM Users WHERE id = ?").bind(currentUserId).all();
     const user = userRes[0] as any;
     
     if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
+
+    const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
+    const totalCount = (totalRes[0]?.total as number) || 0;
+
+    if (user.plan_type === 'free' && totalCount >= 20) {
+      return new Response(JSON.stringify({ success: false, error: "發現bug不要太超過><" }), { status: 403, headers: corsHeaders });
+    }
 
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentOrders } = await env.commission_db.prepare(`
