@@ -500,3 +500,28 @@
     transform: translateY(0);
   }
 }
+
+
+/* 新增：預設頭像佔位符樣式 */
+.default-avatar-placeholder {
+  background-color: #E2E8F0; /* 基礎灰色背景 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8; /* 圖標顏色 */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 確保 profile-avatar 的基礎定義包含這兩個類別 */
+.profile-avatar {
+  width: 120px; /* 根據您現有 CSS 調整 */
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* 針對不同主題微調佔位符背景 (選用) */
+.theme-dark .default-avatar-placeholder {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+}
