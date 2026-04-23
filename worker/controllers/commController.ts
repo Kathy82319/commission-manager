@@ -102,18 +102,6 @@ export const commController = {
       return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
     }
 
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-    const { results: recentOrders } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as recent_count 
-      FROM Commissions 
-      WHERE artist_id = ? AND datetime(order_date) >= datetime(?)
-    `).bind(currentUserId, oneMinuteAgo).all();
-
-    const recentCount = (recentOrders[0]?.recent_count as number) || 0;
-    if (recentCount >= 5) {
-      return new Response(JSON.stringify({ success: false, error: "建單頻率過高，請稍後再試。" }), { status: 429, headers: corsHeaders });
-    }
-
     const body: CreateCommissionBody = await request.json();
 
     // 🌟 修正點 2：移除報錯邏輯，直接靜默使用 type-01 滿足 FK 約束
