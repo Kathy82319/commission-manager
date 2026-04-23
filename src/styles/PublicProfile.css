@@ -520,145 +520,116 @@
 }
 
 /* ==========================================================================
-   9. 手機版深度優化 (Mobile Deep Optimization) - 斷點 768px
+   手機版：左右並排「社群名片」模式優化
    ========================================================================== */
 
 @media (max-width: 768px) {
-  /* 側邊欄改為頂部區塊，解除固定高度 */
+  .profile-layout-root {
+    flex-direction: column;
+  }
+
   .profile-sidebar {
     width: 100%;
     height: auto;
     position: relative;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   }
 
+  /* 🌟 名片式核心：改為橫向排列 */
   .sidebar-top {
-    padding: 30px 20px 10px 20px;
+    padding: 24px 20px 15px 20px;
+    flex-direction: row; /* 左右並排 */
     align-items: center;
-    text-align: center;
+    gap: 16px;
+    text-align: left;
   }
 
-  /* 縮小手機版大頭貼 */
+  /* 縮小頭像尺寸以配合橫向排版 */
   .profile-avatar {
-    width: 140px;
-    height: 140px;
-    border-radius: 20px; /* 保持與電腦版一致的圓角風格 */
+    width: 90px;
+    height: 90px;
+    border-radius: 18px;
+    margin-bottom: 0; /* 移除底部間距 */
+    flex-shrink: 0;
   }
 
-  /* 名字與社群居中 */
+  /* 文字區塊填滿剩餘空間 */
   .name-social-section {
-    text-align: center;
-    margin-top: 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .profile-name {
     font-size: 20px;
+    margin-bottom: 6px;
   }
 
+  /* 社群連結靠左對齊 */
   .social-links {
-    justify-content: center;
-    margin-bottom: 20px;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-bottom: 0;
   }
 
+  .social-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* 簡介區塊優化 */
   .sidebar-bottom {
     padding: 0 20px 20px 20px;
   }
 
-  /* 🌟 重點修正：導覽列改為橫向滾動，節省垂直空間 */
+  .bio-section {
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .profile-bio {
+    font-size: 13.5px;
+    line-height: 1.5;
+    opacity: 0.85;
+    /* 避免手機版簡介過長，可視需求加入行數限制 */
+  }
+
+  /* 導覽列維持橫向滑動，僅微調間距 */
   .sidebar-nav {
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 5px 0;
-    gap: 8px;
-    /* 隱藏滾動條但保持功能 */
-    -webkit-overflow-scrolling: touch;
+    padding: 5px 4px;
   }
 
-  .sidebar-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav-item {
-    white-space: nowrap; /* 防止文字換行 */
-    padding: 8px 16px;
-    font-size: 14px;
-    background: rgba(0, 0, 0, 0.05); /* 給個淡底色讓它像標籤 */
-  }
-
-  /* 主內容區縮減邊距 */
+  /* 主內容區邊距縮減 */
   .profile-main-content {
-    padding: 20px 15px;
+    padding: 15px 12px;
   }
 
-  /* 富文本內容在手機版不要 50px 這麼寬的內距 */
   .rich-text-content {
     padding: 20px;
-    border-radius: 16px;
-    line-height: 1.7;
-    font-size: 15px;
+    border-radius: 20px;
   }
 
-  /* 瀑布流改為單欄或兩欄 */
-  .masonry-grid {
-    column-count: 1; /* 螢幕太小時建議一欄，若想兩欄可改為 2 */
-    column-gap: 15px;
-  }
-
-  .masonry-item {
-    margin-bottom: 15px;
-  }
-
-  /* 作品網格改為兩欄 */
+  /* 作品網格改為兩欄提高密度 */
   .portfolio-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
   }
 
-  /* 彈窗細節優化 */
+  /* 彈窗內容垂直排列優化 */
   .showcase-content-box {
-    width: 95vw;
-    height: 90vh;
     flex-direction: column;
+    width: 95vw;
+    height: 92vh;
   }
 
   .showcase-cover {
-    height: 35vh; /* 圖片佔比縮小，留給文字 */
+    height: 40%;
     flex: none;
     border-right: none;
-    border-bottom: 1px solid #eee;
   }
 
   .showcase-details {
-    padding: 20px;
-    gap: 15px;
-  }
-
-  .showcase-details h2 {
-    font-size: 22px;
-  }
-
-  /* 燈箱關閉按鈕移到更顯眼位置，防止手指按不到 */
-  .lightbox-close {
-    top: 15px;
-    right: 15px;
-    width: 44px;
-    height: 44px;
-  }
-
-  /* 頁腳橫向排列 */
-  .profile-internal-footer .footer-links {
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-}
-
-/* 針對極小螢幕 (如 iPhone SE) */
-@media (max-width: 380px) {
-  .portfolio-grid {
-    grid-template-columns: 1fr; /* 寬度太小時作品改為一欄 */
-  }
-  .splash-box h1 {
-    font-size: 2rem;
+    padding: 25px;
   }
 }
