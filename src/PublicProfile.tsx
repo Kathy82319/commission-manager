@@ -9,7 +9,7 @@ interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
-// 🌟 修正點 1：強化解碼防禦，防止 undefined 或 null 導致渲染崩潰
+// 🌟 僅在渲染階段使用，不可用於 JSON 解析前
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
   const txt = document.createElement("textarea");
@@ -22,7 +22,7 @@ interface ProfileSettings {
   detailed_intro: string;
   process: string;
   payment: string;
-  // 配合數據庫結構，id 改為選擇性
+  rules?: string; 
   custom_sections: { id?: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
@@ -119,14 +119,16 @@ export function PublicProfile() {
 
         if (userData.success && userData.data) {
           setArtist(userData.data);
+          
+          // 🌟 直接解析原始 JSON，不對整個字串進行解碼，防止語法錯誤
           if (userData.data.profile_settings) {
             try {
-              const decodedSettings = decodeHTML(userData.data.profile_settings);
-              const parsedSettings = JSON.parse(decodedSettings);
+              const rawSettings = userData.data.profile_settings;
+              const parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
               setSettings(parsedSettings);
             } catch (e) {
-              console.error(e);
+              console.error("JSON 解析失敗:", e);
               setShowSplash(false);
             }
           } else {
@@ -150,7 +152,7 @@ export function PublicProfile() {
           setShowcaseItems(formattedItems);
         }
       } catch (error) {
-        console.error(error);
+        console.error("載入 API 發生錯誤:", error);
         setShowSplash(false);
       } finally {
         setLoading(false);
@@ -174,6 +176,7 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
+  // 取得所有項目中出現過的標籤
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     showcaseItems.forEach(item => {
@@ -184,6 +187,7 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
+  // 🌟 現在此函式已被 UI 正確呼叫，解決 TypeScript 錯誤
   const handleTagClick = (tag: string) => {
     setSelectedTags(prev => {
       if (tag === '全部') return ['全部'];
@@ -203,7 +207,6 @@ export function PublicProfile() {
     );
   }, [showcaseItems, selectedTags]);
 
-  // 🌟 修正點 2：availableTabs 徹底移除 rules，並修正自定義分頁 ID 同步
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs = [];
@@ -215,7 +218,7 @@ export function PublicProfile() {
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
-    // 依要求：不顯示 'rules' 標籤
+    // 依要求：不顯示 rules
 
     if (Array.isArray(settings.custom_sections)) {
       settings.custom_sections.forEach((sec, index) => {
@@ -314,6 +317,7 @@ export function PublicProfile() {
               
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
+                  {/* 🌟 補回篩選 UI，解決 handleTagClick 未讀取的報錯 */}
                   {availableTags.length > 1 && (
                     <div className="tag-filter-bar">
                       {availableTags.map(tag => {
@@ -333,9 +337,6 @@ export function PublicProfile() {
                         <div className="floating-info-box">
                           <div className="item-title">{item.title}</div>
                           <div className="item-price">${item.price_info}</div>
-                          <div className="item-tags">
-                            {Array.isArray(item.tags) && item.tags.slice(0, 3).map(tag => <span key={tag}>#{tag}</span>)}
-                          </div>
                         </div>
                       </div>
                     ))}
@@ -353,13 +354,12 @@ export function PublicProfile() {
                 </div>
               )}
               
-              {/* 🌟 修正點 3：渲染邏輯排除 rules */}
               {['detailed_intro', 'process', 'payment'].includes(currentTab) && settings && (
                 <div className="rich-text-content" 
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
               )}
 
-              {/* 🌟 修正點 4：自定義分頁渲染同步 ID */}
+              {/* 自定義分頁渲染 (同步使用 index 生成的 ID) */}
               {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec, index) => {
                 const generatedId = `custom_${index}`;
                 return currentTab === generatedId && (
@@ -378,31 +378,20 @@ export function PublicProfile() {
                 <Link to="/privacy">隱私權政策</Link>
                 <span>|</span>
                 <Link to="/refund-policy">退款政策</Link>
-                <span>|</span>
-                <span>客服信箱：cath40286@gmail.com</span>
               </div>
             </footer>
           </div>
         </main>
       </div>
 
-      {/* Lightbox Modals 保持不變 ... */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
             <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
             <div className="showcase-details">
-              <div className="showcase-header">
-                <h2>{selectedShowcase.title}</h2>
-                <div className="modal-price">${selectedShowcase.price_info}</div>
-              </div>
-              <div className="modal-tags">
-                {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
-              </div>
-              <div className="description-scroll-area">
-                <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
-              </div>
+              <h2>{selectedShowcase.title}</h2>
+              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
             </div>
           </div>
         </div>
@@ -414,7 +403,6 @@ export function PublicProfile() {
           <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
             <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" />
-            <div className="lightbox-counter">{selectedImgIndex + 1} / {settings.portfolio.length}</div>
           </div>
           <button className="lightbox-nav next" onClick={handleNextImg}><ChevronRight size={48}/></button>
         </div>
