@@ -317,6 +317,27 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
+      {/* 🌟 插入局部樣式修正分頁問題 */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .notebook-page .scroll-tabs .tab-btn.active {
+            background-color: #5D4A3E !important; /* 強制咖啡色背景 */
+            color: #FFFFFF !important;           /* 強制文字白色 */
+            border-radius: 20px !important;      /* 確保膠囊外觀 */
+            border: none !important;
+          }
+          .notebook-page .scroll-tabs .tab-btn.active .tab-text {
+            color: #FFFFFF !important;
+            position: relative;
+            z-index: 5;
+          }
+          /* 防止可能的偽元素遮擋 */
+          .notebook-page .scroll-tabs .tab-btn.active::before,
+          .notebook-page .scroll-tabs .tab-btn.active::after {
+            display: none !important;
+          }
+        }
+      `}</style>
       
       {parsedChanges && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
@@ -368,12 +389,10 @@ export function ClientOrders() {
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
                     </div>
                     
-                    {/* 調整這裡的 lineHeight 和 paddingBottom 避免文字上下被裁切 */}
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px', lineHeight: '1.4', paddingBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {order.client_custom_title || order.project_name || '未命名項目'}
                     </div>
                     
-                    {/* 調整 gap 和 flexShrink 避免單號和金額互擠 */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '12px', color: '#7A7269', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>單號：{order.id}</span>
                       <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '14px', whiteSpace: 'nowrap', flexShrink: 0 }}>NT$ {order.total_price}</span>
@@ -423,9 +442,15 @@ export function ClientOrders() {
               </div>
 
               <div className="scroll-tabs">
-                <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
-                <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
-                <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
+                <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
+                  <span className="tab-text">詳細內容</span>
+                </button>
+                <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>
+                  <span className="tab-text">稿件審閱</span>
+                </button>
+                <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+                  <span className="tab-text">歷程紀錄</span>
+                </button>
               </div>
 
               <div className="tab-content-area">
