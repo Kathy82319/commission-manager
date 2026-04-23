@@ -1,24 +1,3 @@
--- 0. 暫時關閉外鍵約束檢查，確保能順利清空舊表
-PRAGMA foreign_keys = OFF;
-
--- 1. 刪除所有依賴子表與舊表
-DROP TABLE IF EXISTS Messages;
-DROP TABLE IF EXISTS Attachments;
-DROP TABLE IF EXISTS ActionLogs;
-DROP TABLE IF EXISTS Submissions;
-DROP TABLE IF EXISTS PaymentRecords;
-DROP TABLE IF EXISTS Milestones;
-DROP TABLE IF EXISTS Artists;
-
--- 2. 刪除所有主表
-DROP TABLE IF EXISTS Commissions;
-DROP TABLE IF EXISTS CommissionTypes;
-DROP TABLE IF EXISTS ArtistProfiles;
-DROP TABLE IF EXISTS Users;
-
--- 3. 重新開啟外鍵約束檢查
-PRAGMA foreign_keys = ON;
-
 -- ==========================================
 -- 建立資料表結構
 -- ==========================================
@@ -226,13 +205,5 @@ CREATE TABLE CustomerRecords (
     FOREIGN KEY (client_user_id) REFERENCES Users(id)
 );
 
--- ==========================================
--- 寫入預設開發資料 (Seed Data)
--- ==========================================
 
-INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role, plan_type) 
-VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 'artist', 'pro');
-
-INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
-VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 

@@ -26,9 +26,6 @@ export function Login() {
         </div>
 
         <button onClick={handleLineLogin} className="line-login-btn">
-          <span className="line-icon-wrapper">
-            <img src="/line-icon.svg" alt="LINE" className="line-icon-img" />
-          </span>
           透過 LINE 繼續
         </button>
 
