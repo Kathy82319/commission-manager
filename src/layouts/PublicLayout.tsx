@@ -19,8 +19,7 @@ export function PublicLayout() {
   });
 
   const handleLoginClick = () => {
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-    window.location.href = `${API_BASE}/api/auth/line/login`;
+    navigate('/login');
   };
 
   const isLegalPage = 
@@ -28,7 +27,6 @@ export function PublicLayout() {
     location.pathname === '/privacy' || 
     location.pathname === '/refund-policy';
 
-  
   const color = theme.primaryColor || '#ffffff';
   const isWhiteText = theme.textColor === 'white';
   
