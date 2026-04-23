@@ -682,3 +682,9 @@
     padding: 16px 16px 20px 16px;
   }
 }
+
+/* 針對文字頁面區塊的間距優化 */
+  .rich-text-content {
+    padding: 24px 16px; /* 大幅縮小左右內距，讓文字展開 */
+    border-radius: 20px; /* 稍微縮小圓角以符合手機版比例 */
+  }
