@@ -563,7 +563,7 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    min-width: 0; /
+    min-width: 0; 
   }
 
   .profile-name {
@@ -588,7 +588,6 @@
     height: 32px;
   }
 
-  /* 簡介與導覽列區塊 */
   .sidebar-bottom {
     padding: 20px 24px 24px 24px;
   }
@@ -675,5 +674,5 @@
 
   .rich-text-content {
     padding: 24px 16px; 
-    border-radius: 20px;
+    border-radius: 20px; 
   }
