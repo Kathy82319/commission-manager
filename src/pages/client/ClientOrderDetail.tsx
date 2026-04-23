@@ -309,7 +309,7 @@ export function ClientOrderDetail() {
       <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column' }}>
         <button 
           onClick={() => navigate('/client/orders')} 
-          style={{ background: 'none', border: 'none', color: '#5D4A3E', padding: '0 0 16px 0', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', transition: 'color 0.2s', alignSelf: 'flex-start', fontWeight: 'bold' }} 
+          style={{ background: 'none', border: 'none', padding: '0 0 16px 0', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', transition: 'color 0.2s', alignSelf: 'flex-start', fontWeight: 'bold' }} 
         >
           ← 返回列表
         </button>
@@ -337,12 +337,7 @@ export function ClientOrderDetail() {
         </div>
 
         <div className="tab-scroll-container">
-          <button 
-  className={`detail-tab ${activeTab === 'main' ? 'this-is-my-selected-tab' : ''}`} 
-  onClick={() => setActiveTab('main')}
->
-  詳細內容
-</button>
+          <button className={`detail-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>詳細內容</button>
           <button className={`detail-tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>稿件審閱</button>
           <button className={`detail-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>歷程紀錄</button>
         </div>
