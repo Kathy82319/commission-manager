@@ -264,7 +264,10 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {!isFormOpen && (
         <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
-          📢 目前您的方案僅公開前 6 項項目。 (目前數量: {items.length} / 配額: {limit})
+          {quotaInfo?.plan_type === 'free' 
+            ? `📢 目前您的方案僅公開前 6 項項目。 (目前數量: ${items.length} / 配額: ${limit})`
+            : `📢 您的項目將在個人分頁完整公開展示。 (目前數量: ${items.length} / 配額: ${limit})`
+          }
         </div>
       )}
 
@@ -302,7 +305,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
           {items.map((item, index) => (
             <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {index < 6 && (
+              {/* 公開中標籤邏輯：免費版限制前 6 個，其餘版本標註所有配額內項目 */}
+              {(quotaInfo?.plan_type === 'free' ? index < 6 : index < limit) && (
                 <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
                   公開展示中
                 </div>
