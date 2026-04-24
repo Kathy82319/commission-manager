@@ -14,6 +14,7 @@ node_modules/
 /target
 .cache/
 .npm/
+*.tsbuildinfo
 .eslintcache
 
 # --- Logs (日誌檔案) ---
@@ -54,3 +55,5 @@ credentials.json
 # --- Git 內部資料 ---
 # 雖然 Git 本身不追蹤，但明確列出可防止某些掃描工具誤入
 .git/
+
+*.tsbuildinfo
