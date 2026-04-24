@@ -392,7 +392,7 @@ export function PublicProfile() {
               <div className="showcase-header">
                 <h2>{selectedShowcase.title}</h2>
                 {selectedShowcase.price_info && (
-                  <div className="modal-price">{selectedShowcase.price_info}</div>
+                 <div className="modal-price">${selectedShowcase.price_info}</div>
                 )}
               </div>
 
