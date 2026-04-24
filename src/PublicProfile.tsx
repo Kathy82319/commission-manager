@@ -384,10 +384,33 @@ export function PublicProfile() {
         <div className="lightbox-overlay showcase-modal-overlay" onClick={() => setSelectedShowcase(null)}>
           <button className="lightbox-close" onClick={() => setSelectedShowcase(null)}><X size={32}/></button>
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
+            <div className="showcase-cover">
+              <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
+            </div>
             <div className="showcase-details">
-              <h2>{selectedShowcase.title}</h2>
-              <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
+              
+              <div className="showcase-header">
+                <h2>{selectedShowcase.title}</h2>
+                {selectedShowcase.price_info && (
+                  <div className="modal-price">{selectedShowcase.price_info}</div>
+                )}
+              </div>
+
+              {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.length > 0 && (
+                <div className="modal-tags">
+                  {selectedShowcase.tags.map(tag => (
+                    <span key={tag} className="tag-chip">#{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              <div className="description-scroll-area">
+                <div 
+                  className="rich-text-content description" 
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} 
+                />
+              </div>
+
             </div>
           </div>
         </div>
