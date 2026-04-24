@@ -15,6 +15,7 @@ node_modules/
 .cache/
 .npm/
 *.tsbuildinfo
+package-lock.json
 .eslintcache
 
 # --- Logs (日誌檔案) ---
