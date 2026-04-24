@@ -72,7 +72,7 @@ export function Terms() {
         <p style={{ marginBottom: '16px' }}>本服務依據使用者身份提供不同額度之管理服務：</p>
         <ul style={listStyle}>
           <li style={itemStyle}>
-            <span style={highlightStyle}>專業版試用期：</span> 新註冊用戶享 15 天試用，試用期間享有專業版全功能，並提供 20 筆委託建單額度。
+            <span style={highlightStyle}>專業版試用期：</span> 用戶可啟用 15 天試用專業版服務，試用期間享有專業版全功能，並提供 20 筆委託建單額度。
           </li>
           <li style={itemStyle}>
             <span style={highlightStyle}>額度扣抵順序：</span> 若用戶擁有試用額度，系統將優先扣抵該 20 筆額度，用罄後方開始使用當月之免費額度。
@@ -81,7 +81,7 @@ export function Terms() {
             <span style={highlightStyle}>免費版：</span>
             <ul style={nestedListStyle}>
               <li>每月提供 3 筆委託單建立額度。</li>
-              <li>個人展示頁面：作品區限制上傳 6 張圖片。</li>
+              <li>個人展示頁面：作品區、徵稿區限制為 6 張圖片。</li>
               <li>開放「頭像、簡介、詳細介紹」區塊之編輯權限。</li>
             </ul>
           </li>
@@ -90,13 +90,13 @@ export function Terms() {
             <ul style={nestedListStyle}>
               <li><span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買)。</li>
               <li>無接單數量限制。</li>
-              <li>可使用最多 7 個分頁區塊，作品區上傳限制提高至 20 張。</li>
-              <li>費用採預付制，用戶可隨時停止續訂。</li>
+              <li>作品區、徵稿區上傳限制提高至 30 張。</li>
+              <li>個人展示頁面：可編輯背景色、開場動畫、數個文字說明介面</li>
             </ul>
           </li>
         </ul>
         <p style={{ marginTop: '20px' }}>
-          <span style={highlightStyle}>退款原則：</span> 依據「通訊交易解除權合理例外情事適用準則」，本服務提供之數位內容一經啟用（升級 Pro 版）即完成履約，恕不接受當月退款。
+          <span style={highlightStyle}>退款原則：</span> 依據「通訊交易解除權合理例外情事適用準則」，本服務提供之數位內容一經啟用（升級 Pro 版）即完成履約，恕不接受當月退款，特殊狀況請參考退款政策。
         </p>
       </section>
 
@@ -110,7 +110,7 @@ export function Terms() {
       <section style={sectionStyle}>
         <h2 style={subTitleStyle}>四、 違規與法律責任</h2>
         <p style={itemStyle}>1. <span style={highlightStyle}>禁止行為：</span>用戶不得利用本服務儲存、發布或傳送任何非法、具威脅性、誹謗、猥褻、色情、侵權或違反公共秩序之內容。若上傳之畫作涉及版權爭議，由上傳用戶自行承擔所有法律責任。</p>
-        <p style={itemStyle}>2. <span style={highlightStyle}>紀錄之真實性義務：</span>繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任須由該用戶百分之百自負。</p>
+        <p style={itemStyle}>2. <span style={highlightStyle}>紀錄之真實性義務：</span>繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任須由該用戶負擔。</p>
         <p style={itemStyle}>3. <span style={highlightStyle}>異常使用防範：</span>用戶不得利用自動化程式或人為惡意手段進行不合理之資源耗損行為，包含但不限於短時間內大量建立單據（如一分鐘內連續建單）、大量上傳無關或冗餘圖檔、或執行任何足以導致伺服器效能受損之行為。</p>
         <p style={itemStyle}>4. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定或有異常使用之情事，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」、「永久刪除帳號」或「限制 IP 訪問」等措施。</p>
       </section>

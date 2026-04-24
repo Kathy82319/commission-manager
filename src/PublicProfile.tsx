@@ -367,7 +367,6 @@ export function PublicProfile() {
 
             <footer className="profile-internal-footer">
               <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
-                <Link to="/login">管理登入</Link>
                 <span>|</span>
                 <Link to="/terms">服務條款</Link>
                 <span>|</span>
