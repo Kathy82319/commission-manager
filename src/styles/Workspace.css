@@ -1,0 +1,154 @@
+/* src/styles/Workspace.css */
+
+.workspace-wrapper {
+  display: flex;
+  height: calc(100vh - 60px); /* 扣除頂部導覽列的高度 */
+  background-color: #f3f4f6;
+  overflow: hidden;
+}
+
+/* 左側：聊天區域 */
+.workspace-chat-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+.inquiry-info-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #fafafa;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.message-bubble.artist {
+  align-self: flex-end;
+  background-color: #dcf8c6;
+  color: #0b141a;
+}
+
+.message-bubble.client {
+  align-self: flex-start;
+  background-color: #f0f0f0;
+  color: #0b141a;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.message-input-area {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+}
+
+.message-input-area input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+}
+
+/* 右側：側邊欄協議區 */
+.workspace-sidebar {
+  width: 350px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.proposal-form {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+.form-group input, 
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.form-group input:disabled, 
+.form-group textarea:disabled {
+  background-color: #f9fafb;
+  color: #374151;
+  cursor: not-allowed;
+}
+
+.proposal-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 按鈕樣式 */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  color: #374151;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.btn-primary:hover { background-color: #1d4ed8; }
+.btn-secondary:hover { background-color: #f3f4f6; }
