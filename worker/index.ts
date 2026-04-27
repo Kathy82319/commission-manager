@@ -10,6 +10,7 @@ import { adminController } from "./controllers/adminController";
 import { paymentController } from "./controllers/paymentController";
 import { showcaseController } from "./controllers/showcaseController";
 import { customerController } from "./controllers/customerController";
+import { bulletinController } from "./controllers/bulletinController"; 
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -45,6 +46,38 @@ export default {
 
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
+
+      // --- [新增] 許願池 (Bulletins) 路由 ---
+      if (sanitizedPath.startsWith("/api/bulletins")) {
+        const targetId = pathParts[3]; // e.g. /api/bulletins/123 -> 123
+        const subAction = pathParts[4]; // e.g. inquire
+
+        if (!targetId) {
+          if (request.method === "GET") return bulletinController.getList(env, corsHeaders);
+          if (request.method === "POST") {
+            const authErr = requireAuth(currentUserId, corsHeaders);
+            if (authErr) return authErr;
+            return bulletinController.create(request, currentUserId!, env, corsHeaders);
+          }
+        } else if (targetId && subAction === "inquire" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
+        }
+      }
+
+      // --- [新增] 意向投遞 (Inquiries) 婉拒路由 ---
+      if (sanitizedPath.startsWith("/api/inquiries/")) {
+        const targetId = pathParts[3];
+        const subAction = pathParts[4];
+        
+        if (targetId && subAction === "decline" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.declineInquiry(request, targetId, currentUserId!, env, corsHeaders);
+        }
+      }
+      // ----------------------------------------
 
       if (sanitizedPath.startsWith("/api/customers")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 

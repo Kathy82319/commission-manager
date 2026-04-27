@@ -28,13 +28,15 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
 
+import { Wishboard } from './pages/public/Wishboard';
+
 export function App() {
-  const MY_ARTIST_ID = "User_84448";
+  // 原本的 MY_ARTIST_ID 如果後續沒有其他地方需要用到，可以直接刪除
+  // const MY_ARTIST_ID = "User_84448"; 
   
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to={`/${MY_ARTIST_ID}`} replace />} />
         
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
@@ -63,12 +65,18 @@ export function App() {
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
 
+        {/* 公開頁面群組 */}
         <Route element={<PublicLayout />}>
+          {/* 將許願池設定為真正的首頁 */}
+          <Route path="/" element={<Wishboard />} />
+          
           <Route path="/terms" element={<Terms />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/privacy" element={<Privacy />} />
-          <Route path="/:artistId" element={<PublicProfile />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
+          
+          {/* 繪師個人頁路由放在靜態路由之下，避免覆蓋前面的路徑 */}
+          <Route path="/:artistId" element={<PublicProfile />} />
         </Route>
         
         <Route path="/adminbalabababa" element={<AdminLayout />}>

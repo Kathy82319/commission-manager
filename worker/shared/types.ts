@@ -1,6 +1,7 @@
 import type { Fetcher, D1Database, R2Bucket } from '@cloudflare/workers-types';
 
 export interface Env {
+  DB: any;
   ASSETS: Fetcher;
   commission_db: D1Database;
   ID_SALT: string; 

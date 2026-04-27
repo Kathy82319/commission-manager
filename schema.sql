@@ -205,6 +205,55 @@ CREATE TABLE CustomerRecords (
     FOREIGN KEY (client_user_id) REFERENCES Users(id)
 );
 
+
+-- 許願池布告欄
+CREATE TABLE Bulletins (
+    id TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    content TEXT NOT NULL,       
+    budget_range TEXT,            
+    specs TEXT,                    
+    ref_image_key TEXT,            
+    status TEXT DEFAULT 'open',    
+    expires_at DATETIME,           
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES Users(id)
+);
+
+-- 意向投遞與洽談紀錄
+CREATE TABLE BulletinInquiries (
+    id TEXT PRIMARY KEY,
+    bulletin_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    artist_snapshot TEXT,          
+    client_response TEXT,         
+    status TEXT DEFAULT 'pending', 
+    decline_reason TEXT,          
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bulletin_id) REFERENCES Bulletins(id),
+    FOREIGN KEY (artist_id) REFERENCES Users(id)
+);
+
+-- 收件匣通知系統
+CREATE TABLE Notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT,                    
+    title TEXT,
+    content TEXT,
+    link_to TEXT,               
+    is_read INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id)
+);
+
+ALTER TABLE ArtistProfiles ADD COLUMN question_template TEXT DEFAULT '';
+
+
+
+
+
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
