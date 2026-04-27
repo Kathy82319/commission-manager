@@ -125,7 +125,7 @@ export const Wishboard: React.FC = () => {
               <p><small>預算：{b.budget_range}</small></p>
               <p><small>規格：{b.specs}</small></p>
               
-              {/* 關鍵邏輯：必須是繪師，且這篇貼文「不是」自己發的，才能看到投遞按鈕 */}
+              {/* 關鍵邏輯：必須是繪師，且這篇貼文「不是」自己發的，才能看到投遞按鈕 */}{/* 測試期間：註解掉身分檢查，讓自己也能看到投遞按鈕 
               {currentUser?.role === 'artist' && b.client_id !== currentUser.id && activeTab === 'request' && (
                 <button 
                   onClick={() => {
@@ -136,7 +136,7 @@ export const Wishboard: React.FC = () => {
                 >
                   我有興趣 (發送系統簡歷)
                 </button>
-              )}
+              )}*/}
             </div>
           ))}
           {filteredBulletins.length === 0 && (
