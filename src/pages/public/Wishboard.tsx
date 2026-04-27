@@ -125,18 +125,19 @@ export const Wishboard: React.FC = () => {
               <p><small>預算：{b.budget_range}</small></p>
               <p><small>規格：{b.specs}</small></p>
               
-              {/* 關鍵邏輯：必須是繪師，且這篇貼文「不是」自己發的，才能看到投遞按鈕 */}{/* 測試期間：註解掉身分檢查，讓自己也能看到投遞按鈕 
-              {currentUser?.role === 'artist' && b.client_id !== currentUser.id && activeTab === 'request' && (
-                <button 
-                  onClick={() => {
-                    setSelectedBulletin(b.id);
-                    setShowInquireModal(true);
-                  }}
-                  className="w-full mt-4 bg-green-50 text-green-700 border border-green-200 py-2 rounded hover:bg-green-100 font-medium cursor-pointer"
-                >
-                  我有興趣 (發送系統簡歷)
-                </button>
-              )}*/}
+              {/* 關鍵邏輯：必須是繪師，且這篇貼文「不是」自己發的，才能看到投遞按鈕 */}{/* 測試期間：註解掉身分檢查，讓自己也能看到投遞按鈕 */}
+              {/* 測試期間：註解掉身分檢查，讓自己也能看到投遞按鈕 */}
+{currentUser?.role === 'artist' && /* b.client_id !== currentUser.id && */ activeTab === 'request' && (
+  <button 
+    onClick={() => {
+      setSelectedBulletin(b.id);
+      setShowInquireModal(true);
+    }}
+    className="w-full mt-4 bg-green-50 text-green-700 ..."
+  >
+    我有興趣 (測試模式)
+  </button>
+)}
             </div>
           ))}
           {filteredBulletins.length === 0 && (
