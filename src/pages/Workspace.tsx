@@ -13,6 +13,7 @@ interface OrderData {
   client_name: string;
   status: string;
   total_price: number;
+  origin_source?: string; // 新增來源欄位
 }
 
 export function Workspace() {
@@ -38,6 +39,18 @@ export function Workspace() {
       minute: '2-digit',
       hour12: false
     });
+  };
+
+  // 判斷是否來自許願池
+  const getBulletinSource = (currentOrder: OrderData | null) => {
+    if (!currentOrder || !currentOrder.origin_source) return null;
+    try {
+      const parsed = JSON.parse(currentOrder.origin_source);
+      if (parsed.source_type === 'bulletin') return parsed;
+    } catch (e) {
+      return null;
+    }
+    return null;
   };
 
   const updateReadTime = async () => {
@@ -158,6 +171,8 @@ export function Workspace() {
     </div>
   );
 
+  const bulletinData = getBulletinSource(order);
+
   return (
     <div style={{ 
       height: '100vh', 
@@ -198,7 +213,7 @@ export function Workspace() {
               onClick={() => navigate(-1)} 
               style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '18px', cursor: 'pointer', padding: '5px' }}
             >
-              ←
+              ←返回
             </button>
             <div>
               <h2 className="header-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>
@@ -228,6 +243,38 @@ export function Workspace() {
           gap: '16px',
           backgroundColor: '#FBFBF9' 
         }}>
+          {/* 許願池媒合軌跡區塊 - 置頂顯示 */}
+          {bulletinData && (
+            <div style={{
+              backgroundColor: '#FDFBFE',
+              border: '1px solid #E9D5FF',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '10px',
+              fontSize: '13px',
+              color: '#4B5563',
+              lineHeight: '1.6',
+              boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)'
+            }}>
+              <div style={{ color: '#9333EA', fontWeight: 'bold', borderBottom: '1px solid #F3E8FF', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>
+                許願池媒合軌跡
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: '#5D4A3E' }}>原始許願內容：</strong> {bulletinData.bulletin_content}
+              </div>
+              <div style={{ marginBottom: '8px' }}>
+                <strong style={{ color: '#5D4A3E' }}>繪師投遞規格：</strong> 
+                {bulletinData.artist_initial_snapshot?.title} ({bulletinData.artist_initial_snapshot?.price})
+              </div>
+              {bulletinData.client_initial_response && (
+                <div>
+                  <strong style={{ color: '#5D4A3E' }}>案主提問回覆：</strong> {bulletinData.client_initial_response}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 訊息列表 */}
           {messages.map(msg => {
             const isMe = msg.sender_role === role;
             return (

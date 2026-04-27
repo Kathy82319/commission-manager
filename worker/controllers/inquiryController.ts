@@ -83,6 +83,7 @@ export const inquiryController = {
   },
 
   // 案主同意並正式成單 (Finalize)
+// 案主同意並正式成單 (Finalize)
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(
@@ -97,7 +98,7 @@ export const inquiryController = {
       const draft = JSON.parse(inquiry.negotiation_draft);
       const commissionId = crypto.randomUUID();
 
-      // 封裝軌跡資訊，標註來源為許願池
+      // 封裝軌跡資訊
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
         bulletin_content: inquiry.bulletin_content,
@@ -107,7 +108,7 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
-      // 寫入正式 Commissions 表，補齊所有必填與 CHECK 約束
+      // 1. 寫入正式 Commissions 表
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
@@ -131,6 +132,23 @@ export const inquiryController = {
         draft.add_ons || ''
       ).run();
 
+      // 2. 複製洽談室的歷史對話到正式訂單對話紀錄中
+      const oldMessages = await env.commission_db.prepare(
+        `SELECT sender_id, content, message_type, created_at FROM InquiryMessages WHERE inquiry_id = ?`
+      ).bind(inquiryId).all();
+
+      if (oldMessages.results && oldMessages.results.length > 0) {
+        // 利用 D1 的 batch 執行批次寫入
+        const stmts = oldMessages.results.map((msg: any) => {
+          return env.commission_db.prepare(
+            `INSERT INTO CommissionMessages (id, commission_id, sender_id, content, message_type, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?)`
+          ).bind(crypto.randomUUID(), commissionId, msg.sender_id, msg.content, msg.message_type, msg.created_at);
+        });
+        await env.commission_db.batch(stmts);
+      }
+
+      // 3. 更新原洽談狀態
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
