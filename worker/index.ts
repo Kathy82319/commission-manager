@@ -11,6 +11,7 @@ import { paymentController } from "./controllers/paymentController";
 import { showcaseController } from "./controllers/showcaseController";
 import { customerController } from "./controllers/customerController";
 import { bulletinController } from "./controllers/bulletinController"; 
+import { inquiryController } from './controllers/inquiryController';
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -47,22 +48,22 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      // --- [新增] 許願池 (Bulletins) 路由 ---
+      // --- 許願池 (Bulletins) 相關路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
+        // 收件匣特化路由
+        if (sanitizedPath === "/api/bulletins/client/inbox" && request.method === "GET") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.getClientInbox(currentUserId!, env, corsHeaders);
+        }
+        if (sanitizedPath === "/api/bulletins/artist/inbox" && request.method === "GET") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.getArtistInbox(currentUserId!, env, corsHeaders);
+        }
 
-if (sanitizedPath === "/api/bulletins/client/inbox" && request.method === "GET") {
-  const authErr = requireAuth(currentUserId, corsHeaders);
-  if (authErr) return authErr;
-  return bulletinController.getClientInbox(currentUserId!, env, corsHeaders);
-}
-
-if (sanitizedPath === "/api/bulletins/artist/inbox" && request.method === "GET") {
-  const authErr = requireAuth(currentUserId, corsHeaders);
-  if (authErr) return authErr;
-  return bulletinController.getArtistInbox(currentUserId!, env, corsHeaders);
-}        
-        const targetId = pathParts[3]; // e.g. /api/bulletins/123 -> 123
-        const subAction = pathParts[4]; // e.g. inquire
+        const targetId = pathParts[3]; 
+        const subAction = pathParts[4]; 
 
         if (!targetId) {
           if (request.method === "GET") return bulletinController.getList(env, corsHeaders);
@@ -78,37 +79,59 @@ if (sanitizedPath === "/api/bulletins/artist/inbox" && request.method === "GET")
         }
       }
 
-      // --- 意向投遞 (Inquiries) 相關路由 ---
+      // --- 意向/洽談 (Inquiries) 相關路由 ---
       if (sanitizedPath.startsWith("/api/inquiries/")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
         
-        // 原有的婉拒 API
+        // 1. 婉拒或回填提問 (由 bulletinController 處理)
         if (targetId && subAction === "decline" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.declineInquiry(request, targetId, currentUserId!, env, corsHeaders);
         }
-
-        // 新增的送出回覆 API
         if (targetId && subAction === "submit-response" && request.method === "PATCH") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
-if (targetId && subAction === "accept" && request.method === "POST") {
+
+        // 2. 洽談室功能 (由 inquiryController 處理)
+        if (targetId && subAction === "messages") {
+          if (request.method === "GET") return inquiryController.getMessages(targetId, env, corsHeaders);
+          if (request.method === "POST") {
+            const authErr = requireAuth(currentUserId, corsHeaders);
+            if (authErr) return authErr;
+            return inquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
+          }
+        }
+        if (targetId && subAction === "draft" && request.method === "PATCH") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return inquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
+        }
+        if (targetId && subAction === "propose" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return inquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
+        }
+        if (targetId && subAction === "finalize" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return inquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
+        }
+// 在 /api/inquiries/:id 的判斷區塊內加入
+if (targetId && !subAction && request.method === "GET") {
   const authErr = requireAuth(currentUserId, corsHeaders);
   if (authErr) return authErr;
-  return bulletinController.acceptInquiry(request, targetId, currentUserId!, env, corsHeaders);
+  return inquiryController.getInquiryDetail(targetId, currentUserId!, env, corsHeaders);
 }        
-
       }
-      // ----------------------------------------
 
+      // --- 客戶管理路由 ---
       if (sanitizedPath.startsWith("/api/customers")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
-
         const targetId = pathParts[3]; 
         const subAction = pathParts[4]; 
 
@@ -124,6 +147,7 @@ if (targetId && subAction === "accept" && request.method === "POST") {
         }
       }
 
+      // --- 付款路由 ---
       if (sanitizedPath === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -133,10 +157,12 @@ if (targetId && subAction === "accept" && request.method === "POST") {
         return paymentController.handleNotify(request, env);
       }
 
+      // --- 認證路由 ---
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
 
+      // --- 作品集路由 ---
       if (sanitizedPath.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -151,6 +177,7 @@ if (targetId && subAction === "accept" && request.method === "POST") {
         return showcaseController.getPublicList(artistId, env, corsHeaders);
       }
 
+      // --- 管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -162,18 +189,18 @@ if (targetId && subAction === "accept" && request.method === "POST") {
         }
       }
 
+      // --- 使用者路由 ---
       if (sanitizedPath.startsWith("/api/users/")) {
         const targetId = pathParts[3];
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
-        
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
-
         if (request.method === "PATCH") return userController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
         if (request.method === "DELETE" && targetId === "me") return userController.deleteUser(currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/complete-onboarding")) return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
       }
 
+      // --- 委託管理路由 (Commissions) ---
       if (sanitizedPath.startsWith("/api/commissions")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -216,6 +243,7 @@ if (targetId && subAction === "accept" && request.method === "POST") {
         }
       }
 
+      // --- R2 & Test 路由 ---
       if (sanitizedPath.startsWith("/api/r2/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;

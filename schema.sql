@@ -251,8 +251,19 @@ ALTER TABLE ArtistProfiles ADD COLUMN question_template TEXT DEFAULT '';
 
 ALTER TABLE Bulletins ADD COLUMN category TEXT DEFAULT 'request';
 
+-- 「還沒成單前」的聊天紀錄
+CREATE TABLE InquiryMessages (
+  id TEXT PRIMARY KEY,
+  inquiry_id TEXT NOT NULL,
+  sender_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  message_type TEXT DEFAULT 'text',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (inquiry_id) REFERENCES BulletinInquiries(id)
+);
 
-
+-- 增加草稿欄位
+ALTER TABLE BulletinInquiries ADD COLUMN negotiation_draft TEXT; 
 
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)

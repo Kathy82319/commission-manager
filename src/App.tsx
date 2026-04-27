@@ -30,7 +30,7 @@ import { RefundPolicy } from './pages/RefundPolicy';
 
 import { Wishboard } from './pages/public/Wishboard';
 import { Inbox } from './pages/Inbox';
-
+import { InquiryWorkspace } from './pages/InquiryWorkspace';
 
 export function App() {
   // 原本的 MY_ARTIST_ID 如果後續沒有其他地方需要用到，可以直接刪除
@@ -74,6 +74,7 @@ export function App() {
         <Route element={<PublicLayout />}>
           {/* 將許願池設定為真正的首頁 */}
           <Route path="/" element={<Wishboard />} />
+          <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
           
           <Route path="/terms" element={<Terms />} />
           <Route path="/portal" element={<Portal />} />
@@ -89,6 +90,7 @@ export function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
+        
       </Routes>
     </BrowserRouter>
   );
