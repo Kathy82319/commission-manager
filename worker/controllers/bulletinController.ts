@@ -87,17 +87,18 @@ export const bulletinController = {
     }
   },
 
-  // 5. 案主：查看收到的投遞 (Inbox) - 補強版本
+// 5. 案主：查看收到的投遞 (Inbox)
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
         SELECT 
           b.id as bulletin_id, b.content as bulletin_content, b.category,
           i.id as inquiry_id, i.artist_id, i.artist_snapshot, i.status as inquiry_status, i.client_response,
-          ap.question_template -- 這裡抓取繪師的提問模板
+          ap.question_template
         FROM Bulletins b
         JOIN BulletinInquiries i ON b.id = i.bulletin_id
-        LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.artist_id
+        /* 這裡的 ap.artist_id 請改為 ap.user_id 或是 ap.id */
+        LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.user_id 
         WHERE b.client_id = ?
         ORDER BY i.created_at DESC
       `).bind(currentUserId).all();
