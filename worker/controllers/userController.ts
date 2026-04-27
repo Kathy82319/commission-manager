@@ -14,12 +14,14 @@ export const userController = {
       return new Response(JSON.stringify({ success: false, error: "未登入" }), { status: 401, headers: corsHeaders });
     }
 
+    // 🌟 1. 讀取時，加入 ap.question_template
     const { results } = await env.commission_db.prepare(`
       SELECT 
         u.*, 
         ap.tos_content, ap.about_me, ap.portfolio_urls, ap.commission_process, 
         ap.payment_info, ap.usage_rules, ap.custom_1_title, ap.custom_1_content,
-        ap.custom_2_title, ap.custom_2_content, ap.custom_3_title, ap.custom_3_content
+        ap.custom_2_title, ap.custom_2_content, ap.custom_3_title, ap.custom_3_content,
+        ap.question_template
       FROM Users u
       LEFT JOIN ArtistProfiles ap ON u.id = ap.user_id
       WHERE u.id = ? OR u.public_id = ?
@@ -45,6 +47,8 @@ export const userController = {
       parsedSettings.process = user.commission_process || parsedSettings.process;
       parsedSettings.payment = user.payment_info || parsedSettings.payment;
       parsedSettings.rules = user.usage_rules || parsedSettings.rules;
+      // 🌟 2. 將 question_template 塞回給前端
+      parsedSettings.question_template = user.question_template || parsedSettings.question_template || '';
       try {
         if (user.portfolio_urls && user.portfolio_urls !== '[]') {
           parsedSettings.portfolio = JSON.parse(user.portfolio_urls);
@@ -60,10 +64,12 @@ export const userController = {
 
     user.profile_settings = JSON.stringify(parsedSettings);
     
+    // 清理不要的欄位
     delete user.tos_content; delete user.about_me; delete user.portfolio_urls;
     delete user.commission_process; delete user.payment_info; delete user.usage_rules;
     delete user.custom_1_title; delete user.custom_1_content; delete user.custom_2_title;
     delete user.custom_2_content; delete user.custom_3_title; delete user.custom_3_content;
+    delete user.question_template; 
 
     const now = new Date();
     let planChanged = false;
@@ -166,12 +172,14 @@ export const userController = {
     const c2 = settings.custom_sections?.[1] || {};
     const c3 = settings.custom_sections?.[2] || {};
 
+    // 🌟 3. 在 UPDATE 語法中加入 question_template
     const updateProfile = env.commission_db.prepare(`
       INSERT INTO ArtistProfiles (
         user_id, about_me, tos_content, portfolio_urls, commission_process, 
         payment_info, usage_rules, custom_1_title, custom_1_content,
-        custom_2_title, custom_2_content, custom_3_title, custom_3_content
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        custom_2_title, custom_2_content, custom_3_title, custom_3_content,
+        question_template
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         about_me = excluded.about_me,
         tos_content = excluded.tos_content,
@@ -184,7 +192,8 @@ export const userController = {
         custom_2_title = excluded.custom_2_title,
         custom_2_content = excluded.custom_2_content,
         custom_3_title = excluded.custom_3_title,
-        custom_3_content = excluded.custom_3_content
+        custom_3_content = excluded.custom_3_content,
+        question_template = excluded.question_template
     `).bind(
       targetId,
       settings.detailed_intro || '',
@@ -195,7 +204,8 @@ export const userController = {
       settings.rules || '',
       c1.title || '', c1.content || '',
       c2.title || '', c2.content || '',
-      c3.title || '', c3.content || ''
+      c3.title || '', c3.content || '',
+      body.question_template || settings.question_template || '' // 🌟 綁定變數
     );
 
     await env.commission_db.batch([updateUsers, updateProfile]);

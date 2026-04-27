@@ -4,7 +4,6 @@ import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
 
 export const Wishboard: React.FC = () => {
-  // 移除寫死的 Role，改為動態取得當前使用者狀態
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [bulletins, setBulletins] = useState<any[]>([]);
@@ -15,16 +14,23 @@ export const Wishboard: React.FC = () => {
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<string | null>(null);
 
-  // 初始化：同時抓取許願池資料與當前登入者資料
+  // 存放繪師準備投遞的「明信片」快照資料
+  const [inquireDraft, setInquireDraft] = useState({
+    title: '',
+    specialties: '',
+    no_gos: '',
+    payment_methods: '',
+    price_list: '',
+    question_template: ''
+  });
+
   const initData = async () => {
     setLoading(true);
     try {
-      // 1. 抓取看板資料
       const resBulletins = await apiClient.get('/api/bulletins');
       if (resBulletins.success) {
         setBulletins(resBulletins.data);
       }
-      // 2. 抓取當前使用者 (如果未登入會報錯，但我們 catch 起來忽略即可)
       try {
         const resUser = await apiClient.get('/api/users/me');
         if (resUser.success) {
@@ -64,26 +70,48 @@ export const Wishboard: React.FC = () => {
       if (res.success) {
         alert('發布成功！');
         setShowPostModal(false);
-        initData(); // 重新載入列表
+        initData(); 
       }
     } catch (error: any) {
       alert('發布失敗: ' + (error.message || '未知錯誤'));
     }
   };
 
+  // 打開投遞視窗，並預先載入繪師的預設設定
+  const openInquireModal = (bulletinId: string) => {
+    setSelectedBulletin(bulletinId);
+
+    let settings: any = {};
+    if (currentUser && currentUser.profile_settings) {
+      try {
+        settings = typeof currentUser.profile_settings === 'string'
+          ? JSON.parse(currentUser.profile_settings)
+          : currentUser.profile_settings;
+      } catch(e) {}
+    }
+
+    const card = settings.bulletin_card || {};
+
+    setInquireDraft({
+      title: `${currentUser?.display_name || '繪師'} 的客製化服務`,
+      specialties: card.specialties || '',
+      no_gos: card.no_gos || '',
+      payment_methods: card.payment_methods || '',
+      price_list: card.price_list || '',
+      question_template: settings.question_template || ''
+    });
+
+    setShowInquireModal(true);
+  };
+
+  // 送出修改後的專屬快照
   const handleInquire = async () => {
     if (!selectedBulletin) return;
     
-    // 這裡我們暫時用假資料模擬投遞的快照，後續可以改為從 currentUser 的設定中抓取
-    const mockArtistSnapshot = {
-      title: currentUser?.display_name + " 的客製化服務",
-      price: "詳談後報價",
-      terms: "依據平台標準服務條款"
-    };
-
+    // 這裡我們直接傳送繪師剛剛確認/修改過的 draft
     try {
       const res = await apiClient.post(`/api/bulletins/${selectedBulletin}/inquire`, {
-        artist_snapshot: mockArtistSnapshot
+        artist_snapshot: JSON.stringify(inquireDraft) // 將物件轉為 JSON 字串存入資料庫
       });
       if (res.success) {
         alert('已成功發送您的意向與簡歷給案主！請至收件匣查看進度。');
@@ -99,8 +127,7 @@ export const Wishboard: React.FC = () => {
   return (
     <div className="wishboard-container">
       <div className="wishboard-header">
-        <h1>✨ 許願池看板</h1>
-        {/* 只要有登入的使用者就可以發布需求 */}
+        <h1>許願池看板</h1>
         {currentUser && (
           <button className="btn-primary" onClick={() => setShowPostModal(true)}>
             + 發布需求
@@ -125,19 +152,14 @@ export const Wishboard: React.FC = () => {
               <p><small>預算：{b.budget_range}</small></p>
               <p><small>規格：{b.specs}</small></p>
               
-              {/* 關鍵邏輯：必須是繪師，且這篇貼文「不是」自己發的，才能看到投遞按鈕 */}{/* 測試期間：註解掉身分檢查，讓自己也能看到投遞按鈕 */}
-{/* 測試期間：註解掉所有檢查，讓按鈕強制出現 */}
-{activeTab === 'request' && (
-  <button 
-    onClick={() => {
-      setSelectedBulletin(b.id);
-      setShowInquireModal(true);
-    }}
-    className="w-full mt-4 bg-green-50 text-green-700 ..."
-  >
-    我有興趣 (測試強制開啟)
-  </button>
-)}
+              {activeTab === 'request' && (
+                <button 
+                  onClick={() => openInquireModal(b.id)}
+                  className="w-full mt-4 bg-green-50 text-green-700 font-bold py-2 rounded border border-green-200 hover:bg-green-100 transition-colors"
+                >
+                  我有興趣 (發送投遞意向)
+                </button>
+              )}
             </div>
           ))}
           {filteredBulletins.length === 0 && (
@@ -173,17 +195,78 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 投遞確認 Modal */}
+      {/* 投遞確認與預覽 Modal */}
       {showInquireModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>確認發送意向？</h2>
-            <p className="mb-4">
-              系統將自動抓取您的徵稿簡歷與預設協議發送給案主。案主審閱後若同意，將向您發送邀請細節。
+          <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto' }}>
+            <h2>投遞意向預覽與微調</h2>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '20px' }}>
+              以下內容將會發送給該案主。您可以針對本次委託進行暫時性的文字微調（不會影響您的全域設定）。
             </p>
-            <div className="modal-actions">
+
+            <div className="form-group">
+              <label>標題 / 稱呼</label>
+              <input 
+                type="text" 
+                value={inquireDraft.title}
+                onChange={(e) => setInquireDraft({...inquireDraft, title: e.target.value})}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label>擅長題材</label>
+              <input 
+                type="text" 
+                value={inquireDraft.specialties}
+                onChange={(e) => setInquireDraft({...inquireDraft, specialties: e.target.value})}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label>不擅長 / 雷點</label>
+              <input 
+                type="text" 
+                value={inquireDraft.no_gos}
+                onChange={(e) => setInquireDraft({...inquireDraft, no_gos: e.target.value})}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label>接受的付款方式</label>
+              <input 
+                type="text" 
+                value={inquireDraft.payment_methods}
+                onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label>簡易價目表預覽</label>
+              <textarea 
+                value={inquireDraft.price_list}
+                onChange={(e) => setInquireDraft({...inquireDraft, price_list: e.target.value})}
+                className="w-full border p-2 rounded"
+                rows={3}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label style={{ color: '#9333ea' }}>要求案主回填的提問模板</label>
+              <textarea 
+                value={inquireDraft.question_template}
+                onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})}
+                className="w-full border p-2 rounded"
+                rows={4}
+              />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '25px' }}>
               <button onClick={() => setShowInquireModal(false)} className="btn-secondary">取消</button>
-              <button onClick={handleInquire} className="btn-primary" style={{backgroundColor: '#16a34a'}}>確認投遞</button>
+              <button onClick={handleInquire} className="btn-primary" style={{ backgroundColor: '#16a34a' }}>確認並送出投遞</button>
             </div>
           </div>
         </div>
