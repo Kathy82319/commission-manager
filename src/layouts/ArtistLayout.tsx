@@ -1,5 +1,3 @@
-// src/layouts/ArtistLayout.tsx
-
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/ArtistLayout.css'; 
@@ -98,12 +96,14 @@ export function ArtistLayout() {
     }
   }
 
-const navItems = [
+  // --- 修改重點：在這裡新增了「收件匣」的路由設定 ---
+  const navItems = [
     { path: '/artist/quote/new', label: '建立委託單' },
     { path: '/artist/queue', label: '排單表' },
     { path: '/artist/notebook', label: '委託單管理' },
     { path: '/artist/customers', label: '客戶管理' }, 
     { path: '/artist/records', label: '結案紀錄' },
+    { path: '/artist/inbox', label: '收件匣' }, // <-- 新增的行
     { path: '/artist/settings', label: '個人設定' }
   ];
 

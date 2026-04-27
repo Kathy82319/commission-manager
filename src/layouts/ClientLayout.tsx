@@ -1,6 +1,7 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, Link } from 'react-router-dom';
+import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
+import { ClipboardList, Inbox } from 'lucide-react'; // 引入側邊欄圖標
 import '../styles/ClientLayout.css';  
 
 export function ClientLayout() {
@@ -9,6 +10,7 @@ export function ClientLayout() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
 
+  // --- 原有的驗證與資料撈取邏輯 (完全保留) ---
   useEffect(() => {
     const checkClientAuth = async () => {
       try {
@@ -89,43 +91,66 @@ export function ClientLayout() {
   }
 
   return (
-    <div className="client-layout-container">
-      <header className="client-header">
-        <div className="header-logo">
-          Arti 繪師小幫手
-          <div className="header-subtitle">委託管理 (委託方)</div>
+    <div className="client-layout-wrapper">
+      {/* --- 新增：左側邊欄 --- */}
+      <aside className="client-sidebar">
+        <div className="sidebar-brand">
+          <h2>Arti 繪師小幫手</h2>
+          <div className="brand-subtitle">委託管理 (委託方)</div>
         </div>
         
-        <nav className="desktop-nav">
-          <button onClick={handleSwitchToArtist} className="switch-btn">
-            {(profile?.role === 'artist' || profile?.role === 'admin') ? '進入繪師後台' : '開通繪師管理頁'}
-          </button>
+        <nav className="sidebar-nav">
+          <NavLink 
+            to="/client/orders" 
+            className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+          >
+            <ClipboardList size={20} />
+            <span>委託單管理</span>
+          </NavLink>
+
+          <NavLink 
+            to="/client/inbox" 
+            className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+          >
+            <Inbox size={20} />
+            <span>收件匣</span>
+          </NavLink>
         </nav>
-      </header>
 
-      {notifications.length > 0 && (
-        <div className="notification-bar">
-          <div className="marquee-content">
-            {notifications.map((msg, index) => (
-              <span key={index} style={{ marginRight: '80px' }}>🔔 {msg}</span>
-            ))}
+        <div className="sidebar-footer">
+          <button onClick={handleSwitchToArtist} className="switch-btn">
+            {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
+          </button>
+        </div>
+      </aside>
+
+      {/* --- 右側：主要內容區 --- */}
+      <div className="client-main-container">
+        {/* 原本的動態提醒跑馬燈 */}
+        {notifications.length > 0 && (
+          <div className="notification-bar">
+            <div className="marquee-content">
+              {notifications.map((msg, index) => (
+                <span key={index} style={{ marginRight: '80px' }}>🔔 {msg}</span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <main className="client-main">
-        <Outlet />
-      </main>
+        <main className="client-main">
+          <Outlet />
+        </main>
 
-      <footer className="client-footer">
-        <div className="footer-links">
-          <Link to="/terms">服務條款</Link>
-          <span>|</span>
-          <Link to="/privacy">隱私權政策</Link>
-          <span>|</span>
-          <span>客服：cath40286@gmail.com</span>
-        </div>
-      </footer>
+        <footer className="client-footer">
+          <div className="footer-links">
+            <Link to="/terms">服務條款</Link>
+            <span>|</span>
+            <Link to="/privacy">隱私權政策</Link>
+            <span>|</span>
+            <span>客服：cath40286@gmail.com</span>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
