@@ -31,6 +31,7 @@ import { RefundPolicy } from './pages/RefundPolicy';
 import { Wishboard } from './pages/public/Wishboard';
 import { Inbox } from './pages/Inbox';
 
+
 export function App() {
   // 原本的 MY_ARTIST_ID 如果後續沒有其他地方需要用到，可以直接刪除
   // const MY_ARTIST_ID = "User_84448"; 
@@ -52,6 +53,7 @@ export function App() {
           
           <Route path="notebook" element={<Notebook />} />
           <Route path="records" element={<Records />} />
+          <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

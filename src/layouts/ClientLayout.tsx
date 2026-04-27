@@ -1,8 +1,8 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import { ClipboardList, Inbox } from 'lucide-react'; // 引入側邊欄圖標
 import '../styles/ClientLayout.css';  
+import { ClipboardList, Inbox, Sparkles } from 'lucide-react';
 
 export function ClientLayout() {
   const navigate = useNavigate();
@@ -100,6 +100,14 @@ export function ClientLayout() {
         </div>
         
         <nav className="sidebar-nav">
+          {/* 新增這區塊：前往許願池 */}
+          <NavLink 
+            to="/" 
+            className="nav-item"
+          >
+            <Sparkles size={20} />
+            <span>前往許願池</span>
+          </NavLink>
           <NavLink 
             to="/client/orders" 
             className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
