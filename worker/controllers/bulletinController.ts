@@ -27,10 +27,19 @@ export const bulletinController = {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 3);
 
-      await env.DB.prepare(
-  `INSERT INTO Bulletins (id, client_id, content, budget_range, specs, ref_image_key, category, expires_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-).bind(id, currentUserId, content, budget_range, specs, ref_image_key, category || 'request', expiresAt.toISOString()).run();
+    await env.DB.prepare(
+        `INSERT INTO Bulletins (id, client_id, content, budget_range, specs, ref_image_key, category, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        id, 
+        currentUserId, 
+        content, 
+        budget_range, 
+        specs, 
+        ref_image_key || null,  // 關鍵修復：把 undefined 轉成 null
+        category || 'request', 
+        expiresAt.toISOString()
+      ).run();
 
       return new Response(JSON.stringify({ success: true, id, message: '許願已發布' }), { headers: corsHeaders });
     } catch (error: any) {
