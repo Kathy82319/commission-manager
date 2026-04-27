@@ -94,11 +94,14 @@ export const bulletinController = {
         SELECT 
           b.id as bulletin_id, b.content as bulletin_content, b.category,
           i.id as inquiry_id, i.artist_id, i.artist_snapshot, i.status as inquiry_status, i.client_response,
-          ap.question_template
+          ap.question_template,
+          /* 加入這行，這樣案主成單後才能點擊跳轉 */
+          c.id as commission_id
         FROM Bulletins b
         JOIN BulletinInquiries i ON b.id = i.bulletin_id
-        /* 這裡的 ap.artist_id 請改為 ap.user_id 或是 ap.id */
         LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.user_id 
+        /* 關聯 Commissions 表，尋找是否有從這個 inquiry 轉化過來的訂單 */
+        LEFT JOIN Commissions c ON (i.artist_id = c.artist_id AND b.client_id = c.client_id AND i.status = 'accepted')
         WHERE b.client_id = ?
         ORDER BY i.created_at DESC
       `).bind(currentUserId).all();

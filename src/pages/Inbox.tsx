@@ -113,7 +113,6 @@ export const Inbox: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {inquiries.map((item) => {
-            const snapshot = JSON.parse(item.artist_snapshot || '{}');
             
             return (
               <div key={item.inquiry_id} className="inbox-item">
@@ -134,14 +133,57 @@ export const Inbox: React.FC = () => {
                 </div>
 
                 {/* 案主視角：顯示繪師簡歷 */}
-                {activeTab === 'client' && (
-                  <div className="artist-info-box">
-                    <p className="text-blue-600 font-bold">繪師簡歷摘要</p>
-                    <p><strong>項目：</strong>{snapshot.title}</p>
-                    <p><strong>參考價格：</strong>{snapshot.price}</p>
-                    <p className="text-gray-500 text-sm mt-1"><strong>協議預覽：</strong>{snapshot.terms}</p>
-                  </div>
-                )}
+                {/* 案主可執行的動作 */}
+{activeTab === 'client' && (
+  <div className="action-buttons">
+    {/* 狀態為 pending 時：顯示邀請詳談 */}
+    {item.inquiry_status === 'pending' && (
+      <>
+        <button 
+          className="btn-primary" 
+          onClick={() => {
+            setSelectedInquiry(item);
+            setShowInviteModal(true);
+          }}
+        >
+          邀請詳談 (填寫提問單)
+        </button>
+        <button className="btn-secondary" onClick={() => handleDecline(item.inquiry_id)}>
+          禮貌婉拒
+        </button>
+      </>
+    )}
+
+    {/* 狀態為 submitted 或 proposed 時：顯示進入洽談室 */}
+    {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
+      <button 
+        className="btn-primary" 
+        onClick={() => navigate(`/inquiry/workspace/${item.inquiry_id}`)}
+      >
+        進入洽談室
+      </button>
+    )}
+    
+    {/* 如果已經 accepted，則導向正式的 Workspace */}
+    {item.inquiry_status === 'accepted' && (
+      <button 
+        className="btn-secondary" 
+        style={{ borderColor: '#2563eb', color: '#2563eb' }}
+        onClick={() => {
+          // 這裡需要透過 API 獲取正式的 commission_id，或者在 item 中原本就有帶過來
+          // 假設我們在後端 getClientInbox 已經補上了 commission_id 欄位
+          if (item.commission_id) {
+            navigate(`/workspace/${item.commission_id}`);
+          } else {
+            alert('找不到對應的委託單，請重整頁面');
+          }
+        }}
+      >
+        查看正式委託單
+      </button>
+    )}
+  </div>
+)}
 
                 {/* 繪師視角：顯示案主回覆 */}
                 {activeTab === 'artist' && item.client_response && (
