@@ -10,9 +10,14 @@ export const authController = {
 
   async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
+    
+    // 【暫時寬鬆 1】從網址抓取指定要登入的 userId
+    const testUserId = url.searchParams.get("userId"); 
     const secret = url.searchParams.get("secret");
 
-    if (secret !== "NewebPay_Review_Special_2026_XYZ") {
+    // 【暫時寬鬆 2】密鑰檢查改為：只要有傳 userId 或是 secret 對了就放行
+    // 開發測試完畢後，建議將此 if 恢復為原本的嚴格密鑰檢查
+    if (!testUserId && secret !== "NewebPay_Review_Special_2026_XYZ") {
       return new Response(JSON.stringify({ success: false, error: "Access Denied" }), { 
         status: 403, 
         headers: corsHeaders 
@@ -20,20 +25,27 @@ export const authController = {
     }
 
     try {
-      const testUserId = "reviewer_newebpay_001";
-      let user: any = await getUserById(env, testUserId);
+      // 如果沒傳 userId 就預設用原本的審核員 ID
+      const finalUserId = testUserId || "reviewer_newebpay_001";
       
+      let user: any = await getUserById(env, finalUserId);
+      
+      // 【暫時寬鬆 3】如果資料庫沒這個測試帳號，就自動幫你創一個
       if (!user) {
-        await createNewUser(env, testUserId, "金流審核員", "");
+        const mockName = testUserId === 'u-artist-01' ? "系統預設繪師" : `測試用戶(${finalUserId})`;
+        await createNewUser(env, finalUserId, mockName, "");
       }
 
-      const sessionValue = await generateToken(testUserId, env.ID_SALT, 30);
+      // 生成登入憑證 (Cookie)
+      const sessionValue = await generateToken(finalUserId, env.ID_SALT, 30);
       const baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
 
+      // 執行變身登入
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${baseUrl}/artist/settings`,
+          // 【暫時寬鬆 4】登入後改導向 /portal 或首頁，方便你測試
+          'Location': `${baseUrl}/portal`,
           'Set-Cookie': `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`,
           ...corsHeaders
         }
