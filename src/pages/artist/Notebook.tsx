@@ -16,6 +16,7 @@ interface Commission {
   agreed_tos_snapshot?: string; 
   client_custom_label?: string;
   crm_record_id?: string;
+  origin_source?: string; // 新增來源欄位
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
@@ -68,6 +69,18 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
     reader.readAsDataURL(originalBlob);
   });
 }
+
+// 判斷是否來自許願池
+const getBulletinSource = (order?: Commission) => {
+  if (!order || !order.origin_source) return null;
+  try {
+    const parsed = JSON.parse(order.origin_source);
+    if (parsed.source_type === 'bulletin') return parsed;
+  } catch (e) {
+    return null;
+  }
+  return null;
+};
 
 export function Notebook() {
   const location = useLocation();
@@ -286,7 +299,7 @@ export function Notebook() {
   };
 
   const copyLink = (id: string) => {
-    const msg = "⚠️ 注意：此連結具備「綁定」特性。\n\n當委託人點擊並登入後，此訂單將永久綁定該帳號。若綁定錯誤，您將需要刪除並重新建單。\n\n確定要複製連結嗎？";
+    const msg = "[注意]：此連結具備「綁定」特性。\n\n當委託人點擊並登入後，此訂單將永久綁定該帳號。若綁定錯誤，您將需要刪除並重新建單。\n\n確定要複製連結嗎？";
     if (window.confirm(msg)) {
       const link = `${window.location.origin}/quote/${id}`;
       navigator.clipboard.writeText(link).then(() => alert('專屬連結已複製！請私下傳送給對應的委託人。'));
@@ -398,12 +411,12 @@ export function Notebook() {
     let headerClass = 'stage-pending', statusTag = '等待繪製上傳...';
     
     if (!sub) { headerClass = 'stage-empty'; } 
-    else if (isFreeMode) { headerClass = 'stage-passed'; statusTag = '✓ 檔案已上傳 (自由模式)'; } 
-    else if (isUnbound) { headerClass = 'stage-unbound'; statusTag = '⚠️ 等待委託人綁定'; } 
-    else if (isPassed) { headerClass = 'stage-passed'; statusTag = isFinal ? '✓ 委託人已同意 (原檔已解鎖)' : '✓ 委託人已閱覽'; } 
-    else if (isReviewing) { headerClass = 'stage-reviewing'; statusTag = '⏳ 待委託人確認'; } 
-    else if (isRejected) { headerClass = 'stage-rejected'; statusTag = '⚠️ 委託人已退回修改'; } 
-    else { headerClass = 'stage-passed'; statusTag = '✓ 稿件已上傳 (待閱覽)'; }
+    else if (isFreeMode) { headerClass = 'stage-passed'; statusTag = '[完成] 檔案已上傳 (自由模式)'; } 
+    else if (isUnbound) { headerClass = 'stage-unbound'; statusTag = '[注意] 等待委託人綁定'; } 
+    else if (isPassed) { headerClass = 'stage-passed'; statusTag = isFinal ? '[完成] 委託人已同意 (原檔已解鎖)' : '[完成] 委託人已閱覽'; } 
+    else if (isReviewing) { headerClass = 'stage-reviewing'; statusTag = '[等待] 待委託人確認'; } 
+    else if (isRejected) { headerClass = 'stage-rejected'; statusTag = '[注意] 委託人已退回修改'; } 
+    else { headerClass = 'stage-passed'; statusTag = '[完成] 稿件已上傳 (待閱覽)'; }
   
     return (
       <div className="stage-box">
@@ -412,7 +425,7 @@ export function Notebook() {
         </div>
         <div className="stage-box-content">
           {isFinal && !isFreeMode && <div className="stage-notice">
-            💡 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
+            [提示] 上傳說明：系統會自動產生「浮水印預覽圖」供委託人確認。委託人按下同意後，才能下載您上傳的高畫質原檔。
           </div>}
           {isUploading === stageKey ? (
             <div className="stage-loading">檔案處理中，請稍候...</div>
@@ -472,30 +485,32 @@ export function Notebook() {
           <div className="sidebar-header">
             <span className="sidebar-title">委託單列表</span>
             <div className="sidebar-controls">
-              <input type="text" className="form-input sidebar-search-input" placeholder="🔍 搜尋暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <input type="text" className="form-input sidebar-search-input" placeholder="[搜尋] 暱稱/單號..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               <select className="form-input sidebar-filter" value={filter} onChange={e => setFilter(e.target.value as any)}>
                 {tabs.map(tab => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
               </select>
             </div>
           </div>
 
-
           <div className="sidebar-list-container">
             {filteredOrders.map(order => {
               const payBadge = getPaymentBadge(order.payment_status);
               const statusBadge = getStatusBadge(order.status);
-              const dateStr = formatLocalDate(order.order_date); // 🌟 使用修正後的日期顯示
+              const dateStr = formatLocalDate(order.order_date); 
               const isSelected = selectedId === order.id;
               const hasNewMsg = parseTime(order.latest_message_at) > parseTime(order.last_read_at_artist);
+              const isBulletin = getBulletinSource(order) !== null;
               
               return (
                 <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
-                    {order.client_custom_label === '黑名單' && (
-                      <span className="card-mode-badge mode-blacklist">黑名單</span>
+                    {isBulletin && (
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', marginLeft: '6px' }}>許願池</span>
                     )}
-                   
+                    {order.client_custom_label === '黑名單' && (
+                      <span className="card-mode-badge mode-blacklist" style={{ marginLeft: '6px' }}>黑名單</span>
+                    )}
                   </div>
                   <div className="card-title-row">
                     <span className="card-client-name" title={getDualName(order)}>{getDualName(order)}</span>
@@ -507,13 +522,12 @@ export function Notebook() {
                   <div className="card-info-row">
                     <span>單號：{order.id.split('-')[1] || order.id}</span>
                     <span>委託人：{order.client_public_id || '未綁定'}</span>
-                    
                   </div>
                   <div className="card-tags-row">
                     <span className={`card-tag ${payBadge.className}`}>{payBadge.text}</span>
                     {statusBadge && <span className={`card-tag ${statusBadge.className}`}>{statusBadge.text}</span>}
                     {order.queue_status && <span className="card-tag badge-queue">{order.queue_status}</span>}
-                    {hasNewMsg && <span className="card-tag badge-new-msg">☆新訊息</span>}
+                    {hasNewMsg && <span className="card-tag badge-new-msg">新訊息</span>}
                   </div>
                 </div>
               );
@@ -532,7 +546,7 @@ export function Notebook() {
                 <div className="main-header-info">
                   
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>
-                    ⬅ 返回列表
+                    返回列表
                   </button>
 
                   <div className="main-title-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -549,13 +563,19 @@ export function Notebook() {
                   </div>
 
                   <div className="main-subtitle">項目：{selectedOrder.project_name || '未命名項目'}</div>
+                  
                   <div className="main-meta-row">
-                    <span>日期：{formatLocalDate(selectedOrder.order_date)}</span> {/* 🌟 修正後的日期顯示 */}
+                    <span>日期：{formatLocalDate(selectedOrder.order_date)}</span> 
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
-                      <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
+                    <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
                       {selectedOrder.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                     </span>
+                    {getBulletinSource(selectedOrder) && (
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>
+                        來源：許願池
+                      </span>
+                    )}
                   </div>
                   {getStatusBadge(selectedOrder.status) && (
                     <div className="main-status-wrapper">
@@ -591,6 +611,28 @@ export function Notebook() {
                 {activeTab === 'details' && (
                   <div className="tab-details-container">
                     
+                    {/* 許願池媒合軌跡區塊 */}
+                    {getBulletinSource(selectedOrder) && (
+                      <div className="section-card" style={{ backgroundColor: '#fdfbfe', border: '1px solid #e9d5ff' }}>
+                        <h3 className="section-title" style={{ color: '#9333ea', borderBottom: '1px solid #f3e8ff', paddingBottom: '8px' }}>
+                          許願池媒合軌跡
+                        </h3>
+                        <div style={{ fontSize: '13px', color: '#4b5563', marginTop: '12px', lineHeight: '1.6' }}>
+                          <p><strong>原始許願內容：</strong> {getBulletinSource(selectedOrder).bulletin_content}</p>
+                          <p style={{ marginTop: '8px' }}>
+                            <strong>繪師投遞規格：</strong> 
+                            {getBulletinSource(selectedOrder).artist_initial_snapshot?.title} 
+                            ({getBulletinSource(selectedOrder).artist_initial_snapshot?.price})
+                          </p>
+                          {getBulletinSource(selectedOrder).client_initial_response && (
+                            <p style={{ marginTop: '8px' }}>
+                              <strong>案主提問回覆：</strong> {getBulletinSource(selectedOrder).client_initial_response}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="section-card">
                       <div className="section-header">
                         <h3 className="section-title">財務與收款狀態</h3>
@@ -690,7 +732,7 @@ export function Notebook() {
                 {activeTab === 'delivery' && (
                   <div className="fade-in">
                     <div className="delivery-hint-wrapper">
-                      <span className="hint-text">🌟提示：上傳後系統會自動進行壓縮與壓製浮水印...</span>
+                      <span className="hint-text">[提示]：上傳後系統會自動進行壓縮與壓製浮水印...</span>
                     </div>
                     {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', isStageActuallyReviewed('草稿'))}
                     {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder.current_stage === 'lineart_reviewing', isStageActuallyReviewed('線稿'))}
