@@ -14,7 +14,6 @@ export const Wishboard: React.FC = () => {
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<string | null>(null);
 
-  // 存放繪師準備投遞的「明信片」快照資料
   const [inquireDraft, setInquireDraft] = useState({
     title: '',
     specialties: '',
@@ -77,7 +76,6 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  // 打開投遞視窗，並預先載入繪師的預設設定
   const openInquireModal = (bulletinId: string) => {
     setSelectedBulletin(bulletinId);
 
@@ -104,18 +102,20 @@ export const Wishboard: React.FC = () => {
     setShowInquireModal(true);
   };
 
-  // 送出修改後的專屬快照
   const handleInquire = async () => {
     if (!selectedBulletin) return;
     
-    // 這裡我們直接傳送繪師剛剛確認/修改過的 draft
     try {
       const res = await apiClient.post(`/api/bulletins/${selectedBulletin}/inquire`, {
-        artist_snapshot: JSON.stringify(inquireDraft) // 將物件轉為 JSON 字串存入資料庫
+        artist_snapshot: JSON.stringify(inquireDraft) 
       });
       if (res.success) {
         alert('已成功發送您的意向與簡歷給案主！請至收件匣查看進度。');
         setShowInquireModal(false);
+        // 🌟 成功後重新讀取列表，讓按鈕立刻變成「已投遞」
+        initData();
+      } else {
+        alert(res.message || '投遞發生錯誤');
       }
     } catch (error: any) {
       alert('投遞發生錯誤: ' + (error.message || ''));
@@ -127,7 +127,7 @@ export const Wishboard: React.FC = () => {
   return (
     <div className="wishboard-container">
       <div className="wishboard-header">
-        <h1>許願池看板</h1>
+        <h1>✨ 許願池看板</h1>
         {currentUser && (
           <button className="btn-primary" onClick={() => setShowPostModal(true)}>
             + 發布需求
@@ -145,30 +145,47 @@ export const Wishboard: React.FC = () => {
         <p>載入中...</p>
       ) : (
         <div className="bulletin-grid">
-          {filteredBulletins.map((b) => (
-            <div key={b.id} className="bulletin-card">
-              <p><strong>類別:</strong> {b.category === 'offer' ? '#接委託' : b.category === 'other' ? '#其他' : '#徵委託'}</p>
-              <p>{b.content}</p>
-              <p><small>預算：{b.budget_range}</small></p>
-              <p><small>規格：{b.specs}</small></p>
-              
-              {activeTab === 'request' && (
-                <button 
-                  onClick={() => openInquireModal(b.id)}
-                  className="w-full mt-4 bg-green-50 text-green-700 font-bold py-2 rounded border border-green-200 hover:bg-green-100 transition-colors"
-                >
-                  我有興趣 (發送投遞意向)
-                </button>
-              )}
-            </div>
-          ))}
+          {filteredBulletins.map((b) => {
+            // 🌟 判斷是否為自己發的，或是已經投遞過
+            const isMyOwnPost = currentUser && b.client_id === currentUser.id;
+            const hasApplied = currentUser && b.applied_artist_ids && b.applied_artist_ids.includes(currentUser.id);
+
+            return (
+              <div key={b.id} className="bulletin-card">
+                <p><strong>類別:</strong> {b.category === 'offer' ? '#接委託' : b.category === 'other' ? '#其他' : '#徵委託'}</p>
+                <p>{b.content}</p>
+                <p><small>預算：{b.budget_range}</small></p>
+                <p><small>規格：{b.specs}</small></p>
+                
+                {activeTab === 'request' && (
+                  <>
+                    {isMyOwnPost ? (
+                      <button disabled className="w-full mt-4 bg-gray-100 text-gray-500 font-bold py-2 rounded border border-gray-200 cursor-not-allowed">
+                        這是您發布的許願單
+                      </button>
+                    ) : hasApplied ? (
+                      <button disabled className="w-full mt-4 bg-gray-200 text-gray-500 font-bold py-2 rounded border border-gray-300 cursor-not-allowed">
+                        已投遞
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => openInquireModal(b.id)}
+                        className="w-full mt-4 bg-green-50 text-green-700 font-bold py-2 rounded border border-green-200 hover:bg-green-100 transition-colors"
+                      >
+                        我有興趣 (發送投遞意向)
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
           {filteredBulletins.length === 0 && (
             <p>這個分類目前還沒有任何內容。</p>
           )}
         </div>
       )}
 
-      {/* 發布 Modal */}
       {showPostModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -195,7 +212,6 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 投遞確認與預覽 Modal */}
       {showInquireModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto' }}>

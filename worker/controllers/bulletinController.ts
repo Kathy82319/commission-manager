@@ -4,8 +4,11 @@ export const bulletinController = {
   // 1. 取得許願池列表 (公開)
   async getList(env: Env, corsHeaders: any) {
     try {
+      // 🌟 巧思：用 GROUP_CONCAT 把投遞過這張單的繪師 ID 串起來，讓前端可以輕鬆判斷
       const { results } = await env.commission_db.prepare(
-        `SELECT * FROM Bulletins 
+        `SELECT b.*, 
+          (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id) as applied_artist_ids
+         FROM Bulletins b 
          WHERE status = 'open' AND expires_at > CURRENT_TIMESTAMP 
          ORDER BY created_at DESC`
       ).all();
@@ -50,6 +53,15 @@ export const bulletinController = {
   // 3. 繪師投遞意向 (需登入，為繪師)
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 後端絕對防護：檢查該繪師是否已經對這張單投遞過
+      const existing = await env.commission_db.prepare(
+        `SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`
+      ).bind(bulletinId, currentUserId).first();
+
+      if (existing) {
+        return new Response(JSON.stringify({ success: false, message: '您已經投遞過此許願單，請勿重複投遞' }), { status: 400, headers: corsHeaders });
+      }
+
       const body = await request.json() as any;
       const { artist_snapshot } = body;
       const id = crypto.randomUUID();
@@ -87,7 +99,7 @@ export const bulletinController = {
     }
   },
 
-// 5. 案主：查看收到的投遞 (Inbox)
+  // 5. 案主：查看收到的投遞 (Inbox)
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
@@ -95,12 +107,10 @@ export const bulletinController = {
           b.id as bulletin_id, b.content as bulletin_content, b.category,
           i.id as inquiry_id, i.artist_id, i.artist_snapshot, i.status as inquiry_status, i.client_response,
           ap.question_template,
-          /* 加入這行，這樣案主成單後才能點擊跳轉 */
           c.id as commission_id
         FROM Bulletins b
         JOIN BulletinInquiries i ON b.id = i.bulletin_id
         LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.user_id 
-        /* 關聯 Commissions 表，尋找是否有從這個 inquiry 轉化過來的訂單 */
         LEFT JOIN Commissions c ON (i.artist_id = c.artist_id AND b.client_id = c.client_id AND i.status = 'accepted')
         WHERE b.client_id = ?
         ORDER BY i.created_at DESC
@@ -115,10 +125,11 @@ export const bulletinController = {
   // 6. 繪師：查看我投遞過的意向 (Artist Inbox)
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 順手補上 b.id as bulletin_id，方便後續擴充功能
       const { results } = await env.commission_db.prepare(`
         SELECT 
           i.id as inquiry_id, i.status as inquiry_status, i.artist_snapshot, i.client_response, i.decline_reason,
-          b.content as bulletin_content, b.budget_range, b.category
+          b.id as bulletin_id, b.content as bulletin_content, b.budget_range, b.category
         FROM BulletinInquiries i
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE i.artist_id = ?
@@ -130,6 +141,7 @@ export const bulletinController = {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
+
   // 7. 案主：送出邀請詳談 (回填提問)
   async submitResponse(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
@@ -140,7 +152,6 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '回覆內容不能為空' }), { status: 400, headers: corsHeaders });
       }
 
-      // 更新狀態為 submitted，並寫入案主的回覆內容
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
          SET status = 'submitted', client_response = ? 
@@ -156,10 +167,10 @@ export const bulletinController = {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
+
   // 8. 繪師：接受並正式成單
   async acceptInquiry(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 1. 找出該筆投遞資訊
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, b.content, b.budget_range, b.specs 
          FROM BulletinInquiries i 
@@ -173,7 +184,6 @@ export const bulletinController = {
 
       const commissionId = crypto.randomUUID();
       
-      // 2. 建立正式委託單 (這裡先寫入最基本的欄位，細節由繪師後續在 Workspace 補齊)
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, artist_id, client_id, project_name, status, 
@@ -182,12 +192,11 @@ export const bulletinController = {
       ).bind(
         commissionId,
         currentUserId,
-        inquiry.client_id || 'unknown', // 這裡建議資料表要有 client_id 關聯
-        inquiry.content.substring(0, 50), // 用許願內容當暫時標題
-        0 // 初始金額設為 0，等洽談後由繪師修改
+        inquiry.client_id || 'unknown',
+        inquiry.content.substring(0, 50),
+        0 
       ).run();
 
-      // 3. 更新投遞狀態
       await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'accepted' WHERE id = ?`
       ).bind(inquiryId).run();
