@@ -4,7 +4,7 @@ export const bulletinController = {
   // 1. 取得許願池列表 (公開)
   async getList(env: Env, corsHeaders: any) {
     try {
-      const { results } = await env.DB.prepare(
+      const { results } = await env.commission_db.prepare(
         `SELECT * FROM Bulletins 
          WHERE status = 'open' AND expires_at > CURRENT_TIMESTAMP 
          ORDER BY created_at DESC`
@@ -27,7 +27,7 @@ export const bulletinController = {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 3);
 
-    await env.DB.prepare(
+      await env.commission_db.prepare(
         `INSERT INTO Bulletins (id, client_id, content, budget_range, specs, ref_image_key, category, expires_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
@@ -36,7 +36,7 @@ export const bulletinController = {
         content, 
         budget_range, 
         specs, 
-        ref_image_key || null,  // 關鍵修復：把 undefined 轉成 null
+        ref_image_key || null, 
         category || 'request', 
         expiresAt.toISOString()
       ).run();
@@ -54,7 +54,7 @@ export const bulletinController = {
       const { artist_snapshot } = body;
       const id = crypto.randomUUID();
 
-      await env.DB.prepare(
+      await env.commission_db.prepare(
         `INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status)
          VALUES (?, ?, ?, ?, 'pending')`
       ).bind(id, bulletinId, currentUserId, JSON.stringify(artist_snapshot)).run();
@@ -71,8 +71,7 @@ export const bulletinController = {
       const body = await request.json() as any;
       const { decline_reason } = body;
 
-      // 更新為 declined (實務上可以多加一個條件檢查 currentUserId 是否為該單的擁有者或投遞者，這裡先以最簡邏輯示範)
-      const result = await env.DB.prepare(
+      const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
          SET status = 'declined', decline_reason = ? 
          WHERE id = ? AND status != 'declined'`
