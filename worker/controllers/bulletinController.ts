@@ -85,5 +85,71 @@ export const bulletinController = {
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
+  },
+
+  // 5. 案主：查看收到的投遞 (Inbox) - 補強版本
+  async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT 
+          b.id as bulletin_id, b.content as bulletin_content, b.category,
+          i.id as inquiry_id, i.artist_id, i.artist_snapshot, i.status as inquiry_status, i.client_response,
+          ap.question_template -- 這裡抓取繪師的提問模板
+        FROM Bulletins b
+        JOIN BulletinInquiries i ON b.id = i.bulletin_id
+        LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.artist_id
+        WHERE b.client_id = ?
+        ORDER BY i.created_at DESC
+      `).bind(currentUserId).all();
+
+      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 6. 繪師：查看我投遞過的意向 (Artist Inbox)
+  async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT 
+          i.id as inquiry_id, i.status as inquiry_status, i.artist_snapshot, i.client_response, i.decline_reason,
+          b.content as bulletin_content, b.budget_range, b.category
+        FROM BulletinInquiries i
+        JOIN Bulletins b ON i.bulletin_id = b.id
+        WHERE i.artist_id = ?
+        ORDER BY i.created_at DESC
+      `).bind(currentUserId).all();
+
+      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+  // 7. 案主：送出邀請詳談 (回填提問)
+  async submitResponse(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json() as any;
+      const { client_response } = body;
+
+      if (!client_response || client_response.trim() === '') {
+        return new Response(JSON.stringify({ success: false, message: '回覆內容不能為空' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 更新狀態為 submitted，並寫入案主的回覆內容
+      const result = await env.commission_db.prepare(
+        `UPDATE BulletinInquiries 
+         SET status = 'submitted', client_response = ? 
+         WHERE id = ? AND status = 'pending'`
+      ).bind(client_response, inquiryId).run();
+
+      if (result.meta.changes === 0) {
+        return new Response(JSON.stringify({ success: false, message: '無法更新狀態，可能該筆投遞已不在待處理狀態' }), { status: 400, headers: corsHeaders });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: '已成功送出回覆' }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };

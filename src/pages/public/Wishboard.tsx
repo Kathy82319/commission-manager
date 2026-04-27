@@ -10,8 +10,7 @@ export const Wishboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>('request');
 
   const [showPostModal, setShowPostModal] = useState(false);
-  const [showInquireModal, setShowInquireModal] = useState(false);
-  const [selectedBulletin, setSelectedBulletin] = useState<string | null>(null);
+
 
   const fetchBulletins = async () => {
     setLoading(true);

@@ -49,6 +49,18 @@ export default {
 
       // --- [新增] 許願池 (Bulletins) 路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
+
+if (sanitizedPath === "/api/bulletins/client/inbox" && request.method === "GET") {
+  const authErr = requireAuth(currentUserId, corsHeaders);
+  if (authErr) return authErr;
+  return bulletinController.getClientInbox(currentUserId!, env, corsHeaders);
+}
+
+if (sanitizedPath === "/api/bulletins/artist/inbox" && request.method === "GET") {
+  const authErr = requireAuth(currentUserId, corsHeaders);
+  if (authErr) return authErr;
+  return bulletinController.getArtistInbox(currentUserId!, env, corsHeaders);
+}        
         const targetId = pathParts[3]; // e.g. /api/bulletins/123 -> 123
         const subAction = pathParts[4]; // e.g. inquire
 
@@ -66,15 +78,23 @@ export default {
         }
       }
 
-      // --- [新增] 意向投遞 (Inquiries) 婉拒路由 ---
+      // --- 意向投遞 (Inquiries) 相關路由 ---
       if (sanitizedPath.startsWith("/api/inquiries/")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
         
+        // 原有的婉拒 API
         if (targetId && subAction === "decline" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.declineInquiry(request, targetId, currentUserId!, env, corsHeaders);
+        }
+
+        // 新增的送出回覆 API
+        if (targetId && subAction === "submit-response" && request.method === "PATCH") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
       }
       // ----------------------------------------

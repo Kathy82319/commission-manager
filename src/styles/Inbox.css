@@ -1,0 +1,12 @@
+.inbox-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
+.inbox-item { 
+  border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; 
+  background: white; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.inbox-badge { font-size: 12px; padding: 4px 8px; border-radius: 99px; font-weight: bold; }
+.status-pending { background: #fef3c7; color: #92400e; } /* 待審閱 */
+.status-submitted { background: #dcfce7; color: #166534; } /* 已回填提問 */
+.status-declined { background: #fee2e2; color: #991b1b; } /* 已婉拒 */
+
+.artist-info-box { background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; }
+.action-buttons { display: flex; gap: 10px; margin-top: 10px; }

@@ -29,6 +29,7 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
 
 import { Wishboard } from './pages/public/Wishboard';
+import { Inbox } from './pages/Inbox';
 
 export function App() {
   // 原本的 MY_ARTIST_ID 如果後續沒有其他地方需要用到，可以直接刪除
@@ -55,10 +56,12 @@ export function App() {
         </Route>
 
         <Route path="/client" element={<ClientLayout />}>
+
           <Route path="home" element={<Navigate to="/client/orders" replace />} />
           <Route path="orders" element={<ClientOrders />} />
           <Route path="order/:id" element={<Navigate to="/client/orders" replace />} />
           <Route path="form/:id" element={<ClientForm />} />
+          <Route path="inbox" element={<Inbox />} />
         </Route>
 
         <Route path="/quote/:id" element={<ClientForm />} />
