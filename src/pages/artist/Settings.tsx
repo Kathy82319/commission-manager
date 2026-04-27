@@ -11,6 +11,17 @@ import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import '../../styles/Settings.css';
 
+// 擴充原有的 ProfileSettings 型別以支援許願池設定
+interface ExtendedSettings extends ProfileSettings {
+  bulletin_card?: {
+    specialties: string;
+    no_gos: string;
+    payment_methods: string;
+    price_list: string;
+  };
+  question_template?: string;
+}
+
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -19,7 +30,7 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 
   return (
     <div className={`toast-message ${type === 'err' ? 'error' : 'success'}`}>
-      <div className="toast-icon">{type === 'err' ? '⚠️' : '✅'}</div>
+      <div className="toast-icon">{type === 'err' ? '[錯誤]' : '[成功]'}</div>
       <div className="toast-content">{message}</div>
     </div>
   );
@@ -46,7 +57,7 @@ export function Settings() {
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  const [settings, setSettings] = useState<ProfileSettings>({
+  const [settings, setSettings] = useState<ExtendedSettings>({
     portfolio: [], 
     detailed_intro: '', 
     process: '', 
@@ -62,7 +73,10 @@ export function Settings() {
     layout_type: 'blog', 
     background_color: '#F4F0EB', 
     gradient_direction: 'to bottom right',
-    theme_mode: 'dark'
+    theme_mode: 'dark',
+    // 預設許願池設定資料
+    bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
+    question_template: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -79,6 +93,7 @@ export function Settings() {
         { id: 'splash', label: '開場動畫設定' }
     ]},
     { title: '內容管理', items: [
+        { id: 'bulletin_settings', label: '許願池接案設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '徵稿/販售區' },
@@ -135,7 +150,9 @@ export function Settings() {
           setSettings(prev => ({ 
             ...prev, 
             ...parsed,
-            custom_sections: parsed.custom_sections || [] 
+            custom_sections: parsed.custom_sections || [],
+            bulletin_card: parsed.bulletin_card || { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
+            question_template: data.data.question_template || parsed.question_template || ''
           }));
         }
       }
@@ -159,7 +176,8 @@ export function Settings() {
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
           bio: formData.bio,
-          profile_settings: JSON.stringify(settings)
+          profile_settings: JSON.stringify(settings),
+          question_template: settings.question_template // 確保傳遞此欄位給後端
         })
       });
       const data = await res.json();
@@ -187,11 +205,10 @@ export function Settings() {
     });
   };
 
-  // 🌟 核心計算區：確保變數在此處宣告，防止「找不到名稱」錯誤
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment'
+    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment', 'bulletin_settings'
   ];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
@@ -220,7 +237,7 @@ export function Settings() {
                     className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
                     onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
                   >
-                    {item.label} {isLocked && '🔒'}
+                    {item.label} {isLocked && '[鎖定]'}
                   </button>
                 );
               })}
@@ -233,7 +250,7 @@ export function Settings() {
             <h3>內容編輯</h3>
             {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
-                {settings.hidden_sections.includes(activeTab) ? '🚫 目前已隱藏' : '👁️ 公開顯示中'}
+                {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
             )}
           </div>
@@ -241,7 +258,7 @@ export function Settings() {
           {isCurrentTabLocked && (
             <div className="lock-overlay">
               <div className="lock-card">
-                <div className="lock-icon">🔒</div>
+                <div className="lock-icon">[鎖定]</div>
                 <h4>此功能僅限專業版</h4>
                 <button onClick={() => setActiveTab('subscription')}>查看方案</button>
               </div>
@@ -250,11 +267,76 @@ export function Settings() {
 
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'theme' && <ThemeTab settings={settings} setSettings={setSettings} />}
-            {activeTab === 'splash' && <SplashTab settings={settings} setSettings={setSettings} />}
+            
+            {activeTab === 'bulletin_settings' && (
+              <div className="settings-section">
+                <h4 className="section-title">許願池「邀請詳談」明信片設定</h4>
+                <p className="section-desc" style={{ color: '#888', marginBottom: '20px', fontSize: '0.9rem' }}>
+                  當案主在許願池向您提出「邀請詳談」時，將會看到以下您設定的資訊與提問。
+                </p>
+
+                <div className="form-group">
+                  <label className="form-label">提問模板 (案主必填)</label>
+                  <p style={{ fontSize: '0.8rem', color: '#A0978D', marginBottom: '8px' }}>引導案主提供您評估所需的關鍵資訊 (例如：角色設定、期望截稿日等)</p>
+                  <textarea 
+                    className="form-input textarea-large" 
+                    value={settings.question_template || ''} 
+                    onChange={(e) => setSettings({...settings, question_template: e.target.value})}
+                    placeholder="請提供角色設定圖與希望的表情..."
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginTop: '24px' }}>
+                  <label className="form-label">擅長題材 (明信片顯示)</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={settings.bulletin_card?.specialties || ''} 
+                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, specialties: e.target.value }})}
+                    placeholder="例如：日系美少女、Q版、獸人..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">不擅長 / 雷點 (明信片顯示)</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={settings.bulletin_card?.no_gos || ''} 
+                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, no_gos: e.target.value }})}
+                    placeholder="例如：機甲、老人、純文字設定..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">接受的付款方式 (明信片顯示)</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={settings.bulletin_card?.payment_methods || ''} 
+                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, payment_methods: e.target.value }})}
+                    placeholder="例如：銀行轉帳、PayPal、綠界..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">簡易價目表預覽 (明信片顯示)</label>
+                  <textarea 
+                    className="form-input textarea-medium" 
+                    value={settings.bulletin_card?.price_list || ''} 
+                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, price_list: e.target.value }})}
+                    placeholder="胸像：800起 / 半身：1500起..."
+                    style={{ minHeight: '100px' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
+            {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
             
             {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
-              <RichTextTab key={activeTab} field={activeTab} settings={settings} setSettings={setSettings} />
+              <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
             )}
             
             {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
@@ -262,14 +344,14 @@ export function Settings() {
                 key={activeTab}
                 isCustom 
                 customIndex={parseInt(activeTab.split('_')[1])} 
-                settings={settings} 
-                setSettings={setSettings} 
+                settings={settings as any} 
+                setSettings={setSettings as any} 
               />
             )}
 
-            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings} setSettings={setSettings} />}
+            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} />}
-            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings} setSettings={setSettings} quotaInfo={quotaInfo} />}
+            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
             {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />}
           </div>
 
