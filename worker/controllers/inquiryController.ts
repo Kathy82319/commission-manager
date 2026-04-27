@@ -103,7 +103,7 @@ export const inquiryController = {
         draft.total_price || 0,
         origin_source
       ).run();
-
+ 
       await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'accepted' WHERE id = ?`
       ).bind(inquiryId).run();

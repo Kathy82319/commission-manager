@@ -265,6 +265,8 @@ CREATE TABLE InquiryMessages (
 -- 增加草稿欄位
 ALTER TABLE BulletinInquiries ADD COLUMN negotiation_draft TEXT; 
 
+ALTER TABLE Commissions ADD COLUMN origin_source TEXT;
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
