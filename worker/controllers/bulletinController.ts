@@ -20,7 +20,7 @@ export const bulletinController = {
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
-      const { content, budget_range, specs, ref_image_key } = body;
+      const { content, budget_range, specs, ref_image_key, category } = body;
       const id = crypto.randomUUID();
       
       // 設定 3 天後過期
@@ -28,9 +28,9 @@ export const bulletinController = {
       expiresAt.setDate(expiresAt.getDate() + 3);
 
       await env.DB.prepare(
-        `INSERT INTO Bulletins (id, client_id, content, budget_range, specs, ref_image_key, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      ).bind(id, currentUserId, content, budget_range, specs, ref_image_key, expiresAt.toISOString()).run();
+  `INSERT INTO Bulletins (id, client_id, content, budget_range, specs, ref_image_key, category, expires_at)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+).bind(id, currentUserId, content, budget_range, specs, ref_image_key, category || 'request', expiresAt.toISOString()).run();
 
       return new Response(JSON.stringify({ success: true, id, message: '許願已發布' }), { headers: corsHeaders });
     } catch (error: any) {

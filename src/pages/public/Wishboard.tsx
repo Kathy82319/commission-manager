@@ -2,18 +2,20 @@
 import React, { useEffect, useState } from 'react';
 
 export const Wishboard: React.FC = () => {
-  // 加上 : string 避免 TypeScript 字面量型別推斷錯誤
   const currentUserRole: string = 'client'; 
 
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 新增分類狀態：'request' (徵委託), 'offer' (接委託), 'other' (其他)
+  const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>('request');
 
   const [showPostModal, setShowPostModal] = useState(false);
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<string | null>(null);
 
-  // 直接使用 fetch 呼叫後端 API，避開 client.ts 的匯出問題
   const fetchBulletins = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/bulletins');
       const data = await res.json();
@@ -38,6 +40,7 @@ export const Wishboard: React.FC = () => {
       content: formData.get('content') as string,
       budget_range: formData.get('budget') as string,
       specs: formData.get('specs') as string,
+      category: activeTab // 將目前的分類一併送出
     };
 
     try {
@@ -49,7 +52,7 @@ export const Wishboard: React.FC = () => {
       const data = await res.json();
       
       if (data.success) {
-        alert('許願發布成功！');
+        alert('發布成功！');
         setShowPostModal(false);
         fetchBulletins();
       }
@@ -77,7 +80,7 @@ export const Wishboard: React.FC = () => {
       const data = await res.json();
 
       if (data.success) {
-        alert('已成功發送您的意向與簡歷給案主！');
+        alert('已成功發送您的意向給案主！');
         setShowInquireModal(false);
       } else {
         alert(data.error || '投遞失敗');
@@ -88,64 +91,95 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">載入中...</div>;
+  // 過濾當前分類的資料
+  const filteredBulletins = bulletins.filter(b => b.category === activeTab || (!b.category && activeTab === 'request'));
 
   return (
-    <div className="wishboard-container max-w-5xl mx-auto p-6 mt-10">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-5xl mx-auto p-6 mt-10 relative z-0">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">許願池看板</h1>
         
         {currentUserRole === 'client' && (
           <button 
+            type="button"
             onClick={() => setShowPostModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative z-10 cursor-pointer"
           >
-            + 發布許願
+            發布需求
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {bulletins.map((b) => (
-          <div key={b.id} className="border rounded-lg p-5 shadow-sm bg-white">
-            <div className="mb-4">
-              <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
-                案主 ID: {b.client_id.substring(0, 8)}...
-              </span>
-            </div>
-            <p className="text-lg font-medium mb-2">{b.content}</p>
-            <div className="text-sm text-gray-600 space-y-1 mb-4">
-              <p>預算：{b.budget_range}</p>
-              <p>規格：{b.specs}</p>
-            </div>
-            
-            {currentUserRole === 'artist' && (
-              <button 
-                onClick={() => {
-                  setSelectedBulletin(b.id);
-                  setShowInquireModal(true);
-                }}
-                className="w-full bg-green-50 text-green-700 border border-green-200 py-2 rounded hover:bg-green-100 font-medium"
-              >
-                我有興趣 (發送系統簡歷)
-              </button>
-            )}
-          </div>
-        ))}
-        {bulletins.length === 0 && (
-          <p className="text-gray-500 col-span-2 text-center py-10">目前還沒有人發布許願哦！</p>
-        )}
+      {/* 分頁標籤 UI */}
+      <div className="flex border-b mb-6">
+        <button
+          className={`px-6 py-3 font-medium ${activeTab === 'request' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('request')}
+        >
+          #徵委託
+        </button>
+        <button
+          className={`px-6 py-3 font-medium ${activeTab === 'offer' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('offer')}
+        >
+          #接委託
+        </button>
+        <button
+          className={`px-6 py-3 font-medium ${activeTab === 'other' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setActiveTab('other')}
+        >
+          #其他
+        </button>
       </div>
+
+      {loading ? (
+        <div className="p-8 text-center">載入中...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredBulletins.map((b) => (
+            <div key={b.id} className="border rounded-lg p-5 shadow-sm bg-white">
+              <div className="mb-4 flex justify-between">
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                  ID: {b.client_id.substring(0, 8)}...
+                </span>
+                <span className="text-xs font-bold text-blue-600">
+                  {b.category === 'offer' ? '#接委託' : b.category === 'other' ? '#其他' : '#徵委託'}
+                </span>
+              </div>
+              <p className="text-lg font-medium mb-2">{b.content}</p>
+              <div className="text-sm text-gray-600 space-y-1 mb-4">
+                <p>預算：{b.budget_range}</p>
+                <p>規格：{b.specs}</p>
+              </div>
+              
+              {currentUserRole === 'artist' && activeTab === 'request' && (
+                <button 
+                  onClick={() => {
+                    setSelectedBulletin(b.id);
+                    setShowInquireModal(true);
+                  }}
+                  className="w-full bg-green-50 text-green-700 border border-green-200 py-2 rounded hover:bg-green-100 font-medium"
+                >
+                  我有興趣 (投遞意向)
+                </button>
+              )}
+            </div>
+          ))}
+          {filteredBulletins.length === 0 && (
+            <p className="text-gray-500 col-span-2 text-center py-10">這個分類目前還沒有任何內容。</p>
+          )}
+        </div>
+      )}
 
       {/* 案主發布 Modal */}
       {showPostModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">發布您的需求</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full relative">
+            <h2 className="text-xl font-bold mb-4">發布 {activeTab === 'request' ? '徵委託' : activeTab === 'offer' ? '接委託' : '其他'}</h2>
             <form onSubmit={handlePostWish} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">許願內容 (文字描述)</label>
-                <textarea name="content" required className="w-full border rounded p-2 h-24" placeholder="想徵求一張原創女性角色的半身大頭貼..."></textarea>
+                <label className="block text-sm font-medium mb-1">內容描述</label>
+                <textarea name="content" required className="w-full border rounded p-2 h-24" placeholder="請填寫詳細內容..."></textarea>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">預算區間</label>
@@ -166,8 +200,8 @@ export const Wishboard: React.FC = () => {
 
       {/* 繪師投遞確認 Modal */}
       {showInquireModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full relative">
             <h2 className="text-xl font-bold mb-4">確認發送意向？</h2>
             <p className="text-gray-600 mb-6">
               系統將自動抓取您的徵稿簡歷與預設協議發送給案主。案主審閱後若同意，將向您發送邀請細節。

@@ -249,7 +249,7 @@ CREATE TABLE Notifications (
 
 ALTER TABLE ArtistProfiles ADD COLUMN question_template TEXT DEFAULT '';
 
-
+ALTER TABLE Bulletins ADD COLUMN category TEXT DEFAULT 'request';
 
 
 
