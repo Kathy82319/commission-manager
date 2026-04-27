@@ -60,3 +60,4 @@ credentials.json
 *.tsbuildinfo
 worker-configuration.d.ts
 package-lock.json
+lib.dom.d.ts

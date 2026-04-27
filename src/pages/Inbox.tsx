@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
+import { useNavigate } from 'react-router-dom'; // 新增這行
 
 export const Inbox: React.FC = () => {
+  const navigate = useNavigate();
   // 控制當前觀看的視角
   const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -77,9 +79,19 @@ export const Inbox: React.FC = () => {
 
   // 繪師動作：接受並開啟詳談 (準備轉換為正式委託單)
   const handleAcceptAndOpenChat = async (inquiryId: string) => {
-    if (window.confirm('確定接受此案主的初步需求，並開啟正式聊天室嗎？')) {
-      // 下一步我們要在這裡寫一支 API，將 Inquiry 轉成 Commission
-      alert('即將為您建立正式委託單與聊天室 (API 待串接)');
+    if (!window.confirm('確定接受此案主的初步需求，並開啟正式聊天室嗎？')) return;
+
+    try {
+      // 呼叫 API 建立正式訂單
+      const res = await apiClient.post(`/api/inquiries/${inquiryId}/accept`, {});
+      
+      if (res.success && res.commission_id) {
+        alert('委託單已建立！即將進入聊天室。');
+        // 自動跳轉到繪師端的 Workspace 頁面 (假設路徑是 /artist/order/:id)
+        navigate(`/artist/order/${res.commission_id}`);
+      }
+    } catch (error: any) {
+      alert(error.message || '建立委託單失敗');
     }
   };
 

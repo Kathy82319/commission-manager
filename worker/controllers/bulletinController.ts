@@ -152,5 +152,51 @@ export const bulletinController = {
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
+  },
+  // 8. 繪師：接受並正式成單
+  async acceptInquiry(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      // 1. 找出該筆投遞資訊
+      const inquiry = await env.commission_db.prepare(
+        `SELECT i.*, b.content, b.budget_range, b.specs 
+         FROM BulletinInquiries i 
+         JOIN Bulletins b ON i.bulletin_id = b.id 
+         WHERE i.id = ? AND i.artist_id = ?`
+      ).bind(inquiryId, currentUserId).first() as any;
+
+      if (!inquiry) {
+        return new Response(JSON.stringify({ success: false, message: '找不到該筆投遞或權限不足' }), { status: 404, headers: corsHeaders });
+      }
+
+      const commissionId = crypto.randomUUID();
+      
+      // 2. 建立正式委託單 (這裡先寫入最基本的欄位，細節由繪師後續在 Workspace 補齊)
+      await env.commission_db.prepare(
+        `INSERT INTO Commissions (
+          id, artist_id, client_id, project_name, status, 
+          total_price, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, 'discussing', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+      ).bind(
+        commissionId,
+        currentUserId,
+        inquiry.client_id || 'unknown', // 這裡建議資料表要有 client_id 關聯
+        inquiry.content.substring(0, 50), // 用許願內容當暫時標題
+        0 // 初始金額設為 0，等洽談後由繪師修改
+      ).run();
+
+      // 3. 更新投遞狀態
+      await env.commission_db.prepare(
+        `UPDATE BulletinInquiries SET status = 'accepted' WHERE id = ?`
+      ).bind(inquiryId).run();
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        commission_id: commissionId, 
+        message: '已成功轉換為正式委託單' 
+      }), { headers: corsHeaders });
+
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };

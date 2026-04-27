@@ -96,6 +96,12 @@ if (sanitizedPath === "/api/bulletins/artist/inbox" && request.method === "GET")
           if (authErr) return authErr;
           return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
+if (targetId && subAction === "accept" && request.method === "POST") {
+  const authErr = requireAuth(currentUserId, corsHeaders);
+  if (authErr) return authErr;
+  return bulletinController.acceptInquiry(request, targetId, currentUserId!, env, corsHeaders);
+}        
+
       }
       // ----------------------------------------
 
