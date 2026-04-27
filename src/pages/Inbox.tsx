@@ -5,20 +5,96 @@ import { apiClient } from '../api/client';
 import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
 
+// 🌟 新增：獨立的明信片元件，負責處理翻頁邏輯與顯示
+const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
+  const [page, setPage] = useState(1);
+
+  const handleArtistClick = () => {
+    // 導向繪師個人頁面，可以根據你的路由架構調整，這裡預設為 /portfolio/{id}
+    const targetId = item.artist_public_id || item.artist_id;
+    if (targetId) navigate(`/portfolio/${targetId}`);
+  };
+
+  return (
+    <div className="relative mt-4 bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden" style={{ minHeight: '220px' }}>
+      <div className="p-5 pb-8">
+        {page === 1 ? (
+          <div className="flex flex-col animate-fade-in">
+            {/* 第一頁：頭像、名稱、擅長與雷點 */}
+            <div className="flex items-center gap-4 border-b border-purple-100 pb-3 mb-3">
+              <img 
+                src={item.artist_avatar || 'https://via.placeholder.com/60'} 
+                alt="Avatar" 
+                className="w-14 h-14 rounded-full object-cover cursor-pointer hover:opacity-80 transition shadow-sm border border-gray-100"
+                onClick={handleArtistClick}
+              />
+              <div>
+                <h4 
+                  className="text-purple-700 font-bold text-lg cursor-pointer hover:text-purple-500 transition inline-block border-b border-dashed border-purple-400"
+                  onClick={handleArtistClick}
+                  title="前往繪師個人頁"
+                >
+                  {item.artist_name || snapshot.title?.replace(' 的客製化服務', '') || '匿名繪師'}
+                </h4>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div><strong className="text-gray-600 block mb-1">擅長題材：</strong> <span className="text-gray-800">{snapshot.specialties || '未提供'}</span></div>
+              <div><strong className="text-gray-600 block mb-1">不擅長/雷點：</strong> <span className="text-gray-800">{snapshot.no_gos || '未提供'}</span></div>
+              <div className="md:col-span-2"><strong className="text-gray-600 block mb-1">付款方式：</strong> <span className="text-gray-800">{snapshot.payment_methods || '未提供'}</span></div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col animate-fade-in">
+            {/* 第二頁：簡易價目表 */}
+            <div className="border-b border-purple-100 pb-2 mb-3">
+              <h4 className="text-purple-700 font-bold text-base">簡易價目表預覽</h4>
+            </div>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100 max-h-32 overflow-y-auto">
+              {snapshot.price_list || '繪師未提供價目表明細，請直接邀請詳談。'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 左右翻頁箭頭 */}
+      {page === 2 && (
+        <button 
+          onClick={() => setPage(1)} 
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10"
+        >
+          ❮
+        </button>
+      )}
+      {page === 1 && (
+        <button 
+          onClick={() => setPage(2)} 
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10"
+        >
+          ❯
+        </button>
+      )}
+      
+      {/* 底部頁碼指示點 */}
+      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
+        <div className={`w-2 h-2 rounded-full transition-colors ${page === 1 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+        <div className={`w-2 h-2 rounded-full transition-colors ${page === 2 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+      </div>
+    </div>
+  );
+};
+
 export const Inbox: React.FC = () => {
   const navigate = useNavigate();
   
-  // 狀態管理
   const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 案主回填提問 Modal 狀態
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [inviteResponse, setInviteResponse] = useState('');
 
-  // 獲取收件匣資料
   const fetchInbox = async () => {
     setLoading(true);
     try {
@@ -41,7 +117,6 @@ export const Inbox: React.FC = () => {
     fetchInbox(); 
   }, [activeTab]);
 
-  // 動作：禮貌婉拒 / 終止洽談 (雙方皆可用，所有成單前階段皆可用)
   const handleDecline = async (inquiryId: string) => {
     const reason = prompt("請輸入婉拒/終止理由 (例如：時程已滿、預算不符、已找到合適人選)：", "已找到合適人選 / 終止洽談");
     if (!reason) return;
@@ -57,7 +132,6 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  // 案主動作：送出提問回覆 (邀請詳談)
   const handleSendInvite = async () => {
     if (!inviteResponse.trim()) {
       alert('請填寫回覆內容');
@@ -78,12 +152,10 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  // 跳轉至媒合洽談室
   const handleEnterInquiryWorkspace = (inquiryId: string) => {
     navigate(`/inquiry/workspace/${inquiryId}`);
   };
 
-  // 跳轉至正式委託工作區
   const handleViewCommission = (commissionId: string) => {
     if (!commissionId) {
       alert('找不到關聯的委託單');
@@ -92,7 +164,6 @@ export const Inbox: React.FC = () => {
     navigate(`/workspace/${commissionId}`);
   };
 
-  // 解析狀態文字
   const getStatusLabel = (status: string) => {
     switch(status) {
       case 'pending': return '待確認';
@@ -111,7 +182,6 @@ export const Inbox: React.FC = () => {
         <h1 className="text-2xl font-bold">收件匣</h1>
       </div>
 
-      {/* 視角切換頁籤 */}
       <div className="wishboard-tabs mb-6">
         <button 
           className={`tab-btn ${activeTab === 'client' ? 'active' : ''}`} 
@@ -134,10 +204,13 @@ export const Inbox: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {inquiries.map((item) => {
+            // 🌟 雙重解碼：修正重複打包導致的「未提供」問題
             let snapshot: any = {};
-            try { snapshot = JSON.parse(item.artist_snapshot || '{}'); } catch(e) {}
+            try { 
+              const parsed1 = JSON.parse(item.artist_snapshot || '{}');
+              snapshot = typeof parsed1 === 'string' ? JSON.parse(parsed1) : parsed1;
+            } catch(e) {}
             
-            // 判斷是否顯示婉拒按鈕 (只要不是 accepted, declined, closed 就都能終止)
             const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
             return (
@@ -155,22 +228,8 @@ export const Inbox: React.FC = () => {
 
                 {/* 資訊卡：根據視角顯示不同內容 */}
                 {activeTab === 'client' ? (
-                  <div className="mt-4 bg-white p-5 rounded-lg border border-purple-200 shadow-sm">
-                    <div className="border-b border-purple-100 pb-2 mb-3">
-                      <h4 className="text-purple-700 font-bold text-lg">{snapshot.title || '繪師投遞意向'}</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div><strong className="text-gray-600 block mb-1">擅長題材：</strong> <span className="text-gray-800">{snapshot.specialties || snapshot.terms || '未提供'}</span></div>
-                      <div><strong className="text-gray-600 block mb-1">不擅長/雷點：</strong> <span className="text-gray-800">{snapshot.no_gos || '未提供'}</span></div>
-                      <div className="md:col-span-2"><strong className="text-gray-600 block mb-1">付款方式：</strong> <span className="text-gray-800">{snapshot.payment_methods || '未提供'}</span></div>
-                    </div>
-                    <div className="mt-4">
-                      <strong className="text-gray-600 text-sm block mb-1">簡易價目表預覽：</strong>
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100">
-                        {snapshot.price_list || snapshot.price || '未提供'}
-                      </div>
-                    </div>
-                  </div>
+                  // 🌟 呼叫剛做好的明信片元件
+                  <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate} />
                 ) : (
                   item.client_response && (
                     <div className="bg-blue-50 p-4 rounded border border-blue-100 mt-4">
@@ -180,14 +239,12 @@ export const Inbox: React.FC = () => {
                   )
                 )}
 
-                {/* 婉拒理由顯示 */}
                 {item.inquiry_status === 'declined' && item.decline_reason && (
                   <div className="bg-red-50 p-3 rounded border border-red-100 mt-4 text-red-800 text-sm">
                     <strong>終止/婉拒理由：</strong>{item.decline_reason}
                   </div>
                 )}
 
-                {/* 動態按鈕區塊 */}
                 <div className="action-buttons mt-5 border-t pt-4 border-gray-100 flex gap-2">
                   {/* --- 案主視角按鈕 --- */}
                   {activeTab === 'client' && (
@@ -216,7 +273,6 @@ export const Inbox: React.FC = () => {
                         </button>
                       )}
 
-                      {/* 在成單或關閉前，隨時可婉拒 */}
                       {canDecline && (
                         <button className="btn-secondary text-red-600 hover:bg-red-50" onClick={() => handleDecline(item.inquiry_id)}>
                           {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
@@ -240,7 +296,6 @@ export const Inbox: React.FC = () => {
                         </button>
                       )}
                       
-                      {/* 在成單或關閉前，隨時可撤回/婉拒 */}
                       {canDecline && (
                         <button className="btn-secondary text-red-600 hover:bg-red-50" onClick={() => handleDecline(item.inquiry_id)}>
                           {item.inquiry_status === 'pending' ? '撤回投遞' : '終止洽談'}
