@@ -55,12 +55,12 @@ export const bulletinController = {
       const { artist_snapshot } = body;
       const id = crypto.randomUUID();
 
-      // 🌟 修正重複打包問題：判斷如果已經是字串就不再 stringify
       const snapshotStr = typeof artist_snapshot === 'string' ? artist_snapshot : JSON.stringify(artist_snapshot);
 
+      // 🌟 新增：設定 latest_update_at，此時案主尚未讀取，因此會產生新通知
       await env.commission_db.prepare(
-        `INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status)
-         VALUES (?, ?, ?, ?, 'pending')`
+        `INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, latest_update_at)
+         VALUES (?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`
       ).bind(id, bulletinId, currentUserId, snapshotStr).run();
 
       return new Response(JSON.stringify({ success: true, id, message: '意向已投遞' }), { headers: corsHeaders });
@@ -74,9 +74,10 @@ export const bulletinController = {
       const body = await request.json() as any;
       const { decline_reason } = body;
 
+      // 🌟 新增：婉拒也算是一種進度更新
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
-         SET status = 'declined', decline_reason = ? 
+         SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP
          WHERE id = ? AND status != 'declined'`
       ).bind(decline_reason, inquiryId).run();
 
@@ -92,14 +93,15 @@ export const bulletinController = {
 
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 加入 Users (u) 關聯，抓取繪師暱稱與頭像
       const { results } = await env.commission_db.prepare(`
         SELECT 
           b.id as bulletin_id, b.content as bulletin_content, b.category,
           i.id as inquiry_id, i.artist_id, i.artist_snapshot, i.status as inquiry_status, i.client_response,
           ap.question_template,
           c.id as commission_id,
-          u.display_name as artist_name, u.avatar_url as artist_avatar, u.public_id as artist_public_id
+          u.display_name as artist_name, u.avatar_url as artist_avatar, u.public_id as artist_public_id,
+          /* 🌟 抓取時間以判斷紅點 */
+          i.latest_update_at, i.last_read_at_client
         FROM Bulletins b
         JOIN BulletinInquiries i ON b.id = i.bulletin_id
         LEFT JOIN ArtistProfiles ap ON i.artist_id = ap.user_id 
@@ -108,6 +110,13 @@ export const bulletinController = {
         WHERE b.client_id = ?
         ORDER BY i.created_at DESC
       `).bind(currentUserId).all();
+
+      // 🌟 標記已讀：只要案主打開收件匣，就更新所有相關單據的讀取時間
+      await env.commission_db.prepare(`
+        UPDATE BulletinInquiries 
+        SET last_read_at_client = CURRENT_TIMESTAMP 
+        WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
+      `).bind(currentUserId).run();
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
@@ -120,12 +129,21 @@ export const bulletinController = {
       const { results } = await env.commission_db.prepare(`
         SELECT 
           i.id as inquiry_id, i.status as inquiry_status, i.artist_snapshot, i.client_response, i.decline_reason,
-          b.id as bulletin_id, b.content as bulletin_content, b.budget_range, b.category
+          b.id as bulletin_id, b.content as bulletin_content, b.budget_range, b.category,
+          /* 🌟 抓取時間以判斷紅點 */
+          i.latest_update_at, i.last_read_at_artist
         FROM BulletinInquiries i
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE i.artist_id = ?
         ORDER BY i.created_at DESC
       `).bind(currentUserId).all();
+
+      // 🌟 標記已讀：繪師打開收件匣時，更新自己投遞過的單據的讀取時間
+      await env.commission_db.prepare(`
+        UPDATE BulletinInquiries 
+        SET last_read_at_artist = CURRENT_TIMESTAMP 
+        WHERE artist_id = ?
+      `).bind(currentUserId).run();
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
@@ -142,9 +160,10 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '回覆內容不能為空' }), { status: 400, headers: corsHeaders });
       }
 
+      // 🌟 新增：更新狀態同時，也更新 latest_update_at
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
-         SET status = 'submitted', client_response = ? 
+         SET status = 'submitted', client_response = ?, latest_update_at = CURRENT_TIMESTAMP
          WHERE id = ? AND status = 'pending'`
       ).bind(client_response, inquiryId).run();
 
@@ -182,8 +201,9 @@ export const bulletinController = {
         commissionId, currentUserId, inquiry.client_id || 'unknown', inquiry.content.substring(0, 50), 0 
       ).run();
 
+      // 🌟 成單也算是最終異動
       await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'accepted' WHERE id = ?`
+        `UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ 

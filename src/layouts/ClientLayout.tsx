@@ -9,8 +9,10 @@ export function ClientLayout() {
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
+  
+  // 🌟 新增：未讀收件匣數量狀態
+  const [unreadInboxCount, setUnreadInboxCount] = useState(0);
 
-  // --- 原有的驗證與資料撈取邏輯 (完全保留) ---
   useEffect(() => {
     const checkClientAuth = async () => {
       try {
@@ -30,6 +32,27 @@ export function ClientLayout() {
     };
     checkClientAuth();
   }, [navigate]);
+
+  // 🌟 新增：定期檢查是否有未讀的系統通知/收件匣
+  useEffect(() => {
+    if (!profile) return;
+    const fetchUnread = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/notifications/unread?role=client`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          setUnreadInboxCount(data.count);
+        }
+      } catch (error) {
+        // 忽略背景錯誤
+      }
+    };
+    
+    fetchUnread();
+    const intervalId = setInterval(fetchUnread, 10000); // 每 10 秒檢查一次
+    return () => clearInterval(intervalId);
+  }, [profile]);
 
   const fetchOrdersForNotifications = async (currentUserId: string) => {
     try {
@@ -92,7 +115,6 @@ export function ClientLayout() {
 
   return (
     <div className="client-layout-wrapper">
-      {/* --- 新增：左側邊欄 --- */}
       <aside className="client-sidebar">
         <div className="sidebar-brand">
           <h2>Arti 繪師小幫手</h2>
@@ -100,7 +122,6 @@ export function ClientLayout() {
         </div>
         
         <nav className="sidebar-nav">
-          {/* 新增這區塊：前往許願池 */}
           <NavLink 
             to="/" 
             className="nav-item"
@@ -108,6 +129,7 @@ export function ClientLayout() {
             <Sparkles size={20} />
             <span>前往許願池</span>
           </NavLink>
+          
           <NavLink 
             to="/client/orders" 
             className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
@@ -122,6 +144,10 @@ export function ClientLayout() {
           >
             <Inbox size={20} />
             <span>收件匣</span>
+            {/* 🌟 條件渲染：如果有未讀訊息，顯示新訊息提示 */}
+            {unreadInboxCount > 0 && (
+              <span style={{ color: '#E06C75', marginLeft: 'auto', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>
+            )}
           </NavLink>
         </nav>
 
@@ -132,9 +158,7 @@ export function ClientLayout() {
         </div>
       </aside>
 
-      {/* --- 右側：主要內容區 --- */}
       <div className="client-main-container">
-        {/* 原本的動態提醒跑馬燈 */}
         {notifications.length > 0 && (
           <div className="notification-bar">
             <div className="marquee-content">

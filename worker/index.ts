@@ -48,9 +48,15 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
+      // 🌟 新增：系統通知與未讀數量 API
+      if (sanitizedPath === "/api/notifications/unread" && request.method === "GET") {
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+        return inquiryController.getUnreadCount(request, currentUserId!, env, corsHeaders);
+      }
+
       // --- 許願池 (Bulletins) 相關路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
-        // 收件匣特化路由
         if (sanitizedPath === "/api/bulletins/client/inbox" && request.method === "GET") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -84,7 +90,6 @@ export default {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
         
-        // 1. 婉拒或回填提問 (由 bulletinController 處理)
         if (targetId && subAction === "decline" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -96,7 +101,6 @@ export default {
           return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
 
-        // 2. 洽談室功能 (由 inquiryController 處理)
         if (targetId && subAction === "messages") {
           if (request.method === "GET") return inquiryController.getMessages(targetId, env, corsHeaders);
           if (request.method === "POST") {
@@ -120,12 +124,12 @@ export default {
           if (authErr) return authErr;
           return inquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
         }
-// 在 /api/inquiries/:id 的判斷區塊內加入
-if (targetId && !subAction && request.method === "GET") {
-  const authErr = requireAuth(currentUserId, corsHeaders);
-  if (authErr) return authErr;
-  return inquiryController.getInquiryDetail(targetId, currentUserId!, env, corsHeaders);
-}        
+        
+        if (targetId && !subAction && request.method === "GET") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return inquiryController.getInquiryDetail(targetId, currentUserId!, env, corsHeaders);
+        }        
       }
 
       // --- 客戶管理路由 ---

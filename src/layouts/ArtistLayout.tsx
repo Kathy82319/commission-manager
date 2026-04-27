@@ -8,6 +8,9 @@ export function ArtistLayout() {
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // 🌟 新增：未讀收件匣數量狀態
+  const [unreadInboxCount, setUnreadInboxCount] = useState(0);
 
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
@@ -37,6 +40,27 @@ export function ArtistLayout() {
     };
     checkAuthAndFetchProfile();
   }, [navigate]);
+
+  // 🌟 新增：定期檢查是否有未讀的系統通知/收件匣
+  useEffect(() => {
+    if (!artist) return;
+    const fetchUnread = async () => {
+      try {
+        const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/notifications/unread?role=artist`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          setUnreadInboxCount(data.count);
+        }
+      } catch (error) {
+        // 忽略背景錯誤
+      }
+    };
+    
+    fetchUnread();
+    const intervalId = setInterval(fetchUnread, 10000); // 每 10 秒檢查一次
+    return () => clearInterval(intervalId);
+  }, [artist]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -96,7 +120,6 @@ export function ArtistLayout() {
     }
   }
 
-  // --- 修改重點：在這裡新增了「收件匣」的路由設定 ---
   const navItems = [
     { path: '/', label: '前往許願池' }, 
     { path: '/artist/quote/new', label: '建立委託單' },
@@ -139,6 +162,10 @@ export function ArtistLayout() {
           {navItems.map(item => (
             <Link key={item.path} to={item.path} className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}>
               {item.label}
+              {/* 🌟 條件渲染：如果有未讀訊息且是收件匣選單，顯示新訊息提示 */}
+              {item.path === '/artist/inbox' && unreadInboxCount > 0 && (
+                <span style={{ color: '#E06C75', marginLeft: '6px', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>
+              )}
             </Link>
           ))}
         </nav>
@@ -147,7 +174,6 @@ export function ArtistLayout() {
           <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
           <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
           
-          {/* 🌟 這裡新增了退款政策的連結 */}
           <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
             <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
             <span style={{ margin: '0 4px' }}>|</span>
