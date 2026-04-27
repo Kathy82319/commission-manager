@@ -93,15 +93,16 @@ export const inquiryController = {
 
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
-          id, artist_id, client_id, project_name, status, total_price, origin_source
-        ) VALUES (?, ?, ?, ?, 'discussing', ?, ?)`
+          id, artist_id, client_id, project_name, status, total_price, origin_source, type_id
+        ) VALUES (?, ?, ?, ?, 'discussing', ?, ?, ?)`
       ).bind(
         commissionId,
         inquiry.artist_id,
         currentUserId,
         draft.project_name || inquiry.bulletin_content.substring(0, 50),
         draft.total_price || 0,
-        origin_source
+        origin_source,
+        'custom' // 給予一個預設的 type_id 以繞過 NOT NULL 限制
       ).run();
  
       await env.commission_db.prepare(
