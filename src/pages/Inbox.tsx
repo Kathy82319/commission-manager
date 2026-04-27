@@ -6,13 +6,18 @@ import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
 
 // 🌟 新增：獨立的明信片元件，負責處理翻頁邏輯與顯示
+// 🌟 修正：獨立的明信片元件，負責處理翻頁邏輯、正確跳轉與頭像大小限制
 const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
   const [page, setPage] = useState(1);
 
   const handleArtistClick = () => {
-    // 導向繪師個人頁面，可以根據你的路由架構調整，這裡預設為 /portfolio/{id}
+    // 修正路由：直接跳轉到根目錄下的 User_ID
     const targetId = item.artist_public_id || item.artist_id;
-    if (targetId) navigate(`/portfolio/${targetId}`);
+    if (targetId) {
+      // 若希望開新分頁，可以使用 window.open(`/${targetId}`, '_blank');
+      // 這裡維持使用原本的跳轉方式
+      navigate(`/${targetId}`);
+    }
   };
 
   return (
@@ -25,7 +30,9 @@ const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
               <img 
                 src={item.artist_avatar || 'https://via.placeholder.com/60'} 
                 alt="Avatar" 
-                className="w-14 h-14 rounded-full object-cover cursor-pointer hover:opacity-80 transition shadow-sm border border-gray-100"
+                className="rounded-full object-cover cursor-pointer hover:opacity-80 transition shadow-sm border border-gray-100"
+                // 🌟 強制鎖死頭像大小，防止圖片被撐開
+                style={{ width: '60px', height: '60px', minWidth: '60px', minHeight: '60px', flexShrink: 0 }}
                 onClick={handleArtistClick}
               />
               <div>
