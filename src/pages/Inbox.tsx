@@ -1,49 +1,59 @@
 // src/pages/Inbox.tsx
 import React, { useEffect, useState } from 'react';
-import '../styles/Inbox.css';
-import '../styles/Wishboard.css'; // 共用 Modal 樣式
 import { apiClient } from '../api/client';
+import '../styles/Inbox.css';
+import '../styles/Wishboard.css';
 
 export const Inbox: React.FC = () => {
+  // 控制當前觀看的視角
+  const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Modal 狀態
+  // 案主邀請 Modal 狀態
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [inviteResponse, setInviteResponse] = useState('');
 
   const fetchInbox = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/bulletins/client/inbox');
-      const data = await res.json();
-      if (data.success) setInquiries(data.data);
-    } catch (error) { console.error("無法載入收件匣", error); }
-    finally { setLoading(false); }
+      const endpoint = activeTab === 'client' 
+        ? '/api/bulletins/client/inbox' 
+        : '/api/bulletins/artist/inbox';
+        
+      const data = await apiClient.get(endpoint);
+      if (data.success) {
+        setInquiries(data.data);
+      }
+    } catch (error) { 
+      console.error("無法載入收件匣", error); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
-  useEffect(() => { fetchInbox(); }, []);
+  useEffect(() => { 
+    fetchInbox(); 
+  }, [activeTab]); // 當切換 Tab 時重新撈取資料
 
-// 動作：禮貌婉拒 (一鍵婉拒)
+  // 共用動作：婉拒 (繪師與案主皆可使用)
   const handleDecline = async (inquiryId: string) => {
     const reason = prompt("請選擇婉拒理由：\n1. 題材不符\n2. 時程已滿\n3. 預算不符", "題材不符");
     if (!reason) return;
 
     try {
-      // 直接使用 apiClient.post，不需要寫 headers 跟 body: JSON.stringify
       await apiClient.post(`/api/inquiries/${inquiryId}/decline`, {
         decline_reason: reason
       });
-      
       alert('已傳送系統婉拒通知，對話已關閉。');
       fetchInbox();
-    } catch (error: any) {
-      // apiClient 已經幫忙解析了錯誤訊息
-      alert(error.message || '婉拒失敗');
+    } catch (error: any) { 
+      alert(error.message || '婉拒失敗'); 
     }
   };
 
-  // 動作：送出邀請詳談 (回填提問)
+  // 案主動作：送出邀請詳談 (回填提問)
   const handleSendInvite = async () => {
     if (!inviteResponse.trim()) {
       alert('請填寫回覆內容');
@@ -52,72 +62,140 @@ export const Inbox: React.FC = () => {
     if (!selectedInquiry) return;
     
     try {
-      // 直接使用 apiClient.patch
       await apiClient.patch(`/api/inquiries/${selectedInquiry.inquiry_id}/submit-response`, {
         client_response: inviteResponse
       });
-      
       alert('已送出回覆！待繪師確認後將會開啟聊天室。');
       setShowInviteModal(false);
-      setInviteResponse(''); 
-      fetchInbox(); 
+      setInviteResponse('');
+      fetchInbox();
     } catch (error: any) {
       alert(error.message || '送出失敗');
       console.error(error);
     }
   };
 
-  if (loading) return <p className="text-center p-10">載入中...</p>;
+  // 繪師動作：接受並開啟詳談 (準備轉換為正式委託單)
+  const handleAcceptAndOpenChat = async (inquiryId: string) => {
+    if (window.confirm('確定接受此案主的初步需求，並開啟正式聊天室嗎？')) {
+      // 下一步我們要在這裡寫一支 API，將 Inquiry 轉成 Commission
+      alert('即將為您建立正式委託單與聊天室 (API 待串接)');
+    }
+  };
 
   return (
     <div className="inbox-container">
-      <h1 className="text-2xl font-bold mb-6">收到的投遞清單</h1>
-      
-      {inquiries.map((item) => {
-        const snapshot = JSON.parse(item.artist_snapshot || '{}');
-        return (
-          <div key={item.inquiry_id} className="inbox-item">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className={`inbox-badge status-${item.inquiry_status}`}>
-                  {item.inquiry_status === 'pending' ? '待處理' : 
-                   item.inquiry_status === 'declined' ? '已婉拒' : '洽談中'}
-                </span>
-                <h3 className="text-lg font-bold mt-2">針對：{item.bulletin_content}</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">收件匣</h1>
+      </div>
+
+      {/* 切換視角的 Tabs */}
+      <div className="wishboard-tabs mb-6">
+        <button 
+          className={`tab-btn ${activeTab === 'client' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('client')}
+        >
+          我發布的許願 (案主視角)
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'artist' ? 'active' : ''}`} 
+          onClick={() => setActiveTab('artist')}
+        >
+          我投遞的意向 (繪師視角)
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-center p-10">載入中...</p>
+      ) : inquiries.length === 0 ? (
+        <p className="text-center p-10 text-gray-500">目前沒有任何紀錄。</p>
+      ) : (
+        <div className="space-y-4">
+          {inquiries.map((item) => {
+            const snapshot = JSON.parse(item.artist_snapshot || '{}');
+            
+            return (
+              <div key={item.inquiry_id} className="inbox-item">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className={`inbox-badge status-${item.inquiry_status}`}>
+                      {item.inquiry_status === 'pending' ? '待處理' : 
+                       item.inquiry_status === 'submitted' ? '已回填提問' : 
+                       item.inquiry_status === 'declined' ? '已婉拒' : '洽談中'}
+                    </span>
+                    <h3 className="text-lg font-bold mt-2">
+                      {activeTab === 'client' ? `針對您的許願：${item.bulletin_content}` : `投遞項目：${item.bulletin_content}`}
+                    </h3>
+                    {activeTab === 'artist' && (
+                      <p className="text-sm text-gray-500 mt-1">預算區間：{item.budget_range}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 案主視角：顯示繪師簡歷 */}
+                {activeTab === 'client' && (
+                  <div className="artist-info-box">
+                    <p className="text-blue-600 font-bold">繪師簡歷摘要</p>
+                    <p><strong>項目：</strong>{snapshot.title}</p>
+                    <p><strong>參考價格：</strong>{snapshot.price}</p>
+                    <p className="text-gray-500 text-sm mt-1"><strong>協議預覽：</strong>{snapshot.terms}</p>
+                  </div>
+                )}
+
+                {/* 繪師視角：顯示案主回覆 */}
+                {activeTab === 'artist' && item.client_response && (
+                  <div className="bg-blue-50 p-4 rounded border border-blue-100 mt-2">
+                    <p className="text-blue-800 font-bold mb-1">案主回覆的需求細節：</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{item.client_response}</p>
+                  </div>
+                )}
+
+                {/* 被婉拒時顯示理由 */}
+                {item.inquiry_status === 'declined' && item.decline_reason && (
+                  <div className="bg-red-50 p-3 rounded border border-red-100 mt-2 text-red-800 text-sm">
+                    <strong>婉拒理由：</strong>{item.decline_reason}
+                  </div>
+                )}
+
+                {/* 操作按鈕區塊 */}
+                <div className="action-buttons">
+                  {/* 案主可執行的動作 */}
+                  {activeTab === 'client' && item.inquiry_status === 'pending' && (
+                    <>
+                      <button 
+                        className="btn-primary" 
+                        onClick={() => {
+                          setSelectedInquiry(item);
+                          setShowInviteModal(true);
+                        }}
+                      >
+                        邀請詳談 (填寫提問單)
+                      </button>
+                      <button className="btn-secondary" onClick={() => handleDecline(item.inquiry_id)}>
+                        禮貌婉拒
+                      </button>
+                    </>
+                  )}
+
+                  {/* 繪師可執行的動作 */}
+                  {activeTab === 'artist' && item.inquiry_status === 'submitted' && (
+                    <>
+                      <button className="btn-primary" onClick={() => handleAcceptAndOpenChat(item.inquiry_id)}>
+                        接受並開啟詳談
+                      </button>
+                      <button className="btn-secondary" onClick={() => handleDecline(item.inquiry_id)}>
+                        禮貌婉拒
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
+      )}
 
-            <div className="artist-info-box">
-              <p className="text-blue-600 font-bold">🎨 繪師簡歷摘要</p>
-              <p><strong>項目：</strong>{snapshot.title}</p>
-              <p><strong>參考價格：</strong>{snapshot.price}</p>
-              <p className="text-gray-500 text-sm mt-1"><strong>協議預覽：</strong>{snapshot.terms}</p>
-            </div>
-
-            {item.inquiry_status === 'pending' && (
-              <div className="action-buttons">
-                <button 
-                  className="btn-primary" 
-                  onClick={() => {
-                    setSelectedInquiry(item);
-                    setShowInviteModal(true);
-                  }}
-                >
-                  邀請詳談 (填寫提問單)
-                </button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => handleDecline(item.inquiry_id)}
-                >
-                  禮貌婉拒
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* 邀請詳談 Modal */}
+      {/* 案主邀請詳談 Modal */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content">
