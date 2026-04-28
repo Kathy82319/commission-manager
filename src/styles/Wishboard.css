@@ -98,10 +98,39 @@
 .image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
 .remove-image-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-/* 🌟 排單需求設定 (解決文字截斷) */
-.radio-group { display: flex; gap: 16px; align-items: center; height: 40px; }
-.radio-label { display: flex; align-items: center; gap: 6px; font-weight: normal !important; color: #475569 !important; cursor: pointer; white-space: nowrap; /* 確保不斷行 */ }
-.date-input { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
+/* 🌟 排單需求設定 (解決文字截斷與互相覆蓋) */
+.radio-group { 
+  display: flex; 
+  flex-wrap: wrap; /* 允許換行，避免空間不足時互相覆蓋 */
+  gap: 20px;       /* 加大間距，讓點擊區域更明確 */
+  align-items: center; 
+  min-height: 40px; /* 取代固定的 height: 40px，讓它能隨內容長高 */
+}
+
+.radio-label { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  font-weight: normal !important; 
+  color: #475569 !important; 
+  cursor: pointer; 
+  white-space: nowrap; /* 保持文字不斷行 */ 
+}
+
+.date-input { 
+  padding: 6px 10px; 
+  border-radius: 6px; 
+  border: 1px solid #cbd5e1; 
+  font-size: 13px; 
+  background-color: #fff;
+  transition: border-color 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #ff8c00;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+}
 
 .budget-inputs { display: flex; align-items: center; gap: 8px; }
 .budget-separator { color: #94a3b8; font-weight: bold; }
