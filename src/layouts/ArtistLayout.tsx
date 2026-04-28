@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Bell } from 'lucide-react'; // 🌟 新增：引入鈴鐺圖示
 import '../styles/ArtistLayout.css'; 
 
 export function ArtistLayout() {
@@ -10,7 +11,13 @@ export function ArtistLayout() {
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [unreadInboxCount, setUnreadInboxCount] = useState(0);
+  
+  // 🌟 新增：通知相關狀態
+  const [unreadInboxCount, setUnreadInboxCount] = useState(0); // 保留給側邊欄使用
+  const [unreadCount, setUnreadCount] = useState(0); // 給鈴鐺使用
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
@@ -37,19 +44,35 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate, API_BASE]);
 
+  // 🌟 修正：改用整合後的 notifications API
   useEffect(() => {
     if (!artist) return;
     const fetchUnread = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/notifications/unread?role=artist`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/notifications?role=artist`, { credentials: 'include' });
         const data = await res.json();
-        if (data.success) setUnreadInboxCount(data.count);
+        if (data.success) {
+          setUnreadCount(data.unreadCount);
+          setUnreadInboxCount(data.unreadCount); // 為了相容原本的側邊欄紅字保留
+          setNotifications(data.notifications);
+        }
       } catch (error) {}
     };
     fetchUnread();
     const intervalId = setInterval(fetchUnread, 10000); 
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
+
+  // 🌟 新增：點擊外部關閉通知選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowNotifMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -59,7 +82,7 @@ export function ArtistLayout() {
     } finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
-      window.location.href = '/'; // 修正重導向
+      window.location.href = '/'; 
     }
   };
 
@@ -174,6 +197,50 @@ export function ArtistLayout() {
       <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
 
       <main className="app-main-content">
+        
+        {/* 🌟 新增：桌面版頂部鈴鐺列 (我直接寫入 style 確保與你的舊版面相容) */}
+        <div style={{ height: '60px', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 24px', position: 'sticky', top: 0, zIndex: 40 }}>
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <div 
+              onClick={() => setShowNotifMenu(!showNotifMenu)} 
+              style={{ position: 'relative', cursor: 'pointer', padding: '8px', borderRadius: '50%', transition: 'background-color 0.2s', backgroundColor: showNotifMenu ? '#f3f4f6' : 'transparent' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = showNotifMenu ? '#f3f4f6' : 'transparent'}
+            >
+              <Bell size={22} color="#4b5563" />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 'bold', height: '16px', minWidth: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
+            
+            {showNotifMenu && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', width: '320px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 50, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', fontWeight: 'bold', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', color: '#374151' }}>系統通知</div>
+                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>目前沒有新通知</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => { setShowNotifMenu(false); navigate(n.link); }} 
+                        style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s' }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '4px', lineHeight: '1.4' }}>{n.text}</div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="content-wrapper">
           {showWarningBanner && (
             <div className="plan-warning-banner">

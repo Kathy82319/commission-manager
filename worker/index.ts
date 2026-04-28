@@ -12,6 +12,7 @@ import { showcaseController } from "./controllers/showcaseController";
 import { customerController } from "./controllers/customerController";
 import { bulletinController } from "./controllers/bulletinController"; 
 import { inquiryController } from './controllers/inquiryController';
+import { notificationController } from "./controllers/notificationController";
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -50,10 +51,10 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      if (sanitizedPath === "/api/notifications/unread" && request.method === "GET") {
+      if (sanitizedPath === "/api/notifications" && request.method === "GET") {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
-        return inquiryController.getUnreadCount(request, currentUserId!, env, corsHeaders);
+        return notificationController.getNotifications(request, currentUserId!, env, corsHeaders);
       }
 
       // --- 許願池 (Bulletins) 相關路由 ---

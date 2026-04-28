@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+// src/layouts/ClientLayout.tsx
+import { useEffect, useState, useRef } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
 import '../styles/ClientLayout.css';  
-import { ClipboardList, Inbox, Sparkles, LogOut } from 'lucide-react';
+import { ClipboardList, Inbox, Sparkles, LogOut, Bell } from 'lucide-react';
 
 export function ClientLayout() {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [notifications, setNotifications] = useState<string[]>([]);
-  const [unreadInboxCount, setUnreadInboxCount] = useState(0);
+  
+  // 🌟 通知狀態
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkClientAuth = async () => {
@@ -19,7 +24,6 @@ export function ClientLayout() {
           const data = await res.json();
           setProfile(data.data);
           setIsAuthorized(true);
-          fetchOrdersForNotifications(data.data.id);
         } else {
           navigate('/login');
         }
@@ -30,61 +34,46 @@ export function ClientLayout() {
     checkClientAuth();
   }, [navigate, API_BASE]);
 
+  // 🌟 定期從單一 API 取得輕量化通知
   useEffect(() => {
     if (!profile) return;
-    const fetchAllNotifs = async () => {
+    const fetchNotifications = async () => {
       try {
-        const resInbox = await fetch(`${API_BASE}/api/notifications/unread?role=client`, { credentials: 'include' });
-        const dataInbox = await resInbox.json();
-        if (dataInbox.success) setUnreadInboxCount(dataInbox.count);
-        await fetchOrdersForNotifications(profile.id);
+        const res = await fetch(`${API_BASE}/api/notifications?role=client`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+          setUnreadCount(data.unreadCount);
+          setNotifications(data.notifications);
+        }
       } catch (error) {}
     };
-    fetchAllNotifs();
-    const intervalId = setInterval(fetchAllNotifs, 10000); 
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 15000); // 15秒更新一次
     return () => clearInterval(intervalId);
   }, [profile, API_BASE]);
 
-  const fetchOrdersForNotifications = async (currentUserId: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
-      const data = await res.json();
-      if (data.success) {
-        const notifs: string[] = [];
-        const parseTime = (dateStr?: string) => {
-          if (!dateStr) return 0;
-          return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
-        };
-        data.data.forEach((order: any) => {
-          if (order.status === 'cancelled') return;
-          if (order.client_id !== currentUserId) return;
-          const title = order.client_custom_title || order.project_name;
-          const titleStr = title ? ` 訂單項目：${title}` : '';
-          if (order.pending_changes) notifs.push(`訂單：${order.id}${titleStr} 有合約異動申請`);
-          if (order.latest_message_at) {
-            const latestMsgTime = parseTime(order.latest_message_at);
-            const lastReadTime = parseTime(order.last_read_at_client);
-            if (latestMsgTime > lastReadTime) notifs.push(`訂單：${order.id}${titleStr} 有新訊息`);
-          }
-        });
-        setNotifications(notifs);
+  // 點擊外部關閉通知選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowNotifMenu(false);
       }
-    } catch (error) {}
-  };
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
-    } catch (e) {
-      console.error("登出失敗", e);
-    } finally {
+    } catch (e) {} finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
-      window.location.href = '/'; // 修正重導向
+      window.location.href = '/'; 
     }
   };
 
-  const handleSwitchToArtist = async () => {
+  const handleSwitchToArtist = async () => { /* ... 保留原本切換邏輯 ... */
     if (!profile) return;
     if (profile.role === 'artist' || profile.role === 'admin') {
       window.location.href = '/artist/queue';
@@ -111,19 +100,16 @@ export function ClientLayout() {
   return (
     <div className="client-layout-wrapper">
       <aside className="client-sidebar">
+        {/* ... 保留原本 Sidebar 內容 ... */}
         <div className="sidebar-brand">
           <h2>Arti 繪師小幫手</h2>
           <div className="brand-subtitle">委託管理 (委託方)</div>
         </div>
-        
         <nav className="sidebar-nav">
           <NavLink to="/" className="nav-item"><Sparkles size={20} /><span>前往許願池</span></NavLink>
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><ClipboardList size={20} /><span>委託單管理</span></NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span>
-            {unreadInboxCount > 0 && <span style={{ color: '#E06C75', marginLeft: 'auto', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>}
-          </NavLink>
+          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span></NavLink>
         </nav>
-
         <div className="sidebar-footer">
           <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
@@ -135,14 +121,37 @@ export function ClientLayout() {
       </aside>
 
       <div className="client-main-container">
-        {notifications.length > 0 && (
-          <div className="notification-bar">
-            <div className="marquee-content">
-              {notifications.map((msg, index) => <span key={index} style={{ marginRight: '80px' }}>🔔 {msg}</span>)}
+        {/* 🌟 新增：頂部標題與鈴鐺列 */}
+        <header className="client-top-header">
+          <div className="header-spacer"></div>
+          <div className="header-actions" ref={menuRef}>
+            <div className="bell-container" onClick={() => setShowNotifMenu(!showNotifMenu)}>
+              <Bell size={22} color="#4b5563" />
+              {unreadCount > 0 && <span className="bell-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
             </div>
+            
+            {showNotifMenu && (
+              <div className="notif-dropdown">
+                <div className="notif-header">系統通知</div>
+                <div className="notif-list">
+                  {notifications.length === 0 ? (
+                    <div className="notif-empty">目前沒有新通知</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className="notif-item" onClick={() => { setShowNotifMenu(false); navigate(n.link); }}>
+                        <div className="notif-text">{n.text}</div>
+                        <div className="notif-time">{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </header>
+
         <main className="client-main"><Outlet /></main>
+        
         <footer className="client-footer">
           <div className="footer-links">
             <Link to="/terms">服務條款</Link>
