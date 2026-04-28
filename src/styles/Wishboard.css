@@ -7,7 +7,6 @@
   position: relative;
 }
 
-/* 🌟 Toast 通知樣式 */
 .toast-notification {
   position: fixed;
   top: 24px;
@@ -24,461 +23,107 @@
   z-index: 9999;
   animation: slideDown 0.3s ease-out;
 }
+.toast-notification.success { background-color: #22c55e; color: white; }
+.toast-notification.error { background-color: #ef4444; color: white; }
+@keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
 
-.toast-notification.success {
-  background-color: #22c55e;
-  color: white;
-}
+.wishboard-hero { text-align: center; padding: 40px 0; background: linear-gradient(135deg, #fff5eb 0%, #fff 100%); border-radius: 20px; margin-bottom: 30px; }
+.tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+.tab-group button { padding: 10px 25px; border-radius: 30px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; color: #666; transition: 0.3s; }
+.tab-group button.active { background: #ff8c00; color: white; border-color: #ff8c00; box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 
-.toast-notification.error {
-  background-color: #ef4444;
-  color: white;
-}
+.filter-section { display: flex; align-items: flex-start; gap: 20px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.filter-label { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 6px; font-weight: bold; color: #555; }
+.filter-tags { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-tags button { padding: 5px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; transition: 0.2s; }
+.filter-tags button:hover { background: #f0f0f0; }
+.filter-tags button.active { background: #fff0e0; color: #ff8c00; border-color: #ff8c00; }
+.post-trigger-btn { flex-shrink: 0; background: #ff8c00; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; transition: 0.2s; }
+.post-trigger-btn:hover { background: #e67e00; }
 
-@keyframes slideDown {
-  from { top: -50px; opacity: 0; }
-  to { top: 24px; opacity: 1; }
-}
+.wish-grid { display: flex; flex-direction: column; gap: 20px; }
+.wish-card-wide { display: flex; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); transition: transform 0.2s; border: 1px solid #f0f0f0; align-items: stretch; }
+.wish-card-wide:hover { transform: translateY(-4px); }
+.wish-card-image-wrapper { width: 320px; position: relative; flex-shrink: 0; display: flex; flex-direction: column; background-color: #fafafa; border-right: 1px solid #f0f0f0; }
+.wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fallback-placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #aaa; font-size: 13px; font-weight: 500; min-height: 240px; }
+.wish-countdown { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
+.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; }
+.wish-card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.wish-card-header h3 { font-size: 20px; color: #333; margin: 0; }
+.category-badge { font-size: 12px; font-weight: bold; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; color: #666; }
+.wish-metadata { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #666; margin-bottom: 15px; }
+.meta-row { display: flex; gap: 30px; }
+.meta-item { display: flex; align-items: center; gap: 6px; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip { background: #f0f2f5; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #555; }
+.price { color: #e67e22; font-weight: bold; }
+.wish-description { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+.wish-description p { margin-top: 5px; line-height: 1.5; color: #444; }
+.inquire-btn { margin-top: auto; width: 100%; padding: 12px; background: #fff7f0; border: 1px solid #ffccbc; color: #ff5722; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+.inquire-btn:hover:not(:disabled) { background: #ffebe0; }
+.disabled-btn { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; cursor: not-allowed !important; }
+.applied-btn { background: #e5e7eb !important; color: #6b7280 !important; border-color: #d1d5db !important; cursor: not-allowed !important; }
 
-/* Hero Section */
-.wishboard-hero {
-  text-align: center;
-  padding: 40px 0;
-  background: linear-gradient(135deg, #fff5eb 0%, #fff 100%);
-  border-radius: 20px;
-  margin-bottom: 30px;
-}
+/* 🌟 Modal 核心重構：區塊化設計 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.post-modal, .inquire-modal { background: #f8fafc; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+.inquire-modal { max-width: 600px; }
+.modal-header { padding: 20px 24px; background: white; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h2 { margin: 0; font-size: 20px; color: #333; }
+.close-modal-btn { background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: 0.2s; }
+.close-modal-btn:hover { background: #f1f5f9; color: #333; }
 
-.tab-group {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
+.post-form, .inquire-form-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
 
-.tab-group button {
-  padding: 10px 25px;
-  border-radius: 30px;
-  border: 1px solid #ddd;
-  background: white;
-  cursor: pointer;
-  font-weight: 600;
-  color: #666;
-  transition: 0.3s;
-}
+/* 表單區塊設計 */
+.form-section { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; }
+.section-title { margin: 0 0 4px 0; font-size: 15px; color: #0f172a; border-left: 4px solid #ff8c00; padding-left: 10px; }
 
-.tab-group button.active {
-  background: #ff8c00;
-  color: white;
-  border-color: #ff8c00;
-  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
-}
+/* 網格系統 */
+.grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 640px) { .grid-2-cols { grid-template-columns: 1fr; } }
 
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group label { font-weight: bold; color: #334155; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
+.label-hint { font-weight: normal; font-size: 12px; color: #94a3b8; }
 
-/* 🌟 Wide Wish Card (修復佈局問題) */
-.wish-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+.form-group input[type="text"], 
+.form-group input[type="number"], 
+.form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; background: #fff; }
+.form-group input:focus, .form-group textarea:focus { outline: none; border-color: #ff8c00; box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1); }
+.detail-textarea { resize: vertical; min-height: 100px; }
 
-.wish-card-wide {
-  display: flex;
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  transition: transform 0.2s;
-  border: 1px solid #f0f0f0;
-  align-items: stretch; /* 讓左右區塊等高 */
-}
+.image-preview-box { position: relative; width: 100%; height: 160px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+.image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+.remove-image-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-.wish-card-wide:hover {
-  transform: translateY(-4px);
-}
+/* 🌟 排單需求設定 (解決文字截斷) */
+.radio-group { display: flex; gap: 16px; align-items: center; height: 40px; }
+.radio-label { display: flex; align-items: center; gap: 6px; font-weight: normal !important; color: #475569 !important; cursor: pointer; white-space: nowrap; /* 確保不斷行 */ }
+.date-input { padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
 
+.budget-inputs { display: flex; align-items: center; gap: 8px; }
+.budget-separator { color: #94a3b8; font-weight: bold; }
 
-.wish-countdown {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
+.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+.selectable-tag { padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; user-select: none; transition: 0.2s; background: #f8fafc; }
+.selectable-tag:hover { background: #e2e8f0; }
+.selectable-tag.selected { background: #ff8c00; color: white; border-color: #ff8c00; }
 
-/* 右側資訊區塊 */
-.wish-card-info {
-  flex: 1;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-}
+/* 🌟 膠囊型自定義輸入框 */
+.compact-tag-input { width: 130px !important; padding: 6px 12px !important; border-radius: 20px !important; font-size: 13px !important; border: 1px dashed #94a3b8 !important; background: transparent !important; }
+.compact-tag-input:focus { border-style: solid !important; }
+.custom-tag { display: flex; align-items: center; gap: 6px; }
+.custom-tag svg { cursor: pointer; background: rgba(0,0,0,0.15); border-radius: 50%; padding: 2px; }
+.custom-tag svg:hover { background: rgba(0,0,0,0.3); }
 
-.wish-card-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
+.modal-footer { padding: 16px 24px; background: white; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; }
+.submit-post-btn, .btn-confirm { background: #ff8c00; color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+.submit-post-btn:hover, .btn-confirm:hover { background: #e67e00; }
+.submit-post-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.btn-cancel { background: white; color: #64748b; padding: 10px 20px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+.btn-cancel:hover { background: #f1f5f9; color: #334155; }
 
-.wish-card-header h3 {
-  font-size: 20px;
-  color: #333;
-  margin: 0;
-}
-
-.category-badge {
-  font-size: 12px;
-  font-weight: bold;
-  padding: 4px 8px;
-  background: #f3f4f6;
-  border-radius: 4px;
-  color: #666;
-}
-
-.wish-metadata {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 15px;
-}
-
-.meta-row {
-  display: flex;
-  gap: 30px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag-chip {
-  background: #f0f2f5;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #555;
-}
-
-.price {
-  color: #e67e22;
-  font-weight: bold;
-}
-
-.wish-description {
-  background: #f9f9f9;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-}
-
-.wish-description p {
-  margin-top: 5px;
-  line-height: 1.5;
-  color: #444;
-}
-
-/* 按鈕狀態樣式 */
-.inquire-btn {
-  margin-top: auto;
-  width: 100%;
-  padding: 12px;
-  background: #fff7f0;
-  border: 1px solid #ffccbc;
-  color: #ff5722;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.inquire-btn:hover:not(:disabled) {
-  background: #ffebe0;
-}
-
-.disabled-btn {
-  background: #f3f4f6 !important;
-  color: #9ca3af !important;
-  border-color: #e5e7eb !important;
-  cursor: not-allowed !important;
-}
-
-.applied-btn {
-  background: #e5e7eb !important;
-  color: #6b7280 !important;
-  border-color: #d1d5db !important;
-  cursor: not-allowed !important;
-}
-
-/* Modal CSS */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.post-modal {
-  background: white;
-  width: 100%;
-  max-width: 800px;
-  max-height: 90vh;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #999;
-}
-
-.post-form {
-  padding: 24px;
-  overflow-y: auto;
-}
-
-.form-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.flex-2 { flex: 2; }
-.flex-1 { flex: 1; }
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-  color: #444;
-}
-
-.form-group input[type="text"], .form-group input[type="number"] {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-/* 🌟 上傳預覽框樣式 */
-.upload-box {
-  border: 2px dashed #ddd;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #f9f9f9;
-  transition: 0.2s;
-  overflow: hidden;
-}
-
-.upload-box:hover {
-  background: #f0f0f0;
-  border-color: #ccc;
-}
-
-.upload-box.has-preview {
-  height: 120px; /* 有圖片時自動長高 */
-  border: 1px solid #eee;
-  padding: 0;
-}
-
-.upload-preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.upload-text {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #666;
-  font-size: 14px;
-}
-
-.budget-inputs {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.tag-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.selectable-tag {
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  font-size: 13px;
-  cursor: pointer;
-  user-select: none;
-  transition: 0.2s;
-}
-
-.selectable-tag.selected {
-  background: #ff8c00;
-  color: white;
-  border-color: #ff8c00;
-}
-
-.inline-tag-input {
-  width: 160px ;
-  padding: 6px 12px ;
-  border-radius: 20px ;
-  font-size: 13px;
-  border: 1px dashed #aaa;
-}
-
-/* 🌟 修改排版：避免壓縮，允許換行 */
-.filter-section {
-  display: flex;
-  align-items: flex-start; /* 改為 flex-start 適應多行 */
-  gap: 20px;
-  padding: 15px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  margin-bottom: 20px;
-}
-
-.filter-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0; /* 絕對不壓縮 */
-  margin-top: 6px; /* 對齊第一排標籤 */
-  font-weight: bold;
-  color: #555;
-}
-
-.filter-tags {
-  flex: 1; /* 佔據中間剩餘空間 */
-  display: flex;
-  flex-wrap: wrap; /* 允許標籤換行 */
-  gap: 8px;
-}
-
-.filter-tags button {
-  padding: 5px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #eee;
-  background: #f9f9f9;
-  margin: 0; /* 拔除原本的 margin-right，改用外層 gap */
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.filter-tags button:hover {
-  background: #f0f0f0;
-}
-
-.filter-tags button.active {
-  background: #fff0e0;
-  color: #ff8c00;
-  border-color: #ff8c00;
-}
-
-.post-trigger-btn {
-  flex-shrink: 0; /* 絕對不壓縮 */
-  background: #ff8c00;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.post-trigger-btn:hover {
-  background: #e67e00;
-}
-
-/* 🌟 修改圖片區塊：背景色統一，填滿高度 */
-.wish-card-image-wrapper {
-  width: 320px;
-  position: relative;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background-color: #fafafa; /* 乾淨的背景色 */
-  border-right: 1px solid #f0f0f0;
-}
-
-.wish-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.fallback-placeholder {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #aaa;
-  font-size: 13px;
-  font-weight: 500;
-  min-height: 240px;
-}
-
-/* 🌟 自定義標籤的 x 按鈕 */
-.custom-tag {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.custom-tag svg {
-  cursor: pointer;
-  background: rgba(0,0,0,0.1);
-  border-radius: 50%;
-  padding: 2px;
-}
-
-.custom-tag svg:hover {
-  background: rgba(0,0,0,0.2);
-}
+.inquire-hint { font-size: 14px; color: #64748b; margin: 0 0 16px 0; }
+.highlight-label { color: #9333ea !important; }
