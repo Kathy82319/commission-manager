@@ -1,3 +1,4 @@
+/* 基礎排版 */
 .inbox-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
 
 /* 🌟 發布儀表板插槽設計 */
@@ -13,7 +14,7 @@
 }
 
 .dashboard-slot {
-  border-radius: 16px;
+  border-radius: 12px;
   height: 140px;
   display: flex;
   flex-direction: column;
@@ -22,15 +23,15 @@
 }
 
 .empty-slot {
-  border: 2px dashed #d1d5db;
-  background-color: #f9fafb;
+  border: 2px dashed #DED9D3;
+  background-color: #FBFBF9;
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 .empty-slot:hover {
-  border-color: #a855f7;
-  background-color: #faf5ff;
+  border-color: #A0978D;
+  background-color: #FDFDFB;
 }
 .empty-content {
   display: flex;
@@ -39,7 +40,7 @@
 }
 
 .active-slot {
-  border: 2px solid #e5e7eb;
+  border: 2px solid #EAE6E1;
   background-color: white;
   cursor: pointer;
   position: relative;
@@ -47,13 +48,13 @@
 }
 .active-slot:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border-color: #c084fc;
+  box-shadow: 0 8px 16px rgba(93, 74, 62, 0.08);
+  border-color: #DED9D3;
 }
 .active-slot.selected {
-  border-color: #9333ea;
-  background-color: #faf5ff;
-  box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.1);
+  border-color: #5D4A3E;
+  background-color: #FBFBF9;
+  box-shadow: 0 0 0 3px rgba(93, 74, 62, 0.1);
 }
 .active-slot.selected::after {
   content: '';
@@ -63,7 +64,7 @@
   transform: translateX(-50%);
   border-width: 10px 10px 0;
   border-style: solid;
-  border-color: #9333ea transparent transparent transparent;
+  border-color: #5D4A3E transparent transparent transparent;
 }
 
 .slot-header {
@@ -73,11 +74,11 @@
   margin-bottom: 8px;
 }
 .slot-icon { font-size: 18px; }
-.slot-category { font-size: 12px; font-weight: bold; color: #6b7280; }
+.slot-category { font-size: 12px; font-weight: bold; color: #7A7269; }
 .slot-title {
   font-size: 16px;
   font-weight: bold;
-  color: #1f2937;
+  color: #5D4A3E;
   margin: 0 0 auto 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -88,35 +89,35 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #EAE6E1;
   padding-top: 8px;
 }
-.stat-item { font-size: 13px; color: #6b7280; font-weight: 500; }
-.stat-num { font-size: 18px; font-weight: 900; color: #9333ea; }
-.stat-item.expiry { color: #ea580c; background: #fff1f2; padding: 2px 8px; border-radius: 99px; font-size: 11px; }
+.stat-item { font-size: 13px; color: #7A7269; font-weight: 500; }
+.stat-num { font-size: 18px; font-weight: 900; color: #5D4A3E; }
+.stat-item.expiry { color: #A05C5C; background: #FCE8E6; padding: 2px 8px; border-radius: 6px; font-size: 11px; }
 
-.btn-outline-purple {
-  border: 1px solid #c084fc;
-  color: #9333ea;
+.btn-outline-primary {
+  border: 1px solid #A0978D;
+  color: #5D4A3E;
   background: transparent;
-  border-radius: 99px;
+  border-radius: 8px;
   font-weight: bold;
   transition: all 0.2s;
 }
-.btn-outline-purple:hover { background: #9333ea; color: white; }
+.btn-outline-primary:hover { background: #5D4A3E; color: white; border-color: #5D4A3E; }
 
 /* 🌟 原本 Inbox 列表項目樣式 */
 .inbox-item { 
   padding: 20px; 
   display: flex; flex-direction: column; gap: 12px;
 }
-.inbox-badge { font-size: 12px; padding: 4px 8px; border-radius: 99px; font-weight: bold; }
-.status-pending { background: #fef3c7; color: #92400e; }
-.status-submitted { background: #dcfce7; color: #166534; }
-.status-declined { background: #fee2e2; color: #991b1b; }
-.status-proposed { background: #e0e7ff; color: #3730a3; }
-.status-accepted { background: #f3e8ff; color: #6b21a8; }
-.status-closed { background: #f3f4f6; color: #4b5563; }
+.inbox-badge { font-size: 12px; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+.status-pending { background: #FDF4E6; color: #A67B3E; border: 1px solid #FDE0B5; }
+.status-submitted { background: #EBF2F7; color: #4A7294; border: 1px solid #C1D6E8; }
+.status-declined { background: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
+.status-proposed { background: #E8F3EB; color: #4E7A5A; border: 1px solid #C3E0CC; }
+.status-accepted { background: #EAE6E1; color: #5D4A3E; border: 1px solid #DED9D3; }
+.status-closed { background: #F3F4F6; color: #7A7269; border: 1px solid #EAE6E1; }
 
 
 /* ==========================================================================
@@ -126,7 +127,7 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #EAE6E1;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -135,13 +136,13 @@
   position: relative; /* 為了讓郵戳絕對定位 */
 }
 .postcard-container:hover {
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 24px -8px rgba(93, 74, 62, 0.15);
 }
 
 @media (min-width: 768px) {
   .postcard-container {
     flex-direction: row;
-    height: auto; 
+    height: auto; /* 讓內容自動撐開，解決擁擠感 */
     min-height: 280px; 
   }
 }
@@ -150,32 +151,33 @@
 .postcard-stamp {
   position: absolute;
   top: 16px;
-  right: -24px;
-  background: #f3f4f6;
-  color: #4b5563;
-  padding: 4px 32px;
-  font-size: 12px;
+  right: -26px;
+  background: #FBFBF9;
+  color: #7A7269;
+  padding: 4px 36px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 1px;
   transform: rotate(35deg);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  border: 1px dashed #d1d5db;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px dashed #DED9D3;
   z-index: 10;
   text-align: center;
 }
-.stamp-pending { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-.stamp-submitted { background: #dcfce7; color: #166534; border-color: #86efac; }
-.stamp-proposed { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
-.stamp-accepted { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
-.stamp-declined { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.stamp-pending { background: #FDF4E6; color: #A67B3E; border-color: #FDE0B5; }
+.stamp-submitted { background: #EBF2F7; color: #4A7294; border-color: #C1D6E8; }
+.stamp-proposed { background: #E8F3EB; color: #4E7A5A; border-color: #C3E0CC; }
+.stamp-accepted { background: #EAE6E1; color: #5D4A3E; border-color: #DED9D3; }
+.stamp-declined { background: #FCE8E6; color: #A05C5C; border-color: #F5C6C6; }
+
 
 /* 左側：圖片展示區 */
 .postcard-image-section {
   width: 100%;
   height: 220px;
-  background-color: #f9fafb;
+  background-color: #FBFBF9;
   position: relative;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #EAE6E1;
   overflow: hidden;
 }
 @media (min-width: 768px) {
@@ -183,7 +185,7 @@
     width: 40%; /* 加寬圖片區比例 */
     height: auto;
     border-bottom: none;
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid #EAE6E1;
   }
 }
 .postcard-image {
@@ -195,7 +197,7 @@
 .postcard-image-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.2);
+  background: rgba(93, 74, 62, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,8 +214,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  background: linear-gradient(135deg, #f8fafc 0%, #e5e7eb 100%);
+  color: #A0978D;
+  background: linear-gradient(135deg, #FDFDFB 0%, #EAE6E1 100%);
   font-size: 14px;
   font-weight: bold;
 }
@@ -221,12 +223,12 @@
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(93, 74, 62, 0.75);
   color: white;
   font-size: 12px;
   font-weight: bold;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: 8px;
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.2);
 }
@@ -234,9 +236,7 @@
 /* 右側：內容資訊區 */
 .postcard-content-section {
   width: 100%;
-  padding: 24px; 
-  display: flex;
-  flex-direction: column;
+  padding: 24px; /* 加大內距，呼吸空間 */
 }
 @media (min-width: 768px) {
   .postcard-content-section {
@@ -256,41 +256,41 @@
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #EAE6E1;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .postcard-avatar-fallback {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: #f3f4f6;
-  border: 2px solid #e5e7eb;
+  background-color: #FBFBF9;
+  border: 2px solid #EAE6E1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: #A0978D;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .postcard-artist-name {
   font-size: 20px;
   font-weight: 900;
-  color: #1f2937;
+  color: #5D4A3E;
   text-decoration: none;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 .postcard-artist-name:hover {
-  color: #4f46e5;
+  color: #8C6F5A;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
 
-/* 標籤群組 (Chips) */
+/* 標籤群組 (Chips) - 大地色系 */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .chip-tag { font-size: 13px; padding: 4px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
-.chip-good { background-color: #ecfdf5; color: #166534; border: 1px solid #a7f3d0; }
-.chip-bad { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.chip-info { background-color: #f8fafc; color: #4b5563; border: 1px solid #e2e8f0; }
+.chip-good { background-color: #E8F3EB; color: #4E7A5A; border: 1px solid #C3E0CC; }
+.chip-bad { background-color: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
+.chip-info { background-color: #FBFBF9; color: #7A7269; border: 1px solid #EAE6E1; }
 
 /* 🌟 動作按鈕區 - 推到底部並置右對齊 */
 .postcard-actions-wrapper {
@@ -298,34 +298,35 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #EAE6E1;
   padding-top: 16px;
 }
 
+/* 按鈕樣式 (符合 Notebook.css 大地色風格) */
 .btn-primary { 
-  background: #5d4a3e; color: white; padding: 10px 24px; border-radius: 99px; 
+  background: #5D4A3E; color: white; padding: 10px 24px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(93, 74, 62, 0.3); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(93, 74, 62, 0.2); }
 
 .btn-secondary-red { 
-  background: white; color: #e11d48; border: 1px solid #fecaca; padding: 10px 24px; 
-  border-radius: 99px; font-weight: bold; cursor: pointer; transition: 0.2s;
+  background: white; color: #A05C5C; border: 1px solid #F5C6C6; padding: 10px 24px; 
+  border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
-.btn-secondary-red:hover { background: #fff1f2; }
+.btn-secondary-red:hover { background: #FCE8E6; }
 
 .btn-success { 
-  background: #166534; color: white; padding: 10px 24px; border-radius: 99px; 
+  background: #4E7A5A; color: white; padding: 10px 24px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
 }
-.btn-success:hover { background: #14532d; transform: translateY(-2px); }
+.btn-success:hover { background: #3B5C44; transform: translateY(-2px); }
 
 
 /* 🌟 圖片燈箱 (Lightbox) */
 .lightbox-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: rgba(26, 20, 18, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,32 +399,72 @@
   .lightbox-close { top: 10px; right: 10px; }
 }
 
-/* 🌟 信紙風格彈窗 (Modal) */
+/* 🌟 信紙風格彈窗 (Modal) - 莫蘭迪大地色系 */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  position: fixed; inset: 0; background: rgba(26, 20, 18, 0.6);
   backdrop-filter: blur(8px); 
   display: flex; align-items: center; justify-content: center; z-index: 1000;
   padding: 20px;
 }
 .modal-content-paper {
-  background: #fdfdf9; width: 100%; max-width: 560px;
-  border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  background: #FDFDFB; width: 100%; max-width: 560px;
+  border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25);
   position: relative; overflow: hidden; padding: 40px;
-  border: 1px solid #eae6e1;
+  border: 1px solid #EAE6E1;
 }
+
+/* 信封邊框 - 莫蘭迪紅與藍交錯 */
 .paper-deco {
   position: absolute; top: 0; left: 0; right: 0; height: 8px;
-  background: repeating-linear-gradient(45deg, #f87171 0, #f87171 20px, #fff 20px, #fff 40px, #60a5fa 40px, #60a5fa 60px, #fff 60px, #fff 80px);
+  background: repeating-linear-gradient(
+    45deg, 
+    #C27A7A 0, #C27A7A 20px, 
+    #FDFDFB 20px, #FDFDFB 40px, 
+    #7A93AC 40px, #7A93AC 60px, 
+    #FDFDFB 60px, #FDFDFB 80px
+  );
 }
+
+/* 婉拒專用信封邊框 - 莫蘭迪紅與白 */
+.paper-deco-red {
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(
+    45deg, 
+    #C27A7A 0, #C27A7A 20px, 
+    #FDFDFB 20px, #FDFDFB 40px
+  );
+}
+
+.decline-modal {
+  border-color: #F5C6C6;
+}
+
 .paper-textarea {
-  width: 100%; height: 160px; border: 2px solid #eae6e1; border-radius: 16px;
-  padding: 15px; font-size: 15px; resize: none; outline: none; background: #fff;
+  width: 100%; height: 160px; border: 2px solid #EAE6E1; border-radius: 8px;
+  padding: 16px; font-size: 15px; resize: none; outline: none; background: #FFFFFF;
   transition: border-color 0.2s;
   color: #5D4A3E;
+  line-height: 1.5;
 }
-.paper-textarea:focus { border-color: #5d4a3e; }
+.paper-textarea:focus { border-color: #5D4A3E; }
+.decline-textarea:focus { border-color: #A05C5C; }
 
-.btn-paper-submit { background: #5d4a3e; color: white; padding: 12px 30px; border-radius: 99px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+.btn-paper-submit { 
+  background: #5D4A3E; color: white; padding: 12px 30px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(93, 74, 62, 0.1); 
+  transition: 0.2s; 
+}
 .btn-paper-submit:hover { background: #4A3A30; transform: translateY(-2px); }
-.btn-paper-cancel { color: #94a3b8; font-weight: bold; border: none; background: none; cursor: pointer; padding: 12px 20px; border-radius: 99px; transition: 0.2s; }
-.btn-paper-cancel:hover { background: #f1f5f9; color: #475569; }
+
+.btn-paper-submit-red { 
+  background: #A05C5C; color: white; padding: 12px 30px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(160, 92, 92, 0.1); 
+  transition: 0.2s; 
+}
+.btn-paper-submit-red:hover { background: #824747; transform: translateY(-2px); }
+
+.btn-paper-cancel { 
+  color: #A0978D; font-weight: bold; border: none; background: none; 
+  cursor: pointer; padding: 12px 20px; border-radius: 8px; transition: 0.2s; 
+}
+.btn-paper-cancel:hover { background: #FBFBF9; color: #7A7269; }

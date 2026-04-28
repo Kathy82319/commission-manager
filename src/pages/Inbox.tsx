@@ -6,7 +6,7 @@ import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
 
 const renderChips = (text: string, type: 'good' | 'bad' | 'info') => {
-  if (!text || text.trim() === '') return <span className="text-gray-400 text-sm">未提供</span>;
+  if (!text || text.trim() === '') return <span className="text-[#A0978D] text-sm">未提供</span>;
   const tags = text.split(/[,、\s]+/).filter(t => t.trim() !== '');
   return (
     <div className="chip-group">
@@ -102,7 +102,7 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
               )}
               
               <div className="flex-1">
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                <div className="flex items-center gap-2 text-xs text-[#A0978D] mb-1">
                   <span>投遞繪師</span>
                 </div>
                 <span className="postcard-artist-name block truncate" onClick={handleArtistClick} title="前往繪師個人頁">
@@ -113,15 +113,15 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm mt-4 mb-4">
               <div>
-                <strong className="text-gray-700 block mb-1">舒適圈 / 擅長題材：</strong>
+                <strong className="text-[#5D4A3E] block mb-1">舒適圈 / 擅長題材：</strong>
                 {renderChips(snapshot.specialties, 'good')}
               </div>
               <div>
-                <strong className="text-gray-700 block mb-1">婉拒 / 雷點：</strong>
+                <strong className="text-[#5D4A3E] block mb-1">婉拒 / 雷點：</strong>
                 {renderChips(snapshot.no_gos, 'bad')}
               </div>
               <div className="md:col-span-2 pt-2">
-                <strong className="text-gray-700 block mb-1">付款方式與條件：</strong>
+                <strong className="text-[#5D4A3E] block mb-1">付款方式與條件：</strong>
                 {renderChips(snapshot.payment_methods, 'info')}
               </div>
             </div>
@@ -251,10 +251,10 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-container">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">訊息中心</h1>
+        <h1 className="text-2xl font-bold text-[#5D4A3E]">訊息中心</h1>
       </div>
 
-      <div className="wishboard-tabs mb-8 border-b border-gray-200">
+      <div className="wishboard-tabs mb-8 border-b border-[#EAE6E1]">
         <button className={`tab-btn ${activeTab === 'client' ? 'active' : ''}`} onClick={() => setActiveTab('client')}>
           已發佈許願
         </button>
@@ -264,12 +264,12 @@ export const Inbox: React.FC = () => {
       </div>
 
       {loading ? (
-        <p className="text-center p-10 text-gray-500 font-bold">載入中...</p>
+        <p className="text-center p-10 text-[#A0978D] font-bold">載入中...</p>
       ) : activeTab === 'client' ? (
         <>
           <div className="mb-8">
-            <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-              <span className="bg-purple-100 text-purple-700 w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
+            <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
+              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm">1</span> 
               我的許願 (每種分類限一則許願)
             </h2>
             <div className="dashboard-slots-grid">
@@ -303,14 +303,14 @@ export const Inbox: React.FC = () => {
                   return (
                     <div 
                       key={slotType.id} 
-                      className="dashboard-slot empty-slot cursor-pointer transition hover:bg-gray-50"
+                      className="dashboard-slot empty-slot cursor-pointer transition"
                       onClick={() => navigate(`/?category=${slotType.id}`)}
                     >
                       <div className="empty-content">
                         <span className="empty-icon text-3xl mb-2 opacity-50">{slotType.icon}</span>
-                        <div className="text-gray-500 font-bold mb-1">{slotType.label} 尚有空缺</div>
-                        <div className="text-xs text-gray-400 mb-3">{slotType.desc}</div>
-                        <button className="btn-outline-purple text-sm py-1 px-3">
+                        <div className="text-[#7A7269] font-bold mb-1">{slotType.label} 尚有空缺</div>
+                        <div className="text-xs text-[#A0978D] mb-3">{slotType.desc}</div>
+                        <button className="btn-outline-primary text-sm py-1 px-3">
                           + 前往發布
                         </button>
                       </div>
@@ -322,19 +322,19 @@ export const Inbox: React.FC = () => {
           </div>
 
           <div className="mb-4">
-            <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-              <span className="bg-purple-100 text-purple-700 w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
+            <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
+              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm">2</span> 
               收到的繪師履歷
             </h2>
             
             {!selectedBulletinId ? (
-              <div className="p-10 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-500">
+              <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-dashed border-[#EAE6E1] text-[#A0978D]">
                 請點擊上方的「發布槽」來檢視針對該文章收到的提案。
               </div>
             ) : (
               <div className="space-y-8">
                 {clientInquiries.filter(i => i.bulletin_id === selectedBulletinId).length === 0 ? (
-                  <div className="p-10 text-center bg-gray-50 rounded-xl border border-gray-200 text-gray-500 shadow-sm">
+                  <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-[#EAE6E1] text-[#A0978D] shadow-sm">
                     這篇文章目前還沒有收到任何提案喔！再等等吧～
                   </div>
                 ) : (
@@ -393,7 +393,7 @@ export const Inbox: React.FC = () => {
 
                         {/* 婉拒理由獨立顯示於卡片外，保持卡片乾淨 */}
                         {item.inquiry_status === 'declined' && item.decline_reason && (
-                          <div className="bg-red-50 p-3 rounded-lg border border-red-100 mt-2 mx-4 text-red-800 text-sm">
+                          <div className="bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] mt-2 mx-4 text-[#A05C5C] text-sm">
                             <strong>終止/婉拒理由：</strong>{item.decline_reason}
                           </div>
                         )}
@@ -406,53 +406,53 @@ export const Inbox: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 繪師視角 (保留原來的列表邏輯) */
+        /* 繪師視角 (保留原來的列表邏輯，但套用新顏色) */
         <div className="space-y-4">
           {artistInquiries.length === 0 ? (
-            <p className="text-center p-10 text-gray-500">目前沒有任何投遞紀錄。</p>
+            <p className="text-center p-10 text-[#A0978D]">目前沒有任何投遞紀錄。</p>
           ) : (
             artistInquiries.map((item) => {
               const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
               return (
-                <div key={item.inquiry_id} className="inbox-item relative overflow-hidden bg-white shadow-sm border border-gray-200 rounded-xl">
+                <div key={item.inquiry_id} className="inbox-item relative overflow-hidden bg-white shadow-sm border border-[#EAE6E1] rounded-xl">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className={`inbox-badge status-${item.inquiry_status}`}>
                         {getStatusLabel(item.inquiry_status)}
                       </span>
-                      <h3 className="text-lg font-bold mt-2 text-gray-800">
+                      <h3 className="text-lg font-bold mt-2 text-[#5D4A3E]">
                         投遞項目：{item.bulletin_title}
                       </h3>
                     </div>
                   </div>
 
                   {item.client_response && (
-                    <div className="bg-blue-50 p-4 rounded border border-blue-100 mt-4">
-                      <p className="text-blue-800 font-bold mb-2">案主回覆的需求細節：</p>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm">{item.client_response}</p>
+                    <div className="bg-[#EBF2F7] p-4 rounded border border-[#C1D6E8] mt-4">
+                      <p className="text-[#4A7294] font-bold mb-2">案主回覆的需求細節：</p>
+                      <p className="text-[#5D4A3E] whitespace-pre-wrap text-sm">{item.client_response}</p>
                     </div>
                   )}
 
                   {item.inquiry_status === 'declined' && item.decline_reason && (
-                    <div className="bg-red-50 p-3 rounded border border-red-100 mt-4 text-red-800 text-sm">
+                    <div className="bg-[#FCE8E6] p-3 rounded border border-[#F5C6C6] mt-4 text-[#A05C5C] text-sm">
                       <strong>終止/婉拒理由：</strong>{item.decline_reason}
                     </div>
                   )}
 
-                  <div className="action-buttons mt-5 border-t pt-4 border-gray-100 flex gap-2 justify-end">
+                  <div className="action-buttons mt-5 border-t pt-4 border-[#EAE6E1] flex gap-2 justify-end">
                     {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
                       <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
                         進入洽談室
                       </button>
                     )}
                     {item.inquiry_status === 'accepted' && (
-                      <button className="btn-secondary" onClick={() => handleViewCommission(item.commission_id)}>
+                      <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
                         前往正式委託單
                       </button>
                     )}
                     {canDecline && (
-                      <button className="btn-secondary text-red-600 hover:bg-red-50" onClick={() => {
+                      <button className="btn-secondary-red" onClick={() => {
                         setSelectedInquiry(item);
                         setShowDeclineModal(true);
                       }}>
@@ -471,7 +471,7 @@ export const Inbox: React.FC = () => {
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper">
-            {/* 信封頂部裝飾條 */}
+            {/* 信封頂部裝飾條 (大地色系：莫蘭迪紅、莫蘭迪藍、奶油白) */}
             <div className="paper-deco"></div>
             
             <h2 className="text-2xl font-bold text-[#5D4A3E] mb-2 mt-2">✉️ 邀請繪師詳談</h2>
@@ -479,7 +479,7 @@ export const Inbox: React.FC = () => {
               填寫下方的回信，系統將為您建立專屬的「洽談室」，讓雙方能夠進一步溝通細節與合約。
             </p>
 
-            <div className="bg-white p-5 rounded-xl border border-[#EAE6E1] mb-6 shadow-sm">
+            <div className="bg-[#FBFBF9] p-5 rounded-xl border border-[#EAE6E1] mb-6 shadow-sm">
               <strong className="text-[#5D4A3E] flex items-center gap-2 mb-2 text-sm">
                 <span className="bg-[#EAE6E1] w-6 h-6 flex items-center justify-center rounded-full text-[#5D4A3E]">Q</span>
                 繪師希望您提供的資訊：
@@ -511,17 +511,16 @@ export const Inbox: React.FC = () => {
       {/* 🌟 婉拒彈窗 (信紙風格，紅色調) */}
       {showDeclineModal && (
         <div className="modal-overlay">
-          <div className="modal-content-paper" style={{ borderColor: '#fecaca' }}>
-            <div className="paper-deco" style={{ background: 'repeating-linear-gradient(45deg, #f87171 0, #f87171 20px, #fff 20px, #fff 40px)' }}></div>
+          <div className="modal-content-paper decline-modal">
+            <div className="paper-deco-red"></div>
             
-            <h2 className="text-2xl font-bold text-red-800 mb-2 mt-2">禮貌婉拒提案</h2>
-            <p className="text-sm text-gray-500 mb-6 border-b border-red-100 pb-4">
+            <h2 className="text-2xl font-bold text-[#A05C5C] mb-2 mt-2">禮貌婉拒提案</h2>
+            <p className="text-sm text-[#A0978D] mb-6 border-b border-[#F5C6C6] pb-4">
               這將會終止與此繪師的洽談，建議附上簡單理由以示尊重。
             </p>
 
             <textarea 
-              className="paper-textarea"
-              style={{ borderColor: '#fecaca' }}
+              className="paper-textarea decline-textarea"
               placeholder="例如：預算不符、時程已滿、或已找到合適人選..."
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
@@ -531,7 +530,7 @@ export const Inbox: React.FC = () => {
               <button className="btn-paper-cancel" onClick={() => setShowDeclineModal(false)}>
                 再想想
               </button>
-              <button className="btn-paper-submit" style={{ backgroundColor: '#e11d48' }} onClick={handleConfirmDecline}>
+              <button className="btn-paper-submit-red" onClick={handleConfirmDecline}>
                 確認婉拒
               </button>
             </div>
