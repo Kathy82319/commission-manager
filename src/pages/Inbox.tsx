@@ -127,8 +127,8 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
             </div>
           </div>
 
-          {/* 🌟 動作按鈕區 (由外部傳入 children) */}
-          <div className="postcard-actions-wrapper border-t border-gray-100 pt-4 mt-2">
+          {/* 🌟 動作按鈕區 (由外部傳入 children，已透過 CSS 固定在右下角) */}
+          <div className="postcard-actions-wrapper">
             {children}
           </div>
         </div>
@@ -172,9 +172,12 @@ export const Inbox: React.FC = () => {
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(null);
 
+  // 🌟 彈窗狀態管理
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [inviteResponse, setInviteResponse] = useState('');
+  const [declineReason, setDeclineReason] = useState('');
 
   const fetchInbox = async () => {
     setLoading(true);
@@ -205,23 +208,28 @@ export const Inbox: React.FC = () => {
     fetchInbox(); 
   }, [activeTab]);
 
-  const handleDecline = async (inquiryId: string) => {
-    const reason = prompt("請輸入婉拒/終止理由 (例如：時程已滿、預算不符、已找到合適人選)：", "已找到合適人選 / 終止洽談");
-    if (!reason) return;
+  // 🌟 婉拒確認送出
+  const handleConfirmDecline = async () => {
+    if (!selectedInquiry) return;
     try {
-      await apiClient.post(`/api/inquiries/${inquiryId}/decline`, { decline_reason: reason });
+      await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: declineReason || '已找到合適人選 / 終止洽談' });
       alert('已傳送系統婉拒通知，對話已關閉。');
+      setShowDeclineModal(false);
+      setDeclineReason('');
       fetchInbox();
     } catch (error: any) { alert(error.message || '婉拒失敗'); }
   };
 
+  // 🌟 邀請確認送出
   const handleSendInvite = async () => {
     if (!inviteResponse.trim()) return alert('請填寫回覆內容');
     if (!selectedInquiry) return;
     try {
       await apiClient.patch(`/api/inquiries/${selectedInquiry.inquiry_id}/submit-response`, { client_response: inviteResponse });
       alert('回信已送出！現在您可以進入洽談室與繪師溝通。');
-      setShowInviteModal(false); setInviteResponse(''); fetchInbox();
+      setShowInviteModal(false); 
+      setInviteResponse(''); 
+      fetchInbox();
     } catch (error: any) { alert(error.message || '送出失敗'); }
   };
 
@@ -341,30 +349,46 @@ export const Inbox: React.FC = () => {
 
                     return (
                       <div key={item.inquiry_id}>
-                        {/* 🌟 獨立的明信片元件，將動作按鈕作為 children 傳入，置於右下角 */}
+                        {/* 🌟 獨立的明信片元件，將動作按鈕作為 children 傳入 */}
                         <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
-                          <div className="flex justify-end gap-3 w-full flex-wrap">
-                            {item.inquiry_status === 'pending' && (
-                              <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...item, question_template: snapshot.question_template || item.question_template }); setShowInviteModal(true); }}>
-                                ✉️ 邀請詳談 (填寫回信)
-                              </button>
-                            )}
-                            {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                              <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                                💬 進入洽談室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
-                              </button>
-                            )}
-                            {item.inquiry_status === 'accepted' && (
-                              <button className="btn-secondary text-green-700 border-green-200 hover:bg-green-50" onClick={() => handleViewCommission(item.commission_id)}>
-                                前往正式委託單
-                              </button>
-                            )}
-                            {canDecline && (
-                              <button className="btn-secondary text-red-500 border-red-100 hover:bg-red-50" onClick={() => handleDecline(item.inquiry_id)}>
-                                {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                              </button>
-                            )}
-                          </div>
+                          {canDecline && (
+                            <button 
+                              className="btn-secondary-red" 
+                              onClick={() => { 
+                                setSelectedInquiry(item); 
+                                setShowDeclineModal(true); 
+                              }}
+                            >
+                              {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
+                            </button>
+                          )}
+                          {item.inquiry_status === 'pending' && (
+                            <button 
+                              className="btn-primary" 
+                              onClick={() => { 
+                                setSelectedInquiry({ ...item, question_template: snapshot.question_template || item.question_template }); 
+                                setShowInviteModal(true); 
+                              }}
+                            >
+                              ✉️ 邀請詳談
+                            </button>
+                          )}
+                          {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
+                            <button 
+                              className="btn-primary" 
+                              onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}
+                            >
+                              💬 進入洽談室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
+                            </button>
+                          )}
+                          {item.inquiry_status === 'accepted' && (
+                            <button 
+                              className="btn-success" 
+                              onClick={() => handleViewCommission(item.commission_id)}
+                            >
+                              前往正式委託單
+                            </button>
+                          )}
                         </ArtistPostcard>
 
                         {/* 婉拒理由獨立顯示於卡片外，保持卡片乾淨 */}
@@ -428,7 +452,10 @@ export const Inbox: React.FC = () => {
                       </button>
                     )}
                     {canDecline && (
-                      <button className="btn-secondary text-red-600 hover:bg-red-50" onClick={() => handleDecline(item.inquiry_id)}>
+                      <button className="btn-secondary text-red-600 hover:bg-red-50" onClick={() => {
+                        setSelectedInquiry(item);
+                        setShowDeclineModal(true);
+                      }}>
                         {item.inquiry_status === 'pending' ? '撤回投遞' : '終止洽談'}
                       </button>
                     )}
@@ -440,14 +467,12 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 優化後的「信紙風格」邀請視窗 */}
+      {/* 🌟 邀請彈窗 (信紙風格) */}
       {showInviteModal && (
-        <div className="modal-overlay backdrop-blur-sm bg-black bg-opacity-60">
-          <div className="modal-content max-w-xl bg-[#FDFDF9] rounded-2xl shadow-2xl border border-[#EAE6E1] p-8 relative overflow-hidden">
+        <div className="modal-overlay">
+          <div className="modal-content-paper">
             {/* 信封頂部裝飾條 */}
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-400 via-white to-blue-400 opacity-80" 
-                 style={{ backgroundImage: 'repeating-linear-gradient(45deg, #f87171 0, #f87171 20px, transparent 20px, transparent 40px, #60a5fa 40px, #60a5fa 60px, transparent 60px, transparent 80px)'}}>
-            </div>
+            <div className="paper-deco"></div>
             
             <h2 className="text-2xl font-bold text-[#5D4A3E] mb-2 mt-2">✉️ 邀請繪師詳談</h2>
             <p className="text-sm text-[#A0978D] mb-6 border-b border-[#EAE6E1] pb-4">
@@ -465,24 +490,49 @@ export const Inbox: React.FC = () => {
             </div>
             
             <textarea 
-              className="w-full border-2 border-[#EAE6E1] p-4 rounded-xl h-40 focus:border-[#5D4A3E] focus:ring-0 outline-none resize-none bg-white text-[#5D4A3E] placeholder-[#C4BDB5] text-sm"
+              className="paper-textarea"
               placeholder="請在此撰寫您的回信內容，建議包含對繪師提問的回答、額外的需求說明或是對提案的回饋。"
               value={inviteResponse}
               onChange={(e) => setInviteResponse(e.target.value)}
             ></textarea>
             
             <div className="flex justify-end gap-4 mt-8">
-              <button 
-                className="px-6 py-2.5 rounded-full text-[#A0978D] font-bold hover:bg-[#F3F2EE] transition"
-                onClick={() => setShowInviteModal(false)}
-              >
+              <button className="btn-paper-cancel" onClick={() => setShowInviteModal(false)}>
                 取消捨棄
               </button>
-              <button 
-                className="px-8 py-2.5 rounded-full bg-[#5D4A3E] text-white font-bold hover:bg-[#4A3A30] transition shadow-md flex items-center gap-2"
-                onClick={handleSendInvite}
-              >
+              <button className="btn-paper-submit" onClick={handleSendInvite}>
                 確認並送出回信 ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 婉拒彈窗 (信紙風格，紅色調) */}
+      {showDeclineModal && (
+        <div className="modal-overlay">
+          <div className="modal-content-paper" style={{ borderColor: '#fecaca' }}>
+            <div className="paper-deco" style={{ background: 'repeating-linear-gradient(45deg, #f87171 0, #f87171 20px, #fff 20px, #fff 40px)' }}></div>
+            
+            <h2 className="text-2xl font-bold text-red-800 mb-2 mt-2">禮貌婉拒提案</h2>
+            <p className="text-sm text-gray-500 mb-6 border-b border-red-100 pb-4">
+              這將會終止與此繪師的洽談，建議附上簡單理由以示尊重。
+            </p>
+
+            <textarea 
+              className="paper-textarea"
+              style={{ borderColor: '#fecaca' }}
+              placeholder="例如：預算不符、時程已滿、或已找到合適人選..."
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+            ></textarea>
+            
+            <div className="flex justify-end gap-4 mt-8">
+              <button className="btn-paper-cancel" onClick={() => setShowDeclineModal(false)}>
+                再想想
+              </button>
+              <button className="btn-paper-submit" style={{ backgroundColor: '#e11d48' }} onClick={handleConfirmDecline}>
+                確認婉拒
               </button>
             </div>
           </div>

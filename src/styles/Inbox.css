@@ -114,6 +114,9 @@
 .status-pending { background: #fef3c7; color: #92400e; }
 .status-submitted { background: #dcfce7; color: #166534; }
 .status-declined { background: #fee2e2; color: #991b1b; }
+.status-proposed { background: #e0e7ff; color: #3730a3; }
+.status-accepted { background: #f3e8ff; color: #6b21a8; }
+.status-closed { background: #f3f4f6; color: #4b5563; }
 
 
 /* ==========================================================================
@@ -138,7 +141,7 @@
 @media (min-width: 768px) {
   .postcard-container {
     flex-direction: row;
-    height: auto; /* 讓內容自動撐開，解決擁擠感 */
+    height: auto; 
     min-height: 280px; 
   }
 }
@@ -165,7 +168,6 @@
 .stamp-proposed { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
 .stamp-accepted { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
 .stamp-declined { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
-
 
 /* 左側：圖片展示區 */
 .postcard-image-section {
@@ -232,7 +234,9 @@
 /* 右側：內容資訊區 */
 .postcard-content-section {
   width: 100%;
-  padding: 24px; /* 加大內距，呼吸空間 */
+  padding: 24px; 
+  display: flex;
+  flex-direction: column;
 }
 @media (min-width: 768px) {
   .postcard-content-section {
@@ -287,6 +291,35 @@
 .chip-good { background-color: #ecfdf5; color: #166534; border: 1px solid #a7f3d0; }
 .chip-bad { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .chip-info { background-color: #f8fafc; color: #4b5563; border: 1px solid #e2e8f0; }
+
+/* 🌟 動作按鈕區 - 推到底部並置右對齊 */
+.postcard-actions-wrapper {
+  margin-top: auto; 
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+}
+
+.btn-primary { 
+  background: #5d4a3e; color: white; padding: 10px 24px; border-radius: 99px; 
+  font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(93, 74, 62, 0.3); }
+
+.btn-secondary-red { 
+  background: white; color: #e11d48; border: 1px solid #fecaca; padding: 10px 24px; 
+  border-radius: 99px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.btn-secondary-red:hover { background: #fff1f2; }
+
+.btn-success { 
+  background: #166534; color: white; padding: 10px 24px; border-radius: 99px; 
+  font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
+}
+.btn-success:hover { background: #14532d; transform: translateY(-2px); }
+
 
 /* 🌟 圖片燈箱 (Lightbox) */
 .lightbox-overlay {
@@ -364,3 +397,33 @@
   .lightbox-next { right: 10px; }
   .lightbox-close { top: 10px; right: 10px; }
 }
+
+/* 🌟 信紙風格彈窗 (Modal) */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px); 
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  padding: 20px;
+}
+.modal-content-paper {
+  background: #fdfdf9; width: 100%; max-width: 560px;
+  border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  position: relative; overflow: hidden; padding: 40px;
+  border: 1px solid #eae6e1;
+}
+.paper-deco {
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(45deg, #f87171 0, #f87171 20px, #fff 20px, #fff 40px, #60a5fa 40px, #60a5fa 60px, #fff 60px, #fff 80px);
+}
+.paper-textarea {
+  width: 100%; height: 160px; border: 2px solid #eae6e1; border-radius: 16px;
+  padding: 15px; font-size: 15px; resize: none; outline: none; background: #fff;
+  transition: border-color 0.2s;
+  color: #5D4A3E;
+}
+.paper-textarea:focus { border-color: #5d4a3e; }
+
+.btn-paper-submit { background: #5d4a3e; color: white; padding: 12px 30px; border-radius: 99px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+.btn-paper-submit:hover { background: #4A3A30; transform: translateY(-2px); }
+.btn-paper-cancel { color: #94a3b8; font-weight: bold; border: none; background: none; cursor: pointer; padding: 12px 20px; border-radius: 99px; transition: 0.2s; }
+.btn-paper-cancel:hover { background: #f1f5f9; color: #475569; }
