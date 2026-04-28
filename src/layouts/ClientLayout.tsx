@@ -1,8 +1,7 @@
-// src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import '../styles/ClientLayout.css';  
 import { ClipboardList, Inbox, Sparkles, LogOut, Bell } from 'lucide-react';
+import '../styles/ClientLayout.css'; 
 
 export function ClientLayout() {
   const navigate = useNavigate();
@@ -11,8 +10,8 @@ export function ClientLayout() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   
   // 🌟 通知狀態
-  const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +33,6 @@ export function ClientLayout() {
     checkClientAuth();
   }, [navigate, API_BASE]);
 
-  // 🌟 定期從單一 API 取得輕量化通知
   useEffect(() => {
     if (!profile) return;
     const fetchNotifications = async () => {
@@ -48,11 +46,10 @@ export function ClientLayout() {
       } catch (error) {}
     };
     fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, 15000); // 15秒更新一次
+    const intervalId = setInterval(fetchNotifications, 15000); 
     return () => clearInterval(intervalId);
   }, [profile, API_BASE]);
 
-  // 點擊外部關閉通知選單
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -73,7 +70,7 @@ export function ClientLayout() {
     }
   };
 
-  const handleSwitchToArtist = async () => { /* ... 保留原本切換邏輯 ... */
+  const handleSwitchToArtist = async () => {
     if (!profile) return;
     if (profile.role === 'artist' || profile.role === 'admin') {
       window.location.href = '/artist/queue';
@@ -99,17 +96,60 @@ export function ClientLayout() {
 
   return (
     <div className="client-layout-wrapper">
+      
+      {/* 🌟 全域浮動小鈴鐺 (獨立於所有排版之外，絕不擠壓內容) */}
+      <div ref={menuRef} style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999 }}>
+        <div 
+          onClick={() => setShowNotifMenu(!showNotifMenu)}
+          style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
+        >
+          <Bell size={22} color="#4b5563" />
+          {unreadCount > 0 && (
+            <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', height: '20px', minWidth: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </div>
+        
+        {showNotifMenu && (
+          <div style={{ position: 'absolute', top: '55px', right: '0', width: '320px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+             <div style={{ padding: '14px 16px', fontWeight: 'bold', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', color: '#374151' }}>系統通知</div>
+             <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '30px 24px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>目前沒有新通知</div>
+                ) : (
+                  notifications.map(n => (
+                    <div 
+                      key={n.id} 
+                      onClick={() => { setShowNotifMenu(false); navigate(n.link); }} 
+                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  ))
+                )}
+             </div>
+          </div>
+        )}
+      </div>
+
       <aside className="client-sidebar">
-        {/* ... 保留原本 Sidebar 內容 ... */}
         <div className="sidebar-brand">
           <h2>Arti 繪師小幫手</h2>
           <div className="brand-subtitle">委託管理 (委託方)</div>
         </div>
+        
         <nav className="sidebar-nav">
           <NavLink to="/" className="nav-item"><Sparkles size={20} /><span>前往許願池</span></NavLink>
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><ClipboardList size={20} /><span>委託單管理</span></NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span></NavLink>
+          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span>
+            {unreadCount > 0 && <span style={{ color: '#E06C75', marginLeft: 'auto', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>}
+          </NavLink>
         </nav>
+
         <div className="sidebar-footer">
           <button onClick={handleSwitchToArtist} className="switch-btn">
             {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
@@ -121,37 +161,7 @@ export function ClientLayout() {
       </aside>
 
       <div className="client-main-container">
-        {/* 🌟 新增：頂部標題與鈴鐺列 */}
-        <header className="client-top-header">
-          <div className="header-spacer"></div>
-          <div className="header-actions" ref={menuRef}>
-            <div className="bell-container" onClick={() => setShowNotifMenu(!showNotifMenu)}>
-              <Bell size={22} color="#4b5563" />
-              {unreadCount > 0 && <span className="bell-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-            </div>
-            
-            {showNotifMenu && (
-              <div className="notif-dropdown">
-                <div className="notif-header">系統通知</div>
-                <div className="notif-list">
-                  {notifications.length === 0 ? (
-                    <div className="notif-empty">目前沒有新通知</div>
-                  ) : (
-                    notifications.map(n => (
-                      <div key={n.id} className="notif-item" onClick={() => { setShowNotifMenu(false); navigate(n.link); }}>
-                        <div className="notif-text">{n.text}</div>
-                        <div className="notif-time">{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
-
         <main className="client-main"><Outlet /></main>
-        
         <footer className="client-footer">
           <div className="footer-links">
             <Link to="/terms">服務條款</Link>

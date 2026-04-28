@@ -1,7 +1,6 @@
 // worker/controllers/notificationController.ts
 import type { Env } from "../shared/types";
 
-// 🌟 新增：定義通知物件的型別，解決 implicit 'any[]' 錯誤
 interface NotificationItem {
   id: string;
   type: string;
@@ -16,7 +15,6 @@ export const notificationController = {
       const url = new URL(request.url);
       const role = url.searchParams.get('role') || 'client';
       
-      // 🌟 修正：明確宣告這是一個裝載 NotificationItem 的陣列
       const notifications: NotificationItem[] = [];
       let unreadCount = 0;
 
@@ -35,15 +33,15 @@ export const notificationController = {
           notifications.push({
             id: `inquiry_${item.id}`,
             type: 'inquiry',
-            text: `您的許願「${item.title || '未命名'}」有新提案或新訊息`,
+            text: `您的許願「${item.title || '未命名'}」有新提案或狀態更新`,
             link: '/client/inbox',
             time: item.latest_update_at
           });
         });
 
-        // 2. 取得正式委託單通知 (案主視角)
+        // 2. 取得正式委託單通知 (案主視角) - 🌟 已排除一般聊天訊息，僅保留合約異動
         const { results: commResults } = await env.commission_db.prepare(`
-          SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
+          SELECT id, project_name, pending_changes, latest_message_at 
           FROM Commissions 
           WHERE client_id = ? AND status != 'cancelled'
         `).bind(currentUserId).all();
@@ -59,22 +57,55 @@ export const notificationController = {
               time: order.latest_message_at || new Date().toISOString()
             });
           }
-          const latestTime = new Date(order.latest_message_at || 0).getTime();
-          const readTime = new Date(order.last_read_at_client || 0).getTime();
-          if (latestTime > readTime) {
-            unreadCount++;
-            notifications.push({
-              id: `comm_msg_${order.id}`,
-              type: 'commission_msg',
-              text: `委託單「${order.project_name || order.id}」有新訊息`,
-              link: `/workspace/${order.id}`,
-              time: order.latest_message_at
-            });
-          }
         });
 
       } else {
-        // 留作未來擴充繪師 (artist) 視角的通知邏輯
+        // 1. 取得許願池未讀通知 (繪師視角)
+        const { results: artistInbox } = await env.commission_db.prepare(`
+          SELECT b.title, i.id, i.latest_update_at, i.status
+          FROM BulletinInquiries i
+          JOIN Bulletins b ON i.bulletin_id = b.id
+          WHERE i.artist_id = ? AND i.status != 'cancelled'
+          AND (
+            (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
+            OR (i.last_read_at_artist IS NULL AND i.status != 'pending') 
+          )
+        `).bind(currentUserId).all();
+
+        artistInbox.forEach((item: any) => {
+          unreadCount++;
+          let text = `您投遞的許願「${item.title || '未命名'}」有新進度`;
+          if (item.status === 'submitted') text = `案主已回填「${item.title || '未命名'}」的提問單`;
+          if (item.status === 'declined') text = `您投遞的「${item.title || '未命名'}」已被婉拒`;
+          
+          notifications.push({
+            id: `inquiry_${item.id}`,
+            type: 'inquiry',
+            text: text,
+            link: '/artist/inbox',
+            time: item.latest_update_at
+          });
+        });
+
+        // 2. 取得正式委託單通知 (繪師視角) - 🌟 同樣僅保留合約異動
+        const { results: commResults } = await env.commission_db.prepare(`
+          SELECT id, project_name, pending_changes, latest_message_at 
+          FROM Commissions 
+          WHERE artist_id = ? AND status != 'cancelled'
+        `).bind(currentUserId).all();
+
+        commResults.forEach((order: any) => {
+          if (order.pending_changes) {
+            unreadCount++;
+            notifications.push({
+              id: `comm_change_${order.id}`,
+              type: 'commission_change',
+              text: `委託單「${order.project_name || order.id}」有來自案主的合約異動申請`,
+              link: `/workspace/${order.id}`,
+              time: order.latest_message_at || new Date().toISOString()
+            });
+          }
+        });
       }
 
       // 依時間排序 (最新在最上面)，並限制最多回傳 20 筆
