@@ -59,7 +59,6 @@ export function ClientOrders() {
   const [customTitle, setCustomTitle] = useState('');
   const [, setSavedTitle] = useState(''); 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
-  const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -115,14 +114,6 @@ export function ClientOrders() {
 
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
-
-      if (orderData.latest_message_at) {
-        const latestMsgTime = parseTime(orderData.latest_message_at);
-        const lastReadTime = parseTime(orderData.last_read_at_client);
-        setHasNewMessage(latestMsgTime > lastReadTime);
-      } else {
-        setHasNewMessage(false);
-      }
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -359,8 +350,8 @@ export function ClientOrders() {
 
           .notebook-page .scroll-tabs .tab-btn.active {
             background-color: #5D4A3E; 
-            color: #FFFFFF;          
-            border-radius: 20px;     
+            color: #FFFFFF;          
+            border-radius: 20px;     
             border: none;
           }
           .notebook-page .scroll-tabs .tab-btn.active .tab-text {
@@ -459,17 +450,9 @@ export function ClientOrders() {
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
-                const latestMsgTime = parseTime(order.latest_message_at);
-                const lastReadTime = parseTime(order.last_read_at_client);
-                const hasUnread = latestMsgTime > lastReadTime;
-                const hasPending = !!order.pending_changes;
-                const showDot = hasUnread || hasPending;
 
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} style={{ position: 'relative', padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
-                    {showDot && (
-                      <div style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#e11d48', color: '#FFF', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>🔔</div>
-                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
                       <span>{formatLocalDate(order.order_date)}</span>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
@@ -515,10 +498,10 @@ export function ClientOrders() {
                     className="action-btn"
                     style={{ 
                       padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', 
-                      fontSize: '14px', animation: hasNewMessage ? 'pulse-yellow 2s infinite' : 'none'
+                      fontSize: '14px'
                     }}
                   >
-                    {hasNewMessage ? '🔔 有新訊息！' : '進入聊天室'}
+                    進入聊天室
                   </button>
                 </div>
               </div>
