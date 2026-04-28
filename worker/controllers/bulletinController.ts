@@ -1,7 +1,6 @@
 // worker/controllers/bulletinController.ts
 import type { Env } from "../shared/types";
 
-// 🛡️ 資安防護：實作 HTML 轉義，防止使用者輸入惡意標籤 (XSS 防護)
 function escapeHtml(str: string) {
   if (!str) return "";
   return str
@@ -13,7 +12,6 @@ function escapeHtml(str: string) {
 }
 
 export const bulletinController = {
-  // 1. 取得許願池列表
   async getList(request: Request, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
@@ -44,7 +42,6 @@ export const bulletinController = {
     }
   },
 
-  // 2. 發布許願
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
@@ -54,7 +51,6 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '標題與內容為必填' }), { status: 400, headers: corsHeaders });
       }
 
-      // 🛡️ 資安防護：過期與數值驗證，防止異常預算導致邏輯錯誤
       const bMin = Math.max(0, parseInt(budget_min) || 0);
       const bMax = Math.max(0, parseInt(budget_max) || 0);
       if (bMax > 0 && bMin > bMax) {
@@ -68,7 +64,8 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
+      // 🌟 修正：恢復預設為 3 天
+      expiresAt.setDate(expiresAt.getDate() + 3);
 
       await env.commission_db.prepare(
         `INSERT INTO Bulletins (id, client_id, title, content, tags, payment_methods, budget_min, budget_max, schedule_type, specific_date, ref_image_key, category, expires_at, status)
@@ -81,7 +78,6 @@ export const bulletinController = {
     }
   },
 
-  // 3. 投遞意向
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const existing = await env.commission_db.prepare(`SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`).bind(bulletinId, currentUserId).first();
@@ -102,7 +98,6 @@ export const bulletinController = {
     }
   },
 
-  // 4. 案主主動結案
   async closeBulletin(bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
@@ -118,7 +113,6 @@ export const bulletinController = {
     }
   },
 
-  // 5. 婉拒投遞 (Decline)
   async declineInquiry(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
@@ -132,7 +126,6 @@ export const bulletinController = {
     }
   },
 
-  // 6. 提交案主回覆 (Submit Response)
   async submitResponse(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
@@ -146,7 +139,6 @@ export const bulletinController = {
     }
   },
 
-  // 7. 取得收件匣資料 (案主與繪師視角)
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
