@@ -5,24 +5,22 @@ import '../styles/ArtistLayout.css';
 export function ArtistLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
+  
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // 🌟 新增：未讀收件匣數量狀態
   const [unreadInboxCount, setUnreadInboxCount] = useState(0);
 
+  // 1. 驗證與讀取資料
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
-        const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
-
         if (res.status === 401 || res.status === 403) {
           navigate('/login');
           return;
         }
-
         const data = await res.json();
         if (data.success && data.data) {
           if (data.data.role === 'pending') navigate('/onboarding');
@@ -39,41 +37,37 @@ export function ArtistLayout() {
       }
     };
     checkAuthAndFetchProfile();
-  }, [navigate]);
+  }, [navigate, API_BASE]);
 
-  // 🌟 新增：定期檢查是否有未讀的系統通知/收件匣
+  // 2. 定期檢查未讀通知
   useEffect(() => {
     if (!artist) return;
     const fetchUnread = async () => {
       try {
-        const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
         const res = await fetch(`${API_BASE}/api/notifications/unread?role=artist`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) {
           setUnreadInboxCount(data.count);
         }
-      } catch (error) {
-        // 忽略背景錯誤
-      }
+      } catch (error) {}
     };
-    
     fetchUnread();
-    const intervalId = setInterval(fetchUnread, 10000); // 每 10 秒檢查一次
+    const intervalId = setInterval(fetchUnread, 10000); 
     return () => clearInterval(intervalId);
-  }, [artist]);
+  }, [artist, API_BASE]);
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (isMobileMenuOpen && window.innerWidth < 1024) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+  // 3. 登出功能
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch (e) {
+      console.error("登出失敗", e);
+    } finally {
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('is_logged_in');
+      window.location.href = '/wishboard';
     }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isMobileMenuOpen]);
+  };
 
   const handlePreviewAndCopy = () => {
     if (!artist) return;
@@ -88,6 +82,7 @@ export function ArtistLayout() {
     return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
   };
 
+  // 🌟 方案判斷邏輯（恢復）
   let planDisplay = '基礎免費版';
   let expiryDateText = '';
   let planBadgeColor = '#4A4A4A';
@@ -135,11 +130,8 @@ export function ArtistLayout() {
 
   return (
     <div className="artist-layout-wrapper">
-      
       <header className="mobile-app-bar">
-        <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">
-          ☰
-        </button>
+        <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">☰</button>
         <div className="mobile-app-title">
           <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E', lineHeight: '1' }}>Arti繪師小幫手</div>
           <div style={{ fontSize: '13px', color: '#A0978D', lineHeight: '1.2', marginTop: '4px' }}>管理後台</div>
@@ -162,7 +154,6 @@ export function ArtistLayout() {
           {navItems.map(item => (
             <Link key={item.path} to={item.path} className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}>
               {item.label}
-              {/* 🌟 條件渲染：如果有未讀訊息且是收件匣選單，顯示新訊息提示 */}
               {item.path === '/artist/inbox' && unreadInboxCount > 0 && (
                 <span style={{ color: '#E06C75', marginLeft: '6px', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>
               )}
@@ -180,15 +171,14 @@ export function ArtistLayout() {
             <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
             <span style={{ margin: '0 4px' }}>|</span>
             <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
-            <div style={{ marginTop: '4px' }}>客服：cath40286@gmail.com</div>
+            <div style={{ marginTop: '4px' }}>
+              <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '12px', padding: 0 }}>登出系統</button>
+            </div>
           </div>
         </div>
       </aside>
 
-      <div 
-        className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} 
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
+      <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
 
       <main className="app-main-content">
         <div className="content-wrapper">
@@ -198,16 +188,12 @@ export function ArtistLayout() {
                 <div style={{ fontSize: '14px', fontWeight: 'bold' }}>⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！</div>
                 <div style={{ fontSize: '12px', marginTop: '4px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
               </div>
-              <button onClick={() => navigate('/artist/settings')} className="renew-plan-btn">
-                立即查看續費方案
-              </button>
+              <button onClick={() => navigate('/artist/settings')} className="renew-plan-btn">立即查看續費方案</button>
             </div>
           )}
-          
           <Outlet />
         </div>
       </main>
-
     </div>
   );
 }

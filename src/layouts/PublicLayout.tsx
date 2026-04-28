@@ -11,6 +11,7 @@ interface ThemeSettings {
 export function PublicLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -21,13 +22,9 @@ export function PublicLayout() {
     gradientDirection: 'to bottom right' 
   });
 
-  // 1. 檢查登入狀態：不再依賴 localStorage.getItem('token')
-  // 而是檢查你的應用程式是否有存下 user_role 或其他登入後的標記
+  // 1. 檢查登入狀態：監聽路由變化，即時同步 UI 標記
   useEffect(() => {
-    // 假設你的前端登入後（例如在 Portal 選完角色後），有將角色存入 localStorage
     const role = localStorage.getItem('user_role'); 
-    
-    // 如果有 user_role，我們就「假定」他已經登入，讓按鈕變為「回後台」
     if (role) {
       setIsLoggedIn(true);
       setUserRole(role);
@@ -37,19 +34,36 @@ export function PublicLayout() {
     }
   }, [location]);
 
-  // 2. 按鈕點擊行為
-  const handleAuthClick = () => {
-    if (isLoggedIn) {
-      if (userRole === 'artist') {
-        navigate('/artist');
-      } else if (userRole === 'client') {
-        navigate('/client/orders'); 
-      } else {
-        navigate('/portal');
-      }
+  // 2. 登出邏輯：包含後端 Cookie 清除與前端標記清理
+  const handleLogout = async () => {
+    try {
+      // 呼叫後端 logout API 以清除 HttpOnly 的 user_session
+      await fetch(`${API_BASE}/api/auth/logout`, { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+    } catch (e) {
+      console.error("登出通訊失敗:", e);
+    } finally {
+      // 無論後端 API 是否成功，前端都必須清理 UI 標記以保護隱私
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('is_logged_in');
+      setIsLoggedIn(false);
+      setUserRole(null);
+      
+      // 登出後導向許願池首頁
+      navigate('/wishboard');
+    }
+  };
+
+  // 3. 回到後台點擊行為
+  const handleDashboardClick = () => {
+    if (userRole === 'artist') {
+      navigate('/artist');
+    } else if (userRole === 'client') {
+      navigate('/client/orders'); 
     } else {
-      // 若尚未登入，導向你設定的登入頁面
-      navigate('/login');
+      navigate('/portal');
     }
   };
 
@@ -76,16 +90,52 @@ export function PublicLayout() {
   return (
     <div className="public-layout-container" style={dynamicStyles}>
       <header className="public-header">
-        <button 
-          onClick={handleAuthClick}
-          className="login-btn"
-          style={{ 
-            backgroundColor: 'var(--artist-text-color)', 
-            color: 'var(--artist-theme-color)' 
-          }}
-        >
-          {isLoggedIn ? '回到管理後台' : '登入 / 註冊'}
-        </button>
+        <div className="header-actions">
+          {isLoggedIn ? (
+            <div className="logged-in-group" style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={handleDashboardClick}
+                className="dashboard-btn"
+                style={{ 
+                  backgroundColor: 'var(--artist-text-color)', 
+                  color: 'var(--artist-theme-color)',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                回到管理後台
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="logout-btn"
+                style={{ 
+                  backgroundColor: 'transparent', 
+                  color: 'var(--artist-text-color)',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--artist-text-color)',
+                  cursor: 'pointer'
+                }}
+              >
+                登出
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => navigate('/login')}
+              className="login-btn"
+              style={{ 
+                backgroundColor: 'var(--artist-text-color)', 
+                color: 'var(--artist-theme-color)' 
+              }}
+            >
+              登入 / 註冊
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="public-main">
