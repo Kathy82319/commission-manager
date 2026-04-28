@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
 import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, User, AlertCircle, CheckCircle2 } from 'lucide-react';

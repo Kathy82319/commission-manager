@@ -1,6 +1,5 @@
-// Settings.tsx 完整修正版
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { ProfileSettings, QuotaInfo, FormDataState } from './Settings/types';
+import type { QuotaInfo, FormDataState } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
 import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
@@ -9,18 +8,9 @@ import { CustomSectionsTab } from './Settings/CustomSectionsTab';
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
+// 🌟 匯入新切出的許願池設定 Tab 以及擴充型別
+import { BulletinSettingsTab, type ExtendedSettings } from './Settings/BulletinSettingsTab';
 import '../../styles/Settings.css';
-
-// 擴充原有的 ProfileSettings 型別以支援許願池設定
-interface ExtendedSettings extends ProfileSettings {
-  bulletin_card?: {
-    specialties: string;
-    no_gos: string;
-    payment_methods: string;
-    price_list: string;
-  };
-  question_template?: string;
-}
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -177,7 +167,7 @@ export function Settings() {
           avatar_url: formData.avatar_url,
           bio: formData.bio,
           profile_settings: JSON.stringify(settings),
-          question_template: settings.question_template // 確保傳遞此欄位給後端
+          question_template: settings.question_template
         })
       });
       const data = await res.json();
@@ -268,68 +258,9 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />}
             
+            {/* 🌟 替換為新切出的 BulletinSettingsTab */}
             {activeTab === 'bulletin_settings' && (
-              <div className="settings-section">
-                <h4 className="section-title">許願池「邀請詳談」明信片設定</h4>
-                <p className="section-desc" style={{ color: '#888', marginBottom: '20px', fontSize: '0.9rem' }}>
-                  當案主在許願池向您提出「邀請詳談」時，將會看到以下您設定的資訊與提問。
-                </p>
-
-                <div className="form-group">
-                  <label className="form-label">提問模板 (案主必填)</label>
-                  <p style={{ fontSize: '0.8rem', color: '#A0978D', marginBottom: '8px' }}>引導案主提供您評估所需的關鍵資訊 (例如：角色設定、期望截稿日等)</p>
-                  <textarea 
-                    className="form-input textarea-large" 
-                    value={settings.question_template || ''} 
-                    onChange={(e) => setSettings({...settings, question_template: e.target.value})}
-                    placeholder="請提供角色設定圖與希望的表情..."
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginTop: '24px' }}>
-                  <label className="form-label">擅長題材 (明信片顯示)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={settings.bulletin_card?.specialties || ''} 
-                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, specialties: e.target.value }})}
-                    placeholder="例如：日系美少女、Q版、獸人..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">不擅長 / 雷點 (明信片顯示)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={settings.bulletin_card?.no_gos || ''} 
-                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, no_gos: e.target.value }})}
-                    placeholder="例如：機甲、老人、純文字設定..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">接受的付款方式 (明信片顯示)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={settings.bulletin_card?.payment_methods || ''} 
-                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, payment_methods: e.target.value }})}
-                    placeholder="例如：銀行轉帳、PayPal、綠界..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">簡易價目表預覽 (明信片顯示)</label>
-                  <textarea 
-                    className="form-input textarea-medium" 
-                    value={settings.bulletin_card?.price_list || ''} 
-                    onChange={(e) => setSettings({...settings, bulletin_card: { ...settings.bulletin_card!, price_list: e.target.value }})}
-                    placeholder="胸像：800起 / 半身：1500起..."
-                    style={{ minHeight: '100px' }}
-                  />
-                </div>
-              </div>
+              <BulletinSettingsTab settings={settings} setSettings={setSettings} />
             )}
 
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
