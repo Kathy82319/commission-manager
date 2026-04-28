@@ -10,3 +10,143 @@
 
 .artist-info-box { background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; }
 .action-buttons { display: flex; gap: 10px; margin-top: 10px; }
+
+/* src/styles/Inbox.css (新增明信片樣式) */
+
+/* 明信片卡片容器 (桌面版左右雙欄，手機版上下堆疊) */
+.postcard-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-top: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.postcard-container:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .postcard-container {
+    flex-direction: row;
+    height: 260px; /* 固定高度讓明信片看起來整齊 */
+  }
+}
+
+/* 左側：圖片展示區 */
+.postcard-image-section {
+  width: 100%;
+  height: 200px;
+  background-color: #f3f4f6;
+  position: relative;
+  border-bottom: 1px solid #e5e7eb;
+}
+@media (min-width: 768px) {
+  .postcard-image-section {
+    width: 35%;
+    height: 100%;
+    border-bottom: none;
+    border-right: 1px solid #e5e7eb;
+  }
+}
+.postcard-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.postcard-image-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+  font-size: 14px;
+}
+.postcard-image-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* 右側：內容資訊區 */
+.postcard-content-section {
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .postcard-content-section {
+    width: 65%;
+  }
+}
+
+/* 繪師頭像與連結 */
+.postcard-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.postcard-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+}
+.postcard-artist-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #4f46e5;
+  text-decoration: none;
+  border-bottom: 1px dashed #a5b4fc;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+.postcard-artist-name:hover {
+  color: #312e81;
+  border-bottom-color: #312e81;
+}
+
+/* 標籤群組 (Chips) */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.chip-tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip-good {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.chip-bad {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.chip-info {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}

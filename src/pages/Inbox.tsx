@@ -5,65 +5,93 @@ import { apiClient } from '../api/client';
 import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
 
-const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
-  const [page, setPage] = useState(1);
+const renderChips = (text: string, type: 'good' | 'bad' | 'info') => {
+  if (!text || text.trim() === '') return <span className="text-gray-400 text-sm">未提供</span>;
+  // 將逗號、頓號、空白作為分隔符
+  const tags = text.split(/[,、\s]+/).filter(t => t.trim() !== '');
+  return (
+    <div className="chip-group">
+      {tags.map((t, i) => (
+        <span key={i} className={`chip-tag chip-${type}`}>{t}</span>
+      ))}
+    </div>
+  );
+};
 
-  const handleArtistClick = () => {
+const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
+  // 處理點擊頭像或名稱跳轉至公開頁面
+  const handleArtistClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 避免觸發外層的其他點擊事件
     const targetId = item.artist_public_id || item.artist_id;
     if (targetId) navigate(`/${targetId}`);
   };
 
+  // 取得快照中的圖片陣列
+  const images: string[] = Array.isArray(snapshot.images) ? snapshot.images : [];
+  const mainImage = images.length > 0 ? images[0] : null;
+
   return (
-    <div className="relative mt-4 bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden" style={{ minHeight: '220px' }}>
-      <div className="p-5 pb-8">
-        {page === 1 ? (
-          <div className="flex flex-col animate-fade-in">
-            <div className="flex items-center gap-4 border-b border-purple-100 pb-3 mb-3">
-              <img 
-                src={item.artist_avatar || 'https://via.placeholder.com/60'} 
-                alt="Avatar" 
-                className="rounded-full object-cover cursor-pointer hover:opacity-80 transition shadow-sm border border-gray-100"
-                style={{ width: '60px', height: '60px', minWidth: '60px', minHeight: '60px', flexShrink: 0 }}
-                onClick={handleArtistClick}
-              />
-              <div>
-                <h4 
-                  className="text-purple-700 font-bold text-lg cursor-pointer hover:text-purple-500 transition inline-block border-b border-dashed border-purple-400"
-                  onClick={handleArtistClick}
-                  title="前往繪師個人頁"
-                >
-                  {item.artist_name || snapshot.title?.replace(' 的客製化服務', '') || '匿名繪師'}
-                </h4>
+    <div className="postcard-container">
+      {/* 左側：圖片展示區 */}
+      <div className="postcard-image-section">
+        {mainImage ? (
+          <>
+            <img src={mainImage} alt="Reference" className="postcard-image" />
+            {images.length > 1 && (
+              <div className="postcard-image-count">
+                1 / {images.length} 張附圖
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div><strong className="text-gray-600 block mb-1">擅長題材：</strong> <span className="text-gray-800">{snapshot.specialties || '未提供'}</span></div>
-              <div><strong className="text-gray-600 block mb-1">不擅長/雷點：</strong> <span className="text-gray-800">{snapshot.no_gos || '未提供'}</span></div>
-              <div className="md:col-span-2"><strong className="text-gray-600 block mb-1">付款方式：</strong> <span className="text-gray-800">{snapshot.payment_methods || '未提供'}</span></div>
-            </div>
-          </div>
+            )}
+          </>
         ) : (
-          <div className="flex flex-col animate-fade-in">
-            <div className="border-b border-purple-100 pb-2 mb-3">
-              <h4 className="text-purple-700 font-bold text-base">簡易價目表預覽</h4>
-            </div>
-            <div className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-100 max-h-32 overflow-y-auto">
-              {snapshot.price_list || '繪師未提供價目表明細，請直接邀請詳談。'}
-            </div>
+          <div className="postcard-image-fallback">
+            <span className="flex flex-col items-center gap-2">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              純文字提案
+            </span>
           </div>
         )}
       </div>
 
-      {page === 2 && (
-        <button onClick={() => setPage(1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10">❮</button>
-      )}
-      {page === 1 && (
-        <button onClick={() => setPage(2)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10">❯</button>
-      )}
-      
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-        <div className={`w-2 h-2 rounded-full transition-colors ${page === 1 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-        <div className={`w-2 h-2 rounded-full transition-colors ${page === 2 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+      {/* 右側：繪師資訊與條件 */}
+      <div className="postcard-content-section">
+        <div className="postcard-header">
+          <img 
+            src={item.artist_avatar || 'https://via.placeholder.com/100'} 
+            alt="Avatar" 
+            className="postcard-avatar cursor-pointer"
+            onClick={handleArtistClick}
+            title="點擊前往繪師個人頁"
+          />
+          <div>
+            <span className="text-xs text-gray-500 block mb-1">投遞繪師</span>
+            <span 
+              className="postcard-artist-name"
+              onClick={handleArtistClick}
+              title="前往繪師個人頁"
+            >
+              {item.artist_name || '匿名繪師'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm mt-2 overflow-y-auto pr-2">
+          {/* 舒適圈與雷點掃視 */}
+          <div>
+            <strong className="text-gray-700 block mb-1">舒適圈 / 擅長題材：</strong>
+            {renderChips(snapshot.specialties, 'good')}
+          </div>
+          <div>
+            <strong className="text-gray-700 block mb-1">婉拒 / 雷點：</strong>
+            {renderChips(snapshot.no_gos, 'bad')}
+          </div>
+          
+          {/* 其他重要資訊 (佔據全寬) */}
+          <div className="md:col-span-2 mt-2 pt-3 border-t border-gray-100">
+            <strong className="text-gray-700 block mb-1">付款方式與條件：</strong>
+            {renderChips(snapshot.payment_methods, 'info')}
+          </div>
+        </div>
       </div>
     </div>
   );

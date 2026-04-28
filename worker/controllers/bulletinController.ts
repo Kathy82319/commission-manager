@@ -164,7 +164,10 @@ export const bulletinController = {
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
-        SELECT b.id as bulletin_id, b.title as bulletin_title, i.id as inquiry_id, i.artist_id, i.status as inquiry_status, u.display_name as artist_name, u.public_id as artist_public_id, i.latest_update_at
+        SELECT b.id as bulletin_id, b.title as bulletin_title, i.id as inquiry_id, 
+               i.artist_id, i.status as inquiry_status, u.display_name as artist_name, 
+               u.public_id as artist_public_id, u.avatar_url as artist_avatar, 
+               i.latest_update_at
         FROM Bulletins b JOIN BulletinInquiries i ON b.id = i.bulletin_id LEFT JOIN Users u ON i.artist_id = u.id
         WHERE b.client_id = ? ORDER BY i.latest_update_at DESC
       `).bind(currentUserId).all();
