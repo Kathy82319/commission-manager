@@ -12,7 +12,6 @@ export function ArtistLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadInboxCount, setUnreadInboxCount] = useState(0);
 
-  // 1. 驗證與讀取資料
   useEffect(() => {
     const checkAuthAndFetchProfile = async () => {
       try {
@@ -30,7 +29,6 @@ export function ArtistLayout() {
           navigate('/login');
         }
       } catch (error) {
-        console.error("驗證繪師身分失敗", error);
         navigate('/login');
       } finally {
         setLoading(false);
@@ -39,16 +37,13 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate, API_BASE]);
 
-  // 2. 定期檢查未讀通知
   useEffect(() => {
     if (!artist) return;
     const fetchUnread = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/notifications/unread?role=artist`, { credentials: 'include' });
         const data = await res.json();
-        if (data.success) {
-          setUnreadInboxCount(data.count);
-        }
+        if (data.success) setUnreadInboxCount(data.count);
       } catch (error) {}
     };
     fetchUnread();
@@ -56,7 +51,6 @@ export function ArtistLayout() {
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
 
-  // 3. 登出功能
   const handleLogout = async () => {
     try {
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
@@ -65,7 +59,7 @@ export function ArtistLayout() {
     } finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
-      window.location.href = '/wishboard';
+      window.location.href = '/'; // 修正重導向
     }
   };
 
@@ -82,7 +76,6 @@ export function ArtistLayout() {
     return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
   };
 
-  // 🌟 方案判斷邏輯（恢復）
   let planDisplay = '基礎免費版';
   let expiryDateText = '';
   let planBadgeColor = '#4A4A4A';
@@ -133,8 +126,8 @@ export function ArtistLayout() {
       <header className="mobile-app-bar">
         <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">☰</button>
         <div className="mobile-app-title">
-          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E', lineHeight: '1' }}>Arti繪師小幫手</div>
-          <div style={{ fontSize: '13px', color: '#A0978D', lineHeight: '1.2', marginTop: '4px' }}>管理後台</div>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+          <div style={{ fontSize: '13px', color: '#A0978D' }}>管理後台</div>
         </div>
       </header>
 
@@ -171,8 +164,8 @@ export function ArtistLayout() {
             <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
             <span style={{ margin: '0 4px' }}>|</span>
             <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
-            <div style={{ marginTop: '4px' }}>
-              <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '12px', padding: 0 }}>登出系統</button>
+            <div style={{ marginTop: '8px' }}>
+              <button onClick={handleLogout} style={{ background: 'none', border: '1px solid #D1D5DB', color: '#9CA3AF', cursor: 'pointer', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>登出系統</button>
             </div>
           </div>
         </div>
