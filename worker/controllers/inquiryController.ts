@@ -71,6 +71,7 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
+      // 🌟 修正：確保進入洽談室時，正確寫入使用者的「已讀時間」
       const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
@@ -97,6 +98,7 @@ export const inquiryController = {
       const { content, message_type = 'text' } = body;
       const id = crypto.randomUUID();
       
+      // 🌟 修正：確保傳送訊息時，強制更新 latest_update_at，這樣才會觸發小鈴鐺
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)

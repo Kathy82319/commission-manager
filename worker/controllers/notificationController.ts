@@ -47,7 +47,7 @@ export const notificationController = {
             id: `client_inquiry_${item.id}`,
             type: 'inquiry_msg',
             text: `[我是案主] 許願「${item.title || '未命名'}」有新洽談訊息或進度`,
-            link: `/inquiry-workspace/${item.id}`,
+            link: `/inquiry/workspace/${item.id}`, // 🌟 修正：精準跳轉至洽談室
             time: item.latest_update_at
           });
         }
@@ -61,14 +61,14 @@ export const notificationController = {
       `).bind(currentUserId).all();
 
       (clientCommQuery.results || []).forEach((order: any) => {
-        // 🌟 案主收到繪師的異動申請 -> 點擊後跳轉到列表頁並打開這張單，觸發紅色的確認視窗
+        // 案主收到繪師的異動申請 -> 跳轉到列表頁並打開這張單
         if (order.pending_changes) {
           unreadCount++;
           notifications.push({
             id: `client_change_${order.id}`,
             type: 'commission_change',
             text: `[我是案主] 委託單「${order.project_name || order.id}」有合約異動申請`,
-            link: `/client/orders?open=${order.id}`, // 跳轉至案主列表
+            link: `/client/orders?open=${order.id}`,
             time: order.latest_message_at || new Date().toISOString()
           });
         }
@@ -81,7 +81,7 @@ export const notificationController = {
             id: `client_msg_${order.id}`,
             type: 'commission_msg',
             text: `[我是案主] 委託單「${order.project_name || order.id}」有新聊天訊息`,
-            link: `/workspace/${order.id}`, // 跳轉至正式委託聊天室
+            link: `/workspace/${order.id}`, 
             time: order.latest_message_at
           });
         }
@@ -111,7 +111,7 @@ export const notificationController = {
             id: `artist_inquiry_${item.id}`,
             type: 'inquiry_msg',
             text,
-            link: `/inquiry-workspace/${item.id}`, // 精準跳轉至洽談室
+            link: `/inquiry/workspace/${item.id}`, // 🌟 修正：精準跳轉至洽談室
             time: item.latest_update_at
           });
         }
@@ -125,14 +125,14 @@ export const notificationController = {
       `).bind(currentUserId).all();
 
       (artistCommQuery.results || []).forEach((order: any) => {
-        // 🌟 繪師收到案主同意異動 -> 點擊後跳轉到繪師的委託單細項
+        // 繪師收到案主同意異動 -> 跳轉到繪師的委託單細項
         if (order.pending_changes) {
           unreadCount++;
           notifications.push({
             id: `artist_change_${order.id}`,
             type: 'commission_change',
             text: `[我是繪師] 委託單「${order.project_name || order.id}」合約異動待處理`,
-            link: `/artist/notebook?id=${order.id}&tab=details`, // 跳轉至委託單細項
+            link: `/artist/notebook?id=${order.id}&tab=details`, 
             time: order.latest_message_at || new Date().toISOString()
           });
         }
@@ -145,7 +145,7 @@ export const notificationController = {
             id: `artist_msg_${order.id}`,
             type: 'commission_msg',
             text: `[我是繪師] 委託單「${order.project_name || order.id}」有新聊天訊息`,
-            link: `/workspace/${order.id}`, // 跳轉至正式委託聊天室
+            link: `/workspace/${order.id}`,
             time: order.latest_message_at
           });
         }

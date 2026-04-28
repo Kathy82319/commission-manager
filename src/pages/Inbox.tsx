@@ -29,7 +29,7 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-// 🌟 明信片卡片元件 (加入燈箱與郵戳設計)
+// 🌟 明信片卡片元件
 const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
@@ -60,12 +60,10 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
   return (
     <>
       <div className="postcard-container relative">
-        {/* 🌟 右上角狀態郵戳 (Stamp) */}
         <div className={`postcard-stamp stamp-${item.inquiry_status}`}>
           {getStatusLabel(item.inquiry_status)}
         </div>
 
-        {/* 左側：圖片展示區 */}
         <div className="postcard-image-section cursor-pointer group" onClick={openLightbox} title={images.length > 0 ? "點擊放大檢視" : ""}>
           {images.length > 0 ? (
             <>
@@ -89,7 +87,6 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
           )}
         </div>
 
-        {/* 右側：繪師資訊與條件 */}
         <div className="postcard-content-section flex flex-col h-full justify-between">
           <div>
             <div className="postcard-header">
@@ -127,34 +124,20 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
             </div>
           </div>
 
-          {/* 🌟 動作按鈕區 (由外部傳入 children，已透過 CSS 固定在右下角) */}
           <div className="postcard-actions-wrapper">
             {children}
           </div>
         </div>
       </div>
 
-      {/* 🌟 燈箱 Lightbox Modal */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>
             <button className="lightbox-close" onClick={() => setLightboxOpen(false)}>✕</button>
-            
-            {images.length > 1 && (
-              <button className="lightbox-nav lightbox-prev" onClick={prevImg}>❮</button>
-            )}
-            
+            {images.length > 1 && <button className="lightbox-nav lightbox-prev" onClick={prevImg}>❮</button>}
             <img src={mainImage as string} alt="Enlarged" className="lightbox-img" />
-            
-            {images.length > 1 && (
-              <button className="lightbox-nav lightbox-next" onClick={nextImg}>❯</button>
-            )}
-
-            {images.length > 1 && (
-              <div className="lightbox-counter">
-                {imgIndex + 1} / {images.length}
-              </div>
-            )}
+            {images.length > 1 && <button className="lightbox-nav lightbox-next" onClick={nextImg}>❯</button>}
+            {images.length > 1 && <div className="lightbox-counter">{imgIndex + 1} / {images.length}</div>}
           </div>
         </div>
       )}
@@ -172,7 +155,6 @@ export const Inbox: React.FC = () => {
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(null);
 
-  // 🌟 彈窗狀態管理
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
@@ -208,7 +190,6 @@ export const Inbox: React.FC = () => {
     fetchInbox(); 
   }, [activeTab]);
 
-  // 🌟 婉拒確認送出
   const handleConfirmDecline = async () => {
     if (!selectedInquiry) return;
     try {
@@ -220,20 +201,20 @@ export const Inbox: React.FC = () => {
     } catch (error: any) { alert(error.message || '婉拒失敗'); }
   };
 
-  // 🌟 邀請確認送出
   const handleSendInvite = async () => {
     if (!inviteResponse.trim()) return alert('請填寫回覆內容');
     if (!selectedInquiry) return;
     try {
       await apiClient.patch(`/api/inquiries/${selectedInquiry.inquiry_id}/submit-response`, { client_response: inviteResponse });
-      alert('回信已送出！現在您可以進入洽談室與繪師溝通。');
+      alert('回信已送出！現在您可以進入聊天室與繪師溝通。');
       setShowInviteModal(false); 
       setInviteResponse(''); 
       fetchInbox();
     } catch (error: any) { alert(error.message || '送出失敗'); }
   };
 
-  const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry-workspace/${inquiryId}`);
+  // 🌟 修正跳轉路徑：改成 /inquiry/workspace/:id
+  const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   const handleViewCommission = (commissionId: string) => commissionId ? navigate(`/workspace/${commissionId}`) : alert('找不到關聯的委託單');
 
   const calculateDaysLeft = (expiresAt: string) => {
@@ -349,49 +330,29 @@ export const Inbox: React.FC = () => {
 
                     return (
                       <div key={item.inquiry_id}>
-                        {/* 🌟 獨立的明信片元件，將動作按鈕作為 children 傳入 */}
                         <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
                           {canDecline && (
-                            <button 
-                              className="btn-secondary-red" 
-                              onClick={() => { 
-                                setSelectedInquiry(item); 
-                                setShowDeclineModal(true); 
-                              }}
-                            >
+                            <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
                               {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
                             </button>
                           )}
                           {item.inquiry_status === 'pending' && (
-                            <button 
-                              className="btn-primary" 
-                              onClick={() => { 
-                                setSelectedInquiry({ ...item, question_template: snapshot.question_template || item.question_template }); 
-                                setShowInviteModal(true); 
-                              }}
-                            >
+                            <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...item, question_template: snapshot.question_template || item.question_template }); setShowInviteModal(true); }}>
                               ✉️ 邀請詳談
                             </button>
                           )}
                           {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                            <button 
-                              className="btn-primary" 
-                              onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}
-                            >
-                              💬 進入洽談室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
+                            <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
+                              💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
                             </button>
                           )}
                           {item.inquiry_status === 'accepted' && (
-                            <button 
-                              className="btn-success" 
-                              onClick={() => handleViewCommission(item.commission_id)}
-                            >
+                            <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
                               前往正式委託單
                             </button>
                           )}
                         </ArtistPostcard>
 
-                        {/* 婉拒理由獨立顯示於卡片外，保持卡片乾淨 */}
                         {item.inquiry_status === 'declined' && item.decline_reason && (
                           <div className="bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] mt-2 mx-4 text-[#A05C5C] text-sm">
                             <strong>終止/婉拒理由：</strong>{item.decline_reason}
@@ -406,7 +367,6 @@ export const Inbox: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 繪師視角 (保留原來的列表邏輯，但套用新顏色) */
         <div className="space-y-4">
           {artistInquiries.length === 0 ? (
             <p className="text-center p-10 text-[#A0978D]">目前沒有任何投遞紀錄。</p>
@@ -443,7 +403,7 @@ export const Inbox: React.FC = () => {
                   <div className="action-buttons mt-5 border-t pt-4 border-[#EAE6E1] flex gap-2 justify-end">
                     {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
                       <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                        進入洽談室
+                        進入聊天室
                       </button>
                     )}
                     {item.inquiry_status === 'accepted' && (
@@ -471,12 +431,10 @@ export const Inbox: React.FC = () => {
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper">
-            {/* 信封頂部裝飾條 (大地色系：莫蘭迪紅、莫蘭迪藍、奶油白) */}
             <div className="paper-deco"></div>
-            
             <h2 className="text-2xl font-bold text-[#5D4A3E] mb-2 mt-2">✉️ 邀請繪師詳談</h2>
             <p className="text-sm text-[#A0978D] mb-6 border-b border-[#EAE6E1] pb-4">
-              填寫下方的回信，系統將為您建立專屬的「洽談室」，讓雙方能夠進一步溝通細節與合約。
+              填寫下方的回信，系統將為您建立專屬的「聊天室」，讓雙方能夠進一步溝通細節與合約。
             </p>
 
             <div className="bg-[#FBFBF9] p-5 rounded-xl border border-[#EAE6E1] mb-6 shadow-sm">
@@ -513,7 +471,6 @@ export const Inbox: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-content-paper decline-modal">
             <div className="paper-deco-red"></div>
-            
             <h2 className="text-2xl font-bold text-[#A05C5C] mb-2 mt-2">禮貌婉拒提案</h2>
             <p className="text-sm text-[#A0978D] mb-6 border-b border-[#F5C6C6] pb-4">
               這將會終止與此繪師的洽談，建議附上簡單理由以示尊重。
