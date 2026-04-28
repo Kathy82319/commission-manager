@@ -74,46 +74,6 @@
   box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
 }
 
-/* Filter Section */
-.filter-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 15px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  margin-bottom: 20px;
-}
-
-.filter-tags button {
-  padding: 5px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #eee;
-  margin-right: 8px;
-  background: #f9f9f9;
-}
-
-.filter-tags button.active {
-  background: #fff0e0;
-  color: #ff8c00;
-  border-color: #ff8c00;
-}
-
-.post-trigger-btn {
-  margin-left: auto;
-  background: #ff8c00;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  cursor: pointer;
-}
 
 /* 🌟 Wide Wish Card (修復佈局問題) */
 .wish-grid {
@@ -137,36 +97,6 @@
   transform: translateY(-4px);
 }
 
-/* 左側圖片區塊完美貼合 */
-.wish-card-image-wrapper {
-  width: 320px;
-  position: relative;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f5f5; /* 給予底色避免留白 */
-}
-
-.wish-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* 確保圖片不變形且填滿 */
-  display: block;
-}
-
-/* Fallback 模式（無圖片或破圖時） */
-.fallback-placeholder, .wish-card-image-wrapper.fallback-mode {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f0f0f0;
-  color: #999;
-  font-size: 13px;
-  font-weight: 500;
-  min-height: 240px; /* 確保最小高度 */
-}
 
 .wish-countdown {
   position: absolute;
@@ -429,9 +359,126 @@
 }
 
 .inline-tag-input {
-  width: 160px !important;
-  padding: 6px 12px !important;
-  border-radius: 20px !important;
-  font-size: 13px !important;
-  border: 1px dashed #aaa !important;
+  width: 160px ;
+  padding: 6px 12px ;
+  border-radius: 20px ;
+  font-size: 13px;
+  border: 1px dashed #aaa;
+}
+
+/* 🌟 修改排版：避免壓縮，允許換行 */
+.filter-section {
+  display: flex;
+  align-items: flex-start; /* 改為 flex-start 適應多行 */
+  gap: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0; /* 絕對不壓縮 */
+  margin-top: 6px; /* 對齊第一排標籤 */
+  font-weight: bold;
+  color: #555;
+}
+
+.filter-tags {
+  flex: 1; /* 佔據中間剩餘空間 */
+  display: flex;
+  flex-wrap: wrap; /* 允許標籤換行 */
+  gap: 8px;
+}
+
+.filter-tags button {
+  padding: 5px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  background: #f9f9f9;
+  margin: 0; /* 拔除原本的 margin-right，改用外層 gap */
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filter-tags button:hover {
+  background: #f0f0f0;
+}
+
+.filter-tags button.active {
+  background: #fff0e0;
+  color: #ff8c00;
+  border-color: #ff8c00;
+}
+
+.post-trigger-btn {
+  flex-shrink: 0; /* 絕對不壓縮 */
+  background: #ff8c00;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.post-trigger-btn:hover {
+  background: #e67e00;
+}
+
+/* 🌟 修改圖片區塊：背景色統一，填滿高度 */
+.wish-card-image-wrapper {
+  width: 320px;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #fafafa; /* 乾淨的背景色 */
+  border-right: 1px solid #f0f0f0;
+}
+
+.wish-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fallback-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 240px;
+}
+
+/* 🌟 自定義標籤的 x 按鈕 */
+.custom-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.custom-tag svg {
+  cursor: pointer;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.custom-tag svg:hover {
+  background: rgba(0,0,0,0.2);
 }
