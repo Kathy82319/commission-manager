@@ -117,13 +117,15 @@
   white-space: nowrap; /* 保持文字不斷行 */ 
 }
 
+
+
 /* 🌟 強制重置 radio 按鈕尺寸，防止被全域 input 樣式污染 */
 .radio-label input[type="radio"] {
   width: auto !important;
   height: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  flex-shrink: 0; /* 確保它絕對不會被壓縮或拉伸 */
+  margin: 10px !important;
+  padding: 10px !important;
+  flex-shrink: 1; /* 確保它絕對不會被壓縮或拉伸 */
   appearance: auto; /* 維持瀏覽器原生的圓點樣式 */
 }
 
