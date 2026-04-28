@@ -266,9 +266,9 @@ CREATE TABLE InquiryMessages (
 ALTER TABLE BulletinInquiries ADD COLUMN negotiation_draft TEXT; 
 
 ALTER TABLE Commissions ADD COLUMN origin_source TEXT;
-ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_client DATETIME DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_artist DATETIME DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE BulletinInquiries ADD COLUMN latest_update_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_client DATETIME DEFAULT NULL;
+ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_artist DATETIME DEFAULT NULL;
+ALTER TABLE BulletinInquiries ADD COLUMN latest_update_at DATETIME DEFAULT NULL;
 
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)

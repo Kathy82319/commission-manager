@@ -5,19 +5,12 @@ import { apiClient } from '../api/client';
 import '../styles/Inbox.css';
 import '../styles/Wishboard.css';
 
-// 🌟 新增：獨立的明信片元件，負責處理翻頁邏輯與顯示
-// 🌟 修正：獨立的明信片元件，負責處理翻頁邏輯、正確跳轉與頭像大小限制
 const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
   const [page, setPage] = useState(1);
 
   const handleArtistClick = () => {
-    // 修正路由：直接跳轉到根目錄下的 User_ID
     const targetId = item.artist_public_id || item.artist_id;
-    if (targetId) {
-      // 若希望開新分頁，可以使用 window.open(`/${targetId}`, '_blank');
-      // 這裡維持使用原本的跳轉方式
-      navigate(`/${targetId}`);
-    }
+    if (targetId) navigate(`/${targetId}`);
   };
 
   return (
@@ -25,13 +18,11 @@ const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
       <div className="p-5 pb-8">
         {page === 1 ? (
           <div className="flex flex-col animate-fade-in">
-            {/* 第一頁：頭像、名稱、擅長與雷點 */}
             <div className="flex items-center gap-4 border-b border-purple-100 pb-3 mb-3">
               <img 
                 src={item.artist_avatar || 'https://via.placeholder.com/60'} 
                 alt="Avatar" 
                 className="rounded-full object-cover cursor-pointer hover:opacity-80 transition shadow-sm border border-gray-100"
-                // 🌟 強制鎖死頭像大小，防止圖片被撐開
                 style={{ width: '60px', height: '60px', minWidth: '60px', minHeight: '60px', flexShrink: 0 }}
                 onClick={handleArtistClick}
               />
@@ -53,7 +44,6 @@ const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
           </div>
         ) : (
           <div className="flex flex-col animate-fade-in">
-            {/* 第二頁：簡易價目表 */}
             <div className="border-b border-purple-100 pb-2 mb-3">
               <h4 className="text-purple-700 font-bold text-base">簡易價目表預覽</h4>
             </div>
@@ -64,25 +54,13 @@ const ArtistPostcard = ({ item, snapshot, navigate }: any) => {
         )}
       </div>
 
-      {/* 左右翻頁箭頭 */}
       {page === 2 && (
-        <button 
-          onClick={() => setPage(1)} 
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10"
-        >
-          ❮
-        </button>
+        <button onClick={() => setPage(1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10">❮</button>
       )}
       {page === 1 && (
-        <button 
-          onClick={() => setPage(2)} 
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10"
-        >
-          ❯
-        </button>
+        <button onClick={() => setPage(2)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow hover:bg-purple-50 text-purple-600 transition z-10">❯</button>
       )}
       
-      {/* 底部頁碼指示點 */}
       <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
         <div className={`w-2 h-2 rounded-full transition-colors ${page === 1 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
         <div className={`w-2 h-2 rounded-full transition-colors ${page === 2 ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
@@ -183,6 +161,25 @@ export const Inbox: React.FC = () => {
     }
   };
 
+  // 🌟 判斷是否為未讀狀態
+  const isUnread = (item: any) => {
+    if (!item.latest_update_at) return false;
+    const latest = new Date(item.latest_update_at).getTime();
+    
+    // 如果是被取消的單，就不亮紅點
+    if (['declined', 'closed'].includes(item.inquiry_status)) return false;
+
+    if (activeTab === 'client') {
+      if (!item.last_read_at_client) return true;
+      return latest > new Date(item.last_read_at_client).getTime();
+    } else {
+      // 繪師視角，排除自己剛投遞時的狀態
+      if (item.inquiry_status === 'pending') return false; 
+      if (!item.last_read_at_artist) return true;
+      return latest > new Date(item.last_read_at_artist).getTime();
+    }
+  };
+
   return (
     <div className="inbox-container">
       <div className="flex justify-between items-center mb-6">
@@ -211,7 +208,6 @@ export const Inbox: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {inquiries.map((item) => {
-            // 🌟 雙重解碼：修正重複打包導致的「未提供」問題
             let snapshot: any = {};
             try { 
               const parsed1 = JSON.parse(item.artist_snapshot || '{}');
@@ -219,9 +215,19 @@ export const Inbox: React.FC = () => {
             } catch(e) {}
             
             const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
+            
+            // 🌟 判斷這張卡片是否要亮紅點
+            const showRedDot = isUnread(item);
 
             return (
-              <div key={item.inquiry_id} className="inbox-item">
+              <div key={item.inquiry_id} className="inbox-item relative overflow-hidden">
+                {/* 🌟 實體紅點 UI */}
+                {showRedDot && (
+                  <div className="absolute top-0 right-0 w-0 h-0 border-t-[40px] border-t-red-500 border-l-[40px] border-l-transparent z-10" title="有新進度">
+                     <span className="absolute -top-[32px] -left-[16px] text-white text-xs font-bold transform">新</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start">
                   <div>
                     <span className={`inbox-badge status-${item.inquiry_status}`}>
@@ -233,9 +239,7 @@ export const Inbox: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 資訊卡：根據視角顯示不同內容 */}
                 {activeTab === 'client' ? (
-                  // 🌟 呼叫剛做好的明信片元件
                   <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate} />
                 ) : (
                   item.client_response && (
@@ -253,7 +257,6 @@ export const Inbox: React.FC = () => {
                 )}
 
                 <div className="action-buttons mt-5 border-t pt-4 border-gray-100 flex gap-2">
-                  {/* --- 案主視角按鈕 --- */}
                   {activeTab === 'client' && (
                     <>
                       {item.inquiry_status === 'pending' && (
@@ -288,7 +291,6 @@ export const Inbox: React.FC = () => {
                     </>
                   )}
 
-                  {/* --- 繪師視角按鈕 --- */}
                   {activeTab === 'artist' && (
                     <>
                       {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
@@ -317,7 +319,6 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 案主回填提問 Modal */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content">

@@ -3,31 +3,44 @@ import type { Env } from '../shared/types';
 
 export const inquiryController = {
   
-  // 🌟 新增：計算未讀的收件匣/洽談進度數量
+  // 🌟 修正：精準的未讀數量計算邏輯
   async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
-      const role = url.searchParams.get('role'); // 'client' 或是 'artist'
+      const role = url.searchParams.get('role'); 
 
       let query = "";
       if (role === 'client') {
-        // 案主視角：看自己發的許願底下，是否有 latest_update_at > last_read_at_client 的單
+        // 案主視角：
+        // 1. 繪師剛投遞 (status = 'pending')
+        // 2. 繪師送出提案 (status = 'proposed')
+        // 3. 洽談室有新訊息 (latest_update_at > last_read_at_client)
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
           JOIN Bulletins b ON i.bulletin_id = b.id
           WHERE b.client_id = ? 
-          AND (i.latest_update_at > i.last_read_at_client OR i.last_read_at_client IS NULL)
           AND i.status != 'cancelled'
+          AND (
+            (i.latest_update_at > IFNULL(i.last_read_at_client, '1970-01-01 00:00:00'))
+            OR (i.last_read_at_client IS NULL)
+          )
         `;
       } else {
-        // 繪師視角：看自己投遞的單子，是否有 latest_update_at > last_read_at_artist
+        // 繪師視角：
+        // 1. 案主回填提問單 (status = 'submitted')
+        // 2. 案主婉拒 (status = 'declined')
+        // 3. 洽談室有新訊息
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
           WHERE i.artist_id = ? 
-          AND (i.latest_update_at > i.last_read_at_artist OR i.last_read_at_artist IS NULL)
           AND i.status != 'cancelled'
+          AND (
+            (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
+            OR (i.last_read_at_artist IS NULL AND i.status != 'pending') 
+            /* 排除剛投遞(pending)就亮紅點的狀況 */
+          )
         `;
       }
 
@@ -58,7 +71,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 進入洽談室也算已讀
       const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
@@ -85,7 +97,6 @@ export const inquiryController = {
       const { content, message_type = 'text' } = body;
       const id = crypto.randomUUID();
       
-      // 🌟 發送訊息時，也算是一種更新，觸發紅點
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
@@ -114,7 +125,6 @@ export const inquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 繪師送出提案，觸發最新異動時間
       await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ? AND artist_id = ?`
       ).bind(inquiryId, currentUserId).run();
