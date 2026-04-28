@@ -57,7 +57,7 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '最低預算不得高於最高預算' }), { status: 400, headers: corsHeaders });
       }
 
-      // 🌟 新增防洗版機制：檢查該用戶是否已有同分類且開啟中的貼文
+      // 🌟 防洗版機制：檢查該用戶是否已有同分類且開啟中的貼文
       const currentCategory = category || 'request';
       const existingPost = await env.commission_db.prepare(
         `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
@@ -77,7 +77,7 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const expiresAt = new Date();
-      // 🌟 預設為 3 天
+      // 預設為 3 天
       expiresAt.setDate(expiresAt.getDate() + 3);
 
       await env.commission_db.prepare(
@@ -130,7 +130,7 @@ export const bulletinController = {
     try {
       const body = await request.json() as any;
       const { decline_reason } = body;
-      const result = await env.commission_db.prepare(
+      await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(decline_reason || '案主已婉拒', inquiryId).run();
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -152,30 +152,58 @@ export const bulletinController = {
     }
   },
 
+  // 🌟 為「發布儀表板 (My Posts Dashboard)」與「明信片提案」重構的 API
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 擴充欄位：加入 avatar_url (artist_avatar) 與 public_id (artist_public_id)
-      const { results } = await env.commission_db.prepare(`
-        SELECT b.id as bulletin_id, b.title as bulletin_title, i.id as inquiry_id, 
+      // 1. 撈出該用戶發布的 Bulletins (包含分類、狀態、到期日與收到幾份提案)
+      const { results: myBulletins } = await env.commission_db.prepare(`
+        SELECT id, title, category, status, expires_at, created_at,
+          (SELECT COUNT(*) FROM BulletinInquiries WHERE bulletin_id = Bulletins.id) as inquiry_count
+        FROM Bulletins 
+        WHERE client_id = ? 
+        ORDER BY created_at DESC
+      `).bind(currentUserId).all();
+
+      // 2. 撈出針對這些 Bulletins 收到的 Inquiries (提案明信片詳細資料)
+      const { results: myInquiries } = await env.commission_db.prepare(`
+        SELECT i.id as inquiry_id, b.id as bulletin_id, b.title as bulletin_title, 
                i.artist_id, i.status as inquiry_status, u.display_name as artist_name, 
-               u.avatar_url as artist_avatar, u.public_id as artist_public_id, i.latest_update_at
+               u.avatar_url as artist_avatar, u.public_id as artist_public_id, 
+               i.latest_update_at, i.artist_snapshot
         FROM Bulletins b 
         JOIN BulletinInquiries i ON b.id = i.bulletin_id 
         LEFT JOIN Users u ON i.artist_id = u.id
-        WHERE b.client_id = ? ORDER BY i.latest_update_at DESC
+        WHERE b.client_id = ? 
+        ORDER BY i.latest_update_at DESC
       `).bind(currentUserId).all();
-      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
-    } catch (error: any) { return new Response(JSON.stringify({ success: false }), { status: 500, headers: corsHeaders }); }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: {
+          bulletins: myBulletins,
+          inquiries: myInquiries
+        }
+      }), { headers: corsHeaders });
+    } catch (error: any) { 
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
+    }
   },
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 繪師專屬：撈出自己「投遞出去」的提案狀態
       const { results } = await env.commission_db.prepare(`
-        SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, i.latest_update_at
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id
-        WHERE i.artist_id = ? ORDER BY i.latest_update_at DESC
+        SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
+               i.latest_update_at, i.artist_snapshot, b.client_id
+        FROM BulletinInquiries i 
+        JOIN Bulletins b ON i.bulletin_id = b.id
+        WHERE i.artist_id = ? 
+        ORDER BY i.latest_update_at DESC
       `).bind(currentUserId).all();
+
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
-    } catch (error: any) { return new Response(JSON.stringify({ success: false }), { status: 500, headers: corsHeaders }); }
+    } catch (error: any) { 
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
+    }
   }
 };

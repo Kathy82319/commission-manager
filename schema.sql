@@ -291,3 +291,8 @@ VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 
 
 
+--刪除許願池收件匣用
+DELETE FROM Notifications;
+DELETE FROM InquiryMessages;
+DELETE FROM BulletinInquiries;
+DELETE FROM Bulletins;
