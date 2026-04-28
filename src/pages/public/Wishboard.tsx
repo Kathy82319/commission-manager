@@ -112,7 +112,6 @@ export const Wishboard: React.FC = () => {
       if (res.success) {
         alert('已成功發送您的意向與簡歷給案主！請至收件匣查看進度。');
         setShowInquireModal(false);
-        // 🌟 成功後重新讀取列表，讓按鈕立刻變成「已投遞」
         initData();
       } else {
         alert(res.message || '投遞發生錯誤');
@@ -120,6 +119,23 @@ export const Wishboard: React.FC = () => {
     } catch (error: any) {
       alert('投遞發生錯誤: ' + (error.message || ''));
     }
+  };
+
+  // 🌟 新增：計算剩餘時間的輔助函數
+  const getTimeRemaining = (expiresAt: string) => {
+    if (!expiresAt) return '未知';
+    const now = new Date();
+    const exp = new Date(expiresAt);
+    const diffMs = exp.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return '已結束';
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) return `剩餘 ${diffDays}天`;
+    if (diffHours > 0) return `剩餘 ${diffHours}小時`;
+    return '即將結束';
   };
 
   const filteredBulletins = bulletins.filter(b => b.category === activeTab || (!b.category && activeTab === 'request'));
@@ -146,16 +162,26 @@ export const Wishboard: React.FC = () => {
       ) : (
         <div className="bulletin-grid">
           {filteredBulletins.map((b) => {
-            // 🌟 判斷是否為自己發的，或是已經投遞過
             const isMyOwnPost = currentUser && b.client_id === currentUser.id;
             const hasApplied = currentUser && b.applied_artist_ids && b.applied_artist_ids.includes(currentUser.id);
 
             return (
-              <div key={b.id} className="bulletin-card">
-                <p><strong>類別:</strong> {b.category === 'offer' ? '#接委託' : b.category === 'other' ? '#其他' : '#徵委託'}</p>
-                <p>{b.content}</p>
-                <p><small>預算：{b.budget_range}</small></p>
-                <p><small>規格：{b.specs}</small></p>
+              <div key={b.id} className="bulletin-card relative">
+                {/* 🌟 頂部的標籤與倒數計時 */}
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">
+                    {b.category === 'offer' ? '#接委託' : b.category === 'other' ? '#其他' : '#徵委託'}
+                  </span>
+                  <span className="text-xs text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                    ⏱️ {getTimeRemaining(b.expires_at)}
+                  </span>
+                </div>
+
+                <p className="text-gray-800 whitespace-pre-wrap">{b.content}</p>
+                <div className="mt-3 text-sm text-gray-600">
+                  <p><strong>預算：</strong>{b.budget_range}</p>
+                  <p><strong>規格：</strong>{b.specs}</p>
+                </div>
                 
                 {activeTab === 'request' && (
                   <>
@@ -186,6 +212,7 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
+      {/* 發布 Modal */}
       {showPostModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -212,6 +239,7 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
+      {/* 投遞意向 Modal */}
       {showInquireModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto' }}>

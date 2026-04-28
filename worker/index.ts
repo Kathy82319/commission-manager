@@ -48,7 +48,6 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      // 🌟 新增：系統通知與未讀數量 API
       if (sanitizedPath === "/api/notifications/unread" && request.method === "GET") {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
@@ -82,6 +81,11 @@ export default {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
+        } else if (targetId && subAction === "close" && request.method === "POST") {
+          // 🌟 新增：手動關閉/結案路由
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.closeBulletin(targetId, currentUserId!, env, corsHeaders);
         }
       }
 
