@@ -21,7 +21,13 @@ export function Portal() {
         const data = await res.json();
         if (data.success) {
           setUser(data.data);
+          // 💡 當確認使用者已登入，可以先寫入一個基礎的登入標記
+          // 這樣即使他還沒選角色，右上角至少可以顯示「回到管理後台」
+          localStorage.setItem('is_logged_in', 'true');
         } else {
+          // 如果驗證失敗，記得清除前端的 UI 標記
+          localStorage.removeItem('is_logged_in');
+          localStorage.removeItem('user_role');
           navigate('/login'); 
         }
       } catch (e) {
@@ -30,6 +36,12 @@ export function Portal() {
     };
     fetchUser();
   }, [navigate, API_BASE]);
+
+  // 💡 處理角色選擇，並在跳轉前寫入 localStorage
+  const handleRoleSelection = (rolePath: string, roleName: string) => {
+    localStorage.setItem('user_role', roleName);
+    navigate(rolePath);
+  };
 
   if (!user) return <div className="portal-loading">載入中...</div>;
 
@@ -51,7 +63,7 @@ export function Portal() {
         <div className="portal-cards-container">
           
           <div 
-            onClick={() => navigate('/client/orders')}
+            onClick={() => handleRoleSelection('/client/orders', 'client')}
             className="portal-card card-client"
           >
             <div className="card-icon">🎨</div>
@@ -60,7 +72,7 @@ export function Portal() {
           </div>
 
           <div 
-            onClick={() => navigate('/artist/notebook')}
+            onClick={() => handleRoleSelection('/artist/notebook', 'artist')}
             className="portal-card card-artist"
           >
             <div className="card-icon">🖋️</div>
@@ -72,7 +84,7 @@ export function Portal() {
         {user?.role === 'admin' && (
           <div className="admin-section">
             <button
-              onClick={() => navigate('/admin')}
+              onClick={() => handleRoleSelection('/admin', 'admin')}
               className="admin-btn"
             >
               ⚙️ 進入系統管理後台

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react'; // 引入 useEffect 來監聽狀態
+import { useState, useEffect } from 'react';
 import '../styles/PublicLayout.css';
 
 interface ThemeSettings {
@@ -12,7 +12,6 @@ export function PublicLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // 新增狀態來追蹤登入資訊
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -22,26 +21,34 @@ export function PublicLayout() {
     gradientDirection: 'to bottom right' 
   });
 
-  // 每當路由改變時，重新檢查登入狀態
+  // 1. 檢查登入狀態：不再依賴 localStorage.getItem('token')
+  // 而是檢查你的應用程式是否有存下 user_role 或其他登入後的標記
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('user_role'); // 確保你的登入邏輯有存入此欄位
-    setIsLoggedIn(!!token);
-    setUserRole(role);
+    // 假設你的前端登入後（例如在 Portal 選完角色後），有將角色存入 localStorage
+    const role = localStorage.getItem('user_role'); 
+    
+    // 如果有 user_role，我們就「假定」他已經登入，讓按鈕變為「回後台」
+    if (role) {
+      setIsLoggedIn(true);
+      setUserRole(role);
+    } else {
+      setIsLoggedIn(false);
+      setUserRole(null);
+    }
   }, [location]);
 
-  // 按鈕點擊後的邏輯判斷
+  // 2. 按鈕點擊行為
   const handleAuthClick = () => {
     if (isLoggedIn) {
-      // 根據角色導向不同後台[cite: 1]
       if (userRole === 'artist') {
         navigate('/artist');
       } else if (userRole === 'client') {
         navigate('/client/orders'); 
       } else {
-        navigate('/portal'); // 角色不明確時送去分流頁[cite: 1]
+        navigate('/portal');
       }
     } else {
+      // 若尚未登入，導向你設定的登入頁面
       navigate('/login');
     }
   };
@@ -70,14 +77,13 @@ export function PublicLayout() {
     <div className="public-layout-container" style={dynamicStyles}>
       <header className="public-header">
         <button 
-          onClick={handleAuthClick} // 改用新的處理函數
+          onClick={handleAuthClick}
           className="login-btn"
           style={{ 
             backgroundColor: 'var(--artist-text-color)', 
             color: 'var(--artist-theme-color)' 
           }}
         >
-          {/* 根據登入狀態動態顯示文字 */}
           {isLoggedIn ? '回到管理後台' : '登入 / 註冊'}
         </button>
       </header>
@@ -85,7 +91,6 @@ export function PublicLayout() {
       <main className="public-main">
         <Outlet context={{ setTheme }} />
         
-        {/* 這裡我們將 footer 移出 isLegalPage 的判斷，讓它全域顯示 */}
         <div className={`legal-page-wrapper ${!isLegalPage ? 'footer-only' : ''}`}>
           {isLegalPage && (
             <div className="back-btn-container">
