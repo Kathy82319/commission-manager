@@ -105,16 +105,20 @@
 }
 .btn-outline-purple:hover { background: #9333ea; color: white; }
 
-/* 🌟 原本的 Inbox 項目與明信片樣式 */
+/* 🌟 原本 Inbox 列表項目樣式 */
 .inbox-item { 
-  border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; 
-  background: white; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;
+  padding: 20px; 
+  display: flex; flex-direction: column; gap: 12px;
 }
 .inbox-badge { font-size: 12px; padding: 4px 8px; border-radius: 99px; font-weight: bold; }
 .status-pending { background: #fef3c7; color: #92400e; }
 .status-submitted { background: #dcfce7; color: #166534; }
 .status-declined { background: #fee2e2; color: #991b1b; }
 
+
+/* ==========================================================================
+   🌟 精美明信片樣式 (Artist Postcard) - 重新佈局與間距優化
+   ========================================================================== */
 .postcard-container {
   display: flex;
   flex-direction: column;
@@ -123,31 +127,59 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  margin-top: 12px;
+  margin-top: 4px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative; /* 為了讓郵戳絕對定位 */
 }
 .postcard-container:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
 }
 
 @media (min-width: 768px) {
   .postcard-container {
     flex-direction: row;
-    height: 260px; 
+    height: auto; /* 讓內容自動撐開，解決擁擠感 */
+    min-height: 280px; 
   }
 }
 
+/* 🌟 狀態郵戳 (右上角) */
+.postcard-stamp {
+  position: absolute;
+  top: 16px;
+  right: -24px;
+  background: #f3f4f6;
+  color: #4b5563;
+  padding: 4px 32px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transform: rotate(35deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px dashed #d1d5db;
+  z-index: 10;
+  text-align: center;
+}
+.stamp-pending { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.stamp-submitted { background: #dcfce7; color: #166534; border-color: #86efac; }
+.stamp-proposed { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
+.stamp-accepted { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+.stamp-declined { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+
+/* 左側：圖片展示區 */
 .postcard-image-section {
   width: 100%;
-  height: 200px;
-  background-color: #f3f4f6;
+  height: 220px;
+  background-color: #f9fafb;
   position: relative;
   border-bottom: 1px solid #e5e7eb;
+  overflow: hidden;
 }
 @media (min-width: 768px) {
   .postcard-image-section {
-    width: 35%;
-    height: 100%;
+    width: 40%; /* 加寬圖片區比例 */
+    height: auto;
     border-bottom: none;
     border-right: 1px solid #e5e7eb;
   }
@@ -158,6 +190,20 @@
   object-fit: cover;
   display: block;
 }
+.postcard-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.postcard-image-section:hover .postcard-image-overlay {
+  opacity: 1;
+}
+
 .postcard-image-fallback {
   width: 100%;
   height: 100%;
@@ -165,62 +211,156 @@
   align-items: center;
   justify-content: center;
   color: #9ca3af;
-  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e5e7eb 100%);
   font-size: 14px;
+  font-weight: bold;
 }
 .postcard-image-count {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.6);
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.75);
   color: white;
   font-size: 12px;
-  padding: 4px 8px;
+  font-weight: bold;
+  padding: 6px 12px;
   border-radius: 20px;
   backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
+/* 右側：內容資訊區 */
 .postcard-content-section {
   width: 100%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
+  padding: 24px; /* 加大內距，呼吸空間 */
 }
 @media (min-width: 768px) {
   .postcard-content-section {
-    width: 65%;
+    width: 60%;
   }
 }
 
+/* 繪師頭像與預設人影 */
 .postcard-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 .postcard-avatar {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.postcard-avatar-fallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .postcard-artist-name {
-  font-size: 18px;
-  font-weight: bold;
-  color: #4f46e5;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1f2937;
   text-decoration: none;
-  border-bottom: 1px dashed #a5b4fc;
-  transition: color 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 .postcard-artist-name:hover {
-  color: #312e81;
-  border-bottom-color: #312e81;
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.chip-tag { font-size: 12px; padding: 4px 10px; border-radius: 99px; font-weight: 500; white-space: nowrap; }
-.chip-good { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-.chip-bad { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-.chip-info { background-color: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+/* 標籤群組 (Chips) */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip-tag { font-size: 13px; padding: 4px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
+.chip-good { background-color: #ecfdf5; color: #166534; border: 1px solid #a7f3d0; }
+.chip-bad { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.chip-info { background-color: #f8fafc; color: #4b5563; border: 1px solid #e2e8f0; }
+
+/* 🌟 圖片燈箱 (Lightbox) */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  backdrop-filter: blur(4px);
+}
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+.lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  color: white;
+  font-size: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.lightbox-close:hover { opacity: 1; }
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.lightbox-nav:hover { background: rgba(255, 255, 255, 0.3); }
+.lightbox-prev { left: -70px; }
+.lightbox-next { right: -70px; }
+
+.lightbox-counter {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 768px) {
+  .lightbox-prev { left: 10px; }
+  .lightbox-next { right: 10px; }
+  .lightbox-close { top: 10px; right: 10px; }
+}
