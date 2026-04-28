@@ -30,29 +30,31 @@ export const notificationController = {
       let unreadCount = 0;
 
       if (role === 'client') {
-        // 案主視角：許願池通知
+        // 案主視角：許願池與洽談通知 (跳轉至 InquiryWorkspace)
         const inboxQuery = await env.commission_db.prepare(`
-          SELECT b.title, i.id, i.latest_update_at 
+          SELECT b.title, i.id, i.latest_update_at, i.last_read_at_client 
           FROM BulletinInquiries i
           JOIN Bulletins b ON i.bulletin_id = b.id
           WHERE b.client_id = ? AND i.status != 'cancelled'
-          AND (i.latest_update_at > IFNULL(i.last_read_at_client, '1970-01-01 00:00:00') OR i.last_read_at_client IS NULL)
         `).bind(currentUserId).all();
 
         (inboxQuery.results || []).forEach((item: any) => {
-          unreadCount++;
-          notifications.push({
-            id: `inquiry_${item.id}`,
-            type: 'inquiry',
-            text: `您的許願「${item.title || '未命名'}」有新提案或狀態更新`,
-            link: '/client/inbox',
-            time: item.latest_update_at
-          });
+          const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_client);
+          if (isUnread) {
+            unreadCount++;
+            notifications.push({
+              id: `inquiry_${item.id}`,
+              type: 'inquiry_msg',
+              text: `您的許願「${item.title || '未命名'}」有新洽談訊息或進度`,
+              link: `/inquiry-workspace/${item.id}`, // 🌟 精準跳轉至洽談室
+              time: item.latest_update_at
+            });
+          }
         });
 
-        // 案主視角：合約異動通知
+        // 案主視角：正式委託單 (合約異動 & 新聊天訊息)
         const commQuery = await env.commission_db.prepare(`
-          SELECT id, project_name, pending_changes, latest_message_at 
+          SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
           FROM Commissions 
           WHERE client_id = ? AND status != 'cancelled'
         `).bind(currentUserId).all();
@@ -64,43 +66,54 @@ export const notificationController = {
               id: `comm_change_${order.id}`,
               type: 'commission_change',
               text: `委託單「${order.project_name || order.id}」有合約異動申請`,
-              link: `/workspace/${order.id}`,
+              link: `/workspace/${order.id}`, // 🌟 跳轉至正式委託聊天室
               time: order.latest_message_at || new Date().toISOString()
+            });
+          }
+          
+          const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_client);
+          if (hasNewMsg) {
+            unreadCount++;
+            notifications.push({
+              id: `comm_msg_${order.id}`,
+              type: 'commission_msg',
+              text: `委託單「${order.project_name || order.id}」有新聊天訊息`,
+              link: `/workspace/${order.id}`, // 🌟 跳轉至正式委託聊天室
+              time: order.latest_message_at
             });
           }
         });
 
       } else {
-        // 繪師視角：許願池通知 (排除待審閱階段，僅顯示案主回覆或婉拒)
+        // 繪師視角：許願池與洽談通知
         const artistInboxQuery = await env.commission_db.prepare(`
           SELECT b.title, i.id, i.latest_update_at, i.status, i.last_read_at_artist
           FROM BulletinInquiries i
           JOIN Bulletins b ON i.bulletin_id = b.id
           WHERE i.artist_id = ? AND i.status != 'cancelled'
-          AND (
-            (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
-            OR (i.last_read_at_artist IS NULL AND i.status != 'pending')
-          )
         `).bind(currentUserId).all();
 
         (artistInboxQuery.results || []).forEach((item: any) => {
-          unreadCount++;
-          let text = `您的提案「${item.title || '未命名'}」有新進度`;
-          if (item.status === 'submitted') text = `案主已回填「${item.title || '未命名'}」的提問單`;
-          if (item.status === 'declined') text = `提案「${item.title || '未命名'}」已被婉拒`;
-          
-          notifications.push({
-            id: `inquiry_${item.id}`,
-            type: 'inquiry',
-            text,
-            link: '/artist/inbox',
-            time: item.latest_update_at
-          });
+          const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_artist);
+          if (isUnread && item.status !== 'pending') {
+            unreadCount++;
+            let text = `提案「${item.title || '未命名'}」有新洽談訊息或進度`;
+            if (item.status === 'submitted') text = `案主已回填「${item.title || '未命名'}」的提問單`;
+            if (item.status === 'declined') text = `提案「${item.title || '未命名'}」已被婉拒`;
+            
+            notifications.push({
+              id: `inquiry_${item.id}`,
+              type: 'inquiry_msg',
+              text,
+              link: `/inquiry-workspace/${item.id}`, // 🌟 精準跳轉至洽談室
+              time: item.latest_update_at
+            });
+          }
         });
 
-        // 繪師視角：合約異動通知
+        // 繪師視角：正式委託單 (合約異動 & 新聊天訊息)
         const artistCommQuery = await env.commission_db.prepare(`
-          SELECT id, project_name, pending_changes, latest_message_at 
+          SELECT id, project_name, pending_changes, latest_message_at, last_read_at_artist 
           FROM Commissions 
           WHERE artist_id = ? AND status != 'cancelled'
         `).bind(currentUserId).all();
@@ -112,8 +125,20 @@ export const notificationController = {
               id: `comm_change_${order.id}`,
               type: 'commission_change',
               text: `委託單「${order.project_name || order.id}」有新的合約異動`,
-              link: `/workspace/${order.id}`,
+              link: `/workspace/${order.id}`, // 🌟 跳轉至正式委託聊天室
               time: order.latest_message_at || new Date().toISOString()
+            });
+          }
+
+          const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_artist);
+          if (hasNewMsg) {
+            unreadCount++;
+            notifications.push({
+              id: `comm_msg_${order.id}`,
+              type: 'commission_msg',
+              text: `委託單「${order.project_name || order.id}」有新聊天訊息`,
+              link: `/workspace/${order.id}`, // 🌟 跳轉至正式委託聊天室
+              time: order.latest_message_at
             });
           }
         });

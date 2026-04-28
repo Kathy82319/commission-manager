@@ -112,7 +112,7 @@ export function ClientLayout() {
         </div>
         
         {showNotifMenu && (
-          <div style={{ position: 'absolute', top: '55px', right: '0', width: '320px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '55px', right: '0', width: '340px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
              <div style={{ padding: '14px 16px', fontWeight: 'bold', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', color: '#374151' }}>系統通知</div>
              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
@@ -122,12 +122,18 @@ export function ClientLayout() {
                     <div 
                       key={n.id} 
                       onClick={() => { setShowNotifMenu(false); navigate(n.link); }} 
-                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s' }}
+                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
-                      <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ flex: 1, paddingRight: '12px' }}>
+                        <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                      {/* 🌟 加入精美的跳轉按鈕引導 */}
+                      <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        查看 <span style={{ fontSize: '16px', paddingBottom: '2px' }}>›</span>
+                      </div>
                     </div>
                   ))
                 )}
@@ -145,9 +151,7 @@ export function ClientLayout() {
         <nav className="sidebar-nav">
           <NavLink to="/" className="nav-item"><Sparkles size={20} /><span>前往許願池</span></NavLink>
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><ClipboardList size={20} /><span>委託單管理</span></NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span>
-            {unreadCount > 0 && <span style={{ color: '#E06C75', marginLeft: 'auto', fontSize: '12px', fontWeight: 'bold' }}>--新訊息</span>}
-          </NavLink>
+          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span></NavLink>
         </nav>
 
         <div className="sidebar-footer">
