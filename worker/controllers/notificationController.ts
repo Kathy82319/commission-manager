@@ -33,7 +33,7 @@ export const notificationController = {
       
       // 案主視角：許願池與洽談通知
       const clientInboxQuery = await env.commission_db.prepare(`
-        SELECT b.title, i.id, i.latest_update_at, i.last_read_at_client 
+        SELECT b.title, i.id, i.latest_update_at, i.last_read_at_client, i.status 
         FROM BulletinInquiries i
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE b.client_id = ? AND i.status != 'cancelled'
@@ -43,11 +43,15 @@ export const notificationController = {
         const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_client);
         if (isUnread) {
           unreadCount++;
+          
+          // 🌟 修正 1：如果是 pending (繪師剛投遞，案主還沒回填)，跳轉收件匣，否則跳轉洽談室
+          const linkUrl = item.status === 'pending' ? '/client/inbox' : `/inquiry/workspace/${item.id}`;
+          
           notifications.push({
             id: `client_inquiry_${item.id}`,
             type: 'inquiry_msg',
             text: `[我是案主] 許願「${item.title || '未命名'}」有新洽談訊息或進度`,
-            link: `/inquiry/workspace/${item.id}`, // 🌟 修正：精準跳轉至洽談室
+            link: linkUrl,
             time: item.latest_update_at
           });
         }
@@ -61,7 +65,6 @@ export const notificationController = {
       `).bind(currentUserId).all();
 
       (clientCommQuery.results || []).forEach((order: any) => {
-        // 案主收到繪師的異動申請 -> 跳轉到列表頁並打開這張單
         if (order.pending_changes) {
           unreadCount++;
           notifications.push({
@@ -73,7 +76,6 @@ export const notificationController = {
           });
         }
         
-        // 案主收到聊天室新訊息 -> 跳轉到聊天室
         const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_client);
         if (hasNewMsg) {
           unreadCount++;
@@ -111,7 +113,7 @@ export const notificationController = {
             id: `artist_inquiry_${item.id}`,
             type: 'inquiry_msg',
             text,
-            link: `/inquiry/workspace/${item.id}`, // 🌟 修正：精準跳轉至洽談室
+            link: `/inquiry/workspace/${item.id}`,
             time: item.latest_update_at
           });
         }
@@ -125,7 +127,6 @@ export const notificationController = {
       `).bind(currentUserId).all();
 
       (artistCommQuery.results || []).forEach((order: any) => {
-        // 繪師收到案主同意異動 -> 跳轉到繪師的委託單細項
         if (order.pending_changes) {
           unreadCount++;
           notifications.push({
@@ -137,7 +138,6 @@ export const notificationController = {
           });
         }
 
-        // 繪師收到聊天室新訊息 -> 跳轉到聊天室
         const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_artist);
         if (hasNewMsg) {
           unreadCount++;
@@ -151,7 +151,6 @@ export const notificationController = {
         }
       });
 
-      // 🌟 將雙身分的通知混合，使用時間從新到舊排序
       notifications.sort((a, b) => safeParseTime(b.time) - safeParseTime(a.time));
       const topNotifications = notifications.slice(0, 20);
 

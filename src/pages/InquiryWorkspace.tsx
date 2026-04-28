@@ -15,7 +15,7 @@ export const InquiryWorkspace: React.FC = () => {
   const [focusedField, setFocusedField] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-  // 🌟 修正 2：加入初次載入標記，避免 5 秒輪詢覆蓋正在輸入的草稿
+  // 🌟 避免 5 秒輪詢覆蓋正在輸入的草稿
   const isFirstLoad = useRef(true);
 
   // 為了「成單成功面板」停止輪詢
@@ -44,7 +44,6 @@ export const InquiryWorkspace: React.FC = () => {
   };
 
   const fetchData = async () => {
-    // 若已成單，就停止無謂的輪詢
     if (isAccepted) return;
 
     try {
@@ -59,7 +58,6 @@ export const InquiryWorkspace: React.FC = () => {
           setIsAccepted(true);
         }
 
-        // 🌟 修正 2：如果是初次載入，或不是繪師在編輯時，才允許資料庫覆蓋草稿畫面
         if (isFirstLoad.current || !currentUserIsArtist || resInquiry.data.status !== 'submitted') {
           if (resInquiry.data.negotiation_draft) {
             setDraft(JSON.parse(resInquiry.data.negotiation_draft));
@@ -113,10 +111,7 @@ export const InquiryWorkspace: React.FC = () => {
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     
     try {
-      // 🌟 修正 3：防呆機制！送出前強制幫繪師「自動儲存草稿」，避免案主讀不到資料而 500 Error
       await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
-      
-      // 再送出改變狀態的請求
       await apiClient.post(`/api/inquiries/${id}/propose`, {});
       alert('已送出正式提案給案主！');
       fetchData();
@@ -130,7 +125,6 @@ export const InquiryWorkspace: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/inquiries/${id}/finalize`, {});
       if (res.success) {
-        // 觸發重新抓取資料，讓畫面切換為成單成功面板
         fetchData();
       } else {
         alert('成單失敗：' + res.error);
@@ -146,10 +140,8 @@ export const InquiryWorkspace: React.FC = () => {
     </div>
   );
 
-  // 🌟 修正：成單成功全螢幕面板
+  // 🌟 成單成功全螢幕面板
   if (isAccepted) {
-    // 嘗試從草稿中取得委託單 ID (這裡透過 API 回傳或抓取，但我們可以用返回列表的方式引導)
-    // 因為 finalize 已經執行完畢，最好的做法是引導他們回到各自的管理頁面看最新訂單。
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9' }}>
         <div style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(93, 74, 62, 0.1)', textAlign: 'center', maxWidth: '500px', border: '1px solid #EAE6E1' }}>
@@ -180,7 +172,6 @@ export const InquiryWorkspace: React.FC = () => {
   }
 
   return (
-    // 🌟 修正 1：強制覆蓋全螢幕 (position: fixed, inset: 0, zIndex: 9999)，避免被 ClientLayout 的底端列干擾
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -310,7 +301,6 @@ export const InquiryWorkspace: React.FC = () => {
                 {inquiry.bulletin_content}
               </div>
             </div>
-            {/* 🌟 移除繪師投遞規格 (方案 B) */}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -375,6 +365,7 @@ export const InquiryWorkspace: React.FC = () => {
               </select>
               {!['大頭', '半身', '全身'].includes(draft.draw_scope) && (
                 <input 
+                  disabled={!isArtist || inquiry.status !== 'submitted'} // 🌟 修正：鎖住自行輸入框
                   className="draft-input" 
                   placeholder="請輸入範圍" 
                   value={draft.draw_scope} 
@@ -398,6 +389,7 @@ export const InquiryWorkspace: React.FC = () => {
               </select>
               {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && (
                 <input 
+                  disabled={!isArtist || inquiry.status !== 'submitted'} // 🌟 修正：鎖住自行輸入框
                   className="draft-input" 
                   placeholder="請輸入背景需求" 
                   value={draft.bg_type} 

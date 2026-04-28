@@ -3,7 +3,6 @@ import type { Env } from '../shared/types';
 
 export const inquiryController = {
   
-  // 🌟 修正：精準的未讀數量計算邏輯
   async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
@@ -11,10 +10,6 @@ export const inquiryController = {
 
       let query = "";
       if (role === 'client') {
-        // 案主視角：
-        // 1. 繪師剛投遞 (status = 'pending')
-        // 2. 繪師送出提案 (status = 'proposed')
-        // 3. 洽談室有新訊息 (latest_update_at > last_read_at_client)
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
@@ -27,10 +22,6 @@ export const inquiryController = {
           )
         `;
       } else {
-        // 繪師視角：
-        // 1. 案主回填提問單 (status = 'submitted')
-        // 2. 案主婉拒 (status = 'declined')
-        // 3. 洽談室有新訊息
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
@@ -39,7 +30,6 @@ export const inquiryController = {
           AND (
             (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
             OR (i.last_read_at_artist IS NULL AND i.status != 'pending') 
-            /* 排除剛投遞(pending)就亮紅點的狀況 */
           )
         `;
       }
@@ -71,7 +61,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 修正：確保進入洽談室時，正確寫入使用者的「已讀時間」，小鈴鐺才會熄滅
       const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
@@ -98,7 +87,6 @@ export const inquiryController = {
       const { content, message_type = 'text' } = body;
       const id = crypto.randomUUID();
       
-      // 🌟 修正：發送訊息時同步更新 BulletinInquiries 的時間，觸發小鈴鐺
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
@@ -159,21 +147,21 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
-      // 1. 建立正式委託單
+      // 1. 建立正式委託單 (🌟 修正 3：狀態從 quote_created 改為 unpaid，這樣案主才看得到)
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
           total_price, status, origin_source, 
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons,
           delivery_method, workflow_mode, latest_message_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'quote_created', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
+        ) VALUES (?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
       ).bind(
         commissionId, currentUserId, inquiry.artist_id, 'type-01', draft.project_name || '許願池媒合委託',
         draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || ''
       ).run();
 
-      // 2. 搬移對話紀錄 (修正：目標資料表為 Messages)
+      // 2. 搬移對話紀錄
       const oldMessages = await env.commission_db.prepare(
         `SELECT sender_id, content, created_at FROM InquiryMessages WHERE inquiry_id = ?`
       ).bind(inquiryId).all();

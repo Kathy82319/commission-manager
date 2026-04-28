@@ -611,27 +611,7 @@ export function Notebook() {
                 {activeTab === 'details' && (
                   <div className="tab-details-container">
                     
-                    {/* 許願池媒合軌跡區塊 */}
-                    {getBulletinSource(selectedOrder) && (
-                      <div className="section-card" style={{ backgroundColor: '#fdfbfe', border: '1px solid #e9d5ff' }}>
-                        <h3 className="section-title" style={{ color: '#9333ea', borderBottom: '1px solid #f3e8ff', paddingBottom: '8px' }}>
-                          許願池媒合軌跡
-                        </h3>
-                        <div style={{ fontSize: '13px', color: '#4b5563', marginTop: '12px', lineHeight: '1.6' }}>
-                          <p><strong>原始許願內容：</strong> {getBulletinSource(selectedOrder).bulletin_content}</p>
-                          <p style={{ marginTop: '8px' }}>
-                            <strong>繪師投遞規格：</strong> 
-                            {getBulletinSource(selectedOrder).artist_initial_snapshot?.title} 
-                            ({getBulletinSource(selectedOrder).artist_initial_snapshot?.price})
-                          </p>
-                          {getBulletinSource(selectedOrder).client_initial_response && (
-                            <p style={{ marginTop: '8px' }}>
-                              <strong>案主提問回覆：</strong> {getBulletinSource(selectedOrder).client_initial_response}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
+
 
                     <div className="section-card">
                       <div className="section-header">
@@ -673,6 +653,27 @@ export function Notebook() {
                         <div className="summary-item">未付款：<span className="summary-val unpaid">${totalUnpaid > 0 ? totalUnpaid : 0}</span></div>
                       </div>
                     </div>
+
+                    
+                    {/* 許願池媒合軌跡區塊 */}
+                    {getBulletinSource(selectedOrder) && (
+                      <div className="section-card" style={{ backgroundColor: '#fdfbfe', border: '1px solid #e9d5ff' }}>
+                        <h3 className="section-title" style={{ color: '#9333ea', borderBottom: '1px solid #f3e8ff', paddingBottom: '8px' }}>
+                          許願池媒合軌跡
+                        </h3>
+                        <div style={{ fontSize: '13px', color: '#4b5563', marginTop: '12px', lineHeight: '1.6' }}>
+                          <p><strong>原始許願內容：</strong> {getBulletinSource(selectedOrder).bulletin_content}</p>
+
+                          {getBulletinSource(selectedOrder).client_initial_response && (
+                            <p style={{ marginTop: '8px' }}>
+                              <strong>案主提問回覆：</strong> {getBulletinSource(selectedOrder).client_initial_response}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+
 
                     <div className="section-card">
                       <div className="section-header-no-border">
