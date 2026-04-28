@@ -114,21 +114,6 @@
 }
 
 /* 🌟 新增：頂部導覽列與通知鈴鐺樣式 */
-.client-top-header {
-  height: 60px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  z-index: 40;
-}
-
-.header-spacer { flex: 1; }
-
-.header-actions { position: relative; }
-
 .bell-container {
   position: relative;
   cursor: pointer;
