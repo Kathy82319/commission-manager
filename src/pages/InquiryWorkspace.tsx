@@ -13,7 +13,10 @@ export const InquiryWorkspace: React.FC = () => {
   const [isArtist, setIsArtist] = useState(false);
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // 🌟 修正 2：加入初次載入標記，避免 5 秒輪詢覆蓋正在輸入的草稿
+  const isFirstLoad = useRef(true);
 
   // 初始化草稿結構
   const [draft, setDraft] = useState<any>({
@@ -39,22 +42,27 @@ export const InquiryWorkspace: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      // 🌟 注意：後端 API 已經設定為「只要呼叫此支 API，就會自動更新已讀時間」
       const resInquiry = await apiClient.get(`/api/inquiries/${id}`);
       if (resInquiry.success) {
         setInquiry(resInquiry.data);
         const resUser = await apiClient.get('/api/users/me');
-        setIsArtist(resUser.data.id === resInquiry.data.artist_id);
+        const currentUserIsArtist = resUser.data.id === resInquiry.data.artist_id;
+        setIsArtist(currentUserIsArtist);
         
-        if (resInquiry.data.negotiation_draft) {
-          setDraft(JSON.parse(resInquiry.data.negotiation_draft));
-        } else {
-          setDraft((prev: any) => ({
-            ...prev,
-            project_name: resInquiry.data.bulletin_content.substring(0, 30)
-          }));
+        // 🌟 修正 2：如果是初次載入，或不是繪師在編輯時，才允許資料庫覆蓋草稿畫面
+        if (isFirstLoad.current || !currentUserIsArtist || resInquiry.data.status !== 'submitted') {
+          if (resInquiry.data.negotiation_draft) {
+            setDraft(JSON.parse(resInquiry.data.negotiation_draft));
+          } else if (isFirstLoad.current) {
+            setDraft((prev: any) => ({
+              ...prev,
+              project_name: resInquiry.data.bulletin_content.substring(0, 30)
+            }));
+          }
         }
+        isFirstLoad.current = false;
       }
+      
       const resMsgs = await apiClient.get(`/api/inquiries/${id}/messages`);
       if (resMsgs.success) {
         setMessages(resMsgs.data);
@@ -68,7 +76,6 @@ export const InquiryWorkspace: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    // 🌟 每 5 秒輪詢最新訊息，同時觸發後端的「已讀時間更新」
     const timer = setInterval(fetchData, 5000);
     return () => clearInterval(timer);
   }, [id]);
@@ -87,34 +94,49 @@ export const InquiryWorkspace: React.FC = () => {
 
   const handleSaveDraft = async () => {
     await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
-    alert('協議草稿已儲存');
+    alert('協議草稿已儲存！');
   };
 
   const handlePropose = async () => {
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
-    await apiClient.post(`/api/inquiries/${id}/propose`, {});
-    fetchData();
+    
+    try {
+      // 🌟 修正 3：防呆機制！送出前強制幫繪師「自動儲存草稿」，避免案主讀不到資料而 500 Error
+      await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
+      
+      // 再送出改變狀態的請求
+      await apiClient.post(`/api/inquiries/${id}/propose`, {});
+      alert('已送出正式提案給案主！');
+      fetchData();
+    } catch (error: any) {
+      alert('送出提案失敗：' + error.message);
+    }
   };
 
   const handleFinalize = async () => {
     if (!window.confirm('確定以此協議建立委託單？')) return;
-    const res = await apiClient.post(`/api/inquiries/${id}/finalize`, {});
-    if (res.success) {
-      alert('委託單建立成功！');
-      navigate(`/workspace/${res.commission_id}`);
-    } else {
-      alert('成單失敗：' + res.error);
+    try {
+      const res = await apiClient.post(`/api/inquiries/${id}/finalize`, {});
+      if (res.success) {
+        alert('委託單建立成功！');
+        navigate(`/workspace/${res.commission_id}`);
+      } else {
+        alert('成單失敗：' + res.error);
+      }
+    } catch (error: any) {
+      alert('系統異常，成單失敗');
     }
   };
 
   if (loading || !inquiry) return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', color: '#5D4A3E', fontSize: '15px' }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', color: '#5D4A3E', fontSize: '15px', position: 'fixed', inset: 0, zIndex: 9999 }}>
       載入洽談室中...
     </div>
   );
 
   return (
-    <div style={{ height: '100vh', display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
+    // 🌟 修正 1：強制覆蓋全螢幕 (position: fixed, inset: 0, zIndex: 9999)，避免被 ClientLayout 的底端列干擾
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -214,7 +236,7 @@ export const InquiryWorkspace: React.FC = () => {
         </footer>
       </div>
 
-      {/* 右側側邊欄：軌跡與協議 (大地色系設計) */}
+      {/* 右側側邊欄：軌跡與協議 */}
       <aside className="custom-scrollbar" style={{ width: '420px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column' }}>
         
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
@@ -233,7 +255,6 @@ export const InquiryWorkspace: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           
-          {/* 1. 媒合軌跡區 */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               🔍 許願池媒合軌跡
@@ -252,7 +273,6 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. 表單區 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label>
