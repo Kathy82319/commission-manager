@@ -295,7 +295,7 @@ const openInquireModal = (bulletinId: string) => {
                     <button disabled className="inquire-btn applied-btn">已投遞</button>
                   ) : (
                     <button className="inquire-btn" onClick={() => openInquireModal(b.id)}>
-                      我有興趣 (發送投遞意向)
+                      我有興趣 (發送履歷)
                     </button>
                   )}
                 </div>

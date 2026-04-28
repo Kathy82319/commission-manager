@@ -310,7 +310,7 @@ export const Inbox: React.FC = () => {
             
             {!selectedBulletinId ? (
               <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-dashed border-[#EAE6E1] text-[#A0978D]">
-                請點擊上方的「發布槽」來檢視針對該文章收到的提案。
+                請點擊上方的「許願種類」來檢視針對該文章收到的提案。
               </div>
             ) : (
               <div className="space-y-8">

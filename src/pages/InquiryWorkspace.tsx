@@ -18,14 +18,17 @@ export const InquiryWorkspace: React.FC = () => {
   // 🌟 修正 2：加入初次載入標記，避免 5 秒輪詢覆蓋正在輸入的草稿
   const isFirstLoad = useRef(true);
 
+  // 為了「成單成功面板」停止輪詢
+  const [isAccepted, setIsAccepted] = useState(false);
+
   // 初始化草稿結構
   const [draft, setDraft] = useState<any>({
     project_name: '',
     total_price: 0,
-    usage_type: '個人收藏',
+    usage_type: '非商用',
     is_rush: '否',
-    draw_scope: '胸像',
-    bg_type: '透明/純色',
+    draw_scope: '大頭',
+    bg_type: '無背景',
     char_count: 1,
     add_ons: ''
   });
@@ -41,6 +44,9 @@ export const InquiryWorkspace: React.FC = () => {
   };
 
   const fetchData = async () => {
+    // 若已成單，就停止無謂的輪詢
+    if (isAccepted) return;
+
     try {
       const resInquiry = await apiClient.get(`/api/inquiries/${id}`);
       if (resInquiry.success) {
@@ -49,6 +55,10 @@ export const InquiryWorkspace: React.FC = () => {
         const currentUserIsArtist = resUser.data.id === resInquiry.data.artist_id;
         setIsArtist(currentUserIsArtist);
         
+        if (resInquiry.data.status === 'accepted') {
+          setIsAccepted(true);
+        }
+
         // 🌟 修正 2：如果是初次載入，或不是繪師在編輯時，才允許資料庫覆蓋草稿畫面
         if (isFirstLoad.current || !currentUserIsArtist || resInquiry.data.status !== 'submitted') {
           if (resInquiry.data.negotiation_draft) {
@@ -78,11 +88,13 @@ export const InquiryWorkspace: React.FC = () => {
     fetchData();
     const timer = setInterval(fetchData, 5000);
     return () => clearInterval(timer);
-  }, [id]);
+  }, [id, isAccepted]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!isAccepted) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isAccepted]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,8 +130,8 @@ export const InquiryWorkspace: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/inquiries/${id}/finalize`, {});
       if (res.success) {
-        alert('委託單建立成功！');
-        navigate(`/workspace/${res.commission_id}`);
+        // 觸發重新抓取資料，讓畫面切換為成單成功面板
+        fetchData();
       } else {
         alert('成單失敗：' + res.error);
       }
@@ -133,6 +145,39 @@ export const InquiryWorkspace: React.FC = () => {
       載入洽談室中...
     </div>
   );
+
+  // 🌟 修正：成單成功全螢幕面板
+  if (isAccepted) {
+    // 嘗試從草稿中取得委託單 ID (這裡透過 API 回傳或抓取，但我們可以用返回列表的方式引導)
+    // 因為 finalize 已經執行完畢，最好的做法是引導他們回到各自的管理頁面看最新訂單。
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9' }}>
+        <div style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(93, 74, 62, 0.1)', textAlign: 'center', maxWidth: '500px', border: '1px solid #EAE6E1' }}>
+          <div style={{ fontSize: '60px', marginBottom: '20px' }}>🎉</div>
+          <h2 style={{ color: '#4E7A5A', fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+            {isArtist ? '合作達成！委託單已建立' : '恭喜！您已成功與繪師達成協議'}
+          </h2>
+          <p style={{ color: '#7A7269', fontSize: '15px', marginBottom: '32px', lineHeight: '1.6' }}>
+            {isArtist 
+              ? '系統已自動將您們的對話與協議轉換為正式委託單，並放入您的筆記本中。您可以隨時前往管理並開始工作。' 
+              : '繪師即將開始為您安排繪製工作。系統已建立專屬的委託追蹤單，方便您隨時查看進度。'}
+          </p>
+          <button 
+            onClick={() => {
+              if (isArtist) {
+                navigate('/artist/notebook');
+              } else {
+                navigate('/client/orders');
+              }
+            }}
+            style={{ width: '100%', padding: '16px', borderRadius: '99px', background: '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: '0.2s', boxShadow: '0 4px 6px rgba(93, 74, 62, 0.2)' }}
+          >
+            {isArtist ? '前往委託單管理 (筆記本) ➔' : '前往我的委託單管理 ➔'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     // 🌟 修正 1：強制覆蓋全螢幕 (position: fixed, inset: 0, zIndex: 9999)，避免被 ClientLayout 的底端列干擾
@@ -259,18 +304,13 @@ export const InquiryWorkspace: React.FC = () => {
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               🔍 許願池媒合軌跡
             </h4>
-            <div style={{ marginBottom: '12px' }}>
+            <div>
               <label style={{ fontSize: '11px', color: '#A0978D', display: 'block', marginBottom: '4px' }}>原始許願內容</label>
               <div style={{ fontSize: '13px', color: '#5D4A3E', backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
                 {inquiry.bulletin_content}
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: '11px', color: '#A0978D', display: 'block', marginBottom: '4px' }}>繪師投遞規格</label>
-              <div style={{ fontSize: '13px', color: '#5D4A3E', backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid #EAE6E1', fontWeight: 'bold' }}>
-                {JSON.parse(inquiry.artist_snapshot).title} / {JSON.parse(inquiry.artist_snapshot).price}
-              </div>
-            </div>
+            {/* 🌟 移除繪師投遞規格 (方案 B) */}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -325,15 +365,15 @@ export const InquiryWorkspace: React.FC = () => {
               <select 
                 disabled={!isArtist || inquiry.status !== 'submitted'} 
                 className="draft-input" style={{ marginBottom: '8px' }}
-                value={['胸像', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'}
+                value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'}
                 onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}
               >
-                <option value="胸像">胸像</option>
+                <option value="大頭">大頭</option>
                 <option value="半身">半身</option>
                 <option value="全身">全身</option>
                 <option value="other">自行輸入...</option>
               </select>
-              {!['胸像', '半身', '全身'].includes(draft.draw_scope) && (
+              {!['大頭', '半身', '全身'].includes(draft.draw_scope) && (
                 <input 
                   className="draft-input" 
                   placeholder="請輸入範圍" 
@@ -348,15 +388,15 @@ export const InquiryWorkspace: React.FC = () => {
               <select 
                 disabled={!isArtist || inquiry.status !== 'submitted'} 
                 className="draft-input" style={{ marginBottom: '8px' }}
-                value={['透明/純色', '簡單裝飾', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'}
+                value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'}
                 onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}
               >
-                <option value="透明/純色">透明/純色</option>
-                <option value="簡單裝飾">簡單裝飾</option>
+                <option value="無背景">無背景</option>
+                <option value="簡單/色塊">簡單/色塊</option>
                 <option value="複雜背景">複雜背景</option>
                 <option value="other">自行輸入...</option>
               </select>
-              {!['透明/純色', '簡單裝飾', '複雜背景'].includes(draft.bg_type) && (
+              {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && (
                 <input 
                   className="draft-input" 
                   placeholder="請輸入背景需求" 
@@ -422,12 +462,6 @@ export const InquiryWorkspace: React.FC = () => {
           {inquiry.status === 'proposed' && isArtist && (
             <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>
               ⏳ 已送出提案，等待案主確認中...
-            </div>
-          )}
-
-          {inquiry.status === 'accepted' && (
-            <div style={{ textAlign: 'center', color: '#4E7A5A', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#E8F3EB', padding: '12px', borderRadius: '8px', border: '1px solid #C3E0CC' }}>
-              🎉 雙方已達成共識並建立委託！
             </div>
           )}
         </div>

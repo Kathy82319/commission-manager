@@ -71,7 +71,7 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 修正：確保進入洽談室時，正確寫入使用者的「已讀時間」
+      // 🌟 修正：確保進入洽談室時，正確寫入使用者的「已讀時間」，小鈴鐺才會熄滅
       const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
@@ -98,7 +98,7 @@ export const inquiryController = {
       const { content, message_type = 'text' } = body;
       const id = crypto.randomUUID();
       
-      // 🌟 修正：確保傳送訊息時，強制更新 latest_update_at，這樣才會觸發小鈴鐺
+      // 🌟 修正：發送訊息時同步更新 BulletinInquiries 的時間，觸發小鈴鐺
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
@@ -159,33 +159,37 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
+      // 1. 建立正式委託單
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
           total_price, status, origin_source, 
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons,
-          delivery_method, workflow_mode
-        ) VALUES (?, ?, ?, ?, ?, ?, 'quote_created', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard')`
+          delivery_method, workflow_mode, latest_message_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'quote_created', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
       ).bind(
         commissionId, currentUserId, inquiry.artist_id, 'type-01', draft.project_name || '許願池媒合委託',
         draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || ''
       ).run();
 
+      // 2. 搬移對話紀錄 (修正：目標資料表為 Messages)
       const oldMessages = await env.commission_db.prepare(
-        `SELECT sender_id, content, message_type, created_at FROM InquiryMessages WHERE inquiry_id = ?`
+        `SELECT sender_id, content, created_at FROM InquiryMessages WHERE inquiry_id = ?`
       ).bind(inquiryId).all();
 
       if (oldMessages.results && oldMessages.results.length > 0) {
         const stmts = oldMessages.results.map((msg: any) => {
+          const role = msg.sender_id === inquiry.artist_id ? 'artist' : 'client';
           return env.commission_db.prepare(
-            `INSERT INTO CommissionMessages (id, commission_id, sender_id, content, message_type, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?)`
-          ).bind(crypto.randomUUID(), commissionId, msg.sender_id, msg.content, msg.message_type, msg.created_at);
+            `INSERT INTO Messages (id, commission_id, sender_role, content, created_at) 
+             VALUES (?, ?, ?, ?, ?)`
+          ).bind(crypto.randomUUID(), commissionId, role, msg.content, msg.created_at);
         });
         await env.commission_db.batch(stmts);
       }
 
+      // 3. 更新洽談狀態為已成單
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
