@@ -64,7 +64,6 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const expiresAt = new Date();
-      // 🌟 修正：恢復預設為 3 天
       expiresAt.setDate(expiresAt.getDate() + 3);
 
       await env.commission_db.prepare(
@@ -78,6 +77,7 @@ export const bulletinController = {
     }
   },
 
+  // 🌟 修正 Inquire (投遞意向)：強化對 artist_snapshot 的清洗
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const existing = await env.commission_db.prepare(`SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`).bind(bulletinId, currentUserId).first();
@@ -85,14 +85,36 @@ export const bulletinController = {
 
       const body = await request.json() as any;
       const { artist_snapshot } = body;
-      const snapshotStr = typeof artist_snapshot === 'string' ? artist_snapshot : JSON.stringify(artist_snapshot);
+      
+      // 🛡️ 資安防護：確保存入的 snapshot 是乾淨的 JSON，並過濾 XSS
+      let parsedSnapshot: any = {};
+      try {
+        parsedSnapshot = typeof artist_snapshot === 'string' ? JSON.parse(artist_snapshot) : artist_snapshot;
+        // 基本清洗，避免惡意 HTML 標籤
+        if (parsedSnapshot.message) parsedSnapshot.message = escapeHtml(parsedSnapshot.message);
+        if (parsedSnapshot.specialties) parsedSnapshot.specialties = escapeHtml(parsedSnapshot.specialties);
+        if (parsedSnapshot.no_gos) parsedSnapshot.no_gos = escapeHtml(parsedSnapshot.no_gos);
+        if (parsedSnapshot.payment_methods) parsedSnapshot.payment_methods = escapeHtml(parsedSnapshot.payment_methods);
+        if (parsedSnapshot.question_template) parsedSnapshot.question_template = escapeHtml(parsedSnapshot.question_template);
+        
+        // 確保 images 是一個安全的字串陣列
+        if (Array.isArray(parsedSnapshot.images)) {
+          parsedSnapshot.images = parsedSnapshot.images.map((url: string) => escapeHtml(url)).slice(0, 3); // 限制最多 3 張
+        } else {
+          parsedSnapshot.images = [];
+        }
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, message: '提案格式錯誤' }), { status: 400, headers: corsHeaders });
+      }
+
+      const snapshotStr = JSON.stringify(parsedSnapshot);
 
       await env.commission_db.prepare(
         `INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, latest_update_at)
          VALUES (?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`
       ).bind(crypto.randomUUID(), bulletinId, currentUserId, snapshotStr).run();
 
-      return new Response(JSON.stringify({ success: true, message: '已投遞' }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, message: '已發送專屬提案！' }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
@@ -142,7 +164,7 @@ export const bulletinController = {
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
-        SELECT b.id as bulletin_id, b.title as bulletin_title, i.id as inquiry_id, i.artist_id, i.status as inquiry_status, u.display_name as artist_name, i.latest_update_at
+        SELECT b.id as bulletin_id, b.title as bulletin_title, i.id as inquiry_id, i.artist_id, i.status as inquiry_status, u.display_name as artist_name, u.public_id as artist_public_id, i.latest_update_at
         FROM Bulletins b JOIN BulletinInquiries i ON b.id = i.bulletin_id LEFT JOIN Users u ON i.artist_id = u.id
         WHERE b.client_id = ? ORDER BY i.latest_update_at DESC
       `).bind(currentUserId).all();

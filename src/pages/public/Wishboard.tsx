@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
 import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, User, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { ImageUploader } from '../../components/ImageUploader';
+import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入你的上傳元件
 
 const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
 const PAY_TAGS = ['皆可配合', '無卡', '匯款', '空包', '超商'];
@@ -24,13 +24,15 @@ export const Wishboard: React.FC = () => {
   const [customTagInput, setCustomTagInput] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
+  // 🌟 修正：升級版的提案快照結構
   const [inquireDraft, setInquireDraft] = useState({
-    title: '', specialties: '', no_gos: '', payment_methods: '', price_list: '', question_template: ''
+    message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] as string[]
   });
+  const [inquireUploading, setInquireUploading] = useState(false);
 
   const [postForm, setPostForm] = useState({
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
-    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: ''
+    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' // 這裡現在會存完整的 URL
   });
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -54,6 +56,7 @@ export const Wishboard: React.FC = () => {
 
   useEffect(() => { initData(); }, [activeTab]);
 
+  // 🌟 發布許願池：圖片上傳邏輯
   const handleImageUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -87,6 +90,36 @@ export const Wishboard: React.FC = () => {
       showToast(err.message || "圖片上傳失敗", "error"); 
     } finally { 
       setIsUploading(false); 
+    }
+  };
+
+  // 🌟 投遞提案：附圖上傳邏輯 (最多 3 張)
+  const handleInquireImageUpload = async (resultBlobs: { preview: Blob }) => {
+    if (inquireDraft.images.length >= 3) {
+      showToast("最多只能上傳 3 張參考圖", "error");
+      return;
+    }
+    setInquireUploading(true);
+    try {
+      const fileType = resultBlobs.preview.type || 'image/jpeg';
+      const fileExt = fileType.split('/')[1] || 'jpg';
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `proposal_${Date.now()}.${fileExt}`, folder: 'proposals' }) 
+      });
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
+      
+      const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
+      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
+      
+      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+      setInquireDraft(prev => ({ ...prev, images: [...prev.images, finalUrl] }));
+      showToast("參考圖上傳成功！");
+    } catch (err: any) { 
+      showToast(err.message || "圖片上傳失敗", "error"); 
+    } finally { 
+      setInquireUploading(false); 
     }
   };
 
@@ -133,10 +166,14 @@ export const Wishboard: React.FC = () => {
       try { settings = typeof currentUser.profile_settings === 'string' ? JSON.parse(currentUser.profile_settings) : currentUser.profile_settings; } catch(e) {}
     }
     const card = settings.bulletin_card || {};
+    // 🌟 初始化新版提案卡結構
     setInquireDraft({
-      title: `${currentUser?.display_name || '繪師'} 的客製化服務`,
-      specialties: card.specialties || '', no_gos: card.no_gos || '', payment_methods: card.payment_methods || '',
-      price_list: card.price_list || '', question_template: settings.question_template || ''
+      message: '', 
+      specialties: card.specialties || '', 
+      no_gos: card.no_gos || '', 
+      payment_methods: card.payment_methods || '',
+      question_template: settings.question_template || '',
+      images: []
     });
     setShowInquireModal(true);
   };
@@ -262,98 +299,74 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-      {/* 🌟 全新重構的發布彈窗 */}
+      {/* 發布需求 Modal */}
       {showPostModal && (
         <div className="modal-overlay">
           <div className="post-modal">
             <div className="modal-header">
-              <h2>發布{activeTab === 'request' ? '徵委託' : '需求'}</h2>
-              <button className="close-modal-btn" onClick={() => setShowPostModal(false)}><X /></button>
+              <h2>發布徵委託需求</h2>
+              <button onClick={() => setShowPostModal(false)}><X /></button>
             </div>
             
             <form onSubmit={handlePostSubmit} className="post-form">
-              
-              {/* 區塊一：基本資訊 */}
-              <div className="form-section">
-                <h3 className="section-title">基本資訊</h3>
-                <div className="form-group">
-                  <label>需求標題</label>
-                  <input type="text" placeholder="簡單明確描述您的委託項目 (例：原創角色全身立繪)" value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required />
+              <div className="form-row">
+                <div className="form-group flex-2">
+                  <label>標題</label>
+                  <input type="text" placeholder="簡單描述你的需求" value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required />
                 </div>
-                <div className="form-group">
-                  <label>範例參考圖 <span className="label-hint">(建議 1MB 內，有助於繪師了解您的風格喜好)</span></label>
+                <div className="form-group flex-1">
+                  <label>範例參考圖 (建議 1MB 內)</label>
                   {postForm.ref_image_key ? (
-                    <div className="image-preview-box">
-                      <img src={postForm.ref_image_key} alt="預覽" />
-                      <button type="button" className="remove-image-btn" onClick={() => setPostForm({...postForm, ref_image_key: ''})}><X size={14}/></button>
+                    <div style={{ position: 'relative', width: '100%', height: '100px', borderRadius: '8px', overflow: 'hidden' }}>
+                      <img src={postForm.ref_image_key} alt="預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button type="button" onClick={() => setPostForm({...postForm, ref_image_key: ''})} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer' }}><X size={16}/></button>
                     </div>
                   ) : (
-                    <ImageUploader onUpload={handleImageUpload} targetWidth={800} buttonText={isUploading ? "上傳中..." : "點擊上傳圖片"} maxSizeMB={2} />
+                    <ImageUploader 
+                      onUpload={handleImageUpload} 
+                      targetWidth={800} 
+                      buttonText={isUploading ? "上傳中..." : "選擇圖片"} 
+                      maxSizeMB={5} 
+                    />
                   )}
                 </div>
               </div>
 
-              {/* 區塊二：委託條件 (Grid 排版) */}
-              <div className="form-section grid-2-cols">
-                <div className="form-group">
-                  <label>預算範圍 (NT$)</label>
-                  <div className="budget-inputs">
-                    <input type="number" placeholder="最低預算" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} />
-                    <span className="budget-separator">~</span>
-                    <input type="number" placeholder="最高預算" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>排單需求</label>
-                  <div className="radio-group">
-                    <label className="radio-label">
-                      <input type="radio" name="schedule" checked={postForm.schedule_type === 'flexible'} onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} /> 
-                      <span>可接受排單</span>
-                    </label>
-                    <label className="radio-label">
-                      <input type="radio" name="schedule" checked={postForm.schedule_type === 'fixed'} onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} /> 
-                      <span>指定完成日：</span>
-                    </label>
-                    {postForm.schedule_type === 'fixed' && (
-                      <input type="date" className="date-input" value={postForm.specific_date} onChange={e => setPostForm({...postForm, specific_date: e.target.value})} required />
-                    )}
-                  </div>
+              <div className="form-group">
+                <label>需求標籤 (複選)</label>
+                <div className="tag-selector">
+                  {REQ_TAGS.map(t => (
+                    <span key={t} className={`selectable-tag ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
+                  ))}
+                  
+                  {postForm.tags.filter(t => !REQ_TAGS.includes(t)).map(t => (
+                    <span key={t} className="selectable-tag selected custom-tag" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {t} <X size={12} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); removeCustomTag(t); }} />
+                    </span>
+                  ))}
+
+                  <input 
+                    type="text" 
+                    className="inline-tag-input" 
+                    placeholder="+ 自定義 (按 Enter 加入)" 
+                    value={customTagInput} 
+                    onChange={e => setCustomTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        if (customTagInput.trim()) {
+                          toggleTag(customTagInput.trim(), 'tags');
+                          setCustomTagInput('');
+                        }
+                      }
+                    }}
+                    style={{ width: '160px', padding: '6px 12px', borderRadius: '20px', border: '1px dashed #aaa' }}
+                  />
                 </div>
               </div>
 
-              {/* 區塊三：標籤分類 */}
-              <div className="form-section">
-                <h3 className="section-title">標籤分類</h3>
-                <div className="form-group">
-                  <label>需求標籤 (可複選)</label>
-                  <div className="tag-selector">
-                    {REQ_TAGS.map(t => (
-                      <span key={t} className={`selectable-tag ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
-                    ))}
-                    {postForm.tags.filter(t => !REQ_TAGS.includes(t)).map(t => (
-                      <span key={t} className="selectable-tag selected custom-tag">
-                        {t} <X size={12} onClick={(e) => { e.stopPropagation(); removeCustomTag(t); }} />
-                      </span>
-                    ))}
-                    <input 
-                      type="text" 
-                      className="compact-tag-input" 
-                      placeholder="+ 自填標籤 (Enter)" 
-                      value={customTagInput} 
-                      onChange={e => setCustomTagInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault(); 
-                          if (customTagInput.trim()) {
-                            toggleTag(customTagInput.trim(), 'tags');
-                            setCustomTagInput('');
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
+              <div className="form-row">
+                <div className="form-group flex-2">
                   <label>付款方式</label>
                   <div className="tag-selector">
                     {PAY_TAGS.map(t => (
@@ -361,44 +374,141 @@ export const Wishboard: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* 區塊四：詳細說明 */}
-              <div className="form-section">
-                <div className="form-group">
-                  <label>詳細需求說明</label>
-                  <textarea rows={5} placeholder="請詳細描述您的委託內容、用途、風格偏好等細節..." value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required className="detail-textarea"></textarea>
+                <div className="form-group flex-1">
+                  <label>預算範圍</label>
+                  <div className="budget-inputs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="number" placeholder="最低" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} style={{ width: '80px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                    <span>~</span>
+                    <input type="number" placeholder="最高" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} style={{ width: '80px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="submit" className="submit-post-btn" disabled={isUploading}>發布許願單</button>
+              <div className="form-row">
+                <div className="form-group" style={{ width: '100%' }}>
+                  <label>排單需求</label>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="schedule" 
+                        checked={postForm.schedule_type === 'flexible'} 
+                        onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} 
+                        style={{ width: 'auto', height: 'auto', margin: 0 }}
+                      /> 可接受排單
+                    </label>
+                    <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="schedule" 
+                        checked={postForm.schedule_type === 'fixed'} 
+                        onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} 
+                        style={{ width: 'auto', height: 'auto', margin: 0 }}
+                      /> 指定完成日期：
+                    </label>
+                    {postForm.schedule_type === 'fixed' && (
+                      <input 
+                        type="date" 
+                        value={postForm.specific_date} 
+                        onChange={e => setPostForm({...postForm, specific_date: e.target.value})} 
+                        style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ddd' }}
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>詳細需求說明</label>
+                <textarea rows={4} value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ background: '#ff8c00', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>發布許願單</button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* 投遞意向 Modal */}
+      
+      {/* 🌟 全新升級：投遞意向 Modal (提案卡) */}
       {showInquireModal && (
         <div className="modal-overlay">
-          <div className="modal-content inquire-modal">
-            <div className="modal-header">
-              <h2>投遞意向預覽與微調</h2>
-              <button className="close-modal-btn" onClick={() => setShowInquireModal(false)}><X /></button>
+          <div className="modal-content" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>發送專屬提案卡</h2>
+              <button onClick={() => setShowInquireModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '50%' }}><X color="#999" /></button>
             </div>
-            <div className="inquire-form-body">
-              <p className="inquire-hint">以下內容將會發送給該案主。您可以針對本次委託進行暫時性的文字微調。</p>
-              <div className="form-group"><label>標題 / 稱呼</label><input type="text" value={inquireDraft.title} onChange={(e) => setInquireDraft({...inquireDraft, title: e.target.value})} /></div>
-              <div className="form-group"><label>擅長題材</label><input type="text" value={inquireDraft.specialties} onChange={(e) => setInquireDraft({...inquireDraft, specialties: e.target.value})} /></div>
-              <div className="form-group"><label>不擅長 / 雷點</label><input type="text" value={inquireDraft.no_gos} onChange={(e) => setInquireDraft({...inquireDraft, no_gos: e.target.value})} /></div>
-              <div className="form-group"><label>接受的付款方式</label><input type="text" value={inquireDraft.payment_methods} onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})} /></div>
-              <div className="form-group"><label>簡易價目表預覽</label><textarea value={inquireDraft.price_list} onChange={(e) => setInquireDraft({...inquireDraft, price_list: e.target.value})} rows={3} /></div>
-              <div className="form-group"><label className="highlight-label">要求案主回填的提問模板</label><textarea value={inquireDraft.question_template} onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} rows={4} /></div>
+            
+            <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.6' }}>
+              與其丟文字履歷，不如直接給案主看您的作品！<br/>
+              您可以上傳精美的價目表或排版圖，並針對本次委託提供客製化報價與留言。
+            </p>
+
+            {/* 區塊 1：給案主的話 */}
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>給案主的留言 / 初步報價 (選填)</label>
+              <textarea 
+                value={inquireDraft.message} 
+                onChange={(e) => setInquireDraft({...inquireDraft, message: e.target.value})} 
+                placeholder="例如：您好！這個題材剛好是我擅長的，針對您的需求預估大約 1500 元..."
+                rows={3} 
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
             </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowInquireModal(false)} className="btn-cancel">取消</button>
-              <button onClick={handleInquire} className="btn-confirm">確認並送出投遞</button>
+
+            {/* 區塊 2：視覺化附圖 */}
+            <div className="form-group" style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>附上參考圖 / 價目表 (最多 3 張)</label>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                {inquireDraft.images.map((imgUrl, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                    <img src={imgUrl} alt={`附件 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button type="button" onClick={() => setInquireDraft(prev => ({...prev, images: prev.images.filter((_, i) => i !== idx)}))} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer', padding: '4px', display: 'flex' }}><X size={14}/></button>
+                  </div>
+                ))}
+                {inquireDraft.images.length < 3 && (
+                  <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
+                    <ImageUploader 
+                      onUpload={handleInquireImageUpload} 
+                      targetWidth={1000} 
+                      buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} 
+                      maxSizeMB={3} 
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px dashed #e2e8f0', margin: '25px 0' }}></div>
+
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，案主在查看提案時可一目了然：</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              <div className="form-group">
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>您的舒適圈 / 擅長題材</label>
+                <input type="text" value={inquireDraft.specialties} onChange={(e) => setInquireDraft({...inquireDraft, specialties: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#ef4444' }}>不擅長 / 雷點</label>
+                <input type="text" value={inquireDraft.no_gos} onChange={(e) => setInquireDraft({...inquireDraft, no_gos: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>接受的付款方式</label>
+              <input type="text" value={inquireDraft.payment_methods} onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#9333ea' }}>案主回填提問模板 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(若案主按下邀請詳談，系統將請他填寫)</span></label>
+              <textarea value={inquireDraft.question_template} onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '25px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+              <button onClick={() => setShowInquireModal(false)} style={{ padding: '10px 20px', border: '1px solid #cbd5e1', borderRadius: '8px', background: 'white', color: '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>取消</button>
+              <button onClick={handleInquire} disabled={inquireUploading} style={{ padding: '10px 24px', border: 'none', borderRadius: '8px', background: '#ff8c00', color: 'white', fontWeight: 'bold', cursor: inquireUploading ? 'not-allowed' : 'pointer', opacity: inquireUploading ? 0.7 : 1 }}>發送專屬提案</button>
             </div>
           </div>
         </div>
