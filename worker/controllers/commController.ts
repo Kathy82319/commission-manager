@@ -230,10 +230,11 @@ export const commController = {
     const newStageStatus = (comm[0] as any).workflow_mode === 'free' ? (comm[0] as any).current_stage : `${body.stage}_reviewing`; 
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
+    // 🌟 修正點：同步更新 latest_message_at
     await env.commission_db.batch([
       env.commission_db.prepare("INSERT INTO Submissions (id, commission_id, stage, file_url, version) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.stage, body.file_url, version),
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'upload', ?)").bind(crypto.randomUUID(), id, `繪師已上傳 ${stageNameCH} (v${version})`),
-      env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(newStageStatus, id),
+      env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(newStageStatus, id),
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
     ]);
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
@@ -257,9 +258,11 @@ export const commController = {
     }
 
     let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
+    
+    // 🌟 修正點：同步更新 latest_message_at
     let batchOps = [
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'review', ?)").bind(crypto.randomUUID(), id, logMsg),
-      env.commission_db.prepare("UPDATE Commissions SET current_stage = ? WHERE id = ?").bind(nextStageStatus, id),
+      env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(nextStageStatus, id),
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] ${logMsg}`)
     ];
     if (globalStatusUpdate) batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
@@ -324,7 +327,15 @@ export const commController = {
       return new Response(JSON.stringify({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }), { status: 429, headers: corsHeaders });
     }
 
-    await env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.sender_role, sanitizeAndLimit(body.content, 10000)).run();
+    // 🌟 修正點：在寫入訊息的同時，強制更新主表的 latest_message_at 欄位
+    const msgId = crypto.randomUUID();
+    const cleanContent = sanitizeAndLimit(body.content, 10000);
+    
+    await env.commission_db.batch([
+      env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(msgId, id, body.sender_role, cleanContent),
+      env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
+    ]);
+    
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
