@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // 引入 useEffect 來監聽狀態
 import '../styles/PublicLayout.css';
 
 interface ThemeSettings {
@@ -12,29 +12,36 @@ export function PublicLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // 新增狀態來追蹤登入資訊
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
     textColor: 'black',
     gradientDirection: 'to bottom right' 
   });
 
-  // 1. 抓取本地的登入狀態與角色 (請依據你實際存儲的 key 名稱做調整)
-  const token = localStorage.getItem('token'); 
-  const userRole = localStorage.getItem('userRole'); // 假設值為 'artist' 或 'client'
+  // 每當路由改變時，重新檢查登入狀態
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('user_role'); // 確保你的登入邏輯有存入此欄位
+    setIsLoggedIn(!!token);
+    setUserRole(role);
+  }, [location]);
 
-  // 2. 動態判斷點擊右上角按鈕的行為
-  const handleAuthAction = () => {
-    if (token) {
-      // 根據角色導回對應的後台
+  // 按鈕點擊後的邏輯判斷
+  const handleAuthClick = () => {
+    if (isLoggedIn) {
+      // 根據角色導向不同後台[cite: 1]
       if (userRole === 'artist') {
         navigate('/artist');
       } else if (userRole === 'client') {
         navigate('/client/orders'); 
       } else {
-        navigate('/portal'); // 角色不明確時導向分流頁
+        navigate('/portal'); // 角色不明確時送去分流頁[cite: 1]
       }
     } else {
-      // 未登入則導向登入頁
       navigate('/login');
     }
   };
@@ -63,45 +70,44 @@ export function PublicLayout() {
     <div className="public-layout-container" style={dynamicStyles}>
       <header className="public-header">
         <button 
-          onClick={handleAuthAction} 
+          onClick={handleAuthClick} // 改用新的處理函數
           className="login-btn"
           style={{ 
             backgroundColor: 'var(--artist-text-color)', 
             color: 'var(--artist-theme-color)' 
           }}
         >
-          {/* 動態顯示按鈕文字 */}
-          {token ? '回到管理後台' : '登入 / 註冊'}
+          {/* 根據登入狀態動態顯示文字 */}
+          {isLoggedIn ? '回到管理後台' : '登入 / 註冊'}
         </button>
       </header>
 
       <main className="public-main">
         <Outlet context={{ setTheme }} />
         
-        {/* 只保留「回上一頁」按鈕在法律頁面顯示 */}
-        {isLegalPage && (
-          <div className="legal-page-wrapper">
+        {/* 這裡我們將 footer 移出 isLegalPage 的判斷，讓它全域顯示 */}
+        <div className={`legal-page-wrapper ${!isLegalPage ? 'footer-only' : ''}`}>
+          {isLegalPage && (
             <div className="back-btn-container">
               <button onClick={() => navigate(-1)} className="back-btn">
                 回上一頁
               </button>
             </div>
-          </div>
-        )}
-      </main>
-
-      {/* 將 Footer 移出 isLegalPage 的判斷式，讓它在所有 Public 頁面都能顯示 */}
-      <footer className="public-footer">
-        <div className="footer-links">
-          <Link to="/terms">服務條款</Link>
-          <span className="footer-divider-text">|</span>
-          <Link to="/privacy">隱私權政策</Link>
-          <span className="footer-divider-text">|</span>
-          <Link to="/refund-policy">退款政策</Link>
-          <span className="footer-divider-text">|</span>
-          <span className="footer-contact">客服信箱：cath40286@gmail.com</span>
+          )}
+          
+          <footer className="public-footer">
+            <div className="footer-links">
+              <Link to="/terms">服務條款</Link>
+              <span className="footer-divider-text">|</span>
+              <Link to="/privacy">隱私權政策</Link>
+              <span className="footer-divider-text">|</span>
+              <Link to="/refund-policy">退款政策</Link>
+              <span className="footer-divider-text">|</span>
+              <span className="footer-contact">客服信箱：cath40286@gmail.com</span>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }
