@@ -432,6 +432,6 @@ export const InquiryWorkspace: React.FC = () => {
           )}
         </div>
       </aside>
-    </div>
+    </div> 
   );
 };
