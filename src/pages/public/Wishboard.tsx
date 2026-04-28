@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
-import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, Upload, User } from 'lucide-react';
+import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, Upload, User, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
+const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時', '包日'];
 const PAY_TAGS = ['皆可配合', '無卡', '匯款', '空包', '超商'];
 
 export const Wishboard: React.FC = () => {
@@ -16,42 +16,66 @@ export const Wishboard: React.FC = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<string | null>(null);
+  
+  // 上傳預覽與 Toast 狀態
   const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 🌟 將 customTag 獨立出來，解決 Enter 狀態覆蓋問題
+  const [customTagInput, setCustomTagInput] = useState('');
 
   const [inquireDraft, setInquireDraft] = useState({
     title: '', specialties: '', no_gos: '', payment_methods: '', price_list: '', question_template: ''
   });
 
   const [postForm, setPostForm] = useState({
-    title: '', content: '', tags: [] as string[], customTag: '', payment_methods: [] as string[],
+    title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
     budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: ''
   });
+
+  // 讀取 R2 公開網址 (請確保 .env 有設定 VITE_R2_PUBLIC_URL，例如 https://pub-xxxx.r2.dev)
+  const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || '';
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const initData = async () => {
     setLoading(true);
     try {
       const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
       if (resBulletins.success) setBulletins(resBulletins.data);
-      
       const resUser = await apiClient.get('/api/users/me');
       if (resUser.success) setCurrentUser(resUser.data);
-    } catch (e) { console.log("訪客模式"); } 
-    finally { setLoading(false); }
+    } catch (e) { 
+      console.log("訪客模式"); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { initData(); }, [activeTab]);
 
-  // 🌟 上傳邏輯：使用 Presigned URL 直接對 R2 進行上傳
+  // 🌟 圖片上傳與本地預覽
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1 * 1024 * 1024) { alert("檔案大小不得超過 1MB"); return; }
+    if (file.size > 1 * 1024 * 1024) { 
+      showToast("檔案大小不得超過 1MB", "error"); 
+      return; 
+    }
 
+    // 產生安全的本地預覽圖
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
     setIsUploading(true);
+
     try {
       const fileName = `wishboard/${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
-      
       const res = await apiClient.post('/api/r2/upload-url', {
         bucketType: 'public',
         fileName: fileName,
@@ -69,9 +93,10 @@ export const Wishboard: React.FC = () => {
       if (!uploadRes.ok) throw new Error("檔案上傳到 R2 失敗");
 
       setPostForm(prev => ({ ...prev, ref_image_key: fileName }));
-      alert("圖片上傳成功！");
+      showToast("圖片上傳成功！");
     } catch (err) {
-      alert("上傳失敗，請稍後再試。");
+      showToast("上傳失敗，請檢查網路狀態", "error");
+      setPreviewUrl(null); // 失敗則還原預覽
     } finally {
       setIsUploading(false);
     }
@@ -79,21 +104,23 @@ export const Wishboard: React.FC = () => {
 
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return alert("請先登入");
+    if (!currentUser) return showToast("請先登入才能發布", "error");
     try {
       const res = await apiClient.post('/api/bulletins', {
-        ...postForm, category: activeTab, tags: postForm.tags, payment_methods: postForm.payment_methods
+        ...postForm, category: activeTab
       });
       if (res.success) {
-        alert("發布成功");
+        showToast("許願單發布成功！");
         setShowPostModal(false);
-        setPostForm({ title: '', content: '', tags: [], customTag: '', payment_methods: [], budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' });
+        setPostForm({ title: '', content: '', tags: [], payment_methods: [], budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' });
+        setPreviewUrl(null);
         initData();
       }
-    } catch (err) { alert("發布失敗"); }
+    } catch (err) { 
+      showToast("發布失敗，請稍後再試", "error"); 
+    }
   };
 
-  // 🌟 排他邏輯處理
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods' | 'filters') => {
     if (field === 'filters') {
       setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
@@ -104,10 +131,8 @@ export const Wishboard: React.FC = () => {
       const exclusiveTag = field === 'tags' ? '不限' : '皆可配合';
 
       if (tag === exclusiveTag) {
-        // 如果選了排他標籤，清空其他
         list = list.includes(tag) ? [] : [tag];
       } else {
-        // 如果選了其他標籤，取消排他標籤
         list = list.includes(tag) ? list.filter(t => t !== tag) : [...list.filter(t => t !== exclusiveTag), tag];
       }
       return { ...prev, [field]: list };
@@ -134,11 +159,15 @@ export const Wishboard: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/bulletins/${selectedBulletin}/inquire`, { artist_snapshot: JSON.stringify(inquireDraft) });
       if (res.success) {
-        alert('已成功發送您的意向與簡歷給案主！');
+        showToast('已成功發送投遞意向！');
         setShowInquireModal(false);
         initData();
-      } else { alert(res.message || '投遞發生錯誤'); }
-    } catch (error: any) { alert('投遞發生錯誤: ' + (error.message || '')); }
+      } else { 
+        showToast(res.message || '投遞發生錯誤', "error"); 
+      }
+    } catch (error: any) { 
+      showToast('投遞發生錯誤: ' + (error.message || ''), "error"); 
+    }
   };
 
   const getTimeRemaining = (expiresAt: string) => {
@@ -156,6 +185,14 @@ export const Wishboard: React.FC = () => {
 
   return (
     <div className="wishboard-page">
+      {/* 🌟 Toast 通知系統 */}
+      {toast && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
       <header className="wishboard-hero">
         <div className="hero-content">
           <h1>✨ 創作許願池</h1>
@@ -190,14 +227,23 @@ export const Wishboard: React.FC = () => {
 
             return (
               <div key={b.id} className="wish-card-wide">
-                <div className="wish-card-image">
-                  {b.ref_image_key ? (
-                    <img src={`https://pub-r2.your-domain.com/${b.ref_image_key}`} alt="範例圖" />
+                {/* 🌟 滿版左側區塊：動態適應高度 */}
+                <div className="wish-card-image-wrapper">
+                  {b.ref_image_key && R2_PUBLIC_URL ? (
+                    <img 
+                      src={`${R2_PUBLIC_URL}/${b.ref_image_key}`} 
+                      alt="範例圖" 
+                      className="wish-card-img"
+                      onError={(e) => {
+                        // 圖片載入失敗時切換為備用顯示
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement?.classList.add('fallback-mode');
+                      }}
+                    />
                   ) : (
-                    // 🌟 Fallback 圖像：柔和的剪影
-                    <div style={{ width: '100%', height: '100%', backgroundColor: '#f0f0f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#a0a0a0' }}>
-                      <User size={64} opacity={0.5} />
-                      <span style={{ fontSize: '12px', marginTop: '10px' }}>無提供範例圖</span>
+                    <div className="fallback-placeholder">
+                      <User size={64} opacity={0.3} />
+                      <span>無提供範例圖</span>
                     </div>
                   )}
                   <div className="wish-countdown"><Clock size={12} /> {getTimeRemaining(b.expires_at)}</div>
@@ -228,15 +274,10 @@ export const Wishboard: React.FC = () => {
                     <p>{b.content}</p>
                   </div>
 
-                  {/* 🌟 重新接回「我有興趣」邏輯 */}
                   {isMyOwnPost ? (
-                    <button disabled className="inquire-btn" style={{ background: '#f3f4f6', color: '#9ca3af', borderColor: '#e5e7eb', cursor: 'not-allowed' }}>
-                      這是您發布的許願單
-                    </button>
+                    <button disabled className="inquire-btn disabled-btn">這是您發布的許願單</button>
                   ) : hasApplied ? (
-                    <button disabled className="inquire-btn" style={{ background: '#e5e7eb', color: '#6b7280', borderColor: '#d1d5db', cursor: 'not-allowed' }}>
-                      已投遞
-                    </button>
+                    <button disabled className="inquire-btn applied-btn">已投遞</button>
                   ) : (
                     <button className="inquire-btn" onClick={() => openInquireModal(b.id)}>
                       我有興趣 (發送投遞意向)
@@ -266,8 +307,15 @@ export const Wishboard: React.FC = () => {
                 </div>
                 <div className="form-group flex-1">
                   <label>範例參考圖 (1MB內)</label>
-                  <div className="upload-box" onClick={() => fileInputRef.current?.click()} style={{ border: '2px dashed #ddd', padding: '10px', textAlign: 'center', borderRadius: '8px', cursor: 'pointer', background: '#f9f9f9' }}>
-                    {isUploading ? '上傳中...' : postForm.ref_image_key ? '✅ 已上傳' : <><Upload size={16}/> 點擊選擇</>}
+                  {/* 🌟 上傳預覽區塊 */}
+                  <div className={`upload-box ${previewUrl ? 'has-preview' : ''}`} onClick={() => fileInputRef.current?.click()}>
+                    {isUploading ? (
+                      <span className="upload-text">上傳中...</span>
+                    ) : previewUrl ? (
+                      <img src={previewUrl} alt="預覽" className="upload-preview-img" />
+                    ) : (
+                      <span className="upload-text"><Upload size={16}/> 點擊選擇圖片</span>
+                    )}
                   </div>
                   <input type="file" ref={fileInputRef} hidden onChange={handleImageUpload} accept="image/*" />
                 </div>
@@ -279,15 +327,18 @@ export const Wishboard: React.FC = () => {
                   {REQ_TAGS.map(t => (
                     <span key={t} className={`selectable-tag ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
                   ))}
-                  {/* 🌟 解決自定義標籤 Enter 問題 */}
-                  <input type="text" className="inline-tag-input" placeholder="+ 自定義 (按 Enter 加入)" value={postForm.customTag} 
-                    onChange={e => setPostForm({...postForm, customTag: e.target.value})}
+                  <input 
+                    type="text" 
+                    className="inline-tag-input" 
+                    placeholder="+ 自定義 (按 Enter 加入)" 
+                    value={customTagInput} 
+                    onChange={e => setCustomTagInput(e.target.value)}
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault(); 
-                        if (postForm.customTag.trim()) {
-                          toggleTag(postForm.customTag.trim(), 'tags');
-                          setPostForm({...postForm, customTag: ''});
+                        if (customTagInput.trim()) {
+                          toggleTag(customTagInput.trim(), 'tags');
+                          setCustomTagInput('');
                         }
                       }
                     }}
@@ -327,7 +378,7 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
       
-      {/* 投遞意向 Modal (保留原本設計) */}
+      {/* 投遞意向 Modal */}
       {showInquireModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto', background: 'white', padding: '24px', borderRadius: '16px' }}>
