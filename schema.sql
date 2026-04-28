@@ -270,6 +270,15 @@ ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_client DATETIME DEFAULT NU
 ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_artist DATETIME DEFAULT NULL;
 ALTER TABLE BulletinInquiries ADD COLUMN latest_update_at DATETIME DEFAULT NULL;
 
+-- 1. 為 Bulletins 擴充詳細欄位
+ALTER TABLE Bulletins ADD COLUMN title TEXT DEFAULT '';         
+ALTER TABLE Bulletins ADD COLUMN tags TEXT DEFAULT '[]';          
+ALTER TABLE Bulletins ADD COLUMN payment_methods TEXT DEFAULT '[]'; 
+ALTER TABLE Bulletins ADD COLUMN budget_min INTEGER DEFAULT 0; 
+ALTER TABLE Bulletins ADD COLUMN budget_max INTEGER DEFAULT 0;  
+ALTER TABLE Bulletins ADD COLUMN schedule_type TEXT DEFAULT 'flexible';
+ALTER TABLE Bulletins ADD COLUMN specific_date DATETIME;     
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

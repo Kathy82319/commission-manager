@@ -26,6 +26,7 @@ export default {
       return Response.redirect(redirectUrl.toString(), 303);
     }
     
+    // 🛡️ 資安防護：動態 CORS 白名單，防止惡意網域跨站存取
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
@@ -41,6 +42,7 @@ export default {
       "Access-Control-Allow-Credentials": "true",
     };
 
+    // 處理瀏覽器的預檢請求 (Preflight Request)
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -71,7 +73,8 @@ export default {
         const subAction = pathParts[4]; 
 
         if (!targetId) {
-          if (request.method === "GET") return bulletinController.getList(env, corsHeaders);
+          // 🌟 修正：補上 request 參數，解決 TS 報錯，並讓控制器能讀取 URL 查詢參數
+          if (request.method === "GET") return bulletinController.getList(request, env, corsHeaders);
           if (request.method === "POST") {
             const authErr = requireAuth(currentUserId, corsHeaders);
             if (authErr) return authErr;
@@ -82,7 +85,6 @@ export default {
           if (authErr) return authErr;
           return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
         } else if (targetId && subAction === "close" && request.method === "POST") {
-          // 🌟 新增：手動關閉/結案路由
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.closeBulletin(targetId, currentUserId!, env, corsHeaders);
@@ -169,6 +171,11 @@ export default {
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
+      
+      // 🌟 確認你是否有包含登出路由，通常在這裡：
+      if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
+        return authController.logout(request, env, corsHeaders);
+      }
 
       // --- 作品集路由 ---
       if (sanitizedPath.startsWith("/api/showcase")) {
@@ -275,4 +282,4 @@ export default {
     }
     return assetResponse as any;
   }   
-}; 
+};
