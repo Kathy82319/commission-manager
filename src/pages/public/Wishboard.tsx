@@ -159,24 +159,30 @@ export const Wishboard: React.FC = () => {
     setPostForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
-  const openInquireModal = (bulletinId: string) => {
-    setSelectedBulletin(bulletinId);
-    let settings: any = {};
-    if (currentUser && currentUser.profile_settings) {
-      try { settings = typeof currentUser.profile_settings === 'string' ? JSON.parse(currentUser.profile_settings) : currentUser.profile_settings; } catch(e) {}
-    }
-    const card = settings.bulletin_card || {};
-    // 🌟 初始化新版提案卡結構
-    setInquireDraft({
-      message: '', 
-      specialties: card.specialties || '', 
-      no_gos: card.no_gos || '', 
-      payment_methods: card.payment_methods || '',
-      question_template: settings.question_template || '',
-      images: []
-    });
-    setShowInquireModal(true);
-  };
+// 找到 openInquireModal 函式並修改
+const openInquireModal = (bulletinId: string) => {
+  setSelectedBulletin(bulletinId);
+  let settings: any = {};
+  if (currentUser && currentUser.profile_settings) {
+    try {
+      settings = typeof currentUser.profile_settings === 'string' 
+        ? JSON.parse(currentUser.profile_settings) 
+        : currentUser.profile_settings;
+    } catch(e) {}
+  }
+  
+  const card = settings.bulletin_card || {};
+
+  setInquireDraft({
+    message: '', 
+    specialties: card.specialties || '', 
+    no_gos: card.no_gos || '', 
+    payment_methods: card.payment_methods || '',
+    question_template: settings.question_template || '',
+    images: card.images || [] 
+  });
+  setShowInquireModal(true);
+};
 
   const handleInquire = async () => {
     if (!selectedBulletin) return;

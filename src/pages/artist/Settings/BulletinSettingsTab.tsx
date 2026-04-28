@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ProfileSettings } from './types';
+import { ImageUploader } from '../../../components/ImageUploader';
+import { X } from 'lucide-react';
 
-// 🌟 直接在這裡擴充型別，不影響你的 types.ts
+// 🌟 擴充型別以包含預設圖片
 export interface ExtendedSettings extends ProfileSettings {
   bulletin_card?: {
     specialties: string;
     no_gos: string;
     payment_methods: string;
     price_list: string;
+    images?: string[]; // 預設圖片路徑
   };
   question_template?: string;
 }
@@ -18,9 +21,10 @@ interface Props {
 }
 
 export function BulletinSettingsTab({ settings, setSettings }: Props) {
-  
-  const updateBulletinCard = (field: string, value: string) => {
-    // 🌟 明確標示 prev 的型別為 ExtendedSettings，解決 any 報錯
+  const [isUploading, setIsUploading] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
+  const updateBulletinCard = (field: string, value: any) => {
     setSettings((prev: ExtendedSettings) => ({
       ...prev,
       bulletin_card: {
@@ -30,68 +34,102 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
     }));
   };
 
+  const handleDefaultImageUpload = async (resultBlobs: { preview: Blob }) => {
+    const currentImages = settings.bulletin_card?.images || [];
+    if (currentImages.length >= 3) {
+      alert("預設圖片最多 3 張");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileType = resultBlobs.preview.type || 'image/jpeg';
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contentType: fileType, 
+          bucketType: 'public', 
+          originalName: `default_price_${Date.now()}.jpg`, 
+          folder: 'settings' 
+        })
+      });
+      const ticketData = await ticketRes.json();
+      const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
+      
+      if (uploadRes.ok) {
+        const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+        updateBulletinCard('images', [...currentImages, finalUrl]);
+      }
+    } catch (err) {
+      alert("上傳預設圖失敗");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="settings-section">
-      <h4 className="section-title">許願池「邀請詳談」明信片設定</h4>
+      <h4 className="section-title">許願池「投遞意向」預設設定</h4>
       <p className="section-desc" style={{ color: '#888', marginBottom: '20px', fontSize: '0.9rem' }}>
-        當案主在許願池向您提出「邀請詳談」時，將會看到以下您預設的資訊與提問模板。
+        設定後，當您在許願池按下「我有興趣」時，系統會自動帶入以下內容，省去重複輸入的時間。
       </p>
 
-      {/* 區塊 1：提問模板 */}
+      {/* 🌟 新增：預設價目表/參考圖管理 */}
+      <div className="form-group" style={{ marginBottom: '24px' }}>
+        <label className="form-label">預算價目表 / 參考作品 (最多3張，圖片限制 3MB 以下)</label>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px' }}>
+          {(settings.bulletin_card?.images || []).map((url, idx) => (
+            <div key={idx} style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <img src={url} alt="預設圖" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button 
+                type="button" 
+                onClick={() => updateBulletinCard('images', settings.bulletin_card?.images?.filter((_, i) => i !== idx))}
+                style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer', padding: '4px', display: 'flex' }}
+              >
+                <X size={14}/>
+              </button>
+            </div>
+          ))}
+          {(settings.bulletin_card?.images || []).length < 3 && (
+            <div style={{ width: '120px', height: '120px' }}>
+              <ImageUploader 
+                onUpload={handleDefaultImageUpload} 
+                targetWidth={1000} 
+                buttonText={isUploading ? "上傳中..." : "+ 預設圖片"} 
+                maxSizeMB={3} 
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="form-group">
         <label className="form-label">提問模板 (案主邀請時必填)</label>
-        <p style={{ fontSize: '0.8rem', color: '#A0978D', marginBottom: '8px' }}>
-          引導案主提供您評估所需的關鍵資訊 (例如：角色設定圖、期望截稿日、用途等)
-        </p>
         <textarea 
-          className="form-input textarea-large" 
+          className="form-input" 
           value={settings.question_template || ''} 
           onChange={(e) => setSettings({...settings, question_template: e.target.value})}
-          placeholder="範例：&#10;1. 請提供角色設定圖：&#10;2. 預計用途 (個人收藏/頭貼...)：&#10;3. 希望的動作與表情："
-          style={{ minHeight: '150px' }}
+          placeholder="範例：1.用途 2.角色設定..."
+          style={{ minHeight: '120px' }}
         />
       </div>
 
-      {/* 區塊 2：條件標籤 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
         <div className="form-group">
           <label className="form-label">擅長題材 (舒適圈)</label>
-          <input 
-            type="text" 
-            className="form-input" 
-            value={settings.bulletin_card?.specialties || ''} 
-            onChange={(e) => updateBulletinCard('specialties', e.target.value)}
-            placeholder="例如：日系美少女、Q版、獸人..."
-          />
+          <input type="text" className="form-input" value={settings.bulletin_card?.specialties || ''} onChange={(e) => updateBulletinCard('specialties', e.target.value)} />
         </div>
-
         <div className="form-group">
-          <label className="form-label" style={{ color: '#ef4444' }}>不擅長 / 雷點 (No-Go)</label>
-          <input 
-            type="text" 
-            className="form-input" 
-            value={settings.bulletin_card?.no_gos || ''} 
-            onChange={(e) => updateBulletinCard('no_gos', e.target.value)}
-            placeholder="例如：機甲、老人、純文字設定..."
-          />
+          <label className="form-label">不擅長 / 雷點</label>
+          <input type="text" className="form-input" value={settings.bulletin_card?.no_gos || ''} onChange={(e) => updateBulletinCard('no_gos', e.target.value)} />
         </div>
       </div>
 
       <div className="form-group" style={{ marginTop: '20px' }}>
         <label className="form-label">接受的付款方式</label>
-        <input 
-          type="text" 
-          className="form-input" 
-          value={settings.bulletin_card?.payment_methods || ''} 
-          onChange={(e) => updateBulletinCard('payment_methods', e.target.value)}
-          placeholder="例如：銀行轉帳、PayPal、超商代碼..."
-        />
-      </div>
-      
-      <div style={{ marginTop: '30px', padding: '15px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-        <p style={{ fontSize: '13px', color: '#92400e', margin: 0 }}>
-          💡 <strong>小提醒：</strong> 現在「價目表」已改由提案時直接上傳圖片。您可以在個人主頁的作品集或詳細介紹中，也放上一份視覺化的價目表喔！
-        </p>
+        <input type="text" className="form-input" value={settings.bulletin_card?.payment_methods || ''} onChange={(e) => updateBulletinCard('payment_methods', e.target.value)} />
       </div>
     </div>
   );
