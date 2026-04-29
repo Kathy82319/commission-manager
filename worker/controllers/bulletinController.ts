@@ -152,10 +152,9 @@ export const bulletinController = {
     }
   },
 
-  // 🌟 為「發布儀表板 (My Posts Dashboard)」與「明信片提案」重構的 API
+// 🌟 為「發布儀表板 (My Posts Dashboard)」與「明信片提案」重構的 API
   async getClientInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 1. 撈出該用戶發布的 Bulletins (包含分類、狀態、到期日與收到幾份提案)
       const { results: myBulletins } = await env.commission_db.prepare(`
         SELECT id, title, category, status, expires_at, created_at,
           (SELECT COUNT(*) FROM BulletinInquiries WHERE bulletin_id = Bulletins.id) as inquiry_count
@@ -164,12 +163,12 @@ export const bulletinController = {
         ORDER BY created_at DESC
       `).bind(currentUserId).all();
 
-      // 2. 撈出針對這些 Bulletins 收到的 Inquiries (提案明信片詳細資料)
       const { results: myInquiries } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, b.id as bulletin_id, b.title as bulletin_title, 
                i.artist_id, i.status as inquiry_status, u.display_name as artist_name, 
                u.avatar_url as artist_avatar, u.public_id as artist_public_id, 
-               i.latest_update_at, i.artist_snapshot
+               i.latest_update_at, i.artist_snapshot, 
+               i.decline_reason, i.client_response -- 🌟 新增：婉拒理由與案主回覆
         FROM Bulletins b 
         JOIN BulletinInquiries i ON b.id = i.bulletin_id 
         LEFT JOIN Users u ON i.artist_id = u.id
@@ -179,10 +178,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ 
         success: true, 
-        data: {
-          bulletins: myBulletins,
-          inquiries: myInquiries
-        }
+        data: { bulletins: myBulletins, inquiries: myInquiries }
       }), { headers: corsHeaders });
     } catch (error: any) { 
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
@@ -191,10 +187,12 @@ export const bulletinController = {
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 繪師專屬：撈出自己「投遞出去」的提案狀態
       const { results } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
-               i.latest_update_at, i.artist_snapshot, b.client_id
+               i.latest_update_at, i.artist_snapshot, b.client_id,
+               b.ref_image_key, b.budget_min, b.budget_max, b.content as bulletin_content, 
+               b.schedule_type, b.specific_date, -- 🌟 新增：許願池詳細資訊用於迷你卡片
+               i.decline_reason, i.client_response -- 🌟 新增：婉拒理由與案主回覆
         FROM BulletinInquiries i 
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE i.artist_id = ? 

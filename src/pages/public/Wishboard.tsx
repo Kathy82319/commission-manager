@@ -516,14 +516,14 @@ export const Wishboard: React.FC = () => {
 
             <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，案主在查看提案時可一目了然：</p>
 
-            {/* 🌟 修正後的標籤化輸入區塊：舒適圈、雷點、付款方式 */}
+{/* 🌟 修正後的標籤化輸入區塊：舒適圈、雷點、付款方式 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
               {/* 舒適圈標籤輸入 */}
               <div className="form-group">
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>您的舒適圈 / 擅長題材</label>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>
                 <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {inquireDraft.specialties.split(' ').filter(t => t).map((tag, i) => (
-                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px' }}>
+                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fff5eb', color: '#ff8c00', borderColor: '#ffd2a6' }}>
                       {tag} <X size={12} onClick={() => handleInquireTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                     </span>
                   ))}
@@ -545,10 +545,10 @@ export const Wishboard: React.FC = () => {
               
               {/* 雷點標籤輸入 */}
               <div className="form-group">
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#ef4444' }}>不擅長 / 雷點</label>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#e65c5c' }}>不擅長 / 雷點</label>
                 <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {inquireDraft.no_gos.split(' ').filter(t => t).map((tag, i) => (
-                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fee2e2', color: '#ef4444', borderColor: '#fca5a5' }}>
+                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fff0f0', color: '#e65c5c', borderColor: '#f1a9a9' }}>
                       {tag} <X size={12} onClick={() => handleInquireTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
                     </span>
                   ))}
@@ -571,10 +571,10 @@ export const Wishboard: React.FC = () => {
 
             {/* 付款方式標籤輸入 */}
             <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>接受的付款方式</label>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#4E7A5A' }}>接受的付款方式</label>
               <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {inquireDraft.payment_methods.split(' ').filter(t => t).map((tag, i) => (
-                  <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#f0f9ff', color: '#0369a1', borderColor: '#bae6fd' }}>
+                  <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#f2f5f3', color: '#4e7a5a', borderColor: '#b5c9bc' }}>
                     {tag} <X size={12} onClick={() => handleInquireTagRemove('payment_methods', tag)} style={{ cursor: 'pointer' }} />
                   </span>
                 ))}

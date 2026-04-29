@@ -29,7 +29,13 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-// 🌟 明信片卡片元件
+// 🌟 安全的時間解析 (支援跨瀏覽器 UTC)
+const safeParseTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).getTime();
+};
+
 const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
@@ -43,19 +49,9 @@ const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
   const images: string[] = Array.isArray(snapshot.images) ? snapshot.images : [];
   const mainImage = images.length > 0 ? images[imgIndex] : null;
 
-  const openLightbox = () => {
-    if (images.length > 0) setLightboxOpen(true);
-  };
-  
-  const nextImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImgIndex((prev) => (prev + 1) % images.length);
-  };
-  
-  const prevImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImgIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  const openLightbox = () => { if (images.length > 0) setLightboxOpen(true); };
+  const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev + 1) % images.length); };
+  const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev - 1 + images.length) % images.length); };
 
   return (
     <>
@@ -150,6 +146,7 @@ export const Inbox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [loading, setLoading] = useState(true);
   
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
@@ -161,9 +158,27 @@ export const Inbox: React.FC = () => {
   const [inviteResponse, setInviteResponse] = useState('');
   const [declineReason, setDeclineReason] = useState('');
 
+  // 🌟 預設罐頭訊息
+  const [declineTemplates, setDeclineTemplates] = useState<string[]>([
+    '目前檔期較滿，暫不接單', 
+    '經過評估，可能有預算或價格考量', 
+    '較不擅長此題材，怕無法達到您的期望'
+  ]);
+
   const fetchInbox = async () => {
     setLoading(true);
     try {
+      const meData = await apiClient.get('/api/users/me');
+      if (meData.success) {
+        setCurrentUser(meData.data);
+        try {
+          const settings = typeof meData.data.profile_settings === 'string' ? JSON.parse(meData.data.profile_settings) : meData.data.profile_settings;
+          if (settings?.decline_templates && Array.isArray(settings.decline_templates)) {
+            setDeclineTemplates(settings.decline_templates);
+          }
+        } catch(e) {}
+      }
+
       if (activeTab === 'client') {
         const data = await apiClient.get('/api/bulletins/client/inbox');
         if (data.success) {
@@ -193,12 +208,18 @@ export const Inbox: React.FC = () => {
   const handleConfirmDecline = async () => {
     if (!selectedInquiry) return;
     try {
-      await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: declineReason || '已找到合適人選 / 終止洽談' });
-      alert('已傳送系統婉拒通知，對話已關閉。');
+      const defaultReason = selectedInquiry.inquiry_status === 'pending' && activeTab === 'artist' 
+        ? '繪師已撤回投遞' 
+        : '已找到合適人選 / 終止洽談';
+
+      await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { 
+        decline_reason: declineReason || defaultReason 
+      });
+      alert('已傳送婉拒/撤回通知，對話已關閉。');
       setShowDeclineModal(false);
       setDeclineReason('');
       fetchInbox();
-    } catch (error: any) { alert(error.message || '婉拒失敗'); }
+    } catch (error: any) { alert(error.message || '操作失敗'); }
   };
 
   const handleSendInvite = async () => {
@@ -213,14 +234,22 @@ export const Inbox: React.FC = () => {
     } catch (error: any) { alert(error.message || '送出失敗'); }
   };
 
-  // 🌟 修正跳轉路徑：改成 /inquiry/workspace/:id
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   const handleViewCommission = (commissionId: string) => commissionId ? navigate(`/workspace/${commissionId}`) : alert('找不到關聯的委託單');
 
   const calculateDaysLeft = (expiresAt: string) => {
-    const diff = new Date(expiresAt).getTime() - new Date().getTime();
+    const diff = safeParseTime(expiresAt) - Date.now();
     if (diff <= 0) return '已過期';
     return `剩餘 ${Math.ceil(diff / (1000 * 60 * 60 * 24))} 天`;
+  };
+
+  // 🌟 過濾器：隱藏超過 3 天的已婉拒紀錄
+  const filterOldItems = (item: any) => {
+    if (item.inquiry_status === 'declined' || item.inquiry_status === 'cancelled') {
+      const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+      if (safeParseTime(item.latest_update_at) < threeDaysAgo) return false;
+    }
+    return true;
   };
 
   const SLOT_TYPES = [
@@ -235,13 +264,17 @@ export const Inbox: React.FC = () => {
         <h1 className="text-2xl font-bold text-[#5D4A3E]">訊息中心</h1>
       </div>
 
-      <div className="wishboard-tabs mb-8 border-b border-[#EAE6E1]">
+      <div className="wishboard-tabs mb-4 border-b border-[#EAE6E1]">
         <button className={`tab-btn ${activeTab === 'client' ? 'active' : ''}`} onClick={() => setActiveTab('client')}>
           已發佈許願
         </button>
         <button className={`tab-btn ${activeTab === 'artist' ? 'active' : ''}`} onClick={() => setActiveTab('artist')}>
           我投遞的履歷
         </button>
+      </div>
+
+      <div className="mb-6 text-sm text-[#A0978D] bg-[#FBFBF9] p-3 rounded-lg border border-[#EAE6E1] inline-block">
+        💡 提示：為了保持版面整潔，已婉拒或撤回的提案將於 3 天後自動隱藏。
       </div>
 
       {loading ? (
@@ -260,40 +293,26 @@ export const Inbox: React.FC = () => {
                 
                 if (bulletin) {
                   return (
-                    <div 
-                      key={slotType.id} 
-                      className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`}
-                      onClick={() => setSelectedBulletinId(bulletin.id)}
-                    >
+                    <div key={slotType.id} className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedBulletinId(bulletin.id)}>
                       <div className="slot-header">
                         <span className="slot-icon">{slotType.icon}</span>
                         <span className="slot-category">{slotType.label}刊登中</span>
                       </div>
                       <h3 className="slot-title" title={bulletin.title}>{bulletin.title || '未命名貼文'}</h3>
                       <div className="slot-stats">
-                        <div className="stat-item">
-                          <span className="stat-num">{bulletin.inquiry_count || 0}</span> 份提案
-                        </div>
-                        <div className="stat-item expiry">
-                          {calculateDaysLeft(bulletin.expires_at)}
-                        </div>
+                        <div className="stat-item"><span className="stat-num">{bulletin.inquiry_count || 0}</span> 份提案</div>
+                        <div className="stat-item expiry">{calculateDaysLeft(bulletin.expires_at)}</div>
                       </div>
                     </div>
                   );
                 } else {
                   return (
-                    <div 
-                      key={slotType.id} 
-                      className="dashboard-slot empty-slot cursor-pointer transition"
-                      onClick={() => navigate(`/?category=${slotType.id}`)}
-                    >
+                    <div key={slotType.id} className="dashboard-slot empty-slot cursor-pointer transition" onClick={() => navigate(`/?category=${slotType.id}`)}>
                       <div className="empty-content">
                         <span className="empty-icon text-3xl mb-2 opacity-50">{slotType.icon}</span>
                         <div className="text-[#7A7269] font-bold mb-1">{slotType.label} 尚有空缺</div>
                         <div className="text-xs text-[#A0978D] mb-3">{slotType.desc}</div>
-                        <button className="btn-outline-primary text-sm py-1 px-3">
-                          + 前往發布
-                        </button>
+                        <button className="btn-outline-primary text-sm py-1 px-3">+ 前往發布</button>
                       </div>
                     </div>
                   );
@@ -314,12 +333,12 @@ export const Inbox: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-8">
-                {clientInquiries.filter(i => i.bulletin_id === selectedBulletinId).length === 0 ? (
+                {clientInquiries.filter(i => i.bulletin_id === selectedBulletinId).filter(filterOldItems).length === 0 ? (
                   <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-[#EAE6E1] text-[#A0978D] shadow-sm">
-                    這篇文章目前還沒有收到任何提案喔！再等等吧～
+                    目前沒有可顯示的提案喔！再等等吧～
                   </div>
                 ) : (
-                  clientInquiries.filter(i => i.bulletin_id === selectedBulletinId).map(item => {
+                  clientInquiries.filter(i => i.bulletin_id === selectedBulletinId).filter(filterOldItems).map(item => {
                     let snapshot: any = {};
                     try { 
                       const parsed = JSON.parse(item.artist_snapshot || '{}');
@@ -353,6 +372,7 @@ export const Inbox: React.FC = () => {
                           )}
                         </ArtistPostcard>
 
+                        {/* 顯示婉拒理由 */}
                         {item.inquiry_status === 'declined' && item.decline_reason && (
                           <div className="bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] mt-2 mx-4 text-[#A05C5C] text-sm">
                             <strong>終止/婉拒理由：</strong>{item.decline_reason}
@@ -367,40 +387,59 @@ export const Inbox: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="space-y-4">
-          {artistInquiries.length === 0 ? (
-            <p className="text-center p-10 text-[#A0978D]">目前沒有任何投遞紀錄。</p>
+        <div className="space-y-6">
+          {artistInquiries.filter(filterOldItems).length === 0 ? (
+            <p className="text-center p-10 text-[#A0978D] bg-[#FBFBF9] rounded-xl border border-[#EAE6E1]">目前沒有任何投遞紀錄。</p>
           ) : (
-            artistInquiries.map((item) => {
+            artistInquiries.filter(filterOldItems).map((item) => {
               const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
               return (
-                <div key={item.inquiry_id} className="inbox-item relative overflow-hidden bg-white shadow-sm border border-[#EAE6E1] rounded-xl">
-                  <div className="flex justify-between items-start">
+                <div key={item.inquiry_id} className="inbox-item relative overflow-hidden bg-white shadow-sm border border-[#EAE6E1] rounded-xl p-5">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <span className={`inbox-badge status-${item.inquiry_status}`}>
+                      <span className={`inbox-badge status-${item.inquiry_status} mb-2 inline-block`}>
                         {getStatusLabel(item.inquiry_status)}
                       </span>
-                      <h3 className="text-lg font-bold mt-2 text-[#5D4A3E]">
+                      <h3 className="text-lg font-bold text-[#5D4A3E]">
                         投遞項目：{item.bulletin_title}
                       </h3>
                     </div>
                   </div>
 
+                  {/* 🌟 1. 繪師視角的「許願池迷你摘要卡片」 */}
+                  <div className="flex gap-4 mb-5 bg-[#FBFBF9] p-3 rounded-lg border border-[#EAE6E1]">
+                    {item.ref_image_key ? (
+                      <img src={item.ref_image_key} className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-[#EAE6E1]" alt="參考圖" />
+                    ) : (
+                      <div className="w-20 h-20 bg-[#EAE6E1] rounded-md flex items-center justify-center text-xs text-[#A0978D] flex-shrink-0">無圖</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-[#7A7269] mb-2 flex gap-3 font-bold">
+                        <span className="bg-[#FFF5EB] text-[#ff8c00] px-2 py-0.5 rounded">💰 {item.budget_min}~{item.budget_max}</span>
+                        <span className="bg-[#F2F5F3] text-[#4E7A5A] px-2 py-0.5 rounded">📅 {item.schedule_type === 'flexible' ? '可排單' : item.specific_date}</span>
+                      </div>
+                      <div className="text-sm text-[#7A7269] line-clamp-2 leading-relaxed" title={item.bulletin_content}>
+                        {item.bulletin_content}
+                      </div>
+                    </div>
+                  </div>
+
                   {item.client_response && (
-                    <div className="bg-[#EBF2F7] p-4 rounded border border-[#C1D6E8] mt-4">
+                    <div className="bg-[#EBF2F7] p-4 rounded border border-[#C1D6E8] mt-4 mb-4">
                       <p className="text-[#4A7294] font-bold mb-2">案主回覆的需求細節：</p>
                       <p className="text-[#5D4A3E] whitespace-pre-wrap text-sm">{item.client_response}</p>
                     </div>
                   )}
 
+                  {/* 顯示婉拒理由 */}
                   {item.inquiry_status === 'declined' && item.decline_reason && (
-                    <div className="bg-[#FCE8E6] p-3 rounded border border-[#F5C6C6] mt-4 text-[#A05C5C] text-sm">
+                    <div className="bg-[#FCE8E6] p-3 rounded border border-[#F5C6C6] mt-4 mb-4 text-[#A05C5C] text-sm">
                       <strong>終止/婉拒理由：</strong>{item.decline_reason}
                     </div>
                   )}
 
-                  <div className="action-buttons mt-5 border-t pt-4 border-[#EAE6E1] flex gap-2 justify-end">
+                  <div className="action-buttons border-t pt-4 border-[#EAE6E1] flex gap-3 justify-end">
                     {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
                       <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
                         進入聊天室
@@ -411,6 +450,8 @@ export const Inbox: React.FC = () => {
                         前往正式委託單
                       </button>
                     )}
+                    
+                    {/* 🌟 2. 繪師視角的撤回與婉拒按鈕 */}
                     {canDecline && (
                       <button className="btn-secondary-red" onClick={() => {
                         setSelectedInquiry(item);
@@ -427,7 +468,7 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 邀請彈窗 (信紙風格) */}
+      {/* 邀請彈窗 (維持原樣) */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper">
@@ -455,26 +496,41 @@ export const Inbox: React.FC = () => {
             ></textarea>
             
             <div className="flex justify-end gap-4 mt-8">
-              <button className="btn-paper-cancel" onClick={() => setShowInviteModal(false)}>
-                取消捨棄
-              </button>
-              <button className="btn-paper-submit" onClick={handleSendInvite}>
-                確認並送出回信 ➔
-              </button>
+              <button className="btn-paper-cancel" onClick={() => setShowInviteModal(false)}>取消捨棄</button>
+              <button className="btn-paper-submit" onClick={handleSendInvite}>確認並送出回信 ➔</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🌟 婉拒彈窗 (信紙風格，紅色調) */}
+      {/* 🌟 婉拒彈窗 (加入罐頭訊息按鈕) */}
       {showDeclineModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper decline-modal">
             <div className="paper-deco-red"></div>
-            <h2 className="text-2xl font-bold text-[#A05C5C] mb-2 mt-2">禮貌婉拒提案</h2>
-            <p className="text-sm text-[#A0978D] mb-6 border-b border-[#F5C6C6] pb-4">
-              這將會終止與此繪師的洽談，建議附上簡單理由以示尊重。
+            <h2 className="text-2xl font-bold text-[#A05C5C] mb-2 mt-2">
+              {selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案'}
+            </h2>
+            <p className="text-sm text-[#A0978D] mb-4 border-b border-[#F5C6C6] pb-4">
+              這將會終止與此對象的洽談，建議附上簡單理由以示尊重。
             </p>
+
+            {/* 🌟 3. 罐頭訊息快速按鈕 */}
+            <div className="mb-3">
+              <div className="text-xs font-bold text-[#A05C5C] mb-2">快速帶入罐頭訊息：</div>
+              <div className="flex flex-wrap gap-2">
+                {declineTemplates.map((template, idx) => (
+                  <button 
+                    key={idx}
+                    type="button"
+                    className="text-xs bg-[#FFF5F5] border border-[#F5C6C6] text-[#A05C5C] px-3 py-1.5 rounded-full hover:bg-[#FCE8E6] transition-colors"
+                    onClick={() => setDeclineReason(template)}
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <textarea 
               className="paper-textarea decline-textarea"
@@ -483,13 +539,14 @@ export const Inbox: React.FC = () => {
               onChange={(e) => setDeclineReason(e.target.value)}
             ></textarea>
             
-            <div className="flex justify-end gap-4 mt-8">
-              <button className="btn-paper-cancel" onClick={() => setShowDeclineModal(false)}>
-                再想想
-              </button>
-              <button className="btn-paper-submit-red" onClick={handleConfirmDecline}>
-                確認婉拒
-              </button>
+            <div className="flex justify-between items-center mt-6">
+              <div className="text-xs text-[#A0978D]">
+                (若想修改預設罐頭訊息，可至 [設定] &gt; [履歷與接案] 更改)
+              </div>
+              <div className="flex gap-4">
+                <button className="btn-paper-cancel" onClick={() => setShowDeclineModal(false)}>再想想</button>
+                <button className="btn-paper-submit-red" onClick={handleConfirmDecline}>確認送出</button>
+              </div>
             </div>
           </div>
         </div>
