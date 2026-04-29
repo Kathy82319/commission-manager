@@ -99,19 +99,35 @@ export const Wishboard: React.FC = () => {
     } catch (err: any) { showToast(err.message || "圖片上傳失敗", "error"); } finally { setInquireUploading(false); }
   };
 
-  const handlePostSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return showToast("請先登入才能發布", "error");
-    try {
-      const res = await apiClient.post('/api/bulletins', { ...postForm, category: activeTab });
-      if (res.success) {
-        showToast("發布成功！");
-        setShowPostModal(false);
-        setPostForm({ title: '', content: '', tags: [], payment_methods: [], budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '', question_template: '' });
-        initData();
-      }
-    } catch (err) { showToast("發布失敗", "error"); }
-  };
+// 找到 handlePostSubmit 並替換如下
+const handlePostSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!currentUser) return showToast("請先登入才能發布", "error");
+
+  // 🛡️ [資安攔截] 再次確保預算不是負數
+  if (Number(postForm.budget_min) < 0 || Number(postForm.budget_max) < 0) {
+    return showToast("預算金額不可以是負數喔！", "error");
+  }
+
+  try {
+    const res = await apiClient.post('/api/bulletins', { ...postForm, category: activeTab });
+    
+    // 如果 API 回傳成功 (success: true)
+    if (res.success) {
+      showToast("發布成功！");
+      setShowPostModal(false);
+      setPostForm({ title: '', content: '', tags: [], payment_methods: [], budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '', question_template: '' });
+      initData();
+    } else {
+      // 🌟 [優化提醒] 捕捉後端回傳的錯誤訊息 (例如：一人只能發布一篇)
+      showToast(res.message || "發布失敗，請確認是否已有發布中的貼文", "error");
+    }
+  } catch (err: any) { 
+    // 若為嚴重的系統錯誤才顯示通用失敗
+    console.warn("提交攔截:", err.message); 
+    showToast(err.message || "系統忙碌中，請稍後再試", "error");
+  }
+};
 
   const openInquireModal = (bulletin: any) => {
     setSelectedBulletin(bulletin);
