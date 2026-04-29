@@ -12,6 +12,10 @@ interface CommissionDetail {
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
+  // 🌟 新增：許願池媒合軌跡欄位 (需後端 API 支援回傳)
+  bulletin_content?: string; 
+  artist_snapshot?: string; 
+  client_response?: string;
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -60,6 +64,9 @@ export function ClientOrders() {
   const [, setSavedTitle] = useState(''); 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 🌟 控制軌跡收合的狀態
+  const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -287,7 +294,7 @@ export function ClientOrders() {
                </div>
 
                <div style={{ marginTop: '20px', display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                 {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統已自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
+                 {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
                  {isReviewing && isFinal && (
                    <>
                      <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
@@ -321,6 +328,15 @@ export function ClientOrders() {
   let finalTosHtml = '';
   if (selectedOrder?.agreed_tos_snapshot) finalTosHtml = selectedOrder.agreed_tos_snapshot;
   else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
+
+  // 🌟 解析繪師的快照 (為了拿出 question_template)
+  let artistQuestionTemplate = "無提問範本";
+  if (selectedOrder?.artist_snapshot) {
+    try {
+      const snap = JSON.parse(selectedOrder.artist_snapshot);
+      if (snap.question_template) artistQuestionTemplate = snap.question_template;
+    } catch(e) {}
+  }
 
   return (
     <div className="notebook-page">
@@ -403,6 +419,8 @@ export function ClientOrders() {
             background-color: #FDFDFB;
           }
         }
+        
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
       
       {parsedChanges && (
@@ -521,6 +539,40 @@ export function ClientOrders() {
               <div className="tab-content-area" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
+                    
+                    {/* 🌟 新增：許願池媒合軌跡 (若有資料才顯示) */}
+                    {selectedOrder.bulletin_content && (
+                      <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', position: 'relative' }}>
+                        <h3 style={{ fontSize: '16px', color: '#7A7269', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          🔍 許願池媒合軌跡
+                        </h3>
+                        <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.6' }}>
+                          <p style={{ margin: '0 0 12px 0' }}><strong>原始許願內容：</strong><br/>
+                            {/* React 預設會過濾字串中的 HTML 標籤，這具有防禦 XSS 的作用 */}
+                            {selectedOrder.bulletin_content}
+                          </p>
+                          
+                          {selectedOrder.artist_snapshot && (
+                            <p style={{ margin: '0 0 12px 0' }}><strong>繪師提問單範本：</strong><br/>
+                              {artistQuestionTemplate}
+                            </p>
+                          )}
+                          
+                          {selectedOrder.client_response && (
+                            <p style={{ margin: 0 }}><strong>我的初始回覆：</strong><br/>
+                              {selectedOrder.client_response}
+                            </p>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} 
+                          style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', padding: '8px 0 0 0', marginTop: '8px', width: '100%', textAlign: 'left', borderTop: '1px dashed #EAE6E1' }}
+                        >
+                          {isTrajectoryExpanded ? "▲ 收合完整軌跡" : "▼ 展開完整軌跡"}
+                        </button>
+                      </div>
+                    )}
+
                     <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
