@@ -438,7 +438,7 @@ export const Inbox: React.FC = () => {
                       
                       <div className="aic-snippet-info">
                         <div className="aic-snippet-tags">
-                          <span className="aic-tag price">💰 {item.budget_min}~{item.budget_max}</span>
+                          <span className="aic-tag price">💰預算 ${item.budget_min}~${item.budget_max}</span>
                           <span className="aic-tag schedule">📅 {item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}</span>
                         </div>
                         <div className="aic-desc" title={item.bulletin_content}>
