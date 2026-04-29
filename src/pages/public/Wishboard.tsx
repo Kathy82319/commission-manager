@@ -1,10 +1,11 @@
+// src/pages/public/Wishboard.tsx
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
 import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, User, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ImageUploader } from '../../components/ImageUploader'; 
 
-const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日系', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
+const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
 const PAY_TAGS = ['皆可配合', '無卡', '匯款', '空包', '超商'];
 
 export const Wishboard: React.FC = () => {
@@ -28,7 +29,7 @@ export const Wishboard: React.FC = () => {
     message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] as string[]
   });
   
-  // 🌟 新增：提案卡標籤輸入框的暫存狀態
+  // 提案卡標籤輸入框的暫存狀態
   const [inquireTagInputs, setInquireTagInputs] = useState({
     specialties: '',
     no_gos: '',
@@ -144,7 +145,12 @@ export const Wishboard: React.FC = () => {
 
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods' | 'filters') => {
     if (field === 'filters') {
-      setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+      // 🌟 修正 Bug 2: 點選「不限」則清空條件
+      if (tag === '不限') {
+        setSelectedFilters([]);
+      } else {
+        setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+      }
       return;
     }
     setPostForm(prev => {
@@ -164,7 +170,7 @@ export const Wishboard: React.FC = () => {
     setPostForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
-  // 🌟 處理提案卡內的標籤新增 (Enter 或 空格觸發)
+  // 處理提案卡內的標籤新增 (Enter 或 空格觸發)
   const handleInquireTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
     const value = inquireTagInputs[field].trim();
     if (!value) return;
@@ -177,7 +183,6 @@ export const Wishboard: React.FC = () => {
     setInquireTagInputs(prev => ({ ...prev, [field]: '' }));
   };
 
-  // 🌟 處理提案卡內的標籤刪除
   const handleInquireTagRemove = (field: 'specialties' | 'no_gos' | 'payment_methods', tagToRemove: string) => {
     setInquireDraft(prev => {
       const currentTags = prev[field].split(' ').filter(t => t !== tagToRemove);
@@ -206,17 +211,29 @@ export const Wishboard: React.FC = () => {
       question_template: settings.question_template || '',
       images: card.images || [] 
     });
-    
-    // 重置標籤輸入框狀態
     setInquireTagInputs({ specialties: '', no_gos: '', payment_methods: '' });
-    
     setShowInquireModal(true);
   };
 
-  const handleInquire = async () => {
+const handleInquire = async () => {
     if (!selectedBulletin) return;
+
+    // 🌟 修正：確保 TypeScript 認識這些 Key，並修正之前的賦值錯誤
+    const finalDraft = { ...inquireDraft };
+    
+    // 使用 Object.keys 並斷言類型
+    (Object.keys(inquireTagInputs) as Array<keyof typeof inquireTagInputs>).forEach(field => {
+      const leftover = inquireTagInputs[field].trim();
+      if (leftover) {
+        const currentTags = finalDraft[field] ? finalDraft[field].split(' ').filter(t => t) : [];
+        if (!currentTags.includes(leftover)) {
+          finalDraft[field] = [...currentTags, leftover].join(' ');
+        }
+      }
+    });
+
     try {
-      const res = await apiClient.post(`/api/bulletins/${selectedBulletin}/inquire`, { artist_snapshot: JSON.stringify(inquireDraft) });
+      const res = await apiClient.post(`/api/bulletins/${selectedBulletin}/inquire`, { artist_snapshot: JSON.stringify(finalDraft) });
       if (res.success) {
         showToast('已成功發送投遞意向！');
         setShowInquireModal(false);
@@ -262,8 +279,15 @@ export const Wishboard: React.FC = () => {
       <div className="filter-section">
         <div className="filter-label"><Tag size={16} /> 熱門篩選：</div>
         <div className="filter-tags">
+          {/* 🌟 修正 Bug 2: 點選「不限」顯示 active 狀態 */}
           {REQ_TAGS.map(tag => (
-            <button key={tag} className={selectedFilters.includes(tag) ? 'active' : ''} onClick={() => toggleTag(tag, 'filters')}>{tag}</button>
+            <button 
+              key={tag} 
+              className={(tag === '不限' && selectedFilters.length === 0) || selectedFilters.includes(tag) ? 'active' : ''} 
+              onClick={() => toggleTag(tag, 'filters')}
+            >
+              {tag}
+            </button>
           ))}
         </div>
         {currentUser && (
@@ -514,9 +538,8 @@ export const Wishboard: React.FC = () => {
 
             <div style={{ borderTop: '1px dashed #e2e8f0', margin: '25px 0' }}></div>
 
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，若要新增請輸入後按下enter會自動變成標籤</p>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，案主在查看提案時可一目了然：</p>
 
-{/* 🌟 修正後的標籤化輸入區塊：舒適圈、雷點、付款方式 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
               {/* 舒適圈標籤輸入 */}
               <div className="form-group">
