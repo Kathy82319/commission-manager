@@ -29,7 +29,6 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-// 🌟 安全的時間解析 (支援跨瀏覽器 UTC)
 const safeParseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -158,12 +157,14 @@ export const Inbox: React.FC = () => {
   const [inviteResponse, setInviteResponse] = useState('');
   const [declineReason, setDeclineReason] = useState('');
 
-  // 🌟 預設罐頭訊息
+  // 🌟 罐頭訊息狀態與編輯狀態
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
     '目前檔期較滿，暫不接單', 
     '經過評估，可能有預算或價格考量', 
     '較不擅長此題材，怕無法達到您的期望'
   ]);
+  const [isEditingTemplates, setIsEditingTemplates] = useState(false);
+  const [tempTemplates, setTempTemplates] = useState<string[]>([]);
 
   const fetchInbox = async () => {
     setLoading(true);
@@ -201,9 +202,7 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  useEffect(() => { 
-    fetchInbox(); 
-  }, [activeTab]);
+  useEffect(() => { fetchInbox(); }, [activeTab]);
 
   const handleConfirmDecline = async () => {
     if (!selectedInquiry) return;
@@ -218,6 +217,7 @@ export const Inbox: React.FC = () => {
       alert('已傳送婉拒/撤回通知，對話已關閉。');
       setShowDeclineModal(false);
       setDeclineReason('');
+      setIsEditingTemplates(false);
       fetchInbox();
     } catch (error: any) { alert(error.message || '操作失敗'); }
   };
@@ -234,6 +234,26 @@ export const Inbox: React.FC = () => {
     } catch (error: any) { alert(error.message || '送出失敗'); }
   };
 
+  const handleSaveTemplates = async () => {
+    try {
+      const settings = typeof currentUser?.profile_settings === 'string' 
+        ? JSON.parse(currentUser.profile_settings || '{}') 
+        : (currentUser?.profile_settings || {});
+        
+      settings.decline_templates = tempTemplates;
+      
+      await apiClient.patch('/api/users/me', {
+        profile_settings: JSON.stringify(settings)
+      });
+      
+      setDeclineTemplates(tempTemplates);
+      setIsEditingTemplates(false);
+      alert('✅ 罐頭訊息已成功儲存！');
+    } catch (e) {
+      alert('儲存失敗，請檢查網路連線');
+    }
+  };
+
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   const handleViewCommission = (commissionId: string) => commissionId ? navigate(`/workspace/${commissionId}`) : alert('找不到關聯的委託單');
 
@@ -243,7 +263,6 @@ export const Inbox: React.FC = () => {
     return `剩餘 ${Math.ceil(diff / (1000 * 60 * 60 * 24))} 天`;
   };
 
-  // 🌟 過濾器：隱藏超過 3 天的已婉拒紀錄
   const filterOldItems = (item: any) => {
     if (item.inquiry_status === 'declined' || item.inquiry_status === 'cancelled') {
       const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
@@ -259,16 +278,15 @@ export const Inbox: React.FC = () => {
   ];
 
   return (
-    <div className="inbox-container">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[#5D4A3E]">訊息中心</h1>
-      </div>
+    // 🌟 外層改用 inbox-page-wrapper 賦予標準的網頁版框架寬度與 padding
+    <div className="inbox-page-wrapper">
+      <h1 className="inbox-page-title">訊息中心</h1>
 
-      <div className="wishboard-tabs mb-4 border-b border-[#EAE6E1]">
-        <button className={`tab-btn ${activeTab === 'client' ? 'active' : ''}`} onClick={() => setActiveTab('client')}>
+      <div className="inbox-tabs">
+        <button className={activeTab === 'client' ? 'active' : ''} onClick={() => setActiveTab('client')}>
           已發佈許願
         </button>
-        <button className={`tab-btn ${activeTab === 'artist' ? 'active' : ''}`} onClick={() => setActiveTab('artist')}>
+        <button className={activeTab === 'artist' ? 'active' : ''} onClick={() => setActiveTab('artist')}>
           我投遞的履歷
         </button>
       </div>
@@ -280,6 +298,9 @@ export const Inbox: React.FC = () => {
       {loading ? (
         <p className="text-center p-10 text-[#A0978D] font-bold">載入中...</p>
       ) : activeTab === 'client' ? (
+        // ==========================================
+        // 🌟 案主視角：保留原本的 dashboard-slots-grid 與 ArtistPostcard
+        // ==========================================
         <>
           <div className="mb-8">
             <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
@@ -387,7 +408,10 @@ export const Inbox: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="space-y-6">
+        // ==========================================
+        // 🌟 繪師視角：套用全新的 artist-inquiry-card 設計
+        // ==========================================
+        <div>
           {artistInquiries.filter(filterOldItems).length === 0 ? (
             <p className="text-center p-10 text-[#A0978D] bg-[#FBFBF9] rounded-xl border border-[#EAE6E1]">目前沒有任何投遞紀錄。</p>
           ) : (
@@ -395,51 +419,52 @@ export const Inbox: React.FC = () => {
               const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
               return (
-                <div key={item.inquiry_id} className="inbox-item relative overflow-hidden bg-white shadow-sm border border-[#EAE6E1] rounded-xl p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <span className={`inbox-badge status-${item.inquiry_status} mb-2 inline-block`}>
-                        {getStatusLabel(item.inquiry_status)}
-                      </span>
-                      <h3 className="text-lg font-bold text-[#5D4A3E]">
-                        投遞項目：{item.bulletin_title}
-                      </h3>
-                    </div>
+                <div key={item.inquiry_id} className="artist-inquiry-card">
+                  <div className="aic-header">
+                    <span className={`aic-status status-${item.inquiry_status}`}>
+                      {getStatusLabel(item.inquiry_status)}
+                    </span>
+                    <h3 title={item.bulletin_title}>{item.bulletin_title || '未命名貼文'}</h3>
                   </div>
 
-                  {/* 🌟 1. 繪師視角的「許願池迷你摘要卡片」 */}
-                  <div className="flex gap-4 mb-5 bg-[#FBFBF9] p-3 rounded-lg border border-[#EAE6E1]">
-                    {item.ref_image_key ? (
-                      <img src={item.ref_image_key} className="w-20 h-20 object-cover rounded-md flex-shrink-0 border border-[#EAE6E1]" alt="參考圖" />
-                    ) : (
-                      <div className="w-20 h-20 bg-[#EAE6E1] rounded-md flex items-center justify-center text-xs text-[#A0978D] flex-shrink-0">無圖</div>
+                  <div className="aic-body">
+                    {/* 許願池摘要 (迷你卡片) */}
+                    <div className="aic-snippet">
+                      {item.ref_image_key ? (
+                        <img src={item.ref_image_key} alt="參考圖" className="aic-snippet-img" />
+                      ) : (
+                        <div className="aic-snippet-noimg">無參考圖</div>
+                      )}
+                      
+                      <div className="aic-snippet-info">
+                        <div className="aic-snippet-tags">
+                          <span className="aic-tag price">💰 {item.budget_min}~{item.budget_max}</span>
+                          <span className="aic-tag schedule">📅 {item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}</span>
+                        </div>
+                        <div className="aic-desc" title={item.bulletin_content}>
+                          {item.bulletin_content}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 案主回覆區塊 */}
+                    {item.client_response && (
+                      <div className="aic-response">
+                        <strong>案主回填的提問單：</strong>
+                        <p>{item.client_response}</p>
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-[#7A7269] mb-2 flex gap-3 font-bold">
-                        <span className="bg-[#FFF5EB] text-[#ff8c00] px-2 py-0.5 rounded">💰 {item.budget_min}~{item.budget_max}</span>
-                        <span className="bg-[#F2F5F3] text-[#4E7A5A] px-2 py-0.5 rounded">📅 {item.schedule_type === 'flexible' ? '可排單' : item.specific_date}</span>
+
+                    {/* 婉拒理由區塊 */}
+                    {item.inquiry_status === 'declined' && item.decline_reason && (
+                      <div className="aic-decline">
+                        <strong>終止/婉拒理由：</strong>
+                        <p>{item.decline_reason}</p>
                       </div>
-                      <div className="text-sm text-[#7A7269] line-clamp-2 leading-relaxed" title={item.bulletin_content}>
-                        {item.bulletin_content}
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  {item.client_response && (
-                    <div className="bg-[#EBF2F7] p-4 rounded border border-[#C1D6E8] mt-4 mb-4">
-                      <p className="text-[#4A7294] font-bold mb-2">案主回覆的需求細節：</p>
-                      <p className="text-[#5D4A3E] whitespace-pre-wrap text-sm">{item.client_response}</p>
-                    </div>
-                  )}
-
-                  {/* 顯示婉拒理由 */}
-                  {item.inquiry_status === 'declined' && item.decline_reason && (
-                    <div className="bg-[#FCE8E6] p-3 rounded border border-[#F5C6C6] mt-4 mb-4 text-[#A05C5C] text-sm">
-                      <strong>終止/婉拒理由：</strong>{item.decline_reason}
-                    </div>
-                  )}
-
-                  <div className="action-buttons border-t pt-4 border-[#EAE6E1] flex gap-3 justify-end">
+                  <div className="aic-footer">
                     {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
                       <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
                         進入聊天室
@@ -450,11 +475,10 @@ export const Inbox: React.FC = () => {
                         前往正式委託單
                       </button>
                     )}
-                    
-                    {/* 🌟 2. 繪師視角的撤回與婉拒按鈕 */}
                     {canDecline && (
                       <button className="btn-secondary-red" onClick={() => {
                         setSelectedInquiry(item);
+                        setTempTemplates([...declineTemplates]); // 準備編輯用
                         setShowDeclineModal(true);
                       }}>
                         {item.inquiry_status === 'pending' ? '撤回投遞' : '終止洽談'}
@@ -468,7 +492,7 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 邀請彈窗 (維持原樣) */}
+      {/* 邀請彈窗 */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper">
@@ -503,10 +527,10 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 婉拒彈窗 (加入罐頭訊息按鈕) */}
+      {/* 🌟 婉拒與撤回彈窗 (加入罐頭訊息即時編輯功能) */}
       {showDeclineModal && (
         <div className="modal-overlay">
-          <div className="modal-content-paper decline-modal">
+          <div className="modal-content-paper decline-modal" style={{ maxWidth: '550px' }}>
             <div className="paper-deco-red"></div>
             <h2 className="text-2xl font-bold text-[#A05C5C] mb-2 mt-2">
               {selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案'}
@@ -515,21 +539,56 @@ export const Inbox: React.FC = () => {
               這將會終止與此對象的洽談，建議附上簡單理由以示尊重。
             </p>
 
-            {/* 🌟 3. 罐頭訊息快速按鈕 */}
-            <div className="mb-3">
-              <div className="text-xs font-bold text-[#A05C5C] mb-2">快速帶入罐頭訊息：</div>
-              <div className="flex flex-wrap gap-2">
-                {declineTemplates.map((template, idx) => (
-                  <button 
-                    key={idx}
-                    type="button"
-                    className="text-xs bg-[#FFF5F5] border border-[#F5C6C6] text-[#A05C5C] px-3 py-1.5 rounded-full hover:bg-[#FCE8E6] transition-colors"
-                    onClick={() => setDeclineReason(template)}
-                  >
-                    {template}
-                  </button>
-                ))}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-xs font-bold text-[#A05C5C]">快速帶入罐頭訊息：</div>
+                <button 
+                  className="text-xs text-[#4A7294] font-bold hover:underline bg-transparent border-none cursor-pointer p-0"
+                  onClick={() => setIsEditingTemplates(!isEditingTemplates)}
+                >
+                  {isEditingTemplates ? '✕ 取消編輯' : '⚙️ 編輯罐頭訊息'}
+                </button>
               </div>
+
+              {isEditingTemplates ? (
+                <div className="template-edit-box">
+                  {tempTemplates.map((temp, idx) => (
+                    <div key={idx} className="template-input-row">
+                      <input 
+                        type="text" 
+                        value={temp} 
+                        onChange={(e) => {
+                          const newT = [...tempTemplates];
+                          newT[idx] = e.target.value;
+                          setTempTemplates(newT);
+                        }} 
+                        placeholder={`罐頭訊息 ${idx + 1}`}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex justify-end mt-3">
+                    <button 
+                      className="bg-[#5D4A3E] text-white text-xs font-bold px-4 py-2 rounded-md hover:bg-[#4E7A5A] transition"
+                      onClick={handleSaveTemplates}
+                    >
+                      儲存變更
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {declineTemplates.map((template, idx) => (
+                    <button 
+                      key={idx}
+                      type="button"
+                      className="text-xs bg-[#FFF5F5] border border-[#F5C6C6] text-[#A05C5C] px-3 py-1.5 rounded-full hover:bg-[#FCE8E6] transition-colors"
+                      onClick={() => setDeclineReason(template)}
+                    >
+                      {template}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <textarea 
@@ -537,16 +596,12 @@ export const Inbox: React.FC = () => {
               placeholder="例如：預算不符、時程已滿、或已找到合適人選..."
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
+              disabled={isEditingTemplates}
             ></textarea>
             
-            <div className="flex justify-between items-center mt-6">
-              <div className="text-xs text-[#A0978D]">
-                (若想修改預設罐頭訊息，可至 [設定] &gt; [履歷與接案] 更改)
-              </div>
-              <div className="flex gap-4">
-                <button className="btn-paper-cancel" onClick={() => setShowDeclineModal(false)}>再想想</button>
-                <button className="btn-paper-submit-red" onClick={handleConfirmDecline}>確認送出</button>
-              </div>
+            <div className="flex justify-end gap-4 mt-6">
+              <button className="btn-paper-cancel" onClick={() => { setShowDeclineModal(false); setIsEditingTemplates(false); }}>再想想</button>
+              <button className="btn-paper-submit-red" onClick={handleConfirmDecline} disabled={isEditingTemplates}>確認送出</button>
             </div>
           </div>
         </div>
