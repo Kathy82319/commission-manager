@@ -13,7 +13,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && bulletin.applied_artist_ids.includes(currentUser.id);
   
-  // 🌟 多圖輪播狀態
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
   const getTimeRemaining = (expiresAt: string) => {
@@ -23,7 +22,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     return hours > 24 ? `剩餘 ${Math.floor(hours / 24)}天` : `剩餘 ${hours}小時`;
   };
 
-  // 🌟 解析 JSON 字串的標籤與圖片 (防止破圖的關鍵)
   const tags = JSON.parse(bulletin.tags || '[]');
   const paymentMethods = JSON.parse(bulletin.payment_methods || '[]');
   
@@ -37,7 +35,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   const validImages = images.filter(url => url).map(getFullUrl);
 
-  // 🌟 區分風格、預警、授權 (三權分立顏色標籤)
   const warningTags = tags.filter((t: string) => STYLE_WARNINGS.includes(t));
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t));
@@ -45,7 +42,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   return (
     <div className="wish-card-wide">
       
-      {/* 🖼️ 左側圖片區 */}
       <div className="wish-card-image-wrapper">
         {validImages.length > 0 ? (
           <>
@@ -69,7 +65,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 📄 右側資訊區 */}
       <div className="wish-card-info">
         <div className="wish-card-header">
           <h3>{bulletin.title || '無標題'}</h3>
@@ -111,38 +106,38 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Calendar size={16} color="#94a3b8" /> 
-              <span>排單：</span>
+              <span>排單狀況：</span>
               <span style={{ fontWeight: '600', color: '#334155' }}>
-                {bulletin.schedule_type === 'flexible' ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') : bulletin.specific_date}
+                {/* 🌟 修改點 1：文字說明更清晰 */}
+                {bulletin.schedule_type === 'flexible' 
+                  ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
+                  : `預計排單至 ${bulletin.specific_date} 之後`}
               </span>
             </span>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Send size={16} color="#94a3b8" /> 
-            <span>付款：</span>
+            <span>付款方式：</span>
             <span style={{ fontWeight: '600', color: '#334155' }}>{paymentMethods.join(', ')}</span>
           </div>
         </div>
 
-        {/* 說明區域 */}
         <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9', marginTop: 'auto' }}>
           <strong style={{ color: '#0f172a' }}>{bulletin.category === 'offer' ? '接案說明：' : '詳細需求：'}</strong>
           <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
             {(() => {
               try {
-                // 如果是新版發布的，取出 JSON 裡的 description
+                // 🌟 修改點 2：解析 JSON 避免噴亂碼
                 const contentObj = JSON.parse(bulletin.content);
                 return contentObj.description || '';
               } catch {
-                // 如果是舊版發布的，直接顯示文字
                 return bulletin.content;
               }
             })()}
           </p>
         </div>
 
-        {/* 🌟 重新套用正確的按鈕樣式 (submit-post-btn) */}
         <div style={{ marginTop: '16px' }}>
           {isMyOwnPost ? (
             <button disabled className="submit-post-btn" style={{ width: '100%', background: '#f1f5f9', color: '#94a3b8', boxShadow: 'none' }}>這是您發布的貼文</button>

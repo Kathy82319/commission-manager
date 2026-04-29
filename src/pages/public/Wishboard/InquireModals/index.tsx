@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/InquireModals/index.tsx
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, AlertTriangle } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
 
 interface InquireModalProps {
@@ -28,7 +28,26 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 }) => {
   if (!selectedBulletin) return null;
 
-  // 內部處理：新增標籤
+  const isOffer = selectedBulletin.category === 'offer';
+
+  // 🌟 解析 JSON 獲取提問清單與條款
+  let parsedContent: any = {};
+  try {
+    parsedContent = JSON.parse(selectedBulletin.content);
+  } catch (e) {
+    parsedContent = {};
+  }
+  
+  const questions: string[] = parsedContent.questions || [];
+  const tosContent: string = parsedContent.tos_content || '';
+
+  // 狀態：是否已同意條款 (如果沒有條款，直接視為已同意)
+  const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
+  
+  // 狀態：記錄多個問題的答案
+  const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
+
+  // 內部處理：新增標籤 (僅繪師投單用)
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
     const value = inquireTagInputs[field].trim();
     if (!value) return;
@@ -41,7 +60,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     setInquireTagInputs((prev: any) => ({ ...prev, [field]: '' }));
   };
 
-  // 內部處理：移除標籤
+  // 內部處理：移除標籤 (僅繪師投單用)
   const handleTagRemove = (field: 'specialties' | 'no_gos' | 'payment_methods', tagToRemove: string) => {
     setInquireDraft((prev: any) => {
       const currentTags = prev[field].split(' ').filter((t: string) => t !== tagToRemove);
@@ -49,177 +68,228 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     });
   };
 
-  const isOffer = selectedBulletin.category === 'offer';
+  const handleAgreeTOS = () => {
+    setHasAgreedTOS(true);
+  };
 
+  const handleFinalSubmit = () => {
+    // 若為接委託且有設定問題，組合 Q&A 放入 message 中
+    if (isOffer && questions.length > 0) {
+      const qaString = questions.map((q, idx) => `【${q}】\n${answers[idx] || '未填寫'}`).join('\n\n');
+      const finalMessage = qaString + (inquireDraft.message ? `\n\n【其他備註】\n${inquireDraft.message}` : '');
+      
+      // 因為 setInquireDraft 屬於異步操作，為了確保傳送時帶有最新資料
+      // 在實作上，如果需要立刻送出，可以考慮在 onSubmit() 函式中一併處理
+      // 這裡我們先用簡單的狀態更新
+      setInquireDraft((prev: any) => ({ ...prev, message: finalMessage }));
+    }
+    
+    // 延遲一點點時間讓 state 更新後再 submit
+    setTimeout(() => {
+      onSubmit();
+    }, 100);
+  };
+
+  // 🌟 畫面 A：閱讀條款畫面 (如果繪師有設定條款且案主尚未同意)
+  if (isOffer && !hasAgreedTOS) {
+    return (
+      <div className="modal-overlay">
+        <div className="post-modal" style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <h2>委託服務條款 (TOS)</h2>
+            <button className="close-modal-btn" onClick={onClose}><X size={24} /></button>
+          </div>
+          <div className="post-form">
+            <div className="form-section">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e11d48', fontWeight: 'bold', marginBottom: '12px' }}>
+                <AlertTriangle size={20} /> 在填寫委託單前，請詳細閱讀繪師的接案條款
+              </div>
+              <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '8px', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto', border: '1px solid #cbd5e1', fontSize: '14px', lineHeight: '1.6' }}>
+                {tosContent}
+              </div>
+            </div>
+            <div className="modal-footer" style={{ borderTop: 'none', padding: '0' }}>
+              <button className="btn-cancel" onClick={onClose}>拒絕並離開</button>
+              <button className="submit-post-btn" onClick={handleAgreeTOS}>我已閱讀並同意</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 🌟 畫面 B：正式填寫表單畫面
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+      <div className="post-modal" style={{ maxWidth: '700px' }}>
         
         {/* 標頭 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>
-            {isOffer ? '填寫委託需求單' : '發送專屬提案卡'}
-          </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '50%' }}>
-            <X color="#999" />
-          </button>
+        <div className="modal-header">
+          <h2>{isOffer ? '填寫委託需求單' : '發送專屬提案卡'}</h2>
+          <button className="close-modal-btn" onClick={onClose}><X size={24} /></button>
         </div>
         
-        {/* 提示文字 */}
-        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.6' }}>
-          {isOffer 
-            ? '請根據繪師的要求填寫需求，並附上必要的參考圖，這將幫助繪師決定是否接受您的委託。'
-            : '與其丟文字履歷，不如直接給案主看您的作品！您可以上傳精美的價目表或排版圖，讓案主一目了然。'
-          }
-        </p>
+        <div className="post-form">
+          {/* 提示文字 */}
+          <p className="label-hint">
+            {isOffer 
+              ? '請根據繪師的要求填寫需求，並附上必要的參考圖，這將幫助繪師決定是否接受您的委託。'
+              : '與其丟文字履歷，不如直接給案主看您的作品！您可以上傳精美的價目表或排版圖，讓案主一目了然。'
+            }
+          </p>
 
-        {/* 🌟 繪師提問模板展示（僅接委託） */}
-        {isOffer && (
-          <div style={{ background: '#f8fafc', borderLeft: '4px solid #9333ea', padding: '12px 16px', borderRadius: '4px', marginBottom: '20px' }}>
-            <strong style={{ color: '#9333ea', fontSize: '14px', display: 'block', marginBottom: '8px' }}>繪師提問模板：</strong>
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '14px', color: '#334155', fontFamily: 'inherit', lineHeight: '1.5' }}>
-              {selectedBulletin.question_template || '繪師未設定特定問題，請詳細描述您的委託需求。'}
-            </pre>
+          {/* 圖片上傳區 */}
+          <div className="form-section">
+            <label className="section-title">
+              {isOffer ? '附上參考設定圖 (最多 3 張)' : '附上參考圖 / 價目表 (最多 3 張)'}
+            </label>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {inquireDraft.images.map((imgUrl: string, idx: number) => (
+                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
+                  <img src={imgUrl} alt={`附件 ${idx + 1}`} />
+                  <button 
+                    type="button" 
+                    className="remove-image-btn"
+                    onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))} 
+                  >
+                    <X size={14}/>
+                  </button>
+                </div>
+              ))}
+              {inquireDraft.images.length < 3 && (
+                <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ImageUploader 
+                    onUpload={onImageUpload} 
+                    targetWidth={1000} 
+                    buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} 
+                    maxSizeMB={3} 
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* 圖片上傳區 */}
-        <div className="form-group" style={{ marginBottom: '25px' }}>
-          <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>
-            {isOffer ? '附上參考設定圖 (最多 3 張)' : '附上參考圖 / 價目表 (最多 3 張)'}
-          </label>
-          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-            {inquireDraft.images.map((imgUrl: string, idx: number) => (
-              <div key={idx} style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                <img src={imgUrl} alt={`附件 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button 
-                  type="button" 
-                  onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))} 
-                  style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer', padding: '4px', display: 'flex' }}
-                >
-                  <X size={14}/>
-                </button>
+          {/* 內容輸入區 */}
+          {isOffer ? (
+            /* 🌟 案主模式：動態需求回覆 */
+            <>
+              {questions.length > 0 ? (
+                <div className="form-section">
+                  <label className="section-title">需求問卷</label>
+                  {questions.map((q, idx) => (
+                    <div className="form-group" key={idx} style={{ marginBottom: '12px' }}>
+                      <label>{q}</label>
+                      <input 
+                        type="text" 
+                        placeholder="請輸入您的回答..." 
+                        value={answers[idx]} 
+                        onChange={(e) => {
+                          const newAns = [...answers];
+                          newAns[idx] = e.target.value;
+                          setAnswers(newAns);
+                        }} 
+                      />
+                    </div>
+                  ))}
+                  
+                  <div className="form-group" style={{ marginTop: '16px' }}>
+                    <label>其他備註留言</label>
+                    <textarea 
+                      rows={4} 
+                      className="detail-textarea"
+                      placeholder="有什麼需要補充的細節嗎？"
+                      value={inquireDraft.message} 
+                      onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="form-section">
+                  <label className="section-title">您的需求內容回覆</label>
+                  <textarea 
+                    rows={8} 
+                    className="detail-textarea"
+                    placeholder="請在此詳細填寫您的委託需求..."
+                    value={inquireDraft.message} 
+                    onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
+                    required
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            /* 🎨 繪師模式：提案卡設定 */
+            <>
+              <p className="label-hint" style={{ marginTop: '10px' }}>以下資訊已由您的「接案設定」自動帶入：</p>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label style={{ color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>
+                  <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                    {inquireDraft.specialties.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
+                      <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff5eb', color: '#ff8c00', borderColor: '#ffd2a6' }}>
+                        {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
+                      </span>
+                    ))}
+                    <input 
+                      type="text" 
+                      className="compact-tag-input"
+                      placeholder="+ 項目"
+                      value={inquireTagInputs.specialties}
+                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('specialties'); }
+                      }}
+                      style={{ border: 'none !important', boxShadow: 'none' }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label style={{ color: '#e11d48' }}>不擅長 / 雷點</label>
+                  <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                    {inquireDraft.no_gos.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
+                      <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff1f2', color: '#e11d48', borderColor: '#fecdd3' }}>
+                        {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
+                      </span>
+                    ))}
+                    <input 
+                      type="text" 
+                      className="compact-tag-input"
+                      placeholder="+ 項目"
+                      value={inquireTagInputs.no_gos}
+                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('no_gos'); }
+                      }}
+                      style={{ border: 'none !important', boxShadow: 'none' }}
+                    />
+                  </div>
+                </div>
               </div>
-            ))}
-            {inquireDraft.images.length < 3 && (
-              <div style={{ width: '120px', height: '120px', flexShrink: 0 }}>
-                <ImageUploader 
-                  onUpload={onImageUpload} 
-                  targetWidth={1000} 
-                  buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} 
-                  maxSizeMB={3} 
+
+              <div className="form-section">
+                <label className="section-title">留言訊息</label>
+                <textarea 
+                  rows={4} 
+                  className="detail-textarea"
+                  placeholder="簡單介紹一下自己，讓案主更想選擇你！"
+                  value={inquireDraft.message} 
+                  onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
                 />
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
-        {/* 內容輸入區 */}
-        {isOffer ? (
-          /* 案主模式：需求回覆 */
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '14px', color: '#334155' }}>
-              您的需求內容回覆
-            </label>
-            <textarea 
-              value={inquireDraft.message} 
-              onChange={(e) => setInquireDraft({...inquireDraft, message: e.target.value})} 
-              rows={8} 
-              placeholder="請在此詳細填寫您的需求，並盡量回答繪師在上方提出的問題..."
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', lineHeight: '1.5' }} 
-              required
-            />
-          </div>
-        ) : (
-          /* 繪師模式：提案卡設定 */
-          <>
-            <div style={{ borderTop: '1px dashed #e2e8f0', margin: '25px 0' }}></div>
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入：</p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-              <div className="form-group">
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>
-                <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {inquireDraft.specialties.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
-                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fff5eb', color: '#ff8c00', borderColor: '#ffd2a6' }}>
-                      {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
-                    </span>
-                  ))}
-                  <input 
-                    type="text" 
-                    placeholder="+ 項目"
-                    value={inquireTagInputs.specialties}
-                    onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('specialties'); }
-                    }}
-                    style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#e65c5c' }}>不擅長 / 雷點</label>
-                <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {inquireDraft.no_gos.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
-                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fff0f0', color: '#e65c5c', borderColor: '#f1a9a9' }}>
-                      {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
-                    </span>
-                  ))}
-                  <input 
-                    type="text" 
-                    placeholder="+ 項目"
-                    value={inquireTagInputs.no_gos}
-                    onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('no_gos'); }
-                    }}
-                    style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#4E7A5A' }}>接受的付款方式</label>
-              <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {inquireDraft.payment_methods.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
-                  <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#f2f5f3', color: '#4e7a5a', borderColor: '#b5c9bc' }}>
-                    {tag} <X size={12} onClick={() => handleTagRemove('payment_methods', tag)} style={{ cursor: 'pointer' }} />
-                  </span>
-                ))}
-                <input 
-                  type="text" 
-                  placeholder="+ 方式"
-                  value={inquireTagInputs.payment_methods}
-                  onChange={(e) => setInquireTagInputs({...inquireTagInputs, payment_methods: e.target.value})}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('payment_methods'); }
-                  }}
-                  style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px', fontSize: '14px', color: '#9333ea' }}>
-                初步細節提問單
-              </label>
-              <textarea 
-                value={inquireDraft.question_template} 
-                onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} 
-                rows={4} 
-                placeholder={`1. 角色是否有設定圖？\n2. 是否為商用？\n3. 目前手上排單狀況說明...`}
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
-              />
-            </div>
-          </>
-        )}
-
         {/* 操作按鈕 */}
-        <div className="modal-actions" style={{ marginTop: '25px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', border: '1px solid #cbd5e1', borderRadius: '8px', background: 'white', color: '#64748b', fontWeight: 'bold', cursor: 'pointer' }}>取消</button>
-          <button onClick={onSubmit} disabled={inquireUploading} style={{ padding: '10px 24px', border: 'none', borderRadius: '8px', background: '#ff8c00', color: 'white', fontWeight: 'bold', cursor: inquireUploading ? 'not-allowed' : 'pointer', opacity: inquireUploading ? 0.7 : 1 }}>
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={onClose}>取消</button>
+          <button 
+            className="submit-post-btn" 
+            onClick={handleFinalSubmit} 
+            disabled={inquireUploading}
+          >
             {isOffer ? '送出需求單' : '發送專屬提案'}
           </button>
         </div>
