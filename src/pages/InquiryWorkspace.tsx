@@ -15,11 +15,11 @@ export const InquiryWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
   
-  // 🌟 控制軌跡收合
+  // 🌟 軌跡收合、合約彈窗、以及手機版右側選單控制
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
-  // 🌟 合約彈窗控制
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showMobileAside, setShowMobileAside] = useState(false); // 手機版用
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
@@ -87,6 +87,7 @@ export const InquiryWorkspace: React.FC = () => {
       await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
       await apiClient.post(`/api/inquiries/${id}/propose`, {});
       alert('已送出正式提案給案主！');
+      setShowMobileAside(false); // 送出後關閉手機選單
       fetchData();
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
@@ -108,11 +109,10 @@ export const InquiryWorkspace: React.FC = () => {
     </div>
   );
 
-  // 🌟 成單成功面板
   if (isAccepted) {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9' }}>
-        <div style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(93, 74, 62, 0.1)', textAlign: 'center', maxWidth: '500px', border: '1px solid #EAE6E1' }}>
+        <div className="accepted-modal" style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(93, 74, 62, 0.1)', textAlign: 'center', maxWidth: '500px', border: '1px solid #EAE6E1', width: '90%' }}>
           <div style={{ fontSize: '60px', marginBottom: '20px' }}>🎉</div>
           <h2 style={{ color: '#4E7A5A', fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
             {isArtist ? '合作達成！委託單已建立' : '恭喜！您已成功與繪師達成協議'}
@@ -130,44 +130,39 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  // 🌟 解析繪師提問
   const artistSnap = JSON.parse(inquiry.artist_snapshot || '{}');
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #DED9D3; border-radius: 10px; }
-        .draft-input { width: 100%; border: 1px solid #EAE6E1; padding: 8px 12px; border-radius: 8px; font-size: 13px; color: #5D4A3E; transition: all 0.2s; outline: none; background: #FFFFFF; }
-        .draft-input:focus { border-color: #5D4A3E; box-shadow: 0 0 0 2px rgba(93, 74, 62, 0.1); }
-        .draft-input:disabled { background: #FBFBF9; color: #A0978D; cursor: not-allowed; }
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
-        /* 🌟 補上合約確認彈窗的信紙樣式 */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(26, 20, 18, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 20px; }
-        .modal-content-paper { background: #FDFDFB; width: 100%; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25); position: relative; overflow: hidden; border: 1px solid #EAE6E1; }
-        .paper-deco { position: absolute; top: 0; left: 0; right: 0; height: 8px; background: repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px); }
-        .btn-paper-cancel { color: #A0978D; font-weight: bold; border: none; background: none; cursor: pointer; padding: 12px 20px; border-radius: 8px; transition: 0.2s; }
-        .btn-paper-cancel:hover { background: #FBFBF9; color: #7A7269; }
-        .btn-paper-submit { background: #4E7A5A; color: white; padding: 12px 30px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
-        .btn-paper-submit:hover:not(:disabled) { background: #3B5C44; transform: translateY(-2px); }
-      `}</style>
+    <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
+      
+      {/* 🌟 修改點：將寫在 style 裡面的 CSS 搬到 className 以便集中管理與響應式控制 */}
 
       {/* 左側聊天區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
-        <header style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold' }}>← 返回</button>
-            <h2 style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold' }}>洽談：{inquiry.bulletin_content.substring(0, 20)}...</h2>
+      <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
+        <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>← 返回</button>
+            <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>洽談：{inquiry.bulletin_content.substring(0, 20)}...</h2>
           </div>
-          <div style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>
-            {isArtist ? '🎨 我是繪師' : '👤 我是案主'}
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {/* 手機版：切換合約側邊欄的按鈕 */}
+            <button 
+              className="iw-mobile-toggle-btn"
+              onClick={() => setShowMobileAside(!showMobileAside)}
+              style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}
+            >
+              {showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}
+            </button>
+
+            <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>
+              {isArtist ? '🎨 繪師' : '👤 案主'}
+            </div>
           </div>
         </header>
 
-        <main className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
+        <main className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           {messages.map((msg) => {
             const isMe = msg.sender_id === (isArtist ? inquiry.artist_id : inquiry.bulletin_client_id);
             return (
@@ -176,7 +171,7 @@ export const InquiryWorkspace: React.FC = () => {
                   <span>{msg.sender_id === inquiry.artist_id ? '繪師' : '委託人'}</span>
                   <span>{formatLocalTime(msg.created_at)}</span>
                 </div>
-                <div style={{ maxWidth: '80%', padding: '10px 14px', fontSize: '14px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                <div className="iw-chat-bubble" style={{ maxWidth: '80%', padding: '10px 14px', fontSize: '14px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                   {msg.content}
                 </div>
               </div>
@@ -185,14 +180,19 @@ export const InquiryWorkspace: React.FC = () => {
           <div ref={chatEndRef} />
         </main>
 
-        <footer style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+        <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息 (Enter 發送)..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none', lineHeight: '1.4' }} />
           <button onClick={handleSendMessage} disabled={!newMessage.trim()} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: newMessage.trim() ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: newMessage.trim() ? 'pointer' : 'not-allowed', transition: '0.2s', marginBottom: '2px' }}>傳送</button>
         </footer>
       </div>
 
-      {/* 右側側邊欄 */}
-      <aside className="custom-scrollbar" style={{ width: '420px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column' }}>
+      {/* 右側側邊欄 (手機版將被隱藏並作為 Drawer) */}
+      {/* 遮罩，只有在手機版且選單開啟時顯示 */}
+      {showMobileAside && (
+        <div className="iw-mobile-overlay" onClick={() => setShowMobileAside(false)} style={{ display: 'none', position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 19 }}></div>
+      )}
+
+      <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '420px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>📝 正式協議編輯區</span>
@@ -204,7 +204,6 @@ export const InquiryWorkspace: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-          {/* 🌟 升級版：許願池媒合軌跡 (可收合) */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '0px 8px 8px 8px', marginBottom: '12px', position: 'relative' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
@@ -239,7 +238,7 @@ export const InquiryWorkspace: React.FC = () => {
             <button onClick={handlePropose} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>🚀 送出正式提案</button></>
           )}
           {!isArtist && inquiry.status === 'proposed' && (
-            <button onClick={() => setShowFinalModal(true)} style={{ width: '100%', padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並正式建立委託單</button>
+            <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ width: '100%', padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並正式建立委託單</button>
           )}
           {inquiry.status === 'proposed' && isArtist && (
             <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待案主確認中...</div>
@@ -249,11 +248,11 @@ export const InquiryWorkspace: React.FC = () => {
 
       {/* 🌟 最終合約確認彈窗 (案主專用) */}
       {showFinalModal && (
-        <div className="modal-overlay">
-          <div className="modal-content-paper" style={{ maxWidth: '650px', padding: '0', display: 'flex', flexDirection: 'column', height: '90vh' }}>
-            <div className="paper-deco"></div>
+        <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
+          <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
             
-            <div className="custom-scrollbar" style={{ padding: '30px 40px', overflowY: 'auto', flex: 1 }}>
+            <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
               
               <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
@@ -277,19 +276,18 @@ export const InquiryWorkspace: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ padding: '20px 40px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '20px' }}>
-                <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>我已詳細閱讀並同意以上委託規格與繪師協議。</span>
+            <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '20px' }}>
+                <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px' }} />
+                <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold', lineHeight: '1.4' }}>我已詳細閱讀並同意以上委託規格與繪師協議。</span>
               </label>
               
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <button className="btn-paper-cancel" onClick={() => setShowFinalModal(false)} style={{ flex: 1 }}>再考慮一下</button>
+              <div className="iw-modal-actions" style={{ display: 'flex', gap: '15px' }}>
+                <button style={{ flex: 1, color: '#A0978D', fontWeight: 'bold', border: '1px solid #EAE6E1', background: '#FFFFFF', cursor: 'pointer', padding: '12px', borderRadius: '8px' }} onClick={() => setShowFinalModal(false)}>再考慮一下</button>
                 <button 
-                  className="btn-paper-submit" 
                   disabled={!agreedToTerms} 
                   onClick={handleFinalize}
-                  style={{ flex: 2, opacity: agreedToTerms ? 1 : 0.5, cursor: agreedToTerms ? 'pointer' : 'not-allowed' }}
+                  style={{ flex: 2, background: '#4E7A5A', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 'bold', border: 'none', transition: '0.2s', opacity: agreedToTerms ? 1 : 0.5, cursor: agreedToTerms ? 'pointer' : 'not-allowed' }}
                 >
                   正式簽署並建立委託 ➔
                 </button>

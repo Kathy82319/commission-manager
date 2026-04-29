@@ -152,3 +152,114 @@
 
 .btn-primary:hover { background-color: #1d4ed8; }
 .btn-secondary:hover { background-color: #f3f4f6; }
+
+/* ==========================================================================
+   🌟 洽談室 (InquiryWorkspace) 專屬響應式設計 (Mobile UI)
+   ========================================================================== */
+
+/* 共用捲軸設定 */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #DED9D3; border-radius: 10px; }
+
+/* 網頁版基本樣式定義 (輔助上方 Inline-styles) */
+.draft-input { 
+  width: 100%; border: 1px solid #EAE6E1; padding: 8px 12px; 
+  border-radius: 8px; font-size: 13px; color: #5D4A3E; transition: all 0.2s; 
+  outline: none; background: #FFFFFF; 
+}
+.draft-input:focus { border-color: #5D4A3E; box-shadow: 0 0 0 2px rgba(93, 74, 62, 0.1); }
+.draft-input:disabled { background: #FBFBF9; color: #A0978D; cursor: not-allowed; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 手機版適配 (< 768px) */
+@media (max-width: 768px) {
+  /* 聊天區塊：滿屏 */
+  .iw-chat-section {
+    width: 100vw !important;
+  }
+
+  /* 頭部優化 */
+  .iw-chat-header {
+    padding: 10px 12px !important;
+  }
+  .iw-back-btn { padding: 4px !important; }
+  .iw-chat-title { max-width: 120px; font-size: 15px !important; }
+  .iw-role-badge { display: none !important; } /* 手機空間不夠，隱藏我是案主/繪師標籤 */
+  
+  /* 🌟 手機版顯示「合約按鈕」與覆蓋層 */
+  .iw-mobile-toggle-btn {
+    display: block !important;
+  }
+  .iw-mobile-overlay {
+    display: block !important;
+  }
+
+  /* 聊天區優化 */
+  .iw-chat-main {
+    padding: 12px !important;
+  }
+  .iw-chat-bubble {
+    max-width: 90% !important; /* 增加文字泡泡寬度 */
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* 輸入框優化 (防擋與精簡) */
+  .iw-chat-footer {
+    padding: 10px !important;
+    position: sticky;
+    bottom: 0;
+  }
+  .iw-chat-footer textarea {
+    padding: 10px !important;
+    font-size: 14px !important;
+    min-height: 40px !important;
+  }
+  .iw-chat-footer button {
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+  }
+
+  /* 🌟 右側合約區變形為抽屜 (Drawer) */
+  .iw-aside-section {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -100%; /* 預設隱藏在畫面右側外 */
+    width: 85% !important; /* 抽屜寬度 */
+    max-width: 320px;
+    box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+    transition: right 0.3s ease-in-out;
+    border-left: none !important;
+  }
+  
+  /* 展開狀態 */
+  .iw-aside-section.mobile-open {
+    right: 0;
+  }
+
+  /* 合約確認 Modal 手機版 */
+  .iw-modal-content-paper {
+    height: auto !important;
+    max-height: 95vh !important;
+  }
+  .iw-modal-content-paper > div.custom-scrollbar {
+    padding: 20px 16px !important;
+  }
+  .iw-modal-content-paper > div:last-child {
+    padding: 16px !important;
+  }
+  .iw-modal-actions {
+    flex-direction: column;
+    gap: 10px !important;
+  }
+  .iw-modal-actions button {
+    width: 100%;
+  }
+
+  /* 成功畫面 */
+  .accepted-modal {
+    padding: 24px 16px !important;
+  }
+}
