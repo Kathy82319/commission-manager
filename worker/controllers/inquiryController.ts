@@ -45,10 +45,14 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修改：額外 JOIN Users 表來撈取繪師的 profile_settings (內含 TOS)
       const inquiry = await env.commission_db.prepare(
-        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
+        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id,
+                a.profile_settings as artist_settings, u.display_name as client_name
          FROM BulletinInquiries i
          JOIN Bulletins b ON i.bulletin_id = b.id
+         LEFT JOIN Users a ON i.artist_id = a.id
+         LEFT JOIN Users u ON b.client_id = u.id
          WHERE i.id = ?`
       ).bind(inquiryId).all();
 
@@ -126,11 +130,14 @@ export const inquiryController = {
 
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修改：建立訂單時同時抓取繪師的最新 TOS 快照
       const inquiry = await env.commission_db.prepare(
-        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, u.display_name as client_name
+        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, 
+                u.display_name as client_name, a.profile_settings as artist_settings
          FROM BulletinInquiries i 
          JOIN Bulletins b ON i.bulletin_id = b.id 
          LEFT JOIN Users u ON b.client_id = u.id
+         LEFT JOIN Users a ON i.artist_id = a.id
          WHERE i.id = ? AND b.client_id = ?`
       ).bind(inquiryId, currentUserId).first() as any;
 
@@ -138,10 +145,16 @@ export const inquiryController = {
 
       const draft = JSON.parse(inquiry.negotiation_draft);
       
-      // 🌟 修正 1：短編號產生 (WB-加上時間戳後6碼)
       const timestampStr = Date.now().toString();
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
+
+      // 🌟 解析繪師的 TOS 用於存檔
+      let tosText = "繪師未提供專屬協議說明。";
+      try {
+        const settings = JSON.parse(inquiry.artist_settings || '{}');
+        if (settings.terms_of_service) tosText = settings.terms_of_service;
+      } catch (e) {}
 
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
@@ -152,27 +165,24 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
-      // 🌟 修正 2：如果草稿的 project_name 是預設值(即原始許願內容)，就換成乾淨的名字
       const clientName = inquiry.client_name || '案主';
       let finalProjectName = draft.project_name;
       if (!finalProjectName || finalProjectName === inquiry.bulletin_content.substring(0, 30)) {
         finalProjectName = `${clientName} 的許願池委託`;
       }
 
-      // 🌟 修正 3：加入 contact_memo，自動填入案主名稱
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
-          contact_memo,
-          total_price, status, origin_source, 
+          contact_memo, total_price, status, origin_source, 
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons,
-          delivery_method, workflow_mode, latest_message_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
+          delivery_method, workflow_mode, latest_message_at, agreed_tos_snapshot
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP, ?)`
       ).bind(
         commissionId, currentUserId, inquiry.artist_id, 'type-01', finalProjectName,
-        clientName, // 寫入 contact_memo
-        draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
-        draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || ''
+        clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
+        draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
+        tosText // 🌟 快照寫入
       ).run();
 
       const oldMessages = await env.commission_db.prepare(
