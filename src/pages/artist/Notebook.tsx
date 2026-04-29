@@ -134,6 +134,9 @@ export function Notebook() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
+  // 🌟 控制 Notebook 內媒合軌跡的收合狀態
+  const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
+
   // 🌟 獲取當前登入者 ID，確保後續能正確過濾委託單
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
@@ -195,6 +198,7 @@ export function Notebook() {
     setSelectedId(order.id);
     setEditData(order);
     setIsEditingRequest(false);
+    setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
     fetchPayments(order.id);
     fetchDeliverables(order.id);
 
@@ -691,20 +695,26 @@ export function Notebook() {
                     </div>
 
                     
-                    {/* 許願池媒合軌跡區塊 */}
+                    {/* 🌟 升級版：許願池媒合軌跡區塊 (可收合) */}
                     {getBulletinSource(selectedOrder) && (
-                      <div className="section-card" style={{ backgroundColor: '#fdfbfe', border: '1px solid #e9d5ff' }}>
-                        <h3 className="section-title" style={{ color: '#9333ea', borderBottom: '1px solid #f3e8ff', paddingBottom: '8px' }}>
-                          許願池媒合軌跡
+                      <div 
+                        className="section-card" 
+                        style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', cursor: 'pointer' }}
+                        onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}
+                      >
+                        <h3 className="section-title" style={{ color: '#5D4A3E', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🔍 許願池媒合軌跡</span>
+                          <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}>
+                            {isTrajectoryExpanded ? '收合 ▲' : '展開 ▼'}
+                          </span>
                         </h3>
-                        <div style={{ fontSize: '13px', color: '#4b5563', marginTop: '12px', lineHeight: '1.6' }}>
-                          <p><strong>原始許願內容：</strong> {getBulletinSource(selectedOrder).bulletin_content}</p>
-
-                          {getBulletinSource(selectedOrder).client_initial_response && (
-                            <p style={{ marginTop: '8px' }}>
-                              <strong>案主提問回覆：</strong> {getBulletinSource(selectedOrder).client_initial_response}
-                            </p>
-                          )}
+                        <div style={{ 
+                          fontSize: '13px', color: '#5D4A3E', marginTop: '12px', lineHeight: '1.6',
+                          ...(isTrajectoryExpanded ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' })
+                        }}>
+                          <p style={{ margin: 0 }}><strong>1. 原始許願內容：</strong><br/>{getBulletinSource(selectedOrder).bulletin_content}</p>
+                          <p style={{ margin: '10px 0 0 0' }}><strong>2. 繪師提問單範本：</strong><br/>{getBulletinSource(selectedOrder).artist_initial_snapshot?.question_template || "無提問單"}</p>
+                          <p style={{ margin: '10px 0 0 0' }}><strong>3. 案主初始回覆：</strong><br/>{getBulletinSource(selectedOrder).client_initial_response || "無回覆內容"}</p>
                         </div>
                       </div>
                     )}
@@ -767,7 +777,6 @@ export function Notebook() {
                         ) : (
                           <>
                             <button className="action-btn btn-outline-default" onClick={handleStartEditRequest}>委託單異動</button>
-                            {/* 🌟 點擊日常儲存就會直接儲存剛才解鎖的兩個文字框 */}
                             <button className="action-btn btn-primary btn-save" onClick={handleSaveDailyFields}>日常儲存</button>
                           </>
                         )}
