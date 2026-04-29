@@ -12,10 +12,8 @@ interface CommissionDetail {
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
-  // 🌟 新增：許願池媒合軌跡欄位 (需後端 API 支援回傳)
-  bulletin_content?: string; 
-  artist_snapshot?: string; 
-  client_response?: string;
+  // 🌟 從 Notebook.tsx 學來的：資料其實存在這裡
+  origin_source?: string;
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -40,6 +38,18 @@ const formatLocalDate = (dateStr: string) => {
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+};
+
+// 🌟 解析許願池 JSON 字串的共用函式 (從 Notebook.tsx 移植)
+const getBulletinSource = (order?: CommissionDetail) => {
+  if (!order || !order.origin_source) return null;
+  try {
+    const parsed = JSON.parse(order.origin_source);
+    if (parsed.source_type === 'bulletin') return parsed;
+  } catch (e) {
+    return null;
+  }
+  return null;
 };
 
 export function ClientOrders() {
@@ -121,6 +131,7 @@ export function ClientOrders() {
 
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
+      setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -329,15 +340,6 @@ export function ClientOrders() {
   if (selectedOrder?.agreed_tos_snapshot) finalTosHtml = selectedOrder.agreed_tos_snapshot;
   else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
 
-  // 🌟 解析繪師的快照 (為了拿出 question_template)
-  let artistQuestionTemplate = "無提問範本";
-  if (selectedOrder?.artist_snapshot) {
-    try {
-      const snap = JSON.parse(selectedOrder.artist_snapshot);
-      if (snap.question_template) artistQuestionTemplate = snap.question_template;
-    } catch(e) {}
-  }
-
   return (
     <div className="notebook-page">
       <style>{`
@@ -468,11 +470,17 @@ export function ClientOrders() {
             {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
+                const isBulletin = getBulletinSource(order) !== null;
 
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} style={{ position: 'relative', padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
-                      <span>{formatLocalDate(order.order_date)}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span>{formatLocalDate(order.order_date)}</span>
+                        {isBulletin && (
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#8b5cf6', color: '#fff' }}>許願池</span>
+                        )}
+                      </div>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
                     </div>
                     
@@ -500,7 +508,12 @@ export function ClientOrders() {
                 <div style={{ flex: '1 1 250px' }}>
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
-                  <div style={{ color: '#7A7269', fontSize: '13px', marginBottom: '4px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div style={{ color: '#7A7269', fontSize: '13px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
+                    {getBulletinSource(selectedOrder) && (
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#8b5cf6', color: '#fff' }}>來源：許願池</span>
+                    )}
+                  </div>
                   <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
                 </div>
                 
@@ -540,29 +553,24 @@ export function ClientOrders() {
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {/* 🌟 新增：許願池媒合軌跡 (若有資料才顯示) */}
-                    {selectedOrder.bulletin_content && (
+                    {/* 🌟 讀取自 origin_source 的許願池媒合軌跡 */}
+                    {getBulletinSource(selectedOrder) && (
                       <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', position: 'relative' }}>
-                        <h3 style={{ fontSize: '16px', color: '#7A7269', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          🔍 許願池媒合軌跡
+                        <h3 style={{ fontSize: '16px', color: '#7A7269', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>
+                          <span style={{flex: 1}}>🔍 許願池媒合軌跡</span>
                         </h3>
                         <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.6' }}>
-                          <p style={{ margin: '0 0 12px 0' }}><strong>原始許願內容：</strong><br/>
-                            {/* React 預設會過濾字串中的 HTML 標籤，這具有防禦 XSS 的作用 */}
-                            {selectedOrder.bulletin_content}
+                          <p style={{ margin: '0 0 12px 0' }}><strong>1. 原始許願內容：</strong><br/>
+                            {getBulletinSource(selectedOrder).bulletin_content}
                           </p>
                           
-                          {selectedOrder.artist_snapshot && (
-                            <p style={{ margin: '0 0 12px 0' }}><strong>繪師提問單範本：</strong><br/>
-                              {artistQuestionTemplate}
-                            </p>
-                          )}
+                          <p style={{ margin: '0 0 12px 0' }}><strong>2. 繪師提問單範本：</strong><br/>
+                            {getBulletinSource(selectedOrder).artist_initial_snapshot?.question_template || "無提問單"}
+                          </p>
                           
-                          {selectedOrder.client_response && (
-                            <p style={{ margin: 0 }}><strong>我的初始回覆：</strong><br/>
-                              {selectedOrder.client_response}
-                            </p>
-                          )}
+                          <p style={{ margin: 0 }}><strong>3. 我的初始回覆：</strong><br/>
+                            {getBulletinSource(selectedOrder).client_initial_response || "無回覆內容"}
+                          </p>
                         </div>
                         <button 
                           onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} 
