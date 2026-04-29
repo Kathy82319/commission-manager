@@ -22,7 +22,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 }) => {
   return (
     <>
-      {/* 🌟 優化後的 Hero 區塊 */}
+      {/* 🌟 漸層背景與置中 */}
       <header className="wishboard-hero">
         <h1 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0 10px 0', color: '#1e293b' }}>
           <Sparkles color="#ff8c00" size={28} /> 創作許願池
@@ -30,37 +30,28 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>在這裡遇見你的命定畫師，或為案主實現願望</p>
         
         <div className="tab-group">
-          <button 
-            className={activeTab === 'request' ? 'active' : ''} 
-            onClick={() => setActiveTab('request')}
-          >
+          <button className={activeTab === 'request' ? 'active' : ''} onClick={() => setActiveTab('request')}>
             # 徵委託
           </button>
-          <button 
-            className={activeTab === 'offer' ? 'active' : ''} 
-            onClick={() => setActiveTab('offer')}
-          >
+          <button className={activeTab === 'offer' ? 'active' : ''} onClick={() => setActiveTab('offer')}>
             # 接委託
           </button>
-          <button 
-            className={activeTab === 'other' ? 'active' : ''} 
-            onClick={() => setActiveTab('other')}
-          >
+          <button className={activeTab === 'other' ? 'active' : ''} onClick={() => setActiveTab('other')}>
             # 其他
           </button>
         </div>
       </header>
 
-      {/* 🌟 優化後的篩選器與發布按鈕佈局 */}
-      <div className="filter-section">
-        <div className="filter-label">
+      {/* 🌟 篩選列橫向排版 */}
+      <div className="form-section" style={{ flexDirection: 'row', alignItems: 'center', marginBottom: '20px', padding: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, fontWeight: 'bold', color: '#475569' }}>
           <Tag size={16} /> 熱門篩選：
         </div>
-        <div className="filter-tags">
+        <div className="tag-selector" style={{ flex: 1, margin: 0 }}>
           {REQ_TAGS.map(tag => (
             <button 
               key={tag} 
-              className={(tag === '不限' && selectedFilters.length === 0) || selectedFilters.includes(tag) ? 'active' : ''} 
+              className={`selectable-tag ${((tag === '不限' && selectedFilters.length === 0) || selectedFilters.includes(tag)) ? 'selected' : ''}`} 
               onClick={() => toggleTag(tag, 'filters')}
             >
               {tag}
@@ -68,9 +59,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           ))}
         </div>
         {currentUser && (
-          <button className="post-trigger-btn" onClick={onPostTrigger}>
-            <Plus size={18} /> 
-            {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
+          <button className="submit-post-btn" style={{ padding: '10px 20px', fontSize: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }} onClick={onPostTrigger}>
+            <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
           </button>
         )}
       </div>
