@@ -704,3 +704,146 @@
 .template-input-row input:focus {
   border-color: #A05C5C;
 }
+
+/* ==================================================
+   🌟 響應式設計 (Responsive Design) - 手機版適配
+   ================================================== */
+
+@media (max-width: 768px) {
+  /* 基礎容器與標題 */
+  .inbox-container, .inbox-page-wrapper {
+    padding: 16px;
+  }
+  .inbox-page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  /* 🌟 Tab 標籤切換：改為橫向滑動，避免斷行 */
+  .inbox-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+  }
+  .inbox-tabs::-webkit-scrollbar { display: none; }
+  .inbox-tabs button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* 🌟 我的許願：改為單欄垂直排列 */
+  .dashboard-slots-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .dashboard-slot {
+    height: auto;
+    min-height: 120px;
+  }
+
+  /* 🌟 收到的繪師履歷 (明信片)：上圖下文 */
+  .postcard-container {
+    flex-direction: column;
+  }
+  .postcard-image-section {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #EAE6E1;
+  }
+  .postcard-content-section {
+    width: 100%;
+    padding: 16px;
+  }
+  /* 手機版郵戳縮小並調整位置 */
+  .postcard-stamp {
+    top: 8px;
+    right: -20px;
+    padding: 2px 24px;
+    font-size: 10px;
+    transform: rotate(35deg) scale(0.9);
+  }
+  .postcard-header { gap: 12px; margin-bottom: 16px; }
+  .postcard-avatar, .postcard-avatar-fallback { width: 44px; height: 44px; }
+  .postcard-artist-name { font-size: 16px; }
+
+  .postcard-actions-wrapper {
+    flex-direction: column; /* 按鈕垂直排列 */
+    gap: 10px;
+  }
+  .postcard-actions-wrapper button {
+    width: 100%; /* 手機上按鈕滿寬更好點擊 */
+    text-align: center;
+  }
+
+  /* 🌟 我投遞的履歷 (Artist Inquiry Card) */
+  .artist-inquiry-card {
+    padding: 16px;
+  }
+  .aic-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .aic-header h3 {
+    font-size: 16px;
+    white-space: normal; /* 允許標題折行 */
+  }
+  
+  .aic-snippet {
+    flex-direction: column; /* 摘要區也改為上圖下文 */
+    gap: 12px;
+  }
+  .aic-snippet-img, .aic-snippet-noimg {
+    width: 100%;
+    height: 140px;
+  }
+
+  .aic-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .aic-footer button {
+    width: 100%;
+  }
+
+  /* 🌟 彈出視窗 (Modal) */
+  .modal-overlay {
+    padding: 12px;
+  }
+  .modal-content-paper {
+    padding: 24px 16px;
+  }
+  .modal-content-paper h2 {
+    font-size: 20px;
+  }
+  .paper-textarea {
+    height: 120px;
+    font-size: 14px;
+    padding: 12px;
+  }
+  
+  /* Modal 按鈕區塊 */
+  .modal-content-paper > .flex.justify-end,
+  .modal-content-paper > .flex.justify-between {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .modal-content-paper .flex.gap-4 {
+    flex-direction: column;
+    width: 100%;
+  }
+  .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red {
+    width: 100%;
+    padding: 12px;
+    text-align: center;
+  }
+  
+  /* 罐頭訊息編輯區 */
+  .template-edit-box {
+    padding: 12px;
+  }
+}

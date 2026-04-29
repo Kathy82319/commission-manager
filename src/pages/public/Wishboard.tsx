@@ -514,7 +514,7 @@ export const Wishboard: React.FC = () => {
 
             <div style={{ borderTop: '1px dashed #e2e8f0', margin: '25px 0' }}></div>
 
-            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，案主在查看提案時可一目了然：</p>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，若要新增請輸入後按下enter會自動變成標籤</p>
 
 {/* 🌟 修正後的標籤化輸入區塊：舒適圈、雷點、付款方式 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
@@ -606,7 +606,7 @@ export const Wishboard: React.FC = () => {
                 value={inquireDraft.question_template} 
                 onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} 
                 rows={4} 
-                placeholder={`例：\n1. 角色是否有設定圖？\n2. 是否為商用？\n3. 期望的最晚交稿日期？`}
+                placeholder={`1. 角色是否有設定圖？\n2. 是否為商用？\n3. 目前手上排單狀況說明...`}
                 style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
               />
             </div>

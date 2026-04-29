@@ -313,7 +313,7 @@ export const Inbox: React.FC = () => {
         <>
           <div className="mb-8">
             <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
-              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm">1</span> 
+              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
               我的許願 (每種分類限一則許願)
             </h2>
             <div className="dashboard-slots-grid">
@@ -353,7 +353,7 @@ export const Inbox: React.FC = () => {
 
           <div className="mb-4">
             <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
-              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm">2</span> 
+              <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
               收到的繪師履歷
             </h2>
             
@@ -512,7 +512,7 @@ export const Inbox: React.FC = () => {
             </p>
 
             <div className="bg-[#FBFBF9] p-5 rounded-xl border border-[#EAE6E1] mb-6 shadow-sm">
-              <strong className="text-[#5D4A3E] flex items-center gap-2 mb-2 text-sm">
+              <strong className="text-[#007BFF] flex items-center gap-2 mb-2 text-sm">
                 <span className="bg-[#EAE6E1] w-6 h-6 flex items-center justify-center rounded-full text-[#5D4A3E]">Q</span>
                 繪師希望您提供的資訊：
               </strong>
