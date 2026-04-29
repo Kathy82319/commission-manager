@@ -27,6 +27,14 @@ export const Wishboard: React.FC = () => {
   const [inquireDraft, setInquireDraft] = useState({
     message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] as string[]
   });
+  
+  // 🌟 新增：提案卡標籤輸入框的暫存狀態
+  const [inquireTagInputs, setInquireTagInputs] = useState({
+    specialties: '',
+    no_gos: '',
+    payment_methods: ''
+  });
+  
   const [inquireUploading, setInquireUploading] = useState(false);
 
   const [postForm, setPostForm] = useState({
@@ -156,6 +164,27 @@ export const Wishboard: React.FC = () => {
     setPostForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
+  // 🌟 處理提案卡內的標籤新增 (Enter 或 空格觸發)
+  const handleInquireTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
+    const value = inquireTagInputs[field].trim();
+    if (!value) return;
+
+    setInquireDraft(prev => {
+      const currentTags = prev[field] ? prev[field].split(' ').filter(t => t) : [];
+      if (currentTags.includes(value)) return prev;
+      return { ...prev, [field]: [...currentTags, value].join(' ') };
+    });
+    setInquireTagInputs(prev => ({ ...prev, [field]: '' }));
+  };
+
+  // 🌟 處理提案卡內的標籤刪除
+  const handleInquireTagRemove = (field: 'specialties' | 'no_gos' | 'payment_methods', tagToRemove: string) => {
+    setInquireDraft(prev => {
+      const currentTags = prev[field].split(' ').filter(t => t !== tagToRemove);
+      return { ...prev, [field]: currentTags.join(' ') };
+    });
+  };
+
   const openInquireModal = (bulletinId: string) => {
     setSelectedBulletin(bulletinId);
     let settings: any = {};
@@ -177,6 +206,10 @@ export const Wishboard: React.FC = () => {
       question_template: settings.question_template || '',
       images: card.images || [] 
     });
+    
+    // 重置標籤輸入框狀態
+    setInquireTagInputs({ specialties: '', no_gos: '', payment_methods: '' });
+    
     setShowInquireModal(true);
   };
 
@@ -301,13 +334,12 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-      {/* 🌟 翻新後的發布需求 Modal (符合圖一需求) */}
+      {/* 發布需求 Modal */}
       {showPostModal && (
         <div className="modal-overlay">
           <div className="post-modal" style={{ maxWidth: '800px' }}>
             <div className="modal-header">
               <h2>發布徵委託需求</h2>
-              {/* 修正：修復 X 按鈕樣式 */}
               <button 
                 type="button" 
                 className="close-modal-btn" 
@@ -319,11 +351,7 @@ export const Wishboard: React.FC = () => {
             </div>
             
             <form onSubmit={handlePostSubmit} className="post-form" style={{ padding: '24px', gap: '20px' }}>
-              
-              {/* 上半部：左圖右文 */}
               <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                
-                {/* 修正：強制給予長方形尺寸 */}
                 <div className="form-group" style={{ width: '240px', flexShrink: 0 }}>
                   <label>範例參考圖 (建議 1MB 內)</label>
                   {postForm.ref_image_key ? (
@@ -360,7 +388,6 @@ export const Wishboard: React.FC = () => {
 
                   <div className="form-group" style={{ width: '100%' }}>
                     <label>排單需求</label>
-                    {/* 修正：加入 whiteSpace: nowrap 並調整間距，防止文字擠壓換行 */}
                     <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', minHeight: '42px' }}>
                       <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#475569' }}>
                         <input 
@@ -394,7 +421,6 @@ export const Wishboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 下半部：全寬展示區 */}
               <div className="form-group">
                 <label>付款方式</label>
                 <div className="tag-selector">
@@ -442,7 +468,6 @@ export const Wishboard: React.FC = () => {
                 <textarea rows={3} value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
               </div>
 
-              {/* 修正：移除 Modal 尾部白框，按鈕懸浮置右 */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
                 <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ background: '#ff8c00', color: 'white', padding: '12px 28px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 4px 12px rgba(255, 140, 0, 0.3)' }}>發布許願單</button>
               </div>
@@ -465,7 +490,6 @@ export const Wishboard: React.FC = () => {
               您可以上傳精美的價目表或排版圖，讓案主一目了然。
             </p>
 
-            {/* 視覺化附圖區 */}
             <div className="form-group" style={{ marginBottom: '25px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>附上參考圖 / 價目表 (最多 3 張)</label>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
@@ -492,23 +516,85 @@ export const Wishboard: React.FC = () => {
 
             <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '15px' }}>以下資訊已由您的「接案設定」自動帶入，案主在查看提案時可一目了然：</p>
 
+            {/* 🌟 修正後的標籤化輸入區塊：舒適圈、雷點、付款方式 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              {/* 舒適圈標籤輸入 */}
               <div className="form-group">
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>您的舒適圈 / 擅長題材</label>
-                <input type="text" value={inquireDraft.specialties} onChange={(e) => setInquireDraft({...inquireDraft, specialties: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {inquireDraft.specialties.split(' ').filter(t => t).map((tag, i) => (
+                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px' }}>
+                      {tag} <X size={12} onClick={() => handleInquireTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
+                    </span>
+                  ))}
+                  <input 
+                    type="text" 
+                    placeholder="+ 項目"
+                    value={inquireTagInputs.specialties}
+                    onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleInquireTagAdd('specialties');
+                      }
+                    }}
+                    style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
+                  />
+                </div>
               </div>
+              
+              {/* 雷點標籤輸入 */}
               <div className="form-group">
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#ef4444' }}>不擅長 / 雷點</label>
-                <input type="text" value={inquireDraft.no_gos} onChange={(e) => setInquireDraft({...inquireDraft, no_gos: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {inquireDraft.no_gos.split(' ').filter(t => t).map((tag, i) => (
+                    <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#fee2e2', color: '#ef4444', borderColor: '#fca5a5' }}>
+                      {tag} <X size={12} onClick={() => handleInquireTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
+                    </span>
+                  ))}
+                  <input 
+                    type="text" 
+                    placeholder="+ 項目"
+                    value={inquireTagInputs.no_gos}
+                    onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleInquireTagAdd('no_gos');
+                      }
+                    }}
+                    style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
+                  />
+                </div>
               </div>
             </div>
 
+            {/* 付款方式標籤輸入 */}
             <div className="form-group" style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px' }}>接受的付款方式</label>
-              <input type="text" value={inquireDraft.payment_methods} onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+              <div className="tag-selector" style={{ border: '1px solid #cbd5e1', padding: '6px', borderRadius: '6px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {inquireDraft.payment_methods.split(' ').filter(t => t).map((tag, i) => (
+                  <span key={i} className="selectable-tag selected custom-tag" style={{ margin: 0, padding: '4px 8px', fontSize: '12px', backgroundColor: '#f0f9ff', color: '#0369a1', borderColor: '#bae6fd' }}>
+                    {tag} <X size={12} onClick={() => handleInquireTagRemove('payment_methods', tag)} style={{ cursor: 'pointer' }} />
+                  </span>
+                ))}
+                <input 
+                  type="text" 
+                  placeholder="+ 方式"
+                  value={inquireTagInputs.payment_methods}
+                  onChange={(e) => setInquireTagInputs({...inquireTagInputs, payment_methods: e.target.value})}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleInquireTagAdd('payment_methods');
+                    }
+                  }}
+                  style={{ flex: 1, border: 'none', padding: '4px', fontSize: '12px', outline: 'none', minWidth: '60px' }}
+                />
+              </div>
             </div>
 
-            {/* 🌟 提問模板引導優化區塊 */}
+            {/* 提問模板 */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px', fontSize: '14px', color: '#9333ea' }}>
                 初步細節提問單 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(若案主按下邀請詳談，系統將請他填寫)</span>
