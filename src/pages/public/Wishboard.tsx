@@ -31,7 +31,7 @@ export const Wishboard: React.FC = () => {
 
   const [postForm, setPostForm] = useState({
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
-    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' 
+    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: ''
   });
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -226,7 +226,6 @@ export const Wishboard: React.FC = () => {
         </div>
       </header>
 
-      {/* 🌟 發布區域已修改：移除白底與陰影 */}
       <div className="filter-section">
         <div className="filter-label"><Tag size={16} /> 熱門篩選：</div>
         <div className="filter-tags">
@@ -261,35 +260,28 @@ export const Wishboard: React.FC = () => {
                   <div className="wish-countdown"><Clock size={12} /> {getTimeRemaining(b.expires_at)}</div>
                 </div>
                 
-                {/* 🌟 卡片資訊佈局修改：右側上下拆分 */}
                 <div className="wish-card-info">
-                  
-                  {/* 右側：標題區 */}
                   <div className="wish-card-header">
                     <h3>{b.title || '無標題'}</h3>
                     <span className="category-badge">{b.category === 'request' ? '徵委託' : '其他'}</span>
                   </div>
 
-                  {/* 右側上層：預算與排單 */}
-                  <div style={{ display: 'flex', gap: '24px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <span className="meta-item"><DollarSign size={16} color="#e67e22" /> <strong style={{color: '#555'}}>預算：</strong><span className="price">{b.budget_min}~{b.budget_max}</span></span>
-                    <span className="meta-item"><Calendar size={16} color="#4E7A5A" /> <strong style={{color: '#555'}}>排單：</strong><span>{b.schedule_type === 'flexible' ? '可接受排單' : b.specific_date}</span></span>
-                  </div>
-
-                  {/* 右側下層：付款方式與標籤 */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', background: '#fdfdfb', padding: '12px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
-                    <div className="meta-item"><Send size={14} color="#666" /> <strong style={{color: '#555'}}>付款方式：</strong><span>{JSON.parse(b.payment_methods || '[]').join(', ')}</span></div>
-                    <div className="meta-item" style={{ alignItems: 'flex-start' }}>
-                      <Tag size={14} color="#666" style={{ marginTop: '2px' }} /> <strong style={{color: '#555', whiteSpace: 'nowrap'}}>需求標籤：</strong>
+                  <div className="wish-metadata">
+                    <div className="meta-item">
+                      <Tag size={14} />
                       <div className="tag-cloud">
                         {JSON.parse(b.tags || '[]').map((t: string) => <span key={t} className="tag-chip">{t}</span>)}
                       </div>
                     </div>
+                    <div className="meta-row">
+                      <span className="meta-item"><DollarSign size={14} /> 預算：<span className="price">{b.budget_min}~{b.budget_max}</span></span>
+                      <span className="meta-item"><Calendar size={14} /> 排單：<span>{b.schedule_type === 'flexible' ? '可接受排單' : b.specific_date}</span></span>
+                    </div>
+                    <div className="meta-item"><Send size={14} /> 付款：<span>{JSON.parse(b.payment_methods || '[]').join(', ')}</span></div>
                   </div>
 
-                  {/* 詳細說明 */}
                   <div className="wish-description">
-                    <strong style={{ color: '#555' }}>詳細需求說明：</strong>
+                    <strong>詳細需求：</strong>
                     <p>{b.content}</p>
                   </div>
 
@@ -309,36 +301,99 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-      {/* 發布需求 Modal */}
+      {/* 🌟 1 & 2. 佈局翻新的發布需求 Modal */}
       {showPostModal && (
         <div className="modal-overlay">
-          <div className="post-modal">
+          <div className="post-modal" style={{ maxWidth: '800px' }}>
             <div className="modal-header">
               <h2>發布徵委託需求</h2>
               <button onClick={() => setShowPostModal(false)}><X /></button>
             </div>
             
-            <form onSubmit={handlePostSubmit} className="post-form">
-              <div className="form-row">
-                <div className="form-group flex-2">
-                  <label>標題</label>
-                  <input type="text" placeholder="簡單描述你的需求" value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required />
-                </div>
-                <div className="form-group flex-1">
+            {/* 調整 padding 與 gap 讓版面更緊湊，無需捲動 */}
+            <form onSubmit={handlePostSubmit} className="post-form" style={{ padding: '20px', gap: '16px' }}>
+              
+              {/* === 上半部：左側圖片，右側資訊 === */}
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                
+                {/* 左側：方型圖片區塊 */}
+                <div className="form-group" style={{ width: '220px', flexShrink: 0 }}>
                   <label>範例參考圖 (建議 1MB 內)</label>
                   {postForm.ref_image_key ? (
-                    <div style={{ position: 'relative', width: '100%', height: '100px', borderRadius: '8px', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '220px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
                       <img src={postForm.ref_image_key} alt="預覽" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <button type="button" onClick={() => setPostForm({...postForm, ref_image_key: ''})} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer' }}><X size={16}/></button>
                     </div>
                   ) : (
-                    <ImageUploader 
-                      onUpload={handleImageUpload} 
-                      targetWidth={800} 
-                      buttonText={isUploading ? "上傳中..." : "選擇圖片"} 
-                      maxSizeMB={5} 
-                    />
+                    <div style={{ height: '220px', borderRadius: '8px', overflow: 'hidden' }}>
+                      <ImageUploader 
+                        onUpload={handleImageUpload} 
+                        targetWidth={800} 
+                        buttonText={isUploading ? "上傳中..." : "選擇圖片"} 
+                        maxSizeMB={5} 
+                      />
+                    </div>
                   )}
+                </div>
+
+                {/* 右側：標題、預算、排單 */}
+                <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label>標題</label>
+                    <input type="text" placeholder="簡單描述你的需求" value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>預算範圍</label>
+                    <div className="budget-inputs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input type="number" placeholder="最低" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} style={{ width: '100px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                      <span>~</span>
+                      <input type="number" placeholder="最高" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} style={{ width: '100px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ width: '100%' }}>
+                    <label>排單需求</label>
+                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <input 
+                          type="radio" 
+                          name="schedule" 
+                          checked={postForm.schedule_type === 'flexible'} 
+                          onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} 
+                          style={{ margin: 0 }}
+                        /> 可接受排單
+                      </label>
+                      <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <input 
+                          type="radio" 
+                          name="schedule" 
+                          checked={postForm.schedule_type === 'fixed'} 
+                          onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} 
+                          style={{ margin: 0 }}
+                        /> 指定日期：
+                      </label>
+                      {postForm.schedule_type === 'fixed' && (
+                        <input 
+                          type="date" 
+                          value={postForm.specific_date} 
+                          onChange={e => setPostForm({...postForm, specific_date: e.target.value})} 
+                          style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ddd' }}
+                          required
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* === 下半部：全寬展示區 === */}
+              <div className="form-group">
+                <label>付款方式</label>
+                <div className="tag-selector">
+                  {PAY_TAGS.map(t => (
+                    <span key={t} className={`selectable-tag ${postForm.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
+                  ))}
                 </div>
               </div>
 
@@ -357,7 +412,7 @@ export const Wishboard: React.FC = () => {
 
                   <input 
                     type="text" 
-                    className="inline-tag-input compact-tag-input" 
+                    className="inline-tag-input" 
                     placeholder="+ 自定義 (按 Enter 加入)" 
                     value={customTagInput} 
                     onChange={e => setCustomTagInput(e.target.value)}
@@ -370,69 +425,20 @@ export const Wishboard: React.FC = () => {
                         }
                       }
                     }}
+                    style={{ width: '160px', padding: '6px 12px', borderRadius: '20px', border: '1px dashed #aaa' }}
                   />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group flex-2">
-                  <label>付款方式</label>
-                  <div className="tag-selector">
-                    {PAY_TAGS.map(t => (
-                      <span key={t} className={`selectable-tag ${postForm.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-group flex-1">
-                  <label>預算範圍</label>
-                  <div className="budget-inputs" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input type="number" placeholder="最低" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} style={{ width: '80px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                    <span>~</span>
-                    <input type="number" placeholder="最高" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} style={{ width: '80px', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group" style={{ width: '100%' }}>
-                  <label>排單需求</label>
-                  <div className="radio-group">
-                    <label className="radio-label">
-                      <input 
-                        type="radio" 
-                        name="schedule" 
-                        checked={postForm.schedule_type === 'flexible'} 
-                        onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} 
-                      /> 可接受排單
-                    </label>
-                    <label className="radio-label">
-                      <input 
-                        type="radio" 
-                        name="schedule" 
-                        checked={postForm.schedule_type === 'fixed'} 
-                        onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} 
-                      /> 指定完成日期：
-                    </label>
-                    {postForm.schedule_type === 'fixed' && (
-                      <input 
-                        type="date" 
-                        className="date-input"
-                        value={postForm.specific_date} 
-                        onChange={e => setPostForm({...postForm, specific_date: e.target.value})} 
-                        required
-                      />
-                    )}
-                  </div>
                 </div>
               </div>
 
               <div className="form-group">
                 <label>詳細需求說明</label>
-                <textarea rows={4} value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
+                {/* rows 從 4 降到 3，讓視窗更緊湊 */}
+                <textarea rows={3} value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
               </div>
 
-              <div className="modal-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ background: '#ff8c00', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>發布許願單</button>
+              {/* 🌟 修改點 2：直接用 flex 取代原本的 className="modal-footer"，徹底移除白底與上方灰線 */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
+                <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ background: '#ff8c00', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 4px 12px rgba(255, 140, 0, 0.3)' }}>發布許願單</button>
               </div>
             </form>
           </div>
@@ -450,10 +456,11 @@ export const Wishboard: React.FC = () => {
             
             <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.6' }}>
               與其丟文字履歷，不如直接給案主看您的作品！<br/>
-              您可以上傳精美的價目表或排版圖，讓案主一目了然。
+              您可以上傳精美的價目表或排版圖，並針對本次委託提供客製化報價與留言。
             </p>
 
-            {/* 視覺化附圖區 */}
+            {/* 🌟 修改點 3：已經將原先在這裡的「給案主的留言」textarea 完全移除 */}
+
             <div className="form-group" style={{ marginBottom: '25px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>附上參考圖 / 價目表 (最多 3 張)</label>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
@@ -496,13 +503,13 @@ export const Wishboard: React.FC = () => {
               <input type="text" value={inquireDraft.payment_methods} onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
             </div>
 
-            {/* 🌟 提問模板引導優化區塊 */}
+            {/* 🌟 修改點 4：提問模板的引導與優化 */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px', fontSize: '14px', color: '#9333ea' }}>
-                初步細節提問單 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(案主應徵時需填寫)</span>
+                初步細節提問單 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(若案主按下邀請詳談，系統將請他填寫)</span>
               </label>
               <p style={{ fontSize: '13px', color: '#64748b', marginTop: '0', marginBottom: '10px', lineHeight: '1.5' }}>
-                💡 <strong>功能說明：</strong>請在此填寫您想請案主預先回答的問題。當案主回覆後，這份回覆將會成為後續洽談與正式委託單的基礎參考。
+                💡 <strong>功能說明：</strong>請在此填寫您想請案主預先回答的問題（例如：人物設定、是否需要加急、預計用途）。當案主回覆後，這份回覆將會成為後續洽談與正式委託單的基礎參考。
               </p>
               <textarea 
                 value={inquireDraft.question_template} 
