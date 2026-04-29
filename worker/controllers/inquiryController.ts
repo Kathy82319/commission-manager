@@ -127,16 +127,21 @@ export const inquiryController = {
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(
-        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category
+        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, u.display_name as client_name
          FROM BulletinInquiries i 
          JOIN Bulletins b ON i.bulletin_id = b.id 
+         LEFT JOIN Users u ON b.client_id = u.id
          WHERE i.id = ? AND b.client_id = ?`
       ).bind(inquiryId, currentUserId).first() as any;
 
       if (!inquiry || !inquiry.negotiation_draft) throw new Error('草稿尚未準備好');
 
       const draft = JSON.parse(inquiry.negotiation_draft);
-      const commissionId = crypto.randomUUID();
+      
+      // 🌟 修正 1：短編號產生 (WB-加上時間戳後6碼)
+      const timestampStr = Date.now().toString();
+      const shortCode = timestampStr.substring(timestampStr.length - 6);
+      const commissionId = `WB-${shortCode}`;
 
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
@@ -147,21 +152,29 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
-      // 1. 建立正式委託單 (🌟 修正 3：狀態從 quote_created 改為 unpaid，這樣案主才看得到)
+      // 🌟 修正 2：如果草稿的 project_name 是預設值(即原始許願內容)，就換成乾淨的名字
+      const clientName = inquiry.client_name || '案主';
+      let finalProjectName = draft.project_name;
+      if (!finalProjectName || finalProjectName === inquiry.bulletin_content.substring(0, 30)) {
+        finalProjectName = `${clientName} 的許願池委託`;
+      }
+
+      // 🌟 修正 3：加入 contact_memo，自動填入案主名稱
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
+          contact_memo,
           total_price, status, origin_source, 
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons,
           delivery_method, workflow_mode, latest_message_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP)`
       ).bind(
-        commissionId, currentUserId, inquiry.artist_id, 'type-01', draft.project_name || '許願池媒合委託',
+        commissionId, currentUserId, inquiry.artist_id, 'type-01', finalProjectName,
+        clientName, // 寫入 contact_memo
         draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || ''
       ).run();
 
-      // 2. 搬移對話紀錄
       const oldMessages = await env.commission_db.prepare(
         `SELECT sender_id, content, created_at FROM InquiryMessages WHERE inquiry_id = ?`
       ).bind(inquiryId).all();
@@ -177,7 +190,6 @@ export const inquiryController = {
         await env.commission_db.batch(stmts);
       }
 
-      // 3. 更新洽談狀態為已成單
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });

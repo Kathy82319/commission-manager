@@ -6,17 +6,38 @@ import DOMPurify from 'dompurify';
 import '../../styles/Notebook.css';
 
 interface Commission {
-  id: string; client_name: string; contact_memo: string; project_name: string; order_date: string;
-  total_price: number; payment_status: string; status: string; current_stage: string; is_external: number;
-  usage_type: string; is_rush: string; delivery_method: string; payment_method: string;
-  draw_scope: string; char_count: number; bg_type: string; add_ons: string; detailed_settings: string;
-  pending_changes?: string; workflow_mode: string; queue_status: string;
-  type_name?: string; latest_message_at?: string; last_read_at_artist?: string;
+  id: string; 
+  artist_id: string; // 🌟 為了過濾雙身分，加入 artist_id
+  client_id: string;
+  client_name: string; 
+  contact_memo: string; 
+  project_name: string; 
+  order_date: string;
+  total_price: number; 
+  payment_status: string; 
+  status: string; 
+  current_stage: string; 
+  is_external: number;
+  usage_type: string; 
+  is_rush: string; 
+  delivery_method: string; 
+  payment_method: string;
+  draw_scope: string; 
+  char_count: number; 
+  bg_type: string; 
+  add_ons: string; 
+  detailed_settings: string;
+  pending_changes?: string; 
+  workflow_mode: string; 
+  queue_status: string;
+  type_name?: string; 
+  latest_message_at?: string; 
+  last_read_at_artist?: string;
   client_public_id?: string;
   agreed_tos_snapshot?: string; 
   client_custom_label?: string;
   crm_record_id?: string;
-  origin_source?: string; // 新增來源欄位
+  origin_source?: string; 
 }
 
 interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }
@@ -70,7 +91,6 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
   });
 }
 
-// 判斷是否來自許願池
 const getBulletinSource = (order?: Commission) => {
   if (!order || !order.origin_source) return null;
   try {
@@ -90,6 +110,7 @@ export function Notebook() {
   const initialSelectedId = queryParams.get('id');
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
+  const [myId, setMyId] = useState<string>(''); // 🌟 儲存當前使用者 ID
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
     { id: 'all', label: '全部' },
@@ -112,6 +133,14 @@ export function Notebook() {
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
+
+  // 🌟 獲取當前登入者 ID，確保後續能正確過濾委託單
+  useEffect(() => {
+    fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => { if (data.success) setMyId(data.data.id); })
+      .catch(err => console.error("取得使用者身分失敗", err));
+  }, [API_BASE]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -362,12 +391,16 @@ export function Notebook() {
     return { text: '尚未付款', className: 'badge-unpaid' };
   };
 
+  // 🌟 修正 1：在這裡過濾掉身分不屬於繪師的委託單
   const filteredOrders = useMemo(() => {
     return commissions.filter(order => {
+      // 確保只顯示「我」是繪師的單據
+      if (myId && order.artist_id !== myId) return false;
+
       let tabMatch = true;
       if (filter === 'completed') tabMatch = order.status === 'completed';
       else if (filter === 'working') tabMatch = order.status !== 'completed' && order.status !== 'cancelled';
-      else if (filter === 'pending') tabMatch = order.status === 'quote_created' || order.status === 'pending';
+      else if (filter === 'pending') tabMatch = order.status === 'quote_created' || order.status === 'pending' || order.status === 'unpaid';
       if (!tabMatch) return false;
 
       if (searchTerm.trim().length >= 2) {
@@ -384,7 +417,7 @@ export function Notebook() {
       }
       return true;
     });
-  }, [commissions, filter, searchTerm]);
+  }, [commissions, filter, searchTerm, myId]);
 
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -568,12 +601,15 @@ export function Notebook() {
                     <span>日期：{formatLocalDate(selectedOrder.order_date)}</span> 
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
-                    <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
-                      {selectedOrder.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
-                    </span>
-                    {getBulletinSource(selectedOrder) && (
+                    
+                    {/* 🌟 修正 4：標籤互斥顯示 */}
+                    {getBulletinSource(selectedOrder) ? (
                       <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>
                         來源：許願池
+                      </span>
+                    ) : (
+                      <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
+                        {selectedOrder.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
                       </span>
                     )}
                   </div>
@@ -685,8 +721,17 @@ export function Notebook() {
                       </div>
                       
                       <div className="details-grid">
-                        {renderRequestField('項目名稱 (繪師自訂)：', 'project_name')}
-                        {renderRequestField('交易方式 (繪師自訂)：', 'payment_method')}
+                        {/* 🌟 修正 6：解鎖項目名稱與交易方式，不再受到 renderRequestField 異動審核的限制 */}
+                        <div className="request-field">
+                          <span className="field-label">項目名稱 (繪師自訂)：</span>
+                          <input className="form-input" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} />
+                        </div>
+                        <div className="request-field">
+                          <span className="field-label">交易方式 (繪師自訂)：</span>
+                          <input className="form-input" value={editData.payment_method || ''} onChange={e => setEditData({...editData, payment_method: e.target.value})} />
+                        </div>
+
+                        {/* 下方維持合約屬性，需經過異動申請 */}
                         {renderRequestField('委託用途：', 'usage_type')}
                         {renderRequestField('是否急件：', 'is_rush', 'select', '', ['否', '是'])}
                         {renderRequestField('交稿方式：', 'delivery_method')}
@@ -722,6 +767,7 @@ export function Notebook() {
                         ) : (
                           <>
                             <button className="action-btn btn-outline-default" onClick={handleStartEditRequest}>委託單異動</button>
+                            {/* 🌟 點擊日常儲存就會直接儲存剛才解鎖的兩個文字框 */}
                             <button className="action-btn btn-primary btn-save" onClick={handleSaveDailyFields}>日常儲存</button>
                           </>
                         )}
