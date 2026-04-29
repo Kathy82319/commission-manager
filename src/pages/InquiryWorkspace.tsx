@@ -205,7 +205,7 @@ export const InquiryWorkspace: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {/* 🌟 升級版：許願池媒合軌跡 (可收合) */}
-          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '2px', marginBottom: '12px', position: 'relative' }}>
+          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px',paddingTop: '2px', padding: '8px', marginBottom: '12px', position: 'relative' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
               <p><strong>原始許願內容：</strong><br/>{inquiry.bulletin_content}</p>
