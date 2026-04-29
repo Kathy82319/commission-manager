@@ -1,6 +1,7 @@
+// src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import { ClipboardList, Inbox, Sparkles, LogOut, Bell } from 'lucide-react';
+import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu } from 'lucide-react';
 import '../styles/ClientLayout.css'; 
 
 export function ClientLayout() {
@@ -8,6 +9,10 @@ export function ClientLayout() {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  
+  // 🌟 手機版側邊欄控制狀態
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
   
   // 🌟 通知狀態
   const [unreadCount, setUnreadCount] = useState(0);
@@ -98,7 +103,7 @@ export function ClientLayout() {
     <div className="client-layout-wrapper">
       
       {/* 🌟 全域浮動小鈴鐺 (獨立於所有排版之外，絕不擠壓內容) */}
-      <div ref={menuRef} style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 9999 }}>
+      <div ref={menuRef} style={{ position: 'fixed', top: '10px', right: '24px', zIndex: 9999 }}>
         <div 
           onClick={() => setShowNotifMenu(!showNotifMenu)}
           style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
@@ -130,7 +135,6 @@ export function ClientLayout() {
                         <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
                         <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
-                      {/* 🌟 加入精美的跳轉按鈕引導 */}
                       <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2px' }}>
                         查看 <span style={{ fontSize: '16px', paddingBottom: '2px' }}>›</span>
                       </div>
@@ -142,17 +146,37 @@ export function ClientLayout() {
         )}
       </div>
 
-      <aside className="client-sidebar">
+      {/* 🌟 新增：手機版專用 App Bar */}
+      <div className="mobile-app-bar">
+        <button className="menu-toggle-btn" onClick={() => setIsMobileMenuOpen(true)}>
+          <Menu size={28} />
+        </button>
+        <div style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '18px' }}>委託人中心</div>
+      </div>
+
+      {/* 🌟 新增：手機版側邊欄遮罩 */}
+      <div 
+        className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} 
+        onClick={closeMobileMenu}
+      ></div>
+
+      {/* 🌟 左側邊欄套用 open class */}
+      <aside className={`client-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <h2>Arti 繪師小幫手</h2>
           <div className="brand-subtitle">委託管理 (委託方)</div>
         </div>
         
         <nav className="sidebar-nav">
-          <NavLink to="/" className="nav-item"><Sparkles size={20} /><span>前往許願池</span></NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>許願收件匣</span></NavLink>
-          <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><ClipboardList size={20} /><span>委託單管理</span></NavLink>
-          
+          <NavLink to="/" className="nav-item" onClick={closeMobileMenu}>
+            <Sparkles size={20} /><span>前往許願池</span>
+          </NavLink>
+          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+            <Inbox size={20} /><span>許願收件匣</span>
+          </NavLink>
+          <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+            <ClipboardList size={20} /><span>委託單管理</span>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">
@@ -181,4 +205,4 @@ export function ClientLayout() {
       </div>
     </div>
   );
-} 
+}
