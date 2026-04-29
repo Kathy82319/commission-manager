@@ -23,7 +23,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     return hours > 24 ? `剩餘 ${Math.floor(hours / 24)}天` : `剩餘 ${hours}小時`;
   };
 
-  // 🌟 解析 JSON 字串的標籤與圖片
+  // 🌟 解析 JSON 字串的標籤與圖片 (防止破圖的關鍵)
   const tags = JSON.parse(bulletin.tags || '[]');
   const paymentMethods = JSON.parse(bulletin.payment_methods || '[]');
   
@@ -37,7 +37,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   const validImages = images.filter(url => url).map(getFullUrl);
 
-  // 🌟 區分風格、預警、授權
+  // 🌟 區分風格、預警、授權 (三權分立顏色標籤)
   const warningTags = tags.filter((t: string) => STYLE_WARNINGS.includes(t));
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t));
@@ -64,7 +64,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <span style={{ marginTop: '10px', fontSize: '14px' }}>無提供範例圖</span>
           </div>
         )}
-        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 10 }}>
           <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
         </div>
       </div>
@@ -131,16 +131,18 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
             {(() => {
               try {
+                // 如果是新版發布的，取出 JSON 裡的 description
                 const contentObj = JSON.parse(bulletin.content);
                 return contentObj.description || '';
               } catch {
+                // 如果是舊版發布的，直接顯示文字
                 return bulletin.content;
               }
             })()}
           </p>
         </div>
 
-        {/* 操作按鈕套用新 CSS 樣式 */}
+        {/* 🌟 重新套用正確的按鈕樣式 (submit-post-btn) */}
         <div style={{ marginTop: '16px' }}>
           {isMyOwnPost ? (
             <button disabled className="submit-post-btn" style={{ width: '100%', background: '#f1f5f9', color: '#94a3b8', boxShadow: 'none' }}>這是您發布的貼文</button>
