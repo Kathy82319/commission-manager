@@ -9,7 +9,6 @@ interface WishCardProps {
   onInquire: (bulletin: any) => void;
 }
 
-// 🌟 新增：把後端防 XSS 轉譯的字元還原，拯救 JSON 破圖
 const unescapeHtml = (str: string) => {
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
@@ -28,6 +27,17 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     return hours > 24 ? `剩餘 ${Math.floor(hours / 24)}天` : `剩餘 ${hours}小時`;
   };
 
+  // 解析內容
+  let contentObj: any = {};
+  let rawDescription = bulletin.content;
+  try {
+    const rawContent = unescapeHtml(bulletin.content);
+    contentObj = JSON.parse(rawContent);
+    rawDescription = contentObj.description || '';
+  } catch {
+    rawDescription = unescapeHtml(bulletin.content);
+  }
+
   const tags = JSON.parse(bulletin.tags || '[]');
   const paymentMethods = JSON.parse(bulletin.payment_methods || '[]');
   
@@ -41,12 +51,14 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   const validImages = images.filter(url => url).map(getFullUrl);
 
-  const warningTags = tags.filter((t: string) => STYLE_WARNINGS.includes(t));
-  const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t));
-  const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t));
+  // 🌟 標籤分類邏輯 (支援自定義前綴解析)
+  const warningTags = tags.filter((t: string) => STYLE_WARNINGS.includes(t) || t.startsWith('[預警]'));
+  const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t) || t.startsWith('[授權]'));
+  const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
   return (
     <div className="wish-card-wide">
+      
       <div className="wish-card-image-wrapper">
         {validImages.length > 0 ? (
           <>
@@ -79,19 +91,21 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#64748b' }}>
+          
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
             <Tag size={16} style={{ marginTop: '2px', color: '#94a3b8' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {warningTags.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#e11d48' }}><AlertTriangle size={12} style={{ display: 'inline' }}/> 預警：</span>
-                  {warningTags.map((t: string) => <span key={t} className="tag-chip tag-warning">{t}</span>)}
+                  {/* 🌟 去除前綴再顯示 */}
+                  {warningTags.map((t: string) => <span key={t} className="tag-chip tag-warning">{t.replace('[預警]', '')}</span>)}
                 </div>
               )}
               {licenseTags.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#16a34a' }}><CheckCircle2 size={12} style={{ display: 'inline' }}/> 範圍：</span>
-                  {licenseTags.map((t: string) => <span key={t} className="tag-chip tag-license">{t}</span>)}
+                  {licenseTags.map((t: string) => <span key={t} className="tag-chip tag-license">{t.replace('[授權]', '')}</span>)}
                 </div>
               )}
               {styleTags.length > 0 && (
@@ -103,11 +117,15 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           </div>
 
           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <DollarSign size={16} color="#94a3b8" /> 
-              <span>{bulletin.category === 'offer' ? '接案底價' : '預算'}：</span>
-              <span style={{ color: '#ff8c00', fontWeight: 'bold', fontSize: '16px' }}>${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
-            </span>
+            {/* 🌟 若為徵委託才顯示預算 */}
+            {bulletin.category === 'request' && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <DollarSign size={16} color="#94a3b8" /> 
+                <span>預算：</span>
+                <span style={{ color: '#ff8c00', fontWeight: 'bold', fontSize: '16px' }}>${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
+              </span>
+            )}
+            
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Calendar size={16} color="#94a3b8" /> 
               <span>排單狀況：</span>
@@ -124,21 +142,26 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <span>付款方式：</span>
             <span style={{ fontWeight: '600', color: '#334155' }}>{paymentMethods.join(', ')}</span>
           </div>
+
+          {/* 🌟 新增：接案項目膠囊雲 (若為接委託且有項目) */}
+          {bulletin.category === 'offer' && contentObj.commission_items && contentObj.commission_items.length > 0 && (
+            <div style={{ marginTop: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '8px' }}>接案項目一覽：</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {contentObj.commission_items.map((item: any, idx: number) => (
+                  <span key={idx} style={{ background: '#fff5eb', color: '#ea580c', padding: '4px 10px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {item.name} <strong style={{ color: '#c2410c' }}>${item.price}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9', marginTop: 'auto' }}>
           <strong style={{ color: '#0f172a' }}>{bulletin.category === 'offer' ? '接案說明：' : '詳細需求：'}</strong>
           <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
-            {(() => {
-              try {
-                // 🌟 核心修正：將後端的字串解碼後，再讓 JSON 去解析
-                const rawContent = unescapeHtml(bulletin.content);
-                const contentObj = JSON.parse(rawContent);
-                return contentObj.description || '';
-              } catch {
-                return unescapeHtml(bulletin.content);
-              }
-            })()}
+            {rawDescription}
           </p>
         </div>
 

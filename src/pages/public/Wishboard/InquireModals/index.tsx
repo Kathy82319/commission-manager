@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
+import { R2_PUBLIC_URL } from '../constants'; // 🌟 新增引入，用於破圖修復
 
 interface InquireModalProps {
   selectedBulletin: any;
@@ -19,6 +20,13 @@ interface InquireModalProps {
 const unescapeHtml = (str: string) => {
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
+// 🌟 新增 URL 補全函式
+const getFullUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${R2_PUBLIC_URL}/${url}`;
 };
 
 export const InquireModal: React.FC<InquireModalProps> = ({
@@ -121,7 +129,8 @@ export const InquireModal: React.FC<InquireModalProps> = ({
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {inquireDraft.images.map((imgUrl: string, idx: number) => (
                 <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
-                  <img src={imgUrl} alt={`附件 ${idx + 1}`} />
+                  {/* 🌟 核心修正：使用 getFullUrl 解決破圖 */}
+                  <img src={getFullUrl(imgUrl)} alt={`附件 ${idx + 1}`} />
                   <button type="button" className="remove-image-btn" onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))}>
                     <X size={14}/>
                   </button>
