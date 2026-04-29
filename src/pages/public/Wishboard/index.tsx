@@ -24,17 +24,28 @@ export const Wishboard: React.FC = () => {
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userShowcase, setUserShowcase] = useState<any[]>([]);
 
-  const [postForm, setPostForm] = useState({
-    title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
-    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', 
-    ref_images: [] as string[], 
-    question_template: '',
-    commission_items: [] as { name: string, price: string }[],
-    selection_type: 'fcfs' as 'fcfs' | 'curated',
-    max_slots: '1',
-    payment_timing: 'prepaid',
-    payment_timing_detail: ''
-  });
+  // 🌟 初始狀態定義 (從 localStorage 讀取或給預設值)
+  const getInitialPostForm = () => {
+    return {
+      title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
+      budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', 
+      ref_images: [] as string[], 
+      
+      // 🌟 新增：提問模板改為陣列，最多三題
+      questions: [''] as string[], 
+      
+      // 🌟 新增：服務條款
+      tos_content: '',
+
+      commission_items: [] as { name: string, price: string }[],
+      selection_type: 'fcfs' as 'fcfs' | 'curated',
+      max_slots: '1',
+      payment_timing: 'prepaid',
+      payment_timing_detail: ''
+    };
+  };
+
+  const [postForm, setPostForm] = useState(getInitialPostForm());
 
   const [inquireDraft, setInquireDraft] = useState({
     message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] as string[]
@@ -46,6 +57,34 @@ export const Wishboard: React.FC = () => {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // 🌟 新增：載入與儲存草稿的功能
+  const loadSavedDraft = () => {
+    try {
+      const saved = localStorage.getItem('wishboard_offer_draft');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 合併已存的設定與初始的乾淨設定
+        setPostForm(prev => ({ ...prev, ...parsed, ref_images: [] })); // 圖片不記，避免網址失效
+        showToast('已載入您上次儲存的預設設定！');
+      }
+    } catch (e) {
+      console.error('載入草稿失敗', e);
+    }
+  };
+
+  const saveDraft = () => {
+    try {
+      // 只儲存常態性的設定，不存標題與內容
+      const { tos_content, questions, payment_timing, payment_timing_detail, payment_methods, tags, commission_items } = postForm;
+      localStorage.setItem('wishboard_offer_draft', JSON.stringify({
+        tos_content, questions, payment_timing, payment_timing_detail, payment_methods, tags, commission_items
+      }));
+      showToast('設定已儲存在瀏覽器！');
+    } catch (e) {
+      showToast('儲存失敗', 'error');
+    }
   };
 
   const initData = async () => {
@@ -99,16 +138,24 @@ export const Wishboard: React.FC = () => {
     const ticketData = await ticketRes.json();
     if (!ticketData.success) throw new Error(ticketData.error);
     await fetch(ticketData.uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': fileType } });
-    return `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+    
+    // 🌟 修正：只回傳檔案名稱，由前端統一加上 R2_PUBLIC_URL 顯示，避免路徑重複
+    return ticketData.fileName;
   };
 
   const handlePostImageUpload = async (resultBlobs: { preview: Blob }) => {
-    if (postForm.ref_images.length >= 5) return showToast("最多 5 張圖片", "error");
+    // 🌟 修正：判斷目前的分頁模式，徵委託 1 張，接委託 5 張
+    const limit = activeTab === 'request' ? 1 : 5;
+    if (postForm.ref_images.length >= limit) {
+      return showToast(`此模式最多只能上傳 ${limit} 張圖片`, "error");
+    }
+
     if (resultBlobs.preview.size > 3 * 1024 * 1024) return showToast("單張不能超過 3MB", "error");
+    
     setIsUploading(true);
     try {
-      const url = await uploadToR2(resultBlobs.preview, 'wishboard');
-      setPostForm(prev => ({ ...prev, ref_images: [...prev.ref_images, url] }));
+      const fileName = await uploadToR2(resultBlobs.preview, 'wishboard');
+      setPostForm(prev => ({ ...prev, ref_images: [...prev.ref_images, fileName] }));
       showToast("上傳成功");
     } catch (err) { showToast("上傳失敗", "error"); } finally { setIsUploading(false); }
   };
@@ -117,8 +164,8 @@ export const Wishboard: React.FC = () => {
     if (inquireDraft.images.length >= 3) return showToast("最多 3 張", "error");
     setInquireUploading(true);
     try {
-      const url = await uploadToR2(resultBlobs.preview, 'proposals');
-      setInquireDraft(prev => ({ ...prev, images: [...prev.images, url] }));
+      const fileName = await uploadToR2(resultBlobs.preview, 'proposals');
+      setInquireDraft(prev => ({ ...prev, images: [...prev.images, fileName] }));
       showToast("附件成功");
     } catch (err) { showToast("失敗", "error"); } finally { setInquireUploading(false); }
   };
@@ -126,16 +173,39 @@ export const Wishboard: React.FC = () => {
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return showToast("請先登入", "error");
+    
+    if (activeTab === 'request') {
+      if (Number(postForm.budget_min) < 0 || Number(postForm.budget_max) < 0) {
+        return showToast("預算金額不可以是負數喔！", "error");
+      }
+    }
+
     try {
-      const res = await apiClient.post('/api/bulletins', { 
-        ...postForm, 
+      // 🌟 處理發布資料：若為接委託，我們將整個陣列轉成 JSON 字串存入資料庫
+      const payload = {
+        ...postForm,
         category: activeTab,
-        ref_image_key: JSON.stringify(postForm.ref_images) 
-      });
+        // 如果是接委託，用 JSON 存圖片陣列；如果是徵委託且只有一張，直接存字串（為相容舊資料）
+        ref_image_key: activeTab === 'offer' 
+          ? JSON.stringify(postForm.ref_images) 
+          : (postForm.ref_images[0] || ''),
+        // 打包複雜內容存入 content 欄位 (可依照你的後端設計調整)
+        content: activeTab === 'offer' ? JSON.stringify({
+          description: postForm.content,
+          commission_items: postForm.commission_items,
+          tos_content: postForm.tos_content,
+          payment_timing: postForm.payment_timing,
+          payment_timing_detail: postForm.payment_timing_detail,
+          questions: postForm.questions.filter(q => q.trim() !== '') // 濾掉空白問題
+        }) : postForm.content
+      };
+
+      const res = await apiClient.post('/api/bulletins', payload);
+      
       if (res.success) {
         showToast("發布成功");
         setShowPostModal(false);
-        setPostForm({ title: '', content: '', tags: [], payment_methods: [], budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_images: [], question_template: '', commission_items: [], selection_type: 'fcfs', max_slots: '1', payment_timing: 'prepaid', payment_timing_detail: '' });
+        setPostForm(getInitialPostForm()); // 重置為初始狀態
         initData();
       } else showToast(res.message, "error");
     } catch (err: any) { showToast(err.message, "error"); }
@@ -191,7 +261,7 @@ export const Wishboard: React.FC = () => {
         <PostModal 
           activeTab={activeTab} postForm={postForm} setPostForm={setPostForm} isUploading={isUploading}
           onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handlePostImageUpload} toggleTag={toggleTag}
-          userShowcase={userShowcase}
+          userShowcase={userShowcase} onSaveDraft={saveDraft} onLoadDraft={loadSavedDraft}
         />
       )}
 

@@ -1,4 +1,8 @@
 /* src/styles/Wishboard.css */
+
+/* ==================================================
+   🌟 基礎版面設定 
+   ================================================== */
 .wishboard-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -7,6 +11,7 @@
   position: relative;
 }
 
+/* Toast 通知 */
 .toast-notification {
   position: fixed;
   top: 24px;
@@ -27,231 +32,166 @@
 .toast-notification.error { background-color: #ef4444; color: white; }
 @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
 
+/* Hero 與 分頁 */
 .wishboard-hero { text-align: center; padding: 40px 0; background: linear-gradient(135deg, #fff5eb 0%, #fff 100%); border-radius: 20px; margin-bottom: 30px; }
 .tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
 .tab-group button { padding: 10px 25px; border-radius: 30px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; color: #666; transition: 0.3s; }
 .tab-group button.active { background: #ff8c00; color: white; border-color: #ff8c00; box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 
-/* 🌟 過濾區塊佈局 */
-.filter-section { display: flex; align-items: flex-start; gap: 20px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-.filter-label { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 6px; font-weight: bold; color: #555; }
+/* 過濾區塊 */
+.filter-section { display: flex; align-items: center; gap: 20px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.filter-label { display: flex; align-items: center; gap: 4px; flex-shrink: 0; font-weight: bold; color: #555; }
 .filter-tags { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-tags button { padding: 5px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; transition: 0.2s; white-space: nowrap; }
-.filter-tags button:hover { background: #f0f0f0; }
 .filter-tags button.active { background: #fff0e0; color: #ff8c00; border-color: #ff8c00; }
 .post-trigger-btn { flex-shrink: 0; background: #ff8c00; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; transition: 0.2s; }
-.post-trigger-btn:hover { background: #e67e00; }
-
-.wish-grid { display: flex; flex-direction: column; gap: 20px; }
-.wish-card-wide { display: flex; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); transition: transform 0.2s; border: 1px solid #f0f0f0; align-items: stretch; }
-.wish-card-wide:hover { transform: translateY(-4px); }
-.wish-card-image-wrapper { width: 320px; position: relative; flex-shrink: 0; display: flex; flex-direction: column; background-color: #fafafa; border-right: 1px solid #f0f0f0; }
-.wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.fallback-placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #aaa; font-size: 13px; font-weight: 500; min-height: 240px; }
-.wish-countdown { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 5px; }
-.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; }
-.wish-card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
-.wish-card-header h3 { font-size: 20px; color: #333; margin: 0; }
-.category-badge { font-size: 12px; font-weight: bold; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; color: #666; }
-.wish-metadata { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #666; margin-bottom: 15px; }
-.meta-row { display: flex; gap: 30px; flex-wrap: wrap; }
-.meta-item { display: flex; align-items: center; gap: 6px; }
-.tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
-.tag-chip { background: #f0f2f5; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #555; }
-.price { color: #e67e22; font-weight: bold; }
-.wish-description { background: #f9f9f9; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-.wish-description p { margin-top: 5px; line-height: 1.5; color: #444; }
-.inquire-btn { margin-top: auto; width: 100%; padding: 12px; background: #fff7f0; border: 1px solid #ffccbc; color: #ff5722; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-.inquire-btn:hover:not(:disabled) { background: #ffebe0; }
-.disabled-btn { background: #f3f4f6 !important; color: #9ca3af !important; border-color: #e5e7eb !important; cursor: not-allowed !important; }
-.applied-btn { background: #e5e7eb !important; color: #6b7280 !important; border-color: #d1d5db !important; cursor: not-allowed !important; }
-
-/* 🌟 Modal 核心重構：區塊化設計 */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-.post-modal, .inquire-modal { background: #f8fafc; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-.inquire-modal { max-width: 600px; }
-.modal-header { padding: 20px 24px; background: white; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-.modal-header h2 { margin: 0; font-size: 20px; color: #333; }
-.close-modal-btn { background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: 0.2s; }
-.close-modal-btn:hover { background: #f1f5f9; color: #333; }
-
-.post-form, .inquire-form-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
-
-/* 表單區塊設計 */
-.form-section { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; }
-.section-title { margin: 0 0 4px 0; font-size: 15px; color: #0f172a; border-left: 4px solid #ff8c00; padding-left: 10px; }
-
-/* 網格系統 */
-.grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-@media (max-width: 640px) { .grid-2-cols { grid-template-columns: 1fr; } }
-
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-.form-group label { font-weight: bold; color: #334155; font-size: 14px; display: flex; align-items: center; justify-content: space-between; }
-.label-hint { font-weight: normal; font-size: 12px; color: #94a3b8; }
-
-.form-group input[type="text"], 
-.form-group input[type="number"], 
-.form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; background: #fff; }
-.form-group input:focus, .form-group textarea:focus { outline: none; border-color: #ff8c00; box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1); }
-.detail-textarea { resize: vertical; min-height: 100px; }
-
-.image-preview-box { position: relative; width: 100%; height: 160px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
-.image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-.remove-image-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-/* 🌟 排單需求設定 (解決文字截斷與互相覆蓋) */
-.radio-group { 
-  display: flex; 
-  flex-wrap: wrap; /* 允許換行，避免空間不足時互相覆蓋 */
-  gap: 20px;       /* 加大間距，讓點擊區域更明確 */
-  align-items: center; 
-  min-height: 40px; /* 取代固定的 height: 40px，讓它能隨內容長高 */
-}
-
-.radio-label { 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
-  font-weight: normal !important; 
-  color: #475569 !important; 
-  cursor: pointer; 
-  white-space: nowrap; /* 保持文字不斷行 */ 
-}
-
-/* 🌟 強制重置 radio 按鈕尺寸，防止被全域 input 樣式污染 */
-.radio-label input[type="radio"] {
-  width: auto !important;
-  height: auto !important;
-  margin: 10px !important;
-  padding: 10px !important;
-  flex-shrink: 1; /* 確保它絕對不會被壓縮或拉伸 */
-  appearance: auto; /* 維持瀏覽器原生的圓點樣式 */
-}
-
-.date-input { 
-  padding: 6px 10px; 
-  border-radius: 6px; 
-  border: 1px solid #cbd5e1; 
-  font-size: 13px; 
-  background-color: #fff;
-  transition: border-color 0.2s;
-}
-
-.date-input:focus {
-  outline: none;
-  border-color: #ff8c00;
-  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
-}
-
-.budget-inputs { display: flex; align-items: center; gap: 8px; }
-.budget-separator { color: #94a3b8; font-weight: bold; }
-
-.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; }
-.selectable-tag { padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; user-select: none; transition: 0.2s; background: #f8fafc; }
-.selectable-tag:hover { background: #e2e8f0; }
-.selectable-tag.selected { background: #ff8c00; color: white; border-color: #ff8c00; }
-
-/* 🌟 膠囊型自定義輸入框 */
-.compact-tag-input { width: 130px !important; padding: 6px 12px !important; border-radius: 20px !important; font-size: 13px !important; border: 1px dashed #94a3b8 !important; background: transparent !important; }
-.compact-tag-input:focus { border-style: solid !important; }
-.custom-tag { display: flex; align-items: center; gap: 6px; }
-.custom-tag svg { cursor: pointer; background: rgba(0,0,0,0.15); border-radius: 50%; padding: 2px; }
-.custom-tag svg:hover { background: rgba(0,0,0,0.3); }
-
-.modal-footer { padding: 16px 24px; background: white; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; }
-.submit-post-btn, .btn-confirm { background: #ff8c00; color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-.submit-post-btn:hover, .btn-confirm:hover { background: #e67e00; }
-.submit-post-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-.btn-cancel { background: white; color: #64748b; padding: 10px 20px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-.btn-cancel:hover { background: #f1f5f9; color: #334155; }
-
-.inquire-hint { font-size: 14px; color: #64748b; margin: 0 0 16px 0; }
-.highlight-label { color: #9333ea !important; }
 
 /* ==================================================
-   🌟 響應式設計 (Responsive Design) - 手機版適配
+   🌟 許願池卡片 (WishCard) 
    ================================================== */
+.wish-grid { display: flex; flex-direction: column; gap: 20px; }
+.wish-card-wide { display: flex; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; align-items: stretch; }
 
-@media (max-width: 768px) {
-  /* 整體邊距縮減 */
-  .wishboard-page { padding: 12px; }
-  .wishboard-hero { padding: 24px 12px; }
-  .wishboard-hero h1 { font-size: 24px; margin-bottom: 8px; }
+.wish-card-image-wrapper { width: 320px; position: relative; flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; min-height: 240px; }
+.wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wish-countdown { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; z-index: 2; }
 
-  /* 🌟 過濾標籤：兩排橫向滑動設計 */
-  .filter-section {
-    flex-direction: column; /* 讓「標籤」與「發布按鈕」上下分離 */
-    align-items: stretch;
-    padding: 12px;
-  }
-  .filter-label { margin-top: 0; margin-bottom: 8px; }
-  
-  .filter-tags {
-    display: flex;
-    flex-direction: column; /* 轉為垂直方向，內部包裝為兩排 */
-    flex-wrap: wrap;        /* 允許折行 */
-    height: 70px;           /* 固定高度容納兩排按鈕 (視按鈕高度調整) */
-    gap: 8px;
-    overflow-x: auto;       /* 橫向捲動 */
-    overflow-y: hidden;
-    padding-bottom: 8px;    /* 留空間給捲軸（如果不隱藏捲軸的話） */
-    -webkit-overflow-scrolling: touch; /* 提升 iOS 滑動流暢度 */
-  }
-  
-  /* 隱藏捲軸讓畫面更乾淨 (可選) */
-  .filter-tags::-webkit-scrollbar { display: none; }
-  .filter-tags { -ms-overflow-style: none; scrollbar-width: none; }
+.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.wish-card-header { display: flex; justify-content: space-between; align-items: center; }
+.wish-card-header h3 { font-size: 20px; color: #333; margin: 0; }
 
-  /* 確保按鈕不會被壓縮 */
-  .filter-tags button {
-    flex-shrink: 0;
-  }
+.wish-metadata { display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #666; }
+.meta-row { display: flex; gap: 24px; flex-wrap: wrap; }
 
-  .post-trigger-btn {
-    width: 100%;
-    justify-content: center;
-  }
+/* 🌟 卡片標籤分類樣式 */
+.tag-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag-label { font-size: 12px; color: #94a3b8; font-weight: bold; margin-right: 4px; }
+.tag-chip { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+.tag-style { background: #f0f2f5; color: #555; }          /* 一般風格：灰色 */
+.tag-warning { background: #fff1f2; color: #e11d48; }    /* 風格預警：紅色 */
+.tag-license { background: #f0fdf4; color: #16a34a; }    /* 授權範圍：綠色 */
 
-  /* 許願池卡片：改為上圖下文 */
-  .wish-card-wide {
-    flex-direction: column;
-  }
-  
-  .wish-card-image-wrapper {
-    width: 100%;
-    height: 240px; /* 手機上固定一個適中的高度 */
-    border-right: none;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  
-  .wish-card-info { padding: 16px; }
-  .wish-card-header h3 { font-size: 18px; }
+.price { color: #e67e22; font-weight: bold; font-size: 16px; }
 
-  /* 發布需求 Modal：上圖下資訊 */
-  .post-modal .post-form > div:first-child {
-    flex-direction: column; /* 將原本的 display: flex; gap: 24px; 轉為垂直 */
-  }
-
-  .post-modal .form-group[style*="width: 240px"] {
-    width: 100% !important; /* 圖片區塊撐滿 */
-  }
-
-  /* 強制圖片容器等比例或給定高度，避免被壓縮 */
-  .post-modal .form-group[style*="width: 240px"] > div {
-    height: 240px !important; 
-    width: 100% !important;
-  }
-
-  /* 預算區塊在手機上可能需要折行 */
-  .budget-inputs { flex-wrap: wrap; }
-  
-  /* Modal 的 padding 縮減 */
-  .modal-overlay { padding: 12px; }
-  .post-form, .inquire-form-body { padding: 16px; gap: 16px; }
+/* ==================================================
+   🌟 彈窗 (Modal) 與表單基礎
+   ================================================== */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.post-modal { 
+  background: #f8fafc; 
+  width: 100%; 
+  max-width: 850px; 
+  max-height: 95vh; 
+  border-radius: 16px; 
+  display: flex; 
+  flex-direction: column; 
+  overflow: hidden; 
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
 }
 
-@media (max-width: 480px) {
-  /* 更小螢幕的微調 */
-  .budget-inputs input { width: 100% !important; } /* 預算輸入框撐滿 */
-  .budget-inputs span { display: none; } /* 隱藏波浪號，或是改為顯示「至」 */
+.modal-header { padding: 16px 24px; background: white; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.post-form { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+
+/* 🌟 解決板塊拉長的核心：align-items: flex-start */
+.form-row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 300px; }
+.form-group label { font-weight: bold; color: #334155; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* 輸入框統一樣式 */
+.form-group input, .form-group textarea, .form-group select {
+  padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus { border-color: #ff8c00; outline: none; box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1); }
+
+/* ==================================================
+   🌟 接委託專用組件樣式
+   ================================================== */
+
+/* 作品集選擇器 */
+.portfolio-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.portfolio-item {
+  aspect-ratio: 1/1;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  border: 2px solid transparent;
+  transition: 0.2s;
+}
+.portfolio-item.selected { border-color: #9333ea; transform: scale(0.95); }
+.portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
+.portfolio-item .check-overlay {
+  position: absolute; inset: 0; background: rgba(147, 51, 234, 0.2); 
+  display: flex; align-items: center; justify-content: center; color: white;
+}
+
+/* 接案項目管理 */
+.item-manage-box { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 6px; margin-bottom: 8px; border: 1px solid #f1f5f9; }
+
+/* 提問模板與 + 按鈕 */
+.dynamic-question-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+.add-btn-circle {
+  display: flex; align-items: center; gap: 6px; color: #9333ea; background: #f3e8ff;
+  border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s;
+}
+.add-btn-circle:hover { background: #e9d5ff; }
+
+/* 名額機制區塊 */
+.selection-mechanism-box {
+  background: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fef3c7; display: flex; flex-direction: column; gap: 12px;
+}
+.mechanism-radio-group { display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* 🌟 服務條款 (TOS) 展示區 */
+.tos-container {
+  background: #f1f5f9;
+  padding: 20px;
+  border-radius: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.tos-content { white-space: pre-wrap; }
+
+/* ==================================================
+   🌟 標籤選擇器 (Tag Selector) 強化
+   ================================================== */
+.tag-selector-group { display: flex; flex-direction: column; gap: 10px; }
+.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.selectable-tag { padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; transition: 0.2s; }
+.selectable-tag.style.selected { background: #64748b; color: white; border-color: #64748b; }
+.selectable-tag.warning.selected { background: #e11d48; color: white; border-color: #e11d48; }
+.selectable-tag.license.selected { background: #16a34a; color: white; border-color: #16a34a; }
+
+/* 記憶與儲存提示 */
+.save-hint-btn {
+  font-size: 12px; color: #64748b; background: none; border: 1px dashed #cbd5e1; 
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.save-hint-btn:hover { background: #f8fafc; color: #ff8c00; border-color: #ff8c00; }
+
+/* ==================================================
+   📱 手機版適配 (Responsive)
+   ================================================== */
+@media (max-width: 768px) {
+  .wish-card-wide { flex-direction: column; }
+  .wish-card-image-wrapper { width: 100%; height: 240px; border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .form-row { flex-direction: column; gap: 16px; }
+  .form-group { min-width: 100%; }
+  .filter-tags { height: 70px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }

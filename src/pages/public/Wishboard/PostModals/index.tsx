@@ -1,8 +1,15 @@
 // src/pages/public/Wishboard/PostModals/index.tsx
 import React, { useState } from 'react';
-import { X, Plus, Trash2, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Trash2, HelpCircle, Image as ImageIcon, Save, Download } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
-import { REQ_TAGS, PAY_TAGS, STYLE_WARNINGS, LICENSE_TAGS, PAYMENT_TIMING } from '../constants';
+import { 
+  REQ_TAGS, 
+  PAY_TAGS, 
+  STYLE_WARNINGS, 
+  LICENSE_TAGS, 
+  PAYMENT_TIMING,
+  R2_PUBLIC_URL 
+} from '../constants';
 
 interface PostModalProps {
   activeTab: 'request' | 'offer' | 'other';
@@ -13,7 +20,9 @@ interface PostModalProps {
   onSubmit: (e: React.FormEvent) => void;
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
   toggleTag: (tag: string, field: 'tags' | 'payment_methods') => void;
-  userShowcase?: any[];
+  userShowcase: any[];
+  onSaveDraft: () => void;
+  onLoadDraft: () => void;
 }
 
 export const PostModal: React.FC<PostModalProps> = ({
@@ -25,7 +34,9 @@ export const PostModal: React.FC<PostModalProps> = ({
   onSubmit,
   onImageUpload,
   toggleTag,
-  userShowcase = []
+  userShowcase,
+  onSaveDraft,
+  onLoadDraft
 }) => {
   const [customTagInput, setCustomTagInput] = useState('');
   const [itemInput, setItemInput] = useState({ name: '', price: '' });
@@ -33,27 +44,7 @@ export const PostModal: React.FC<PostModalProps> = ({
 
   const isOffer = activeTab === 'offer';
 
-  // 移除標籤邏輯
-  const removeCustomTag = (tag: string) => {
-    setPostForm((prev: any) => ({
-      ...prev,
-      tags: prev.tags.filter((t: string) => t !== tag)
-    }));
-  };
-
-  // 圖片管理邏輯
-  const togglePortfolioImage = (url: string) => {
-    setPostForm((prev: any) => {
-      const isSelected = prev.ref_images.includes(url);
-      if (isSelected) {
-        return { ...prev, ref_images: prev.ref_images.filter((img: string) => img !== url) };
-      } else {
-        if (prev.ref_images.length >= 5) return prev;
-        return { ...prev, ref_images: [...prev.ref_images, url] };
-      }
-    });
-  };
-
+  // 移除圖片
   const removeImage = (index: number) => {
     setPostForm((prev: any) => ({
       ...prev,
@@ -61,7 +52,37 @@ export const PostModal: React.FC<PostModalProps> = ({
     }));
   };
 
-  // 接案項目邏輯
+  // 切換作品集圖片
+  const togglePortfolioImage = (imageKey: string) => {
+    setPostForm((prev: any) => {
+      const exists = prev.ref_images.includes(imageKey);
+      if (exists) {
+        return { ...prev, ref_images: prev.ref_images.filter((img: string) => img !== imageKey) };
+      } else {
+        if (prev.ref_images.length >= (isOffer ? 5 : 1)) return prev;
+        return { ...prev, ref_images: [...prev.ref_images, imageKey] };
+      }
+    });
+  };
+
+  // 提問模板：新增/修改/刪除 (最多 3 題)
+  const addQuestion = () => {
+    if (postForm.questions.length >= 3) return;
+    setPostForm((prev: any) => ({ ...prev, questions: [...prev.questions, ''] }));
+  };
+
+  const updateQuestion = (index: number, value: string) => {
+    const newQuestions = [...postForm.questions];
+    newQuestions[index] = value;
+    setPostForm((prev: any) => ({ ...prev, questions: newQuestions }));
+  };
+
+  const removeQuestion = (index: number) => {
+    const newQuestions = postForm.questions.filter((_: any, i: number) => i !== index);
+    setPostForm((prev: any) => ({ ...prev, questions: newQuestions }));
+  };
+
+  // 接案項目：新增/刪除
   const addCommissionItem = () => {
     if (!itemInput.name.trim()) return;
     setPostForm((prev: any) => ({
@@ -78,48 +99,53 @@ export const PostModal: React.FC<PostModalProps> = ({
     }));
   };
 
+  // 取得完整圖片路徑，防止破圖
+  const getFullUrl = (url: string) => {
+    if (url.startsWith('http')) return url;
+    return `${R2_PUBLIC_URL}/${url}`;
+  };
+
   return (
     <div className="modal-overlay">
-      <div className="post-modal" style={{ maxWidth: '850px', maxHeight: '95vh', overflowY: 'auto' }}>
+      <div className="post-modal">
         <div className="modal-header">
-          <h2>
-            {activeTab === 'request' ? '發布徵委託需求' : 
-             activeTab === 'offer' ? '發布接委託' : '發布其他'}
-          </h2>
-          <button type="button" className="close-modal-btn" onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-            <X size={24} color="#999" />
-          </button>
+          <h2>{activeTab === 'request' ? '發布徵委託需求' : isOffer ? '發布接委託' : '發布其他'}</h2>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {isOffer && (
+              <>
+                <button type="button" onClick={onLoadDraft} className="save-hint-btn"><Download size={14} /> 載入預設</button>
+                <button type="button" onClick={onSaveDraft} className="save-hint-btn"><Save size={14} /> 設為預設</button>
+              </>
+            )}
+            <button type="button" className="close-modal-btn" onClick={onClose}><X size={24} /></button>
+          </div>
         </div>
         
-        <form onSubmit={onSubmit} className="post-form" style={{ padding: '24px', gap: '24px' }}>
+        <form onSubmit={onSubmit} className="post-form">
           
           {/* 圖片管理區 */}
-          <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <label style={{ fontWeight: 'bold' }}>作品範例 / 價目表展示 (最多 5 張，單張 3MB 內)</label>
+          <div className="form-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="section-title">
+                {isOffer ? '作品範例 / 價目表 (最多 5 張)' : '參考例圖 (最多 1 張)'}
+              </label>
               {isOffer && userShowcase.length > 0 && (
-                <button 
-                  type="button" 
-                  onClick={() => setShowPortfolioPicker(!showPortfolioPicker)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', background: '#f3f4f6', border: '1px solid #d1d5db', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}
-                >
+                <button type="button" onClick={() => setShowPortfolioPicker(!showPortfolioPicker)} className="add-btn-circle">
                   <ImageIcon size={14} /> {showPortfolioPicker ? "關閉作品集" : "從作品集挑選"}
                 </button>
               )}
             </div>
 
             {showPortfolioPicker && (
-              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
-                {userShowcase.map((item) => (
+              <div className="portfolio-picker-grid">
+                {userShowcase.map((item: any) => (
                   <div 
                     key={item.id} 
+                    className={`portfolio-item ${postForm.ref_images.includes(item.image_key) ? 'selected' : ''}`}
                     onClick={() => togglePortfolioImage(item.image_key)}
-                    style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '6px', overflow: 'hidden', cursor: 'pointer', border: postForm.ref_images.includes(item.image_key) ? '3px solid #9333ea' : '1px solid #ddd' }}
                   >
-                    <img src={item.image_key} alt="Portfolio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {postForm.ref_images.includes(item.image_key) && (
-                      <div style={{ position: 'absolute', top: 0, right: 0, background: '#9333ea', color: 'white', padding: '2px' }}><Plus size={12}/></div>
-                    )}
+                    <img src={getFullUrl(item.image_key)} alt="Portfolio" />
+                    {postForm.ref_images.includes(item.image_key) && <div className="check-overlay"><Plus size={24} /></div>}
                   </div>
                 ))}
               </div>
@@ -127,113 +153,131 @@ export const PostModal: React.FC<PostModalProps> = ({
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {postForm.ref_images.map((url: string, idx: number) => (
-                <div key={idx} style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee' }}>
-                  <img src={url} alt="範例" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => removeImage(idx)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer', padding: '4px' }}><X size={14}/></button>
+                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
+                  <img src={getFullUrl(url)} alt="預覽" />
+                  <button type="button" className="remove-image-btn" onClick={() => removeImage(idx)}><X size={14}/></button>
                 </div>
               ))}
-              {postForm.ref_images.length < 5 && (
-                <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <ImageUploader onUpload={onImageUpload} targetWidth={1200} buttonText={isUploading ? "..." : "+ 上傳"} maxSizeMB={3} />
+              {postForm.ref_images.length < (isOffer ? 5 : 1) && (
+                <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '8px' }}>
+                  <ImageUploader onUpload={onImageUpload} buttonText={isUploading ? "..." : "+ 上傳"} maxSizeMB={3} />
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="form-group">
-                <label style={{ fontWeight: 'bold' }}>貼文標題</label>
-                <input type="text" placeholder={isOffer ? "例如：接長期立繪、Q版頭貼" : "簡單描述你的需求"} value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-              </div>
-
-              {isOffer && (
-                <div className="form-group" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <label style={{ color: '#475569', marginBottom: '12px', display: 'block', fontWeight: 'bold' }}>接案項目與底價 (選填)</label>
-                  <div className="item-input-row" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <input type="text" placeholder="項目名稱" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
-                    <input type="number" placeholder="起步價" value={itemInput.price} onChange={e => setItemInput({...itemInput, price: e.target.value})} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
-                    <button type="button" onClick={addCommissionItem} style={{ padding: '8px 12px', background: '#9333ea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}><Plus size={18}/></button>
-                  </div>
-                  <div className="added-items-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {postForm.commission_items.map((item: any, idx: number) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' }}>
-                        <span>{item.name} <span style={{ color: '#94a3b8', marginLeft: '8px' }}>${item.price}~</span></span>
-                        <button type="button" onClick={() => removeCommissionItem(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash2 size={16}/></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!isOffer && (
-                <div className="form-group">
-                  <label style={{ fontWeight: 'bold' }}>預算範圍</label>
-                  <div className="budget-inputs" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <input type="number" min="0" placeholder="最低" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-                    <span>~</span>
-                    <input type="number" min="0" placeholder="最高" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label style={{ fontWeight: 'bold' }}>{isOffer ? '目前排單狀況' : '排單需求'}</label>
-                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                  <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input type="radio" name="schedule" checked={postForm.schedule_type === 'flexible'} onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} /> {isOffer ? '目前空閒' : '可接受排單'}
-                  </label>
-                  <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input type="radio" name="schedule" checked={postForm.schedule_type === 'fixed'} onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} /> {isOffer ? '指定日期' : '指定交稿日'}
-                  </label>
-                  {postForm.schedule_type === 'fixed' && (
-                    <input type="date" value={postForm.specific_date} onChange={e => setPostForm({...postForm, specific_date: e.target.value})} style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1' }} required />
-                  )}
-                </div>
-              </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>標題</label>
+              <input type="text" placeholder="輸入標題..." value={postForm.title} onChange={e => setPostForm({...postForm, title: e.target.value})} required />
             </div>
+
+            {!isOffer && (
+              <div className="form-group">
+                <label>預算範圍</label>
+                <div className="budget-inputs">
+                  <input type="number" min="0" value={postForm.budget_min} onChange={e => setPostForm({...postForm, budget_min: e.target.value})} />
+                  <span className="budget-separator">~</span>
+                  <input type="number" min="0" value={postForm.budget_max} onChange={e => setPostForm({...postForm, budget_max: e.target.value})} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 接委託名額與支付邏輯 */}
+          {/* 接委託專用設定 */}
           {isOffer && (
             <>
-              <div className="form-group" style={{ background: '#fffbeb', padding: '20px', borderRadius: '12px', border: '1px solid #fef3c7' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <label style={{ color: '#92400e', marginBottom: 0, fontWeight: 'bold' }}>名額與徵集機制</label>
-                  <div title="先搶先贏則依投單順序額滿為止。" style={{ cursor: 'help', color: '#d97706' }}><HelpCircle size={16}/></div>
+              {/* 接案項目 */}
+              <div className="form-section">
+                <label className="section-title">接案項目與底價 (選填)</label>
+                <div className="dynamic-question-row">
+                  <input type="text" placeholder="項目 (如：全彩半身)" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2 }} />
+                  <input type="number" placeholder="底價" value={itemInput.price} onChange={e => setItemInput({...itemInput, price: e.target.value})} style={{ flex: 1 }} />
+                  <button type="button" onClick={addCommissionItem} className="add-btn-circle"><Plus size={18}/></button>
                 </div>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input type="radio" value="fcfs" checked={postForm.selection_type === 'fcfs'} onChange={() => setPostForm({...postForm, selection_type: 'fcfs'})} /> 先搶先贏
-                  </label>
-                  <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input type="radio" value="curated" checked={postForm.selection_type === 'curated'} onChange={() => setPostForm({...postForm, selection_type: 'curated'})} /> 繪師選設
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '14px', color: '#92400e' }}>名額上限：</span>
-                    <input type="number" min="1" value={postForm.max_slots} onChange={e => setPostForm({...postForm, max_slots: e.target.value})} style={{ width: '70px', padding: '6px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
-                  </div>
+                <div className="item-manage-box">
+                  {postForm.commission_items.length === 0 && <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>尚未新增項目</p>}
+                  {postForm.commission_items.map((item: any, idx: number) => (
+                    <div key={idx} className="item-row">
+                      <span>{item.name} (${item.price}~)</span>
+                      <button type="button" onClick={() => removeCommissionItem(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash2 size={16}/></button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="form-group">
-                <label style={{ fontWeight: 'bold' }}>支付時機說明 (僅告知，不涉及實體交易)</label>
-                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '8px' }}>
+              {/* 🌟 補回：名額機制與 HelpCircle */}
+              <div className="form-section selection-mechanism-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, margin: 0 }}>名額機制</label>
+                  <div title="先搶先贏則依投單順序額滿為止；選設制則由您挑選。" style={{ cursor: 'help', color: '#d97706' }}>
+                    <HelpCircle size={16}/>
+                  </div>
+                </div>
+                <div className="mechanism-radio-group">
+                  <label className="radio-label"><input type="radio" checked={postForm.selection_type === 'fcfs'} onChange={() => setPostForm({...postForm, selection_type: 'fcfs'})} /> 先搶先贏</label>
+                  <label className="radio-label"><input type="radio" checked={postForm.selection_type === 'curated'} onChange={() => setPostForm({...postForm, selection_type: 'curated'})} /> 繪師選設</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px' }}>上限：</span>
+                    <input type="number" min="1" value={postForm.max_slots} onChange={e => setPostForm({...postForm, max_slots: e.target.value})} style={{ width: '60px' }} />
+                  </div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#b45309' }}>
+                   {postForm.selection_type === 'curated' ? '💡 案主端將顯示：繪師會選擇適洽設定來接單' : '💡 案主端將顯示：剩餘名額 (滿額自動關閉)'}
+                </p>
+              </div>
+
+              {/* 🌟 補回：支付時機與說明 */}
+              <div className="form-section">
+                <label className="section-title">支付時機說明 (僅告知，不涉及實體交易)</label>
+                <div className="radio-group">
                   {PAYMENT_TIMING.map(t => (
-                    <label key={t.value} style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <label key={t.value} className="radio-label">
                       <input type="radio" checked={postForm.payment_timing === t.value} onChange={() => setPostForm({...postForm, payment_timing: t.value})} /> {t.label}
                     </label>
                   ))}
                 </div>
                 {(postForm.payment_timing === 'deposit' || postForm.payment_timing === 'other') && (
-                  <input type="text" placeholder="詳細描述支付時機..." value={postForm.payment_timing_detail} onChange={e => setPostForm({...postForm, payment_timing_detail: e.target.value})} style={{ width: '100%', marginTop: '12px', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }} required />
+                  <input type="text" placeholder="詳細描述支付時機..." value={postForm.payment_timing_detail} onChange={e => setPostForm({...postForm, payment_timing_detail: e.target.value})} style={{ marginTop: '12px' }} required />
                 )}
+              </div>
+
+              {/* 提問模板 */}
+              <div className="form-section">
+                <label className="section-title">提問模板 (讓案主回答，最多 3 題)</label>
+                {postForm.questions.map((q: string, idx: number) => (
+                  <div key={idx} className="dynamic-question-row">
+                    <input 
+                      type="text" 
+                      placeholder={`題目 ${idx + 1} (如：角色設定 / 用途...)`} 
+                      value={q} 
+                      onChange={e => updateQuestion(idx, e.target.value)} 
+                      style={{ flex: 1 }}
+                    />
+                    <button type="button" onClick={() => removeQuestion(idx)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}><Trash2 size={18}/></button>
+                  </div>
+                ))}
+                {postForm.questions.length < 3 && (
+                  <button type="button" onClick={addQuestion} className="add-btn-circle" style={{ width: 'fit-content' }}><Plus size={14} /> 新增題目</button>
+                )}
+              </div>
+
+              {/* 服務條款 */}
+              <div className="form-section">
+                <label className="section-title">委託服務條款 (TOS)</label>
+                <textarea 
+                  rows={4} 
+                  placeholder="請在此輸入您的委託規則、修改次數說明、版權說明等..." 
+                  value={postForm.tos_content} 
+                  onChange={e => setPostForm({...postForm, tos_content: e.target.value})}
+                ></textarea>
               </div>
             </>
           )}
 
-          <div className="form-group">
-            <label style={{ fontWeight: 'bold' }}>收款方式 (多選)</label>
+          {/* 收款方式與標籤設定 */}
+          <div className="form-section">
+            <label className="section-title">收款方式 (多選)</label>
             <div className="tag-selector">
               {PAY_TAGS.map(t => (
                 <span key={t} className={`selectable-tag ${postForm.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
@@ -241,40 +285,72 @@ export const PostModal: React.FC<PostModalProps> = ({
             </div>
           </div>
 
-          <div className="form-group">
-            <label style={{ fontWeight: 'bold' }}>標籤與規格 (複選)</label>
-            <div className="tag-selector">
-              {isOffer && [...STYLE_WARNINGS, ...LICENSE_TAGS].map(t => (
-                <span key={t} className={`selectable-tag ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
-              ))}
-              {REQ_TAGS.map(t => (
-                <span key={t} className={`selectable-tag ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
-              ))}
-              {postForm.tags.filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t)).map((t: string) => (
-                <span key={t} className="selectable-tag selected custom-tag">
-                  {t} <X size={12} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); removeCustomTag(t); }} />
-                </span>
-              ))}
-              <input type="text" className="inline-tag-input" placeholder="+ 自定義標籤" value={customTagInput} onChange={e => setCustomTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customTagInput.trim()) { toggleTag(customTagInput.trim(), 'tags'); setCustomTagInput(''); } } }} />
+          <div className="form-section">
+            <label className="section-title">標籤設定</label>
+            
+            {isOffer && (
+              <>
+                <div className="tag-selector-group">
+                  <span className="label-hint">風格預警 (紅色標籤)</span>
+                  <div className="tag-selector">
+                    {STYLE_WARNINGS.map(t => (
+                      <span key={t} className={`selectable-tag warning ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="tag-selector-group">
+                  <span className="label-hint">授權/接受範圍 (綠色標籤)</span>
+                  <div className="tag-selector">
+                    {LICENSE_TAGS.map(t => (
+                      <span key={t} className={`selectable-tag license ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="tag-selector-group">
+              <span className="label-hint">風格類型與自定義</span>
+              <div className="tag-selector">
+                {REQ_TAGS.map(t => (
+                  <span key={t} className={`selectable-tag style ${postForm.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>
+                ))}
+                
+                {/* 顯示自己新增的自定義標籤 */}
+                {postForm.tags.filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t)).map((t: string) => (
+                  <span key={t} className="selectable-tag style selected custom-tag">
+                    {t} <X size={12} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); toggleTag(t, 'tags'); }} />
+                  </span>
+                ))}
+
+                {/* 🌟 補回：自定義標籤輸入框 */}
+                <input 
+                  type="text" 
+                  className="compact-tag-input" 
+                  placeholder="+ 自定義" 
+                  value={customTagInput}
+                  onChange={e => setCustomTagInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (customTagInput.trim()) { toggleTag(customTagInput.trim(), 'tags'); setCustomTagInput(''); }
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="form-group">
-            <label style={{ fontWeight: 'bold' }}>詳細說明</label>
-            <textarea rows={4} value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
+          <div className="form-group" style={{ marginTop: '8px' }}>
+            <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0 }}>詳細內容</label>
+            <textarea rows={4} className="detail-textarea" value={postForm.content} onChange={e => setPostForm({...postForm, content: e.target.value})} required></textarea>
           </div>
 
-          {isOffer && (
-            <div className="form-group">
-              <label style={{ fontWeight: 'bold' }}>投單提問模板</label>
-              <textarea rows={4} value={postForm.question_template} onChange={e => setPostForm({...postForm, question_template: e.target.value})} placeholder="讓案主填寫的需求單格式..." style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}></textarea>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px' }}>
-            <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ background: '#ff8c00', color: 'white', padding: '12px 36px', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
-              確認發布{isOffer ? '接案' : '許願'}
-            </button>
+          <div className="modal-footer">
+             <button type="button" className="btn-cancel" onClick={onClose}>取消</button>
+             <button type="submit" className="submit-post-btn" disabled={isUploading}>
+               確認發布{isOffer ? '接案' : '許願'}
+             </button>
           </div>
         </form>
       </div>
