@@ -12,17 +12,28 @@ interface CommissionDetail {
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
-  // 🌟 從 Notebook.tsx 學來的：資料其實存在這裡
   origin_source?: string;
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
+// 🌟 強健的時間轉換處理：確保所有來自 DB 的時間都被標記為 UTC
+const ensureUTC = (dateStr?: string) => {
+  if (!dateStr) return '';
+  let str = dateStr.trim();
+  // 補上 T
+  if (!str.includes('T')) str = str.replace(' ', 'T');
+  // 如果沒有時區標示 (Z 或 +08:00)，強制當作 UTC (Z)
+  if (!str.endsWith('Z') && !str.includes('+')) {
+    str += 'Z';
+  }
+  return str;
+};
+
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '';
-  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-  return new Date(utcStr).toLocaleString('zh-TW', { 
+  return new Date(ensureUTC(dateStr)).toLocaleString('zh-TW', { 
     hour12: false,
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -31,16 +42,14 @@ const formatLocalTime = (dateStr: string) => {
 
 const formatLocalDate = (dateStr: string) => {
   if (!dateStr) return '';
-  const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-  return new Date(utcStr).toLocaleDateString('zh-TW');
+  return new Date(ensureUTC(dateStr)).toLocaleDateString('zh-TW');
 };
 
 const parseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
-  return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z').getTime();
+  return new Date(ensureUTC(dateStr)).getTime();
 };
 
-// 🌟 解析許願池 JSON 字串的共用函式 (從 Notebook.tsx 移植)
 const getBulletinSource = (order?: CommissionDetail) => {
   if (!order || !order.origin_source) return null;
   try {
@@ -75,7 +84,6 @@ export function ClientOrders() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // 🌟 控制軌跡收合的狀態
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
   useEffect(() => {
@@ -131,7 +139,7 @@ export function ClientOrders() {
 
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
-      setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
+      setIsTrajectoryExpanded(false);
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -168,12 +176,15 @@ export function ClientOrders() {
       if (orderData.order_date) {
         syntheticLogs.push({ id: 'sys-init', actor_role: 'artist', content: '建立委託單', created_at: orderData.order_date });
         if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
-          const agreeTime = new Date(new Date(orderData.order_date).getTime() + 1000).toISOString();
+          // 確保 synthetic logs 的時間也是穩定的 ISO 格式
+          const agreeTime = new Date(parseTime(orderData.order_date) + 1000).toISOString();
           syntheticLogs.push({ id: 'sys-agree', actor_role: 'client', content: '同意委託協議並簽署合約', created_at: agreeTime });
         }
       }
 
-      const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // 🌟 使用 parseTime 來進行排序，避免瀏覽器解析錯誤
+      const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => parseTime(b.created_at) - parseTime(a.created_at));
+      
       setSubmissions(fetchedSubmissions);
       setLogs(allLogs);
 
@@ -553,7 +564,6 @@ export function ClientOrders() {
                 {activeTab === 'main' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {/* 🌟 讀取自 origin_source 的許願池媒合軌跡 */}
                     {getBulletinSource(selectedOrder) && (
                       <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', position: 'relative' }}>
                         <h3 style={{ fontSize: '16px', color: '#7A7269', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>

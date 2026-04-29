@@ -150,8 +150,9 @@ export function ClientLayout() {
         
         <nav className="sidebar-nav">
           <NavLink to="/" className="nav-item"><Sparkles size={20} /><span>前往許願池</span></NavLink>
+          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>許願收件匣</span></NavLink>
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><ClipboardList size={20} /><span>委託單管理</span></NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}><Inbox size={20} /><span>收件匣</span></NavLink>
+          
         </nav>
 
         <div className="sidebar-footer">

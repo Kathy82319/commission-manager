@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import '../../styles/Wishboard.css';
 import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, User, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { ImageUploader } from '../../components/ImageUploader'; // 🌟 引入你的上傳元件
+import { ImageUploader } from '../../components/ImageUploader'; 
 
 const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
 const PAY_TAGS = ['皆可配合', '無卡', '匯款', '空包', '超商'];
@@ -24,7 +24,6 @@ export const Wishboard: React.FC = () => {
   const [customTagInput, setCustomTagInput] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 🌟 修正：升級版的提案快照結構
   const [inquireDraft, setInquireDraft] = useState({
     message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] as string[]
   });
@@ -32,7 +31,7 @@ export const Wishboard: React.FC = () => {
 
   const [postForm, setPostForm] = useState({
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
-    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' // 這裡現在會存完整的 URL
+    budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', ref_image_key: '' 
   });
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -56,7 +55,6 @@ export const Wishboard: React.FC = () => {
 
   useEffect(() => { initData(); }, [activeTab]);
 
-  // 🌟 發布許願池：圖片上傳邏輯
   const handleImageUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
     try {
@@ -93,7 +91,6 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  // 🌟 投遞提案：附圖上傳邏輯 (最多 3 張)
   const handleInquireImageUpload = async (resultBlobs: { preview: Blob }) => {
     if (inquireDraft.images.length >= 3) {
       showToast("最多只能上傳 3 張參考圖", "error");
@@ -159,30 +156,29 @@ export const Wishboard: React.FC = () => {
     setPostForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
-// 找到 openInquireModal 函式並修改
-const openInquireModal = (bulletinId: string) => {
-  setSelectedBulletin(bulletinId);
-  let settings: any = {};
-  if (currentUser && currentUser.profile_settings) {
-    try {
-      settings = typeof currentUser.profile_settings === 'string' 
-        ? JSON.parse(currentUser.profile_settings) 
-        : currentUser.profile_settings;
-    } catch(e) {}
-  }
-  
-  const card = settings.bulletin_card || {};
+  const openInquireModal = (bulletinId: string) => {
+    setSelectedBulletin(bulletinId);
+    let settings: any = {};
+    if (currentUser && currentUser.profile_settings) {
+      try {
+        settings = typeof currentUser.profile_settings === 'string' 
+          ? JSON.parse(currentUser.profile_settings) 
+          : currentUser.profile_settings;
+      } catch(e) {}
+    }
+    
+    const card = settings.bulletin_card || {};
 
-  setInquireDraft({
-    message: '', 
-    specialties: card.specialties || '', 
-    no_gos: card.no_gos || '', 
-    payment_methods: card.payment_methods || '',
-    question_template: settings.question_template || '',
-    images: card.images || [] 
-  });
-  setShowInquireModal(true);
-};
+    setInquireDraft({
+      message: '', 
+      specialties: card.specialties || '', 
+      no_gos: card.no_gos || '', 
+      payment_methods: card.payment_methods || '',
+      question_template: settings.question_template || '',
+      images: card.images || [] 
+    });
+    setShowInquireModal(true);
+  };
 
   const handleInquire = async () => {
     if (!selectedBulletin) return;
@@ -230,6 +226,7 @@ const openInquireModal = (bulletinId: string) => {
         </div>
       </header>
 
+      {/* 🌟 發布區域已修改：移除白底與陰影 */}
       <div className="filter-section">
         <div className="filter-label"><Tag size={16} /> 熱門篩選：</div>
         <div className="filter-tags">
@@ -264,28 +261,35 @@ const openInquireModal = (bulletinId: string) => {
                   <div className="wish-countdown"><Clock size={12} /> {getTimeRemaining(b.expires_at)}</div>
                 </div>
                 
+                {/* 🌟 卡片資訊佈局修改：右側上下拆分 */}
                 <div className="wish-card-info">
+                  
+                  {/* 右側：標題區 */}
                   <div className="wish-card-header">
                     <h3>{b.title || '無標題'}</h3>
                     <span className="category-badge">{b.category === 'request' ? '徵委託' : '其他'}</span>
                   </div>
 
-                  <div className="wish-metadata">
-                    <div className="meta-item">
-                      <Tag size={14} />
+                  {/* 右側上層：預算與排單 */}
+                  <div style={{ display: 'flex', gap: '24px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <span className="meta-item"><DollarSign size={16} color="#e67e22" /> <strong style={{color: '#555'}}>預算：</strong><span className="price">{b.budget_min}~{b.budget_max}</span></span>
+                    <span className="meta-item"><Calendar size={16} color="#4E7A5A" /> <strong style={{color: '#555'}}>排單：</strong><span>{b.schedule_type === 'flexible' ? '可接受排單' : b.specific_date}</span></span>
+                  </div>
+
+                  {/* 右側下層：付款方式與標籤 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', background: '#fdfdfb', padding: '12px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                    <div className="meta-item"><Send size={14} color="#666" /> <strong style={{color: '#555'}}>付款方式：</strong><span>{JSON.parse(b.payment_methods || '[]').join(', ')}</span></div>
+                    <div className="meta-item" style={{ alignItems: 'flex-start' }}>
+                      <Tag size={14} color="#666" style={{ marginTop: '2px' }} /> <strong style={{color: '#555', whiteSpace: 'nowrap'}}>需求標籤：</strong>
                       <div className="tag-cloud">
                         {JSON.parse(b.tags || '[]').map((t: string) => <span key={t} className="tag-chip">{t}</span>)}
                       </div>
                     </div>
-                    <div className="meta-row">
-                      <span className="meta-item"><DollarSign size={14} /> 預算：<span className="price">{b.budget_min}~{b.budget_max}</span></span>
-                      <span className="meta-item"><Calendar size={14} /> 排單：<span>{b.schedule_type === 'flexible' ? '可接受排單' : b.specific_date}</span></span>
-                    </div>
-                    <div className="meta-item"><Send size={14} /> 付款：<span>{JSON.parse(b.payment_methods || '[]').join(', ')}</span></div>
                   </div>
 
+                  {/* 詳細說明 */}
                   <div className="wish-description">
-                    <strong>詳細需求：</strong>
+                    <strong style={{ color: '#555' }}>詳細需求說明：</strong>
                     <p>{b.content}</p>
                   </div>
 
@@ -353,7 +357,7 @@ const openInquireModal = (bulletinId: string) => {
 
                   <input 
                     type="text" 
-                    className="inline-tag-input" 
+                    className="inline-tag-input compact-tag-input" 
                     placeholder="+ 自定義 (按 Enter 加入)" 
                     value={customTagInput} 
                     onChange={e => setCustomTagInput(e.target.value)}
@@ -366,7 +370,6 @@ const openInquireModal = (bulletinId: string) => {
                         }
                       }
                     }}
-                    style={{ width: '160px', padding: '6px 12px', borderRadius: '20px', border: '1px dashed #aaa' }}
                   />
                 </div>
               </div>
@@ -393,31 +396,29 @@ const openInquireModal = (bulletinId: string) => {
               <div className="form-row">
                 <div className="form-group" style={{ width: '100%' }}>
                   <label>排單需求</label>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <div className="radio-group">
+                    <label className="radio-label">
                       <input 
                         type="radio" 
                         name="schedule" 
                         checked={postForm.schedule_type === 'flexible'} 
                         onChange={() => setPostForm({...postForm, schedule_type: 'flexible', specific_date: ''})} 
-                        style={{ width: 'auto', height: 'auto', margin: 0 }}
                       /> 可接受排單
                     </label>
-                    <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <label className="radio-label">
                       <input 
                         type="radio" 
                         name="schedule" 
                         checked={postForm.schedule_type === 'fixed'} 
                         onChange={() => setPostForm({...postForm, schedule_type: 'fixed'})} 
-                        style={{ width: 'auto', height: 'auto', margin: 0 }}
                       /> 指定完成日期：
                     </label>
                     {postForm.schedule_type === 'fixed' && (
                       <input 
                         type="date" 
+                        className="date-input"
                         value={postForm.specific_date} 
                         onChange={e => setPostForm({...postForm, specific_date: e.target.value})} 
-                        style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ddd' }}
                         required
                       />
                     )}
@@ -438,7 +439,7 @@ const openInquireModal = (bulletinId: string) => {
         </div>
       )}
       
-      {/* 🌟 全新升級：投遞意向 Modal (提案卡) */}
+      {/* 投遞意向 Modal (提案卡) */}
       {showInquireModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
@@ -449,22 +450,10 @@ const openInquireModal = (bulletinId: string) => {
             
             <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px', lineHeight: '1.6' }}>
               與其丟文字履歷，不如直接給案主看您的作品！<br/>
-              您可以上傳精美的價目表或排版圖，並針對本次委託提供客製化報價與留言。
+              您可以上傳精美的價目表或排版圖，讓案主一目了然。
             </p>
 
-            {/* 區塊 1：給案主的話 */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>給案主的留言 / 初步報價 (選填)</label>
-              <textarea 
-                value={inquireDraft.message} 
-                onChange={(e) => setInquireDraft({...inquireDraft, message: e.target.value})} 
-                placeholder="例如：您好！這個題材剛好是我擅長的，針對您的需求預估大約 1500 元..."
-                rows={3} 
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-              />
-            </div>
-
-            {/* 區塊 2：視覺化附圖 */}
+            {/* 視覺化附圖區 */}
             <div className="form-group" style={{ marginBottom: '25px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#334155' }}>附上參考圖 / 價目表 (最多 3 張)</label>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
@@ -507,9 +496,21 @@ const openInquireModal = (bulletinId: string) => {
               <input type="text" value={inquireDraft.payment_methods} onChange={(e) => setInquireDraft({...inquireDraft, payment_methods: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
             </div>
 
+            {/* 🌟 提問模板引導優化區塊 */}
             <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '13px', color: '#9333ea' }}>案主回填提問模板 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(若案主按下邀請詳談，系統將請他填寫)</span></label>
-              <textarea value={inquireDraft.question_template} onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px', fontSize: '14px', color: '#9333ea' }}>
+                初步細節提問單 <span style={{ fontWeight: 'normal', color: '#94a3b8' }}>(案主應徵時需填寫)</span>
+              </label>
+              <p style={{ fontSize: '13px', color: '#64748b', marginTop: '0', marginBottom: '10px', lineHeight: '1.5' }}>
+                💡 <strong>功能說明：</strong>請在此填寫您想請案主預先回答的問題。當案主回覆後，這份回覆將會成為後續洽談與正式委託單的基礎參考。
+              </p>
+              <textarea 
+                value={inquireDraft.question_template} 
+                onChange={(e) => setInquireDraft({...inquireDraft, question_template: e.target.value})} 
+                rows={4} 
+                placeholder={`例：\n1. 角色是否有設定圖？\n2. 是否為商用？\n3. 期望的最晚交稿日期？`}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
+              />
             </div>
 
             <div className="modal-actions" style={{ marginTop: '25px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '20px' }}>
