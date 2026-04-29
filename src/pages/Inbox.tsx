@@ -35,6 +35,9 @@ const safeParseTime = (dateStr?: string) => {
   return new Date(utcStr).getTime();
 };
 
+// ==========================================
+// 案主視角的明信片卡片 (保留原本樣式)
+// ==========================================
 const ArtistPostcard = ({ item, snapshot, navigate, children }: any) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
@@ -157,14 +160,14 @@ export const Inbox: React.FC = () => {
   const [inviteResponse, setInviteResponse] = useState('');
   const [declineReason, setDeclineReason] = useState('');
 
-  // 🌟 罐頭訊息狀態與編輯狀態
+  // 罐頭訊息狀態與編輯狀態
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
     '目前檔期較滿，暫不接單', 
     '經過評估，可能有預算或價格考量', 
     '較不擅長此題材，怕無法達到您的期望'
   ]);
   const [isEditingTemplates, setIsEditingTemplates] = useState(false);
-  const [tempTemplates, setTempTemplates] = useState<string[]>([]);
+  const [tempTemplates, setTempTemplates] = useState<string[]>(['', '', '']);
 
   const fetchInbox = async () => {
     setLoading(true);
@@ -278,20 +281,26 @@ export const Inbox: React.FC = () => {
   ];
 
   return (
-    // 🌟 外層改用 inbox-page-wrapper 賦予標準的網頁版框架寬度與 padding
-    <div className="inbox-page-wrapper">
-      <h1 className="inbox-page-title">訊息中心</h1>
+    // 🌟 優化整體框架，符合其他管理頁面的版面與標題大小
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px', minHeight: 'calc(100vh - 64px)', backgroundColor: '#FDFDFB' }}>
+      <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '24px' }}>訊息中心</h1>
 
-      <div className="inbox-tabs">
-        <button className={activeTab === 'client' ? 'active' : ''} onClick={() => setActiveTab('client')}>
+      <div style={{ display: 'flex', gap: '16px', borderBottom: '2px solid #EAE6E1', marginBottom: '24px' }}>
+        <button 
+          style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === 'client' ? '3px solid #ff8c00' : '3px solid transparent', fontSize: '16px', fontWeight: 'bold', color: activeTab === 'client' ? '#ff8c00' : '#A0978D', cursor: 'pointer', transition: 'all 0.2s ease', marginBottom: '-2px' }}
+          onClick={() => setActiveTab('client')}
+        >
           已發佈許願
         </button>
-        <button className={activeTab === 'artist' ? 'active' : ''} onClick={() => setActiveTab('artist')}>
+        <button 
+          style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === 'artist' ? '3px solid #ff8c00' : '3px solid transparent', fontSize: '16px', fontWeight: 'bold', color: activeTab === 'artist' ? '#ff8c00' : '#A0978D', cursor: 'pointer', transition: 'all 0.2s ease', marginBottom: '-2px' }}
+          onClick={() => setActiveTab('artist')}
+        >
           我投遞的履歷
         </button>
       </div>
 
-      <div className="mb-6 text-sm text-[#A0978D] bg-[#FBFBF9] p-3 rounded-lg border border-[#EAE6E1] inline-block">
+      <div style={{ fontSize: '14px', color: '#A0978D', backgroundColor: '#FBFBF9', padding: '12px 16px', borderRadius: '8px', border: '1px solid #EAE6E1', display: 'inline-block', marginBottom: '24px' }}>
         💡 提示：為了保持版面整潔，已婉拒或撤回的提案將於 3 天後自動隱藏。
       </div>
 
@@ -409,7 +418,7 @@ export const Inbox: React.FC = () => {
         </>
       ) : (
         // ==========================================
-        // 🌟 繪師視角：套用全新的 artist-inquiry-card 設計
+        // 🌟 繪師視角：「我投遞的履歷」全新精緻卡片設計
         // ==========================================
         <div>
           {artistInquiries.filter(filterOldItems).length === 0 ? (
@@ -419,52 +428,53 @@ export const Inbox: React.FC = () => {
               const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
               return (
-                <div key={item.inquiry_id} className="artist-inquiry-card">
-                  <div className="aic-header">
-                    <span className={`aic-status status-${item.inquiry_status}`}>
+                <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                  {/* 頭部標題與狀態 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                    <span className={`inbox-badge status-${item.inquiry_status}`} style={{ margin: 0 }}>
                       {getStatusLabel(item.inquiry_status)}
                     </span>
-                    <h3 title={item.bulletin_title}>{item.bulletin_title || '未命名貼文'}</h3>
+                    <h3 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E', fontWeight: 'bold', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.bulletin_title}>
+                      {item.bulletin_title || '未命名貼文'}
+                    </h3>
                   </div>
 
-                  <div className="aic-body">
-                    {/* 許願池摘要 (迷你卡片) */}
-                    <div className="aic-snippet">
-                      {item.ref_image_key ? (
-                        <img src={item.ref_image_key} alt="參考圖" className="aic-snippet-img" />
-                      ) : (
-                        <div className="aic-snippet-noimg">無參考圖</div>
-                      )}
-                      
-                      <div className="aic-snippet-info">
-                        <div className="aic-snippet-tags">
-                          <span className="aic-tag price">💰預算 ${item.budget_min}~${item.budget_max}</span>
-                          <span className="aic-tag schedule">📅 {item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}</span>
-                        </div>
-                        <div className="aic-desc" title={item.bulletin_content}>
-                          {item.bulletin_content}
-                        </div>
+                  {/* 🌟 許願池摘要區塊 (圖文並排) */}
+                  <div style={{ display: 'flex', gap: '20px', background: '#FBFBF9', border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+                    {item.ref_image_key ? (
+                      <img src={item.ref_image_key} alt="參考圖" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #EAE6E1', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: '100px', height: '100px', background: '#F0F0F0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', fontSize: '13px', flexShrink: 0 }}>無參考圖</div>
+                    )}
+                    
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ background: '#FFF5EB', color: '#ff8c00', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>💰 預算：{item.budget_min}~{item.budget_max}</span>
+                        <span style={{ background: '#E6F4EA', color: '#1E8E3E', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>📅 排單：{item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}</span>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6' }} title={item.bulletin_content}>
+                        {item.bulletin_content}
                       </div>
                     </div>
-
-                    {/* 案主回覆區塊 */}
-                    {item.client_response && (
-                      <div className="aic-response">
-                        <strong>案主回填的提問單：</strong>
-                        <p>{item.client_response}</p>
-                      </div>
-                    )}
-
-                    {/* 婉拒理由區塊 */}
-                    {item.inquiry_status === 'declined' && item.decline_reason && (
-                      <div className="aic-decline">
-                        <strong>終止/婉拒理由：</strong>
-                        <p>{item.decline_reason}</p>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="aic-footer">
+                  {/* 案主回覆區塊 */}
+                  {item.client_response && (
+                    <div style={{ background: '#F8FAFC', borderLeft: '4px solid #4A7294', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
+                      <strong style={{ color: '#4A7294', fontSize: '14px', marginBottom: '8px', display: 'block' }}>案主回填的提問單：</strong>
+                      <p style={{ margin: 0, fontSize: '14px', color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{item.client_response}</p>
+                    </div>
+                  )}
+
+                  {/* 婉拒理由區塊 */}
+                  {item.inquiry_status === 'declined' && item.decline_reason && (
+                    <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
+                      <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/婉拒理由：</strong>
+                      <p style={{ margin: 0, fontSize: '14px', color: '#A05C5C', lineHeight: '1.6' }}>{item.decline_reason}</p>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '16px' }}>
                     {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
                       <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
                         進入聊天室
@@ -478,7 +488,6 @@ export const Inbox: React.FC = () => {
                     {canDecline && (
                       <button className="btn-secondary-red" onClick={() => {
                         setSelectedInquiry(item);
-                        setTempTemplates([...declineTemplates]); // 準備編輯用
                         setShowDeclineModal(true);
                       }}>
                         {item.inquiry_status === 'pending' ? '撤回投遞' : '終止洽談'}
@@ -527,7 +536,7 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 婉拒與撤回彈窗 (加入罐頭訊息即時編輯功能) */}
+      {/* 🌟 婉拒與撤回彈窗 (修復編輯功能與樣式) */}
       {showDeclineModal && (
         <div className="modal-overlay">
           <div className="modal-content-paper decline-modal" style={{ maxWidth: '550px' }}>
@@ -540,20 +549,29 @@ export const Inbox: React.FC = () => {
             </p>
 
             <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-xs font-bold text-[#A05C5C]">快速帶入罐頭訊息：</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#A05C5C' }}>快速帶入罐頭訊息：</div>
                 <button 
-                  className="text-xs text-[#4A7294] font-bold hover:underline bg-transparent border-none cursor-pointer p-0"
-                  onClick={() => setIsEditingTemplates(!isEditingTemplates)}
+                  style={{ fontSize: '13px', color: '#4A7294', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  onClick={() => {
+                    if (!isEditingTemplates) {
+                      // 確保展開時一定有 3 個欄位
+                      const defaults = [...declineTemplates];
+                      while (defaults.length < 3) defaults.push('');
+                      setTempTemplates(defaults);
+                    }
+                    setIsEditingTemplates(!isEditingTemplates);
+                  }}
                 >
                   {isEditingTemplates ? '✕ 取消編輯' : '⚙️ 編輯罐頭訊息'}
                 </button>
               </div>
 
               {isEditingTemplates ? (
-                <div className="template-edit-box">
+                <div style={{ background: '#FAFAFA', border: '1px solid #EAE6E1', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '12px' }}>在此修改您的 3 則常用婉拒/撤回原因，儲存後下次也可直接使用。</div>
                   {tempTemplates.map((temp, idx) => (
-                    <div key={idx} className="template-input-row">
+                    <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                       <input 
                         type="text" 
                         value={temp} 
@@ -563,12 +581,13 @@ export const Inbox: React.FC = () => {
                           setTempTemplates(newT);
                         }} 
                         placeholder={`罐頭訊息 ${idx + 1}`}
+                        style={{ flex: 1, padding: '10px 12px', border: '1px solid #DED9D3', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
                       />
                     </div>
                   ))}
-                  <div className="flex justify-end mt-3">
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                     <button 
-                      className="bg-[#5D4A3E] text-white text-xs font-bold px-4 py-2 rounded-md hover:bg-[#4E7A5A] transition"
+                      style={{ background: '#5D4A3E', color: 'white', fontSize: '13px', fontWeight: 'bold', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
                       onClick={handleSaveTemplates}
                     >
                       儲存變更
@@ -576,17 +595,22 @@ export const Inbox: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {declineTemplates.map((template, idx) => (
-                    <button 
-                      key={idx}
-                      type="button"
-                      className="text-xs bg-[#FFF5F5] border border-[#F5C6C6] text-[#A05C5C] px-3 py-1.5 rounded-full hover:bg-[#FCE8E6] transition-colors"
-                      onClick={() => setDeclineReason(template)}
-                    >
-                      {template}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {declineTemplates.map((template, idx) => {
+                    if (!template.trim()) return null;
+                    return (
+                      <button 
+                        key={idx}
+                        type="button"
+                        style={{ fontSize: '12px', background: '#FFF5F5', border: '1px solid #F5C6C6', color: '#A05C5C', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', transition: 'background 0.2s' }}
+                        onClick={() => setDeclineReason(template)}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#FCE8E6'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#FFF5F5'}
+                      >
+                        {template}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -597,6 +621,7 @@ export const Inbox: React.FC = () => {
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               disabled={isEditingTemplates}
+              style={{ opacity: isEditingTemplates ? 0.5 : 1 }}
             ></textarea>
             
             <div className="flex justify-end gap-4 mt-6">
