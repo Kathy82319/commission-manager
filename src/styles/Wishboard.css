@@ -1,359 +1,270 @@
 /* src/styles/Wishboard.css */
 
 /* ==================================================
-   🌟 基礎頁面佈局 
+   🌟 基礎頁面佈局與變數
    ================================================== */
+:root {
+  --wish-primary: var(--artist-theme-color, #ff8c00);
+  --wish-primary-hover: #e67e00;
+  --wish-text-main: var(--artist-text-color, #334155);
+  --wish-text-muted: #64748b;
+  --wish-bg-light: #f8fafc;
+  --wish-border: #cbd5e1;
+}
+
 .wishboard-page {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   background-color: #fcfaf8;
   min-height: 100vh;
+  color: var(--wish-text-main);
+  font-family: inherit;
 }
-
-/* Toast 通知 */
-.toast-notification {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
-  animation: slideDown 0.3s ease-out;
-}
-.toast-notification.success { background-color: #22c55e; color: white; }
-.toast-notification.error { background-color: #ef4444; color: white; }
-@keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
-
-/* Hero 與 Tab */
-.wishboard-hero { text-align: center; padding: 40px 0; background: linear-gradient(135deg, #fff5eb 0%, #fff 100%); border-radius: 20px; margin-bottom: 30px; }
-.tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
-.tab-group button { padding: 10px 25px; border-radius: 30px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; color: #666; transition: 0.3s; }
-.tab-group button.active { background: #ff8c00; color: white; border-color: #ff8c00; box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 
 /* ==================================================
-   🌟 許願池卡片 (WishCard)
+   🌟 許願池主視覺與篩選器
    ================================================== */
-.wish-grid { display: flex; flex-direction: column; gap: 20px; }
-.wish-card-wide { display: flex; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; transition: transform 0.2s; }
-.wish-card-wide:hover { transform: translateY(-4px); }
+.wishboard-hero { 
+  text-align: center; 
+  padding: 40px 20px; 
+  background: linear-gradient(135deg, #fff5eb 0%, #ffffff 100%); 
+  border-radius: 20px; 
+  margin-bottom: 30px; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
 
-.wish-card-image-wrapper { width: 320px; height: 240px; position: relative; flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; overflow: hidden; }
-.wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
-.wish-card-header { display: flex; justify-content: space-between; align-items: center; }
-.wish-card-header h3 { font-size: 20px; color: #333; margin: 0; font-weight: bold; }
-
-.tag-chip { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
-.tag-style { background: #f0f2f5; color: #555; }
-.tag-warning { background: #fff1f2; color: #e11d48; }
-.tag-license { background: #f0fdf4; color: #16a34a; }
+.tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+.tab-group button { 
+  padding: 10px 25px; border-radius: 30px; border: 1px solid var(--wish-border); 
+  background: white; cursor: pointer; font-weight: 600; color: var(--wish-text-muted); 
+  transition: all 0.3s ease; 
+}
+.tab-group button.active { 
+  background: var(--wish-primary); color: white; border-color: var(--wish-primary); 
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); 
+}
 
 /* ==================================================
-   🌟 彈窗系統 (Modal) 
+   🌟 彈窗系統 (Modal) - 強制置中與捲動
    ================================================== */
 .modal-overlay { 
-  position: fixed; 
-  inset: 0; 
-  background: rgba(0,0,0,0.6); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 9999; 
-  padding: 20px; 
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; 
+  z-index: 9999; padding: 20px; box-sizing: border-box;
 }
 
 .post-modal { 
-  background: #f8fafc; 
-  width: 100%; 
-  max-width: 850px; 
-  max-height: 90vh; 
-  border-radius: 20px; 
-  display: flex; 
-  flex-direction: column; 
-  overflow: hidden; 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+  background: white; width: 100%; max-width: 850px; 
+  max-height: 90vh; border-radius: 20px; display: flex; flex-direction: column; 
+  overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
 }
 
 .modal-header { 
-  padding: 20px 24px; 
-  background: white; 
-  border-bottom: 1px solid #e2e8f0; 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  flex-shrink: 0; 
+  padding: 20px 24px; background: white; border-bottom: 1px solid #f1f5f9; 
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
 }
-.modal-header h2 { margin: 0; font-size: 20px; color: #1e293b; font-weight: 800; }
+.modal-header h2 { margin: 0; font-size: 22px; color: var(--wish-text-main); font-weight: 800; }
 
 .post-form { 
-  padding: 24px; 
-  overflow-y: auto; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 24px; 
-  background: #f8fafc;
+  padding: 24px; overflow-y: auto; display: flex; flex-direction: column; 
+  gap: 24px; background: #f8fafc; flex-grow: 1;
 }
 
 /* ==================================================
-   🌟 表單元件與圖片上傳 (防止大到天際)
+   🌟 表單核心元件 (解決原始 HTML 格式問題)
    ================================================== */
 .form-section { 
-  background: white; 
-  padding: 20px; 
-  border-radius: 12px; 
-  border: 1px solid #e2e8f0; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 16px; 
+  background: white; padding: 24px; border-radius: 16px; 
+  border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .section-title { 
-  font-size: 15px; 
-  font-weight: 800; 
-  color: #0f172a; 
-  border-left: 4px solid #ff8c00; 
-  padding-left: 10px; 
-  margin-bottom: 4px;
+  font-size: 16px; font-weight: 800; color: #0f172a; 
+  border-left: 4px solid var(--wish-primary); padding-left: 10px; margin: 0 0 4px 0;
 }
 
-.form-row { 
-  display: flex; 
-  gap: 24px; 
-  align-items: flex-start; /* 🌟 關鍵：防止垂直拉長 */
-  flex-wrap: wrap; 
+.form-row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 260px; }
+.form-group label { font-weight: 700; color: var(--wish-text-main); font-size: 14px; }
+.label-hint { font-size: 13px; color: var(--wish-text-muted); font-weight: normal; }
+
+/* 🌟 強制統一樣式的輸入框 */
+input[type="text"], 
+input[type="number"], 
+input[type="date"], 
+textarea,
+.date-input {
+  width: 100%; padding: 12px 16px; border: 1.5px solid var(--wish-border); 
+  border-radius: 10px; font-size: 14px; color: var(--wish-text-main); 
+  background: white; transition: all 0.2s; font-family: inherit; box-sizing: border-box;
 }
+input:focus, textarea:focus {
+  outline: none; border-color: var(--wish-primary); 
+  box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.1); 
+}
+.detail-textarea { min-height: 120px; resize: vertical; }
 
-.form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 280px; }
-.form-group label { font-weight: 700; color: #334155; font-size: 14px; }
+/* 預算區塊 */
+.budget-inputs { display: flex; align-items: center; gap: 12px; }
+.budget-separator { color: var(--wish-text-muted); font-weight: bold; }
 
-/* 🌟 圖片預覽框核心修正 */
+/* ==================================================
+   🌟 圖片預覽與上傳 (解決突破天際問題)
+   ================================================== */
 .image-preview-box { 
   position: relative; 
-  width: 100%; 
-  max-width: 300px; /* 限制最大寬度 */
-  height: 200px; 
   border-radius: 12px; 
   overflow: hidden; 
-  border: 2px solid #e2e8f0; 
+  border: 1px solid #e2e8f0; 
   background: #f1f5f9;
+  flex-shrink: 0;
 }
+
+/* 🌟 強制約束 img 標籤 */
 .image-preview-box img { 
-  width: 100%; 
-  height: 100%; 
-  object-fit: cover; /* 確保不變形 */
-  display: block;
+  width: 100% !important; 
+  height: 100% !important; 
+  object-fit: cover !important; 
+  display: block; 
 }
 
 .remove-image-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
+  position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.6); 
+  color: white; border: none; border-radius: 50%; width: 26px; height: 26px; 
+  display: flex; align-items: center; justify-content: center; cursor: pointer; 
+  z-index: 10; transition: 0.2s;
 }
+.remove-image-btn:hover { background: rgba(220, 38, 38, 0.9); transform: scale(1.1); }
 
 /* 作品集選擇器網格 */
 .portfolio-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 12px;
-  background: #f1f5f9;
-  padding: 16px;
-  border-radius: 12px;
-  max-height: 280px;
-  overflow-y: auto;
-  border: 1px solid #cbd5e1;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+  gap: 12px; background: #f1f5f9; padding: 16px; border-radius: 12px; 
+  max-height: 280px; overflow-y: auto; border: 1px solid var(--wish-border);
 }
 
 .portfolio-item {
-  aspect-ratio: 1/1;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-  border: 3px solid transparent;
-  transition: 0.2s;
+  aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; cursor: pointer; 
+  position: relative; border: 3px solid transparent; transition: 0.2s;
 }
-.portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
+.portfolio-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .portfolio-item.selected { border-color: #9333ea; transform: scale(0.95); }
 .portfolio-item .check-overlay {
-  position: absolute; inset: 0; background: rgba(147, 51, 234, 0.3);
+  position: absolute; inset: 0; background: rgba(147, 51, 234, 0.4);
   display: flex; align-items: center; justify-content: center; color: white;
 }
 
 /* ==================================================
-   🌟 輸入框、標籤與按鈕 (補齊樣式)
+   🌟 標籤系統 (Tags)
    ================================================== */
-input[type="text"], 
-input[type="number"], 
-input[type="date"], 
-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #1e293b;
-  background: white;
-  transition: all 0.2s;
-}
-input:focus, textarea:focus {
-  outline: none;
-  border-color: #ff8c00;
-  box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.1);
-}
+.tag-selector-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.tag-selector { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
-/* 標籤選擇器 */
-.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .selectable-tag {
-  padding: 8px 16px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  background: white;
-  transition: 0.2s;
+  padding: 8px 16px; border: 1.5px solid var(--wish-border); border-radius: 20px; 
+  font-size: 13px; font-weight: 600; color: var(--wish-text-muted); 
+  cursor: pointer; background: white; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
 }
-.selectable-tag:hover { background: #f1f5f9; border-color: #94a3b8; }
-.selectable-tag.selected { background: #ff8c00; color: white; border-color: #ff8c00; }
+.selectable-tag:hover { background: #f1f5f9; border-color: #94a3b8; color: var(--wish-text-main); }
+.selectable-tag.selected { background: var(--wish-primary); color: white; border-color: var(--wish-primary); }
 
-/* 標籤分類顏色 */
+/* 三權分立標籤顏色 */
 .selectable-tag.warning.selected { background: #e11d48; border-color: #e11d48; }
 .selectable-tag.license.selected { background: #16a34a; border-color: #16a34a; }
 .selectable-tag.style.selected { background: #64748b; border-color: #64748b; }
 
 .compact-tag-input {
-  width: 120px !important;
-  padding: 6px 12px !important;
-  border: 1.5px dashed #cbd5e1 !important;
-  background: transparent !important;
-  border-radius: 20px !important;
+  width: 140px !important; padding: 8px 16px !important; 
+  border: 1.5px dashed var(--wish-border) !important; background: transparent !important; 
+  border-radius: 20px !important; font-size: 13px !important;
 }
 
-/* 按鈕樣式 */
-.submit-post-btn {
-  background: #ff8c00;
-  color: white;
-  padding: 14px 32px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 10px 15px -3px rgba(255, 140, 0, 0.3);
-  transition: 0.2s;
+/* ==================================================
+   🌟 互動按鈕與特殊區塊
+   ================================================== */
+.modal-footer { 
+  padding: 20px 24px; background: white; border-top: 1px solid #f1f5f9; 
+  display: flex; justify-content: flex-end; gap: 16px; flex-shrink: 0;
 }
-.submit-post-btn:hover { background: #e67e00; transform: translateY(-1px); }
-.submit-post-btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.submit-post-btn {
+  background: var(--wish-primary); color: white; padding: 12px 32px; 
+  border: none; border-radius: 12px; font-weight: 800; font-size: 16px; 
+  cursor: pointer; box-shadow: 0 4px 12px rgba(255, 140, 0, 0.25); transition: 0.2s;
+}
+.submit-post-btn:hover:not(:disabled) { background: var(--wish-primary-hover); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(255, 140, 0, 0.35); }
+.submit-post-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; opacity: 0.7; }
 
 .btn-cancel {
-  background: #f1f5f9;
-  color: #64748b;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
+  background: white; color: var(--wish-text-muted); padding: 12px 28px; 
+  border: 1px solid var(--wish-border); border-radius: 12px; font-weight: 600; 
+  cursor: pointer; transition: 0.2s; font-size: 15px;
 }
+.btn-cancel:hover { background: #f1f5f9; color: var(--wish-text-main); }
 
 .add-btn-circle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f3e8ff;
-  color: #9333ea;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
+  display: flex; align-items: center; gap: 6px; background: #f3e8ff; color: #9333ea; 
+  border: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; 
+  font-weight: 700; cursor: pointer; transition: 0.2s;
 }
-.add-btn-circle:hover { background: #e9d5ff; }
+.add-btn-circle:hover { background: #e9d5ff; transform: scale(1.02); }
 
-/* 🌟 關閉按鈕與問號提示 */
+.save-hint-btn {
+  background: white; border: 1px solid var(--wish-border); color: var(--wish-text-muted);
+  padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;
+}
+.save-hint-btn:hover { color: var(--wish-primary); border-color: var(--wish-primary); background: #fff5eb; }
+
 .close-modal-btn {
-  color: #94a3b8;
-  background: none;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex;
-  transition: 0.2s;
+  background: none; border: none; color: #94a3b8; padding: 8px; 
+  cursor: pointer; border-radius: 50%; display: flex; transition: 0.2s;
 }
-.close-modal-btn:hover { background: #f1f5f9; color: #1e293b; }
+.close-modal-btn:hover { background: #f1f5f9; color: var(--wish-text-main); }
 
 /* ==================================================
-   🌟 特殊區塊 (名額與支付)
+   🌟 排單、名額與動態列表
    ================================================== */
-.selection-mechanism-box {
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
-  padding: 20px;
-  border-radius: 16px;
-}
-
-.radio-group { display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+.radio-group { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
 .radio-label { 
-  display: flex; 
-  align-items: center; 
-  gap: 8px; 
-  font-weight: 600 !important; 
-  color: #475569 !important;
-  cursor: pointer; 
+  display: flex; align-items: center; gap: 8px; font-weight: 600 !important; 
+  color: var(--wish-text-main) !important; cursor: pointer; font-size: 14px;
 }
-.radio-label input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #ff8c00;
+.radio-label input[type="radio"] { 
+  width: 18px; height: 18px; accent-color: var(--wish-primary); cursor: pointer; margin: 0;
 }
 
-.item-manage-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+.selection-mechanism-box {
+  background: #fffbeb; border: 1px solid #fef3c7; padding: 24px; border-radius: 16px;
 }
+.mechanism-radio-group { display: flex; gap: 24px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
+
+.dynamic-question-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+
+.item-manage-box { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 14px 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;
 }
 
 /* ==================================================
-   📱 手機版 RWD 微調
+   📱 手機版適配 (RWD)
    ================================================== */
 @media (max-width: 768px) {
-  .wish-card-wide { flex-direction: column; }
-  .wish-card-image-wrapper { width: 100%; height: 240px; border-right: none; }
+  .modal-overlay { padding: 10px; }
+  .post-modal { max-height: 100vh; height: 100vh; border-radius: 12px; }
   .form-row { flex-direction: column; gap: 16px; }
   .form-group { min-width: 100%; }
-  .modal-overlay { padding: 10px; }
-  .post-modal { border-radius: 0; height: 100vh; max-height: 100vh; }
+  
+  .image-preview-box { max-width: 100%; }
+  
+  .modal-header { padding: 16px; }
+  .post-form { padding: 16px; }
+  .form-section { padding: 16px; }
+  
+  .dynamic-question-row { flex-wrap: wrap; }
+  .dynamic-question-row > input { width: 100%; flex: none; }
 }
