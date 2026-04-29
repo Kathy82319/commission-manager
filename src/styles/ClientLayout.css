@@ -1,18 +1,73 @@
+/* src/styles/ClientLayout.css */
+
 /* --- 佈局架構 --- */
 .client-layout-wrapper {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   background-color: #f9fafb;
+  display: flex;
+  flex-direction: column; /* 手機版改為上下排列 */
 }
 
-/* --- 左側邊欄 --- */
+/* 🌟 新增：手機版頂部導覽列 (包含漢堡選單) */
+.mobile-app-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  height: 64px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.menu-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #1f2937;
+  cursor: pointer;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- 左側邊欄 (手機版預設為隱藏的側滑抽屜) --- */
 .client-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: 260px;
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
+  z-index: 200;
   display: flex;
   flex-direction: column;
+  transform: translateX(-100%); /* 預設收起 */
+  transition: transform 0.3s ease-in-out;
+}
+
+.client-sidebar.open {
+  transform: translateX(0); /* 展開 */
+}
+
+/* 🌟 手機版側邊欄遮罩 */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 150;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .sidebar-brand {
@@ -37,8 +92,9 @@
   flex: 1;
   padding: 20px 12px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 強制直向排列，解決分頁橫向問題 */
   gap: 8px;
+  overflow-y: auto;
 }
 
 .nav-item {
@@ -51,6 +107,8 @@
   border-radius: 8px;
   transition: all 0.2s;
   font-size: 1rem;
+  width: 100%; /* 確保按鈕填滿寬度 */
+  box-sizing: border-box;
 }
 
 .nav-item:hover {
@@ -89,7 +147,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .client-main {
@@ -98,22 +157,23 @@
   padding: 24px;
 }
 
-/* 確保你原本的 notification-bar 與 footer 依然能正常顯示 */
 .client-footer {
   padding: 16px;
   background: white;
   border-top: 1px solid #e5e7eb;
   text-align: center;
 }
+
 .footer-links {
   display: flex;
   justify-content: center;
   gap: 16px;
   color: #6b7280;
   font-size: 0.875rem;
+  flex-wrap: wrap;
 }
 
-/* 🌟 新增：頂部導覽列與通知鈴鐺樣式 */
+/* 頂部導覽列與通知鈴鐺樣式 */
 .client-top-header {
   height: 60px;
   background: white;
@@ -143,4 +203,33 @@
   justify-content: center;
   padding: 0 4px;
   border: 2px solid white;
+}
+
+/* ==================================================
+   🌟 桌面版響應式 (Desktop Layout) 
+   ================================================== */
+@media (min-width: 1024px) {
+  .client-layout-wrapper {
+    flex-direction: row; /* 恢復成左右並排 */
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .mobile-app-bar {
+    display: none; /* 桌面版隱藏手機頂部選單 */
+  }
+  
+  .sidebar-overlay {
+    display: none !important; /* 桌面版隱藏遮罩 */
+  }
+
+  .client-sidebar {
+    position: relative; /* 取消 fixed，回到 flex 列內 */
+    transform: translateX(0); /* 永遠展開 */
+    height: 100vh;
+  }
+
+  .client-main-container {
+    height: 100vh;
+  }
 }
