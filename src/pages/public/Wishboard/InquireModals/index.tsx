@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
-import { R2_PUBLIC_URL } from '../constants'; // 🌟 新增引入，用於破圖修復
+import { R2_PUBLIC_URL } from '../constants'; 
 
 interface InquireModalProps {
   selectedBulletin: any;
@@ -16,13 +16,11 @@ interface InquireModalProps {
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
 }
 
-// 🌟 新增還原函式
 const unescapeHtml = (str: string) => {
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 🌟 新增 URL 補全函式
 const getFullUrl = (url: string) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
@@ -37,7 +35,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
   const isOffer = selectedBulletin.category === 'offer';
 
-  // 🌟 核心修正：將後端的字串解碼後，再讓 JSON 去解析
   let parsedContent: any = {};
   try {
     parsedContent = JSON.parse(unescapeHtml(selectedBulletin.content));
@@ -52,7 +49,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
 
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
-    const value = inquireTagInputs[field].trim();
+    const value = inquireTagInputs[field].trim().replace(/,/g, '').replace(/，/g, ''); // 🌟 清除逗號
     if (!value) return;
     setInquireDraft((prev: any) => {
       const currentTags = prev[field] ? prev[field].split(' ').filter((t: string) => t) : [];
@@ -129,7 +126,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {inquireDraft.images.map((imgUrl: string, idx: number) => (
                 <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
-                  {/* 🌟 核心修正：使用 getFullUrl 解決破圖 */}
                   <img src={getFullUrl(imgUrl)} alt={`附件 ${idx + 1}`} />
                   <button type="button" className="remove-image-btn" onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))}>
                     <X size={14}/>
@@ -188,7 +184,17 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    <input type="text" className="compact-tag-input" placeholder="+ 項目" value={inquireTagInputs.specialties} onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('specialties'); } }} style={{ border: 'none !important', boxShadow: 'none' }} />
+                    {/* 🌟 加上 onBlur 雙重防護 */}
+                    <input 
+                      type="text" 
+                      className="compact-tag-input" 
+                      placeholder="+ 項目" 
+                      value={inquireTagInputs.specialties} 
+                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})} 
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',' || e.key === '，') { e.preventDefault(); handleTagAdd('specialties'); } }} 
+                      onBlur={() => handleTagAdd('specialties')}
+                      style={{ border: 'none !important', boxShadow: 'none' }} 
+                    />
                   </div>
                 </div>
                 
@@ -200,7 +206,17 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    <input type="text" className="compact-tag-input" placeholder="+ 項目" value={inquireTagInputs.no_gos} onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('no_gos'); } }} style={{ border: 'none !important', boxShadow: 'none' }} />
+                    {/* 🌟 加上 onBlur 雙重防護 */}
+                    <input 
+                      type="text" 
+                      className="compact-tag-input" 
+                      placeholder="+ 項目" 
+                      value={inquireTagInputs.no_gos} 
+                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})} 
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',' || e.key === '，') { e.preventDefault(); handleTagAdd('no_gos'); } }} 
+                      onBlur={() => handleTagAdd('no_gos')}
+                      style={{ border: 'none !important', boxShadow: 'none' }} 
+                    />
                   </div>
                 </div>
               </div>

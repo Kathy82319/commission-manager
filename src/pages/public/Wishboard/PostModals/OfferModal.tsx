@@ -19,7 +19,6 @@ interface OfferModalProps {
 export const OfferModal: React.FC<OfferModalProps> = ({
   form, setForm, isUploading, onClose, onSubmit, onImageUpload, userShowcase, onSaveDraft, onLoadDraft
 }) => {
-  // 🌟 加入多個自定義輸入框狀態
   const [customTagInput, setCustomTagInput] = useState('');
   const [customWarningInput, setCustomWarningInput] = useState('');
   const [customLicenseInput, setCustomLicenseInput] = useState('');
@@ -42,7 +41,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
   const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
 
-  // 🌟 修正標籤切換邏輯
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
     setForm((prev: any) => {
       let list = prev[field];
@@ -50,7 +48,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
       
       if (tag === exclusiveTag) {
         if (field === 'tags') {
-          // 點擊「不限」時：只刪除風格標籤，保留預警(紅)與授權(綠)
           list = list.filter((t: string) => STYLE_WARNINGS.includes(t) || LICENSE_TAGS.includes(t) || t.startsWith('[預警]') || t.startsWith('[授權]'));
           list.push(tag);
         } else {
@@ -71,7 +68,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     setForm((prev: any) => ({ ...prev, [field]: prev[field].filter((t: string) => t !== tag) }));
   };
 
-  // 其餘 CRUD
   const addQuestion = () => { if (form.questions.length < 3) setForm((prev: any) => ({ ...prev, questions: [...prev.questions, ''] })); };
   const updateQuestion = (index: number, value: string) => { const n = [...form.questions]; n[index] = value; setForm((prev: any) => ({ ...prev, questions: n })); };
   const removeQuestion = (index: number) => { setForm((prev: any) => ({ ...prev, questions: form.questions.filter((_: any, i: number) => i !== index) })); };
@@ -82,6 +78,34 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     setItemInput({ name: '', price: '' });
   };
   const removeCommissionItem = (index: number) => setForm((prev: any) => ({ ...prev, commission_items: prev.commission_items.filter((_: any, i: number) => i !== index) }));
+
+  // 🌟 共用的處理標籤輸入邏輯 (支援 Enter, 逗號, 失焦)
+  const handleTagInput = (
+    value: string, 
+    setValue: React.Dispatch<React.SetStateAction<string>>, 
+    field: 'tags' | 'payment_methods', 
+    prefix: string = ''
+  ) => {
+    const trimmed = value.trim().replace(/,/g, '').replace(/，/g, ''); // 清除可能帶入的逗號
+    if (trimmed) {
+      toggleTag(prefix + trimmed, field);
+      setValue('');
+    }
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>, 
+    value: string, 
+    setValue: React.Dispatch<React.SetStateAction<string>>, 
+    field: 'tags' | 'payment_methods', 
+    prefix: string = ''
+  ) => {
+    // 支援 Enter、半形逗號、全形逗號
+    if (e.key === 'Enter' || e.key === ',' || e.key === '，') {
+      e.preventDefault();
+      handleTagInput(value, setValue, field, prefix);
+    }
+  };
 
   return (
     <div className="modal-overlay">
@@ -96,6 +120,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
         </div>
         
         <form onSubmit={onSubmit} className="post-form">
+          {/* ... [這中間的 HTML 不變，省略以保持版面乾淨，請直接保留原本的結構] ... */}
+          
           <div className="form-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label className="section-title">作品範例 / 價目表 (最多 5 張)</label>
@@ -204,11 +230,20 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               {PAY_TAGS.map(t => (
                 <span key={t} className={`selectable-tag ${form.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
               ))}
-              {/* 🌟 收款方式自定義 */}
               {form.payment_methods.filter((t: string) => !PAY_TAGS.includes(t) && t !== '皆可配合').map((t: string) => (
                 <span key={t} className="selectable-tag selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'payment_methods'); }} /></span>
               ))}
-              <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customPaymentInput} onChange={e => setCustomPaymentInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customPaymentInput.trim()) { toggleTag(customPaymentInput.trim(), 'payment_methods'); setCustomPaymentInput(''); } } }} />
+              
+              {/* 🌟 收款方式自定義：加入 onBlur 和 onKeyDown 雙重防護 */}
+              <input 
+                type="text" 
+                className="compact-tag-input" 
+                placeholder="+ 自定義" 
+                value={customPaymentInput} 
+                onChange={e => setCustomPaymentInput(e.target.value)} 
+                onKeyDown={e => handleKeyDown(e, customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+                onBlur={() => handleTagInput(customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+              />
             </div>
           </div>
 
@@ -232,7 +267,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-section">
             <label className="section-title">標籤與規格</label>
             
-            {/* 🌟 預警自定義 */}
             <div className="tag-selector-group">
               <span className="label-hint">風格預警 (紅色標籤)</span>
               <div className="tag-selector">
@@ -240,11 +274,19 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                 {form.tags.filter((t: string) => t.startsWith('[預警]')).map((t: string) => (
                   <span key={t} className="selectable-tag warning selected custom-tag">{t.replace('[預警]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
-                <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customWarningInput} onChange={e => setCustomWarningInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customWarningInput.trim()) { toggleTag('[預警]' + customWarningInput.trim(), 'tags'); setCustomWarningInput(''); } } }} />
+                {/* 🌟 預警自定義：加入 onBlur 和 onKeyDown */}
+                <input 
+                  type="text" 
+                  className="compact-tag-input" 
+                  placeholder="+ 自定義" 
+                  value={customWarningInput} 
+                  onChange={e => setCustomWarningInput(e.target.value)} 
+                  onKeyDown={e => handleKeyDown(e, customWarningInput, setCustomWarningInput, 'tags', '[預警]')}
+                  onBlur={() => handleTagInput(customWarningInput, setCustomWarningInput, 'tags', '[預警]')}
+                />
               </div>
             </div>
 
-            {/* 🌟 授權自定義 */}
             <div className="tag-selector-group">
               <span className="label-hint">授權 / 接受範圍 (綠色標籤)</span>
               <div className="tag-selector">
@@ -252,11 +294,19 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                 {form.tags.filter((t: string) => t.startsWith('[授權]')).map((t: string) => (
                   <span key={t} className="selectable-tag license selected custom-tag">{t.replace('[授權]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
-                <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customLicenseInput} onChange={e => setCustomLicenseInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customLicenseInput.trim()) { toggleTag('[授權]' + customLicenseInput.trim(), 'tags'); setCustomLicenseInput(''); } } }} />
+                {/* 🌟 授權自定義：加入 onBlur 和 onKeyDown */}
+                <input 
+                  type="text" 
+                  className="compact-tag-input" 
+                  placeholder="+ 自定義" 
+                  value={customLicenseInput} 
+                  onChange={e => setCustomLicenseInput(e.target.value)} 
+                  onKeyDown={e => handleKeyDown(e, customLicenseInput, setCustomLicenseInput, 'tags', '[授權]')}
+                  onBlur={() => handleTagInput(customLicenseInput, setCustomLicenseInput, 'tags', '[授權]')}
+                />
               </div>
             </div>
 
-            {/* 🌟 風格自定義 */}
             <div className="tag-selector-group">
               <span className="label-hint">風格類型與自定義 (灰色標籤)</span>
               <div className="tag-selector">
@@ -264,7 +314,16 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                 {form.tags.filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]')).map((t: string) => (
                   <span key={t} className="selectable-tag style selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
-                <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customTagInput} onChange={e => setCustomTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customTagInput.trim()) { toggleTag(customTagInput.trim(), 'tags'); setCustomTagInput(''); } } }} />
+                {/* 🌟 風格自定義：加入 onBlur 和 onKeyDown */}
+                <input 
+                  type="text" 
+                  className="compact-tag-input" 
+                  placeholder="+ 自定義" 
+                  value={customTagInput} 
+                  onChange={e => setCustomTagInput(e.target.value)} 
+                  onKeyDown={e => handleKeyDown(e, customTagInput, setCustomTagInput, 'tags')}
+                  onBlur={() => handleTagInput(customTagInput, setCustomTagInput, 'tags')}
+                />
               </div>
             </div>
           </div>

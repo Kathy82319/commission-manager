@@ -17,7 +17,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   form, setForm, isUploading, onClose, onSubmit, onImageUpload
 }) => {
   const [customTagInput, setCustomTagInput] = useState('');
-  const [customPaymentInput, setCustomPaymentInput] = useState(''); // 🌟 新增收款自定義
+  const [customPaymentInput, setCustomPaymentInput] = useState('');
 
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
     setForm((prev: any) => {
@@ -38,6 +38,22 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     if (!url) return '';
     if (url.startsWith('http')) return url;
     return `${R2_PUBLIC_URL}/${url}`;
+  };
+
+  // 🌟 新增共用標籤處理邏輯
+  const handleTagInput = (value: string, setValue: React.Dispatch<React.SetStateAction<string>>, field: 'tags' | 'payment_methods') => {
+    const trimmed = value.trim().replace(/,/g, '').replace(/，/g, '');
+    if (trimmed) {
+      toggleTag(trimmed, field);
+      setValue('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, value: string, setValue: React.Dispatch<React.SetStateAction<string>>, field: 'tags' | 'payment_methods') => {
+    if (e.key === 'Enter' || e.key === ',' || e.key === '，') {
+      e.preventDefault();
+      handleTagInput(value, setValue, field);
+    }
   };
 
   return (
@@ -94,11 +110,20 @@ export const RequestModal: React.FC<RequestModalProps> = ({
             <label className="section-title">付款方式 (多選)</label>
             <div className="tag-selector">
               {PAY_TAGS.map(t => <span key={t} className={`selectable-tag ${form.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>)}
-              {/* 🌟 徵委託也支援付款自定義 */}
               {form.payment_methods.filter((t: string) => !PAY_TAGS.includes(t) && t !== '皆可配合').map((t: string) => (
                 <span key={t} className="selectable-tag selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'payment_methods'); }} /></span>
               ))}
-              <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customPaymentInput} onChange={e => setCustomPaymentInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customPaymentInput.trim()) { toggleTag(customPaymentInput.trim(), 'payment_methods'); setCustomPaymentInput(''); } } }} />
+              
+              {/* 🌟 加上雙重防護 */}
+              <input 
+                type="text" 
+                className="compact-tag-input" 
+                placeholder="+ 自定義" 
+                value={customPaymentInput} 
+                onChange={e => setCustomPaymentInput(e.target.value)} 
+                onKeyDown={e => handleKeyDown(e, customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+                onBlur={() => handleTagInput(customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+              />
             </div>
           </div>
 
@@ -110,7 +135,17 @@ export const RequestModal: React.FC<RequestModalProps> = ({
                 {form.tags.filter((t: string) => !REQ_TAGS.includes(t)).map((t: string) => (
                   <span key={t} className="selectable-tag style selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
-                <input type="text" className="compact-tag-input" placeholder="+ 自定義" value={customTagInput} onChange={e => setCustomTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (customTagInput.trim()) { toggleTag(customTagInput.trim(), 'tags'); setCustomTagInput(''); } } }} />
+                
+                {/* 🌟 加上雙重防護 */}
+                <input 
+                  type="text" 
+                  className="compact-tag-input" 
+                  placeholder="+ 自定義" 
+                  value={customTagInput} 
+                  onChange={e => setCustomTagInput(e.target.value)} 
+                  onKeyDown={e => handleKeyDown(e, customTagInput, setCustomTagInput, 'tags')}
+                  onBlur={() => handleTagInput(customTagInput, setCustomTagInput, 'tags')}
+                />
               </div>
             </div>
           </div>
