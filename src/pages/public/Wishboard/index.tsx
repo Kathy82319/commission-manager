@@ -156,7 +156,7 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  const handlePostSubmit = async (e: React.FormEvent) => {
+const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return showToast("請先登入才能發布", "error");
 
@@ -170,15 +170,15 @@ export const Wishboard: React.FC = () => {
         payload = { 
           ...payload, ...requestForm, 
           ref_image_key: requestForm.ref_image,
-          tags: JSON.stringify(requestForm.tags),
-          payment_methods: JSON.stringify(requestForm.payment_methods)
+          tags: requestForm.tags, // 🌟 修正：直接傳陣列給後端
+          payment_methods: requestForm.payment_methods // 🌟 修正：直接傳陣列
         };
       } else {
         payload = {
           ...payload, ...offerForm,
           ref_image_key: JSON.stringify(offerForm.ref_images),
-          tags: JSON.stringify(offerForm.tags),
-          payment_methods: JSON.stringify(offerForm.payment_methods),
+          tags: offerForm.tags, // 🌟 修正：直接傳陣列給後端
+          payment_methods: offerForm.payment_methods, // 🌟 修正：直接傳陣列
           content: JSON.stringify({
             description: offerForm.content,
             commission_items: offerForm.commission_items,

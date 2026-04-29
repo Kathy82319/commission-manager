@@ -15,25 +15,24 @@ interface InquireModalProps {
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
 }
 
+// 🌟 新增還原函式
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export const InquireModal: React.FC<InquireModalProps> = ({
-  selectedBulletin,
-  inquireDraft,
-  setInquireDraft,
-  inquireTagInputs,
-  setInquireTagInputs,
-  inquireUploading,
-  onClose,
-  onSubmit,
-  onImageUpload
+  selectedBulletin, inquireDraft, setInquireDraft, inquireTagInputs, setInquireTagInputs,
+  inquireUploading, onClose, onSubmit, onImageUpload
 }) => {
   if (!selectedBulletin) return null;
 
   const isOffer = selectedBulletin.category === 'offer';
 
-  // 🌟 解析 JSON 獲取提問清單與條款
+  // 🌟 核心修正：將後端的字串解碼後，再讓 JSON 去解析
   let parsedContent: any = {};
   try {
-    parsedContent = JSON.parse(selectedBulletin.content);
+    parsedContent = JSON.parse(unescapeHtml(selectedBulletin.content));
   } catch (e) {
     parsedContent = {};
   }
@@ -41,17 +40,12 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const questions: string[] = parsedContent.questions || [];
   const tosContent: string = parsedContent.tos_content || '';
 
-  // 狀態：是否已同意條款 (如果沒有條款，直接視為已同意)
   const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
-  
-  // 狀態：記錄多個問題的答案
   const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
 
-  // 內部處理：新增標籤 (僅繪師投單用)
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
     const value = inquireTagInputs[field].trim();
     if (!value) return;
-
     setInquireDraft((prev: any) => {
       const currentTags = prev[field] ? prev[field].split(' ').filter((t: string) => t) : [];
       if (currentTags.includes(value)) return prev;
@@ -60,7 +54,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     setInquireTagInputs((prev: any) => ({ ...prev, [field]: '' }));
   };
 
-  // 內部處理：移除標籤 (僅繪師投單用)
   const handleTagRemove = (field: 'specialties' | 'no_gos' | 'payment_methods', tagToRemove: string) => {
     setInquireDraft((prev: any) => {
       const currentTags = prev[field].split(' ').filter((t: string) => t !== tagToRemove);
@@ -68,29 +61,17 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     });
   };
 
-  const handleAgreeTOS = () => {
-    setHasAgreedTOS(true);
-  };
+  const handleAgreeTOS = () => setHasAgreedTOS(true);
 
   const handleFinalSubmit = () => {
-    // 若為接委託且有設定問題，組合 Q&A 放入 message 中
     if (isOffer && questions.length > 0) {
       const qaString = questions.map((q, idx) => `【${q}】\n${answers[idx] || '未填寫'}`).join('\n\n');
       const finalMessage = qaString + (inquireDraft.message ? `\n\n【其他備註】\n${inquireDraft.message}` : '');
-      
-      // 因為 setInquireDraft 屬於異步操作，為了確保傳送時帶有最新資料
-      // 在實作上，如果需要立刻送出，可以考慮在 onSubmit() 函式中一併處理
-      // 這裡我們先用簡單的狀態更新
       setInquireDraft((prev: any) => ({ ...prev, message: finalMessage }));
     }
-    
-    // 延遲一點點時間讓 state 更新後再 submit
-    setTimeout(() => {
-      onSubmit();
-    }, 100);
+    setTimeout(() => { onSubmit(); }, 100);
   };
 
-  // 🌟 畫面 A：閱讀條款畫面 (如果繪師有設定條款且案主尚未同意)
   if (isOffer && !hasAgreedTOS) {
     return (
       <div className="modal-overlay">
@@ -118,27 +99,21 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     );
   }
 
-  // 🌟 畫面 B：正式填寫表單畫面
   return (
     <div className="modal-overlay">
       <div className="post-modal" style={{ maxWidth: '700px' }}>
-        
-        {/* 標頭 */}
         <div className="modal-header">
           <h2>{isOffer ? '填寫委託需求單' : '發送專屬提案卡'}</h2>
           <button className="close-modal-btn" onClick={onClose}><X size={24} /></button>
         </div>
         
         <div className="post-form">
-          {/* 提示文字 */}
           <p className="label-hint">
             {isOffer 
-              ? '請根據繪師的要求填寫需求，並附上必要的參考圖，這將幫助繪師決定是否接受您的委託。'
-              : '與其丟文字履歷，不如直接給案主看您的作品！您可以上傳精美的價目表或排版圖，讓案主一目了然。'
-            }
+              ? '請根據繪師的要求填寫需求，這將幫助繪師決定是否接受您的委託。'
+              : '與其丟文字履歷，不如直接給案主看您的作品！'}
           </p>
 
-          {/* 圖片上傳區 */}
           <div className="form-section">
             <label className="section-title">
               {isOffer ? '附上參考設定圖 (最多 3 張)' : '附上參考圖 / 價目表 (最多 3 張)'}
@@ -147,31 +122,20 @@ export const InquireModal: React.FC<InquireModalProps> = ({
               {inquireDraft.images.map((imgUrl: string, idx: number) => (
                 <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
                   <img src={imgUrl} alt={`附件 ${idx + 1}`} />
-                  <button 
-                    type="button" 
-                    className="remove-image-btn"
-                    onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))} 
-                  >
+                  <button type="button" className="remove-image-btn" onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))}>
                     <X size={14}/>
                   </button>
                 </div>
               ))}
               {inquireDraft.images.length < 3 && (
                 <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ImageUploader 
-                    onUpload={onImageUpload} 
-                    targetWidth={1000} 
-                    buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} 
-                    maxSizeMB={3} 
-                  />
+                  <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} maxSizeMB={3} />
                 </div>
               )}
             </div>
           </div>
 
-          {/* 內容輸入區 */}
           {isOffer ? (
-            /* 🌟 案主模式：動態需求回覆 */
             <>
               {questions.length > 0 ? (
                 <div className="form-section">
@@ -191,37 +155,21 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                       />
                     </div>
                   ))}
-                  
                   <div className="form-group" style={{ marginTop: '16px' }}>
                     <label>其他備註留言</label>
-                    <textarea 
-                      rows={4} 
-                      className="detail-textarea"
-                      placeholder="有什麼需要補充的細節嗎？"
-                      value={inquireDraft.message} 
-                      onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
-                    />
+                    <textarea rows={4} className="detail-textarea" placeholder="有什麼需要補充的細節嗎？" value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} />
                   </div>
                 </div>
               ) : (
                 <div className="form-section">
                   <label className="section-title">您的需求內容回覆</label>
-                  <textarea 
-                    rows={8} 
-                    className="detail-textarea"
-                    placeholder="請在此詳細填寫您的委託需求..."
-                    value={inquireDraft.message} 
-                    onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
-                    required
-                  />
+                  <textarea rows={8} className="detail-textarea" placeholder="請在此詳細填寫您的委託需求..." value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} required />
                 </div>
               )}
             </>
           ) : (
-            /* 🎨 繪師模式：提案卡設定 */
             <>
               <p className="label-hint" style={{ marginTop: '10px' }}>以下資訊已由您的「接案設定」自動帶入：</p>
-
               <div className="form-row">
                 <div className="form-group">
                   <label style={{ color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>
@@ -231,17 +179,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    <input 
-                      type="text" 
-                      className="compact-tag-input"
-                      placeholder="+ 項目"
-                      value={inquireTagInputs.specialties}
-                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('specialties'); }
-                      }}
-                      style={{ border: 'none !important', boxShadow: 'none' }}
-                    />
+                    <input type="text" className="compact-tag-input" placeholder="+ 項目" value={inquireTagInputs.specialties} onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('specialties'); } }} style={{ border: 'none !important', boxShadow: 'none' }} />
                   </div>
                 </div>
                 
@@ -253,43 +191,22 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    <input 
-                      type="text" 
-                      className="compact-tag-input"
-                      placeholder="+ 項目"
-                      value={inquireTagInputs.no_gos}
-                      onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('no_gos'); }
-                      }}
-                      style={{ border: 'none !important', boxShadow: 'none' }}
-                    />
+                    <input type="text" className="compact-tag-input" placeholder="+ 項目" value={inquireTagInputs.no_gos} onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTagAdd('no_gos'); } }} style={{ border: 'none !important', boxShadow: 'none' }} />
                   </div>
                 </div>
               </div>
 
               <div className="form-section">
                 <label className="section-title">留言訊息</label>
-                <textarea 
-                  rows={4} 
-                  className="detail-textarea"
-                  placeholder="簡單介紹一下自己，讓案主更想選擇你！"
-                  value={inquireDraft.message} 
-                  onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
-                />
+                <textarea rows={4} className="detail-textarea" placeholder="簡單介紹一下自己，讓案主更想選擇你！" value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} />
               </div>
             </>
           )}
         </div>
 
-        {/* 操作按鈕 */}
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>取消</button>
-          <button 
-            className="submit-post-btn" 
-            onClick={handleFinalSubmit} 
-            disabled={inquireUploading}
-          >
+          <button className="submit-post-btn" onClick={handleFinalSubmit} disabled={inquireUploading}>
             {isOffer ? '送出需求單' : '發送專屬提案'}
           </button>
         </div>

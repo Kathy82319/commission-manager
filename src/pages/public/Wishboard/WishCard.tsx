@@ -9,6 +9,12 @@ interface WishCardProps {
   onInquire: (bulletin: any) => void;
 }
 
+// 🌟 新增：把後端防 XSS 轉譯的字元還原，拯救 JSON 破圖
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire }) => {
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && bulletin.applied_artist_ids.includes(currentUser.id);
@@ -27,10 +33,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   
   let images: string[] = [];
   try {
-    const parsed = JSON.parse(bulletin.ref_image_key || '[]');
+    const parsed = JSON.parse(unescapeHtml(bulletin.ref_image_key || '[]'));
     images = Array.isArray(parsed) ? parsed : [parsed];
   } catch {
-    images = bulletin.ref_image_key ? [bulletin.ref_image_key] : [];
+    images = bulletin.ref_image_key ? [unescapeHtml(bulletin.ref_image_key)] : [];
   }
   const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   const validImages = images.filter(url => url).map(getFullUrl);
@@ -41,7 +47,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   return (
     <div className="wish-card-wide">
-      
       <div className="wish-card-image-wrapper">
         {validImages.length > 0 ? (
           <>
@@ -67,14 +72,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
       <div className="wish-card-info">
         <div className="wish-card-header">
-          <h3>{bulletin.title || '無標題'}</h3>
+          <h3>{unescapeHtml(bulletin.title) || '無標題'}</h3>
           <span style={{ background: bulletin.category === 'offer' ? '#fef3c7' : '#f1f5f9', color: bulletin.category === 'offer' ? '#d97706' : '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
             {bulletin.category === 'request' ? '徵委託' : bulletin.category === 'offer' ? '接委託' : '其他'}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#64748b' }}>
-          
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
             <Tag size={16} style={{ marginTop: '2px', color: '#94a3b8' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -108,10 +112,9 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <Calendar size={16} color="#94a3b8" /> 
               <span>排單狀況：</span>
               <span style={{ fontWeight: '600', color: '#334155' }}>
-                {/* 🌟 修改點 1：文字說明更清晰 */}
                 {bulletin.schedule_type === 'flexible' 
                   ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
-                  : `預計排單至 ${bulletin.specific_date} 之後`}
+                  : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
               </span>
             </span>
           </div>
@@ -128,11 +131,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
             {(() => {
               try {
-                // 🌟 修改點 2：解析 JSON 避免噴亂碼
-                const contentObj = JSON.parse(bulletin.content);
+                // 🌟 核心修正：將後端的字串解碼後，再讓 JSON 去解析
+                const rawContent = unescapeHtml(bulletin.content);
+                const contentObj = JSON.parse(rawContent);
                 return contentObj.description || '';
               } catch {
-                return bulletin.content;
+                return unescapeHtml(bulletin.content);
               }
             })()}
           </p>
