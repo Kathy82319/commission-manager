@@ -18,13 +18,11 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 強健的時間轉換處理：確保所有來自 DB 的時間都被標記為 UTC
+// 強健的時間轉換處理
 const ensureUTC = (dateStr?: string) => {
   if (!dateStr) return '';
   let str = dateStr.trim();
-  // 補上 T
   if (!str.includes('T')) str = str.replace(' ', 'T');
-  // 如果沒有時區標示 (Z 或 +08:00)，強制當作 UTC (Z)
   if (!str.endsWith('Z') && !str.includes('+')) {
     str += 'Z';
   }
@@ -176,13 +174,11 @@ export function ClientOrders() {
       if (orderData.order_date) {
         syntheticLogs.push({ id: 'sys-init', actor_role: 'artist', content: '建立委託單', created_at: orderData.order_date });
         if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
-          // 確保 synthetic logs 的時間也是穩定的 ISO 格式
           const agreeTime = new Date(parseTime(orderData.order_date) + 1000).toISOString();
           syntheticLogs.push({ id: 'sys-agree', actor_role: 'client', content: '同意委託協議並簽署合約', created_at: agreeTime });
         }
       }
 
-      // 🌟 使用 parseTime 來進行排序，避免瀏覽器解析錯誤
       const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => parseTime(b.created_at) - parseTime(a.created_at));
       
       setSubmissions(fetchedSubmissions);
@@ -290,24 +286,32 @@ export function ClientOrders() {
     });
   }, [orders, filter, searchTerm]);
 
+  // 🌟 使用 Notebook.css 的 badge 標籤樣式
   const getStatusDisplay = (status: string, stage: string) => {
-    if (status === 'completed') return <span style={{ color: '#4E7A5A', fontWeight: 'bold' }}>✓ 已結案</span>;
-    if (status === 'cancelled') return <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>作廢</span>;
-    if (stage.includes('reviewing')) return <span style={{ color: '#d93025', fontWeight: 'bold' }}>👀 待審閱</span>;
-    return <span style={{ color: '#A67B3E', fontWeight: 'bold' }}>✍️ 安排中</span>;
+    if (status === 'completed') return <span className="card-tag badge-completed">已結案</span>;
+    if (status === 'cancelled') return <span className="card-tag badge-cancelled">作廢</span>;
+    if (stage.includes('reviewing')) return <span className="card-tag badge-new-msg">待審閱</span>;
+    return <span className="card-tag badge-queue">安排中</span>;
   };
 
+  // 🌟 替換為 Notebook.css 的 Stage Box 樣式
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
-    let statusText = isPassed ? (isFinal ? '✓ 已同意，合約結案' : '✓ 繪師已推進下一階段') : (isReviewing ? '👀 繪師已交付，請確認' : '⏳ 尚未交付');
+    let statusText = isPassed ? (isFinal ? '[完成] 已同意，合約結案' : '[完成] 繪師已推進下一階段') : (isReviewing ? '[等待] 繪師已交付，請過目' : '[尚未交付]');
+    
+    let headerClass = 'stage-pending';
+    if (!sub) headerClass = 'stage-empty';
+    else if (isPassed) headerClass = 'stage-passed';
+    else if (isReviewing) headerClass = 'stage-reviewing';
+
     return (
-      <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px', backgroundColor: '#FFFFFF' }}>
-        <div style={{ backgroundColor: isPassed ? '#e6f4ea' : (isReviewing ? '#fce8e6' : '#FBFBF9'), padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E', borderBottom: '1px solid #EAE6E1' }}>
-          <span>{title}</span> <span style={{ color: isPassed ? '#1e8e3e' : (isReviewing ? '#d93025' : '#A0978D') }}>{statusText}</span>
+      <div className="stage-box">
+        <div className={`stage-box-header ${headerClass}`}>
+          <span>{title}</span> <span className="stage-status">{statusText}</span>
         </div>
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          {!sub ? <div style={{ color: '#A0978D', padding: '20px' }}>繪師尚未上傳此階段稿件</div> : (
+        <div className="stage-box-content" style={{ textAlign: 'center' }}>
+          {!sub ? <div className="stage-loading" style={{ color: '#A0978D' }}>繪師尚未上傳此階段稿件</div> : (
             <div>
                <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{formatLocalTime(sub.created_at)} (v{sub.version})</div>
                
@@ -319,13 +323,13 @@ export function ClientOrders() {
                  {isReviewing && !isFinal && (<div style={{ flex: '1 1 100%', fontSize: '13px', color: '#7A7269', fontWeight: 'bold', textAlign: 'right' }}>👀 本階段請過目即可，系統自動為您標記閱覽，繪師後續將推進至下一階段。</div>)}
                  {isReviewing && isFinal && (
                    <>
-                     <div style={{ flex: '1 1 100%', fontSize: '13px', color: '#d93025', fontWeight: 'bold', marginBottom: '8px', textAlign: 'right' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
-                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#FFF', color: '#d93025', border: '1px solid #EAE6E1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', flex: '1 1 auto' }}>退回修改</button>
-                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#1e8e3e', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', flex: '1 1 auto' }}>✓ 同意完稿</button>
+                     <div className="stage-notice" style={{ flex: '1 1 100%', textAlign: 'center' }}>⚠️ 同意後將結案並解鎖原檔下載。</div>
+                     <button onClick={() => handleReview(stageKey, 'reject')} disabled={isProcessing} className="action-btn btn-outline-danger">退回修改</button>
+                     <button onClick={() => handleReview(stageKey, 'approve')} disabled={isProcessing} className="action-btn btn-success">✓ 同意完稿</button>
                    </>
                  )}
                  {isPassed && isFinal && selectedOrder?.status === 'completed' && (
-                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} style={{ padding: '14px 24px', width: '100%', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                   <button onClick={() => handleDownloadOriginal(sub.file_url)} disabled={isProcessing} className="action-btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: '15px' }}>
                      {isProcessing ? '⏳ 正在獲取安全連結...' : '⬇️ 下載無浮水印原檔 (限時安全連結)'}
                    </button>
                  )}
@@ -353,157 +357,81 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
-      <style>{`
-        .notebook-page { overflow-x: hidden; width: 100%; }
-
-        @media (max-width: 1024px) {
-          .notebook-container {
-            width: 100vw !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          .notebook-sidebar {
-            width: 100% !important;
-            box-sizing: border-box;
-          }
-          .controls-wrapper {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            padding: 10px 15px;
-            background-color: #FAFAFA;
-            border-bottom: 1px solid #EAE6E1;
-          }
-          .controls-wrapper input { flex: 2; height: 38px; }
-          .controls-wrapper select { flex: 1; min-width: 90px; height: 38px; }
-
-          .notebook-page .scroll-tabs .tab-btn.active {
-            background-color: #5D4A3E; 
-            color: #FFFFFF;          
-            border-radius: 20px;     
-            border: none;
-          }
-          .notebook-page .scroll-tabs .tab-btn.active .tab-text {
-            color: #FFFFFF;
-            position: relative;
-            z-index: 5;
-          }
-          .sidebar-list-container {
-            padding: 10px 15px !important;
-            box-sizing: border-box;
-          }
-        }
-
-        @media (min-width: 1025px) {
-          .notebook-container {
-            max-width: 1300px !important;
-            width: 95%;
-            margin: 0 auto;
-            display: flex;
-            height: calc(100vh - 120px);
-            overflow: hidden;
-          }
-          .notebook-sidebar {
-            width: 350px !important;
-            flex-shrink: 0;
-            border-right: 1px solid #EAE6E1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-          }
-          .controls-wrapper {
-            display: block; 
-            padding: 10px 20px;
-            background-color: #FAFAFA;
-            border-bottom: 1px solid #EAE6E1;
-          }
-          .controls-wrapper input { width: 100%; margin-bottom: 8px; height: 36px; }
-          .controls-wrapper select { width: 100%; height: 36px; }
-
-          .sidebar-list-container {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden !important;
-            padding: 16px;
-          }
-          .notebook-main {
-            flex: 1;
-            overflow-y: auto;
-            background-color: #FDFDFB;
-          }
-        }
-        
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-      `}</style>
-      
+      {/* ⚠️ 異動申請彈窗 */}
       {parsedChanges && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '16px', maxWidth: '500px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.24)' }}>
-            <h3 style={{ color: '#e11d48', marginTop: 0 }}>⚠️ 繪師提出了規格異動申請</h3>
+        <div className="lightbox-overlay" style={{ alignItems: 'center' }}>
+          <div className="section-card" style={{ maxWidth: '500px', width: '90%', zIndex: 100000, position: 'relative' }}>
+            <h3 style={{ color: '#A05C5C', marginTop: 0, fontSize: '18px', fontWeight: 'bold' }}>⚠️ 繪師提出了規格異動申請</h3>
             <p style={{ color: '#7A7269', fontSize: '14px', marginBottom: '12px' }}>繪師希望調整委託單內容，請確認以下項目：</p>
             <div style={{ backgroundColor: '#FAFAFA', padding: '16px', borderRadius: '12px', fontSize: '14px', color: '#5D4A3E', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
               {Object.keys(parsedChanges).map(key => (<div key={key} style={{ marginBottom: '6px' }}><span style={{ fontWeight: 'bold' }}>• {fieldMap[key] || key}：</span><span>{parsedChanges![key]}</span></div>))}
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => handleReviewChange('approve')} style={{ flex: 1, padding: '14px', backgroundColor: '#1e8e3e', color: '#FFF', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>同意並更新合約</button>
-              <button onClick={() => handleReviewChange('reject')} style={{ flex: 1, padding: '14px', backgroundColor: '#e11d48', color: '#FFF', borderRadius: '12px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>拒絕修改</button>
+              <button onClick={() => handleReviewChange('reject')} className="action-btn btn-outline-danger">拒絕修改</button>
+              <button onClick={() => handleReviewChange('approve')} className="action-btn btn-success">同意並更新合約</button>
             </div>
           </div>
         </div>
       )}
 
       <div className="notebook-container">
+        
+        {/* 🌟 左側列表區 (套用 Notebook.css) */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
-          <div style={{ padding: '20px 20px 10px 20px', backgroundColor: '#FFFFFF' }}>
-            <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>委託單列表</span>
-          </div>
-
-          <div className="controls-wrapper">
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="🔍 搜尋暱稱/單號..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />
-            <select 
-              className="form-input" 
-              value={filter} 
-              onChange={e => setFilter(e.target.value as any)}
-            >
-              <option value="all">全部</option>
-              <option value="working">進行中</option>
-              <option value="completed">已結單</option>
-            </select>
+          <div className="sidebar-header">
+            <span className="sidebar-title">委託單列表</span>
+            <div className="sidebar-controls">
+              <input 
+                type="text" 
+                className="form-input sidebar-search-input" 
+                placeholder="🔍 搜尋暱稱/單號..." 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
+              <select 
+                className="form-input sidebar-filter" 
+                value={filter} 
+                onChange={e => setFilter(e.target.value as any)}
+              >
+                <option value="all">全部</option>
+                <option value="working">進行中</option>
+                <option value="completed">已結單</option>
+              </select>
+            </div>
           </div>
 
           <div className="sidebar-list-container">
-            {isListLoading ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>載入中...</div> : filteredOrders.length === 0 ? <div style={{ textAlign: 'center', padding: '40px 20px', color: '#C4BDB5' }}>沒有符合的委託單</div> : (
+            {isListLoading ? <div className="sidebar-empty">載入中...</div> : filteredOrders.length === 0 ? <div className="sidebar-empty">沒有符合條件的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
                 const isBulletin = getBulletinSource(order) !== null;
 
                 return (
-                  <div key={order.id} onClick={() => handleSelect(order.id)} style={{ position: 'relative', padding: '16px', marginBottom: '8px', borderRadius: '12px', border: isSelected ? '1px solid #DED9D3' : '1px solid transparent', cursor: 'pointer', backgroundColor: isSelected ? '#FDFDFB' : '#FFFFFF', transition: 'all 0.2s ease', opacity: order.status === 'cancelled' ? 0.5 : 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#A0978D', marginBottom: '6px' }}>
+                  <div key={order.id} onClick={() => handleSelect(order.id)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
+                    <div className="card-meta-row">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span>{formatLocalDate(order.order_date)}</span>
                         {isBulletin && (
-                          <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#8b5cf6', color: '#fff' }}>許願池</span>
+                          <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>許願池</span>
                         )}
                       </div>
-                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fce8e6', color: '#d93025' }}>🔥 急件</span>)}
+                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span className="card-tag badge-new-msg">🔥 急件</span>)}
                     </div>
                     
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px', lineHeight: '1.4', paddingBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {order.client_custom_title || order.project_name || '未命名項目'}
+                    <div className="card-title-row">
+                      <span className="card-client-name" title={order.client_custom_title || order.project_name || '未命名項目'}>
+                        {order.client_custom_title || order.project_name || '未命名項目'}
+                      </span>
+                      <span className="card-price">NT$ {order.total_price}</span>
                     </div>
                     
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#7A7269', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>單號：{order.id}</span>
-                      <span style={{ fontWeight: 'bold', color: '#4E7A5A', fontSize: '14px', whiteSpace: 'nowrap', flexShrink: 0 }}>NT$ {order.total_price}</span>
+                    <div className="card-info-row">
+                      <span style={{ fontFamily: 'monospace' }}>單號：{order.id}</span>
                     </div>
-                    <div style={{ marginTop: '8px', fontSize: '12px' }}>{getStatusDisplay(order.status, order.current_stage)}</div>
+
+                    <div className="card-tags-row">
+                      {getStatusDisplay(order.status, order.current_stage)}
+                    </div>
                   </div>
                 );
               })
@@ -511,21 +439,26 @@ export function ClientOrders() {
           </div>
         </div>
 
+        {/* 🌟 右側主內容區 (套用 Notebook.css) */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
-          {!selectedOrder ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#A0978D', fontSize: '16px', padding: '40px' }}>請從列表選擇一張委託單以檢視詳情</div> : (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {!selectedOrder ? <div className="main-empty">請從列表選擇一張委託單以檢視詳情</div> : (
+            <div className="main-content-wrapper">
               
-              <div style={{ padding: '24px 20px', borderBottom: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#FFFFFF' }}>
-                <div style={{ flex: '1 1 250px' }}>
+              <div className="main-header">
+                <div className="main-header-info">
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
-                  <h2 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '20px' }}>{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <div style={{ color: '#7A7269', fontSize: '13px', fontWeight: 'bold' }}>繪師項目名：{selectedOrder.project_name || '無'}</div>
+                  <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
+                  
+                  <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    繪師項目名：{selectedOrder.project_name || '無'}
                     {getBulletinSource(selectedOrder) && (
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#8b5cf6', color: '#fff' }}>來源：許願池</span>
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>來源：許願池</span>
                     )}
                   </div>
-                  <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>單號：{selectedOrder.id}</div>
+                  
+                  <div className="main-meta-row">
+                    <span>單號：{selectedOrder.id}</span>
+                  </div>
                 </div>
                 
                 <div className="main-header-actions">
@@ -537,11 +470,7 @@ export function ClientOrders() {
                       });
                       navigate(`/workspace/${selectedOrder.id}`);
                     }} 
-                    className="action-btn"
-                    style={{ 
-                      padding: '10px 20px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', 
-                      fontSize: '14px'
-                    }}
+                    className="action-btn btn-primary"
                   >
                     進入聊天室
                   </button>
@@ -550,82 +479,90 @@ export function ClientOrders() {
 
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
-                  <span className="tab-text">詳細內容</span>
+                  詳細內容
                 </button>
                 <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>
-                  <span className="tab-text">稿件審閱</span>
+                  稿件審閱
                 </button>
                 <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-                  <span className="tab-text">歷程紀錄</span>
+                  歷程紀錄
                 </button>
               </div>
 
-              <div className="tab-content-area" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              <div className="tab-content-area">
+                
+                {/* === 詳細內容 Tab === */}
                 {activeTab === 'main' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto' }}>
+                  <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
+                    {/* 許願池媒合軌跡 */}
                     {getBulletinSource(selectedOrder) && (
-                      <div style={{ backgroundColor: '#FBFBF9', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', position: 'relative' }}>
-                        <h3 style={{ fontSize: '16px', color: '#7A7269', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>
-                          <span style={{flex: 1}}>🔍 許願池媒合軌跡</span>
+                      <div className="section-card" style={{ cursor: 'pointer' }} onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}>
+                        <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
+                          <span>🔍 許願池媒合軌跡</span>
+                          <span style={{ fontSize: '11px', color: '#A0978D', fontWeight: 'normal' }}>
+                            {isTrajectoryExpanded ? '▲ 收合軌跡' : '▼ 展開軌跡'}
+                          </span>
                         </h3>
-                        <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.6' }}>
-                          <p style={{ margin: '0 0 12px 0' }}><strong>1. 原始許願內容：</strong><br/>
+                        <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6' }}>
+                          <p style={{ margin: '0 0 10px 0' }}><strong>1. 原始許願內容：</strong><br/>
                             {getBulletinSource(selectedOrder).bulletin_content}
                           </p>
-                          
-                          <p style={{ margin: '0 0 12px 0' }}><strong>2. 繪師提問單範本：</strong><br/>
+                          <p style={{ margin: '0 0 10px 0' }}><strong>2. 繪師提問單範本：</strong><br/>
                             {getBulletinSource(selectedOrder).artist_initial_snapshot?.question_template || "無提問單"}
                           </p>
-                          
                           <p style={{ margin: 0 }}><strong>3. 我的初始回覆：</strong><br/>
                             {getBulletinSource(selectedOrder).client_initial_response || "無回覆內容"}
                           </p>
                         </div>
-                        <button 
-                          onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} 
-                          style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', padding: '8px 0 0 0', marginTop: '8px', width: '100%', textAlign: 'left', borderTop: '1px dashed #EAE6E1' }}
-                        >
-                          {isTrajectoryExpanded ? "▲ 收合完整軌跡" : "▼ 展開完整軌跡"}
-                        </button>
                       </div>
                     )}
 
-                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                      <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>自訂委託名稱 (僅您可見)</label>
+                    {/* 自訂名稱 */}
+                    <div className="section-card">
+                      <div className="section-header-no-border">
+                        <h3 className="section-title">自訂委託名稱 (僅您可見)</h3>
+                      </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />
-                        <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} style={{ padding: '10px 20px', color: '#FFF', border: 'none', borderRadius: '8px', cursor: saveStatus === 'idle' ? 'pointer' : 'default', fontWeight: 'bold', backgroundColor: saveStatus === 'success' ? '#4E7A5A' : '#5D4A3E', flexShrink: 0 }}>
+                        <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} className="action-btn btn-primary" style={{ flex: 'none', width: 'auto' }}>
                           {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
                         </button>
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 12px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '20px', fontSize: '14px', color: '#5D4A3E' }}>
-                        <div><strong style={{ color: '#7A7269' }}>委託用途：</strong>{selectedOrder.usage_type || '未提供'}</div>
-                        <div><strong style={{ color: '#7A7269' }}>是否急件：</strong>{selectedOrder.is_rush === '是' || selectedOrder.is_rush === '1' || selectedOrder.is_rush === 1 ? '是' : '否'}</div>
-                        <div><strong style={{ color: '#7A7269' }}>交稿方式：</strong>{selectedOrder.delivery_method || '未提供'}</div>
-                        <div><strong style={{ color: '#7A7269' }}>繪製範圍：</strong>{selectedOrder.draw_scope || '未提供'}</div>
-                        <div><strong style={{ color: '#7A7269' }}>人數：</strong>{selectedOrder.char_count || 1} 人</div>
-                        <div><strong style={{ color: '#7A7269' }}>背景：</strong>{selectedOrder.bg_type || '未提供'}</div>
-                        <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: '#7A7269' }}>備註：</strong>{selectedOrder.add_ons || '無'}</div>
-                        <div style={{ gridColumn: '1 / -1', marginTop: '8px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px', fontSize: '18px', color: '#4E7A5A' }}><strong>總金額：</strong>NT$ {selectedOrder.total_price.toLocaleString()}</div>
+                    {/* 委託規格 */}
+                    <div className="section-card">
+                      <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
+                      <div className="details-grid">
+                        <div className="request-field"><span className="field-label">委託用途：</span><span className="field-value">{selectedOrder.usage_type || '未提供'}</span></div>
+                        <div className="request-field"><span className="field-label">是否急件：</span><span className="field-value">{selectedOrder.is_rush === '是' || selectedOrder.is_rush === '1' || selectedOrder.is_rush === 1 ? '是' : '否'}</span></div>
+                        <div className="request-field"><span className="field-label">交稿方式：</span><span className="field-value">{selectedOrder.delivery_method || '未提供'}</span></div>
+                        <div className="request-field"><span className="field-label">繪製範圍：</span><span className="field-value">{selectedOrder.draw_scope || '未提供'}</span></div>
+                        <div className="request-field"><span className="field-label">人數：</span><span className="field-value">{selectedOrder.char_count || 1} 人</span></div>
+                        <div className="request-field"><span className="field-label">背景：</span><span className="field-value">{selectedOrder.bg_type || '未提供'}</span></div>
+                        <div className="request-field" style={{ gridColumn: '1 / -1' }}><span className="field-label">備註/附加選項：</span><span className="field-value">{selectedOrder.add_ons || '無'}</span></div>
+                        <div className="request-field" style={{ gridColumn: '1 / -1', marginTop: '8px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px' }}>
+                          <span className="field-label">總金額：</span><span className="field-value" style={{ fontSize: '18px', color: '#4E7A5A', fontWeight: 'bold' }}>NT$ {selectedOrder.total_price.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                      <h3 style={{ fontSize: '16px', color: '#5D4A3E', margin: '0 0 12px 0', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px' }}>委託協議</h3>
-                      <div style={{ fontSize: '14px', color: '#5D4A3E', maxHeight: '300px', overflowY: 'auto', padding: '16px', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #EAE6E1', whiteSpace: 'pre-wrap' }}>
-                        {finalTosHtml ? (<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalTosHtml) }} />) : (<div style={{ color: '#A0978D' }}>無協議紀錄</div>)}
+                    {/* 委託協議 */}
+                    <div className="section-card">
+                      <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託協議</h3>
+                      <div className="tos-snapshot-wrapper" style={{ margin: 0 }}>
+                        <div className="tos-content" style={{ maxHeight: '300px' }}>
+                          {finalTosHtml ? (<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalTosHtml) }} />) : (<div style={{ color: '#A0978D' }}>無協議紀錄</div>)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
 
+                {/* === 稿件審閱 Tab === */}
                 {activeTab === 'review' && (
-                  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                  <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {selectedOrder.delivery_method !== '一鍵出圖' && (
                       <>
                         {renderClientStageBox('階段 1：草稿', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
@@ -636,14 +573,18 @@ export function ClientOrders() {
                   </div>
                 )}
 
+                {/* === 歷程紀錄 Tab === */}
                 {activeTab === 'history' && (
-                   <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                     {logs.length === 0 ? <div style={{ textAlign: 'center', color: '#A0978D', padding: '40px' }}>無歷程紀錄</div> : (
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                   <div className="section-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                     <h3 className="section-title logs-title">歷程紀錄</h3>
+                     {logs.length === 0 ? <div className="logs-empty">無歷程紀錄</div> : (
+                       <div className="logs-list">
                          {logs.map(log => (
-                           <div key={log.id} style={{ padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', borderLeft: log.actor_role === 'artist' ? '4px solid #4E7A5A' : '4px solid #4A7294', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid #EAE6E1' }}>
-                             <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '8px' }}>{formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}</div>
-                             <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}>{log.content}</div>
+                           <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : 'log-client'}`}>
+                             <div className="log-meta">
+                               {formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}
+                             </div>
+                             <div className="log-content">{log.content}</div>
                            </div>
                          ))}
                        </div>
