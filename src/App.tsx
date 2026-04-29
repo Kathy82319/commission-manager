@@ -1,13 +1,17 @@
+// src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+// Layouts
 import { PublicLayout } from './layouts/PublicLayout';
 import { ArtistLayout } from './layouts/ArtistLayout';
 import { ClientLayout } from './layouts/ClientLayout';
+import { AdminLayout } from './layouts/AdminLayout';
 
+// Auth Pages
 import { Login } from './pages/auth/Login';
 import { Onboarding } from './pages/auth/Onboarding';
 
-import { PublicProfile } from './PublicProfile';
+// Artist Pages
 import { QuoteBuilder } from './pages/artist/QuoteBuilder';
 import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
@@ -16,49 +20,47 @@ import { Settings } from './pages/artist/Settings';
 import { Customers } from './pages/artist/Customers'; 
 import { CustomerDetail } from './pages/artist/CustomerDetail'; 
 
+// Client Pages
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders';
 
+// Public & Common Pages
+import { PublicProfile } from './PublicProfile';
+import { Wishboard } from './pages/public/Wishboard'; // 🌟 已指向新拆分的資料夾
 import { Workspace } from './pages/Workspace';
+import { InquiryWorkspace } from './pages/InquiryWorkspace';
+import { Inbox } from './pages/Inbox';
+import { Portal } from './pages/Portal';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
-import { Portal } from './pages/Portal';
-
-import { AdminLayout } from './layouts/AdminLayout';
-import { Dashboard } from './pages/admin/Dashboard';
 import { RefundPolicy } from './pages/RefundPolicy';
 
-import { Wishboard } from './pages/public/Wishboard';
-import { Inbox } from './pages/Inbox';
-import { InquiryWorkspace } from './pages/InquiryWorkspace';
+// Admin Pages
+import { Dashboard } from './pages/admin/Dashboard';
 
 export function App() {
-  // 原本的 MY_ARTIST_ID 如果後續沒有其他地方需要用到，可以直接刪除
-  // const MY_ARTIST_ID = "User_84448"; 
-  
   return (
     <BrowserRouter>
       <Routes>
-        
+        {/* 身分驗證路由 */}
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         
+        {/* 繪師後台路由 */}
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
           <Route path="quote/new" element={<QuoteBuilder />} />
-          
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerDetail />} />
-          
           <Route path="notebook" element={<Notebook />} />
           <Route path="records" element={<Records />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
+        {/* 案主後台路由 */}
         <Route path="/client" element={<ClientLayout />}>
-
           <Route path="home" element={<Navigate to="/client/orders" replace />} />
           <Route path="orders" element={<ClientOrders />} />
           <Route path="order/:id" element={<Navigate to="/client/orders" replace />} />
@@ -66,13 +68,14 @@ export function App() {
           <Route path="inbox" element={<Inbox />} />
         </Route>
 
+        {/* 洽談與工作區路由 */}
         <Route path="/quote/:id" element={<ClientForm />} />
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
 
-        {/* 公開頁面群組 */}
+        {/* 公開頁面群組 (套用 PublicLayout) */}
         <Route element={<PublicLayout />}>
-          {/* 將許願池設定為真正的首頁 */}
+          {/* 首頁即為許願池 */}
           <Route path="/" element={<Wishboard />} />
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
           
@@ -81,16 +84,17 @@ export function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           
-          {/* 繪師個人頁路由放在靜態路由之下，避免覆蓋前面的路徑 */}
+          {/* 繪師個人首頁 (動態路由) */}
           <Route path="/:artistId" element={<PublicProfile />} />
         </Route>
         
+        {/* 管理員後台 (路徑已做簡單遮掩) */}
         <Route path="/adminbalabababa" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
         </Route>
 
+        {/* 萬用路由：找不到頁面時一律回首頁 */}
         <Route path="*" element={<Navigate to="/" replace />} />
-        
       </Routes>
     </BrowserRouter>
   );
