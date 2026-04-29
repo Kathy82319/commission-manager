@@ -22,3 +22,4 @@ export const PAYMENT_TIMING = [
 ];
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+export const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev"; 
