@@ -449,12 +449,16 @@ export function ClientOrders() {
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   
-                  <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    繪師項目名：{selectedOrder.project_name || '無'}
-                    {getBulletinSource(selectedOrder) && (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>來源：許願池</span>
-                    )}
-                  </div>
+<div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'normal', overflow: 'visible' }}>
+  <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+    繪師項目名：{selectedOrder.project_name || '無'}
+  </span>
+  {getBulletinSource(selectedOrder) && (
+    <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', flexShrink: 0 }}>
+      來源：許願池
+    </span>
+  )}
+</div>
                   
                   <div className="main-meta-row">
                     <span>單號：{selectedOrder.id}</span>
