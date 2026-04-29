@@ -14,7 +14,6 @@
   margin: 0 auto;
 }
 
-
 .notebook-sidebar {
   width: 100%;
   height: calc(100vh - 90px);
@@ -55,7 +54,6 @@
   width: 100%;
   align-items: center;
   box-sizing: border-box;
-  
 }
 
 .sidebar-controls .sidebar-search-input {
@@ -540,11 +538,60 @@
 .log-meta { font-size: 12px; color: #A0978D; margin-bottom: 8px; }
 .log-content { font-size: 14px; color: #5D4A3E; line-height: 1.5; white-space: pre-wrap; }
 
+/* 黑名單標籤樣式 */
+.card-mode-badge.mode-blacklist {
+  color: #FF4D4D;   
+  border: 1px solid #FF4D4D;
+  margin-left: 6px;
+}
+
+.blacklist-alert-tag:hover {
+  filter: brightness(1.2);
+  transform: scale(1.02);
+  transition: all 0.2s;
+}
+
 /* ==========================================
    11. 響應式設計 (Media Queries)
 ========================================== */
 @media (max-width: 1023px) {
   .mobile-hide { display: none; }
+
+  /* 🌟 修正手機版 Tab 被全域 Inline-CSS 污染，導致咖啡色塊遮擋的問題 */
+  .notebook-page .scroll-tabs {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px; 
+    padding: 10px 16px;
+    background-color: #FAFAFA;
+    border-bottom: 1px solid #EAE6E1;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  
+  .notebook-page .scroll-tabs::-webkit-scrollbar {
+    display: none; 
+  }
+  
+  /* 徹底清除所有外部可能影響到的樣式 */
+  .notebook-page .scroll-tabs .tab-btn {
+    padding: 8px 16px;
+    background: transparent !important; 
+    color: #A0978D !important;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important; 
+  }
+
+  /* 強制回復原本的底線風格，拒絕純色塊背景 */
+  .notebook-page .scroll-tabs .tab-btn.active {
+    background-color: transparent !important;
+    color: #5D4A3E !important;
+    border-bottom: 2px solid #5D4A3E !important;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -557,7 +604,7 @@
     overflow: hidden;
   }
   
-.notebook-container { 
+  .notebook-container { 
     flex: 1;
     min-height: 0; 
     flex-direction: row; 
@@ -619,17 +666,4 @@
 @media (min-width: 1280px) {
   .details-grid { grid-template-columns: 1fr 1fr; }
   .payment-inputs { flex-direction: row; align-items: stretch; }
-}
-
-/* 黑名單標籤樣式 */
-.card-mode-badge.mode-blacklist {
-  color: #FF4D4D;   
-  border: 1px solid #FF4D4D;
-  margin-left: 6px;
-}
-
-.blacklist-alert-tag:hover {
-  filter: brightness(1.2);
-  transform: scale(1.02);
-  transition: all 0.2s;
 }
