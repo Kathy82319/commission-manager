@@ -4,7 +4,7 @@ import '../../styles/Wishboard.css';
 import { Calendar, DollarSign, Tag, Clock, Send, Plus, X, User, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ImageUploader } from '../../components/ImageUploader'; 
 
-const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日式', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
+const REQ_TAGS = ['不限', '頭貼', '半身', '全身', 'Q圖', '韓式', '日系', '美式', '夢向', '黑白', '單人', '雙人', '背景', '立繪', '厚塗', '塗鴉', '插圖', '服設', '包時'];
 const PAY_TAGS = ['皆可配合', '無卡', '匯款', '空包', '超商'];
 
 export const Wishboard: React.FC = () => {

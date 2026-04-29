@@ -28,14 +28,15 @@
 @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 24px; opacity: 1; } }
 
 .wishboard-hero { text-align: center; padding: 40px 0; background: linear-gradient(135deg, #fff5eb 0%, #fff 100%); border-radius: 20px; margin-bottom: 30px; }
-.tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+.tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
 .tab-group button { padding: 10px 25px; border-radius: 30px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; color: #666; transition: 0.3s; }
 .tab-group button.active { background: #ff8c00; color: white; border-color: #ff8c00; box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 
+/* 🌟 過濾區塊佈局 */
 .filter-section { display: flex; align-items: flex-start; gap: 20px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
 .filter-label { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-top: 6px; font-weight: bold; color: #555; }
 .filter-tags { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
-.filter-tags button { padding: 5px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; transition: 0.2s; }
+.filter-tags button { padding: 5px 12px; font-size: 13px; border-radius: 6px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; transition: 0.2s; white-space: nowrap; }
 .filter-tags button:hover { background: #f0f0f0; }
 .filter-tags button.active { background: #fff0e0; color: #ff8c00; border-color: #ff8c00; }
 .post-trigger-btn { flex-shrink: 0; background: #ff8c00; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; transition: 0.2s; }
@@ -53,7 +54,7 @@
 .wish-card-header h3 { font-size: 20px; color: #333; margin: 0; }
 .category-badge { font-size: 12px; font-weight: bold; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; color: #666; }
 .wish-metadata { display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #666; margin-bottom: 15px; }
-.meta-row { display: flex; gap: 30px; }
+.meta-row { display: flex; gap: 30px; flex-wrap: wrap; }
 .meta-item { display: flex; align-items: center; gap: 6px; }
 .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-chip { background: #f0f2f5; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #555; }
@@ -117,8 +118,6 @@
   white-space: nowrap; /* 保持文字不斷行 */ 
 }
 
-
-
 /* 🌟 強制重置 radio 按鈕尺寸，防止被全域 input 樣式污染 */
 .radio-label input[type="radio"] {
   width: auto !important;
@@ -168,3 +167,91 @@
 
 .inquire-hint { font-size: 14px; color: #64748b; margin: 0 0 16px 0; }
 .highlight-label { color: #9333ea !important; }
+
+/* ==================================================
+   🌟 響應式設計 (Responsive Design) - 手機版適配
+   ================================================== */
+
+@media (max-width: 768px) {
+  /* 整體邊距縮減 */
+  .wishboard-page { padding: 12px; }
+  .wishboard-hero { padding: 24px 12px; }
+  .wishboard-hero h1 { font-size: 24px; margin-bottom: 8px; }
+
+  /* 🌟 過濾標籤：兩排橫向滑動設計 */
+  .filter-section {
+    flex-direction: column; /* 讓「標籤」與「發布按鈕」上下分離 */
+    align-items: stretch;
+    padding: 12px;
+  }
+  .filter-label { margin-top: 0; margin-bottom: 8px; }
+  
+  .filter-tags {
+    display: flex;
+    flex-direction: column; /* 轉為垂直方向，內部包裝為兩排 */
+    flex-wrap: wrap;        /* 允許折行 */
+    height: 70px;           /* 固定高度容納兩排按鈕 (視按鈕高度調整) */
+    gap: 8px;
+    overflow-x: auto;       /* 橫向捲動 */
+    overflow-y: hidden;
+    padding-bottom: 8px;    /* 留空間給捲軸（如果不隱藏捲軸的話） */
+    -webkit-overflow-scrolling: touch; /* 提升 iOS 滑動流暢度 */
+  }
+  
+  /* 隱藏捲軸讓畫面更乾淨 (可選) */
+  .filter-tags::-webkit-scrollbar { display: none; }
+  .filter-tags { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* 確保按鈕不會被壓縮 */
+  .filter-tags button {
+    flex-shrink: 0;
+  }
+
+  .post-trigger-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* 許願池卡片：改為上圖下文 */
+  .wish-card-wide {
+    flex-direction: column;
+  }
+  
+  .wish-card-image-wrapper {
+    width: 100%;
+    height: 240px; /* 手機上固定一個適中的高度 */
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .wish-card-info { padding: 16px; }
+  .wish-card-header h3 { font-size: 18px; }
+
+  /* 發布需求 Modal：上圖下資訊 */
+  .post-modal .post-form > div:first-child {
+    flex-direction: column; /* 將原本的 display: flex; gap: 24px; 轉為垂直 */
+  }
+
+  .post-modal .form-group[style*="width: 240px"] {
+    width: 100% !important; /* 圖片區塊撐滿 */
+  }
+
+  /* 強制圖片容器等比例或給定高度，避免被壓縮 */
+  .post-modal .form-group[style*="width: 240px"] > div {
+    height: 240px !important; 
+    width: 100% !important;
+  }
+
+  /* 預算區塊在手機上可能需要折行 */
+  .budget-inputs { flex-wrap: wrap; }
+  
+  /* Modal 的 padding 縮減 */
+  .modal-overlay { padding: 12px; }
+  .post-form, .inquire-form-body { padding: 16px; gap: 16px; }
+}
+
+@media (max-width: 480px) {
+  /* 更小螢幕的微調 */
+  .budget-inputs input { width: 100% !important; } /* 預算輸入框撐滿 */
+  .budget-inputs span { display: none; } /* 隱藏波浪號，或是改為顯示「至」 */
+}

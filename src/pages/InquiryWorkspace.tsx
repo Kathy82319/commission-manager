@@ -203,9 +203,9 @@ export const InquiryWorkspace: React.FC = () => {
           <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           {/* 🌟 升級版：許願池媒合軌跡 (可收合) */}
-          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px',paddingTop: '2px', padding: '8px', marginBottom: '12px', position: 'relative' }}>
+          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '8px', marginBottom: '12px', position: 'relative' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
               <p><strong>原始許願內容：</strong><br/>{inquiry.bulletin_content}</p>
