@@ -130,27 +130,31 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
               {/* 🌟 新增：發布者名稱與 ID 區塊 */}
-              <div className="flex items-center gap-1.5 text-sm mt-1.5 text-[#7A7269]">
-                <User size={14} className="opacity-70" />
+              <div className="flex flex-row items-center gap-1.5 text-sm mt-2 text-[#7A7269]">
+                {/* 加上 flex-shrink-0 防止小人圖示被擠壓變形或換行 */}
+                <User size={14} className="opacity-70 flex-shrink-0" />
+                
                 {bulletin.category === 'offer' ? (
+                  // 🌟 接委託：可點擊跳轉的樣式 (虛線底線 + Hover 變色)
                   <div 
-                    className="flex items-baseline gap-1 cursor-pointer group"
+                    className="flex flex-row items-center gap-1 cursor-pointer group border-b border-dashed border-[#A0978D] hover:border-[#b45309] pb-[1px] transition-all duration-200"
                     onClick={handleProfileClick}
                     title="前往繪師個人頁"
                   >
-                    <span className="font-bold text-[#5D4A3E] group-hover:text-[#b45309] group-hover:underline transition-colors truncate max-w-[120px] sm:max-w-[200px]">
+                    <span className="font-bold text-[#5D4A3E] group-hover:text-[#b45309] transition-colors truncate max-w-[120px] sm:max-w-[200px] leading-none">
                       {posterName}
                     </span>
-                    <span className="text-xs font-mono opacity-60 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs font-mono opacity-60 group-hover:opacity-100 group-hover:text-[#b45309] transition-colors leading-none">
                       @{posterId}
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-baseline gap-1">
-                    <span className="font-bold text-[#5D4A3E] truncate max-w-[120px] sm:max-w-[200px]">
+                  // 徵委託：純展示，無點擊效果
+                  <div className="flex flex-row items-center gap-1">
+                    <span className="font-bold text-[#5D4A3E] truncate max-w-[120px] sm:max-w-[200px] leading-none">
                       {posterName}
                     </span>
-                    <span className="text-xs font-mono opacity-60">
+                    <span className="text-xs font-mono opacity-60 leading-none">
                       @{posterId}
                     </span>
                   </div>
