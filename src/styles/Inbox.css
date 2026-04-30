@@ -23,7 +23,7 @@
   margin: 0;
   color: #5D4A3E;
   font-weight: bold;
-  font-size: 28px; /* 稍微比 Queue 的 24px 大一點，作為主入口 */
+  font-size: 24px; /* 稍微比 Queue 的 24px 大一點，作為主入口 */
 }
 
 /* 🌟 檢視模式切換按鈕 (卡片/列表) */
@@ -207,6 +207,61 @@
 .status-accepted { background-color: #5D4A3E; color: white; }
 .status-declined, .status-cancelled { background-color: #FCE8E6; color: #A05C5C; }
 .status-closed { background-color: #F0ECE7; color: #7A7269; }
+
+
+/* ========================================================= */
+/* 🌟 許願插槽 (Slots) 樣式 */
+/* ========================================================= */
+.dashboard-slots-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+  gap: 16px; 
+}
+.dashboard-slot { 
+  background: #FFFFFF; 
+  border: 1px solid #EAE6E1; 
+  border-radius: 12px; 
+  padding: 16px; 
+  cursor: pointer; 
+  transition: all 0.2s ease; 
+}
+.dashboard-slot:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
+}
+.active-slot.selected { 
+  border: 2px solid #ff8c00; 
+  background: #FFFDFC; 
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.08);
+}
+.slot-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.slot-icon { font-size: 20px; }
+.slot-category { 
+  font-size: 12px; font-weight: bold; color: #ff8c00; 
+  background: #FFF5EB; padding: 2px 8px; border-radius: 12px; 
+}
+.slot-title { 
+  margin: 0 0 16px 0; font-size: 16px; color: #5D4A3E; font-weight: bold; 
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+}
+.slot-stats { 
+  display: flex; justify-content: space-between; align-items: center; 
+  font-size: 13px; color: #7A7269; border-top: 1px solid #F0ECE7; padding-top: 12px; 
+}
+.stat-num { font-weight: bold; color: #5D4A3E; font-size: 16px; margin-right: 4px; }
+.stat-item.expiry { color: #A05C5C; font-weight: bold; background: #FCE8E6; padding: 2px 6px; border-radius: 4px; font-size: 11px;}
+
+.empty-slot { 
+  border: 2px dashed #DED9D3; background: #FAFAFA; 
+  display: flex; align-items: center; justify-content: center; min-height: 130px; 
+}
+.empty-slot:hover { border-color: #A67B3E; background: #FDFDFB; }
+.empty-content { text-align: center; }
+.btn-outline-primary {
+  background: transparent; border: 1px solid #A67B3E; color: #A67B3E;
+  border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
+}
+.btn-outline-primary:hover { background: #A67B3E; color: #FFF; }
 
 /* ========================================================= */
 /* 🌟 手機版適應 (@media max-width: 1023px) */
