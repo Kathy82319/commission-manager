@@ -19,8 +19,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const hasApplied = currentUser && bulletin.applied_artist_ids && bulletin.applied_artist_ids.includes(currentUser.id);
   
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
-  // 🌟 燈箱狀態：儲存目前放大的圖片網址
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  
+  // 🌟 燈箱索引狀態
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
 
   const getTimeRemaining = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - new Date().getTime();
@@ -56,37 +58,52 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t) || t.startsWith('[授權]'));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
+  // 🌟 打開燈箱並定位到目前這張
+  const openLightbox = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLightboxIdx(currentImageIdx);
+    setIsLightboxOpen(true);
+  };
+
+  // 🌟 燈箱導覽
+  const navigateLightbox = (dir: 'prev' | 'next', e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (dir === 'prev') {
+      setLightboxIdx(prev => (prev === 0 ? validImages.length - 1 : prev - 1));
+    } else {
+      setLightboxIdx(prev => (prev === validImages.length - 1 ? 0 : prev + 1));
+    }
+  };
+
   return (
     <>
       <div className="wish-card-wide">
         <div className="wish-card-image-wrapper">
           {validImages.length > 0 ? (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {/* 🌟 加上點擊事件打開燈箱，並增加放大圖示提示 */}
               <img 
                 src={validImages[currentImageIdx]} 
                 alt="預覽圖" 
                 className="wish-card-img" 
-                style={{ cursor: 'zoom-in' }}
-                onClick={() => setLightboxUrl(validImages[currentImageIdx])}
+                onClick={openLightbox}
               />
-              <div className="zoom-hint"><Maximize2 size={16} /></div>
+              <div className="zoom-hint"><Maximize2 size={18} /></div>
               
               {validImages.length > 1 && (
-                <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 5 }}>
-                  <ChevronLeft size={16} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === 0 ? validImages.length - 1 : prev - 1); }} />
-                  {currentImageIdx + 1} / {validImages.length}
-                  <ChevronRight size={16} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === validImages.length - 1 ? 0 : prev + 1); }} />
+                <div className="card-image-nav">
+                  <ChevronLeft className="nav-btn" onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === 0 ? validImages.length - 1 : prev - 1); }} />
+                  <span>{currentImageIdx + 1} / {validImages.length}</span>
+                  <ChevronRight className="nav-btn" onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === validImages.length - 1 ? 0 : prev + 1); }} />
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
-              <User size={64} opacity={0.5} />
-              <span style={{ marginTop: '10px', fontSize: '14px' }}>無提供範例圖</span>
+            <div className="empty-image-placeholder">
+              <User size={64} opacity={0.3} />
+              <span>無提供範例圖</span>
             </div>
           )}
-          <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', zIndex: 10 }}>
+          <div className="wish-expiry-badge">
             <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
           </div>
         </div>
@@ -94,68 +111,66 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         <div className="wish-card-info">
           <div className="wish-card-header">
             <h3>{unescapeHtml(bulletin.title) || '無標題'}</h3>
-            <span style={{ background: bulletin.category === 'offer' ? '#fef3c7' : '#f1f5f9', color: bulletin.category === 'offer' ? '#d97706' : '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
+            <span className={`category-badge ${bulletin.category}`}>
               {bulletin.category === 'request' ? '徵委託' : bulletin.category === 'offer' ? '接委託' : '其他'}
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#64748b' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-              <Tag size={16} style={{ marginTop: '2px', color: '#94a3b8' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="wish-card-meta-list">
+            <div className="meta-tag-row">
+              <Tag size={16} className="meta-icon" />
+              <div className="tag-container">
                 {warningTags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#e11d48' }}><AlertTriangle size={12} style={{ display: 'inline' }}/> 預警：</span>
+                  <div className="tag-sub-group">
+                    <span className="group-label warning"><AlertTriangle size={12}/> 預警：</span>
                     {warningTags.map((t: string) => <span key={t} className="tag-chip tag-warning">{t.replace('[預警]', '')}</span>)}
                   </div>
                 )}
                 {licenseTags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#16a34a' }}><CheckCircle2 size={12} style={{ display: 'inline' }}/> 範圍：</span>
+                  <div className="tag-sub-group">
+                    <span className="group-label license"><CheckCircle2 size={12}/> 範圍：</span>
                     {licenseTags.map((t: string) => <span key={t} className="tag-chip tag-license">{t.replace('[授權]', '')}</span>)}
                   </div>
                 )}
                 {styleTags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <div className="tag-sub-group">
                     {styleTags.map((t: string) => <span key={t} className="tag-chip tag-style">{t}</span>)}
                   </div>
                 )}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            <div className="meta-info-grid">
               {bulletin.category === 'request' && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <DollarSign size={16} color="#94a3b8" /> 
+                <div className="meta-item">
+                  <DollarSign size={16} className="meta-icon" />
                   <span>預算：</span>
-                  <span style={{ color: '#ff8c00', fontWeight: 'bold', fontSize: '16px' }}>${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
-                </span>
+                  <span className="highlight-price">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
+                </div>
               )}
-              
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Calendar size={16} color="#94a3b8" /> 
+              <div className="meta-item">
+                <Calendar size={16} className="meta-icon" />
                 <span>排單狀況：</span>
-                <span style={{ fontWeight: '600', color: '#334155' }}>
+                <span className="text-dark-600">
                   {bulletin.schedule_type === 'flexible' 
                     ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
                     : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
                 </span>
-              </span>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Send size={16} color="#94a3b8" /> 
-              <span>付款方式：</span>
-              <span style={{ fontWeight: '600', color: '#334155' }}>{paymentMethods.join(', ')}</span>
+              </div>
+              <div className="meta-item">
+                <Send size={16} className="meta-icon" />
+                <span>付款方式：</span>
+                <span className="text-dark-600">{paymentMethods.join(', ')}</span>
+              </div>
             </div>
 
             {bulletin.category === 'offer' && contentObj.commission_items && contentObj.commission_items.length > 0 && (
-              <div style={{ marginTop: '4px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '8px' }}>接案項目一覽：</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div className="commission-items-preview">
+                <span className="section-small-title">接案項目：</span>
+                <div className="items-pills">
                   {contentObj.commission_items.map((item: any, idx: number) => (
-                    <span key={idx} style={{ background: '#fff5eb', color: '#ea580c', padding: '4px 10px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {item.name} <strong style={{ color: '#c2410c' }}>${item.price}</strong>
+                    <span key={idx} className="item-pill">
+                      {item.name} <strong>${item.price}</strong>
                     </span>
                   ))}
                 </div>
@@ -163,20 +178,18 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             )}
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9', marginTop: 'auto' }}>
-            <strong style={{ color: '#0f172a' }}>{bulletin.category === 'offer' ? '接案說明：' : '詳細需求：'}</strong>
-            <p style={{ margin: '8px 0 0 0', lineHeight: '1.6', color: '#475569', fontSize: '14px', whiteSpace: 'pre-wrap' }}>
-              {rawDescription}
-            </p>
+          <div className="wish-description-box">
+            <strong className="description-label">{bulletin.category === 'offer' ? '接案說明：' : '詳細需求：'}</strong>
+            <p className="description-text">{rawDescription}</p>
           </div>
 
-          <div style={{ marginTop: '16px' }}>
+          <div className="card-actions">
             {isMyOwnPost ? (
-              <button disabled className="submit-post-btn" style={{ width: '100%', background: '#f1f5f9', color: '#94a3b8', boxShadow: 'none' }}>這是您發布的貼文</button>
+              <button disabled className="btn-status-disabled">這是您發布的貼文</button>
             ) : hasApplied ? (
-              <button disabled className="submit-post-btn" style={{ width: '100%', background: '#e2e8f0', color: '#64748b', boxShadow: 'none' }}>已投遞過此案件</button>
+              <button disabled className="btn-status-disabled">已投遞過此案件</button>
             ) : (
-              <button className="submit-post-btn" style={{ width: '100%' }} onClick={() => onInquire(bulletin)}>
+              <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
                 {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
               </button>
             )}
@@ -184,12 +197,27 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 🌟 全螢幕燈箱實作 */}
-      {lightboxUrl && (
-        <div className="lightbox-overlay" onClick={() => setLightboxUrl(null)}>
-          <button className="lightbox-close"><X size={32} /></button>
-          <div className="lightbox-container" onClick={e => e.stopPropagation()}>
-            <img src={lightboxUrl} alt="放大查看" />
+      {/* 🌟 增強版燈箱：支援左右導覽 */}
+      {isLightboxOpen && (
+        <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
+          <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}><X size={32} /></button>
+          
+          {validImages.length > 1 && (
+            <>
+              <button className="lightbox-nav-btn prev" onClick={(e) => navigateLightbox('prev', e)}>
+                <ChevronLeft size={48} />
+              </button>
+              <button className="lightbox-nav-btn next" onClick={(e) => navigateLightbox('next', e)}>
+                <ChevronRight size={48} />
+              </button>
+            </>
+          )}
+
+          <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+            <img src={validImages[lightboxIdx]} alt="大圖查看" className="lightbox-img" />
+            {validImages.length > 1 && (
+              <div className="lightbox-counter">{lightboxIdx + 1} / {validImages.length}</div>
+            )}
           </div>
         </div>
       )}
