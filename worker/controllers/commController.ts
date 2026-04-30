@@ -363,9 +363,15 @@ export const commController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 🌟 [新增] 用來讓前端公開頁面獲取排單表資料的 API 邏輯
+  // 🌟 修正點：轉換前端傳入的 public_id 成資料庫用的 UUID，確保排單表找得到資料
   async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
+      const artist = await env.commission_db.prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string}>();
+      
+      if (!artist) {
+        return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: corsHeaders });
+      }
+
       const query = `
         SELECT 
           c.id, 
@@ -380,7 +386,7 @@ export const commController = {
         WHERE c.artist_id = ? AND c.status NOT IN ('completed', 'cancelled')
         ORDER BY c.order_date ASC
       `;
-      const { results } = await env.commission_db.prepare(query).bind(artistId).all();
+      const { results } = await env.commission_db.prepare(query).bind(artist.id).all();
       return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
     } catch (e) {
       console.error("無法讀取公開排單表:", e);

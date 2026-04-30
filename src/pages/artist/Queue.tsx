@@ -1,8 +1,8 @@
 // src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical, X } from 'lucide-react'; // 🌟 新增 X 匯入
-import { QuoteBuilder } from './QuoteBuilder'; // 🌟 引入彈窗組件
+import { GripVertical, X } from 'lucide-react';
+import { QuoteBuilder } from './QuoteBuilder';
 import '../../styles/Queue.css';
 
 interface Commission {
@@ -83,7 +83,6 @@ export function Queue() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // 🌟 控制建立委託單彈窗
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
@@ -167,7 +166,6 @@ export function Queue() {
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           
-          {/* 🌟 新增的兩個按鈕 */}
           <button 
             onClick={() => navigate('/artist/settings')} 
             className="queue-settings-btn" 
@@ -315,9 +313,27 @@ export function Queue() {
 
       {/* 🌟 建立新委託單的 Modal */}
       {isQuoteModalOpen && (
-        <div className="lightbox-overlay" onClick={() => setIsQuoteModalOpen(false)} style={{ zIndex: 1000 }}>
-          <div className="lightbox-content quote-modal-content" onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#FAFAFA', padding: '24px', borderRadius: '12px', position: 'relative' }}>
-            <button className="lightbox-close" onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}>
+        <div 
+          className="quote-modal-overlay" 
+          onClick={() => setIsQuoteModalOpen(false)} 
+          style={{ 
+            position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, 
+            display: 'flex', justifyContent: 'center', alignItems: 'flex-start', /* 改為 flex-start 讓視窗貼齊上方往下排 */
+            overflowY: 'auto', padding: '5vh 20px', cursor: 'default' /* 覆蓋放大鏡游標 */
+          }}
+        >
+          <div 
+            className="quote-modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              width: '100%', maxWidth: '800px', background: '#FAFAFA', padding: '24px', 
+              borderRadius: '12px', position: 'relative', cursor: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            }}
+          >
+            <button 
+              onClick={() => setIsQuoteModalOpen(false)} 
+              style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}
+            >
               <X size={28}/>
             </button>
             <QuoteBuilder 
