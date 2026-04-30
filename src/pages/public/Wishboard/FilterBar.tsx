@@ -22,7 +22,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 }) => {
   return (
     <>
-      {/* 🌟 漸層背景與置中 */}
       <header className="wishboard-hero">
         <h1 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0 10px 0', color: '#1e293b' }}>
           <Sparkles color="#ff8c00" size={28} /> 創作許願池
@@ -42,12 +41,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
       </header>
 
-      {/* 🌟 篩選列橫向排版 */}
-      <div className="form-section" style={{ flexDirection: 'row', alignItems: 'center', marginBottom: '20px', padding: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, fontWeight: 'bold', color: '#475569' }}>
+      {/* 🌟 注意這裡：確保外層有 filter-section */}
+      <div className="form-section filter-section" style={{ flexDirection: 'row', alignItems: 'center', marginBottom: '20px', padding: '16px' }}>
+        <div className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, fontWeight: 'bold', color: '#475569' }}>
           <Tag size={16} /> 熱門篩選：
         </div>
-        <div className="tag-selector" style={{ flex: 1, margin: 0 }}>
+        
+        {/* 🌟 核心修改：加上 filter-tags-scroll 用於手機端強制橫向 */}
+        <div className="tag-selector filter-tags-scroll" style={{ flex: 1, margin: 0 }}>
           {REQ_TAGS.map(tag => (
             <button 
               key={tag} 
@@ -58,6 +59,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
           ))}
         </div>
+        
         {currentUser && (
           <button className="submit-post-btn" style={{ padding: '10px 20px', fontSize: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }} onClick={onPostTrigger}>
             <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
