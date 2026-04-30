@@ -21,10 +21,10 @@ export const bulletinController = {
       let query = `
         SELECT b.*, 
           (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id) as applied_artist_ids,
-          u.display_name as client_name, u.avatar_url as client_avatar
+          u.display_name as client_name, 
+          u.avatar_url as client_avatar,
+          u.public_id as client_public_id
         FROM Bulletins b 
-        u.avatar_url as client_avatar,
-        u.public_id as client_public_id
         JOIN Users u ON b.client_id = u.id
         WHERE b.status = 'open' AND b.expires_at > CURRENT_TIMESTAMP 
           AND b.category = ?
