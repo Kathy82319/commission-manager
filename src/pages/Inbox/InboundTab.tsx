@@ -48,7 +48,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
       case 'pending': return { label: '待處理', class: 'status-pending' };
       case 'submitted': return { label: '洽談中', class: 'status-active' };
       case 'declined': return { label: '已婉拒/撤回', class: 'status-declined' };
-      case 'accepted': return { label: '已接受', class: 'status-success' };
+      case 'accepted': return { label: '已接受', class: 'status-success' }; // 補上已接受狀態
       case 'closed': return { label: '已結案', class: 'status-closed' };
       default: return { label: '未知', class: '' };
     }
@@ -108,14 +108,17 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                         
                         <div className="inquiry-top-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div className="artist-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {/* 🌟 修復：連結 setSelectedIdsForBatch 用於批次處理選取 */}
+                            {/* 🌟 修正點 1：將勾選框連結至 setSelectedIdsForBatch 用於批次操作 */}
                             <input 
                               type="checkbox" 
-                              onChange={(e) => {
-                                if (e.target.checked) setSelectedIdsForBatch((prev: string[]) => [...prev, inquiry.inquiry_id]);
-                                else setSelectedIdsForBatch((prev: string[]) => prev.filter(id => id !== inquiry.inquiry_id));
-                              }}
                               className="inquiry-checkbox"
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIdsForBatch((prev: string[]) => [...prev, inquiry.inquiry_id]);
+                                } else {
+                                  setSelectedIdsForBatch((prev: string[]) => prev.filter(id => id !== inquiry.inquiry_id));
+                                }
+                              }}
                             />
                             <span className="artist-name">{inquiry.artist_name}</span>
                             <span className="artist-id">@{inquiry.artist_public_id}</span>
@@ -132,12 +135,26 @@ export const InboundTab: React.FC<InboundTabProps> = ({
 
                         {/* 顯示婉拒或撤回的原因 */}
                         {isDeclined && inquiry.decline_reason && (
-                          <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '12px', borderRadius: '0 8px 8px 0', marginTop: '4px' }}>
+                          <div style={{ 
+                            background: '#FEF2F2', 
+                            borderLeft: '4px solid #EF4444', 
+                            padding: '12px', 
+                            borderRadius: '0 8px 8px 0', 
+                            marginTop: '4px' 
+                          }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444', fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>
                               <AlertCircle size={14} />
                               <span>終止/撤回原因：</span>
                             </div>
-                            <p style={{ margin: 0, fontSize: '13px', color: '#A05C5C', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto' }}>
+                            <p style={{ 
+                              margin: 0, 
+                              fontSize: '13px', 
+                              color: '#A05C5C', 
+                              whiteSpace: 'pre-wrap', 
+                              lineHeight: '1.6',
+                              maxHeight: '100px',
+                              overflowY: 'auto'
+                            }}>
                               {inquiry.decline_reason}
                             </p>
                           </div>
@@ -157,17 +174,18 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                               </button>
                             </>
                           )}
-                          
+
+                          {/* 洽談中顯示進入工作板 */}
                           {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
                             <button className="action-btn workspace" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
                               進入工作板 <ChevronRight size={16} />
                             </button>
                           )}
 
-                          {/* 🌟 修復：連結 handleViewCommission 用於查看已正式成立的委託單 */}
+                          {/* 🌟 修正點 2：當狀態為 accepted 時，顯示查看正式委託單的按鈕 */}
                           {inquiry.inquiry_status === 'accepted' && inquiry.commission_id && (
                             <button className="action-btn success" onClick={() => handleViewCommission(inquiry.commission_id)}>
-                              <FileCheck size={16} /> 查看委託單
+                              <FileCheck size={16} /> 查看正式委託單
                             </button>
                           )}
                         </div>
