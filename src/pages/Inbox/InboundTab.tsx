@@ -1,8 +1,11 @@
 // src/pages/Inbox/InboundTab.tsx
 import React, { useState } from 'react';
 import { ArtistPostcard } from './components/ArtistPostcard';
+import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
-import { OfferList } from './OfferList'; // 🌟 新增這一行
+
+// 💡 同樣確保這裡有 R2_PUBLIC_URL
+const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-url.r2.dev';
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -22,6 +25,12 @@ interface InboundTabProps {
   viewMode: 'card' | 'list'; 
 }
 
+// 🌟 移植解碼函式
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export const InboundTab: React.FC<InboundTabProps> = ({
   clientBulletins,
   clientInquiries,
@@ -37,10 +46,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     clientBulletins.length > 0 ? clientBulletins[0].id : null
   );
 
-  // 🌟 使用變數：取得目前選中的是哪一種文章
   const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
 
-  // 過濾出當前選中貼文的提案
   const currentInquiries = clientInquiries
     .filter(i => i.bulletin_id === selectedBulletinId)
     .filter(filterOldItems);
@@ -104,26 +111,49 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 目前沒有可顯示的提案喔！再等等吧～
               </div>
             ) : (
-              // 🌟 這裡使用變數：根據文章類型切換不同視圖
-activeBulletinCategory === 'offer' ? (
-  // 🌟 載入我們的海選模式容器
-  <OfferList 
-    inquiries={currentInquiries} 
-    viewMode={viewMode}
-    setSelectedInquiry={setSelectedInquiry}
-    setShowDeclineModal={setShowDeclineModal}
-    setShowInviteModal={setShowInviteModal}
-    handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-    handleViewCommission={handleViewCommission}
-  />
-) : (
-                // 原本的徵稿文 (Request) 明信片模式
+              activeBulletinCategory === 'offer' ? (
+                // 接稿文 (Offer) 進入海選模式
+                <OfferList 
+                  inquiries={currentInquiries} 
+                  viewMode={viewMode}
+                  setSelectedInquiry={setSelectedInquiry}
+                  setShowDeclineModal={setShowDeclineModal}
+                  setShowInviteModal={setShowInviteModal}
+                  handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+                  handleViewCommission={handleViewCommission}
+                />
+              ) : (
+                // 徵稿文 (Request) 維持明信片模式
                 currentInquiries.map(item => {
                   let snapshot: any = {};
                   try { 
-                    const parsed = JSON.parse(item.artist_snapshot || '{}');
+                    // 🌟 1. 確保先 unescape 才能成功 parse JSON
+                    const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
+                    const parsed = JSON.parse(rawSnapshot);
                     snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-                  } catch(e) {}
+                  } catch(e) {
+                    console.error("解析履歷快照失敗", e);
+                  }
+
+                  // 🌟 2. 圖片路徑清洗與 R2 網域補全
+                  let images: string[] = [];
+                  const rawImages = snapshot.images || snapshot.ref_images || item.ref_images || item.ref_image_key || [];
+                  
+                  if (Array.isArray(rawImages)) {
+                    images = rawImages;
+                  } else if (typeof rawImages === 'string') {
+                    try {
+                      const parsedImgs = JSON.parse(unescapeHtml(rawImages));
+                      images = Array.isArray(parsedImgs) ? parsedImgs : [parsedImgs];
+                    } catch {
+                      images = [unescapeHtml(rawImages)];
+                    }
+                  }
+
+                  // 將補全好的完整 URL 塞回 snapshot，這樣 ArtistPostcard 就能直接使用了
+                  snapshot.images = images.filter(Boolean).map(url => 
+                    url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
+                  );
                   
                   const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
 
