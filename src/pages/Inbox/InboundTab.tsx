@@ -4,8 +4,8 @@ import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
 
-// 💡 同樣確保這裡有 R2_PUBLIC_URL
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-your-r2-url.r2.dev';
+// 🌟 修正：直接從你許願池的常數檔引入，確保全域統一！
+import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -25,7 +25,6 @@ interface InboundTabProps {
   viewMode: 'card' | 'list'; 
 }
 
-// 🌟 移植解碼函式
 const unescapeHtml = (str: string) => {
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
@@ -112,7 +111,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
               </div>
             ) : (
               activeBulletinCategory === 'offer' ? (
-                // 接稿文 (Offer) 進入海選模式
+                // 🌟 接稿文 (Offer) 進入海選模式
                 <OfferList 
                   inquiries={currentInquiries} 
                   viewMode={viewMode}
@@ -123,11 +122,10 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   handleViewCommission={handleViewCommission}
                 />
               ) : (
-                // 徵稿文 (Request) 維持明信片模式
+                // 🌟 徵稿文 (Request) 維持明信片模式
                 currentInquiries.map(item => {
                   let snapshot: any = {};
                   try { 
-                    // 🌟 1. 確保先 unescape 才能成功 parse JSON
                     const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
                     const parsed = JSON.parse(rawSnapshot);
                     snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
@@ -135,7 +133,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     console.error("解析履歷快照失敗", e);
                   }
 
-                  // 🌟 2. 圖片路徑清洗與 R2 網域補全
                   let images: string[] = [];
                   const rawImages = snapshot.images || snapshot.ref_images || item.ref_images || item.ref_image_key || [];
                   
@@ -150,7 +147,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     }
                   }
 
-                  // 將補全好的完整 URL 塞回 snapshot，這樣 ArtistPostcard 就能直接使用了
+                  // 🌟 這裡使用正確的 R2_PUBLIC_URL
                   snapshot.images = images.filter(Boolean).map(url => 
                     url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
                   );
