@@ -1,8 +1,6 @@
 // src/pages/Inbox/OfferList/CardView.tsx
 import React from 'react';
 import { getStatusLabel } from '../utils/formatters';
-
-// 🌟 從許願池引入圖床常數
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 
 interface CardViewProps {
@@ -35,17 +33,13 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  // 🌟 1. 精準屬性映射 (Property Mapping)
-  const clientName = inquiry.client_name || '匿名委託人';
-  
-  // 因為目前的 SQL 沒有撈取 client_public_id，我們先用 client_id 的前 8 碼代替，或者直接顯示一個預設字串
-  // 如果你需要精確的 @ID，請記得去修改 worker 裡的 SQL 加上 u.public_id as client_public_id
-  const clientId = inquiry.client_public_id || (inquiry.client_id ? inquiry.client_id.substring(0,8) : 'unknown');
+  // 🌟 1. 抓取案主名稱與 ID (投單者被紀錄在 artist_id 欄位中)
+  const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
+  const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
 
-  // 🌟 2. 圖片路徑清洗
+  // 🌟 2. 圖片處理
   let images: string[] = [];
   try {
-    // 案主投單的圖存在 snapshot.images 中
     const rawImageStr = snapshot.images || '[]';
     if (Array.isArray(rawImageStr)) {
       images = rawImageStr;
@@ -63,14 +57,13 @@ export const CardView: React.FC<CardViewProps> = ({
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 3);
 
-  // 🌟 3. 抓取真正填寫的內容 (確定是存在 message 裡)
-  const message = unescapeHtml(snapshot.message || '');
-  const fallbackResponse = unescapeHtml(inquiry.client_response || '');
+  // 🌟 3. 抓取結構化的問題與備註
+  const answers = snapshot.answers || []; // 新增的結構化資料
+  const note = unescapeHtml(snapshot.note || snapshot.message || ''); // 如果沒有 answers，備註就會是揉在一起的字串
 
   return (
     <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
       
-      {/* 左側：參考圖 Grid 排版 */}
       <div className={`offer-card-gallery img-count-${validImages.length || 0}`}>
         {validImages.length > 0 ? (
           validImages.map((img: string, idx: number) => (
@@ -88,10 +81,8 @@ export const CardView: React.FC<CardViewProps> = ({
         )}
       </div>
 
-      {/* 右側：內容區塊 */}
       <div className="offer-card-content">
         
-        {/* 頂部：案主名稱 + 狀態 */}
         <div className="offer-card-header">
           <div className="offer-client-info">
             <span className="client-name">{clientName}</span>
@@ -102,27 +93,36 @@ export const CardView: React.FC<CardViewProps> = ({
           </span>
         </div>
 
-        {/* 中間：需求與備註 */}
         <div className="offer-text-area">
-          {message ? (
+          {answers.length > 0 ? (
+            <>
+              {answers.map((ans: any, idx: number) => (
+                <div key={idx} className="qa-block">
+                  <div className="q-text">Q: {unescapeHtml(ans.question)}</div>
+                  <div className="a-text">A: {unescapeHtml(ans.answer) || '無填寫'}</div>
+                </div>
+              ))}
+              {/* 將純文字備註獨立顯示出來 */}
+              {snapshot.message && (
+                <div className="qa-block note-block mt-4">
+                  <div className="q-text">備註：</div>
+                  <div className="a-text">{unescapeHtml(snapshot.message)}</div>
+                </div>
+              )}
+            </>
+          ) : note ? (
+            // 💡 相容舊資料：如果這筆單是之前投的，只有 message，就顯示它
             <div className="qa-block">
               <div className="q-text">委託需求內容：</div>
-              {/* 🔒 資安防護：React 預設防 XSS */}
-              <div className="a-text">{message}</div>
-            </div>
-          ) : fallbackResponse ? (
-            <div className="qa-block">
-              <div className="q-text">回填需求單：</div>
-              <div className="a-text">{fallbackResponse}</div>
+              <div className="a-text">{note}</div>
             </div>
           ) : (
             <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
           )}
         </div>
 
-        {/* 底部操作按鈕 */}
         {isExpanded && (
-          <div className="offer-actions" onClick={(e) => e.stopPropagation() /* 🔒 防止觸發卡片收合 */}>
+          <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
             {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
               <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
                 💬 進入聊天室

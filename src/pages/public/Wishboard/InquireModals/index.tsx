@@ -48,7 +48,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
   const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
 
-  // 🌟 強化版：包含 XSS 過濾與字串清理
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
     const rawValue = inquireTagInputs[field];
     if (!rawValue) return;
@@ -79,11 +78,24 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
   const handleAgreeTOS = () => setHasAgreedTOS(true);
 
+  // 🌟 核心修改：將問答結構化儲存，方便 Inbox 卡片漂漂亮亮地渲染
   const handleFinalSubmit = () => {
     if (isOffer && questions.length > 0) {
+      // 保留原本的字串備份
       const qaString = questions.map((q, idx) => `【${q}】\n${answers[idx] || '未填寫'}`).join('\n\n');
       const finalMessage = qaString + (inquireDraft.message ? `\n\n【其他備註】\n${inquireDraft.message}` : '');
-      setInquireDraft((prev: any) => ({ ...prev, message: finalMessage }));
+      
+      // 🌟 新增 answers 陣列
+      const structuredAnswers = questions.map((q, idx) => ({
+        question: q,
+        answer: answers[idx] || ''
+      }));
+
+      setInquireDraft((prev: any) => ({ 
+        ...prev, 
+        message: finalMessage,
+        answers: structuredAnswers // 👈 將結構化資料存進快照
+      }));
     }
     setTimeout(() => { onSubmit(); }, 100);
   };
@@ -159,7 +171,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                   {questions.map((q, idx) => (
                     <div className="form-group" key={idx} style={{ marginBottom: '12px' }}>
                       <label>{q}</label>
-                      {/* 🛡️ 提醒：問卷回答也可能會被注入，後端需進行防護 */}
                       <input 
                         type="text" 
                         placeholder="請輸入您的回答..." 
@@ -196,7 +207,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    {/* 🌟 加上空白鍵觸發，並透過 handleTagAdd 進行過濾 */}
                     <input 
                       type="text" 
                       className="compact-tag-input" 
