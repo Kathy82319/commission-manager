@@ -39,7 +39,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   setShowInviteModal,
   handleEnterInquiryWorkspace,
   handleViewCommission,
-  viewMode 
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -114,7 +113,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 // 🌟 接稿文 (Offer) 進入海選模式
                 <OfferList 
                   inquiries={currentInquiries} 
-                  viewMode={viewMode}
                   setSelectedInquiry={setSelectedInquiry}
                   setShowDeclineModal={setShowDeclineModal}
                   setShowInviteModal={setShowInviteModal}

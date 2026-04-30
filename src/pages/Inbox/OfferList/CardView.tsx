@@ -11,6 +11,8 @@ interface CardViewProps {
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   setShowInviteModal: (show: boolean) => void;
+  isSelected: boolean; // 🌟 批次選取狀態
+  onSelect: () => void; // 🌟 批次選取切換
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
 }
@@ -28,16 +30,18 @@ export const CardView: React.FC<CardViewProps> = ({
   setSelectedInquiry,
   setShowDeclineModal,
   setShowInviteModal,
+  isSelected,
+  onSelect,
   handleEnterInquiryWorkspace,
   handleViewCommission
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  // 🌟 1. 名稱與 ID 防呆：底線一律為「匿名委託人」
+  // 🌟 1. 根據 Controller 邏輯：投單者資訊在接案模式下對應到 artist_name 欄位
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
 
-  // 🌟 2. 圖片路徑清洗
+  // 🌟 2. 圖片路徑清洗與 R2 網域補全
   let images: string[] = [];
   try {
     const rawImageStr = snapshot.images || '[]';
@@ -55,9 +59,9 @@ export const CardView: React.FC<CardViewProps> = ({
     if (!url) return '';
     return url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   };
-  const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5); // 容許多張
+  const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5);
 
-  // 🌟 3. 抓取結構化的問題與備註
+  // 🌟 3. 抓取結構化的問題與備註 (由 InquireModal 建立)
   const answers = snapshot.answers || []; 
   const note = unescapeHtml(snapshot.note || snapshot.message || ''); 
 
@@ -82,6 +86,16 @@ export const CardView: React.FC<CardViewProps> = ({
     <>
       <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
         
+        {/* 🌟 批次選取勾選框 */}
+        <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()}>
+          <input 
+            type="checkbox" 
+            className="card-checkbox" 
+            checked={isSelected} 
+            onChange={onSelect} 
+          />
+        </div>
+        
         {/* 左側：單張輪播展示 */}
         <div className="offer-card-gallery">
           {validImages.length > 0 ? (
@@ -93,18 +107,15 @@ export const CardView: React.FC<CardViewProps> = ({
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
-              {/* 圖片數量提示 */}
               {validImages.length > 1 && (
                 <div className="offer-img-counter">{imgIdx + 1} / {validImages.length}</div>
               )}
-              {/* 左右切換按鈕 */}
               {validImages.length > 1 && (
                 <>
                   <button className="offer-img-nav offer-img-prev" onClick={prevImg}>❮</button>
                   <button className="offer-img-nav offer-img-next" onClick={nextImg}>❯</button>
                 </>
               )}
-              {/* Hover 放大的遮罩提示 */}
               <div className="offer-img-overlay">
                 <span className="offer-img-overlay-text">點擊放大</span>
               </div>
@@ -126,7 +137,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </span>
           </div>
 
-          {/* 中間：需求與備註 (透過 ::after 漸層隱藏) */}
+          {/* 中間：需求內容 (CSS 負責漸層隱藏處理) */}
           <div className="offer-text-area">
             {answers.length > 0 ? (
               <>
@@ -181,7 +192,7 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 燈箱 (Lightbox) 實作 */}
+      {/* 🌟 燈箱 (Lightbox) */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>

@@ -1,11 +1,9 @@
 // src/pages/Inbox/OfferList/index.tsx
 import React, { useState } from 'react';
 import { CardView } from './CardView';
-import { ListView } from './ListView'; 
 
 interface OfferListProps {
   inquiries: any[];
-  viewMode: 'card' | 'list';
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   setShowInviteModal: (show: boolean) => void;
@@ -15,74 +13,87 @@ interface OfferListProps {
 
 export const OfferList: React.FC<OfferListProps> = ({
   inquiries,
-  viewMode,
   setSelectedInquiry,
   setShowDeclineModal,
   setShowInviteModal,
   handleEnterInquiryWorkspace,
   handleViewCommission
 }) => {
-  // 記錄哪些訂單被「點擊展開」了 (存 inquiry_id)
+  // 記錄哪些卡片被展開了
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  
+  // 🌟 批次選擇狀態：紀錄哪些卡片被勾選了
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
+      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
       return newSet;
     });
   };
 
-  // 整理傳給子元件的共用 Props，讓程式碼保持乾淨
-  const commonProps = {
-    setSelectedInquiry,
-    setShowDeclineModal,
-    setShowInviteModal,
-    handleEnterInquiryWorkspace,
-    handleViewCommission
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
+      return newSet;
+    });
+  };
+
+  const handleBatchDecline = () => {
+    // 🛡️ 批次操作資安提醒：
+    // 1. 此處僅能觸發前端 UI (如婉拒原因 Modal)。
+    // 2. 最終 API 送出時必須傳送 selectedIds 陣列。
+    // 3. 後端必須檢查當前用戶是否真的擁有操作這幾筆 inquiryId 的權限。
+    if (selectedIds.size === 0) return;
+    
+    // 範例：我們可以將第一筆選中的資料帶入 Modal 做範本，
+    // 或是在 Modal 組件中特別處理「批量模式」。
+    alert(`即將批次處理 ${selectedIds.size} 筆委託。請串接後端 API 並確保後端校驗 artist_id 權限。`);
   };
 
   return (
     <div className="offer-list-container">
+      {/* 🌟 批次工具列：僅在有勾選時出現 */}
+      {selectedIds.size > 0 && (
+        <div className="batch-action-bar">
+          <div className="batch-info">已選取 {selectedIds.size} 筆委託</div>
+          <div className="batch-btns">
+            <button className="btn-secondary-red" onClick={handleBatchDecline}>批次禮貌婉拒</button>
+            <button className="btn-paper-cancel" style={{color: 'white'}} onClick={() => setSelectedIds(new Set())}>取消選取</button>
+          </div>
+        </div>
+      )}
+
       {inquiries.map(inquiry => {
-        // 🔒 資安防護：安全的 JSON 解析，防範 JSON Injection 或損毀導致前端白畫面
         let snapshot: any = {};
         try { 
-          const parsed = JSON.parse(inquiry.artist_snapshot || '{}');
-          snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-        } catch(e) {
-          console.error(`無法解析案主快照 (Inquiry ID: ${inquiry.inquiry_id})`, e);
+          // 🔒 安全解析：避免因為資料異常導致白屏
+          snapshot = JSON.parse(inquiry.artist_snapshot || '{}');
+        } catch(e) { 
+          console.error("解析快照失敗 (ID: " + inquiry.inquiry_id + ")", e); 
         }
 
-        const isExpanded = expandedIds.has(inquiry.inquiry_id);
-
-if (viewMode === 'card') {
-  return (
-    <CardView
-      key={inquiry.inquiry_id}
-      inquiry={inquiry}
-      snapshot={snapshot}
-      isExpanded={isExpanded}
-      onToggle={() => toggleExpand(inquiry.inquiry_id)}
-      {...commonProps}
-    />
-  );
-} else {
-  return (
-    <ListView
-      key={inquiry.inquiry_id}
-      inquiry={inquiry}
-      snapshot={snapshot}
-      isExpanded={isExpanded}
-      onToggle={() => toggleExpand(inquiry.inquiry_id)}
-      {...commonProps}
-    />
-          );
-        }
+        return (
+          <CardView
+            key={inquiry.inquiry_id}
+            inquiry={inquiry}
+            snapshot={snapshot}
+            isExpanded={expandedIds.has(inquiry.inquiry_id)}
+            onToggle={() => toggleExpand(inquiry.inquiry_id)}
+            
+            // 🌟 批次控制 Props
+            isSelected={selectedIds.has(inquiry.inquiry_id)}
+            onSelect={() => toggleSelect(inquiry.inquiry_id)}
+            
+            setSelectedInquiry={setSelectedInquiry}
+            setShowDeclineModal={setShowDeclineModal}
+            setShowInviteModal={setShowInviteModal}
+            handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+            handleViewCommission={handleViewCommission}
+          />
+        );
       })}
     </div>
   );
