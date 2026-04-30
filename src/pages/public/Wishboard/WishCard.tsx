@@ -59,10 +59,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t) || t.startsWith('[授權]'));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
-  // 🌟 提取投遞人數與機制狀態
+  // 🌟 提取投遞人數與機制狀態 (增強兼容性：同時檢查直屬欄位與 JSON 物件)
   const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? bulletin.applied_artist_ids.length : 0);
-  const selectionType = contentObj.selection_type;
-  const maxSlots = contentObj.max_slots || 1;
+  const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs'; // 預設給個先搶先贏
+  const maxSlots = bulletin.max_slots || contentObj.max_slots || 1;
 
   // 🌟 打開燈箱並定位到目前這張
   const openLightbox = (e: React.MouseEvent) => {
@@ -171,7 +171,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
 
               {/* 🌟 新增：名額與徵集機制顯示區塊 (僅接委託顯示) */}
-              {bulletin.category === 'offer' && selectionType && (
+              {bulletin.category === 'offer' && (
                 <div className="meta-item" style={{ gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309]" />
                   <span>徵集名額：</span>
