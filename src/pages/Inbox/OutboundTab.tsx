@@ -1,8 +1,8 @@
 // src/pages/Inbox/OutboundTab.tsx
 import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
-import { ImageIcon, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
+import { ImageIcon, ChevronDown, ChevronUp, FileText, User } from 'lucide-react';
 
 interface OutboundTabProps {
   artistInquiries: any[];
@@ -82,8 +82,21 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
           const snapshot = parseSnapshot(item.artist_snapshot);
 
           return (
-            <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
               
+              {/* 🌟 新增：投遞對象資訊區塊 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7A7269', marginBottom: '12px' }}>
+                <User size={14} style={{ opacity: 0.7 }} />
+                <span>投遞對象：</span>
+                <span style={{ fontWeight: 'bold', color: '#5D4A3E' }}>
+                  {item.client_name || '未知使用者'}
+                </span>
+                <span style={{ fontFamily: 'monospace', opacity: 0.6 }}>
+                  @{item.client_public_id || 'unknown'}
+                </span>
+              </div>
+
+              {/* 頭部標題與狀態 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
                 <span className={`inbox-badge status-${item.inquiry_status}`} style={{ margin: 0, flexShrink: 0 }}>
                   {getStatusLabel(item.inquiry_status)}

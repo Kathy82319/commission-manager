@@ -192,7 +192,6 @@ export const Inbox: React.FC = () => {
           artistInquiries={artistInquiries}
           setSelectedInquiry={setSelectedInquiry}
           setShowDeclineModal={setShowDeclineModal}
-          handleDirectInvite={handleDirectInvite}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
         />

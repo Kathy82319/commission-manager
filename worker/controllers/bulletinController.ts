@@ -248,15 +248,21 @@ export const bulletinController = {
   },
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
-    try {
+try {
+      // 🌟 資安與功能升級：
+      // 1. 補上 b.category (前端才能判斷是接委託還是徵委託)
+      // 2. LEFT JOIN Users 表，安全獲取 display_name 與 public_id，避免暴露內部 UUID
       const { results } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
                i.latest_update_at, i.artist_snapshot, b.client_id,
                b.ref_image_key, b.budget_min, b.budget_max, b.content as bulletin_content, 
-               b.schedule_type, b.specific_date, 
-               i.decline_reason, i.client_response
+               b.schedule_type, b.specific_date, b.category as bulletin_category,
+               i.decline_reason, i.client_response,
+               u.display_name as client_name, 
+               u.public_id as client_public_id
         FROM BulletinInquiries i 
         JOIN Bulletins b ON i.bulletin_id = b.id
+        LEFT JOIN Users u ON b.client_id = u.id
         WHERE i.artist_id = ? 
         ORDER BY i.latest_update_at DESC
       `).bind(currentUserId).all();
