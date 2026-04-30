@@ -2,7 +2,7 @@
 import React from 'react';
 import { getStatusLabel } from '../utils/formatters';
 
-// 🌟 修正：從正確的路徑引入許願池的全域常數
+// 🌟 從許願池引入圖床常數
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 
 interface CardViewProps {
@@ -35,19 +35,18 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  const clientName = snapshot.client_name || inquiry.client_name || inquiry.sender_name || '匿名案主';
-  const clientId = snapshot.client_public_id || inquiry.client_public_id || 'unknown';
+  // 🌟 1. 精準屬性映射 (Property Mapping)
+  const clientName = inquiry.client_name || '匿名委託人';
   
-  const budgetMin = snapshot.budget_min || inquiry.budget_min || '';
-  const budgetMax = snapshot.budget_max || inquiry.budget_max || '';
-  const budgetDisplay = budgetMin && budgetMax ? `$${budgetMin} ~ $${budgetMax}` : (budgetMin || budgetMax ? `$${budgetMin || budgetMax}` : '依繪師報價 / 未提供');
-  
-  const scheduleType = snapshot.schedule_type || inquiry.schedule_type || 'flexible';
-  const specificDate = snapshot.specific_date || inquiry.specific_date || '';
+  // 因為目前的 SQL 沒有撈取 client_public_id，我們先用 client_id 的前 8 碼代替，或者直接顯示一個預設字串
+  // 如果你需要精確的 @ID，請記得去修改 worker 裡的 SQL 加上 u.public_id as client_public_id
+  const clientId = inquiry.client_public_id || (inquiry.client_id ? inquiry.client_id.substring(0,8) : 'unknown');
 
+  // 🌟 2. 圖片路徑清洗
   let images: string[] = [];
   try {
-    const rawImageStr = snapshot.images || snapshot.ref_images || inquiry.ref_images || inquiry.ref_image_key || '[]';
+    // 案主投單的圖存在 snapshot.images 中
+    const rawImageStr = snapshot.images || '[]';
     if (Array.isArray(rawImageStr)) {
       images = rawImageStr;
     } else {
@@ -55,36 +54,33 @@ export const CardView: React.FC<CardViewProps> = ({
       images = Array.isArray(parsed) ? parsed : [parsed];
     }
   } catch {
-    const fallbackStr = snapshot.images || snapshot.ref_images || inquiry.ref_images || inquiry.ref_image_key;
-    images = fallbackStr ? [unescapeHtml(fallbackStr)] : [];
+    images = snapshot.images ? [unescapeHtml(snapshot.images)] : [];
   }
 
-  // 🌟 這裡使用正確的 R2_PUBLIC_URL 拼湊圖片路徑
   const getFullUrl = (url: string) => {
     if (!url) return '';
     return url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 3);
 
-  const answers = snapshot.answers || snapshot.custom_answers || []; 
-  const note = unescapeHtml(snapshot.note || snapshot.remark || '');
+  // 🌟 3. 抓取真正填寫的內容 (確定是存在 message 裡)
+  const message = unescapeHtml(snapshot.message || '');
   const fallbackResponse = unescapeHtml(inquiry.client_response || '');
 
   return (
     <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
       
+      {/* 左側：參考圖 Grid 排版 */}
       <div className={`offer-card-gallery img-count-${validImages.length || 0}`}>
         {validImages.length > 0 ? (
           validImages.map((img: string, idx: number) => (
             <img 
               key={idx} 
               src={img} 
-              alt={`案主參考圖 ${idx + 1}`} 
+              alt={`委託人參考圖 ${idx + 1}`} 
               className="offer-ref-img" 
               referrerPolicy="no-referrer"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'; // 🔒 容錯防護：圖片損毀時隱藏
-              }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ))
         ) : (
@@ -92,7 +88,10 @@ export const CardView: React.FC<CardViewProps> = ({
         )}
       </div>
 
+      {/* 右側：內容區塊 */}
       <div className="offer-card-content">
+        
+        {/* 頂部：案主名稱 + 狀態 */}
         <div className="offer-card-header">
           <div className="offer-client-info">
             <span className="client-name">{clientName}</span>
@@ -103,40 +102,27 @@ export const CardView: React.FC<CardViewProps> = ({
           </span>
         </div>
 
-        <div className="offer-tags">
-          <span className="tag-budget">💰 預算：{budgetDisplay}</span>
-          <span className="tag-schedule">📅 排單：{scheduleType === 'flexible' ? '可接受排單' : `指定日期: ${specificDate}`}</span>
-        </div>
-
+        {/* 中間：需求與備註 */}
         <div className="offer-text-area">
-          {answers.length > 0 ? (
-            answers.map((ans: any, idx: number) => (
-              <div key={idx} className="qa-block">
-                <div className="q-text">Q: {unescapeHtml(ans.question)}</div>
-                <div className="a-text">A: {unescapeHtml(ans.answer) || '無填寫'}</div>
-              </div>
-            ))
-          ) : (
-            fallbackResponse ? (
-              <div className="qa-block">
-                <div className="q-text">回填需求單：</div>
-                <div className="a-text">{fallbackResponse}</div>
-              </div>
-            ) : (
-              <div className="text-[#A0978D] text-sm italic mt-2">此案主尚未填寫詳細需求說明。</div>
-            )
-          )}
-
-          {note && (
-            <div className="qa-block note-block mt-4">
-              <div className="q-text">備註：</div>
-              <div className="a-text">{note}</div>
+          {message ? (
+            <div className="qa-block">
+              <div className="q-text">委託需求內容：</div>
+              {/* 🔒 資安防護：React 預設防 XSS */}
+              <div className="a-text">{message}</div>
             </div>
+          ) : fallbackResponse ? (
+            <div className="qa-block">
+              <div className="q-text">回填需求單：</div>
+              <div className="a-text">{fallbackResponse}</div>
+            </div>
+          ) : (
+            <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
           )}
         </div>
 
+        {/* 底部操作按鈕 */}
         {isExpanded && (
-          <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
+          <div className="offer-actions" onClick={(e) => e.stopPropagation() /* 🔒 防止觸發卡片收合 */}>
             {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
               <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
                 💬 進入聊天室
