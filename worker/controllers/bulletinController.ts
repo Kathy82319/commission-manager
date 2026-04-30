@@ -20,7 +20,7 @@ export const bulletinController = {
 
       let query = `
         SELECT b.*, 
-          (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id) as applied_artist_ids,
+          (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id AND status NOT IN ('declined', 'closed', 'cancelled')) as applied_artist_ids,
           u.display_name as client_name, 
           u.avatar_url as client_avatar,
           u.public_id as client_public_id
@@ -40,7 +40,8 @@ export const bulletinController = {
       const { results } = await env.commission_db.prepare(query).bind(...params).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("getList Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '讀取列表發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
@@ -48,7 +49,6 @@ export const bulletinController = {
     try {
       const body = await request.json() as any;
       
-      // 🌟 修正 1：接收所有前端傳來的欄位，包含 max_slots, selection_type 和其他陣列
       const { 
         title, content, tags, payment_methods, budget_min, budget_max, 
         schedule_type, specific_date, ref_image_key, category,
@@ -84,10 +84,9 @@ export const bulletinController = {
       const safeTags = JSON.stringify(Array.isArray(tags) ? tags.map(t => escapeHtml(String(t))) : []);
       const safePayments = JSON.stringify(Array.isArray(payment_methods) ? payment_methods.map(p => escapeHtml(String(p))) : []);
 
-      // 🌟 修正 2：將所有延伸設定打包成一個安全的 JSON 存入 content 欄位
       const safeContentObj = {
         description: escapeHtml(content),
-        max_slots: Math.max(1, parseInt(max_slots) || 1), // 確保至少是 1
+        max_slots: Math.max(1, parseInt(max_slots) || 1), 
         selection_type: selection_type === 'fcfs' ? 'fcfs' : 'curated',
         commission_items: Array.isArray(commission_items) ? commission_items : [],
         questions: Array.isArray(questions) ? questions.map(q => escapeHtml(String(q))) : [],
@@ -109,21 +108,37 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("create Bulletin Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '發布發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const existing = await env.commission_db.prepare(`SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`).bind(bulletinId, currentUserId).first();
-      if (existing) return new Response(JSON.stringify({ success: false, message: '請勿重複投遞' }), { status: 400, headers: corsHeaders });
+      // 🌟 資安防護 1：檢查「處理中」的訂單
+      const existingActive = await env.commission_db.prepare(
+        `SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ? AND status NOT IN ('declined', 'closed', 'cancelled')`
+      ).bind(bulletinId, currentUserId).first();
+      
+      if (existingActive) {
+        return new Response(JSON.stringify({ success: false, message: '您目前已有處理中的投遞，請勿重複投遞' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 🌟 資安防護 2：實作防騷擾機制 (最多投 2 次)
+      const historyCountResult = await env.commission_db.prepare(
+        `SELECT count(*) as count FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`
+      ).bind(bulletinId, currentUserId).first();
+      
+      const historyCount = historyCountResult ? (historyCountResult as any).count : 0;
+      if (historyCount >= 2) {
+        return new Response(JSON.stringify({ success: false, message: '您已達到此許願池的投遞次數上限 (最多 2 次)' }), { status: 403, headers: corsHeaders });
+      }
 
       const body = await request.json() as any;
       const { artist_snapshot } = body;
       const snapshotStr = typeof artist_snapshot === 'string' ? artist_snapshot : JSON.stringify(artist_snapshot);
 
-      // 🌟 系統防護：D1 樂觀鎖防超賣機制
-      // 1. 先把目標貼文的內容抓出來，解析裡面的 JSON
+      // 🌟 D1 樂觀鎖防超賣機制
       const bulletin = await env.commission_db.prepare(`SELECT content, client_id FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first();
       
       if (!bulletin) {
@@ -136,14 +151,11 @@ export const bulletinController = {
       let contentObj: any = {};
       try {
         contentObj = JSON.parse(bulletin.content as string);
-      } catch (e) {
-        // 舊資料可能不是 JSON 格式，容錯處理
-      }
+      } catch (e) {}
 
       const isFcfs = contentObj.selection_type === 'fcfs';
       const maxSlots = parseInt(contentObj.max_slots) || 1;
 
-      // 2. 如果是「先搶先贏(fcfs)」，我們需要精確計算目前有幾個人投遞 (排除已取消的)
       if (isFcfs) {
         const currentCountResult = await env.commission_db.prepare(
           `SELECT count(*) as count FROM BulletinInquiries WHERE bulletin_id = ? AND status != 'cancelled'`
@@ -152,28 +164,23 @@ export const bulletinController = {
         const currentCount = currentCountResult ? (currentCountResult as any).count : 0;
 
         if (currentCount >= maxSlots) {
-          // 🛡️ 成功防禦超賣！
-          // 如果滿了，我們順便把這篇文章狀態改為 closed，避免其他人繼續點
           await env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId).run();
           return new Response(JSON.stringify({ success: false, message: '抱歉，此委託名額已被搶先投滿了！' }), { status: 409, headers: corsHeaders });
         }
       }
 
-      // 3. 通過檢查，正式寫入投遞資料
       await env.commission_db.prepare(
         `INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, latest_update_at)
          VALUES (?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`
       ).bind(crypto.randomUUID(), bulletinId, currentUserId, snapshotStr).run();
 
-      // (如果有需要，可以在這裡加上發送通知信的邏輯)
-
       return new Response(JSON.stringify({ success: true, message: '已成功投遞' }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("inquire Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '投遞發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
-  // ... (其餘函式如 closeBulletin, declineInquiry 等保持不變，直接沿用你原本的程式碼)
   async closeBulletin(bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
@@ -185,7 +192,8 @@ export const bulletinController = {
       ]);
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("closeBulletin Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
@@ -193,12 +201,23 @@ export const bulletinController = {
     try {
       const body = await request.json() as any;
       const { decline_reason } = body;
-      await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
-      ).bind(decline_reason || '案主已婉拒', inquiryId).run();
+      
+      // 🛡️ 資安防護：防禦 IDOR (越權操作)。必須是提案發起人(撤回) 或 發布該篇許願池的案主(婉拒) 才能操作
+      const result = await env.commission_db.prepare(
+        `UPDATE BulletinInquiries 
+         SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
+         WHERE id = ? 
+         AND (artist_id = ? OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?))`
+      ).bind(decline_reason || '案主已婉拒 / 投遞方已撤回', inquiryId, currentUserId, currentUserId).run();
+
+      if (result.meta.changes === 0) {
+        return new Response(JSON.stringify({ success: false, message: '操作失敗或權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("declineInquiry Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
@@ -206,12 +225,23 @@ export const bulletinController = {
     try {
       const body = await request.json() as any;
       const { client_response } = body;
-      await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'submitted', client_response = ?, latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
-      ).bind(client_response, inquiryId).run();
+
+      // 🛡️ 資安防護：防禦 IDOR。只有發布該篇許願池的案主可以進行回覆
+      const result = await env.commission_db.prepare(
+        `UPDATE BulletinInquiries 
+         SET status = 'submitted', client_response = ?, latest_update_at = CURRENT_TIMESTAMP 
+         WHERE id = ? 
+         AND bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)`
+      ).bind(client_response, inquiryId, currentUserId).run();
+
+      if (result.meta.changes === 0) {
+        return new Response(JSON.stringify({ success: false, message: '操作失敗或權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("submitResponse Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '回覆發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 
@@ -243,15 +273,13 @@ export const bulletinController = {
         data: { bulletins: myBulletins, inquiries: myInquiries }
       }), { headers: corsHeaders });
     } catch (error: any) { 
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
+      console.error("getClientInbox Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '讀取發生異常，請稍後再試' }), { status: 500, headers: corsHeaders }); 
     }
   },
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
-try {
-      // 🌟 資安與功能升級：
-      // 1. 補上 b.category (前端才能判斷是接委託還是徵委託)
-      // 2. LEFT JOIN Users 表，安全獲取 display_name 與 public_id，避免暴露內部 UUID
+    try {
       const { results } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
                i.latest_update_at, i.artist_snapshot, b.client_id,
@@ -269,7 +297,8 @@ try {
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) { 
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
+      console.error("getArtistInbox Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '讀取發生異常，請稍後再試' }), { status: 500, headers: corsHeaders }); 
     }
   },
 
@@ -310,7 +339,8 @@ try {
       }), { headers: corsHeaders });
 
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+      console.error("batchDecline Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '批次處理發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 };
