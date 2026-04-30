@@ -17,7 +17,7 @@ interface InboundTabProps {
   navigate: (path: string) => void;
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  handleDirectInvite: (inquiry: any) => void; // 🌟 取代舊的 setShowInviteModal
+  handleDirectInvite: (inquiry: any) => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
@@ -34,7 +34,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   navigate,
   setSelectedInquiry,
   setShowDeclineModal,
-  handleDirectInvite, // 🌟 使用新函式
+  handleDirectInvite,
   handleEnterInquiryWorkspace,
   handleViewCommission,
   setSelectedIdsForBatch
@@ -102,18 +102,18 @@ export const InboundTab: React.FC<InboundTabProps> = ({
               </div>
             ) : (
               activeBulletinCategory === 'offer' ? (
-                // 🌟 接稿文 (Offer) 進入海選模式
+                /* 🌟 接稿文：顯示理由的邏輯需要去 OfferList.tsx 修改 */
                 <OfferList 
                   inquiries={currentInquiries} 
                   setSelectedInquiry={setSelectedInquiry}
                   setShowDeclineModal={setShowDeclineModal}
-                  handleDirectInvite={handleDirectInvite} // 🌟 傳遞給 OfferList
+                  handleDirectInvite={handleDirectInvite}
                   handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
                   handleViewCommission={handleViewCommission}
                   setSelectedIdsForBatch={setSelectedIdsForBatch}
                 />
               ) : (
-                // 🌟 徵稿文 (Request) 維持明信片模式
+                /* 🌟 徵稿文：在這裡補上婉拒理由顯示 */
                 currentInquiries.map(item => {
                   let snapshot: any = {};
                   try { 
@@ -145,27 +145,36 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   return (
                     <div key={item.inquiry_id}>
                       <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
-                        {canDecline && (
-                          <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
-                            {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                          </button>
+                        {/* 🌟 核心修正：如果已被婉拒/撤回，顯示原因區塊 */}
+                        {item.inquiry_status === 'declined' && item.decline_reason && (
+                          <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
+                            <div className="text-[#EF4444] font-bold text-sm mb-1">終止/撤回原因：</div>
+                            <div className="text-[#A05C5C] text-sm whitespace-pre-wrap">{item.decline_reason}</div>
+                          </div>
                         )}
-                        {/* 🌟 替換按鈕：直接呼叫 handleDirectInvite(item) */}
-                        {item.inquiry_status === 'pending' && (
-                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
-                            ✉️ 邀請詳談
-                          </button>
-                        )}
-                        {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                          <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                            💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
-                          </button>
-                        )}
-                        {item.inquiry_status === 'accepted' && (
-                          <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
-                            前往正式委託單
-                          </button>
-                        )}
+
+                        <div className="flex justify-end gap-3 w-full">
+                          {canDecline && (
+                            <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
+                              {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
+                            </button>
+                          )}
+                          {item.inquiry_status === 'pending' && (
+                            <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
+                              ✉️ 邀請詳談
+                            </button>
+                          )}
+                          {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
+                            <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
+                              💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
+                            </button>
+                          )}
+                          {item.inquiry_status === 'accepted' && (
+                            <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
+                              前往正式委託單
+                            </button>
+                          )}
+                        </div>
                       </ArtistPostcard>
                     </div>
                   );
