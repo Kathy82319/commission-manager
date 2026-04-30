@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/WishCard.tsx
 import React, { useState } from 'react';
-// 🌟 引入 Users icon 作為徵集機制的圖示
+import { useNavigate } from 'react-router-dom'; // 🌟 新增：用於點擊跳轉
 import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users } from 'lucide-react';
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
 
@@ -16,12 +16,12 @@ const unescapeHtml = (str: string) => {
 };
 
 export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire }) => {
+  const navigate = useNavigate(); // 🌟 宣告 navigate
+
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
-  const hasApplied = currentUser && bulletin.applied_artist_ids && bulletin.applied_artist_ids.includes(currentUser.id);
+  const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
   
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
-  
-  // 🌟 燈箱索引狀態
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
 
@@ -59,19 +59,28 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t) || t.startsWith('[授權]'));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
-  // 🌟 提取投遞人數與機制狀態 (增強兼容性：同時檢查直屬欄位與 JSON 物件)
   const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? String(bulletin.applied_artist_ids).split(',').length : 0);
-  const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs'; // 預設給個先搶先贏
+  const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs';
   const maxSlots = bulletin.max_slots || contentObj.max_slots || 1;
 
-  // 🌟 打開燈箱並定位到目前這張
+  // 🌟 提取發布者資訊 (若後端尚未提供 client_public_id，暫時 fallback 到 client_id)
+  const posterName = bulletin.client_name || '匿名使用者';
+  const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
+
+  // 🌟 處理點擊發布者名稱的跳轉邏輯
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 🛡️ 防護：阻止事件冒泡，避免觸發卡片其他點擊事件
+    if (bulletin.category === 'offer' && posterId !== 'unknown') {
+      navigate(`/${posterId}`); // 假設你的個人頁面路由是 /:public_id
+    }
+  };
+
   const openLightbox = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLightboxIdx(currentImageIdx);
     setIsLightboxOpen(true);
   };
 
-  // 🌟 燈箱導覽
   const navigateLightbox = (dir: 'prev' | 'next', e: React.MouseEvent) => {
     e.stopPropagation();
     if (dir === 'prev') {
@@ -117,7 +126,38 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
         <div className="wish-card-info">
           <div className="wish-card-header">
-            <h3>{unescapeHtml(bulletin.title) || '無標題'}</h3>
+            <div className="flex-1 min-w-0 pr-4">
+              <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
+              
+              {/* 🌟 新增：發布者名稱與 ID 區塊 */}
+              <div className="flex items-center gap-1.5 text-sm mt-1.5 text-[#7A7269]">
+                <User size={14} className="opacity-70" />
+                {bulletin.category === 'offer' ? (
+                  <div 
+                    className="flex items-baseline gap-1 cursor-pointer group"
+                    onClick={handleProfileClick}
+                    title="前往繪師個人頁"
+                  >
+                    <span className="font-bold text-[#5D4A3E] group-hover:text-[#b45309] group-hover:underline transition-colors truncate max-w-[120px] sm:max-w-[200px]">
+                      {posterName}
+                    </span>
+                    <span className="text-xs font-mono opacity-60 group-hover:opacity-100 transition-opacity">
+                      @{posterId}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-bold text-[#5D4A3E] truncate max-w-[120px] sm:max-w-[200px]">
+                      {posterName}
+                    </span>
+                    <span className="text-xs font-mono opacity-60">
+                      @{posterId}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <span className={`category-badge ${bulletin.category}`}>
               {bulletin.category === 'request' ? '徵委託' : bulletin.category === 'offer' ? '接委託' : '其他'}
             </span>
@@ -147,7 +187,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
             </div>
 
-<div className="meta-info-grid">
+            <div className="meta-info-grid">
               {bulletin.category === 'request' && (
                 <div className="meta-item items-start">
                   <DollarSign size={16} className="meta-icon mt-0.5 flex-shrink-0" />
@@ -155,8 +195,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
                 </div>
               )}
-              
-              {/* 🌟 修復：防止標籤被擠壓斷行，並允許長日期優雅換行 */}
               <div className="meta-item items-start">
                 <Calendar size={16} className="meta-icon mt-0.5 flex-shrink-0" />
                 <span className="flex-shrink-0">排單狀況：</span>
@@ -166,14 +204,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
                 </span>
               </div>
-              
               <div className="meta-item items-start">
                 <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
                 <span className="flex-shrink-0">付款方式：</span>
                 <span className="text-dark-600 break-words min-w-0 leading-snug">{paymentMethods.join(', ')}</span>
               </div>
 
-              {/* 🌟 名額與徵集機制顯示區塊 */}
               {bulletin.category === 'offer' && selectionType && (
                 <div className="meta-item items-start" style={{ gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309] mt-0.5 flex-shrink-0" />
@@ -227,7 +263,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 🌟 增強版燈箱：支援左右導覽 */}
       {isLightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}><X size={32} /></button>
