@@ -6,6 +6,8 @@ interface OutboundTabProps {
   artistInquiries: any[];
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
+  // 🌟 保留在介面中，並加上「?」設為選填，用來完美對接父層傳來的屬性
+  handleDirectInvite?: (inquiry: any) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
 }
@@ -14,6 +16,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   artistInquiries,
   setSelectedInquiry,
   setShowDeclineModal,
+  // 🌟 將 handleDirectInvite 從這裡拿掉，因為繪師投遞視角不需要用到這個功能，藉此消除「未讀取」的報錯
   handleEnterInquiryWorkspace,
   handleViewCommission
 }) => {

@@ -10,7 +10,7 @@ interface CardViewProps {
   onToggle: () => void;
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  setShowInviteModal: (show: boolean) => void;
+  handleDirectInvite: (inquiry: any) => void;
   isSelected: boolean; // 🌟 批次選取狀態
   onSelect: () => void; // 🌟 批次選取切換
   handleEnterInquiryWorkspace: (id: string) => void;
@@ -29,7 +29,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onToggle,
   setSelectedInquiry,
   setShowDeclineModal,
-  setShowInviteModal,
+  handleDirectInvite,
   isSelected,
   onSelect,
   handleEnterInquiryWorkspace,
@@ -179,9 +179,9 @@ export const CardView: React.FC<CardViewProps> = ({
                 </button>
               )}
               {inquiry.inquiry_status === 'pending' && (
-                <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...inquiry, question_template: snapshot.question_template || inquiry.question_template }); setShowInviteModal(true); }}>
-                  ✉️ 邀請詳談
-                </button>
+<button className="btn-primary" onClick={() => handleDirectInvite(inquiry)}>
+  ✉️ 邀請詳談
+</button>
               )}
               {canDecline && (
                 <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(inquiry); setShowDeclineModal(true); }}>

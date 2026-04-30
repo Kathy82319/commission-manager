@@ -12,23 +12,17 @@ export const Inbox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [loading, setLoading] = useState(true);
   
-  // 🌟 檢視切換狀態 (雖然 ListView 移除了，但保留狀態避免報錯)
-
-
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   
-  // 🌟 狀態管理：區分單筆與批次
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
   const isBatchMode = batchDeclineIds.size > 0;
 
-  const [inviteResponse, setInviteResponse] = useState('');
   const [declineReason, setDeclineReason] = useState('');
 
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
@@ -74,7 +68,6 @@ export const Inbox: React.FC = () => {
 
   useEffect(() => { fetchInbox(); }, [activeTab]);
 
-  // 🌟 整合單筆與批次的婉拒送出邏輯
   const handleConfirmDecline = async () => {
     if (!isBatchMode && !selectedInquiry) return;
     
@@ -85,7 +78,6 @@ export const Inbox: React.FC = () => {
 
     try {
       if (isBatchMode) {
-        // 🌟 升級：直接呼叫後端的批次 API，取代前端 Promise.all 轟炸
         const targetIds = Array.from(batchDeclineIds);
         const res = await apiClient.post('/api/inquiries/batch-decline', { 
           inquiry_ids: targetIds,
@@ -93,13 +85,11 @@ export const Inbox: React.FC = () => {
         });
 
         if (res.success) {
-          // 利用後端回傳的 processed_count 讓案主知道實際成功了幾筆
           alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
         } else {
           throw new Error(res.message);
         }
       } else {
-        // 🌟 單筆模式 (這支舊的單筆 API 如果你願意，未來也可以考慮把它的防護邏輯對齊上面那樣)
         await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: finalReason });
         alert('已傳送婉拒/撤回通知，對話已關閉。');
       }
@@ -109,22 +99,23 @@ export const Inbox: React.FC = () => {
       setIsEditingTemplates(false);
       setBatchDeclineIds(new Set()); 
       setSelectedInquiry(null);      
-      fetchInbox(); // 重新拉取列表，更新畫面狀態
+      fetchInbox(); 
     } catch (error: any) { 
       alert(error.message || '操作發生錯誤，請稍後再試。'); 
     }
   };
 
-  const handleSendInvite = async () => {
-    if (!inviteResponse.trim()) return alert('請填寫回覆內容');
-    if (!selectedInquiry) return;
+  // 🌟 一鍵邀請直達功能
+  const handleDirectInvite = async (inquiryToInvite: any) => {
+    if (!inquiryToInvite) return;
     try {
-      await apiClient.patch(`/api/inquiries/${selectedInquiry.inquiry_id}/submit-response`, { client_response: inviteResponse });
-      alert('回信已送出！現在您可以進入聊天室與繪師溝通。');
-      setShowInviteModal(false); 
-      setInviteResponse(''); 
-      fetchInbox();
-    } catch (error: any) { alert(error.message || '送出失敗'); }
+      await apiClient.patch(`/api/inquiries/${inquiryToInvite.inquiry_id}/submit-response`, { 
+        client_response: "案主已確認提案，開啟聊天室與您詳談細節。" 
+      });
+      fetchInbox(); 
+    } catch (error: any) { 
+      alert(error.message || '開啟聊天室失敗'); 
+    }
   };
 
   const handleSaveTemplates = async () => {
@@ -178,11 +169,9 @@ export const Inbox: React.FC = () => {
           navigate={navigate}
           setSelectedInquiry={setSelectedInquiry}
           setShowDeclineModal={setShowDeclineModal}
-          setShowInviteModal={setShowInviteModal}
+          handleDirectInvite={handleDirectInvite}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
-
-          // 🌟 傳遞批次處理的 Setter 給下層 OfferList 使用
           setSelectedIdsForBatch={setBatchDeclineIds}
         />
       ) : (
@@ -190,44 +179,19 @@ export const Inbox: React.FC = () => {
           artistInquiries={artistInquiries}
           setSelectedInquiry={setSelectedInquiry}
           setShowDeclineModal={setShowDeclineModal}
+          handleDirectInvite={handleDirectInvite}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
         />
       )}
 
-      {/* 邀請彈窗 (維持原樣) */}
-      {showInviteModal && (
-        <div className="inbox-modal-overlay">
-          <div className="inbox-modal-content">
-            <h2 className="modal-title">✉️ 邀請繪師詳談</h2>
-            {/* ... 省略，維持原樣 ... */}
-            <div className="modal-question-box">
-              <strong><span className="q-icon">Q</span>繪師希望您提供的資訊：</strong>
-              <div className="q-text">{selectedInquiry?.question_template || "是否有特殊需求或要加購的的部分？"}</div>
-            </div>
-            <textarea 
-              className="modal-textarea"
-              placeholder="請在此撰寫您的回信內容..."
-              value={inviteResponse}
-              onChange={(e) => setInviteResponse(e.target.value)}
-            ></textarea>
-            <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowInviteModal(false)}>取消捨棄</button>
-              <button className="btn-submit" onClick={handleSendInvite}>確認並送出回信 ➔</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🌟 婉拒彈窗 (動態支援單筆與批次) */}
+      {/* 婉拒彈窗 (動態支援單筆與批次) */}
       {showDeclineModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">
-            
-            {/* 🌟 根據是否為批次模式，動態顯示標題 */}
             <h2 className="modal-title red">
               {isBatchMode 
-                ? `批次婉拒提案 (${batchDeclineIds.size} 筆)` 
+                ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
                 : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案')
               }
             </h2>
@@ -313,7 +277,7 @@ export const Inbox: React.FC = () => {
                 onClick={() => { 
                   setShowDeclineModal(false); 
                   setIsEditingTemplates(false);
-                  setBatchDeclineIds(new Set()); // 取消時清空狀態
+                  setBatchDeclineIds(new Set()); 
                 }}
               >
                 再想想

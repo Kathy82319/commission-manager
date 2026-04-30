@@ -17,12 +17,10 @@ interface InboundTabProps {
   navigate: (path: string) => void;
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  setShowInviteModal: (show: boolean) => void;
+  handleDirectInvite: (inquiry: any) => void; // 🌟 取代舊的 setShowInviteModal
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
-  // 🌟 1. 新增：接收批次選取狀態的方法
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
-  // (舊的 viewMode 已刪除)
 }
 
 const unescapeHtml = (str: string) => {
@@ -36,10 +34,10 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   navigate,
   setSelectedInquiry,
   setShowDeclineModal,
-  setShowInviteModal,
+  handleDirectInvite, // 🌟 使用新函式
   handleEnterInquiryWorkspace,
   handleViewCommission,
-  setSelectedIdsForBatch // 🌟 2. 從 props 解構出來
+  setSelectedIdsForBatch
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -54,7 +52,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   return (
     <>
       <div className="mb-8">
-
         <div className="dashboard-slots-grid">
           {SLOT_TYPES.map(slotType => {
             const bulletin = clientBulletins.find(b => b.category === slotType.id);
@@ -91,7 +88,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
       </div>
 
       <div className="mb-4">
-
         <div style={{ height: '40px' }}></div>
         
         {!selectedBulletinId ? (
@@ -111,10 +107,10 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   inquiries={currentInquiries} 
                   setSelectedInquiry={setSelectedInquiry}
                   setShowDeclineModal={setShowDeclineModal}
-                  setShowInviteModal={setShowInviteModal}
+                  handleDirectInvite={handleDirectInvite} // 🌟 傳遞給 OfferList
                   handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
                   handleViewCommission={handleViewCommission}
-                  setSelectedIdsForBatch={setSelectedIdsForBatch} // 🌟 3. 接力傳給 OfferList
+                  setSelectedIdsForBatch={setSelectedIdsForBatch}
                 />
               ) : (
                 // 🌟 徵稿文 (Request) 維持明信片模式
@@ -124,9 +120,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
                     const parsed = JSON.parse(rawSnapshot);
                     snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-                  } catch(e) {
-                    console.error("解析履歷快照失敗", e);
-                  }
+                  } catch(e) {}
 
                   let images: string[] = [];
                   const rawImages = snapshot.images || snapshot.ref_images || item.ref_images || item.ref_image_key || [];
@@ -156,8 +150,9 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                             {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
                           </button>
                         )}
+                        {/* 🌟 替換按鈕：直接呼叫 handleDirectInvite(item) */}
                         {item.inquiry_status === 'pending' && (
-                          <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...item, question_template: snapshot.question_template || item.question_template }); setShowInviteModal(true); }}>
+                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
                             ✉️ 邀請詳談
                           </button>
                         )}
@@ -172,12 +167,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                           </button>
                         )}
                       </ArtistPostcard>
-
-                      {item.inquiry_status === 'declined' && item.decline_reason && (
-                        <div className="bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] mt-2 mx-4 text-[#A05C5C] text-sm">
-                          <strong>終止/婉拒理由：</strong>{item.decline_reason}
-                        </div>
-                      )}
                     </div>
                   );
                 })

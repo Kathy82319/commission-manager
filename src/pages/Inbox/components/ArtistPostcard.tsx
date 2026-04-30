@@ -133,6 +133,14 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
             </div>
           </div>
 
+          {/* 🌟 婉拒理由高內聚：在按鈕上方顯示，收進卡片內部 */}
+          {item.inquiry_status === 'declined' && item.decline_reason && (
+            <div className="mt-4 bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] text-[#A05C5C] text-[13px] leading-relaxed">
+              <strong className="block mb-1">終止/婉拒理由：</strong>
+              {item.decline_reason}
+            </div>
+          )}
+
           <div className="postcard-actions-wrapper mt-4">
             {children}
           </div>
