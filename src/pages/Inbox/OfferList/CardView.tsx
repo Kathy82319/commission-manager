@@ -1,5 +1,5 @@
 // src/pages/Inbox/OfferList/CardView.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { getStatusLabel } from '../utils/formatters';
 
 interface CardViewProps {
@@ -27,24 +27,45 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  // 整理圖片：最多取 3 張
-  const rawImages = snapshot.images || snapshot.ref_images || [];
-  const images = Array.isArray(rawImages) ? rawImages.slice(0, 3) : [];
+  // 🌟 容錯資料抓取 (Fallback Extraction)
+  // 為了防止取不到值，我們同時檢查 snapshot 與 inquiry 本身
+  const clientName = snapshot.client_name || inquiry.client_name || inquiry.user_name || '匿名案主';
+  const clientId = snapshot.client_public_id || inquiry.client_public_id || 'unknown';
+  
+  const budgetMin = snapshot.budget_min || inquiry.budget_min || '?';
+  const budgetMax = snapshot.budget_max || inquiry.budget_max || '?';
+  const scheduleType = snapshot.schedule_type || inquiry.schedule_type || 'flexible';
+  const specificDate = snapshot.specific_date || inquiry.specific_date || '未指定';
 
-  // 整理問答：假設 snapshot 內有紀錄案主的問答，若無則降級顯示 client_response
-  const answers = snapshot.answers || []; 
-  const note = snapshot.note || '';
+  // 整理圖片：過濾掉空字串或 null，確保陣列裡都是真實的圖片路徑
+  const rawImages = snapshot.images || snapshot.ref_images || inquiry.ref_images || [];
+  const images = Array.isArray(rawImages) ? rawImages.filter(Boolean).slice(0, 3) : [];
+
+  // 整理問答：防範未填寫的情況
+  const answers = snapshot.answers || snapshot.custom_answers || []; 
+  const note = snapshot.note || snapshot.remark || '';
   const fallbackResponse = inquiry.client_response || '';
 
   return (
     <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
       
       {/* 🌟 左側：1~3張參考圖 (Grid 排版) */}
-      <div className={`offer-card-gallery img-count-${images.length}`}>
+      <div className={`offer-card-gallery img-count-${images.length || 0}`}>
         {images.length > 0 ? (
           images.map((img: string, idx: number) => (
-            // 🔒 資安防護：防外部圖片追蹤
-            <img key={idx} src={img} alt={`參考圖 ${idx + 1}`} className="offer-ref-img" referrerPolicy="no-referrer" />
+            // 🔒 資安防護：
+            // 1. referrerPolicy 防追蹤。
+            // 2. onError: 若 URL 損毀（例如只有 R2 key 沒有網域），自動隱藏圖片，防止 UI 破版。
+            <img 
+              key={idx} 
+              src={img} 
+              alt={`參考圖 ${idx + 1}`} 
+              className="offer-ref-img" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           ))
         ) : (
           <div className="offer-no-img">無參考圖</div>
@@ -57,8 +78,8 @@ export const CardView: React.FC<CardViewProps> = ({
         {/* 頂部：案主名稱 + 狀態 */}
         <div className="offer-card-header">
           <div className="offer-client-info">
-            <span className="client-name">{inquiry.client_name || '匿名案主'}</span>
-            <span className="client-id">@{inquiry.client_public_id || 'unknown'}</span>
+            <span className="client-name">{clientName}</span>
+            <span className="client-id">@{clientId}</span>
           </div>
           <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
             {getStatusLabel(inquiry.inquiry_status)}
@@ -67,38 +88,40 @@ export const CardView: React.FC<CardViewProps> = ({
 
         {/* 預算與排單標籤 */}
         <div className="offer-tags">
-          <span className="tag-budget">💰 預算：{inquiry.budget_min}~{inquiry.budget_max}</span>
-          <span className="tag-schedule">📅 排單：{inquiry.schedule_type === 'flexible' ? '可接受排單' : inquiry.specific_date}</span>
+          <span className="tag-budget">💰 預算：{budgetMin} ~ {budgetMax}</span>
+          <span className="tag-schedule">📅 排單：{scheduleType === 'flexible' ? '可接受排單' : specificDate}</span>
         </div>
 
-        {/* 中間：問答與備註 (未展開時會套用 line-clamp 隱藏) */}
+        {/* 中間：問答與備註 */}
         <div className="offer-text-area">
           {answers.length > 0 ? (
             answers.map((ans: any, idx: number) => (
               <div key={idx} className="qa-block">
                 <div className="q-text">Q: {ans.question}</div>
-                {/* 🔒 資安防護：React 預設防 XSS */}
-                <div className="a-text">A: {ans.answer}</div>
+                {/* 🔒 React 預設防 XSS */}
+                <div className="a-text">A: {ans.answer || '無填寫'}</div>
               </div>
             ))
           ) : (
-            fallbackResponse && (
+            fallbackResponse ? (
               <div className="qa-block">
                 <div className="q-text">回填需求單：</div>
                 <div className="a-text">{fallbackResponse}</div>
               </div>
+            ) : (
+              <div className="text-[#A0978D] text-sm italic mt-2">此案主尚未填寫詳細需求說明。</div>
             )
           )}
 
           {note && (
-            <div className="qa-block note-block">
+            <div className="qa-block note-block mt-4">
               <div className="q-text">備註：</div>
               <div className="a-text">{note}</div>
             </div>
           )}
         </div>
 
-        {/* 底部操作按鈕 (只有展開時，或手機版為了方便操作才顯示) */}
+        {/* 底部操作按鈕 */}
         {isExpanded && (
           <div className="offer-actions" onClick={(e) => e.stopPropagation() /* 🔒 防止觸發卡片收合 */}>
             {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
