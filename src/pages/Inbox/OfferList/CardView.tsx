@@ -1,6 +1,6 @@
 // src/pages/Inbox/OfferList/CardView.tsx
 import React, { useState } from 'react';
-import { getStatusLabel } from '../utils/formatters';
+import { getStatusLabel, getExpiryInfo } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 
 interface CardViewProps {
@@ -11,8 +11,8 @@ interface CardViewProps {
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleDirectInvite: (inquiry: any) => void;
-  isSelected: boolean; // 🌟 批次選取狀態
-  onSelect: () => void; // 🌟 批次選取切換
+  isSelected: boolean; 
+  onSelect: () => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
 }
@@ -37,11 +37,9 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  // 🌟 1. 根據 Controller 邏輯：投單者資訊在接案模式下對應到 artist_name 欄位
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
 
-  // 🌟 2. 圖片路徑清洗與 R2 網域補全
   let images: string[] = [];
   try {
     const rawImageStr = snapshot.images || '[]';
@@ -61,16 +59,14 @@ export const CardView: React.FC<CardViewProps> = ({
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5);
 
-  // 🌟 3. 抓取結構化的問題與備註 (由 InquireModal 建立)
   const answers = snapshot.answers || []; 
   const note = unescapeHtml(snapshot.note || snapshot.message || ''); 
 
-  // 🌟 4. 輪播與燈箱狀態管理
   const [imgIdx, setImgIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const nextImg = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 🔒 隔離事件，防止觸發卡片展開
+    e.stopPropagation();
     setImgIdx((prev) => (prev + 1) % validImages.length);
   };
   const prevImg = (e: React.MouseEvent) => {
@@ -82,15 +78,14 @@ export const CardView: React.FC<CardViewProps> = ({
     if (validImages.length > 0) setLightboxOpen(true);
   };
 
+  // 🌟 取得過期資訊與警示樣式
+  const expiryInfo = getExpiryInfo(inquiry.expires_at);
+
   return (
     <>
       <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
         
-
-        
-        {/* 左側：單張輪播展示 */}
         <div className="offer-card-gallery">
-        {/* 🌟 批次選取勾選框 */}
         <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()}>
           <input 
             type="checkbox" 
@@ -126,19 +121,23 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
         </div>
 
-        {/* 右側：內容區塊 */}
         <div className="offer-card-content">
           <div className="offer-card-header">
-            <div className="offer-client-info">
+            <div className="offer-client-info flex flex-wrap items-center gap-2">
               <span className="client-name">{clientName}</span>
               <span className="client-id">@{clientId}</span>
+              {/* 🌟 只有在待確認且未過期時，顯示倒數標籤 */}
+              {inquiry.inquiry_status === 'pending' && inquiry.expires_at && (
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
+                  ⏳ {expiryInfo.text}
+                </span>
+              )}
             </div>
             <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
               {getStatusLabel(inquiry.inquiry_status)}
             </span>
           </div>
 
-          {/* 中間：需求內容 (CSS 負責漸層隱藏處理) */}
           <div className="offer-text-area">
             {answers.length > 0 ? (
               <>
@@ -165,7 +164,6 @@ export const CardView: React.FC<CardViewProps> = ({
             )}
           </div>
 
-          {/* 底部操作按鈕 */}
           {isExpanded && (
             <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
               {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
@@ -179,9 +177,9 @@ export const CardView: React.FC<CardViewProps> = ({
                 </button>
               )}
               {inquiry.inquiry_status === 'pending' && (
-<button className="btn-primary" onClick={() => handleDirectInvite(inquiry)}>
-  ✉️ 邀請詳談
-</button>
+                <button className="btn-primary" onClick={() => handleDirectInvite(inquiry)}>
+                  ✉️ 邀請詳談
+                </button>
               )}
               {canDecline && (
                 <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(inquiry); setShowDeclineModal(true); }}>
@@ -193,7 +191,6 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 燈箱 (Lightbox) */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>

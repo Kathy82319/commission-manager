@@ -1,6 +1,6 @@
 // src/pages/Inbox/components/ArtistPostcard.tsx
 import React, { useState } from 'react';
-import { getStatusLabel, renderChips } from '../utils/formatters';
+import { getStatusLabel, renderChips, getExpiryInfo } from '../utils/formatters';
 
 interface ArtistPostcardProps {
   item: any;
@@ -29,7 +29,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
 
   const openLightbox = () => { if (images.length > 0) setLightboxOpen(true); };
   
-  // 🌟 加入 e.stopPropagation() 防止按鈕觸發外層的放大燈箱
   const nextImg = (e: React.MouseEvent) => { 
     e.stopPropagation(); 
     setImgIndex((prev) => (prev + 1) % images.length); 
@@ -43,6 +42,9 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
   const artistId = item.artist_public_id || snapshot.artist_public_id || 'unknown';
   const message = unescapeHtml(snapshot.message || item.message || '');
 
+  // 🌟 取得過期資訊與警示樣式
+  const expiryInfo = getExpiryInfo(item.expires_at);
+
   return (
     <>
       <div className="postcard-container">
@@ -50,11 +52,9 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
           {getStatusLabel(item.inquiry_status)}
         </div>
 
-        {/* 🌟 左側圖片區塊 (完全套用我們剛才寫好的 CSS) */}
         <div className="postcard-image-section" onClick={openLightbox} title={images.length > 0 ? "點擊放大檢視" : ""}>
           {images.length > 0 ? (
             <>
-              {/* 🔒 資安防護：加入 referrerPolicy 防止外部圖床追蹤 */}
               <img 
                 src={mainImage as string} 
                 alt="Reference" 
@@ -62,7 +62,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
                 referrerPolicy="no-referrer" 
               />
               
-              {/* 🌟 左右輪播按鈕 (純 CSS 控制顯示與隱藏) */}
               {images.length > 1 && (
                 <>
                   <button onClick={prevImg} className="postcard-img-nav postcard-img-prev">❮</button>
@@ -87,7 +86,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
           )}
         </div>
 
-        {/* 右側內容區塊 (維持原樣) */}
         <div className="postcard-content-section flex flex-col justify-between flex-1 min-w-0 bg-white">
           <div>
             <div className="postcard-header flex items-center gap-4">
@@ -100,8 +98,14 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
               )}
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 text-xs text-[#A0978D] mb-1">
-                  <span>投遞繪師</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-[#A0978D]">投遞繪師</span>
+                  {/* 🌟 只有在待確認且未過期時，顯示倒數標籤 */}
+                  {item.inquiry_status === 'pending' && item.expires_at && (
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
+                      ⏳ {expiryInfo.text}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
                   <span className="postcard-artist-name block truncate font-bold text-xl text-[#5D4A3E] cursor-pointer hover:underline" onClick={handleArtistClick} title="前往繪師個人頁">
@@ -133,7 +137,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
             </div>
           </div>
 
-          {/* 🌟 婉拒理由高內聚：在按鈕上方顯示，收進卡片內部 */}
           {item.inquiry_status === 'declined' && item.decline_reason && (
             <div className="mt-4 bg-[#FCE8E6] p-3 rounded-lg border border-[#F5C6C6] text-[#A05C5C] text-[13px] leading-relaxed">
               <strong className="block mb-1">終止/婉拒理由：</strong>

@@ -289,7 +289,7 @@ VALUES ('u-artist-01', 'User_48676', 'dummy_line_id_001', '系統預設繪師', 
 INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days) 
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 
-
+--https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-01
 
 --刪除許願池收件匣用
 DELETE FROM Notifications;

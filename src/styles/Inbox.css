@@ -980,3 +980,44 @@
   .btn-cancel, .btn-submit, .btn-submit-red, .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
   .template-edit-box { padding: 12px; }
 }
+
+/* ==========================================================================
+   🌟 倒數計時與狀態警示標籤 (Expiry Tags)
+   ========================================================================== */
+
+/* 1. 基礎安全狀態 (剩餘 > 24 小時) - 沉穩的莫蘭迪綠色 */
+.expiry-safe {
+  color: #4E7A5A;
+  background-color: #E8F3EB;
+  border-color: #C3E0CC;
+}
+
+/* 2. 警告狀態 (剩餘 <= 24 小時) - 提醒的暖橘黃色 */
+.expiry-warning {
+  color: #A67B3E;
+  background-color: #FDF4E6;
+  border-color: #FDE0B5;
+}
+
+/* 3. 危險狀態 (剩餘 <= 12 小時) - 緊迫的莫蘭迪紅色 + 呼吸燈微動畫 */
+.expiry-danger {
+  color: #A05C5C;
+  background-color: #FCE8E6;
+  border-color: #F5C6C6;
+  animation: pulse-danger 2s infinite; /* 吸引視覺焦點的微閃爍 */
+}
+
+/* 4. 已過期狀態 - 視覺弱化的冷灰色 */
+.expiry-expired {
+  color: #A0978D;
+  background-color: #F0ECE7;
+  border-color: #DED9D3;
+  opacity: 0.8;
+}
+
+/* 呼吸燈動畫 (僅用於不足 12 小時的緊急狀態) */
+@keyframes pulse-danger {
+  0% { box-shadow: 0 0 0 0 rgba(160, 92, 92, 0.4); }
+  70% { box-shadow: 0 0 0 4px rgba(160, 92, 92, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(160, 92, 92, 0); }
+}
