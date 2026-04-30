@@ -39,7 +39,10 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     });
   };
 
-  const getFullUrl = (url: string) => url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
+  const getFullUrl = (url: string) => {
+  if (!url) return ''; // 🌟 關鍵防呆：如果 url 是空值，直接回傳空字串，不要往後執行 startsWith
+  return url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
+};
 
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
     setForm((prev: any) => {
@@ -132,16 +135,22 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               )}
             </div>
 
-            {showPortfolioPicker && (
-              <div className="portfolio-picker-grid">
-                {userShowcase.map((item: any) => (
-                  <div key={item.id} className={`portfolio-item ${form.ref_images.includes(item.image_key) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(item.image_key)}>
-                    <img src={getFullUrl(item.image_key)} alt="Portfolio" />
-                    {form.ref_images.includes(item.image_key) && <div className="check-overlay"><Plus size={24} /></div>}
-                  </div>
-                ))}
-              </div>
-            )}
+{showPortfolioPicker && (
+  <div className="portfolio-picker-grid">
+    {userShowcase
+      .filter((item: any) => item && item.image_key) // 🌟 確保只渲染有圖片 key 的項目
+      .map((item: any) => (
+      <div 
+        key={item.id} 
+        className={`portfolio-item ${form.ref_images.includes(item.image_key) ? 'selected' : ''}`} 
+        onClick={() => togglePortfolioImage(item.image_key)}
+      >
+        <img src={getFullUrl(item.image_key)} alt="Portfolio" />
+        {form.ref_images.includes(item.image_key) && <div className="check-overlay"><Plus size={24} /></div>}
+      </div>
+    ))}
+  </div>
+)}
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {form.ref_images.map((url: string, idx: number) => (
