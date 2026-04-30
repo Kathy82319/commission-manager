@@ -1,21 +1,22 @@
 /* ==========================================================================
-   🌟 基礎排版 (原始設計)
+   🌟 1. 基礎排版 (對齊 Queue 的滿版置中與寬度限制)
    ========================================================================== */
-.inbox-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
-
-.inbox-page-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
-  background-color: #FDFDFB;
+.inbox-page-container { 
+  max-width: 1200px;  /* 限制最大寬度，避免在大螢幕過度擴張 */
+  margin: 40px auto;  /* 上下留白，左右置中對齊排單表 */
+  padding: 0 24px; 
   min-height: calc(100vh - 64px);
+}
+
+.inbox-page-header {
+  margin-bottom: 24px;
 }
 
 .inbox-page-title {
   font-size: 24px;
   font-weight: bold;
   color: #5D4A3E;
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 /* 網頁版標準的 Tab 樣式 (與其他管理頁面一致) */
@@ -47,6 +48,39 @@
   color: #ff8c00;
   border-bottom-color: #ff8c00;
 }
+
+/* ==========================================================================
+   🌟 2. 分頁標籤 (Tabs) 樣式修復 (對齊 TSX 的 ClassName)
+   ========================================================================== */
+.inbox-tabs-wrapper {
+  display: flex;
+  gap: 16px;
+  border-bottom: 2px solid #EAE6E1;
+  margin-bottom: 24px;
+}
+
+.inbox-tab-btn {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  color: #A0978D;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px; /* 往下位移，為了完美蓋住外框的底線 */
+  transition: all 0.2s ease;
+}
+
+.inbox-tab-btn:hover {
+  color: #5D4A3E;
+}
+
+.inbox-tab-btn.active {
+  color: #ff8c00;
+  border-bottom-color: #ff8c00;
+}
+
 
 /* 🌟 發布儀表板插槽設計 */
 .dashboard-slots-grid {
@@ -817,8 +851,8 @@
     margin-bottom: 16px;
   }
 
-  /* Tab 標籤切換：改為橫向滑動 */
-  .inbox-tabs {
+/* Tab 標籤切換：改為橫向滑動 */
+  .inbox-tabs-wrapper {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -826,8 +860,8 @@
     padding-bottom: 4px;
     margin-bottom: 16px;
   }
-  .inbox-tabs::-webkit-scrollbar { display: none; }
-  .inbox-tabs button { padding: 10px 16px; font-size: 14px; }
+  .inbox-tabs-wrapper::-webkit-scrollbar { display: none; }
+  .inbox-tab-btn { padding: 10px 16px; font-size: 14px; }
 
   /* 我的許願：單欄垂直 */
   .dashboard-slots-grid { grid-template-columns: 1fr; gap: 12px; }

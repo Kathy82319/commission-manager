@@ -54,10 +54,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   return (
     <>
       <div className="mb-8">
-        <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
-          <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
-          我的許願 (每種分類限一則許願)
-        </h2>
+
         <div className="dashboard-slots-grid">
           {SLOT_TYPES.map(slotType => {
             const bulletin = clientBulletins.find(b => b.category === slotType.id);
@@ -94,10 +91,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
       </div>
 
       <div className="mb-4">
-        <h2 className="text-lg font-bold text-[#5D4A3E] mb-4 flex items-center gap-2">
-          <span className="bg-[#EAE6E1] text-[#5D4A3E] w-6 h-6 flex items-center justify-center rounded-full text-sm"></span> 
-          收到的繪師履歷 / 案主委託
-        </h2>
+
         
         {!selectedBulletinId ? (
           <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-dashed border-[#EAE6E1] text-[#A0978D]">
