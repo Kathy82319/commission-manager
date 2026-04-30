@@ -253,17 +253,22 @@
 }
 @media (min-width: 768px) {
   .postcard-image-section {
-    width: 40%; /* 加寬圖片區比例 */
-    height: auto;
+    width: 40%;
+    height: unset; /* 移除 auto，讓它跟隨右側內容的高度 */
+    min-height: 280px;
     border-bottom: none;
     border-right: 1px solid #EAE6E1;
   }
 }
 .postcard-image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.3s ease;
 }
 .postcard-image-overlay {
   position: absolute;
@@ -302,6 +307,75 @@
   border-radius: 8px;
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* 🌟 明信片專屬輪播按鈕 (純 CSS 確保環境相容) */
+.postcard-img-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 20;
+  opacity: 0; /* 預設隱藏 */
+  transition: all 0.2s ease;
+}
+.postcard-image-section:hover .postcard-img-nav {
+  opacity: 1; /* 滑鼠移入時顯示 */
+}
+.postcard-img-nav:hover { background: rgba(0, 0, 0, 0.7); }
+.postcard-img-prev { left: 12px; }
+.postcard-img-next { right: 12px; }
+
+/* 圖片張數提示 */
+.postcard-image-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* 點擊放大遮罩 */
+.postcard-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+.postcard-image-section:hover .postcard-image-overlay { opacity: 1; }
+.postcard-image-overlay span {
+  color: white; font-size: 13px; background: rgba(0,0,0,0.6);
+  padding: 4px 12px; border-radius: 20px; backdrop-filter: blur(4px);
+}
+
+.postcard-image-fallback {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: #A0978D; background: linear-gradient(135deg, #FDFDFB 0%, #EAE6E1 100%);
+  font-size: 14px; font-weight: bold;
 }
 
 /* 右側：內容資訊區 */
