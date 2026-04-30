@@ -29,8 +29,16 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
   const mainImage = images.length > 0 ? images[imgIndex] : null;
 
   const openLightbox = () => { if (images.length > 0) setLightboxOpen(true); };
-  const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev + 1) % images.length); };
-  const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev - 1 + images.length) % images.length); };
+  
+  // 🌟 圖片切換邏輯 (加入 e.stopPropagation() 防止觸發燈箱)
+  const nextImg = (e: React.MouseEvent) => { 
+    e.stopPropagation(); 
+    setImgIndex((prev) => (prev + 1) % images.length); 
+  };
+  const prevImg = (e: React.MouseEvent) => { 
+    e.stopPropagation(); 
+    setImgIndex((prev) => (prev - 1 + images.length) % images.length); 
+  };
 
   // 🌟 名稱、ID 與留言防呆抓取
   const artistName = item.artist_name || snapshot.artist_name || '匿名繪師';
@@ -39,24 +47,51 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
 
   return (
     <>
-      <div className="postcard-container relative flex flex-col md:flex-row">
+      {/* 🌟 加入 items-stretch 與 min-h 確保左右等高，防止破版 */}
+      <div className="postcard-container relative flex flex-col md:flex-row items-stretch min-h-[280px]">
+        
         <div className={`postcard-stamp stamp-${item.inquiry_status}`}>
           {getStatusLabel(item.inquiry_status)}
         </div>
 
-        {/* 🌟 修復圖片大小限制：加入 relative, overflow-hidden 確保圖片不出界 */}
-        <div className="postcard-image-section cursor-pointer group relative overflow-hidden" onClick={openLightbox} title={images.length > 0 ? "點擊放大檢視" : ""}>
+        {/* 🌟 圖片區塊：強制佔比 40%，且設置 relative 與 overflow-hidden */}
+        <div className="postcard-image-section group relative overflow-hidden flex-shrink-0 w-full md:w-2/5 cursor-pointer">
           {images.length > 0 ? (
             <>
-              {/* 🔒 資安防護：加入 referrerPolicy 防止外部圖床追蹤。並用 w-full h-full object-cover 限制比例 */}
-              <img src={images[0]} alt="Reference" className="postcard-image transition duration-300 group-hover:scale-105 w-full h-full object-cover absolute inset-0" referrerPolicy="no-referrer" />
+              {/* 🔒 資安防護：加入 referrerPolicy。並透過 absolute inset-0 object-cover 強制圖片填滿且不撐破容器 */}
+              <img 
+                src={mainImage as string} 
+                alt="Reference" 
+                onClick={openLightbox}
+                className="postcard-image w-full h-full object-cover absolute inset-0 transition duration-300 group-hover:scale-105" 
+                referrerPolicy="no-referrer" 
+              />
               
+              {/* 🌟 縮圖左右切換按鈕 (Hover 時才顯示) */}
               {images.length > 1 && (
-                <div className="postcard-image-count z-10 relative">
-                  1 / {images.length} 張附圖
-                </div>
+                <>
+                  <button 
+                    onClick={prevImg} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 hover:bg-opacity-70 z-20"
+                  >
+                    ❮
+                  </button>
+                  <button 
+                    onClick={nextImg} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-black bg-opacity-40 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 hover:bg-opacity-70 z-20"
+                  >
+                    ❯
+                  </button>
+                  
+                  {/* 圖片數量標籤 */}
+                  <div className="postcard-image-count z-10 relative pointer-events-none">
+                    {imgIndex + 1} / {images.length} 張附圖
+                  </div>
+                </>
               )}
-              <div className="postcard-image-overlay z-10">
+
+              {/* 點擊放大的遮罩 */}
+              <div className="postcard-image-overlay z-10 pointer-events-none" onClick={openLightbox}>
                 <span className="text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full backdrop-blur-sm">點擊放大</span>
               </div>
             </>
@@ -70,11 +105,11 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
           )}
         </div>
 
-        <div className="postcard-content-section flex flex-col h-full justify-between flex-1 min-w-0">
+        {/* 右側內容區塊 */}
+        <div className="postcard-content-section flex flex-col justify-between flex-1 min-w-0 bg-white">
           <div>
             <div className="postcard-header flex items-center gap-4">
               {item.artist_avatar ? (
-                // 🔒 資安防護：加入 referrerPolicy
                 <img src={item.artist_avatar} alt="Avatar" className="postcard-avatar cursor-pointer w-[56px] h-[56px] rounded-full object-cover flex-shrink-0" onClick={handleArtistClick} title="點擊前往繪師個人頁" referrerPolicy="no-referrer" />
               ) : (
                 <div className="postcard-avatar-fallback cursor-pointer w-[56px] h-[56px] rounded-full flex items-center justify-center flex-shrink-0" onClick={handleArtistClick} title="點擊前往繪師個人頁">
@@ -86,7 +121,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
                 <div className="flex items-center gap-2 text-xs text-[#A0978D] mb-1">
                   <span>投遞繪師</span>
                 </div>
-                {/* 🌟 顯示名稱與 ID */}
                 <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
                   <span className="postcard-artist-name block truncate font-bold text-xl text-[#5D4A3E] cursor-pointer hover:underline" onClick={handleArtistClick} title="前往繪師個人頁">
                     {artistName}
@@ -108,23 +142,22 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
                 {renderChips(snapshot.no_gos, 'bad')}
               </div>
               
-              {/* 🌟 拔除原本的付款方式，替換為留言訊息 */}
               <div className="md:col-span-2 pt-3 border-t border-dashed border-[#EAE6E1] mt-2">
                 <strong className="text-[#5D4A3E] block mb-2">留言訊息：</strong>
-                {/* 🔒 資安：大括號綁定自動防 XSS */}
-                <div className="bg-[#FBFBF9] border border-[#EAE6E1] p-3 rounded-lg text-[#7A7269] whitespace-pre-wrap leading-relaxed text-[13px]">
+                <div className="bg-[#FBFBF9] border border-[#EAE6E1] p-3 rounded-lg text-[#7A7269] whitespace-pre-wrap leading-relaxed text-[13px] max-h-[120px] overflow-y-auto">
                   {message || <span className="italic opacity-50">此繪師未填寫留言。</span>}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="postcard-actions-wrapper">
+          <div className="postcard-actions-wrapper mt-4">
             {children}
           </div>
         </div>
       </div>
 
+      {/* 燈箱 Modal */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>
