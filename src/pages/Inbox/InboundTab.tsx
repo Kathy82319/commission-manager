@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ArtistPostcard } from './components/ArtistPostcard';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
+import { OfferList } from './OfferList'; // 🌟 新增這一行
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -104,15 +105,18 @@ export const InboundTab: React.FC<InboundTabProps> = ({
               </div>
             ) : (
               // 🌟 這裡使用變數：根據文章類型切換不同視圖
-              activeBulletinCategory === 'offer' ? (
-                <div className="p-8 text-center bg-[#FAFAFA] border border-dashed border-[#DED9D3] rounded-xl">
-                  {/* 🌟 這裡使用變數：預留給準備建立的 OfferList */}
-                  <h3 className="text-[#5D4A3E] font-bold mb-2">🎨 繪師海選模式建置中...</h3>
-                  <p className="text-[#A0978D] text-sm">
-                    目前選擇的檢視模式：<strong>{viewMode === 'card' ? '卡片模式' : '列表模式'}</strong>
-                  </p>
-                </div>
-              ) : (
+activeBulletinCategory === 'offer' ? (
+  // 🌟 載入我們的海選模式容器
+  <OfferList 
+    inquiries={currentInquiries} 
+    viewMode={viewMode}
+    setSelectedInquiry={setSelectedInquiry}
+    setShowDeclineModal={setShowDeclineModal}
+    setShowInviteModal={setShowInviteModal}
+    handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+    handleViewCommission={handleViewCommission}
+  />
+) : (
                 // 原本的徵稿文 (Request) 明信片模式
                 currentInquiries.map(item => {
                   let snapshot: any = {};

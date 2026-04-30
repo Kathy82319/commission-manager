@@ -155,7 +155,7 @@ export const Inbox: React.FC = () => {
           className={`inbox-tab-btn ${activeTab === 'client' ? 'active' : ''}`}
           onClick={() => setActiveTab('client')}
         >
-          已發佈許願
+          我的許願池
         </button>
         <button 
           className={`inbox-tab-btn ${activeTab === 'artist' ? 'active' : ''}`}
@@ -163,10 +163,6 @@ export const Inbox: React.FC = () => {
         >
           我投遞的履歷
         </button>
-      </div>
-
-      <div className="inbox-hint-box">
-        💡 提示：為了保持版面整潔，已婉拒或撤回的提案將於 3 天後自動隱藏。
       </div>
 
       {loading ? (

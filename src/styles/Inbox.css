@@ -264,6 +264,131 @@
 .btn-outline-primary:hover { background: #A67B3E; color: #FFF; }
 
 /* ========================================================= */
+/* 🌟 繪師海選模式：卡片視圖 (CardView) */
+/* ========================================================= */
+.offer-card-container {
+  display: flex;
+  background: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.offer-card-container:hover {
+  border-color: #DED9D3;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.offer-card-container.is-expanded {
+  cursor: default;
+  border-color: #A67B3E; /* 展開時給予醒目邊框 */
+  box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1);
+  transform: none;
+}
+
+/* 左側圖片區塊 (最多三張的 Grid 魔法) */
+.offer-card-gallery {
+  width: 240px;
+  flex-shrink: 0;
+  display: grid;
+  gap: 2px;
+  background: #F0ECE7;
+}
+
+.offer-card-gallery.img-count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.offer-card-gallery.img-count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+.offer-card-gallery.img-count-3 { 
+  grid-template-columns: 1fr 1fr; 
+  grid-template-rows: 1fr 1fr; 
+}
+.offer-card-gallery.img-count-3 img:first-child {
+  grid-column: 1 / 3; /* 第一張橫跨兩欄 */
+}
+
+.offer-ref-img {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  object-fit: cover;
+}
+
+.offer-no-img {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #A0978D;
+  font-size: 14px;
+}
+
+/* 右側文字內容區塊 */
+.offer-card-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* 防止 flex 子元素撐破容器 */
+}
+
+.offer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.offer-client-info { display: flex; align-items: baseline; gap: 8px; }
+.client-name { font-size: 18px; font-weight: bold; color: #5D4A3E; }
+.client-id { font-size: 13px; color: #A0978D; font-family: monospace; }
+
+.offer-tags {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.tag-budget { background: #FFF5EB; color: #ff8c00; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+.tag-schedule { background: #E6F4EA; color: #1E8E3E; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+
+/* 🌟 問答與備註的隱藏/展開邏輯 */
+.offer-text-area {
+  flex: 1;
+  color: #7A7269;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 未展開時：截斷文字，超過三行顯示 ... */
+.offer-card-container:not(.is-expanded) .offer-text-area {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+}
+
+.qa-block { margin-bottom: 12px; }
+.qa-block:last-child { margin-bottom: 0; }
+.q-text { font-weight: bold; color: #4A7294; font-size: 13px; margin-bottom: 2px; }
+.a-text { color: #5D4A3E; white-space: pre-wrap; word-break: break-all; }
+.note-block .q-text { color: #A67B3E; }
+
+.offer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #EAE6E1;
+}
+
+
+/* ========================================================= */
 /* 🌟 手機版適應 (@media max-width: 1023px) */
 /* ========================================================= */
 @media (max-width: 1023px) {
@@ -272,4 +397,9 @@
   .view-toggle-btn { flex: 1; justify-content: center; }
   .inbox-tabs-wrapper { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; padding-bottom: 4px; }
   .inbox-modal-content { padding: 24px 20px; }
+}
+@media (max-width: 768px) {
+  .offer-card-container { flex-direction: column; }
+  .offer-card-gallery { width: 100%; height: 160px; }
+  .offer-ref-img { min-height: auto; }
 }
