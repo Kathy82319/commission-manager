@@ -1021,3 +1021,132 @@
   70% { box-shadow: 0 0 0 4px rgba(160, 92, 92, 0); }
   100% { box-shadow: 0 0 0 0 rgba(160, 92, 92, 0); }
 }
+
+/* ==========================================================================
+   🌟 訊息中心準則 (按鈕與彈窗) 純 CSS 實作
+   ========================================================================== */
+
+/* 1. 分頁列容器優化 (讓按鈕能乖乖靠右) */
+.inbox-tabs-wrapper {
+  display: flex;
+  justify-content: space-between; /* 讓左邊的 Tab 群和右邊的按鈕分開 */
+  align-items: center;
+  border-bottom: 2px solid #EAE6E1;
+  margin-bottom: 24px;
+}
+
+.inbox-tabs-group {
+  display: flex;
+  gap: 16px;
+}
+
+/* 2. 右側「準則說明」虛線按鈕 */
+.inbox-rules-btn {
+  background: none;
+  border: none;
+  border-bottom: 1px dashed #A0978D;
+  color: #A0978D;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0 2px 0;
+  margin-bottom: 8px; /* 對齊底線 */
+  transition: all 0.2s ease;
+}
+
+.inbox-rules-btn:hover {
+  color: #5D4A3E;
+  border-bottom-color: #5D4A3E;
+}
+
+.inbox-rules-btn .info-icon {
+  font-family: serif;
+  font-style: italic;
+  font-size: 16px;
+  position: relative;
+  top: -1px;
+}
+
+/* 3. 規則彈窗專屬樣式 */
+.rules-modal-content {
+  max-width: 480px;
+  padding: 32px;
+}
+
+.rules-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #EAE6E1;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.rules-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #5D4A3E;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #A0978D;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.rules-close-btn:hover {
+  color: #5D4A3E;
+}
+
+/* 4. 規則列表排版 */
+.rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rules-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #7A7269;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rules-bullet {
+  color: #A67B3E;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.rules-highlight {
+  color: #5D4A3E;
+  font-weight: bold;
+}
+
+.rules-danger {
+  color: #e11d48;
+  font-weight: bold;
+}
+
+/* 5. 底部按鈕靠右對齊 */
+.rules-modal-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end; /* 強制內容靠右 */
+}

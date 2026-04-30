@@ -147,9 +147,9 @@ export const Inbox: React.FC = () => {
         <h1 className="inbox-page-title">訊息中心</h1>
       </div>
 
-      {/* 🌟 修改佈局：加入 flex 讓規則說明按鈕能推到最右邊 */}
-      <div className="inbox-tabs-wrapper flex items-center w-full">
-        <div className="flex gap-4">
+{/* 🌟 修改佈局：使用純 CSS 讓規則說明按鈕推到最右邊 */}
+      <div className="inbox-tabs-wrapper">
+        <div className="inbox-tabs-group">
           <button 
             className={`inbox-tab-btn ${activeTab === 'client' ? 'active' : ''}`}
             onClick={() => setActiveTab('client')}
@@ -164,12 +164,12 @@ export const Inbox: React.FC = () => {
           </button>
         </div>
         
-        {/* 🌟 新增：規則說明虛線按鈕 (利用 ml-auto 推至右側) */}
+        {/* 🌟 規則說明虛線按鈕 */}
         <button 
           onClick={() => setShowRulesModal(true)}
-          className="ml-auto text-[#A0978D] hover:text-[#5D4A3E] text-[13px] md:text-sm flex items-center gap-1 border-b border-dashed border-[#A0978D] hover:border-[#5D4A3E] transition-colors pb-0.5 cursor-pointer"
+          className="inbox-rules-btn"
         >
-          <span className="font-serif italic text-base relative -top-[1px]">i</span> 準則說明
+          <span className="info-icon">i</span> ?說明
         </button>
       </div>
 
@@ -198,46 +198,42 @@ export const Inbox: React.FC = () => {
         />
       )}
 
-      {/* 🌟 規則說明彈窗 */}
+{/* 🌟 規則說明彈窗 (純 CSS 重構版) */}
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
-          <div className="inbox-modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6 border-b border-[#EAE6E1] pb-4">
-              <h2 className="text-xl font-bold text-[#5D4A3E] flex items-center gap-2">
-                <span className="text-2xl">📋</span> 訊息中心準則
-              </h2>
-              <button 
-                className="text-[#A0978D] hover:text-[#5D4A3E] text-2xl font-bold leading-none transition-colors"
-                onClick={() => setShowRulesModal(false)}
-              >
-                ✕
-              </button>
+          <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
+            
+            <div className="rules-modal-header">
+              <h2><span>📋</span> 訊息中心規則</h2>
+              <button className="rules-close-btn" onClick={() => setShowRulesModal(false)}>✕</button>
             </div>
             
-            <ul className="text-[#7A7269] space-y-4 text-sm md:text-[15px] leading-relaxed">
-              <li className="flex items-start gap-2">
-                <span className="text-[#A67B3E] font-bold mt-[2px]">•</span>
-                <div><strong className="text-[#5D4A3E]">刊登限額</strong>：每種類型（徵稿 / 接稿 / 其他）限刊登一則，保持看板資訊簡潔。</div>
+            <ul className="rules-list">
+              <li className="rules-list-item">
+                <span className="rules-bullet">•</span>
+                <div><span className="rules-highlight">刊登限額</span>：每種類型（徵稿 / 接稿 / 其他）限刊登一則，保持看板資訊簡潔。</div>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[#A67B3E] font-bold mt-[2px]">•</span>
-                <div><strong className="text-[#5D4A3E]">時效限制</strong>：刊登文章限時 <strong className="text-[#e11d48]">3 天</strong>，過期將自動下架，確保提案都是最新需求。</div>
+              <li className="rules-list-item">
+                <span className="rules-bullet">•</span>
+                <div><span className="rules-highlight">時效限制</span>：刊登文章限時 <span className="rules-danger">3 天</span>，過期將自動下架，確保提案都是最新需求。</div>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[#A67B3E] font-bold mt-[2px]">•</span>
-                <div><strong className="text-[#5D4A3E]">處理期限</strong>：收到提案後請盡速決定「進入聊天室」或「禮貌婉拒」。<strong className="text-[#e11d48]">倒數不足 12 小時</strong>的提案將亮起紅燈警示。</div>
+              <li className="rules-list-item">
+                <span className="rules-bullet">•</span>
+                <div><span className="rules-highlight">處理期限</span>：收到提案後請盡速決定「進入聊天室」或「禮貌婉拒」。倒數 <span className="rules-danger">不足 12 小時</span> 的提案將亮起紅燈警示。</div>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-[#A67B3E] font-bold mt-[2px]">•</span>
-                <div><strong className="text-[#5D4A3E]">逾期處理</strong>：超過 <strong className="text-[#e11d48]">7 天</strong> 未處理的提案，系統將視為無效並自動標記為「已失效」歸檔。</div>
+              <li className="rules-list-item">
+                <span className="rules-bullet">•</span>
+                <div><span className="rules-highlight">逾期處理</span>：超過 <span className="rules-danger">7 天</span> 未處理的提案，系統將視為無效並自動標記為「已失效」歸檔。</div>
               </li>
             </ul>
 
-            <div className="mt-8 flex justify-end">
-              <button className="btn-primary w-full md:w-auto" onClick={() => setShowRulesModal(false)}>
+            {/* 🌟 透過 rules-modal-footer 讓按鈕強制靠右 */}
+            <div className="rules-modal-footer">
+              <button className="btn-primary" onClick={() => setShowRulesModal(false)}>
                 我了解了
               </button>
             </div>
+
           </div>
         </div>
       )}
