@@ -147,39 +147,42 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
             </div>
 
-            <div className="meta-info-grid">
+<div className="meta-info-grid">
               {bulletin.category === 'request' && (
-                <div className="meta-item">
-                  <DollarSign size={16} className="meta-icon" />
-                  <span>預算：</span>
-                  <span className="highlight-price">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
+                <div className="meta-item items-start">
+                  <DollarSign size={16} className="meta-icon mt-0.5 flex-shrink-0" />
+                  <span className="flex-shrink-0">預算：</span>
+                  <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
                 </div>
               )}
-              <div className="meta-item">
-                <Calendar size={16} className="meta-icon" />
-                <span>排單狀況：</span>
-                <span className="text-dark-600">
+              
+              {/* 🌟 修復：防止標籤被擠壓斷行，並允許長日期優雅換行 */}
+              <div className="meta-item items-start">
+                <Calendar size={16} className="meta-icon mt-0.5 flex-shrink-0" />
+                <span className="flex-shrink-0">排單狀況：</span>
+                <span className="text-dark-600 break-words min-w-0 leading-snug">
                   {bulletin.schedule_type === 'flexible' 
                     ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
                     : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
                 </span>
               </div>
-              <div className="meta-item">
-                <Send size={16} className="meta-icon" />
-                <span>付款方式：</span>
-                <span className="text-dark-600">{paymentMethods.join(', ')}</span>
+              
+              <div className="meta-item items-start">
+                <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
+                <span className="flex-shrink-0">付款方式：</span>
+                <span className="text-dark-600 break-words min-w-0 leading-snug">{paymentMethods.join(', ')}</span>
               </div>
 
-              {/* 🌟 新增：名額與徵集機制顯示區塊 (僅接委託顯示) */}
-              {bulletin.category === 'offer' && (
-                <div className="meta-item" style={{ gridColumn: '1 / -1' }}>
-                  <Users size={16} className="meta-icon text-[#b45309]" />
-                  <span>徵集名額：</span>
-                  <span className="font-bold text-[#b45309] flex items-center gap-2">
+              {/* 🌟 名額與徵集機制顯示區塊 */}
+              {bulletin.category === 'offer' && selectionType && (
+                <div className="meta-item items-start" style={{ gridColumn: '1 / -1' }}>
+                  <Users size={16} className="meta-icon text-[#b45309] mt-0.5 flex-shrink-0" />
+                  <span className="flex-shrink-0">徵集名額：</span>
+                  <span className="font-bold text-[#b45309] flex flex-wrap items-center gap-2 min-w-0 leading-snug">
                     {selectionType === 'curated' 
                       ? (
                         <>
-                          預計招收 {maxSlots} 名 <span className="text-[12px] bg-[#FEF3C7] px-2 py-0.5 rounded text-[#92400E] font-normal">💡 繪師會選擇適恰設定來接單</span>
+                          預計招收 {maxSlots} 名 <span className="text-[12px] bg-[#FEF3C7] px-2 py-0.5 rounded text-[#92400E] font-normal mt-1 sm:mt-0">💡 繪師會選擇適恰設定來接單</span>
                         </>
                       ) 
                       : (
