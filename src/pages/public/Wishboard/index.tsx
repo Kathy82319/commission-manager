@@ -168,25 +168,20 @@ const handlePostSubmit = async (e: React.FormEvent) => {
           return showToast("金額不可為負數", "error");
         }
         payload = { 
-          ...payload, ...requestForm, 
+          ...payload, 
+          ...requestForm, 
           ref_image_key: requestForm.ref_image,
-          tags: requestForm.tags, // 🌟 修正：直接傳陣列給後端
-          payment_methods: requestForm.payment_methods // 🌟 修正：直接傳陣列
         };
       } else {
+        // 🌟 修正：停止在前端自行打包 JSON！
+        // 我們直接把整個 offerForm (包含 max_slots, selection_type, content 等平坦欄位) 送給後端。
+        // 由後端的 bulletinController 負責安全過濾並打包成 JSON 寫入資料庫。
         payload = {
-          ...payload, ...offerForm,
+          ...payload, 
+          ...offerForm,
           ref_image_key: JSON.stringify(offerForm.ref_images),
-          tags: offerForm.tags, // 🌟 修正：直接傳陣列給後端
-          payment_methods: offerForm.payment_methods, // 🌟 修正：直接傳陣列
-          content: JSON.stringify({
-            description: offerForm.content,
-            commission_items: offerForm.commission_items,
-            tos_content: offerForm.tos_content,
-            payment_timing: offerForm.payment_timing,
-            payment_timing_detail: offerForm.payment_timing_detail,
-            questions: offerForm.questions.filter(q => q.trim() !== '')
-          })
+          // 只做必要的前端清理：過濾掉空的題目
+          questions: offerForm.questions.filter(q => q.trim() !== '') 
         };
       }
 
@@ -198,7 +193,9 @@ const handlePostSubmit = async (e: React.FormEvent) => {
         else setOfferForm(getInitialOfferForm());
         initData();
       } else showToast(res.message || "發布失敗", "error");
-    } catch (err: any) { showToast(err.message || "發布發生錯誤", "error"); }
+    } catch (err: any) { 
+      showToast(err.message || "發布發生錯誤", "error"); 
+    }
   };
 
   const openInquireModal = (bulletin: any) => {
