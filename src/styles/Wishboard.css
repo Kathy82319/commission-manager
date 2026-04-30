@@ -91,9 +91,10 @@
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
+/* 🌟 核心修正：將 min-height 改為固定 height，並限制寬度，解決圖片展延問題 */
 .wish-card-image-wrapper { 
   width: 320px; 
-  min-height: 240px;
+  height: 280px; /* 🌟 強制固定高度，長圖不會撐開卡片 */
   position: relative; 
   flex-shrink: 0; 
   background-color: #fafafa; 
@@ -104,8 +105,26 @@
 .wish-card-img { 
   width: 100%; 
   height: 100%; 
-  object-fit: cover; 
+  object-fit: cover; /* 🌟 核心：自動裁切多餘的部分 */
   display: block; 
+}
+
+/* 放大提示 */
+.zoom-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.4);
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: 0.3s;
+  pointer-events: none;
+}
+.wish-card-image-wrapper:hover .zoom-hint {
+  opacity: 1;
 }
 
 .wish-card-info { 
@@ -131,6 +150,56 @@
 .tag-style { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .tag-warning { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
 .tag-license { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+/* ==================================================
+   🌟 燈箱樣式 (Lightbox) 
+   ================================================== */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001; /* 比 Modal 高 */
+  cursor: zoom-out;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.lightbox-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-container img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 10px;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+.lightbox-close:hover { opacity: 1; transform: scale(1.1); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ==================================================
    🌟 彈窗系統 (Modal)
@@ -213,7 +282,6 @@ input:focus, textarea:focus {
 }
 .remove-image-btn:hover { background: rgba(220, 38, 38, 0.9); transform: scale(1.1); }
 
-/* 🌟 作品集網格 - 補回 */
 .portfolio-picker-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
   gap: 12px; background: #f1f5f9; padding: 16px; border-radius: 12px; 
@@ -329,7 +397,7 @@ input:focus, textarea:focus {
 @media (max-width: 768px) {
   .wishboard-page { padding: 12px; }
 
-  /* 🌟 1. 篩選列橫向滑動 - 補回 */
+  /* 🌟 1. 篩選列橫向滑動 */
   .filter-section { 
     flex-direction: column !important; 
     align-items: flex-start !important; 
@@ -401,8 +469,8 @@ input:focus, textarea:focus {
   .modal-footer { padding: 12px; flex-direction: column-reverse; gap: 8px; }
   .modal-footer button { width: 100%; padding: 10px; font-size: 14px; }
 
-  /* 許願卡片手機優化 */
+  /* 🌟 許願卡片手機優化：調整圖片高度限制 */
   .wish-card-wide { flex-direction: column; }
-  .wish-card-image-wrapper { width: 100%; height: 200px; border-right: none; }
+  .wish-card-image-wrapper { width: 100%; height: 240px; border-right: none; }
   .wish-card-info { padding: 12px; gap: 8px; }
 }
