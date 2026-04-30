@@ -73,7 +73,7 @@ export function PublicProfile() {
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([]);
-  const [publicQueue, setPublicQueue] = useState<any[]>([]); // 🌟 排單表資料
+  const [publicQueue, setPublicQueue] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<string>('');
@@ -84,6 +84,7 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
+  // 🌟 修正漸層：確保它能套用到最外層的容器
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#f4f0eb67';
     if (settings?.gradient_enabled) {
@@ -142,7 +143,6 @@ export function PublicProfile() {
             setShowSplash(false);
           }
 
-          // 🌟 獲取排單表資料 (若已開啟)
           if (parsedSettings?.queue_settings?.enabled) {
             try {
               const queueRes = await fetch(`${API_BASE}/api/public/queue/${currentArtistId}`);
@@ -237,14 +237,13 @@ export function PublicProfile() {
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
-    // 🌟 若排單表功能開啟，則自動增加分頁
     if (settings.queue_settings?.enabled) {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
     if (Array.isArray(settings.custom_sections)) {
       settings.custom_sections.forEach((sec, index) => {
-        const generatedId = `custom_${index}`; // 同步後台邏輯
+        const generatedId = `custom_${index}`; 
         if (!isHidden(generatedId) && sec.content) {
           tabs.push({ id: generatedId, label: sec.title || `區塊 ${index + 1}` });
         }
@@ -254,7 +253,7 @@ export function PublicProfile() {
   }, [settings, showcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
-  const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); // 排單表也算寬版面
+  const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); 
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -273,11 +272,14 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
+  // 🌟 新增邊框顏色的動態計算：當設定為淺色文字(深色背景)時，框線用白色半透明；反之用黑色半透明
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
+  const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
 
   return (
-    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={backgroundStyle}>
+    // 🌟 在這裡將 minHeight 設為 100vh 並套用背景，讓漸層鋪滿整個畫面
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh' }}>
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
           <div className="splash-box">
@@ -287,7 +289,8 @@ export function PublicProfile() {
       )}
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        <aside className="profile-sidebar" style={{ ...backgroundStyle, color: textColor }}>
+        {/* 🌟 移除 sidebar 的 backgroundStyle，讓它變透明以顯示底層的整體漸層 */}
+        <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
           <div className="sidebar-top">
             <div className="avatar-section">
               {artist.avatar_url ? (
@@ -333,21 +336,22 @@ export function PublicProfile() {
           </div>
         </aside>
 
-        <main className="profile-main-content">
+        {/* 🌟 強制讓右側 Main 區塊也透明 */}
+        <main className="profile-main-content" style={{ background: 'transparent' }}>
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 渲染排單表頁籤 */}
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
-                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: '1px solid rgba(150,150,150,0.2)', paddingBottom: '10px' }}>目前排單狀況</h2>
+                  {/* 🌟 套用動態框線顏色 */}
+                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
                   {publicQueue.length === 0 ? (
-                    <p style={{ color: '#888', textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
+                    <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
                         <thead>
-                          <tr style={{ borderBottom: '2px solid rgba(150,150,150,0.2)' }}>
+                          <tr style={{ borderBottom: `2px solid ${borderColor}` }}>
                             <th style={{ padding: '12px 8px' }}>委託人</th>
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
@@ -356,7 +360,7 @@ export function PublicProfile() {
                         </thead>
                         <tbody>
                           {publicQueue.map((order) => (
-                            <tr key={order.id} style={{ borderBottom: '1px solid rgba(150,150,150,0.1)' }}>
+                            <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
                               <td style={{ padding: '12px 8px' }}>
                                 <div style={{ fontWeight: 'bold' }}>
                                   {settings.queue_settings!.show_client_name && order.contact_memo ? order.contact_memo : '匿名委託'}
@@ -369,7 +373,7 @@ export function PublicProfile() {
                                 {settings.queue_settings!.show_project_name && order.project_name ? order.project_name : '私人委託項目'}
                               </td>
                               <td style={{ padding: '12px 8px' }}>
-                                <span style={{ padding: '4px 8px', background: 'rgba(150,150,150,0.1)', borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
+                                <span style={{ padding: '4px 8px', background: 'rgba(150,150,150,0.2)', borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
                               </td>
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
                                 {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
