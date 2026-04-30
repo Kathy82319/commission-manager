@@ -1,32 +1,19 @@
 // src/pages/Inbox/InboundTab.tsx
-import React, { useState } from 'react';
-import { ArtistPostcard } from './components/ArtistPostcard';
-import { OfferList } from './OfferList';
-import { calculateDaysLeft, filterOldItems } from './utils/formatters';
+import React from 'react';
+import { Clock, MessageSquare, XCircle, ChevronRight, ImageIcon, AlertCircle, FileCheck } from 'lucide-react';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-
-const SLOT_TYPES = [
-  { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
-  { id: 'offer', label: '接稿文', icon: '🎨', desc: '展示自己尋找需要繪製的案主' },
-  { id: 'other', label: '其他/手作', icon: '✨', desc: '非純繪圖的委託或交流' }
-];
 
 interface InboundTabProps {
   clientBulletins: any[];
   clientInquiries: any[];
-  navigate: (path: string) => void;
+  navigate: any;
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  handleDirectInvite: (inquiry: any) => void; // 🌟 取代舊的 setShowInviteModal
+  handleDirectInvite: (inquiry: any) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
-  setSelectedIdsForBatch?: (ids: Set<string>) => void; 
+  setSelectedIdsForBatch: (ids: any) => void;
 }
-
-const unescapeHtml = (str: string) => {
-  if (!str) return '';
-  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
-};
 
 export const InboundTab: React.FC<InboundTabProps> = ({
   clientBulletins,
@@ -34,147 +21,165 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   navigate,
   setSelectedInquiry,
   setShowDeclineModal,
-  handleDirectInvite, // 🌟 使用新函式
+  handleDirectInvite,
   handleEnterInquiryWorkspace,
   handleViewCommission,
   setSelectedIdsForBatch
 }) => {
-  const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
-    clientBulletins.length > 0 ? clientBulletins[0].id : null
-  );
 
-  const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
+  const getFullUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${R2_PUBLIC_URL}/${url}`;
+  };
 
-  const currentInquiries = clientInquiries
-    .filter(i => i.bulletin_id === selectedBulletinId)
-    .filter(filterOldItems);
+  const getBulletinImage = (refImageKey: string) => {
+    try {
+      const parsed = JSON.parse(refImageKey || '[]');
+      const firstImg = Array.isArray(parsed) ? parsed[0] : parsed;
+      return firstImg ? getFullUrl(firstImg) : null;
+    } catch {
+      return refImageKey ? getFullUrl(refImageKey) : null;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return { label: '待處理', class: 'status-pending' };
+      case 'submitted': return { label: '洽談中', class: 'status-active' };
+      case 'declined': return { label: '已婉拒/撤回', class: 'status-declined' };
+      case 'accepted': return { label: '已接受', class: 'status-success' };
+      case 'closed': return { label: '已結案', class: 'status-closed' };
+      default: return { label: '未知', class: '' };
+    }
+  };
+
+  if (clientBulletins.length === 0) {
+    return (
+      <div className="inbox-empty-state">
+        <ImageIcon size={48} opacity={0.2} />
+        <p>目前沒有刊登中的許願池文章</p>
+        <button className="btn-primary-outline" onClick={() => navigate('/wishboard')}>前往發布</button>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="mb-8">
-        <div className="dashboard-slots-grid">
-          {SLOT_TYPES.map(slotType => {
-            const bulletin = clientBulletins.find(b => b.category === slotType.id);
-            const isSelected = selectedBulletinId === bulletin?.id;
-            
-            if (bulletin) {
-              return (
-                <div key={slotType.id} className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedBulletinId(bulletin.id)}>
-                  <div className="slot-header">
-                    <span className="slot-icon">{slotType.icon}</span>
-                    <span className="slot-category">{slotType.label}刊登中</span>
-                  </div>
-                  <h3 className="slot-title" title={bulletin.title}>{bulletin.title || '未命名貼文'}</h3>
-                  <div className="slot-stats">
-                    <div className="stat-item"><span className="stat-num">{bulletin.inquiry_count || 0}</span> 份提案</div>
-                    <div className="stat-item expiry">{calculateDaysLeft(bulletin.expires_at)}</div>
-                  </div>
-                </div>
-              );
-            } else {
-              return (
-                <div key={slotType.id} className="dashboard-slot empty-slot cursor-pointer transition" onClick={() => navigate(`/?category=${slotType.id}`)}>
-                  <div className="empty-content">
-                    <span className="empty-icon text-3xl mb-2 opacity-50">{slotType.icon}</span>
-                    <div className="text-[#7A7269] font-bold mb-1">{slotType.label} 尚有空缺</div>
-                    <div className="text-xs text-[#A0978D] mb-3">{slotType.desc}</div>
-                    <button className="btn-outline-primary text-sm py-1 px-3">+ 前往發布</button>
-                  </div>
-                </div>
-              );
-            }
-          })}
-        </div>
-      </div>
+    <div className="inbound-tab-container">
+      {clientBulletins.map(bulletin => {
+        const inquiries = clientInquiries.filter(i => i.bulletin_id === bulletin.id);
+        const bulletinImg = getBulletinImage(bulletin.ref_image_key);
 
-      <div className="mb-4">
-        <div style={{ height: '40px' }}></div>
-        
-        {!selectedBulletinId ? (
-          <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-dashed border-[#EAE6E1] text-[#A0978D]">
-            請點擊上方的「許願種類」來檢視針對該文章收到的提案。
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {currentInquiries.length === 0 ? (
-              <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-[#EAE6E1] text-[#A0978D] shadow-sm">
-                目前沒有可顯示的提案喔！再等等吧～
+        return (
+          <div key={bulletin.id} className="bulletin-group">
+            <div className="bulletin-group-header">
+              <div className="bulletin-header-left">
+                <div className="bulletin-mini-preview">
+                  {bulletinImg ? (
+                    <img src={bulletinImg} alt="貼文首圖" className="mini-img" />
+                  ) : (
+                    <div className="mini-img-placeholder"><ImageIcon size={14} /></div>
+                  )}
+                </div>
+                <div className="bulletin-title-box">
+                  <span className={`type-tag ${bulletin.category}`}>
+                    {bulletin.category === 'offer' ? '接委託' : '徵委託'}
+                  </span>
+                  <h3>{bulletin.title}</h3>
+                </div>
               </div>
-            ) : (
-              activeBulletinCategory === 'offer' ? (
-                // 🌟 接稿文 (Offer) 進入海選模式
-                <OfferList 
-                  inquiries={currentInquiries} 
-                  setSelectedInquiry={setSelectedInquiry}
-                  setShowDeclineModal={setShowDeclineModal}
-                  handleDirectInvite={handleDirectInvite} // 🌟 傳遞給 OfferList
-                  handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-                  handleViewCommission={handleViewCommission}
-                  setSelectedIdsForBatch={setSelectedIdsForBatch}
-                />
+              <div className="bulletin-header-meta">
+                <span>收到 {inquiries.length} 筆提案</span>
+                <button className="btn-text-small" onClick={() => navigate(`/wishboard`)}>查看原帖</button>
+              </div>
+            </div>
+
+            <div className="inquiry-list">
+              {inquiries.length === 0 ? (
+                <p className="no-inquiry-hint">尚未收到任何提案</p>
               ) : (
-                // 🌟 徵稿文 (Request) 維持明信片模式
-                currentInquiries.map(item => {
-                  let snapshot: any = {};
-                  try { 
-                    const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
-                    const parsed = JSON.parse(rawSnapshot);
-                    snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-                  } catch(e) {}
-
-                  let images: string[] = [];
-                  const rawImages = snapshot.images || snapshot.ref_images || item.ref_images || item.ref_image_key || [];
+                inquiries.map(inquiry => {
+                  const statusInfo = getStatusLabel(inquiry.inquiry_status);
+                  const isDeclined = inquiry.inquiry_status === 'declined';
                   
-                  if (Array.isArray(rawImages)) {
-                    images = rawImages;
-                  } else if (typeof rawImages === 'string') {
-                    try {
-                      const parsedImgs = JSON.parse(unescapeHtml(rawImages));
-                      images = Array.isArray(parsedImgs) ? parsedImgs : [parsedImgs];
-                    } catch {
-                      images = [unescapeHtml(rawImages)];
-                    }
-                  }
-
-                  snapshot.images = images.filter(Boolean).map(url => 
-                    url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
-                  );
-                  
-                  const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
-
                   return (
-                    <div key={item.inquiry_id}>
-                      <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
-                        {canDecline && (
-                          <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
-                            {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                          </button>
+                    <div key={inquiry.inquiry_id} className={`inquiry-row-card ${inquiry.inquiry_status}`}>
+                      <div className="inquiry-main-flex-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                        
+                        <div className="inquiry-top-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div className="artist-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {/* 🌟 修復：連結 setSelectedIdsForBatch 用於批次處理選取 */}
+                            <input 
+                              type="checkbox" 
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedIdsForBatch((prev: string[]) => [...prev, inquiry.inquiry_id]);
+                                else setSelectedIdsForBatch((prev: string[]) => prev.filter(id => id !== inquiry.inquiry_id));
+                              }}
+                              className="inquiry-checkbox"
+                            />
+                            <span className="artist-name">{inquiry.artist_name}</span>
+                            <span className="artist-id">@{inquiry.artist_public_id}</span>
+                          </div>
+                          
+                          <div className="inquiry-meta-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div className="inquiry-time" style={{ fontSize: '12px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={12} />
+                              {new Date(inquiry.latest_update_at).toLocaleDateString()}
+                            </div>
+                            <span className={`status-pill ${statusInfo.class}`}>{statusInfo.label}</span>
+                          </div>
+                        </div>
+
+                        {/* 顯示婉拒或撤回的原因 */}
+                        {isDeclined && inquiry.decline_reason && (
+                          <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '12px', borderRadius: '0 8px 8px 0', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444', fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>
+                              <AlertCircle size={14} />
+                              <span>終止/撤回原因：</span>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#A05C5C', whiteSpace: 'pre-wrap', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto' }}>
+                              {inquiry.decline_reason}
+                            </p>
+                          </div>
                         )}
-                        {/* 🌟 替換按鈕：直接呼叫 handleDirectInvite(item) */}
-                        {item.inquiry_status === 'pending' && (
-                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
-                            ✉️ 邀請詳談
-                          </button>
-                        )}
-                        {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                          <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                            💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
-                          </button>
-                        )}
-                        {item.inquiry_status === 'accepted' && (
-                          <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
-                            前往正式委託單
-                          </button>
-                        )}
-                      </ArtistPostcard>
+
+                        <div className="inquiry-actions-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                          {inquiry.inquiry_status === 'pending' && (
+                            <>
+                              <button className="action-btn invite" onClick={() => handleDirectInvite(inquiry)}>
+                                <MessageSquare size={16} /> 邀請洽談
+                              </button>
+                              <button className="action-btn decline" onClick={() => {
+                                setSelectedInquiry(inquiry);
+                                setShowDeclineModal(true);
+                              }}>
+                                <XCircle size={16} /> 婉拒
+                              </button>
+                            </>
+                          )}
+                          
+                          {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
+                            <button className="action-btn workspace" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
+                              進入工作板 <ChevronRight size={16} />
+                            </button>
+                          )}
+
+                          {/* 🌟 修復：連結 handleViewCommission 用於查看已正式成立的委託單 */}
+                          {inquiry.inquiry_status === 'accepted' && inquiry.commission_id && (
+                            <button className="action-btn success" onClick={() => handleViewCommission(inquiry.commission_id)}>
+                              <FileCheck size={16} /> 查看委託單
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   );
                 })
-              )
-            )}
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 };
