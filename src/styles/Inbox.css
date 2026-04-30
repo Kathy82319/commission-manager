@@ -782,3 +782,61 @@
   .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
   .template-edit-box { padding: 12px; }
 }
+
+/* ========================================================= */
+/* 🌟 列表視圖 (ListView) 樣式整合 */
+/* ========================================================= */
+.list-view-row-container {
+  background: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.list-main-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  gap: 16px;
+}
+
+.list-main-row:hover { background: #FDFDFB; }
+.is-expanded.list-view-row-container { border-color: #5D4A3E; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+/* 欄位分配 */
+.col-checkbox { width: 20px; }
+.col-name { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; }
+.col-summary { flex: 1; color: #7A7269; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-status { width: 100px; text-align: center; }
+.col-time { width: 100px; font-size: 12px; color: #A0978D; text-align: right; }
+.col-arrow { width: 20px; color: #DED9D3; font-weight: bold; }
+
+.client-name { font-weight: bold; color: #5D4A3E; font-size: 14px; }
+.client-id-mini { font-size: 11px; color: #A0978D; font-family: monospace; }
+
+/* 🌟 平板適配：優先保護名字，隱藏摘要 */
+@media (max-width: 900px) {
+  .col-summary { display: none; }
+  .col-name { flex: 1; }
+}
+
+/* 展開詳細區 */
+.list-expanded-detail {
+  padding: 20px;
+  background: #FBFBF9;
+  border-top: 1px dashed #EAE6E1;
+}
+
+.detail-grid { display: flex; gap: 24px; }
+.detail-images { display: flex; gap: 8px; flex-shrink: 0; }
+.detail-images img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #EAE6E1; }
+.no-img-placeholder { width: 80px; height: 80px; background: #EEE; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #A0978D; border-radius: 4px; }
+
+.detail-content { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.detail-qa { margin-bottom: 8px; }
+.detail-q { font-size: 12px; font-weight: bold; color: #4A7294; margin-bottom: 2px; }
+.detail-a { font-size: 14px; color: #5D4A3E; }
+.detail-actions { display: flex; gap: 12px; margin-top: 12px; justify-content: flex-end; }

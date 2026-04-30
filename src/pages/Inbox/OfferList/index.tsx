@@ -1,7 +1,7 @@
 // src/pages/Inbox/OfferList/index.tsx
 import React, { useState } from 'react';
 import { CardView } from './CardView';
-// import { ListView } from './ListView'; // 🌟 預留給我們下一步建置
+import { ListView } from './ListView'; 
 
 interface OfferListProps {
   inquiries: any[];
@@ -60,26 +60,27 @@ export const OfferList: React.FC<OfferListProps> = ({
 
         const isExpanded = expandedIds.has(inquiry.inquiry_id);
 
-        if (viewMode === 'card') {
-          return (
-            <CardView
-              key={inquiry.inquiry_id}
-              inquiry={inquiry}
-              snapshot={snapshot}
-              isExpanded={isExpanded}
-              onToggle={() => toggleExpand(inquiry.inquiry_id)}
-              {...commonProps}
-            />
-          );
-        } else {
-          return (
-            // 🌟 列表模式的佔位區塊，等我們建置好 ListView 就替換掉
-            <div 
-              key={inquiry.inquiry_id} 
-              style={{ background: '#FAFAFA', border: '1px dashed #DED9D3', padding: '16px', marginBottom: '12px', borderRadius: '8px', textAlign: 'center', color: '#A0978D' }}
-            >
-              列表模式 (List View) 努力建置中...
-            </div>
+if (viewMode === 'card') {
+  return (
+    <CardView
+      key={inquiry.inquiry_id}
+      inquiry={inquiry}
+      snapshot={snapshot}
+      isExpanded={isExpanded}
+      onToggle={() => toggleExpand(inquiry.inquiry_id)}
+      {...commonProps}
+    />
+  );
+} else {
+  return (
+    <ListView
+      key={inquiry.inquiry_id}
+      inquiry={inquiry}
+      snapshot={snapshot}
+      isExpanded={isExpanded}
+      onToggle={() => toggleExpand(inquiry.inquiry_id)}
+      {...commonProps}
+    />
           );
         }
       })}
