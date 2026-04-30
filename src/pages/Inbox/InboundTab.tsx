@@ -92,6 +92,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
 
       <div className="mb-4">
 
+        <div style={{ height: '40px' }}></div>
         
         {!selectedBulletinId ? (
           <div className="p-10 text-center bg-[#FBFBF9] rounded-xl border border-dashed border-[#EAE6E1] text-[#A0978D]">

@@ -9,6 +9,12 @@ interface ArtistPostcardProps {
   children?: React.ReactNode;
 }
 
+// 🛡️ 資安輔助：還原字串編碼，後續由 React {} 負責防 XSS 渲染
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, navigate, children }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
@@ -26,71 +32,89 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
   const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev + 1) % images.length); };
   const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIndex((prev) => (prev - 1 + images.length) % images.length); };
 
+  // 🌟 名稱、ID 與留言防呆抓取
+  const artistName = item.artist_name || snapshot.artist_name || '匿名繪師';
+  const artistId = item.artist_public_id || snapshot.artist_public_id || 'unknown';
+  const message = unescapeHtml(snapshot.message || item.message || '');
+
   return (
     <>
-      <div className="postcard-container relative">
+      <div className="postcard-container relative flex flex-col md:flex-row">
         <div className={`postcard-stamp stamp-${item.inquiry_status}`}>
           {getStatusLabel(item.inquiry_status)}
         </div>
 
-        <div className="postcard-image-section cursor-pointer group" onClick={openLightbox} title={images.length > 0 ? "點擊放大檢視" : ""}>
+        {/* 🌟 修復圖片大小限制：加入 relative, overflow-hidden 確保圖片不出界 */}
+        <div className="postcard-image-section cursor-pointer group relative overflow-hidden" onClick={openLightbox} title={images.length > 0 ? "點擊放大檢視" : ""}>
           {images.length > 0 ? (
             <>
-              {/* 🔒 資安防護：加入 referrerPolicy 防止外部圖床追蹤 */}
-              <img src={images[0]} alt="Reference" className="postcard-image transition duration-300 group-hover:scale-105" referrerPolicy="no-referrer" />
+              {/* 🔒 資安防護：加入 referrerPolicy 防止外部圖床追蹤。並用 w-full h-full object-cover 限制比例 */}
+              <img src={images[0]} alt="Reference" className="postcard-image transition duration-300 group-hover:scale-105 w-full h-full object-cover absolute inset-0" referrerPolicy="no-referrer" />
+              
               {images.length > 1 && (
-                <div className="postcard-image-count">
+                <div className="postcard-image-count z-10 relative">
                   1 / {images.length} 張附圖
                 </div>
               )}
-              <div className="postcard-image-overlay">
+              <div className="postcard-image-overlay z-10">
                 <span className="text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full backdrop-blur-sm">點擊放大</span>
               </div>
             </>
           ) : (
-            <div className="postcard-image-fallback">
-              <span className="flex flex-col items-center gap-2">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <div className="postcard-image-fallback w-full h-full flex items-center justify-center absolute inset-0 bg-[#FBFBF9]">
+              <span className="flex flex-col items-center gap-2 opacity-50">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                 無附圖提案
               </span>
             </div>
           )}
         </div>
 
-        <div className="postcard-content-section flex flex-col h-full justify-between">
+        <div className="postcard-content-section flex flex-col h-full justify-between flex-1 min-w-0">
           <div>
-            <div className="postcard-header">
+            <div className="postcard-header flex items-center gap-4">
               {item.artist_avatar ? (
                 // 🔒 資安防護：加入 referrerPolicy
-                <img src={item.artist_avatar} alt="Avatar" className="postcard-avatar cursor-pointer" onClick={handleArtistClick} title="點擊前往繪師個人頁" referrerPolicy="no-referrer" />
+                <img src={item.artist_avatar} alt="Avatar" className="postcard-avatar cursor-pointer w-[56px] h-[56px] rounded-full object-cover flex-shrink-0" onClick={handleArtistClick} title="點擊前往繪師個人頁" referrerPolicy="no-referrer" />
               ) : (
-                <div className="postcard-avatar-fallback cursor-pointer" onClick={handleArtistClick} title="點擊前往繪師個人頁">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <div className="postcard-avatar-fallback cursor-pointer w-[56px] h-[56px] rounded-full flex items-center justify-center flex-shrink-0" onClick={handleArtistClick} title="點擊前往繪師個人頁">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 </div>
               )}
               
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs text-[#A0978D] mb-1">
                   <span>投遞繪師</span>
                 </div>
-                <span className="postcard-artist-name block truncate" onClick={handleArtistClick} title="前往繪師個人頁">
-                  {item.artist_name || '匿名繪師'}
-                </span>
+                {/* 🌟 顯示名稱與 ID */}
+                <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+                  <span className="postcard-artist-name block truncate font-bold text-xl text-[#5D4A3E] cursor-pointer hover:underline" onClick={handleArtistClick} title="前往繪師個人頁">
+                    {artistName}
+                  </span>
+                  <span className="text-[#A0978D] text-sm font-mono">
+                    @{artistId}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm mt-4 mb-4">
               <div>
-                <strong className="text-[#5D4A3E] block mb-1">舒適圈 / 擅長題材：</strong>
+                <strong className="text-[#5D4A3E] block mb-2">舒適圈 / 擅長題材：</strong>
                 {renderChips(snapshot.specialties, 'good')}
               </div>
               <div>
-                <strong className="text-[#5D4A3E] block mb-1">婉拒 / 雷點：</strong>
+                <strong className="text-[#5D4A3E] block mb-2">婉拒 / 雷點：</strong>
                 {renderChips(snapshot.no_gos, 'bad')}
               </div>
-              <div className="md:col-span-2 pt-2">
-                <strong className="text-[#5D4A3E] block mb-1">付款方式與條件：</strong>
-                {renderChips(snapshot.payment_methods, 'info')}
+              
+              {/* 🌟 拔除原本的付款方式，替換為留言訊息 */}
+              <div className="md:col-span-2 pt-3 border-t border-dashed border-[#EAE6E1] mt-2">
+                <strong className="text-[#5D4A3E] block mb-2">留言訊息：</strong>
+                {/* 🔒 資安：大括號綁定自動防 XSS */}
+                <div className="bg-[#FBFBF9] border border-[#EAE6E1] p-3 rounded-lg text-[#7A7269] whitespace-pre-wrap leading-relaxed text-[13px]">
+                  {message || <span className="italic opacity-50">此繪師未填寫留言。</span>}
+                </div>
               </div>
             </div>
           </div>
