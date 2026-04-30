@@ -60,7 +60,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
   // 🌟 提取投遞人數與機制狀態 (增強兼容性：同時檢查直屬欄位與 JSON 物件)
-  const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? bulletin.applied_artist_ids.length : 0);
+  const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? String(bulletin.applied_artist_ids).split(',').length : 0);
   const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs'; // 預設給個先搶先贏
   const maxSlots = bulletin.max_slots || contentObj.max_slots || 1;
 
