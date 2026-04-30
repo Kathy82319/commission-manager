@@ -1,5 +1,5 @@
 // src/pages/public/Wishboard/InquireModals/index.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
 import { R2_PUBLIC_URL } from '../constants'; 
@@ -46,7 +46,16 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const tosContent: string = parsedContent.tos_content || '';
 
   const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
-  const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
+
+  // 🌟 修正 1：在元件載入時，直接將預設的空問題綁定到外層狀態
+  useEffect(() => {
+    if (isOffer && questions.length > 0 && !inquireDraft.answers) {
+      setInquireDraft((prev: any) => ({
+        ...prev,
+        answers: questions.map((q: string) => ({ question: q, answer: '' }))
+      }));
+    }
+  }, [isOffer, questions.length, setInquireDraft]);
 
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
     const rawValue = inquireTagInputs[field];
@@ -78,26 +87,9 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
   const handleAgreeTOS = () => setHasAgreedTOS(true);
 
-  // 🌟 核心修改：將問答結構化儲存，方便 Inbox 卡片漂漂亮亮地渲染
+  // 🌟 修正 2：不需再做非同步字串組合，直接送出！
   const handleFinalSubmit = () => {
-    if (isOffer && questions.length > 0) {
-      // 保留原本的字串備份
-      const qaString = questions.map((q, idx) => `【${q}】\n${answers[idx] || '未填寫'}`).join('\n\n');
-      const finalMessage = qaString + (inquireDraft.message ? `\n\n【其他備註】\n${inquireDraft.message}` : '');
-      
-      // 🌟 新增 answers 陣列
-      const structuredAnswers = questions.map((q, idx) => ({
-        question: q,
-        answer: answers[idx] || ''
-      }));
-
-      setInquireDraft((prev: any) => ({ 
-        ...prev, 
-        message: finalMessage,
-        answers: structuredAnswers // 👈 將結構化資料存進快照
-      }));
-    }
-    setTimeout(() => { onSubmit(); }, 100);
+    onSubmit();
   };
 
   if (isOffer && !hasAgreedTOS) {
@@ -174,18 +166,27 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                       <input 
                         type="text" 
                         placeholder="請輸入您的回答..." 
-                        value={answers[idx]} 
+                        value={inquireDraft.answers?.[idx]?.answer || ''} 
                         onChange={(e) => {
-                          const newAns = [...answers];
-                          newAns[idx] = e.target.value;
-                          setAnswers(newAns);
+                          // 🌟 修正 3：即時將答案寫入外層的 inquireDraft 狀態中
+                          const newAns = inquireDraft.answers ? [...inquireDraft.answers] : questions.map(qText => ({ question: qText, answer: '' }));
+                          if(newAns[idx]) {
+                            newAns[idx].answer = e.target.value;
+                          }
+                          setInquireDraft((prev: any) => ({ ...prev, answers: newAns }));
                         }} 
                       />
                     </div>
                   ))}
                   <div className="form-group" style={{ marginTop: '16px' }}>
                     <label>其他備註留言</label>
-                    <textarea rows={4} className="detail-textarea" placeholder="有什麼需要補充的細節嗎？" value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} />
+                    <textarea 
+                      rows={4} 
+                      className="detail-textarea" 
+                      placeholder="有什麼需要補充的細節嗎？" 
+                      value={inquireDraft.message} 
+                      onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} 
+                    />
                   </div>
                 </div>
               ) : (
