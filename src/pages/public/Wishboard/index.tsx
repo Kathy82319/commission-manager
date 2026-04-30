@@ -210,15 +210,32 @@ const handlePostSubmit = async (e: React.FormEvent) => {
     setShowInquireModal(true);
   };
 
-  const handleInquireSubmit = async () => {
+const handleInquireSubmit = async () => {
     try {
-      const res = await apiClient.post(`/api/bulletins/${selectedBulletin.id}/inquire`, { artist_snapshot: JSON.stringify(inquireDraft) });
+      const res = await apiClient.post(`/api/bulletins/${selectedBulletin.id}/inquire`, { 
+        artist_snapshot: JSON.stringify(inquireDraft) 
+      });
+      
       if (res.success) {
         showToast("投遞成功！");
         setShowInquireModal(false);
         initData();
-      } else showToast("投遞失敗", "error");
-    } catch (error) { showToast("操作發生錯誤", "error"); }
+      } else {
+        // 🌟 優先顯示後端傳來的 message，如果沒有才 fallback 到預設文字
+        showToast(res.message || res.error || "投遞失敗", "error");
+      }
+    } catch (error: any) { 
+      // 🌟 如果 apiClient 遇到 403 錯誤直接 throw，我們要把後端的訊息挖出來
+      // 相容 Axios (error.response.data.message) 或是純 Error 物件 (error.message)
+      const errorMsg = error.response?.data?.message || error.message || "操作發生錯誤，請稍後再試";
+      
+      // 特殊處理：如果是原生的 "Failed to fetch" 這類網路斷線錯誤，給予友善提示
+      if (errorMsg === 'Failed to fetch') {
+        showToast("網路連線異常，請檢查您的網路狀態", "error");
+      } else {
+        showToast(errorMsg, "error"); 
+      }
+    }
   };
 
   return (
