@@ -41,6 +41,9 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   
   const [itemInput, setItemInput] = useState({ name: '', price: '' });
   const [showPortfolioPicker, setShowPortfolioPicker] = useState(false);
+  
+  // 🌟 新增：控制機制說明的顯示與隱藏
+  const [showMechanismInfo, setShowMechanismInfo] = useState(false);
 
   // --- 圖片處理 ---
   const removeImage = (index: number) => {
@@ -76,7 +79,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
       const exclusiveTag = field === 'tags' ? '不限' : '皆可配合';
       
       if (tag === exclusiveTag) {
-        // 🌟 修正：如果點擊「不限」，只清除一般風格標籤，保留預警和授權標籤
         if (field === 'tags') {
           list = list.filter((t: string) => STYLE_WARNINGS.includes(t) || LICENSE_TAGS.includes(t) || t.startsWith('[預警]') || t.startsWith('[授權]'));
           list.push(tag);
@@ -98,14 +100,14 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     setForm((prev: any) => ({ ...prev, [field]: prev[field].filter((t: string) => t !== tag) }));
   };
 
-  // 🌟 共用的處理標籤輸入邏輯 (支援 Enter, 逗號, 空白, 失焦)
+  // 🌟 共用的處理標籤輸入邏輯
   const handleTagInput = (
     value: string, 
     setValue: React.Dispatch<React.SetStateAction<string>>, 
     field: 'tags' | 'payment_methods', 
     prefix: string = ''
   ) => {
-    // 🛡️ 資安防護：過濾潛在的危險字元 (XSS 防禦)，並清除逗號與空白
+    // 🛡️ 資安防護：過濾潛在的危險字元
     let safeValue = value.replace(/[<>"'&]/g, ''); 
     const trimmed = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, ''); 
     
@@ -201,7 +203,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               <label>目前排單狀況</label>
               <div className="radio-group">
                 <label className="radio-label"><input type="radio" checked={form.schedule_type === 'flexible'} onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} /> 目前空閒可排單</label>
-                <label className="radio-label"><input type="radio" checked={form.schedule_type === 'fixed'} onChange={() => setForm({...form, schedule_type: 'fixed'})} /> 排單至指定日期</label>
+                <label className="radio-label"><input type="radio" checked={form.schedule_type === 'fixed'} onChange={() => setForm({...form, schedule_type: 'fixed'})} /> 排單至指定日期之後</label>
                 {form.schedule_type === 'fixed' && <input type="date" className="date-input" value={form.specific_date} onChange={e => setForm({...form, specific_date: e.target.value})} required />}
               </div>
             </div>
@@ -225,20 +227,51 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
           </div>
 
+          {/* 🌟 修改名額與徵集機制區塊 */}
           <div className="form-section selection-mechanism-box">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, margin: 0 }}>名額與徵集機制</label>
-              <div title="先搶先贏依順序額滿為止；選設制則由您挑選。" style={{ cursor: 'help', color: '#d97706' }}><HelpCircle size={16}/></div>
+              <div 
+                title="點擊查看機制說明" 
+                style={{ cursor: 'pointer', color: '#d97706' }} 
+                onClick={() => setShowMechanismInfo(!showMechanismInfo)}
+              >
+                <HelpCircle size={16}/>
+              </div>
             </div>
+            
+            {/* 🌟 點擊問號後展開的說明區塊 */}
+            {showMechanismInfo && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#92400E', lineHeight: '1.6' }}>
+                <strong style={{ display: 'block', marginBottom: '4px' }}>如何選擇機制？</strong>
+                <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                  <li style={{ marginBottom: '4px' }}><strong>先搶先贏：</strong>適合確認較快的委託，名額一旦收滿將自動停止接收投遞。</li>
+                  <li><strong>繪師選設：</strong>適合需要評估角色設定的委託。我們不採用秒殺機制，您可以慢慢挑選心儀的設定來洽談。</li>
+                </ul>
+              </div>
+            )}
+
             <div className="mechanism-radio-group">
-              <label className="radio-label"><input type="radio" checked={form.selection_type === 'fcfs'} onChange={() => setForm({...form, selection_type: 'fcfs'})} /> 先搶先贏</label>
-              <label className="radio-label"><input type="radio" checked={form.selection_type === 'curated'} onChange={() => setForm({...form, selection_type: 'curated'})} /> 繪師選設</label>
+              <label className="radio-label">
+                <input type="radio" checked={form.selection_type === 'fcfs'} onChange={() => setForm({...form, selection_type: 'fcfs'})} /> 
+                先搶先贏
+              </label>
+              <label className="radio-label">
+                <input type="radio" checked={form.selection_type === 'curated'} onChange={() => setForm({...form, selection_type: 'curated'})} /> 
+                繪師選設
+              </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>名額上限：</span>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>預計招收名額：</span>
                 <input type="number" min="1" value={form.max_slots} onChange={e => setForm({...form, max_slots: e.target.value})} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
               </div>
             </div>
-            <p style={{ fontSize: '13px', color: '#b45309', margin: '0' }}>{form.selection_type === 'curated' ? '💡 案主端將顯示：繪師會選擇適洽設定來接單' : '💡 案主端將顯示：剩餘名額 (滿額自動關閉)'}</p>
+            
+            {/* 🌟 明確告知繪師案主端會看到的字眼 */}
+            <p style={{ fontSize: '13px', color: '#b45309', margin: '8px 0 0 0', fontWeight: '500' }}>
+              {form.selection_type === 'curated' 
+                ? '💡 案主端將顯示：繪師會選擇適恰設定來接案' 
+                : '💡 案主端將顯示：目前已投遞人數 / 預計招收名額'}
+            </p>
           </div>
 
           <div className="form-section">

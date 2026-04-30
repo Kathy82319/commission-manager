@@ -169,7 +169,7 @@ export const Inbox: React.FC = () => {
           onClick={() => setShowRulesModal(true)}
           className="inbox-rules-btn"
         >
-          <span className="info-icon">i</span> ?說明
+          <span className="info-icon">?</span> 說明
         </button>
       </div>
 

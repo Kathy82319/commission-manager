@@ -1,6 +1,7 @@
 // src/pages/public/Wishboard/WishCard.tsx
 import React, { useState } from 'react';
-import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X } from 'lucide-react';
+// 🌟 引入 Users icon 作為徵集機制的圖示
+import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users } from 'lucide-react';
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
 
 interface WishCardProps {
@@ -58,6 +59,11 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const licenseTags = tags.filter((t: string) => LICENSE_TAGS.includes(t) || t.startsWith('[授權]'));
   const styleTags = tags.filter((t: string) => !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]'));
 
+  // 🌟 提取投遞人數與機制狀態
+  const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? bulletin.applied_artist_ids.length : 0);
+  const selectionType = contentObj.selection_type;
+  const maxSlots = contentObj.max_slots || 1;
+
   // 🌟 打開燈箱並定位到目前這張
   const openLightbox = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,6 +92,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 alt="預覽圖" 
                 className="wish-card-img" 
                 onClick={openLightbox}
+                referrerPolicy="no-referrer"
               />
               <div className="zoom-hint"><Maximize2 size={18} /></div>
               
@@ -162,6 +169,26 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 <span>付款方式：</span>
                 <span className="text-dark-600">{paymentMethods.join(', ')}</span>
               </div>
+
+              {/* 🌟 新增：名額與徵集機制顯示區塊 (僅接委託顯示) */}
+              {bulletin.category === 'offer' && selectionType && (
+                <div className="meta-item" style={{ gridColumn: '1 / -1' }}>
+                  <Users size={16} className="meta-icon text-[#b45309]" />
+                  <span>徵集名額：</span>
+                  <span className="font-bold text-[#b45309] flex items-center gap-2">
+                    {selectionType === 'curated' 
+                      ? (
+                        <>
+                          預計招收 {maxSlots} 名 <span className="text-[12px] bg-[#FEF3C7] px-2 py-0.5 rounded text-[#92400E] font-normal">💡 繪師會選擇適恰設定來接單</span>
+                        </>
+                      ) 
+                      : (
+                        `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`
+                      )
+                    }
+                  </span>
+                </div>
+              )}
             </div>
 
             {bulletin.category === 'offer' && contentObj.commission_items && contentObj.commission_items.length > 0 && (
@@ -214,7 +241,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           )}
 
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-            <img src={validImages[lightboxIdx]} alt="大圖查看" className="lightbox-img" />
+            <img src={validImages[lightboxIdx]} alt="大圖查看" className="lightbox-img" referrerPolicy="no-referrer" />
             {validImages.length > 1 && (
               <div className="lightbox-counter">{lightboxIdx + 1} / {validImages.length}</div>
             )}
