@@ -1,14 +1,13 @@
 // src/pages/Inbox/OutboundTab.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
-import { ImageIcon } from 'lucide-react';
-import { R2_PUBLIC_URL } from '../public/Wishboard/constants'; // 🌟 確保你有引入這個常數
+import { ImageIcon, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 interface OutboundTabProps {
   artistInquiries: any[];
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  handleDirectInvite?: (inquiry: any) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
 }
@@ -20,8 +19,15 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission
 }) => {
+  // 🌟 新增：用來記錄目前展開了哪些卡片的 ID
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
-  // --- 解析圖片邏輯 ---
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   const getFullUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
@@ -38,16 +44,24 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     }
   };
 
-  // --- 撤回操作與次數警告 ---
+  // 🛡️ 安全解析使用者的投遞內容 (防止 JSON 錯誤導致畫面崩潰)
+  const parseSnapshot = (snapshotData: any) => {
+    try {
+      if (!snapshotData) return {};
+      return typeof snapshotData === 'string' ? JSON.parse(snapshotData) : snapshotData;
+    } catch (e) {
+      console.error("解析投遞內容失敗", e);
+      return {};
+    }
+  };
+
   const handleWithdrawClick = (item: any) => {
     if (item.inquiry_status === 'pending') {
-      // 🛡️ UX 與防騷擾提示：提醒使用者撤回次數限制
       const isConfirmed = window.confirm(
         '⚠️ 注意：每則許願限投遞 2 次，撤回後將消耗 1 次機會。\n\n確定要撤回這筆投遞嗎？'
       );
-      if (!isConfirmed) return; // 使用者按取消就停止
+      if (!isConfirmed) return;
     }
-    
     setSelectedInquiry(item);
     setShowDeclineModal(true);
   };
@@ -62,13 +76,15 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         artistInquiries.filter(filterOldItems).map((item) => {
           const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
           const bulletinImg = getBulletinImage(item.ref_image_key);
-          const isOffer = item.bulletin_category === 'offer'; // ⚠️ 後端必須確保有傳遞此欄位
+          const isOffer = item.bulletin_category === 'offer';
+          
+          const isExpanded = expandedIds.includes(item.inquiry_id);
+          const snapshot = parseSnapshot(item.artist_snapshot);
 
           return (
             <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
               
-              {/* 頭部標題與狀態 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
                 <span className={`inbox-badge status-${item.inquiry_status}`} style={{ margin: 0, flexShrink: 0 }}>
                   {getStatusLabel(item.inquiry_status)}
                 </span>
@@ -77,7 +93,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   {item.bulletin_title || '未命名貼文'}
                 </h3>
 
-                {/* 🌟 右上角身份標籤：區分接委託/徵委託 */}
                 <span style={{ 
                   background: isOffer ? '#EFF6FF' : '#FDF2F8', 
                   color: isOffer ? '#2563EB' : '#DB2777', 
@@ -91,40 +106,86 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </span>
               </div>
 
-              {/* 🌟 許願池摘要區塊 (左圖右文) */}
-              <div style={{ display: 'flex', gap: '20px', background: '#FBFBF9', border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+              {/* 🌟 許願池摘要區塊 (改為可點擊的手風琴觸發區) */}
+              <div 
+                onClick={() => toggleExpand(item.inquiry_id)}
+                style={{ 
+                  display: 'flex', gap: '20px', background: isExpanded ? '#F4F4F1' : '#FBFBF9', 
+                  border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '20px',
+                  cursor: 'pointer', transition: 'background 0.2s ease', position: 'relative'
+                }}
+                title="點擊查看/收起我的提案內容"
+              >
                 {bulletinImg ? (
-                  // 🔒 資安防護：加入 referrerPolicy 防止外部圖床追蹤
-                  <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #EAE6E1', flexShrink: 0 }} />
+                  <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #EAE6E1', flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: '100px', height: '100px', background: '#F0F0F0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', flexShrink: 0 }}>
+                  <div style={{ width: '80px', height: '80px', background: '#F0F0F0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', flexShrink: 0 }}>
                     <ImageIcon size={24} opacity={0.5} />
                   </div>
                 )}
                 
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    
-                    {/* 🌟 動態顯示預算：投給繪師(接委託)才顯示底價/預算，投給案主(徵委託)不顯示 */}
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '24px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {isOffer && (
-                      <span style={{ background: '#FFF5EB', color: '#ff8c00', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+                      <span style={{ background: '#FFF5EB', color: '#ff8c00', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
                         💰 預算/底價：{item.budget_min} ~ {item.budget_max}
                       </span>
                     )}
-
-                    <span style={{ background: '#E6F4EA', color: '#1E8E3E', padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+                    <span style={{ background: '#E6F4EA', color: '#1E8E3E', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
                       📅 排單：{item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}
                     </span>
                   </div>
                   
-                  {/* 原帖內容預覽 */}
-                  <div style={{ fontSize: '14px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6' }} title={item.bulletin_content}>
+                  <div style={{ fontSize: '13px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
                     {item.bulletin_content}
                   </div>
                 </div>
+
+                {/* 右側箭頭提示 */}
+                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D' }}>
+                  {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
               </div>
 
-              {/* 案主回覆區塊 */}
+              {/* 🌟 展開的提案明信片區塊 (安全渲染) */}
+              {isExpanded && (
+                <div style={{ background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', marginBottom: '16px', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px' }}>
+                    <FileText size={18} />
+                    <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>我的投遞內容</h4>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {snapshot.message && (
+                      <div>
+                        <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '4px' }}>招呼語 / 備註：</strong>
+                        {/* 🛡️ whiteSpace: pre-wrap 是防禦 XSS 又能顯示換行的最佳實踐 */}
+                        <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{snapshot.message}</p>
+                      </div>
+                    )}
+                    
+                    {snapshot.question_template && (
+                      <div>
+                        <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '4px' }}>問卷回答：</strong>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{snapshot.question_template}</p>
+                      </div>
+                    )}
+
+                    {snapshot.images && snapshot.images.length > 0 && (
+                      <div>
+                        <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '8px' }}>附件圖片：</strong>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          {snapshot.images.map((img: string, idx: number) => (
+                            <img key={idx} src={getFullUrl(img)} alt={`附件 ${idx + 1}`} referrerPolicy="no-referrer" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #E5E7EB' }} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 案主/繪師回覆區塊 */}
               {item.client_response && (
                 <div style={{ background: '#F8FAFC', borderLeft: '4px solid #4A7294', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
                   <strong style={{ color: '#4A7294', fontSize: '14px', marginBottom: '8px', display: 'block' }}>案主/繪師的回覆：</strong>
@@ -152,7 +213,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </button>
                 )}
                 
-                {/* 🌟 撤回按鈕：綁定剛剛寫好的帶有警告的 onClick 函式 */}
                 {canDecline && (
                   <button className="btn-secondary-red" onClick={() => handleWithdrawClick(item)}>
                     {item.inquiry_status === 'pending' ? '撤回投遞' : '終止洽談'}
