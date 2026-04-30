@@ -1,32 +1,576 @@
-/* src/styles/Inbox.css */
+/* ==========================================================================
+   🌟 基礎排版 (你的原始設計)
+   ========================================================================== */
+.inbox-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
 
-/* 🌟 全域容器 (對齊 Queue.css 的 max-width 與 padding) */
-.inbox-page-container {
-  padding: 20px;
-  max-width: 1300px;
+.inbox-page-wrapper {
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 24px;
+  background-color: #FDFDFB;
   min-height: calc(100vh - 64px);
-  background-color: #FDFDFB; /* 對齊系統底色 */
-}
-
-/* 🌟 頁面頭部與標題 */
-.inbox-page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
 }
 
 .inbox-page-title {
-  margin: 0;
-  color: #5D4A3E;
+  font-size: 24px;
   font-weight: bold;
-  font-size: 24px; /* 稍微比 Queue 的 24px 大一點，作為主入口 */
+  color: #5D4A3E;
+  margin-bottom: 24px;
 }
 
-/* 🌟 檢視模式切換按鈕 (卡片/列表) */
+/* 網頁版標準的 Tab 樣式 (與其他管理頁面一致) */
+.inbox-tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 2px solid #EAE6E1;
+  margin-bottom: 24px;
+}
+
+.inbox-tabs button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  color: #A0978D;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+}
+
+.inbox-tabs button:hover {
+  color: #5D4A3E;
+}
+
+.inbox-tabs button.active {
+  color: #ff8c00;
+  border-bottom-color: #ff8c00;
+}
+
+/* 🌟 發布儀表板插槽設計 */
+.dashboard-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .dashboard-slots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dashboard-slot {
+  border-radius: 12px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.empty-slot {
+  border: 2px dashed #DED9D3;
+  background-color: #FBFBF9;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.empty-slot:hover {
+  border-color: #A0978D;
+  background-color: #FDFDFB;
+}
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.active-slot {
+  border: 2px solid #EAE6E1;
+  background-color: white;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.active-slot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(93, 74, 62, 0.08);
+  border-color: #DED9D3;
+}
+.active-slot.selected {
+  border-color: #5D4A3E;
+  background-color: #FBFBF9;
+  box-shadow: 0 0 0 3px rgba(93, 74, 62, 0.1);
+}
+.active-slot.selected::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #5D4A3E transparent transparent transparent;
+}
+
+.slot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.slot-icon { font-size: 18px; }
+.slot-category { font-size: 12px; font-weight: bold; color: #7A7269; }
+.slot-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #5D4A3E;
+  margin: 0 0 auto 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.slot-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid #EAE6E1;
+  padding-top: 8px;
+}
+.stat-item { font-size: 13px; color: #7A7269; font-weight: 500; }
+.stat-num { font-size: 18px; font-weight: 900; color: #5D4A3E; }
+.stat-item.expiry { color: #A05C5C; background: #FCE8E6; padding: 2px 8px; border-radius: 6px; font-size: 11px; }
+
+/* 🌟 原本 Inbox 列表項目與狀態樣式 */
+.inbox-item { 
+  padding: 20px; 
+  display: flex; flex-direction: column; gap: 12px;
+}
+.inbox-badge { font-size: 12px; padding: 4px 10px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
+.status-pending { background: #FDF4E6; color: #A67B3E; border: 1px solid #FDE0B5; }
+.status-submitted { background: #EBF2F7; color: #4A7294; border: 1px solid #C1D6E8; }
+.status-declined { background: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
+.status-proposed { background: #E8F3EB; color: #4E7A5A; border: 1px solid #C3E0CC; }
+.status-accepted { background: #EAE6E1; color: #5D4A3E; border: 1px solid #DED9D3; }
+.status-closed { background: #F3F4F6; color: #7A7269; border: 1px solid #EAE6E1; }
+
+
+/* ==========================================================================
+   🌟 徵稿文：精美明信片樣式 (Artist Postcard) - 你的原始設計
+   ========================================================================== */
+.postcard-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-top: 4px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative; /* 為了讓郵戳絕對定位 */
+}
+.postcard-container:hover {
+  box-shadow: 0 12px 24px -8px rgba(93, 74, 62, 0.15);
+}
+
+@media (min-width: 768px) {
+  .postcard-container {
+    flex-direction: row;
+    height: auto; 
+    min-height: 280px; 
+  }
+}
+
+/* 🌟 狀態郵戳 (右上角) */
+.postcard-stamp {
+  position: absolute;
+  top: 16px;
+  right: -26px;
+  background: #FBFBF9;
+  color: #7A7269;
+  padding: 4px 36px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transform: rotate(35deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px dashed #DED9D3;
+  z-index: 10;
+  text-align: center;
+}
+.stamp-pending { background: #FDF4E6; color: #A67B3E; border-color: #FDE0B5; }
+.stamp-submitted { background: #EBF2F7; color: #4A7294; border-color: #C1D6E8; }
+.stamp-proposed { background: #E8F3EB; color: #4E7A5A; border-color: #C3E0CC; }
+.stamp-accepted { background: #EAE6E1; color: #5D4A3E; border-color: #DED9D3; }
+.stamp-declined { background: #FCE8E6; color: #A05C5C; border-color: #F5C6C6; }
+
+/* 左側：圖片展示區 */
+.postcard-image-section {
+  width: 100%;
+  height: 220px;
+  background-color: #FBFBF9;
+  position: relative;
+  border-bottom: 1px solid #EAE6E1;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .postcard-image-section {
+    width: 40%; /* 加寬圖片區比例 */
+    height: auto;
+    border-bottom: none;
+    border-right: 1px solid #EAE6E1;
+  }
+}
+.postcard-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.postcard-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(93, 74, 62, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.postcard-image-section:hover .postcard-image-overlay {
+  opacity: 1;
+}
+
+.postcard-image-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #A0978D;
+  background: linear-gradient(135deg, #FDFDFB 0%, #EAE6E1 100%);
+  font-size: 14px;
+  font-weight: bold;
+}
+.postcard-image-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(93, 74, 62, 0.75);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* 右側：內容資訊區 */
+.postcard-content-section {
+  width: 100%;
+  padding: 24px; 
+}
+@media (min-width: 768px) {
+  .postcard-content-section {
+    width: 60%;
+  }
+}
+
+.postcard-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.postcard-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #EAE6E1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.postcard-avatar-fallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #FBFBF9;
+  border: 2px solid #EAE6E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #A0978D;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.postcard-artist-name {
+  font-size: 20px;
+  font-weight: 900;
+  color: #5D4A3E;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.postcard-artist-name:hover {
+  color: #8C6F5A;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* 標籤群組 (Chips) */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip-tag { font-size: 13px; padding: 4px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
+.chip-good { background-color: #E8F3EB; color: #4E7A5A; border: 1px solid #C3E0CC; }
+.chip-bad { background-color: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
+.chip-info { background-color: #FBFBF9; color: #7A7269; border: 1px solid #EAE6E1; }
+
+.postcard-actions-wrapper {
+  margin-top: auto; 
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #EAE6E1;
+  padding-top: 16px;
+}
+
+/* 按鈕樣式 (符合 Notebook.css 大地色風格) */
+.btn-primary { 
+  background: #5D4A3E; color: white; padding: 10px 24px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(93, 74, 62, 0.2); }
+
+.btn-secondary-red { 
+  background: white; color: #A05C5C; border: 1px solid #F5C6C6; padding: 10px 24px; 
+  border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.btn-secondary-red:hover { background: #FCE8E6; }
+
+.btn-success { 
+  background: #4E7A5A; color: white; padding: 10px 24px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
+}
+.btn-success:hover { background: #3B5C44; transform: translateY(-2px); }
+
+.btn-outline-primary {
+  border: 1px solid #A0978D;
+  color: #5D4A3E;
+  background: transparent;
+  border-radius: 8px;
+  font-weight: bold;
+  padding: 6px 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-outline-primary:hover { background: #5D4A3E; color: white; border-color: #5D4A3E; }
+
+
+/* 🌟 圖片燈箱 (Lightbox) */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26, 20, 18, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  backdrop-filter: blur(4px);
+}
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+.lightbox-close {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  color: white;
+  font-size: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.lightbox-close:hover { opacity: 1; }
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.lightbox-nav:hover { background: rgba(255, 255, 255, 0.3); }
+.lightbox-prev { left: -70px; }
+.lightbox-next { right: -70px; }
+.lightbox-counter {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 768px) {
+  .lightbox-prev { left: 10px; }
+  .lightbox-next { right: 10px; }
+  .lightbox-close { top: 10px; right: 10px; }
+}
+
+/* ==================================================
+   🌟 信紙風格彈窗 (Modal) - 你的原始設計
+   ================================================== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(26, 20, 18, 0.6);
+  backdrop-filter: blur(8px); 
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  padding: 20px;
+}
+.modal-content-paper {
+  background: #FDFDFB; width: 100%; max-width: 560px;
+  border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25);
+  position: relative; overflow: hidden; padding: 40px;
+  border: 1px solid #EAE6E1;
+}
+
+.paper-deco {
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(
+    45deg, 
+    #C27A7A 0, #C27A7A 20px, 
+    #FDFDFB 20px, #FDFDFB 40px, 
+    #7A93AC 40px, #7A93AC 60px, 
+    #FDFDFB 60px, #FDFDFB 80px
+  );
+}
+
+.paper-deco-red {
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(
+    45deg, 
+    #C27A7A 0, #C27A7A 20px, 
+    #FDFDFB 20px, #FDFDFB 40px
+  );
+}
+
+.decline-modal { border-color: #F5C6C6; }
+
+.paper-textarea {
+  width: 100%; height: 160px; border: 2px solid #EAE6E1; border-radius: 8px;
+  padding: 16px; font-size: 15px; resize: none; outline: none; background: #FFFFFF;
+  transition: border-color 0.2s; color: #5D4A3E; line-height: 1.5;
+}
+.paper-textarea:focus { border-color: #5D4A3E; }
+.decline-textarea:focus { border-color: #A05C5C; }
+
+.btn-paper-submit { 
+  background: #5D4A3E; color: white; padding: 12px 30px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(93, 74, 62, 0.1); 
+  transition: 0.2s; 
+}
+.btn-paper-submit:hover { background: #4A3A30; transform: translateY(-2px); }
+
+.btn-paper-submit-red { 
+  background: #A05C5C; color: white; padding: 12px 30px; border-radius: 8px; 
+  font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(160, 92, 92, 0.1); 
+  transition: 0.2s; 
+}
+.btn-paper-submit-red:hover { background: #824747; transform: translateY(-2px); }
+
+.btn-paper-cancel { 
+  color: #A0978D; font-weight: bold; border: none; background: none; 
+  cursor: pointer; padding: 12px 20px; border-radius: 8px; transition: 0.2s; 
+}
+.btn-paper-cancel:hover { background: #FBFBF9; color: #7A7269; }
+
+/* 🌟 罐頭訊息編輯區塊 */
+.template-edit-box {
+  background: #FAFAFA;
+  border: 1px solid #EAE6E1;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.template-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.template-input-row input {
+  flex: 1; padding: 8px; border: 1px solid #DED9D3;
+  border-radius: 6px; font-size: 13px; outline: none;
+}
+.template-input-row input:focus { border-color: #A05C5C; }
+
+
+/* ==================================================
+   🌟 我投遞的履歷 (Artist Inquiry Card) - 你的原始設計
+   ================================================== */
+.artist-inquiry-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.artist-inquiry-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); transform: translateY(-2px); }
+
+.aic-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.aic-header h3 {
+  margin: 0; font-size: 18px; color: #5D4A3E; font-weight: bold;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.aic-status { padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+.aic-body { display: flex; flex-direction: column; gap: 16px; }
+
+.aic-snippet { display: flex; gap: 16px; background: #FDFDFB; border: 1px solid #F0F0F0; padding: 12px; border-radius: 8px; }
+.aic-snippet-img { width: 80px; height: 80px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid #EAE6E1; }
+.aic-snippet-noimg { width: 80px; height: 80px; border-radius: 6px; background: #F0F0F0; display: flex; align-items: center; justify-content: center; color: #A0978D; font-size: 12px; flex-shrink: 0; }
+.aic-snippet-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.aic-snippet-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.aic-tag { font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+.aic-tag.price { background: #FFF5EB; color: #ff8c00; }
+.aic-tag.schedule { background: #E6F4EA; color: #1E8E3E; }
+.aic-desc { font-size: 13px; color: #7A7269; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
+
+.aic-response { background: #F8FAFC; border-left: 3px solid #4A7294; padding: 12px; border-radius: 0 8px 8px 0; }
+.aic-response strong { color: #4A7294; font-size: 13px; margin-bottom: 4px; display: block; }
+.aic-decline { background: #FEF2F2; border-left: 3px solid #EF4444; padding: 12px; border-radius: 0 8px 8px 0; }
+.aic-decline strong { color: #EF4444; font-size: 13px; margin-bottom: 4px; display: block; }
+.aic-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #EAE6E1; }
+
+
+/* ==========================================================================
+   🌟 繪師海選模式：專屬卡片視圖 (Offer CardView) - 新增整合
+   ========================================================================== */
+
+/* 確保全域共用的提示字與切換按鈕不衝突 */
 .inbox-view-controls {
   display: flex;
   background-color: #F0ECE7;
@@ -34,238 +578,16 @@
   padding: 4px;
   gap: 4px;
 }
-
 .view-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  color: #7A7269;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 6px; padding: 6px 16px;
+  border: none; background: transparent; border-radius: 6px;
+  color: #7A7269; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
 }
-
 .view-toggle-btn svg { opacity: 0.7; }
 .view-toggle-btn:hover { color: #5D4A3E; }
-.view-toggle-btn.active {
-  background-color: #FFFFFF;
-  color: #5D4A3E;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+.view-toggle-btn.active { background-color: #FFFFFF; color: #5D4A3E; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .view-toggle-btn.active svg { opacity: 1; }
 
-/* 🌟 分頁 Tabs (已發佈 / 我投遞) */
-.inbox-tabs-wrapper {
-  display: flex;
-  gap: 16px;
-  border-bottom: 2px solid #EAE6E1;
-  margin-bottom: 24px;
-}
-
-.inbox-tab-btn {
-  padding: 12px 24px;
-  background: none;
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 16px;
-  font-weight: bold;
-  color: #A0978D;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: -2px; /* 蓋住底線 */
-}
-
-.inbox-tab-btn:hover { color: #7A7269; }
-.inbox-tab-btn.active { color: #ff8c00; border-bottom-color: #ff8c00; }
-
-/* 🌟 提示與載入中文字 */
-.inbox-hint-box {
-  font-size: 14px;
-  color: #A0978D;
-  background-color: #FBFBF9;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #EAE6E1;
-  display: inline-block;
-  margin-bottom: 24px;
-}
-
-.inbox-loading-text {
-  text-align: center;
-  padding: 40px;
-  color: #A0978D;
-  font-weight: bold;
-}
-
-/* ========================================================= */
-/* 🌟 彈窗系統 (Modals) */
-/* ========================================================= */
-.inbox-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000; /* 高於列表，但不過分堆疊 */
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.inbox-modal-content {
-  background-color: #FFFFFF;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 600px;
-  padding: 32px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  position: relative;
-  border-top: 6px solid #4A7294; /* 邀請預設藍色頂部 */
-}
-
-.inbox-modal-content.decline-mode {
-  border-top-color: #A05C5C; /* 婉拒變紅色頂部 */
-  max-width: 550px;
-}
-
-.modal-title { margin: 0 0 8px 0; font-size: 24px; font-weight: bold; color: #5D4A3E; }
-.modal-title.red { color: #A05C5C; }
-
-.modal-desc { margin: 0 0 24px 0; font-size: 14px; color: #A0978D; padding-bottom: 16px; border-bottom: 1px solid #EAE6E1; }
-.modal-desc.red-border { border-bottom-color: #F5C6C6; }
-
-.modal-question-box {
-  background-color: #FBFBF9;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #EAE6E1;
-  margin-bottom: 24px;
-}
-
-.modal-question-box strong { color: #4A7294; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
-.q-icon { background: #EAE6E1; color: #5D4A3E; width: 24px; height: 24px; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%; font-size: 12px; }
-.q-text { color: #7A7269; font-size: 14px; line-height: 1.6; margin-left: 32px; }
-
-.modal-textarea {
-  width: 100%; height: 120px; padding: 16px;
-  border: 1px solid #DED9D3; border-radius: 12px;
-  resize: vertical; font-size: 14px; color: #5D4A3E;
-  background-color: #FAFAFA; box-sizing: border-box;
-  outline: none; transition: border-color 0.2s;
-}
-.modal-textarea:focus { border-color: #A67B3E; background-color: #FFFFFF; }
-
-.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-
-.btn-cancel { padding: 10px 20px; background: transparent; border: 1px solid #DED9D3; color: #7A7269; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-.btn-cancel:hover { background: #F0ECE7; color: #5D4A3E; }
-
-.btn-submit { padding: 10px 24px; background: #5D4A3E; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-.btn-submit:hover { background: #4A3A30; }
-
-.btn-submit-red { padding: 10px 24px; background: #A05C5C; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-.btn-submit-red:hover { background: #8B4A4A; }
-
-/* ========================================================= */
-/* 🌟 婉拒罐頭訊息管理 */
-/* ========================================================= */
-.template-manager { margin-bottom: 16px; }
-.template-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.template-title { font-size: 13px; font-weight: bold; color: #A05C5C; }
-.template-toggle-btn { font-size: 13px; color: #4A7294; font-weight: bold; background: none; border: none; cursor: pointer; padding: 0; }
-
-.template-edit-box { background: #FAFAFA; border: 1px solid #EAE6E1; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-.template-edit-hint { font-size: 12px; color: #7A7269; margin-bottom: 12px; }
-.template-input-row { margin-bottom: 12px; }
-.template-input { width: 100%; padding: 10px 12px; border: 1px solid #DED9D3; border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; }
-.template-save-row { display: flex; justify-content: flex-end; margin-top: 16px; }
-.btn-save-template { background: #5D4A3E; color: white; font-size: 13px; font-weight: bold; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; }
-
-.template-chips-wrapper { display: flex; flex-wrap: wrap; gap: 8px; }
-.template-chip { font-size: 12px; background: #FFF5F5; border: 1px solid #F5C6C6; color: #A05C5C; padding: 6px 12px; border-radius: 20px; cursor: pointer; transition: background 0.2s; }
-.template-chip:hover { background: #FCE8E6; }
-
-/* ========================================================= */
-/* 🌟 狀態標籤與共用組件 (Formatters 對應) */
-/* ========================================================= */
-.chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.chip-tag { font-size: 12px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
-.chip-good { background-color: #E8F3EB; color: #4E7A5A; }
-.chip-bad { background-color: #FCE8E6; color: #A05C5C; }
-.chip-info { background-color: #F0ECE7; color: #7A7269; }
-
-.inbox-badge { font-size: 12px; padding: 4px 10px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
-.status-pending { background-color: #FFF5EB; color: #ff8c00; }
-.status-submitted { background-color: #E8F3EB; color: #4E7A5A; }
-.status-proposed { background-color: #E6F0FA; color: #4A7294; }
-.status-accepted { background-color: #5D4A3E; color: white; }
-.status-declined, .status-cancelled { background-color: #FCE8E6; color: #A05C5C; }
-.status-closed { background-color: #F0ECE7; color: #7A7269; }
-
-
-/* ========================================================= */
-/* 🌟 許願插槽 (Slots) 樣式 */
-/* ========================================================= */
-.dashboard-slots-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-  gap: 16px; 
-}
-.dashboard-slot { 
-  background: #FFFFFF; 
-  border: 1px solid #EAE6E1; 
-  border-radius: 12px; 
-  padding: 16px; 
-  cursor: pointer; 
-  transition: all 0.2s ease; 
-}
-.dashboard-slot:hover { 
-  transform: translateY(-2px); 
-  box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
-}
-.active-slot.selected { 
-  border: 2px solid #ff8c00; 
-  background: #FFFDFC; 
-  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.08);
-}
-.slot-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.slot-icon { font-size: 20px; }
-.slot-category { 
-  font-size: 12px; font-weight: bold; color: #ff8c00; 
-  background: #FFF5EB; padding: 2px 8px; border-radius: 12px; 
-}
-.slot-title { 
-  margin: 0 0 16px 0; font-size: 16px; color: #5D4A3E; font-weight: bold; 
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-}
-.slot-stats { 
-  display: flex; justify-content: space-between; align-items: center; 
-  font-size: 13px; color: #7A7269; border-top: 1px solid #F0ECE7; padding-top: 12px; 
-}
-.stat-num { font-weight: bold; color: #5D4A3E; font-size: 16px; margin-right: 4px; }
-.stat-item.expiry { color: #A05C5C; font-weight: bold; background: #FCE8E6; padding: 2px 6px; border-radius: 4px; font-size: 11px;}
-
-.empty-slot { 
-  border: 2px dashed #DED9D3; background: #FAFAFA; 
-  display: flex; align-items: center; justify-content: center; min-height: 130px; 
-}
-.empty-slot:hover { border-color: #A67B3E; background: #FDFDFB; }
-.empty-content { text-align: center; }
-.btn-outline-primary {
-  background: transparent; border: 1px solid #A67B3E; color: #A67B3E;
-  border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
-}
-.btn-outline-primary:hover { background: #A67B3E; color: #FFF; }
-
-/* ========================================================= */
-/* 🌟 繪師海選模式：卡片視圖 (CardView) */
-/* ========================================================= */
 .offer-card-container {
   display: flex;
   background: #FFFFFF;
@@ -277,21 +599,19 @@
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
-
 .offer-card-container:hover {
   border-color: #DED9D3;
   box-shadow: 0 6px 16px rgba(0,0,0,0.06);
   transform: translateY(-2px);
 }
-
 .offer-card-container.is-expanded {
   cursor: default;
-  border-color: #A67B3E; /* 展開時給予醒目邊框 */
+  border-color: #A67B3E; 
   box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1);
   transform: none;
 }
 
-/* 左側圖片區塊 (最多三張的 Grid 魔法) */
+/* 左側圖片 Grid 排版 */
 .offer-card-gallery {
   width: 240px;
   flex-shrink: 0;
@@ -299,16 +619,10 @@
   gap: 2px;
   background: #F0ECE7;
 }
-
 .offer-card-gallery.img-count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
 .offer-card-gallery.img-count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
-.offer-card-gallery.img-count-3 { 
-  grid-template-columns: 1fr 1fr; 
-  grid-template-rows: 1fr 1fr; 
-}
-.offer-card-gallery.img-count-3 img:first-child {
-  grid-column: 1 / 3; /* 第一張橫跨兩欄 */
-}
+.offer-card-gallery.img-count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.offer-card-gallery.img-count-3 img:first-child { grid-column: 1 / 3; }
 
 .offer-ref-img {
   width: 100%;
@@ -316,7 +630,6 @@
   min-height: 180px;
   object-fit: cover;
 }
-
 .offer-no-img {
   width: 100%;
   height: 100%;
@@ -328,41 +641,35 @@
   font-size: 14px;
 }
 
-/* 右側文字內容區塊 */
+/* 右側內容區 */
 .offer-card-content {
   flex: 1;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* 防止 flex 子元素撐破容器 */
+  min-width: 0; 
 }
-
 .offer-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
 }
-
 .offer-client-info { display: flex; align-items: baseline; gap: 8px; }
 .client-name { font-size: 18px; font-weight: bold; color: #5D4A3E; }
 .client-id { font-size: 13px; color: #A0978D; font-family: monospace; }
 
-.offer-tags {
-  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
-}
+.offer-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .tag-budget { background: #FFF5EB; color: #ff8c00; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 .tag-schedule { background: #E6F4EA; color: #1E8E3E; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
 
-/* 🌟 問答與備註的隱藏/展開邏輯 */
+/* 問答區隱藏與展開邏輯 */
 .offer-text-area {
   flex: 1;
   color: #7A7269;
   font-size: 14px;
   line-height: 1.6;
 }
-
-/* 未展開時：截斷文字，超過三行顯示 ... */
 .offer-card-container:not(.is-expanded) .offer-text-area {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -371,7 +678,6 @@
   mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
 }
-
 .qa-block { margin-bottom: 12px; }
 .qa-block:last-child { margin-bottom: 0; }
 .q-text { font-weight: bold; color: #4A7294; font-size: 13px; margin-bottom: 2px; }
@@ -387,66 +693,73 @@
   border-top: 1px dashed #EAE6E1;
 }
 
-/* ========================================================= */
-/* 🌟 共用按鈕樣式 (Buttons) 修復 */
-/* ========================================================= */
-.btn-primary { background: #2563EB; color: #FFFFFF; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.btn-primary:hover { background: #1D4ED8; }
+/* ==================================================
+   🌟 響應式設計 (Responsive Design) - 手機版適配
+   ================================================== */
 
-.btn-secondary-red { background: #FFFFFF; color: #5D4A3E; border: 1px solid #DED9D3; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.btn-secondary-red:hover { border-color: #A05C5C; color: #A05C5C; background: #FFF5F5; }
-
-.btn-success { background: #10B981; color: #FFFFFF; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.btn-success:hover { background: #059669; }
-
-/* ========================================================= */
-/* 🌟 徵稿文：明信片卡片 (ArtistPostcard) 修復 */
-/* ========================================================= */
-.postcard-container { display: flex; flex-direction: column; background: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #EAE6E1; transition: 0.3s; height: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-.postcard-container:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); border-color: #DED9D3; }
-
-.postcard-stamp { position: absolute; top: 12px; right: 12px; z-index: 10; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-.postcard-image-section { position: relative; height: 200px; overflow: hidden; background: #FBFBF9; }
-.postcard-image { width: 100%; height: 100%; object-fit: cover; }
-.postcard-image-fallback { display: flex; align-items: center; justify-content: center; height: 100%; color: #A0978D; background: #F0ECE7; }
-.postcard-image-count { position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; backdrop-filter: blur(4px); }
-.postcard-image-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
-.postcard-image-section.group:hover .postcard-image-overlay { opacity: 1; }
-
-.postcard-content-section { padding: 16px; flex: 1; display: flex; flex-direction: column; }
-.postcard-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed #EAE6E1; }
-.postcard-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
-.postcard-avatar-fallback { width: 48px; height: 48px; border-radius: 50%; background: #DED9D3; display: flex; align-items: center; justify-content: center; color: #FFFFFF; }
-.postcard-artist-name { font-size: 16px; font-weight: bold; color: #5D4A3E; cursor: pointer; transition: 0.2s; }
-.postcard-artist-name:hover { color: #ff8c00; }
-
-.postcard-actions-wrapper { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid #EAE6E1; justify-content: flex-end; }
-
-/* Lightbox (看圖燈箱) */
-.lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.lightbox-content { position: relative; max-width: 90vw; max-height: 90vh; }
-.lightbox-img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.lightbox-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; opacity: 0.7; transition: 0.2s; }
-.lightbox-close:hover { opacity: 1; }
-.lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: #fff; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: 0.2s; }
-.lightbox-nav:hover { background: rgba(255,255,255,0.3); }
-.lightbox-prev { left: -70px; }
-.lightbox-next { right: -70px; }
-.lightbox-counter { position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; opacity: 0.8; }
-
-/* ========================================================= */
-/* 🌟 手機版適應 (@media max-width: 1023px) */
-/* ========================================================= */
-@media (max-width: 1023px) {
-  .inbox-page-header { flex-direction: column; align-items: flex-start; }
-  .inbox-view-controls { width: 100%; justify-content: space-between; }
-  .view-toggle-btn { flex: 1; justify-content: center; }
-  .inbox-tabs-wrapper { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; padding-bottom: 4px; }
-  .inbox-modal-content { padding: 24px 20px; }
-}
 @media (max-width: 768px) {
+  /* 基礎容器與標題 */
+  .inbox-container, .inbox-page-wrapper {
+    padding: 16px;
+  }
+  .inbox-page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  /* Tab 標籤切換：改為橫向滑動 */
+  .inbox-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+  }
+  .inbox-tabs::-webkit-scrollbar { display: none; }
+  .inbox-tabs button { padding: 10px 16px; font-size: 14px; }
+
+  /* 我的許願：單欄垂直 */
+  .dashboard-slots-grid { grid-template-columns: 1fr; gap: 12px; }
+  .dashboard-slot { height: auto; min-height: 120px; }
+
+  /* 收到的繪師履歷 (明信片)：上圖下文 */
+  .postcard-container { flex-direction: column; }
+  .postcard-image-section { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid #EAE6E1; }
+  .postcard-content-section { width: 100%; padding: 16px; }
+  
+  .postcard-stamp {
+    top: 8px; right: -20px; padding: 2px 24px; font-size: 10px; transform: rotate(35deg) scale(0.9);
+  }
+  .postcard-header { gap: 12px; margin-bottom: 16px; }
+  .postcard-avatar, .postcard-avatar-fallback { width: 44px; height: 44px; }
+  .postcard-artist-name { font-size: 16px; }
+  .postcard-actions-wrapper { flex-direction: column; gap: 10px; }
+  .postcard-actions-wrapper button { width: 100%; text-align: center; }
+
+  /* 我投遞的履歷 (Artist Inquiry Card) */
+  .artist-inquiry-card { padding: 16px; }
+  .aic-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .aic-header h3 { font-size: 16px; white-space: normal; }
+  .aic-snippet { flex-direction: column; gap: 12px; }
+  .aic-snippet-img, .aic-snippet-noimg { width: 100%; height: 140px; }
+  .aic-footer { flex-direction: column; gap: 10px; }
+  .aic-footer button { width: 100%; }
+
+  /* 海選模式 (Offer CardView) */
   .offer-card-container { flex-direction: column; }
   .offer-card-gallery { width: 100%; height: 160px; }
   .offer-ref-img { min-height: auto; }
+
+  /* 彈出視窗 (Modal) */
+  .modal-overlay { padding: 12px; }
+  .modal-content-paper { padding: 24px 16px; }
+  .modal-content-paper h2 { font-size: 20px; }
+  .paper-textarea { height: 120px; font-size: 14px; padding: 12px; }
+  
+  .modal-content-paper > .flex.justify-end,
+  .modal-content-paper > .flex.justify-between { flex-direction: column; gap: 12px; }
+  .modal-content-paper .flex.gap-4 { flex-direction: column; width: 100%; }
+  .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
+  .template-edit-box { padding: 12px; }
 }
