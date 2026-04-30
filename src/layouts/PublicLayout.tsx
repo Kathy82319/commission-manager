@@ -50,9 +50,17 @@ export function PublicLayout() {
   };
 
   const handleDashboardClick = () => {
-    if (userRole === 'artist') navigate('/artist');
-    else if (userRole === 'client') navigate('/client/orders'); 
-    else navigate('/portal');
+    // 🌟 UX 升級：在點擊當下才去 localStorage 抓取「最後活躍身分」
+    // 這樣就算在另一個分頁切換了身分，這裡也能抓到最新的狀態
+    const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
+
+    if (lastActiveRole === 'artist') {
+      navigate('/artist');
+    } else if (lastActiveRole === 'client') {
+      navigate('/client/orders');
+    } else {
+      navigate('/portal');
+    }
   };
 
   const isLegalPage = 

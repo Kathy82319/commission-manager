@@ -21,6 +21,7 @@ export function ClientLayout() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    localStorage.setItem('last_active_role', 'client');
     const checkClientAuth = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
@@ -71,6 +72,7 @@ export function ClientLayout() {
     } catch (e) {} finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
+      localStorage.removeItem('last_active_role');
       window.location.href = '/'; 
     }
   };
