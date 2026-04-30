@@ -1,5 +1,5 @@
 /* ==========================================================================
-   🌟 基礎排版 (你的原始設計)
+   🌟 基礎排版 (原始設計)
    ========================================================================== */
 .inbox-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
 
@@ -159,7 +159,7 @@
 
 
 /* ==========================================================================
-   🌟 徵稿文：精美明信片樣式 (Artist Postcard) - 你的原始設計
+   🌟 徵稿文：精美明信片樣式 (Artist Postcard)
    ========================================================================== */
 .postcard-container {
   display: flex;
@@ -337,7 +337,7 @@
   padding-top: 16px;
 }
 
-/* 按鈕樣式 (符合 Notebook.css 大地色風格) */
+/* 按鈕樣式 (符合大地色風格) */
 .btn-primary { 
   background: #5D4A3E; color: white; padding: 10px 24px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
@@ -345,10 +345,10 @@
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(93, 74, 62, 0.2); }
 
 .btn-secondary-red { 
-  background: white; color: #A05C5C; border: 1px solid #F5C6C6; padding: 10px 24px; 
+  background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; padding: 10px 24px; 
   border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
 }
-.btn-secondary-red:hover { background: #FCE8E6; }
+.btn-secondary-red:hover { background: #ffe4e6; }
 
 .btn-success { 
   background: #4E7A5A; color: white; padding: 10px 24px; border-radius: 8px; 
@@ -445,20 +445,39 @@
   .lightbox-close { top: 10px; right: 10px; }
 }
 
+
 /* ==================================================
-   🌟 信紙風格彈窗 (Modal) - 你的原始設計
+   🌟 信紙風格彈窗 (Modal & Inbox Modal 修復)
    ================================================== */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(26, 20, 18, 0.6);
+/* 修復 JSX 中使用的 .inbox-modal-overlay 和 .inbox-modal-content，讓彈窗正常浮出置中 */
+.inbox-modal-overlay, .modal-overlay {
+  position: fixed; 
+  inset: 0; 
+  background: rgba(26, 20, 18, 0.6);
   backdrop-filter: blur(8px); 
-  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 1000;
   padding: 20px;
 }
-.modal-content-paper {
-  background: #FDFDFB; width: 100%; max-width: 560px;
-  border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25);
-  position: relative; overflow: hidden; padding: 40px;
+
+.inbox-modal-content, .modal-content-paper {
+  background: #FDFDFB; 
+  width: 100%; 
+  max-width: 560px;
+  max-height: 90vh; /* 防止內容過長超出螢幕 */
+  overflow-y: auto;
+  border-radius: 16px; 
+  box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25);
+  position: relative; 
+  padding: 40px;
   border: 1px solid #EAE6E1;
+}
+
+/* 婉拒模式的紅線特效 */
+.inbox-modal-content.decline-mode {
+  border-top: 6px solid #e11d48;
 }
 
 .paper-deco {
@@ -483,52 +502,76 @@
 
 .decline-modal { border-color: #F5C6C6; }
 
-.paper-textarea {
+.modal-textarea, .paper-textarea {
   width: 100%; height: 160px; border: 2px solid #EAE6E1; border-radius: 8px;
   padding: 16px; font-size: 15px; resize: none; outline: none; background: #FFFFFF;
   transition: border-color 0.2s; color: #5D4A3E; line-height: 1.5;
+  margin: 16px 0;
 }
-.paper-textarea:focus { border-color: #5D4A3E; }
+.modal-textarea:focus, .paper-textarea:focus { border-color: #5D4A3E; }
 .decline-textarea:focus { border-color: #A05C5C; }
 
-.btn-paper-submit { 
-  background: #5D4A3E; color: white; padding: 12px 30px; border-radius: 8px; 
+/* Modal 標題與字體 */
+.modal-title { font-size: 22px; color: #5D4A3E; margin-bottom: 12px; font-weight: bold; }
+.modal-title.red { color: #e11d48; }
+.modal-desc { color: #7A7269; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+.modal-desc.red-border { border-left: 3px solid #e11d48; padding-left: 12px; }
+
+/* Modal 操作區塊與按鈕 */
+.modal-actions {
+  display: flex; justify-content: flex-end; gap: 16px; margin-top: 12px;
+}
+.btn-cancel, .btn-paper-cancel { 
+  background: transparent; color: #7A7269; border: 1px solid #DED9D3; 
+  padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; 
+}
+.btn-cancel:hover, .btn-paper-cancel:hover { background: #F0ECE7; }
+
+.btn-submit, .btn-paper-submit { 
+  background: #5D4A3E; color: white; padding: 10px 30px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(93, 74, 62, 0.1); 
   transition: 0.2s; 
 }
-.btn-paper-submit:hover { background: #4A3A30; transform: translateY(-2px); }
+.btn-submit:hover, .btn-paper-submit:hover { background: #4A3A30; transform: translateY(-2px); }
 
-.btn-paper-submit-red { 
-  background: #A05C5C; color: white; padding: 12px 30px; border-radius: 8px; 
+.btn-submit-red, .btn-paper-submit-red { 
+  background: #e11d48; color: white; padding: 10px 30px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(160, 92, 92, 0.1); 
   transition: 0.2s; 
 }
-.btn-paper-submit-red:hover { background: #824747; transform: translateY(-2px); }
-
-.btn-paper-cancel { 
-  color: #A0978D; font-weight: bold; border: none; background: none; 
-  cursor: pointer; padding: 12px 20px; border-radius: 8px; transition: 0.2s; 
-}
-.btn-paper-cancel:hover { background: #FBFBF9; color: #7A7269; }
+.btn-submit-red:hover, .btn-paper-submit-red:hover { background: #be123c; transform: translateY(-2px); }
 
 /* 🌟 罐頭訊息編輯區塊 */
+.template-manager { background: #FAFAFA; border: 1px solid #EAE6E1; border-radius: 8px; padding: 16px; }
+.template-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.template-title { font-weight: bold; color: #5D4A3E; font-size: 14px; }
+.template-toggle-btn { background: none; border: none; color: #A05C5C; cursor: pointer; font-size: 13px; font-weight: bold; }
+.template-toggle-btn:hover { text-decoration: underline; }
+
 .template-edit-box {
-  background: #FAFAFA;
-  border: 1px solid #EAE6E1;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  background: #FFFFFF; border: 1px solid #EAE6E1; padding: 16px;
+  border-radius: 8px; margin-bottom: 16px;
 }
+.template-edit-hint { font-size: 12px; color: #A0978D; margin-bottom: 12px; }
 .template-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .template-input-row input {
   flex: 1; padding: 8px; border: 1px solid #DED9D3;
-  border-radius: 6px; font-size: 13px; outline: none;
+  border-radius: 6px; font-size: 13px; outline: none; transition: 0.2s;
 }
 .template-input-row input:focus { border-color: #A05C5C; }
+.template-save-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+.btn-save-template { background: #A05C5C; color: white; border: none; border-radius: 6px; padding: 6px 16px; font-size: 13px; cursor: pointer; }
+
+.template-chips-wrapper { display: flex; flex-wrap: wrap; gap: 8px; }
+.template-chip {
+  background: #FFFFFF; border: 1px solid #DED9D3; color: #5D4A3E;
+  padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: 0.2s;
+}
+.template-chip:hover { background: #F0ECE7; border-color: #5D4A3E; }
 
 
 /* ==================================================
-   🌟 我投遞的履歷 (Artist Inquiry Card) - 你的原始設計
+   🌟 我投遞的履歷 (Artist Inquiry Card)
    ================================================== */
 .artist-inquiry-card {
   background: #FFFFFF;
@@ -567,8 +610,66 @@
 
 
 /* ==========================================================================
-   🌟 繪師海選模式：專屬卡片視圖 (Offer CardView)
+   🌟 繪師海選模式：批次處理工具列 (Batch Action Toolbar)
    ========================================================================== */
+.batch-action-bar {
+  position: sticky;
+  top: 10px;
+  z-index: 100;
+  background: #FFFFFF;
+  border: 1px solid #e11d48; /* 莫蘭迪紅強調 */
+  padding: 12px 24px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.15);
+  animation: slideInDown 0.3s ease;
+}
+
+.batch-info { 
+  font-weight: bold; 
+  font-size: 15px; 
+  color: #e11d48; 
+}
+
+.batch-btns { 
+  display: flex; 
+  gap: 12px; 
+  align-items: center;
+}
+
+@keyframes slideInDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+/* ==========================================================================
+   🌟 繪師海選模式：專屬卡片視圖 (Offer CardView) 修復左右排版
+   ========================================================================== */
+.offer-card-container {
+  position: relative; 
+  display: flex; /* 🌟 救回左右排版的關鍵！ */
+  background: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.offer-card-container:hover {
+  border-color: #DED9D3; box-shadow: 0 6px 16px rgba(0,0,0,0.06); transform: translateY(-2px);
+}
+.offer-card-container.is-expanded {
+  cursor: default; border-color: #A67B3E; box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1); transform: none;
+}
+
+/* 🌟 勾選框定位 (浮於圖片左上角) */
 .card-checkbox-wrapper {
   position: absolute;
   top: 12px;
@@ -594,40 +695,13 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #A05C5C; /* 配合婉拒的大地紅/莫蘭迪紅色系 */
+  accent-color: #e11d48;
   margin: 0;
 }
 
-
-/* 確保全域共用的提示字與切換按鈕不衝突 */
-.inbox-view-controls {
-  display: flex; background-color: #F0ECE7; border-radius: 8px; padding: 4px; gap: 4px;
-}
-.view-toggle-btn {
-  display: flex; align-items: center; gap: 6px; padding: 6px 16px;
-  border: none; background: transparent; border-radius: 6px;
-  color: #7A7269; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
-}
-.view-toggle-btn svg { opacity: 0.7; }
-.view-toggle-btn:hover { color: #5D4A3E; }
-.view-toggle-btn.active { background-color: #FFFFFF; color: #5D4A3E; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.view-toggle-btn.active svg { opacity: 1; }
-
-.offer-card-container {
-  /* 移除之前為了左側勾選框留的 padding-left: 20px; */
-  position: relative; 
-}
-
-.offer-card-container:hover {
-  border-color: #DED9D3; box-shadow: 0 6px 16px rgba(0,0,0,0.06); transform: translateY(-2px);
-}
-.offer-card-container.is-expanded {
-  cursor: default; border-color: #A67B3E; box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1); transform: none;
-}
-
-/* 🌟 左側圖片：單張輪播設計 */
+/* 🌟 左側圖片區塊 */
 .offer-card-gallery {
-  position: relative;
+  position: relative; /* 確保勾選框正確絕對定位 */
   width: 260px;
   flex-shrink: 0;
   background: #FBFBF9;
@@ -705,7 +779,7 @@
 
 /* 未展開時：固定高度，超過部分隱藏，並加上底部白色漸層 */
 .offer-card-container:not(.is-expanded) .offer-text-area {
-  max-height: 100px; /* 大約 4 行的高度 */
+  max-height: 100px; 
   overflow: hidden;
 }
 
@@ -713,9 +787,9 @@
   content: '';
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 50px; /* 漸層高度 */
+  height: 50px; 
   background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
-  pointer-events: none; /* 防止遮擋點擊 */
+  pointer-events: none; 
 }
 
 .qa-block { margin-bottom: 12px; }
@@ -729,17 +803,10 @@
   margin-top: 24px; padding-top: 16px; border-top: 1px dashed #EAE6E1;
 }
 
-/* 手機版適配 */
-@media (max-width: 768px) {
-  .offer-card-container { flex-direction: column; }
-  .offer-card-gallery { width: 100%; border-right: none; border-bottom: 1px solid #EAE6E1; }
-  .offer-carousel-wrapper, .offer-no-img { min-height: 200px; height: 200px; }
-  .offer-card-content { padding: 16px; }
-}
+
 /* ==================================================
    🌟 響應式設計 (Responsive Design) - 手機版適配
    ================================================== */
-
 @media (max-width: 768px) {
   /* 基礎容器與標題 */
   .inbox-container, .inbox-page-wrapper {
@@ -791,19 +858,17 @@
 
   /* 海選模式 (Offer CardView) */
   .offer-card-container { flex-direction: column; }
-  .offer-card-gallery { width: 100%; height: 160px; }
-  .offer-ref-img { min-height: auto; }
+  .offer-card-gallery { width: 100%; height: 160px; border-right: none; border-bottom: 1px solid #EAE6E1; }
+  .offer-carousel-wrapper, .offer-no-img { min-height: 160px; height: 160px; }
+  .offer-card-content { padding: 16px; }
 
   /* 彈出視窗 (Modal) */
-  .modal-overlay { padding: 12px; }
-  .modal-content-paper { padding: 24px 16px; }
-  .modal-content-paper h2 { font-size: 20px; }
-  .paper-textarea { height: 120px; font-size: 14px; padding: 12px; }
+  .inbox-modal-overlay, .modal-overlay { padding: 12px; }
+  .inbox-modal-content, .modal-content-paper { padding: 24px 16px; }
+  .modal-title { font-size: 20px; }
+  .modal-textarea, .paper-textarea { height: 120px; font-size: 14px; padding: 12px; }
   
-  .modal-content-paper > .flex.justify-end,
-  .modal-content-paper > .flex.justify-between { flex-direction: column; gap: 12px; }
-  .modal-content-paper .flex.gap-4 { flex-direction: column; width: 100%; }
-  .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
+  .modal-actions { flex-direction: column; gap: 12px; }
+  .btn-cancel, .btn-submit, .btn-submit-red, .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
   .template-edit-box { padding: 12px; }
 }
-
