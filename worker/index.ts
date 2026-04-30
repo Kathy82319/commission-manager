@@ -74,7 +74,6 @@ export default {
         const subAction = pathParts[4]; 
 
         if (!targetId) {
-          // 🌟 修正：補上 request 參數，解決 TS 報錯，並讓控制器能讀取 URL 查詢參數
           if (request.method === "GET") return bulletinController.getList(request, env, corsHeaders);
           if (request.method === "POST") {
             const authErr = requireAuth(currentUserId, corsHeaders);
@@ -173,12 +172,11 @@ export default {
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
       
-      // 🌟 確認你是否有包含登出路由，通常在這裡：
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
 
-      // --- 作品集路由 ---
+      // --- 作品集與公開排單表路由 ---
       if (sanitizedPath.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -191,6 +189,11 @@ export default {
       if (sanitizedPath.startsWith("/api/public/showcase/")) {
         const artistId = pathParts[4];
         return showcaseController.getPublicList(artistId, env, corsHeaders);
+      }
+      // 🌟 [新增] 公開排單表 API 路由
+      if (sanitizedPath.startsWith("/api/public/queue/")) {
+        const artistId = pathParts[4];
+        return commController.getPublicQueue(artistId, env, corsHeaders);
       }
 
       // --- 管理員路由 ---

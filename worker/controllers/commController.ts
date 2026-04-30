@@ -230,7 +230,6 @@ export const commController = {
     const newStageStatus = (comm[0] as any).workflow_mode === 'free' ? (comm[0] as any).current_stage : `${body.stage}_reviewing`; 
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
-    // 🌟 修正點：同步更新 latest_message_at
     await env.commission_db.batch([
       env.commission_db.prepare("INSERT INTO Submissions (id, commission_id, stage, file_url, version) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.stage, body.file_url, version),
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'upload', ?)").bind(crypto.randomUUID(), id, `繪師已上傳 ${stageNameCH} (v${version})`),
@@ -259,7 +258,6 @@ export const commController = {
 
     let globalStatusUpdate = nextStageStatus === 'completed' ? 'completed' : '';
     
-    // 🌟 修正點：同步更新 latest_message_at
     let batchOps = [
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'review', ?)").bind(crypto.randomUUID(), id, logMsg),
       env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(nextStageStatus, id),
@@ -327,7 +325,6 @@ export const commController = {
       return new Response(JSON.stringify({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }), { status: 429, headers: corsHeaders });
     }
 
-    // 🌟 修正點：在寫入訊息的同時，強制更新主表的 latest_message_at 欄位
     const msgId = crypto.randomUUID();
     const cleanContent = sanitizeAndLimit(body.content, 10000);
     
@@ -364,5 +361,30 @@ export const commController = {
   async deletePayment(paymentId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+  },
+
+  // 🌟 [新增] 用來讓前端公開頁面獲取排單表資料的 API 邏輯
+  async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      const query = `
+        SELECT 
+          c.id, 
+          c.contact_memo, 
+          c.project_name, 
+          c.queue_status, 
+          c.end_date, 
+          c.order_date,
+          u.public_id AS client_public_id
+        FROM Commissions c
+        LEFT JOIN Users u ON c.client_id = u.id
+        WHERE c.artist_id = ? AND c.status NOT IN ('completed', 'cancelled')
+        ORDER BY c.order_date ASC
+      `;
+      const { results } = await env.commission_db.prepare(query).bind(artistId).all();
+      return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
+    } catch (e) {
+      console.error("無法讀取公開排單表:", e);
+      return new Response(JSON.stringify({ success: false, error: "無法讀取排單表" }), { status: 500, headers: corsHeaders });
+    }
   }
 };

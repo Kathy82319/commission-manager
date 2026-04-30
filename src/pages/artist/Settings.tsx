@@ -1,3 +1,4 @@
+// src/pages/artist/Settings.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { QuotaInfo, FormDataState } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
@@ -8,9 +9,31 @@ import { CustomSectionsTab } from './Settings/CustomSectionsTab';
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
-// 🌟 匯入新切出的許願池設定 Tab 以及擴充型別
-import { BulletinSettingsTab, type ExtendedSettings } from './Settings/BulletinSettingsTab';
+import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
+import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
 import '../../styles/Settings.css';
+
+export interface CompleteSettings {
+  portfolio: string[];
+  detailed_intro: string;
+  process: string;
+  payment: string;
+  rules: string;
+  custom_sections: any[];
+  social_links: any[];
+  hidden_sections: string[];
+  splash_enabled: boolean;
+  splash_image: string;
+  splash_duration: number;
+  splash_text: string;
+  layout_type: string;
+  background_color: string;
+  gradient_direction: string;
+  theme_mode: string;
+  bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
+  question_template: string;
+  queue_settings: QueueSettings;
+}
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -47,7 +70,7 @@ export function Settings() {
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  const [settings, setSettings] = useState<ExtendedSettings>({
+  const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [], 
     detailed_intro: '', 
     process: '', 
@@ -64,9 +87,9 @@ export function Settings() {
     background_color: '#F4F0EB', 
     gradient_direction: 'to bottom right',
     theme_mode: 'dark',
-    // 預設許願池設定資料
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
-    question_template: ''
+    question_template: '',
+    queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true }
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +107,7 @@ export function Settings() {
     ]},
     { title: '內容管理', items: [
         { id: 'bulletin_settings', label: '許願池接案設定' },
+        { id: 'queue_settings', label: '排單表顯示設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '徵稿/販售區' },
@@ -142,7 +166,8 @@ export function Settings() {
             ...parsed,
             custom_sections: parsed.custom_sections || [],
             bulletin_card: parsed.bulletin_card || { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
-            question_template: data.data.question_template || parsed.question_template || ''
+            question_template: data.data.question_template || parsed.question_template || '',
+            queue_settings: parsed.queue_settings || prev.queue_settings
           }));
         }
       }
@@ -198,7 +223,7 @@ export function Settings() {
   const isFreePlan = quotaInfo?.plan_type === 'free';
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment', 'bulletin_settings'
+    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment', 'bulletin_settings', 'queue_settings'
   ];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
@@ -256,11 +281,14 @@ export function Settings() {
           )}
 
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
-            {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />}
+            {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
-            {/* 🌟 替換為新切出的 BulletinSettingsTab */}
             {activeTab === 'bulletin_settings' && (
-              <BulletinSettingsTab settings={settings} setSettings={setSettings} />
+              <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />
+            )}
+
+            {activeTab === 'queue_settings' && (
+              <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />
             )}
 
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}

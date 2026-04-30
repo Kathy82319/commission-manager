@@ -1,3 +1,4 @@
+// src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useOutletContext, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
@@ -35,6 +36,12 @@ interface ProfileSettings {
   gradient_direction?: string;
   secondary_color?: string; 
   theme_mode?: 'light' | 'dark';
+  queue_settings?: {
+    enabled: boolean;
+    show_client_name: boolean;
+    show_client_id: boolean;
+    show_project_name: boolean;
+  };
 }
 
 interface ShowcaseItem {
@@ -66,6 +73,7 @@ export function PublicProfile() {
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([]);
+  const [publicQueue, setPublicQueue] = useState<any[]>([]); // 🌟 排單表資料
   const [loading, setLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<string>('');
@@ -118,11 +126,12 @@ export function PublicProfile() {
 
         if (userData.success && userData.data) {
           setArtist(userData.data);
+          let parsedSettings: any = null;
           
           if (userData.data.profile_settings) {
             try {
               const rawSettings = userData.data.profile_settings;
-              const parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
+              parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
               setSettings(parsedSettings);
             } catch (e) {
@@ -131,6 +140,19 @@ export function PublicProfile() {
             }
           } else {
             setShowSplash(false);
+          }
+
+          // 🌟 獲取排單表資料 (若已開啟)
+          if (parsedSettings?.queue_settings?.enabled) {
+            try {
+              const queueRes = await fetch(`${API_BASE}/api/public/queue/${currentArtistId}`);
+              const queueData = await queueRes.json();
+              if (queueData.success) {
+                setPublicQueue(queueData.data);
+              }
+            } catch (e) {
+              console.error('無法讀取排單表資料');
+            }
           }
         }
 
@@ -215,6 +237,10 @@ export function PublicProfile() {
     if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
     if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
+    // 🌟 若排單表功能開啟，則自動增加分頁
+    if (settings.queue_settings?.enabled) {
+      tabs.push({ id: 'queue', label: '排單狀況' });
+    }
 
     if (Array.isArray(settings.custom_sections)) {
       settings.custom_sections.forEach((sec, index) => {
@@ -228,7 +254,7 @@ export function PublicProfile() {
   }, [settings, showcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
-  const isWideTab = ['portfolio', 'showcase'].includes(currentTab);
+  const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); // 排單表也算寬版面
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -311,9 +337,54 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
+              {/* 🌟 渲染排單表頁籤 */}
+              {currentTab === 'queue' && settings?.queue_settings && (
+                <div className="public-queue-section" style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '12px' }}>
+                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: '1px solid rgba(150,150,150,0.2)', paddingBottom: '10px' }}>目前排單狀況</h2>
+                  {publicQueue.length === 0 ? (
+                    <p style={{ color: '#888', textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid rgba(150,150,150,0.2)' }}>
+                            <th style={{ padding: '12px 8px' }}>委託人</th>
+                            <th style={{ padding: '12px 8px' }}>項目名稱</th>
+                            <th style={{ padding: '12px 8px' }}>當前進度</th>
+                            <th style={{ padding: '12px 8px' }}>預計完工</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {publicQueue.map((order) => (
+                            <tr key={order.id} style={{ borderBottom: '1px solid rgba(150,150,150,0.1)' }}>
+                              <td style={{ padding: '12px 8px' }}>
+                                <div style={{ fontWeight: 'bold' }}>
+                                  {settings.queue_settings!.show_client_name && order.contact_memo ? order.contact_memo : '匿名委託'}
+                                </div>
+                                {settings.queue_settings!.show_client_id && order.client_public_id && (
+                                  <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px 8px' }}>
+                                {settings.queue_settings!.show_project_name && order.project_name ? order.project_name : '私人委託項目'}
+                              </td>
+                              <td style={{ padding: '12px 8px' }}>
+                                <span style={{ padding: '4px 8px', background: 'rgba(150,150,150,0.1)', borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
+                              </td>
+                              <td style={{ padding: '12px 8px', opacity: 0.8 }}>
+                                {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
-                  {/* 🌟 補回篩選 UI，解決 handleTagClick 未讀取的報錯 */}
                   {availableTags.length > 1 && (
                     <div className="tag-filter-bar">
                       {availableTags.map(tag => {
@@ -355,7 +426,6 @@ export function PublicProfile() {
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
               )}
 
-              {/* 自定義分頁渲染 (同步使用 index 生成的 ID) */}
               {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec, index) => {
                 const generatedId = `custom_${index}`;
                 return currentTab === generatedId && (

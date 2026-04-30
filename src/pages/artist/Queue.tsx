@@ -1,6 +1,8 @@
+// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react'; // 🌟 新增 X 匯入
+import { QuoteBuilder } from './QuoteBuilder'; // 🌟 引入彈窗組件
 import '../../styles/Queue.css';
 
 interface Commission {
@@ -81,6 +83,9 @@ export function Queue() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // 🌟 控制建立委託單彈窗
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
   const fetchQueue = async () => {
@@ -155,15 +160,32 @@ export function Queue() {
     <div className="queue-container">
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
-        <div className="queue-controls">
+        <div className="queue-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input placeholder="搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
+          
+          {/* 🌟 新增的兩個按鈕 */}
+          <button 
+            onClick={() => navigate('/artist/settings')} 
+            className="queue-settings-btn" 
+            style={{ padding: '8px 12px', background: '#F4F0EB', border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>
+            設定顯示範圍
+          </button>
+          
+          <button 
+            onClick={() => setIsQuoteModalOpen(true)} 
+            className="create-quote-btn" 
+            style={{ padding: '8px 12px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+            + 建立新委託單
+          </button>
+
           {isSaving && <span className="updating-hint">儲存中...</span>}
         </div>
       </div>
+
       <div className="queue-table-wrapper">
         <table className="queue-table">
           <thead>
@@ -208,7 +230,6 @@ export function Queue() {
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
-                      {/* 🌟 移除委託人字樣，單純顯示名字與真名 */}
                       <span style={{ fontWeight: 'bold' }}>
                         {order.contact_memo || '未命名'}
                       </span>
@@ -247,7 +268,6 @@ export function Queue() {
                 </td>
                 <td data-label="預計完工">
                   <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
-                    {/* 🌟 同時渲染這兩個，交給 CSS 控制顯示時機 */}
                     <span className="date-text-display">
                       {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
                     </span>
@@ -292,6 +312,25 @@ export function Queue() {
           </tbody>
         </table>
       </div>
+
+      {/* 🌟 建立新委託單的 Modal */}
+      {isQuoteModalOpen && (
+        <div className="lightbox-overlay" onClick={() => setIsQuoteModalOpen(false)} style={{ zIndex: 1000 }}>
+          <div className="lightbox-content quote-modal-content" onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', background: '#FAFAFA', padding: '24px', borderRadius: '12px', position: 'relative' }}>
+            <button className="lightbox-close" onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}>
+              <X size={28}/>
+            </button>
+            <QuoteBuilder 
+              isModal 
+              onSuccess={() => { 
+                setIsQuoteModalOpen(false); 
+                fetchQueue(); 
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

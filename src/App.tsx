@@ -12,7 +12,6 @@ import { Login } from './pages/auth/Login';
 import { Onboarding } from './pages/auth/Onboarding';
 
 // Artist Pages
-import { QuoteBuilder } from './pages/artist/QuoteBuilder';
 import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
@@ -26,7 +25,7 @@ import { ClientOrders } from './pages/client/ClientOrders';
 
 // Public & Common Pages
 import { PublicProfile } from './PublicProfile';
-import { Wishboard } from './pages/public/Wishboard'; // 🌟 已指向新拆分的資料夾
+import { Wishboard } from './pages/public/Wishboard';
 import { Workspace } from './pages/Workspace';
 import { InquiryWorkspace } from './pages/InquiryWorkspace';
 import { Inbox } from './pages/Inbox';
@@ -50,7 +49,7 @@ export function App() {
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
-          <Route path="quote/new" element={<QuoteBuilder />} />
+          {/* 🌟 已經移除獨立的 QuoteBuilder 路由，因為它現在作為彈窗運作 */}
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerDetail />} />
           <Route path="notebook" element={<Notebook />} />

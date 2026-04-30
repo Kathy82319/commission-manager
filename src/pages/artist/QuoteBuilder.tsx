@@ -17,7 +17,8 @@ const customQuillModules = {
   ]
 };
 
-export function QuoteBuilder() {
+// 🌟 修改了 Props，加入 isModal 與 onSuccess 支援彈窗模式
+export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean, onSuccess?: (id: string) => void } = {}) {
   const navigate = useNavigate();
 
   const [workflowMode, setWorkflowMode] = useState<'standard' | 'free'>('standard');
@@ -150,11 +151,17 @@ export function QuoteBuilder() {
         const linkToCopy = `${window.location.origin}/quote/${newOrderId}`;
         try {
           await navigator.clipboard.writeText(linkToCopy);
-          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n專屬連結已自動複製到剪貼簿，為您導向委託單管理。`);
+          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n專屬連結已自動複製到剪貼簿。`);
         } catch (err) {
-          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}\n為您導向委託單管理。`);
+          alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}`);
         }
-        navigate(`/artist/notebook?id=${newOrderId}`);
+        
+        // 🌟 彈窗模式處理
+        if (isModal && onSuccess) {
+          onSuccess(newOrderId);
+        } else {
+          navigate(`/artist/notebook?id=${newOrderId}`);
+        }
       } else {
         alert('建置失敗：' + data.error);
       }
@@ -164,35 +171,52 @@ export function QuoteBuilder() {
   };
 
   return (
-    <div className="quote-page">
+    <div className="quote-page" style={isModal ? { padding: 0 } : {}}>
       
-      <div className="quote-header">
-        <div>
-          <h2 className="quote-header-title">產出新委託單</h2>
-          {quotaInfo && (
-            <div className={`plan-badge ${quotaInfo.plan_type}`}>
-              {quotaInfo.plan_type === 'pro' && '目前方案：專業版 (無限建單額度)'}
-              {quotaInfo.plan_type === 'trial' && `目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
-              {quotaInfo.plan_type === 'free' && `目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
-            </div>
-          )}
-        </div>
+      {/* 🌟 非彈窗模式才顯示標題 */}
+      {!isModal && (
+        <div className="quote-header">
+          <div>
+            <h2 className="quote-header-title">產出新委託單</h2>
+            {quotaInfo && (
+              <div className={`plan-badge ${quotaInfo.plan_type}`}>
+                {quotaInfo.plan_type === 'pro' && '目前方案：專業版 (無限建單額度)'}
+                {quotaInfo.plan_type === 'trial' && `目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
+                {quotaInfo.plan_type === 'free' && `目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
+              </div>
+            )}
+          </div>
 
-        <div className="mode-toggle-group">
-          <button 
-            onClick={() => setWorkflowMode('standard')}
-            className={`mode-btn ${workflowMode === 'standard' ? 'active' : ''}`}
-          >
-            標準委託
-          </button>
-          <button 
-            onClick={() => setWorkflowMode('free')}
-            className={`mode-btn ${workflowMode === 'free' ? 'active-dark' : ''}`}
-          >
-            自由紀錄
-          </button>
+          <div className="mode-toggle-group">
+            <button 
+              onClick={() => setWorkflowMode('standard')}
+              className={`mode-btn ${workflowMode === 'standard' ? 'active' : ''}`}
+            >
+              標準委託
+            </button>
+            <button 
+              onClick={() => setWorkflowMode('free')}
+              className={`mode-btn ${workflowMode === 'free' ? 'active-dark' : ''}`}
+            >
+              自由紀錄
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 🌟 彈窗模式時，將按鈕移至這裡方便切換 */}
+      {isModal && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>建立新委託單</h2>
+            {quotaInfo?.plan_type === 'free' && <span style={{ fontSize: '12px', color: '#7A7269' }}>本月額度：{quotaInfo.used_quota} / {quotaInfo.max_quota} 筆</span>}
+          </div>
+          <div className="mode-toggle-group" style={{ margin: 0 }}>
+            <button onClick={() => setWorkflowMode('standard')} className={`mode-btn ${workflowMode === 'standard' ? 'active' : ''}`}>標準委託</button>
+            <button onClick={() => setWorkflowMode('free')} className={`mode-btn ${workflowMode === 'free' ? 'active-dark' : ''}`}>自由紀錄</button>
+          </div>
+        </div>
+      )}
 
       <div className="quote-grid" style={{ 
         filter: isQuotaExceeded ? 'blur(6px)' : 'none',
@@ -386,7 +410,7 @@ export function QuoteBuilder() {
           </div>
 
           <div style={{ marginTop: '12px' }}>
-            <button onClick={handleSubmit} className="submit-btn">
+            <button onClick={handleSubmit} className="submit-btn" style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
               確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
             </button>
           </div>
@@ -404,11 +428,11 @@ export function QuoteBuilder() {
                 : '基礎免費版每月最多建立 3 筆委託。升級以解鎖無限額度！'}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); navigate('/artist/settings'); }} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
                 前往升級方案
               </button>
-              <button onClick={() => navigate('/artist/queue')} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                返回排單表
+              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); else navigate('/artist/queue'); }} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                返回
               </button>
             </div>
           </div>
