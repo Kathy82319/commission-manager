@@ -66,7 +66,6 @@
   box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); 
 }
 
-/* 篩選列專用 */
 .filter-section {
   display: flex; align-items: center; padding: 16px; background: white; 
   border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;
@@ -152,6 +151,7 @@
 .modal-header { 
   padding: 20px 24px; background: white; border-bottom: 1px solid #f1f5f9; 
   display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
+  position: relative;
 }
 .modal-header h2 { margin: 0; font-size: 22px; color: var(--wish-text-main); font-weight: 800; }
 
@@ -213,6 +213,7 @@ input:focus, textarea:focus {
 }
 .remove-image-btn:hover { background: rgba(220, 38, 38, 0.9); transform: scale(1.1); }
 
+/* 🌟 作品集網格 - 補回 */
 .portfolio-picker-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
   gap: 12px; background: #f1f5f9; padding: 16px; border-radius: 12px; 
@@ -262,9 +263,8 @@ input:focus, textarea:focus {
   display: flex; justify-content: flex-end; gap: 16px; flex-shrink: 0;
 }
 
-/* 🌟 核心防斷行設定 */
 .submit-post-btn, .btn-cancel, .save-hint-btn, .add-btn-circle {
-  white-space: nowrap !important; /* 絕對不准文字換行 */
+  white-space: nowrap !important;
 }
 
 .submit-post-btn {
@@ -324,12 +324,12 @@ input:focus, textarea:focus {
 }
 
 /* ==================================================
-   📱 手機版適配 (RWD - 深度優化)
+   📱 手機版適配 (RWD - 核心修復)
    ================================================== */
 @media (max-width: 768px) {
   .wishboard-page { padding: 12px; }
 
-  /* 🌟 1. 篩選列：超暴力橫向滑動 */
+  /* 🌟 1. 篩選列橫向滑動 - 補回 */
   .filter-section { 
     flex-direction: column !important; 
     align-items: flex-start !important; 
@@ -337,7 +337,7 @@ input:focus, textarea:focus {
     gap: 12px !important;
   }
   .filter-label { margin: 0 !important; }
-
+  
   .filter-tags-scroll {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -357,42 +357,52 @@ input:focus, textarea:focus {
   }
   .filter-section .submit-post-btn { width: 100% !important; justify-content: center !important; }
 
-  /* 🌟 2. 許願卡片：上圖下文 */
-  .wish-card-wide { flex-direction: column; }
-  .wish-card-image-wrapper { width: 100%; height: 220px; border-right: none; border-bottom: 1px solid #f0f0f0; }
-  .wish-card-info { padding: 16px; gap: 12px; }
+  /* 🌟 2. 修正 X 關閉按鈕位置 */
+  .modal-header {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap !important; /* 強制不換行 */
+    gap: 8px;
+  }
+  .modal-header h2 { font-size: 16px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  
+  .modal-header > div { 
+    display: flex; 
+    align-items: center; 
+    gap: 4px !important; 
+    flex-shrink: 0; 
+  }
+  .save-hint-btn { padding: 4px 8px; font-size: 12px; }
 
-  /* 🌟 3. 發布表單：底部彈窗與防止斷行 */
+  /* 🌟 3. 修正輸入框距離超級遠的問題 */
+  .post-form { padding: 12px; gap: 12px !important; } 
+  .form-section { padding: 12px; gap: 8px !important; margin-bottom: 0; } 
+  .form-row { gap: 8px !important; } 
+  .form-group { gap: 4px !important; min-width: 100%; } 
+
+  .radio-group { gap: 8px !important; margin-top: 4px; }
+  .radio-label { font-size: 13px !important; }
+
+  /* 🌟 4. 其他手機優化 */
   .modal-overlay { padding: 0; align-items: flex-end; } 
-  .post-modal { max-height: 92vh; height: 92vh; border-radius: 24px 24px 0 0; }
-  
-  /* 讓標頭按鈕區塊可以換行，或者變成上下堆疊 */
-  .modal-header { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
-  .modal-header h2 { font-size: 18px; }
-  .modal-header > div { flex-wrap: wrap; gap: 8px !important; }
+  .post-modal { max-height: 94vh; height: 94vh; border-radius: 20px 20px 0 0; }
 
-  .post-form { padding: 16px; gap: 16px; }
-  .form-section { padding: 16px; gap: 12px; border-radius: 12px; }
-  
-  /* 🌟 把左右排版的「作品範例」標題改成上下排列，給按鈕足夠空間 */
   .form-section > div[style*="space-between"] {
     flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 12px !important;
+    gap: 8px !important;
   }
 
-  .form-row { flex-direction: column; gap: 16px; }
-  .form-group { min-width: 100%; }
-  
-  .dynamic-question-row { flex-wrap: wrap; gap: 8px; }
+  .dynamic-question-row { flex-wrap: wrap; gap: 6px; }
   .dynamic-question-row > input { width: 100%; flex: 1 1 100%; }
-  .dynamic-question-row > button { flex-shrink: 0; margin-left: auto; }
 
-  .budget-inputs { flex-wrap: wrap; }
-  .budget-inputs input { flex: 1; min-width: 100px; }
+  .modal-footer { padding: 12px; flex-direction: column-reverse; gap: 8px; }
+  .modal-footer button { width: 100%; padding: 10px; font-size: 14px; }
 
-  .mechanism-radio-group { gap: 12px; }
-  
-  .modal-footer { padding: 16px; flex-direction: column-reverse; gap: 10px; }
-  .modal-footer button { width: 100%; }
+  /* 許願卡片手機優化 */
+  .wish-card-wide { flex-direction: column; }
+  .wish-card-image-wrapper { width: 100%; height: 200px; border-right: none; }
+  .wish-card-info { padding: 12px; gap: 8px; }
 }
