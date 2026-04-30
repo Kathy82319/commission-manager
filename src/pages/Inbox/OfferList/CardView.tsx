@@ -86,6 +86,10 @@ export const CardView: React.FC<CardViewProps> = ({
     <>
       <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
         
+
+        
+        {/* 左側：單張輪播展示 */}
+        <div className="offer-card-gallery">
         {/* 🌟 批次選取勾選框 */}
         <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()}>
           <input 
@@ -95,9 +99,6 @@ export const CardView: React.FC<CardViewProps> = ({
             onChange={onSelect} 
           />
         </div>
-        
-        {/* 左側：單張輪播展示 */}
-        <div className="offer-card-gallery">
           {validImages.length > 0 ? (
             <div className="offer-carousel-wrapper" onClick={openLightbox}>
               <img 

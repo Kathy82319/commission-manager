@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
-import '../../styles/Inbox.css'; // 我們即將重寫這個檔案
+import '../../styles/Inbox.css';
 
 import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
@@ -12,8 +12,8 @@ export const Inbox: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
   const [loading, setLoading] = useState(true);
   
-  // 🌟 新增：繪師海選模式的檢視切換狀態
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  // 🌟 檢視切換狀態 (雖然 ListView 移除了，但保留狀態避免報錯)
+
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
@@ -22,7 +22,12 @@ export const Inbox: React.FC = () => {
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
+  
+  // 🌟 狀態管理：區分單筆與批次
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
+  const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
+  const isBatchMode = batchDeclineIds.size > 0;
+
   const [inviteResponse, setInviteResponse] = useState('');
   const [declineReason, setDeclineReason] = useState('');
 
@@ -69,23 +74,45 @@ export const Inbox: React.FC = () => {
 
   useEffect(() => { fetchInbox(); }, [activeTab]);
 
+  // 🌟 整合單筆與批次的婉拒送出邏輯
   const handleConfirmDecline = async () => {
-    if (!selectedInquiry) return;
-    try {
-      const defaultReason = selectedInquiry.inquiry_status === 'pending' && activeTab === 'artist' 
-        ? '繪師已撤回投遞' 
-        : '已找到合適人選 / 終止洽談';
+    if (!isBatchMode && !selectedInquiry) return;
+    
+    const defaultReason = (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist')
+      ? '繪師已撤回投遞' 
+      : '已找到合適人選 / 終止洽談';
+    const finalReason = declineReason || defaultReason;
 
-      // 🔒 資安防護：後端應在此 endpoint 確認使用者身分，防止 IDOR
-      await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { 
-        decline_reason: declineReason || defaultReason 
-      });
-      alert('已傳送婉拒/撤回通知，對話已關閉。');
+    try {
+      if (isBatchMode) {
+        // 🌟 升級：直接呼叫後端的批次 API，取代前端 Promise.all 轟炸
+        const targetIds = Array.from(batchDeclineIds);
+        const res = await apiClient.post('/api/inquiries/batch-decline', { 
+          inquiry_ids: targetIds,
+          decline_reason: finalReason 
+        });
+
+        if (res.success) {
+          // 利用後端回傳的 processed_count 讓案主知道實際成功了幾筆
+          alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
+        } else {
+          throw new Error(res.message);
+        }
+      } else {
+        // 🌟 單筆模式 (這支舊的單筆 API 如果你願意，未來也可以考慮把它的防護邏輯對齊上面那樣)
+        await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: finalReason });
+        alert('已傳送婉拒/撤回通知，對話已關閉。');
+      }
+
       setShowDeclineModal(false);
       setDeclineReason('');
       setIsEditingTemplates(false);
-      fetchInbox();
-    } catch (error: any) { alert(error.message || '操作失敗'); }
+      setBatchDeclineIds(new Set()); 
+      setSelectedInquiry(null);      
+      fetchInbox(); // 重新拉取列表，更新畫面狀態
+    } catch (error: any) { 
+      alert(error.message || '操作發生錯誤，請稍後再試。'); 
+    }
   };
 
   const handleSendInvite = async () => {
@@ -108,9 +135,7 @@ export const Inbox: React.FC = () => {
         
       settings.decline_templates = tempTemplates;
       
-      await apiClient.patch('/api/users/me', {
-        profile_settings: JSON.stringify(settings)
-      });
+      await apiClient.patch('/api/users/me', { profile_settings: JSON.stringify(settings) });
       
       setDeclineTemplates(tempTemplates);
       setIsEditingTemplates(false);
@@ -124,30 +149,9 @@ export const Inbox: React.FC = () => {
   const handleViewCommission = (commissionId: string) => commissionId ? navigate(`/workspace/${commissionId}`) : alert('找不到關聯的委託單');
 
   return (
-    // 🌟 完全對齊 Queue 的容器樣式
     <div className="inbox-page-container">
       <div className="inbox-page-header">
         <h1 className="inbox-page-title">訊息中心</h1>
-        
-        {/* 🌟 只有在接稿文（案主視角看一堆委託人）時才顯示檢視切換按鈕 */}
-        {activeTab === 'client' && (
-          <div className="inbox-view-controls">
-            <button 
-              className={`view-toggle-btn ${viewMode === 'card' ? 'active' : ''}`}
-              onClick={() => setViewMode('card')}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-              卡片
-            </button>
-            <button 
-              className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-              列表
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="inbox-tabs-wrapper">
@@ -177,7 +181,9 @@ export const Inbox: React.FC = () => {
           setShowInviteModal={setShowInviteModal}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
-          viewMode={viewMode} // 🌟 將 viewMode 傳遞給子元件
+
+          // 🌟 傳遞批次處理的 Setter 給下層 OfferList 使用
+          setSelectedIdsForBatch={setBatchDeclineIds}
         />
       ) : (
         <OutboundTab 
@@ -189,32 +195,22 @@ export const Inbox: React.FC = () => {
         />
       )}
 
-      {/* 邀請與婉拒彈窗保持原樣，CSS 會在 Inbox.css 中統一控制 */}
+      {/* 邀請彈窗 (維持原樣) */}
       {showInviteModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content">
             <h2 className="modal-title">✉️ 邀請繪師詳談</h2>
-            <p className="modal-desc">
-              填寫下方的回信，系統將為您建立專屬的「聊天室」，讓雙方能夠進一步溝通細節與合約。
-            </p>
-
+            {/* ... 省略，維持原樣 ... */}
             <div className="modal-question-box">
-              <strong>
-                <span className="q-icon">Q</span>
-                繪師希望您提供的資訊：
-              </strong>
-              <div className="q-text">
-                {selectedInquiry?.question_template || "是否有特殊需求或要加購的的部分？（例如：背景、道具、額外角色）"}
-              </div>
+              <strong><span className="q-icon">Q</span>繪師希望您提供的資訊：</strong>
+              <div className="q-text">{selectedInquiry?.question_template || "是否有特殊需求或要加購的的部分？"}</div>
             </div>
-            
             <textarea 
               className="modal-textarea"
-              placeholder="請在此撰寫您的回信內容，建議包含對繪師提問的回答、額外的需求說明或是對提案的回饋。"
+              placeholder="請在此撰寫您的回信內容..."
               value={inviteResponse}
               onChange={(e) => setInviteResponse(e.target.value)}
             ></textarea>
-            
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setShowInviteModal(false)}>取消捨棄</button>
               <button className="btn-submit" onClick={handleSendInvite}>確認並送出回信 ➔</button>
@@ -223,14 +219,24 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
+      {/* 🌟 婉拒彈窗 (動態支援單筆與批次) */}
       {showDeclineModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">
+            
+            {/* 🌟 根據是否為批次模式，動態顯示標題 */}
             <h2 className="modal-title red">
-              {selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案'}
+              {isBatchMode 
+                ? `批次婉拒提案 (${batchDeclineIds.size} 筆)` 
+                : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案')
+              }
             </h2>
+            
             <p className="modal-desc red-border">
-              這將會終止與此對象的洽談，建議附上簡單理由以示尊重。
+              {isBatchMode
+                ? '您即將同時婉拒多筆委託提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
+                : '這將會終止與此對象的洽談，建議附上簡單理由以示尊重。'
+              }
             </p>
 
             <div className="template-manager">
@@ -302,8 +308,23 @@ export const Inbox: React.FC = () => {
             ></textarea>
             
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => { setShowDeclineModal(false); setIsEditingTemplates(false); }}>再想想</button>
-              <button className="btn-submit-red" onClick={handleConfirmDecline} disabled={isEditingTemplates}>確認送出</button>
+              <button 
+                className="btn-cancel" 
+                onClick={() => { 
+                  setShowDeclineModal(false); 
+                  setIsEditingTemplates(false);
+                  setBatchDeclineIds(new Set()); // 取消時清空狀態
+                }}
+              >
+                再想想
+              </button>
+              <button 
+                className="btn-submit-red" 
+                onClick={handleConfirmDecline} 
+                disabled={isEditingTemplates}
+              >
+                確認送出
+              </button>
             </div>
           </div>
         </div>

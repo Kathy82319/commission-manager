@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
-
-// 🌟 修正：直接從你許願池的常數檔引入，確保全域統一！
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 const SLOT_TYPES = [
@@ -22,7 +20,9 @@ interface InboundTabProps {
   setShowInviteModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
-  viewMode: 'card' | 'list'; 
+  // 🌟 1. 新增：接收批次選取狀態的方法
+  setSelectedIdsForBatch?: (ids: Set<string>) => void; 
+  // (舊的 viewMode 已刪除)
 }
 
 const unescapeHtml = (str: string) => {
@@ -39,6 +39,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   setShowInviteModal,
   handleEnterInquiryWorkspace,
   handleViewCommission,
+  setSelectedIdsForBatch // 🌟 2. 從 props 解構出來
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -118,6 +119,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   setShowInviteModal={setShowInviteModal}
                   handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
                   handleViewCommission={handleViewCommission}
+                  setSelectedIdsForBatch={setSelectedIdsForBatch} // 🌟 3. 接力傳給 OfferList
                 />
               ) : (
                 // 🌟 徵稿文 (Request) 維持明信片模式
@@ -145,7 +147,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     }
                   }
 
-                  // 🌟 這裡使用正確的 R2_PUBLIC_URL
                   snapshot.images = images.filter(Boolean).map(url => 
                     url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
                   );

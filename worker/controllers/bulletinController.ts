@@ -203,5 +203,55 @@ export const bulletinController = {
     } catch (error: any) { 
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders }); 
     }
-  }
+  },
+  // 🌟 新增：批次婉拒提案
+  async batchDeclineInquiries(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json() as any;
+      const { inquiry_ids, decline_reason } = body;
+
+      // 🛡️ 資安防護 1：驗證資料型態
+      if (!Array.isArray(inquiry_ids) || inquiry_ids.length === 0) {
+        return new Response(JSON.stringify({ success: false, message: '未提供有效的委託單 ID 列表' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 🛡️ 資安防護 2：防止資料庫 DoS 攻擊 (限制單次最大處理量)
+      if (inquiry_ids.length > 50) {
+        return new Response(JSON.stringify({ success: false, message: '單次批次處理不得超過 50 筆' }), { status: 400, headers: corsHeaders });
+      }
+
+      const finalReason = decline_reason || '已找到合適人選 / 終止洽談';
+
+      // 動態產生對應數量的佔位符 (?, ?, ?)
+      const placeholders = inquiry_ids.map(() => '?').join(',');
+
+      // 🛡️ 資安防護 3：越權操作防禦 (BOLA/IDOR) & 狀態限制
+      // 邏輯：只能婉拒「發起人是自己(artist)」或「案主是自己(client)」且狀態還是 pending 的單
+      const query = `
+        UPDATE BulletinInquiries 
+        SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
+        WHERE id IN (${placeholders})
+        AND (
+          artist_id = ? 
+          OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
+        )
+        AND status = 'pending'
+      `;
+
+      // 綁定參數陣列：[理由, id1, id2..., 當前用戶ID, 當前用戶ID]
+      const params = [finalReason, ...inquiry_ids, currentUserId, currentUserId];
+
+      const result = await env.commission_db.prepare(query).bind(...params).run();
+
+      // result.meta.changes 會回傳實際被修改的資料筆數
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: '批次處理完成',
+        processed_count: result.meta.changes 
+      }), { headers: corsHeaders });
+
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
 };

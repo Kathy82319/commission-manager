@@ -9,6 +9,10 @@ interface OfferListProps {
   setShowInviteModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
+  // 🌟 新增：將 selectedIds 提升到父層（通常是 InboundTab 或 Inbox/index.tsx）去管理，
+  // 或者透過 callback 傳遞，但為了最快見效，我們在這裡直接把 selectedIds 傳給 setShowDeclineModal，
+  // 讓 Modal 知道這是一次批次操作。
+  setSelectedIdsForBatch?: (ids: Set<string>) => void; 
 }
 
 export const OfferList: React.FC<OfferListProps> = ({
@@ -17,12 +21,10 @@ export const OfferList: React.FC<OfferListProps> = ({
   setShowDeclineModal,
   setShowInviteModal,
   handleEnterInquiryWorkspace,
-  handleViewCommission
+  handleViewCommission,
+  setSelectedIdsForBatch // 如果父層有傳，我們就用；沒有的話我們暫時用 alert 擋著（後面會去改父層）
 }) => {
-  // 記錄哪些卡片被展開了
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  
-  // 🌟 批次選擇狀態：紀錄哪些卡片被勾選了
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
@@ -41,21 +43,29 @@ export const OfferList: React.FC<OfferListProps> = ({
     });
   };
 
+  // 🌟 單筆婉拒：清空批次，設定單筆
+  const handleSingleDecline = (inquiry: any) => {
+    if (setSelectedIdsForBatch) setSelectedIdsForBatch(new Set()); // 清空批次狀態
+    setSelectedInquiry(inquiry);
+    setShowDeclineModal(true);
+  };
+
+  // 🌟 批次婉拒：清空單筆，設定批次
   const handleBatchDecline = () => {
-    // 🛡️ 批次操作資安提醒：
-    // 1. 此處僅能觸發前端 UI (如婉拒原因 Modal)。
-    // 2. 最終 API 送出時必須傳送 selectedIds 陣列。
-    // 3. 後端必須檢查當前用戶是否真的擁有操作這幾筆 inquiryId 的權限。
     if (selectedIds.size === 0) return;
-    
-    // 範例：我們可以將第一筆選中的資料帶入 Modal 做範本，
-    // 或是在 Modal 組件中特別處理「批量模式」。
-    alert(`即將批次處理 ${selectedIds.size} 筆委託。請串接後端 API 並確保後端校驗 artist_id 權限。`);
+    setSelectedInquiry(null); // 確保單筆是空的，這就是批次模式的訊號
+    if (setSelectedIdsForBatch) {
+      setSelectedIdsForBatch(selectedIds);
+      setShowDeclineModal(true);
+    } else {
+      // 防呆：如果還沒接通上層，先保留 alert
+      alert(`即將批次處理 ${selectedIds.size} 筆委託。請串接父層狀態。`);
+    }
   };
 
   return (
     <div className="offer-list-container">
-      {/* 🌟 批次工具列：僅在有勾選時出現 */}
+      {/* 🌟 批次工具列 */}
       {selectedIds.size > 0 && (
         <div className="batch-action-bar">
           <div className="batch-info">已選取 {selectedIds.size} 筆委託</div>
@@ -68,12 +78,7 @@ export const OfferList: React.FC<OfferListProps> = ({
 
       {inquiries.map(inquiry => {
         let snapshot: any = {};
-        try { 
-          // 🔒 安全解析：避免因為資料異常導致白屏
-          snapshot = JSON.parse(inquiry.artist_snapshot || '{}');
-        } catch(e) { 
-          console.error("解析快照失敗 (ID: " + inquiry.inquiry_id + ")", e); 
-        }
+        try { snapshot = JSON.parse(inquiry.artist_snapshot || '{}'); } catch(e) {}
 
         return (
           <CardView
@@ -82,13 +87,11 @@ export const OfferList: React.FC<OfferListProps> = ({
             snapshot={snapshot}
             isExpanded={expandedIds.has(inquiry.inquiry_id)}
             onToggle={() => toggleExpand(inquiry.inquiry_id)}
-            
-            // 🌟 批次控制 Props
             isSelected={selectedIds.has(inquiry.inquiry_id)}
             onSelect={() => toggleSelect(inquiry.inquiry_id)}
-            
             setSelectedInquiry={setSelectedInquiry}
-            setShowDeclineModal={setShowDeclineModal}
+            // 🌟 替換為單筆處理函式
+            setShowDeclineModal={() => handleSingleDecline(inquiry)}
             setShowInviteModal={setShowInviteModal}
             handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
             handleViewCommission={handleViewCommission}
