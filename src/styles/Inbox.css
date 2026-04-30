@@ -567,16 +567,12 @@
 
 
 /* ==========================================================================
-   🌟 繪師海選模式：專屬卡片視圖 (Offer CardView) - 新增整合
+   🌟 繪師海選模式：專屬卡片視圖 (Offer CardView)
    ========================================================================== */
 
 /* 確保全域共用的提示字與切換按鈕不衝突 */
 .inbox-view-controls {
-  display: flex;
-  background-color: #F0ECE7;
-  border-radius: 8px;
-  padding: 4px;
-  gap: 4px;
+  display: flex; background-color: #F0ECE7; border-radius: 8px; padding: 4px; gap: 4px;
 }
 .view-toggle-btn {
   display: flex; align-items: center; gap: 6px; padding: 6px 16px;
@@ -600,99 +596,122 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 .offer-card-container:hover {
-  border-color: #DED9D3;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-  transform: translateY(-2px);
+  border-color: #DED9D3; box-shadow: 0 6px 16px rgba(0,0,0,0.06); transform: translateY(-2px);
 }
 .offer-card-container.is-expanded {
-  cursor: default;
-  border-color: #A67B3E; 
-  box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1);
-  transform: none;
+  cursor: default; border-color: #A67B3E; box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1); transform: none;
 }
 
-/* 左側圖片 Grid 排版 */
+/* 🌟 左側圖片：單張輪播設計 */
 .offer-card-gallery {
-  width: 240px;
+  width: 260px;
   flex-shrink: 0;
-  display: grid;
-  gap: 2px;
-  background: #F0ECE7;
+  background: #FBFBF9;
+  border-right: 1px solid #EAE6E1;
 }
-.offer-card-gallery.img-count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-.offer-card-gallery.img-count-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
-.offer-card-gallery.img-count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.offer-card-gallery.img-count-3 img:first-child { grid-column: 1 / 3; }
+
+.offer-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  cursor: pointer;
+}
 
 .offer-ref-img {
   width: 100%;
   height: 100%;
-  min-height: 180px;
   object-fit: cover;
+  display: block;
 }
+
 .offer-no-img {
-  width: 100%;
-  height: 100%;
-  min-height: 180px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #A0978D;
-  font-size: 14px;
+  width: 100%; height: 100%; min-height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  color: #A0978D; font-size: 14px; background: #F0ECE7;
+}
+
+/* 輪播導覽按鈕與提示 */
+.offer-img-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.4); color: white; border: none;
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; z-index: 10; transition: 0.2s;
+}
+.offer-img-nav:hover { background: rgba(0,0,0,0.8); }
+.offer-img-prev { left: 8px; }
+.offer-img-next { right: 8px; }
+
+.offer-img-counter {
+  position: absolute; bottom: 12px; right: 12px;
+  background: rgba(0,0,0,0.65); color: white; padding: 4px 10px;
+  border-radius: 12px; font-size: 11px; z-index: 10; backdrop-filter: blur(4px);
+}
+
+.offer-img-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+}
+.offer-carousel-wrapper:hover .offer-img-overlay { opacity: 1; }
+.offer-img-overlay-text {
+  color: white; font-size: 13px; background: rgba(0,0,0,0.6);
+  padding: 4px 12px; border-radius: 20px; backdrop-filter: blur(4px);
 }
 
 /* 右側內容區 */
 .offer-card-content {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0; 
+  flex: 1; padding: 24px; display: flex; flex-direction: column; min-width: 0; 
 }
 .offer-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;
 }
 .offer-client-info { display: flex; align-items: baseline; gap: 8px; }
 .client-name { font-size: 18px; font-weight: bold; color: #5D4A3E; }
 .client-id { font-size: 13px; color: #A0978D; font-family: monospace; }
 
-.offer-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-.tag-budget { background: #FFF5EB; color: #ff8c00; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-.tag-schedule { background: #E6F4EA; color: #1E8E3E; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-
-/* 問答區隱藏與展開邏輯 */
+/* 🌟 問答區：漸層隱藏邏輯 (解決文字重疊) */
 .offer-text-area {
-  flex: 1;
+  position: relative;
   color: #7A7269;
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* 未展開時：固定高度，超過部分隱藏，並加上底部白色漸層 */
 .offer-card-container:not(.is-expanded) .offer-text-area {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  max-height: 100px; /* 大約 4 行的高度 */
   overflow: hidden;
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
 }
+
+.offer-card-container:not(.is-expanded) .offer-text-area::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 50px; /* 漸層高度 */
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+  pointer-events: none; /* 防止遮擋點擊 */
+}
+
 .qa-block { margin-bottom: 12px; }
 .qa-block:last-child { margin-bottom: 0; }
-.q-text { font-weight: bold; color: #4A7294; font-size: 13px; margin-bottom: 2px; }
+.q-text { font-weight: bold; color: #4A7294; font-size: 13px; margin-bottom: 4px; }
 .a-text { color: #5D4A3E; white-space: pre-wrap; word-break: break-all; }
 .note-block .q-text { color: #A67B3E; }
 
 .offer-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px dashed #EAE6E1;
+  display: flex; justify-content: flex-end; gap: 12px;
+  margin-top: 24px; padding-top: 16px; border-top: 1px dashed #EAE6E1;
 }
 
+/* 手機版適配 */
+@media (max-width: 768px) {
+  .offer-card-container { flex-direction: column; }
+  .offer-card-gallery { width: 100%; border-right: none; border-bottom: 1px solid #EAE6E1; }
+  .offer-carousel-wrapper, .offer-no-img { min-height: 200px; height: 200px; }
+  .offer-card-content { padding: 16px; }
+}
 /* ==================================================
    🌟 響應式設計 (Responsive Design) - 手機版適配
    ================================================== */

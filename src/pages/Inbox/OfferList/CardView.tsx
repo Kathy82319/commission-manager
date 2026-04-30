@@ -1,5 +1,5 @@
 // src/pages/Inbox/OfferList/CardView.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { getStatusLabel } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 
@@ -33,11 +33,11 @@ export const CardView: React.FC<CardViewProps> = ({
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
 
-  // 🌟 1. 抓取案主名稱與 ID (投單者被紀錄在 artist_id 欄位中)
+  // 🌟 1. 名稱與 ID 防呆：底線一律為「匿名委託人」
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
 
-  // 🌟 2. 圖片處理
+  // 🌟 2. 圖片路徑清洗
   let images: string[] = [];
   try {
     const rawImageStr = snapshot.images || '[]';
@@ -55,97 +55,144 @@ export const CardView: React.FC<CardViewProps> = ({
     if (!url) return '';
     return url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   };
-  const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 3);
+  const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5); // 容許多張
 
   // 🌟 3. 抓取結構化的問題與備註
-  const answers = snapshot.answers || []; // 新增的結構化資料
-  const note = unescapeHtml(snapshot.note || snapshot.message || ''); // 如果沒有 answers，備註就會是揉在一起的字串
+  const answers = snapshot.answers || []; 
+  const note = unescapeHtml(snapshot.note || snapshot.message || ''); 
+
+  // 🌟 4. 輪播與燈箱狀態管理
+  const [imgIdx, setImgIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const nextImg = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 🔒 隔離事件，防止觸發卡片展開
+    setImgIdx((prev) => (prev + 1) % validImages.length);
+  };
+  const prevImg = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgIdx((prev) => (prev - 1 + validImages.length) % validImages.length);
+  };
+  const openLightbox = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (validImages.length > 0) setLightboxOpen(true);
+  };
 
   return (
-    <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
-      
-      <div className={`offer-card-gallery img-count-${validImages.length || 0}`}>
-        {validImages.length > 0 ? (
-          validImages.map((img: string, idx: number) => (
-            <img 
-              key={idx} 
-              src={img} 
-              alt={`委託人參考圖 ${idx + 1}`} 
-              className="offer-ref-img" 
-              referrerPolicy="no-referrer"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          ))
-        ) : (
-          <div className="offer-no-img">無附上參考圖</div>
-        )}
-      </div>
-
-      <div className="offer-card-content">
+    <>
+      <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
         
-        <div className="offer-card-header">
-          <div className="offer-client-info">
-            <span className="client-name">{clientName}</span>
-            <span className="client-id">@{clientId}</span>
-          </div>
-          <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
-            {getStatusLabel(inquiry.inquiry_status)}
-          </span>
-        </div>
-
-        <div className="offer-text-area">
-          {answers.length > 0 ? (
-            <>
-              {answers.map((ans: any, idx: number) => (
-                <div key={idx} className="qa-block">
-                  <div className="q-text">Q: {unescapeHtml(ans.question)}</div>
-                  <div className="a-text">A: {unescapeHtml(ans.answer) || '無填寫'}</div>
-                </div>
-              ))}
-              {/* 將純文字備註獨立顯示出來 */}
-              {snapshot.message && (
-                <div className="qa-block note-block mt-4">
-                  <div className="q-text">備註：</div>
-                  <div className="a-text">{unescapeHtml(snapshot.message)}</div>
-                </div>
+        {/* 左側：單張輪播展示 */}
+        <div className="offer-card-gallery">
+          {validImages.length > 0 ? (
+            <div className="offer-carousel-wrapper" onClick={openLightbox}>
+              <img 
+                src={validImages[imgIdx]} 
+                alt={`委託人參考圖 ${imgIdx + 1}`} 
+                className="offer-ref-img" 
+                referrerPolicy="no-referrer"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+              {/* 圖片數量提示 */}
+              {validImages.length > 1 && (
+                <div className="offer-img-counter">{imgIdx + 1} / {validImages.length}</div>
               )}
-            </>
-          ) : note ? (
-            // 💡 相容舊資料：如果這筆單是之前投的，只有 message，就顯示它
-            <div className="qa-block">
-              <div className="q-text">委託需求內容：</div>
-              <div className="a-text">{note}</div>
+              {/* 左右切換按鈕 */}
+              {validImages.length > 1 && (
+                <>
+                  <button className="offer-img-nav offer-img-prev" onClick={prevImg}>❮</button>
+                  <button className="offer-img-nav offer-img-next" onClick={nextImg}>❯</button>
+                </>
+              )}
+              {/* Hover 放大的遮罩提示 */}
+              <div className="offer-img-overlay">
+                <span className="offer-img-overlay-text">點擊放大</span>
+              </div>
             </div>
           ) : (
-            <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
+            <div className="offer-no-img">無附上參考圖</div>
           )}
         </div>
 
-        {isExpanded && (
-          <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
-            {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
-              <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
-                💬 進入聊天室
-              </button>
-            )}
-            {inquiry.inquiry_status === 'accepted' && (
-              <button className="btn-success" onClick={() => handleViewCommission(inquiry.commission_id)}>
-                前往正式委託單
-              </button>
-            )}
-            {inquiry.inquiry_status === 'pending' && (
-              <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...inquiry, question_template: snapshot.question_template || inquiry.question_template }); setShowInviteModal(true); }}>
-                ✉️ 邀請詳談
-              </button>
-            )}
-            {canDecline && (
-              <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(inquiry); setShowDeclineModal(true); }}>
-                {inquiry.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-              </button>
+        {/* 右側：內容區塊 */}
+        <div className="offer-card-content">
+          <div className="offer-card-header">
+            <div className="offer-client-info">
+              <span className="client-name">{clientName}</span>
+              <span className="client-id">@{clientId}</span>
+            </div>
+            <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
+              {getStatusLabel(inquiry.inquiry_status)}
+            </span>
+          </div>
+
+          {/* 中間：需求與備註 (透過 ::after 漸層隱藏) */}
+          <div className="offer-text-area">
+            {answers.length > 0 ? (
+              <>
+                {answers.map((ans: any, idx: number) => (
+                  <div key={idx} className="qa-block">
+                    <div className="q-text">Q: {unescapeHtml(ans.question)}</div>
+                    <div className="a-text">A: {unescapeHtml(ans.answer) || '無填寫'}</div>
+                  </div>
+                ))}
+                {snapshot.message && (
+                  <div className="qa-block note-block mt-4">
+                    <div className="q-text">備註：</div>
+                    <div className="a-text">{unescapeHtml(snapshot.message)}</div>
+                  </div>
+                )}
+              </>
+            ) : note ? (
+              <div className="qa-block">
+                <div className="q-text">委託需求內容：</div>
+                <div className="a-text">{note}</div>
+              </div>
+            ) : (
+              <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
             )}
           </div>
-        )}
+
+          {/* 底部操作按鈕 */}
+          {isExpanded && (
+            <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
+              {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
+                <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
+                  💬 進入聊天室
+                </button>
+              )}
+              {inquiry.inquiry_status === 'accepted' && (
+                <button className="btn-success" onClick={() => handleViewCommission(inquiry.commission_id)}>
+                  前往正式委託單
+                </button>
+              )}
+              {inquiry.inquiry_status === 'pending' && (
+                <button className="btn-primary" onClick={() => { setSelectedInquiry({ ...inquiry, question_template: snapshot.question_template || inquiry.question_template }); setShowInviteModal(true); }}>
+                  ✉️ 邀請詳談
+                </button>
+              )}
+              {canDecline && (
+                <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(inquiry); setShowDeclineModal(true); }}>
+                  {inquiry.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* 🌟 燈箱 (Lightbox) 實作 */}
+      {lightboxOpen && (
+        <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
+          <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>
+            <button className="lightbox-close" onClick={() => setLightboxOpen(false)}>✕</button>
+            {validImages.length > 1 && <button className="lightbox-nav lightbox-prev" onClick={prevImg}>❮</button>}
+            <img src={validImages[imgIdx]} alt="放大檢視" className="lightbox-img" referrerPolicy="no-referrer" />
+            {validImages.length > 1 && <button className="lightbox-nav lightbox-next" onClick={nextImg}>❯</button>}
+            {validImages.length > 1 && <div className="lightbox-counter">{imgIdx + 1} / {validImages.length}</div>}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
