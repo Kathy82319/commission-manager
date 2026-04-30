@@ -390,6 +390,80 @@ input:focus, textarea:focus {
   padding: 14px 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;
 }
 
+/* ==========================================================================
+   🌟 許願池卡片：發布者資訊與點擊 UI
+   ========================================================================== */
+
+/* 1. 外層容器：確保圖示跟文字絕對在同一排 */
+.wish-card-author-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #7A7269;
+}
+
+/* 2. 小人圖示：防擠壓 */
+.wish-card-author-icon {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* 3. 可點擊的連結狀態 (接委託專用) */
+.wish-card-author-link {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  cursor: pointer;
+  border-bottom: 1px dashed #A0978D; /* 底部虛線 */
+  padding-bottom: 1px;
+  transition: all 0.2s ease; /* 平滑過渡效果 */
+}
+
+/* Hover 狀態：整組變色 */
+.wish-card-author-link:hover {
+  border-bottom-color: #b45309;
+}
+
+.wish-card-author-link:hover .wish-card-author-name,
+.wish-card-author-link:hover .wish-card-author-id {
+  color: #b45309;
+  opacity: 1;
+}
+
+/* 4. 名字：防撐爆版面 (Text Truncation) */
+.wish-card-author-name {
+  font-weight: bold;
+  color: #5D4A3E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* 文字過長變 ... */
+  max-width: 120px;
+  transition: color 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .wish-card-author-name {
+    max-width: 200px;
+  }
+}
+
+/* 5. ID 顯示 */
+.wish-card-author-id {
+  font-size: 12px;
+  font-family: monospace;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+/* 6. 純展示狀態 (徵委託專用，無虛線無 Hover) */
+.wish-card-author-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
 /* ==================================================
    📱 手機版適配 (RWD - 包含您最新修復的全部設定)
    ================================================== */
