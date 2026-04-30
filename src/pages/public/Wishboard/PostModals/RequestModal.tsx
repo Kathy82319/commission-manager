@@ -24,8 +24,13 @@ export const RequestModal: React.FC<RequestModalProps> = ({
       let list = prev[field];
       const exclusiveTag = field === 'tags' ? '不限' : '皆可配合';
       
-      if (tag === exclusiveTag) list = list.includes(tag) ? [] : [tag];
-      else list = list.includes(tag) ? list.filter((t: string) => t !== tag) : [...list.filter((t: string) => t !== exclusiveTag), tag];
+      if (tag === exclusiveTag) {
+        list = list.includes(tag) ? [] : [tag];
+      } else {
+        list = list.includes(tag) 
+          ? list.filter((t: string) => t !== tag) 
+          : [...list.filter((t: string) => t !== exclusiveTag), tag];
+      }
       return { ...prev, [field]: list };
     });
   };
@@ -40,9 +45,12 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     return `${R2_PUBLIC_URL}/${url}`;
   };
 
-  // 🌟 新增共用標籤處理邏輯
+  // 🌟 新增共用標籤處理邏輯 (包含資安防護)
   const handleTagInput = (value: string, setValue: React.Dispatch<React.SetStateAction<string>>, field: 'tags' | 'payment_methods') => {
-    const trimmed = value.trim().replace(/,/g, '').replace(/，/g, '');
+    // 🛡️ 資安防護：過濾潛在的危險字元 (XSS 防禦)，並清除逗號與空白
+    let safeValue = value.replace(/[<>"'&]/g, ''); 
+    const trimmed = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
+    
     if (trimmed) {
       toggleTag(trimmed, field);
       setValue('');
@@ -50,7 +58,8 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, value: string, setValue: React.Dispatch<React.SetStateAction<string>>, field: 'tags' | 'payment_methods') => {
-    if (e.key === 'Enter' || e.key === ',' || e.key === '，') {
+    // 支援 Enter、半形/全形逗號、空白鍵
+    if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') {
       e.preventDefault();
       handleTagInput(value, setValue, field);
     }
@@ -83,6 +92,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
             <div className="form-group" style={{ flex: '1 1 300px', gap: '16px' }}>
               <div className="form-group">
                 <label>標題</label>
+                {/* 🛡️ 提醒：標題也可能會被注入，建議後端也需進行 sanitize */}
                 <input type="text" placeholder="簡單描述您的委託需求" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
               </div>
 
@@ -114,7 +124,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
                 <span key={t} className="selectable-tag selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'payment_methods'); }} /></span>
               ))}
               
-              {/* 🌟 加上雙重防護 */}
               <input 
                 type="text" 
                 className="compact-tag-input" 
@@ -136,7 +145,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
                   <span key={t} className="selectable-tag style selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
                 
-                {/* 🌟 加上雙重防護 */}
                 <input 
                   type="text" 
                   className="compact-tag-input" 

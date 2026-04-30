@@ -48,9 +48,20 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
   const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(''));
 
+  // 🌟 強化版：包含 XSS 過濾與字串清理
   const handleTagAdd = (field: 'specialties' | 'no_gos' | 'payment_methods') => {
-    const value = inquireTagInputs[field].trim().replace(/,/g, '').replace(/，/g, ''); // 🌟 清除逗號
-    if (!value) return;
+    const rawValue = inquireTagInputs[field];
+    if (!rawValue) return;
+
+    // 🛡️ 資安防護：過濾危險字元
+    const safeValue = rawValue.replace(/[<>"'&]/g, '');
+    const value = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
+
+    if (!value) {
+      setInquireTagInputs((prev: any) => ({ ...prev, [field]: '' }));
+      return;
+    }
+
     setInquireDraft((prev: any) => {
       const currentTags = prev[field] ? prev[field].split(' ').filter((t: string) => t) : [];
       if (currentTags.includes(value)) return prev;
@@ -148,6 +159,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                   {questions.map((q, idx) => (
                     <div className="form-group" key={idx} style={{ marginBottom: '12px' }}>
                       <label>{q}</label>
+                      {/* 🛡️ 提醒：問卷回答也可能會被注入，後端需進行防護 */}
                       <input 
                         type="text" 
                         placeholder="請輸入您的回答..." 
@@ -184,14 +196,19 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    {/* 🌟 加上 onBlur 雙重防護 */}
+                    {/* 🌟 加上空白鍵觸發，並透過 handleTagAdd 進行過濾 */}
                     <input 
                       type="text" 
                       className="compact-tag-input" 
                       placeholder="+ 項目" 
                       value={inquireTagInputs.specialties} 
                       onChange={(e) => setInquireTagInputs({...inquireTagInputs, specialties: e.target.value})} 
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',' || e.key === '，') { e.preventDefault(); handleTagAdd('specialties'); } }} 
+                      onKeyDown={(e) => { 
+                        if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') { 
+                          e.preventDefault(); 
+                          handleTagAdd('specialties'); 
+                        } 
+                      }} 
                       onBlur={() => handleTagAdd('specialties')}
                       style={{ border: 'none !important', boxShadow: 'none' }} 
                     />
@@ -206,14 +223,18 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
                       </span>
                     ))}
-                    {/* 🌟 加上 onBlur 雙重防護 */}
                     <input 
                       type="text" 
                       className="compact-tag-input" 
                       placeholder="+ 項目" 
                       value={inquireTagInputs.no_gos} 
                       onChange={(e) => setInquireTagInputs({...inquireTagInputs, no_gos: e.target.value})} 
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',' || e.key === '，') { e.preventDefault(); handleTagAdd('no_gos'); } }} 
+                      onKeyDown={(e) => { 
+                        if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') { 
+                          e.preventDefault(); 
+                          handleTagAdd('no_gos'); 
+                        } 
+                      }} 
                       onBlur={() => handleTagAdd('no_gos')}
                       style={{ border: 'none !important', boxShadow: 'none' }} 
                     />
