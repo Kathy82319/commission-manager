@@ -36,6 +36,7 @@ export const CardView: React.FC<CardViewProps> = ({
   handleViewCommission
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
+  const isDeclined = inquiry.inquiry_status === 'declined';
 
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
@@ -78,7 +79,7 @@ export const CardView: React.FC<CardViewProps> = ({
     if (validImages.length > 0) setLightboxOpen(true);
   };
 
-  // 🌟 取得過期資訊與警示樣式
+  // 取得過期資訊與警示樣式
   const expiryInfo = getExpiryInfo(inquiry.expires_at);
 
   return (
@@ -126,7 +127,7 @@ export const CardView: React.FC<CardViewProps> = ({
             <div className="offer-client-info flex flex-wrap items-center gap-2">
               <span className="client-name">{clientName}</span>
               <span className="client-id">@{clientId}</span>
-              {/* 🌟 只有在待確認且未過期時，顯示倒數標籤 */}
+              {/* 只有在待確認且未過期時，顯示倒數標籤 */}
               {inquiry.inquiry_status === 'pending' && inquiry.expires_at && (
                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
                   ⏳ {expiryInfo.text}
@@ -163,6 +164,23 @@ export const CardView: React.FC<CardViewProps> = ({
               <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
             )}
           </div>
+
+          {/* 🌟 核心修改：在內容區下方顯示婉拒/撤回原因 */}
+          {isDeclined && inquiry.decline_reason && (
+            <div className="qa-block mt-4" style={{ 
+              background: '#FEF2F2', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              borderLeft: '4px solid #EF4444',
+            }}>
+              <div className="q-text" style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px', lineHeight: 1 }}>⚠</span> 終止/撤回原因：
+              </div>
+              <div className="a-text" style={{ color: '#A05C5C', marginTop: '4px' }}>
+                {inquiry.decline_reason}
+              </div>
+            </div>
+          )}
 
           {isExpanded && (
             <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
