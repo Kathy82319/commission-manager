@@ -74,6 +74,7 @@ export function App() {
 
         {/* 公開頁面群組 (套用 PublicLayout) */}
         <Route element={<PublicLayout />}>
+          <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=success" replace />} />
           {/* 首頁即為許願池 */}
           <Route path="/" element={<Wishboard />} />
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
@@ -96,8 +97,7 @@ export function App() {
 
         {/* 萬用路由：找不到頁面時一律回首頁*/}
         <Route path="*" element={<Navigate to="/" replace />} />
-         {/*隨便導向一個現有的頁面，至少不要讓它真的 404 */}
-        <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=checking" replace />} />
+        
       </Routes>
     </BrowserRouter>
   );
