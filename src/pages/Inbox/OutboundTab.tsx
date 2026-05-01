@@ -123,93 +123,84 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </span>
               </div>
 
-              <div 
-                onClick={() => toggleExpand(item.inquiry_id)}
-                style={{ 
-                  display: 'flex', gap: '20px', background: isExpanded ? '#F4F4F1' : '#FBFBF9', 
-                  border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '20px',
-                  cursor: 'pointer', transition: 'background 0.2s ease', position: 'relative'
-                }}
-              >
+              {/* 🌟 常駐顯示：原許願池的描述與提問 */}
+              <div style={{ display: 'flex', gap: '20px', background: '#F4F4F1', border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
                 {bulletinImg ? (
-                  <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #EAE6E1', flexShrink: 0 }} />
+                  <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #DED9D3', flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: '80px', height: '80px', background: '#F0F0F0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', flexShrink: 0 }}>
+                  <div style={{ width: '80px', height: '80px', background: '#EAE6E1', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', flexShrink: 0 }}>
                     <ImageIcon size={24} opacity={0.5} />
                   </div>
                 )}
                 
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '24px' }}>
-                  <div style={{ fontSize: '13px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
-                    {displayContent}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>原許願池的描述與提問</h4>
+                  <div className="custom-scrollbar" style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere', paddingRight: '8px' }}>
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+                    {originalQuestions.length > 0 && (
+                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
+                        <strong style={{ color: '#A0978D' }}>{isOffer ? '繪師提問：' : '委託方提問：'}</strong>
+                        <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
+                          {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
+                        </ol>
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D' }}>
-                  {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
               </div>
 
+              <button 
+                onClick={() => toggleExpand(item.inquiry_id)}
+                style={{ width: '100%', background: isExpanded ? '#FBFBF9' : '#FFFFFF', border: '1px solid #EAE6E1', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', marginBottom: '20px', transition: 'all 0.2s' }}
+              >
+                {isExpanded ? <>▲ 收起我的投遞與回覆</> : <>▼ 查看我的投遞與回覆</>}
+              </button>
+
+              {/* 🌟 展開顯示：我的回覆與備註 */}
               {isExpanded && (
-                <div style={{ background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '20px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
-                  
-                  {/* 🌟 區塊一：原許願池的描述與提問 */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>原許願池的描述與提問</h4>
-                    <div className="custom-scrollbar" style={{ background: '#F4F4F1', padding: '12px', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', border: '1px solid #EAE6E1' }}>
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
-                      {originalQuestions.length > 0 && (
-                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
-                          <strong style={{ color: '#7A7269' }}>繪師提問：</strong>
-                          <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#5D4A3E' }}>
-                            {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
-                          </ol>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 🌟 區塊二：我的回覆與備註 */}
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>我的回覆與備註</h4>
-                    <div className="custom-scrollbar" style={{ background: '#F4F4F1', padding: '12px', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', border: '1px solid #EAE6E1' }}>
-                      {isOffer ? (
-                        <>
-                          {snapshot.question_template && (
-                            <div>
-                              <strong style={{ color: '#7A7269' }}>問卷回覆：</strong>
-                              <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.question_template}</div>
-                            </div>
-                          )}
-                          {snapshot.message && (
-                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
-                              <strong style={{ color: '#7A7269' }}>備註留言：</strong>
-                              <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.message}</div>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        snapshot.message && (
-                          <div>
-                            <strong style={{ color: '#7A7269' }}>自我介紹 / 備註：</strong>
-                            <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.message}</div>
+                <div style={{ background: '#F4F4F1', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>我的回覆與備註</h4>
+                  <div className="custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere', paddingRight: '8px' }}>
+                    
+                    {/* 🌟 正確解析 answers 陣列 */}
+                    {snapshot.answers && snapshot.answers.length > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        {snapshot.answers.map((ans: any, idx: number) => (
+                          <div key={idx} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: idx !== snapshot.answers.length - 1 ? '1px dashed #DED9D3' : 'none' }}>
+                            <strong style={{ color: '#7A7269' }}>Q: {ans.question}</strong>
+                            <div style={{ whiteSpace: 'pre-wrap', marginTop: '2px' }}>A: {ans.answer || '(未填寫)'}</div>
                           </div>
-                        )
-                      )}
-                      
-                      {snapshot.images && snapshot.images.length > 0 && (
-                        <div style={{ marginTop: '12px' }}>
-                          <strong style={{ color: '#7A7269' }}>附件圖片：</strong>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-                            {snapshot.images.map((img: string, idx: number) => (
-                              <img key={idx} src={getFullUrl(img)} alt={`附件 ${idx + 1}`} referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DED9D3' }} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                        ))}
+                      </div>
+                    )}
 
+                    {snapshot.message && (
+                      <div style={{ marginTop: snapshot.answers && snapshot.answers.length > 0 ? '12px' : '0', paddingTop: snapshot.answers && snapshot.answers.length > 0 ? '12px' : '0', borderTop: snapshot.answers && snapshot.answers.length > 0 ? '1px dashed #DED9D3' : 'none' }}>
+                        <strong style={{ color: '#7A7269' }}>備註留言：</strong>
+                        <div style={{ whiteSpace: 'pre-wrap', marginTop: '2px' }}>{snapshot.message}</div>
+                      </div>
+                    )}
+
+                    {/* 如果是繪師投遞，顯示舒適圈與雷點 */}
+                    {!isOffer && (snapshot.specialties || snapshot.no_gos) && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #DED9D3' }}>
+                        {snapshot.specialties && <div style={{ marginBottom: '4px' }}><strong style={{ color: '#ff8c00' }}>舒適圈/擅長：</strong> {snapshot.specialties}</div>}
+                        {snapshot.no_gos && <div><strong style={{ color: '#e11d48' }}>雷點/不擅長：</strong> {snapshot.no_gos}</div>}
+                      </div>
+                    )}
+                    
+                    {snapshot.images && snapshot.images.length > 0 && (
+                      <div style={{ marginTop: '12px' }}>
+                        <strong style={{ color: '#7A7269' }}>附件圖片：</strong>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                          {snapshot.images.map((img: string, idx: number) => (
+                            <img key={idx} src={getFullUrl(img)} alt={`附件 ${idx + 1}`} referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DED9D3' }} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
                 </div>
               )}
 
