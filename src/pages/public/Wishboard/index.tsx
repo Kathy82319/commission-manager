@@ -1,4 +1,6 @@
+// src/pages/public/Wishboard/index.tsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -8,9 +10,10 @@ import { WishCard } from './WishCard';
 import { FilterBar } from './FilterBar';
 import { RequestModal } from './PostModals/RequestModal';
 import { OfferModal } from './PostModals/OfferModal';
-import { InquireModal } from './InquireModals'; // 這是投單彈窗
+import { InquireModal } from './InquireModals'; 
 
 export const Wishboard: React.FC = () => {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,9 +25,16 @@ export const Wishboard: React.FC = () => {
   const [selectedBulletin, setSelectedBulletin] = useState<any | null>(null);
   
   const [isUploading, setIsUploading] = useState(false);
-  const [inquireUploading, setInquireUploading] = useState(false); // 🌟 保留給 InquireModal
+  const [inquireUploading, setInquireUploading] = useState(false); 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userShowcase, setUserShowcase] = useState<any[]>([]);
+
+  // 🌟 新增：儲存本月許願池相關的額度使用量
+  const [wishQuota, setWishQuota] = useState<{ 
+    is_pro: boolean, 
+    offer_used: number, offer_max: number, 
+    request_inquire_used: number, request_inquire_max: number 
+  } | null>(null);
 
   // 徵委託狀態
   const initialRequestForm = {
@@ -85,9 +95,19 @@ export const Wishboard: React.FC = () => {
     try {
       const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
       if (resBulletins.success) setBulletins(resBulletins.data);
+      
       const resUser = await apiClient.get('/api/users/me');
-      if (resUser.success) setCurrentUser(resUser.data);
-    } catch (e) { console.log("訪客模式"); } finally { setLoading(false); }
+      if (resUser.success) {
+        setCurrentUser(resUser.data);
+        // 🌟 登入狀態下，額外請求一次本月額度資訊
+        const resQuota = await apiClient.get('/api/bulletins/quota');
+        if (resQuota.success) setWishQuota(resQuota.data);
+      }
+    } catch (e) { 
+      console.log("訪客模式"); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const fetchUserShowcase = async () => {
@@ -139,12 +159,11 @@ export const Wishboard: React.FC = () => {
     } catch (err) { showToast("上傳失敗", "error"); } finally { setIsUploading(false); }
   };
 
-  // 🌟 補回缺失的投單圖片上傳函式
   const handleInquireImageUpload = async (resultBlobs: { preview: Blob }) => {
     if (inquireDraft.images.length >= 3) return showToast("最多上傳 3 張", "error");
     if (resultBlobs.preview.size > 3 * 1024 * 1024) return showToast("單張不能超過 3MB", "error");
     
-    setInquireUploading(true); // 使用狀態
+    setInquireUploading(true);
     try {
       const fileName = await uploadToR2(resultBlobs.preview, 'proposals');
       setInquireDraft(prev => ({ ...prev, images: [...prev.images, fileName] }));
@@ -156,7 +175,37 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-const handlePostSubmit = async (e: React.FormEvent) => {
+  // 🌟 新增：攔截發布按鈕，進行發佈額度判斷
+  const handlePostTrigger = () => {
+    if (activeTab === 'offer' && wishQuota && !wishQuota.is_pro) {
+       if (wishQuota.offer_used >= wishQuota.offer_max) {
+           showToast('免費版每月僅能發佈 1 則接委託，您的額度已用盡。', 'error');
+           return;
+       }
+    }
+    setShowPostModal(true);
+  };
+
+  // 🌟 新增：攔截投遞按鈕，進行投遞額度判斷
+  const openInquireModal = (bulletin: any) => {
+    if (bulletin.category === 'request' && wishQuota && !wishQuota.is_pro) {
+       if (wishQuota.request_inquire_used >= wishQuota.request_inquire_max) {
+           showToast('免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。', 'error');
+           return;
+       }
+    }
+    setSelectedBulletin(bulletin);
+    if (bulletin.category === 'offer') {
+      setInquireDraft({ message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] });
+    } else {
+      let settings = JSON.parse(currentUser?.profile_settings || '{}');
+      const card = settings.bulletin_card || {};
+      setInquireDraft({ message: '', specialties: card.specialties || '', no_gos: card.no_gos || '', payment_methods: card.payment_methods || '', question_template: settings.question_template || '', images: card.images || [] });
+    }
+    setShowInquireModal(true);
+  };
+
+  const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return showToast("請先登入才能發布", "error");
 
@@ -173,14 +222,10 @@ const handlePostSubmit = async (e: React.FormEvent) => {
           ref_image_key: requestForm.ref_image,
         };
       } else {
-        // 🌟 修正：停止在前端自行打包 JSON！
-        // 我們直接把整個 offerForm (包含 max_slots, selection_type, content 等平坦欄位) 送給後端。
-        // 由後端的 bulletinController 負責安全過濾並打包成 JSON 寫入資料庫。
         payload = {
           ...payload, 
           ...offerForm,
           ref_image_key: JSON.stringify(offerForm.ref_images),
-          // 只做必要的前端清理：過濾掉空的題目
           questions: offerForm.questions.filter(q => q.trim() !== '') 
         };
       }
@@ -191,26 +236,14 @@ const handlePostSubmit = async (e: React.FormEvent) => {
         setShowPostModal(false);
         if (activeTab === 'request') setRequestForm(initialRequestForm);
         else setOfferForm(getInitialOfferForm());
-        initData();
+        initData(); // 重新整理資料，包含最新額度
       } else showToast(res.message || "發布失敗", "error");
     } catch (err: any) { 
       showToast(err.message || "發布發生錯誤", "error"); 
     }
   };
 
-  const openInquireModal = (bulletin: any) => {
-    setSelectedBulletin(bulletin);
-    if (bulletin.category === 'offer') {
-      setInquireDraft({ message: '', specialties: '', no_gos: '', payment_methods: '', question_template: '', images: [] });
-    } else {
-      let settings = JSON.parse(currentUser?.profile_settings || '{}');
-      const card = settings.bulletin_card || {};
-      setInquireDraft({ message: '', specialties: card.specialties || '', no_gos: card.no_gos || '', payment_methods: card.payment_methods || '', question_template: settings.question_template || '', images: card.images || [] });
-    }
-    setShowInquireModal(true);
-  };
-
-const handleInquireSubmit = async () => {
+  const handleInquireSubmit = async () => {
     try {
       const res = await apiClient.post(`/api/bulletins/${selectedBulletin.id}/inquire`, { 
         artist_snapshot: JSON.stringify(inquireDraft) 
@@ -219,17 +252,12 @@ const handleInquireSubmit = async () => {
       if (res.success) {
         showToast("投遞成功！");
         setShowInquireModal(false);
-        initData();
+        initData(); // 重新整理資料，包含最新額度
       } else {
-        // 🌟 優先顯示後端傳來的 message，如果沒有才 fallback 到預設文字
         showToast(res.message || res.error || "投遞失敗", "error");
       }
     } catch (error: any) { 
-      // 🌟 如果 apiClient 遇到 403 錯誤直接 throw，我們要把後端的訊息挖出來
-      // 相容 Axios (error.response.data.message) 或是純 Error 物件 (error.message)
       const errorMsg = error.response?.data?.message || error.message || "操作發生錯誤，請稍後再試";
-      
-      // 特殊處理：如果是原生的 "Failed to fetch" 這類網路斷線錯誤，給予友善提示
       if (errorMsg === 'Failed to fetch') {
         showToast("網路連線異常，請檢查您的網路狀態", "error");
       } else {
@@ -247,11 +275,24 @@ const handleInquireSubmit = async () => {
         </div>
       )}
 
+      {/* 🌟 新增：免費版額度提示橫幅 */}
+      {currentUser && wishQuota && !wishQuota.is_pro && (
+        <div style={{ padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
+          </span>
+          <button onClick={() => navigate('/artist/settings')} style={{ background: '#A67B3E', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            升級專業版解鎖限制
+          </button>
+        </div>
+      )}
+
       <FilterBar 
         activeTab={activeTab} setActiveTab={setActiveTab} 
         selectedFilters={selectedFilters} 
         toggleTag={(tag) => setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} 
-        currentUser={currentUser} onPostTrigger={() => setShowPostModal(true)} 
+        currentUser={currentUser} 
+        onPostTrigger={handlePostTrigger} // 🌟 替換為攔截函式
       />
 
       <main className="wish-grid">
@@ -282,7 +323,7 @@ const handleInquireSubmit = async () => {
           selectedBulletin={selectedBulletin} inquireDraft={inquireDraft} setInquireDraft={setInquireDraft}
           inquireTagInputs={inquireTagInputs} setInquireTagInputs={setInquireTagInputs} inquireUploading={inquireUploading}
           onClose={() => setShowInquireModal(false)} onSubmit={handleInquireSubmit} 
-          onImageUpload={handleInquireImageUpload} // 🌟 傳入函式
+          onImageUpload={handleInquireImageUpload} 
         />
       )}
     </div>

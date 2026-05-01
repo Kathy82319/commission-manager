@@ -43,12 +43,11 @@ export const inquiryController = {
     }
   },
 
-  async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修改：額外 JOIN Users 表來撈取繪師的 profile_settings (內含 TOS)
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id,
-                a.profile_settings as artist_settings, u.display_name as client_name
+                a.profile_settings as artist_settings, a.plan_type as artist_plan, a.pro_expires_at, a.trial_end_at, u.display_name as client_name
          FROM BulletinInquiries i
          JOIN Bulletins b ON i.bulletin_id = b.id
          LEFT JOIN Users a ON i.artist_id = a.id
@@ -65,10 +64,26 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
+      // 🌟 新增：如果是繪師，順便計算他本月已建單數量並回傳，讓前端可以顯示！
+      let quotaInfo = null;
+      if (currentUserId === data.artist_id) {
+         const { results: countRes } = await env.commission_db.prepare(`
+            SELECT COUNT(*) as count FROM Commissions 
+            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
+         `).bind(currentUserId).all();
+         const used = countRes[0]?.count || 0;
+         
+         const isPro = data.artist_plan === 'pro' && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
+         const isTrial = data.artist_plan === 'trial' && (!data.trial_end_at || new Date(data.trial_end_at) > new Date());
+         const max = (isPro || isTrial) ? -1 : 3; // -1 代表無限
+         
+         quotaInfo = { used_quota: used, max_quota: max, plan_type: data.artist_plan };
+      }
+
       const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, data, quota: quotaInfo }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
@@ -128,12 +143,12 @@ export const inquiryController = {
     }
   },
 
-  async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修改：建立訂單時同時抓取繪師的最新 TOS 快照
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, 
-                u.display_name as client_name, a.profile_settings as artist_settings
+                u.display_name as client_name, a.profile_settings as artist_settings,
+                a.plan_type, a.pro_expires_at, a.trial_end_at
          FROM BulletinInquiries i 
          JOIN Bulletins b ON i.bulletin_id = b.id 
          LEFT JOIN Users u ON b.client_id = u.id
@@ -143,13 +158,32 @@ export const inquiryController = {
 
       if (!inquiry || !inquiry.negotiation_draft) throw new Error('草稿尚未準備好');
 
+      // 🌟 新增：成單前額度檢查 (針對繪師的額度)
+      const isPro = inquiry.plan_type === 'pro' && (!inquiry.pro_expires_at || new Date(inquiry.pro_expires_at) > new Date());
+      const isTrial = inquiry.plan_type === 'trial' && (!inquiry.trial_end_at || new Date(inquiry.trial_end_at) > new Date());
+      
+      if (!isPro && !isTrial) {
+         const { results: countRes } = await env.commission_db.prepare(`
+            SELECT COUNT(*) as count FROM Commissions 
+            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
+         `).bind(inquiry.artist_id).all();
+         
+         const usedCount = (countRes[0]?.count as number) || 0;
+         if (usedCount >= 3) {
+            return new Response(JSON.stringify({ 
+              success: false, 
+              error: 'QUOTA_EXCEEDED', 
+              message: '該繪師本月建單額度已滿，無法建立新訂單。' 
+            }), { status: 403, headers: corsHeaders });
+         }
+      }
+
       const draft = JSON.parse(inquiry.negotiation_draft);
       
       const timestampStr = Date.now().toString();
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
 
-      // 🌟 解析繪師的 TOS 用於存檔
       let tosText = "繪師未提供專屬協議說明。";
       try {
         const settings = JSON.parse(inquiry.artist_settings || '{}');
@@ -182,7 +216,7 @@ export const inquiryController = {
         commissionId, currentUserId, inquiry.artist_id, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
-        tosText // 🌟 快照寫入
+        tosText
       ).run();
 
       const oldMessages = await env.commission_db.prepare(

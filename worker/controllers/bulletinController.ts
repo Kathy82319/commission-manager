@@ -66,8 +66,32 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '最低預算不得高於最高預算' }), { status: 400, headers: corsHeaders });
       }
 
-      // 防洗版機制
       const currentCategory = category || 'request';
+
+      // 🌟 新增：免費版繪師每月發佈「接委託 (offer)」限制 1 次
+      if (currentCategory === 'offer') {
+          const user = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+          const isPro = user?.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+          const isTrial = user?.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
+          
+          if (!isPro && !isTrial) {
+              const { results: countRes } = await env.commission_db.prepare(`
+                  SELECT COUNT(*) as count FROM Bulletins 
+                  WHERE client_id = ? AND category = 'offer' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+              `).bind(currentUserId).all();
+              
+              const usedCount = (countRes[0]?.count as number) || 0;
+              if (usedCount >= 1) {
+                  return new Response(JSON.stringify({ 
+                      success: false, 
+                      error: 'QUOTA_EXCEEDED', 
+                      message: '免費版每月僅能發佈 1 則接委託，您的額度已用盡。升級專業版以解鎖發佈限制！' 
+                  }), { status: 403, headers: corsHeaders });
+              }
+          }
+      }
+
+      // 防洗版機制 (不論免費/專業版，同類型只能有一篇刊登中)
       const existingPost = await env.commission_db.prepare(
         `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
       ).bind(currentUserId, currentCategory).first();
@@ -134,19 +158,42 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '您已達到此許願池的投遞次數上限 (最多 2 次)' }), { status: 403, headers: corsHeaders });
       }
 
-      const body = await request.json() as any;
-      const { artist_snapshot } = body;
-      const snapshotStr = typeof artist_snapshot === 'string' ? artist_snapshot : JSON.stringify(artist_snapshot);
-
-      // 🌟 D1 樂觀鎖防超賣機制
-      const bulletin = await env.commission_db.prepare(`SELECT content, client_id FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first();
-      
+      // 🌟 新增：免費版繪師每月投遞「徵委託 (request)」限制 5 次
+      const bulletin = await env.commission_db.prepare(`SELECT content, client_id, category FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first() as any;
       if (!bulletin) {
         return new Response(JSON.stringify({ success: false, message: '此許願池文章不存在或已關閉' }), { status: 404, headers: corsHeaders });
       }
       if (bulletin.client_id === currentUserId) {
          return new Response(JSON.stringify({ success: false, message: '無法投遞給自己' }), { status: 400, headers: corsHeaders });
       }
+
+      if (bulletin.category === 'request') {
+          const user = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+          const isPro = user?.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+          const isTrial = user?.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
+          
+          if (!isPro && !isTrial) {
+              // 撈取本月已投遞「徵委託 (request)」的次數
+              const { results: countRes } = await env.commission_db.prepare(`
+                  SELECT COUNT(*) as count FROM BulletinInquiries i
+                  JOIN Bulletins b ON i.bulletin_id = b.id
+                  WHERE i.artist_id = ? AND b.category = 'request' AND strftime('%Y-%m', i.created_at) = strftime('%Y-%m', 'now')
+              `).bind(currentUserId).all();
+              
+              const usedCount = (countRes[0]?.count as number) || 0;
+              if (usedCount >= 5) {
+                  return new Response(JSON.stringify({ 
+                      success: false, 
+                      error: 'QUOTA_EXCEEDED', 
+                      message: '免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。升級專業版以解鎖投遞限制！' 
+                  }), { status: 403, headers: corsHeaders });
+              }
+          }
+      }
+
+      const body = await request.json() as any;
+      const { artist_snapshot } = body;
+      const snapshotStr = typeof artist_snapshot === 'string' ? artist_snapshot : JSON.stringify(artist_snapshot);
 
       let contentObj: any = {};
       try {
@@ -343,4 +390,39 @@ export const bulletinController = {
       return new Response(JSON.stringify({ success: false, error: '批次處理發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
+  // 🌟 新增：獲取本月許願池使用額度 API
+  async getQuota(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const user = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      const isPro = user?.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+      const isTrial = user?.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
+
+      // 1. 本月發布「接委託(offer)」的次數
+      const { results: offerRes } = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM Bulletins 
+        WHERE client_id = ? AND category = 'offer' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+      `).bind(currentUserId).all();
+
+      // 2. 本月投遞「徵委託(request)」的次數
+      const { results: requestRes } = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM BulletinInquiries i
+        JOIN Bulletins b ON i.bulletin_id = b.id
+        WHERE i.artist_id = ? AND b.category = 'request' AND strftime('%Y-%m', i.created_at) = strftime('%Y-%m', 'now')
+      `).bind(currentUserId).all();
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: {
+          is_pro: isPro || isTrial,
+          offer_used: offerRes[0]?.count || 0,
+          offer_max: 1,
+          request_inquire_used: requestRes[0]?.count || 0,
+          request_inquire_max: 5
+        }
+      }), { headers: corsHeaders });
+    } catch (error: any) {
+      console.error("getQuota Error:", error);
+      return new Response(JSON.stringify({ success: false, error: '讀取額度發生異常' }), { status: 500, headers: corsHeaders });
+    }
+  }
 };

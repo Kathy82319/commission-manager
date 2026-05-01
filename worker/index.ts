@@ -59,6 +59,12 @@ export default {
 
       // --- 許願池 (Bulletins) 相關路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
+        // 🌟 補上這一段：抓取額度路由
+        if (sanitizedPath === "/api/bulletins/quota" && request.method === "GET") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.getQuota(currentUserId!, env, corsHeaders);
+        }
         if (sanitizedPath === "/api/bulletins/client/inbox" && request.method === "GET") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;

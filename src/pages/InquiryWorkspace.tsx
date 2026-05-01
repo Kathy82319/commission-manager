@@ -19,11 +19,14 @@ export const InquiryWorkspace: React.FC = () => {
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [showMobileAside, setShowMobileAside] = useState(false); // 手機版用
+  const [showMobileAside, setShowMobileAside] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
   const [isAccepted, setIsAccepted] = useState(false);
+
+  // 🌟 儲存繪師的額度資訊
+  const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
 
   const [draft, setDraft] = useState<any>({
     project_name: '', total_price: 0, usage_type: '非商用', is_rush: '否', draw_scope: '大頭', bg_type: '無背景', char_count: 1, add_ons: ''
@@ -41,6 +44,12 @@ export const InquiryWorkspace: React.FC = () => {
       const resInquiry = await apiClient.get(`/api/inquiries/${id}`);
       if (resInquiry.success) {
         setInquiry(resInquiry.data);
+        
+        // 🌟 如果後端有回傳額度資訊，就存起來
+        if (resInquiry.quota) {
+           setArtistQuota(resInquiry.quota);
+        }
+
         const resUser = await apiClient.get('/api/users/me');
         const currentUserIsArtist = resUser.data.id === resInquiry.data.artist_id;
         setIsArtist(currentUserIsArtist);
@@ -50,7 +59,17 @@ export const InquiryWorkspace: React.FC = () => {
           if (resInquiry.data.negotiation_draft) {
             setDraft(JSON.parse(resInquiry.data.negotiation_draft));
           } else if (isFirstLoad.current) {
-            setDraft((prev: any) => ({ ...prev, project_name: resInquiry.data.bulletin_content.substring(0, 30) }));
+             // 嘗試解析 bulletin_content 來當預設專案名稱
+             let defaultName = "許願池委託";
+             try {
+                const parsedContent = JSON.parse(resInquiry.data.bulletin_content);
+                if (parsedContent.description) {
+                   defaultName = parsedContent.description.substring(0, 30);
+                }
+             } catch(e) {
+                defaultName = resInquiry.data.bulletin_content.substring(0, 30);
+             }
+            setDraft((prev: any) => ({ ...prev, project_name: defaultName }));
           }
         }
         isFirstLoad.current = false;
@@ -87,7 +106,7 @@ export const InquiryWorkspace: React.FC = () => {
       await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
       await apiClient.post(`/api/inquiries/${id}/propose`, {});
       alert('已送出正式提案給案主！');
-      setShowMobileAside(false); // 送出後關閉手機選單
+      setShowMobileAside(false); 
       fetchData();
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
@@ -99,7 +118,13 @@ export const InquiryWorkspace: React.FC = () => {
       if (res.success) {
         setShowFinalModal(false);
         fetchData();
-      } else { alert('成單失敗：' + res.error); }
+      } else { 
+        if (res.error === 'QUOTA_EXCEEDED') {
+            alert('成單失敗：該繪師本月的建單額度已滿。');
+        } else {
+            alert('成單失敗：' + res.error); 
+        }
+      }
     } catch (error: any) { alert('系統異常，成單失敗'); }
   };
 
@@ -130,24 +155,31 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  const artistSnap = JSON.parse(inquiry.artist_snapshot || '{}');
+  // 🌟 解析原始許願內容
+  let displayBulletinContent = inquiry.bulletin_content;
+  try {
+     const parsed = JSON.parse(inquiry.bulletin_content);
+     if (parsed.description) {
+        displayBulletinContent = parsed.description;
+     }
+  } catch (e) {
+     // 如果不是 JSON，就照原樣顯示
+  }
+
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
 
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
       
-      {/* 🌟 修改點：將寫在 style 裡面的 CSS 搬到 className 以便集中管理與響應式控制 */}
-
       {/* 左側聊天區 */}
       <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
         <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>← 返回</button>
-            <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>洽談：{inquiry.bulletin_content.substring(0, 20)}...</h2>
+            <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>洽談：{displayBulletinContent.substring(0, 20)}...</h2>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* 手機版：切換合約側邊欄的按鈕 */}
             <button 
               className="iw-mobile-toggle-btn"
               onClick={() => setShowMobileAside(!showMobileAside)}
@@ -186,8 +218,6 @@ export const InquiryWorkspace: React.FC = () => {
         </footer>
       </div>
 
-      {/* 右側側邊欄 (手機版將被隱藏並作為 Drawer) */}
-      {/* 遮罩，只有在手機版且選單開啟時顯示 */}
       {showMobileAside && (
         <div className="iw-mobile-overlay" onClick={() => setShowMobileAside(false)} style={{ display: 'none', position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 19 }}></div>
       )}
@@ -200,16 +230,37 @@ export const InquiryWorkspace: React.FC = () => {
               {inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單'}
             </span>
           </h3>
-          <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p>
+          
+          {/* 🌟 額度提醒 UI */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+            <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>
+               {isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}
+            </p> 
+            
+            {isArtist && artistQuota && (
+               <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 'bold',
+                  color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294',
+                  backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8'
+               }}>
+                  {artistQuota.max_quota === -1 
+                     ? '專業版無限額度' 
+                     : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`
+                  }
+               </span>
+            )}
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '0px 8px 8px 8px', marginBottom: '12px', position: 'relative' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
-              <p><strong>原始許願內容：</strong><br/>{inquiry.bulletin_content}</p>
-              <p style={{ marginTop: '8px' }}><strong>繪師提問單範本：</strong><br/>{artistSnap.question_template || "無提問範本"}</p>
-              <p style={{ marginTop: '8px' }}><strong>案主初始回覆：</strong><br/>{inquiry.client_response || "尚未回覆"}</p>
+              <p><strong>原始許願內容：</strong><br/>{displayBulletinContent}</p>
             </div>
             <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', padding: '4px 0', marginTop: '4px' }}>
               {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}

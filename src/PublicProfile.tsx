@@ -1,6 +1,6 @@
 // src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useOutletContext, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User } from 'lucide-react';
