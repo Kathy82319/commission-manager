@@ -150,11 +150,13 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  // 🌟 解析許願池原始內容
+  // 🌟 解析許願池原始內容與問題
   let displayBulletinContent = inquiry.bulletin_content;
+  let originalQuestions: string[] = [];
   try {
       const parsed = JSON.parse(inquiry.bulletin_content);
       if (parsed.description) displayBulletinContent = parsed.description;
+      if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
   } catch (e) {}
 
   // 🌟 解析投遞時的快照內容
@@ -226,38 +228,47 @@ export const InquiryWorkspace: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           
-          {/* 🌟 修正的許願池媒合軌跡區塊 */}
+          {/* 🌟 修正的許願池媒合軌跡區塊 (Email 引用風格) */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0' }}>🔍 許願池媒合軌跡</h4>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
-              <p style={{ margin: '0 0 8px 0' }}>
-                <strong style={{ color: '#A0978D' }}>原始許願內容：</strong><br/>
-                {displayBulletinContent}
-              </p>
+              
+              <div style={{ background: '#F0F3F5', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #C1D6E8', marginBottom: '12px' }}>
+                <p style={{ margin: '0 0 8px 0', color: '#4A7294', fontWeight: 'bold' }}>引用原始貼文與設定：</p>
+                <p style={{ margin: '0 0 8px 0', whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</p>
+                {originalQuestions.length > 0 && (
+                  <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #C1D6E8' }}>
+                    <strong style={{ color: '#4A7294' }}>繪師預設提問：</strong>
+                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                      {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
+                    </ol>
+                  </div>
+                )}
+              </div>
 
               {/* 🌟 根據接委託/徵委託動態渲染快照內容 */}
               {isOffer ? (
                 // 接委託 (案主投遞繪師)
                 <>
                   {parsedSnapshot.question_template && (
-                    <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
+                    <p style={{ margin: '0 0 8px 0' }}>
                       <strong style={{ color: '#A0978D' }}>案主問卷回覆：</strong><br/>
-                      {parsedSnapshot.question_template}
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.question_template}</span>
                     </p>
                   )}
                   {parsedSnapshot.message && (
                     <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
-                      <strong style={{ color: '#A0978D' }}>案主留言：</strong><br/>
-                      {parsedSnapshot.message}
+                      <strong style={{ color: '#A0978D' }}>案主備註留言：</strong><br/>
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
                     </p>
                   )}
                 </>
               ) : (
                 // 徵委託 (繪師投遞案主)
                 parsedSnapshot.message && (
-                  <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
+                  <p style={{ margin: '0 0 8px 0' }}>
                     <strong style={{ color: '#A0978D' }}>繪師自介/留言：</strong><br/>
-                    {parsedSnapshot.message}
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
                   </p>
                 )
               )}
