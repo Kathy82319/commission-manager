@@ -140,7 +140,15 @@ export const Inbox: React.FC = () => {
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   
   // 🌟 核心修改：直接導向委託單管理總覽頁面，不依賴個別 commission_id
-  const handleViewCommission = () => navigate('/workspace');
+  const handleViewCommission = () => {
+  // 如果當下是「我的許願池」(案主視角)，則跳轉至案主委託單列表
+  if (activeTab === 'client') {
+    navigate('/client/orders'); 
+  } else {
+    // 如果當下是「我投遞的履歷」(繪師視角)，則跳轉至繪師接案本
+    navigate('/artist/notebook'); 
+  }
+};
 
   return (
     <div className="inbox-page-container">
