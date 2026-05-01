@@ -14,8 +14,8 @@ export const paymentController = {
       
       const amount = 199;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
-      const backendUrl = env.BACKEND_URL || "https://commission-app.pages.workers.dev";
+      const absoluteFrontendUrl = "https://cath-commission-manager.pages.pages.dev";
+      const backendUrl = env.BACKEND_URL || "https://cath-commission-manager.pages.workers.dev";
       
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
