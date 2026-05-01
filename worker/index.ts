@@ -51,15 +51,22 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      if (sanitizedPath === "/api/notifications" && request.method === "GET") {
+      // --- 🌟 通知 (Notifications) 相關路由 ---
+      if (sanitizedPath.startsWith("/api/notifications")) {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
-        return notificationController.getNotifications(request, currentUserId!, env, corsHeaders);
+
+        if (sanitizedPath === "/api/notifications" && request.method === "GET") {
+          return notificationController.getNotifications(request, currentUserId!, env, corsHeaders);
+        }
+        // 🌟 新增的消除紅點 (標記已讀) 路由
+        if (sanitizedPath === "/api/notifications/read" && request.method === "POST") {
+          return notificationController.markAsRead(request, currentUserId!, env, corsHeaders);
+        }
       }
 
       // --- 許願池 (Bulletins) 相關路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
-        // 🌟 補上這一段：抓取額度路由
         if (sanitizedPath === "/api/bulletins/quota" && request.method === "GET") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -196,7 +203,6 @@ export default {
         const artistId = pathParts[4];
         return showcaseController.getPublicList(artistId, env, corsHeaders);
       }
-      // 🌟 [新增] 公開排單表 API 路由
       if (sanitizedPath.startsWith("/api/public/queue/")) {
         const artistId = pathParts[4];
         return commController.getPublicQueue(artistId, env, corsHeaders);

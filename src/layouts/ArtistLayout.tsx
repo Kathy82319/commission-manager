@@ -1,3 +1,4 @@
+// src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react'; 
@@ -44,7 +45,6 @@ export function ArtistLayout() {
     checkAuthAndFetchProfile();
   }, [navigate, API_BASE]);
 
-  // 🌟 改用整合後的 notifications API
   useEffect(() => {
     if (!artist) return;
     const fetchUnread = async () => {
@@ -62,7 +62,6 @@ export function ArtistLayout() {
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
 
-  // 🌟 點擊外部自動關閉通知選單
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -97,6 +96,24 @@ export function ArtistLayout() {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+  };
+
+  // 🌟 處理打開鈴鐺並消除紅點的邏輯
+  const handleOpenNotifMenu = async () => {
+    const nextState = !showNotifMenu;
+    setShowNotifMenu(nextState);
+
+    if (nextState && unreadCount > 0) {
+      setUnreadCount(0); // 樂觀更新，UI 立刻消除數字
+      try {
+        await fetch(`${API_BASE}/api/notifications/read?role=artist`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (e) {
+        console.error("無法標記通知為已讀", e);
+      }
+    }
   };
 
   let planDisplay = '基礎免費版';
@@ -143,12 +160,16 @@ export function ArtistLayout() {
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
 
+  // 🌟 邏輯控制顯示數量：最少 5 則，若未讀大於 5 則就顯示全部未讀數量
+  const displayCount = Math.max(unreadCount, 5);
+  const displayedNotifs = notifications.slice(0, displayCount);
+
   return (
     <>
-      {/* 🌟 放置於佈局框架外部的全域鈴鐺，徹底避免擠壓原有 Layout */}
+      {/* 🌟 全域鈴鐺 */}
       <div ref={menuRef} style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9999 }}>
         <div 
-          onClick={() => setShowNotifMenu(!showNotifMenu)}
+          onClick={handleOpenNotifMenu}
           style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
         >
           <Bell size={22} color="#4b5563" />
@@ -163,22 +184,24 @@ export function ArtistLayout() {
           <div style={{ position: 'absolute', top: '55px', right: '0', width: '340px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
              <div style={{ padding: '14px 16px', fontWeight: 'bold', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', color: '#374151' }}>系統通知</div>
              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                {notifications.length === 0 ? (
+                {displayedNotifs.length === 0 ? (
                   <div style={{ padding: '30px 24px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>目前沒有新通知</div>
                 ) : (
-                  notifications.map(n => (
+                  displayedNotifs.map((n: any) => (
                     <div 
                       key={n.id} 
                       onClick={() => { setShowNotifMenu(false); navigate(n.link); }} 
-                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: n.isUnread ? '#f0f7ff' : 'transparent' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#e0f0ff' : '#f9fafb'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#f0f7ff' : 'transparent'}
                     >
+                      {/* 🌟 藍色未讀小點點 */}
+                      {n.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0, marginRight: '10px' }}></div>}
+                      
                       <div style={{ flex: 1, paddingRight: '12px' }}>
                         <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
                         <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
-                      {/* 🌟 加入精美的跳轉按鈕引導 */}
                       <div style={{ fontSize: '13px', color: '#3b82f6', fontWeight: 'bold', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2px' }}>
                         查看 <span style={{ fontSize: '16px', paddingBottom: '2px' }}>›</span>
                       </div>

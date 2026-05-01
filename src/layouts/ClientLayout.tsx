@@ -10,7 +10,6 @@ export function ClientLayout() {
   const [profile, setProfile] = useState<any>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   
-  // 🌟 手機版側邊欄控制狀態
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
   
@@ -99,15 +98,37 @@ export function ClientLayout() {
     }
   };
 
+  // 🌟 處理打開鈴鐺並消除紅點的邏輯
+  const handleOpenNotifMenu = async () => {
+    const nextState = !showNotifMenu;
+    setShowNotifMenu(nextState);
+
+    if (nextState && unreadCount > 0) {
+      setUnreadCount(0); // 樂觀更新，UI 立刻消除數字
+      try {
+        await fetch(`${API_BASE}/api/notifications/read?role=client`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (e) {
+        console.error("無法標記通知為已讀", e);
+      }
+    }
+  };
+
   if (!isAuthorized) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#5a6e85', color: '#FFF' }}>載入中...</div>;
+
+  // 🌟 邏輯控制顯示數量：最少 5 則，若未讀大於 5 則就顯示全部未讀數量
+  const displayCount = Math.max(unreadCount, 5);
+  const displayedNotifs = notifications.slice(0, displayCount);
 
   return (
     <div className="client-layout-wrapper">
       
-      {/* 🌟 全域浮動小鈴鐺 (獨立於所有排版之外，絕不擠壓內容) */}
+      {/* 🌟 全域浮動小鈴鐺 */}
       <div ref={menuRef} style={{ position: 'fixed', top: '10px', right: '24px', zIndex: 9999 }}>
         <div 
-          onClick={() => setShowNotifMenu(!showNotifMenu)}
+          onClick={handleOpenNotifMenu}
           style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
         >
           <Bell size={22} color="#4b5563" />
@@ -122,17 +143,20 @@ export function ClientLayout() {
           <div style={{ position: 'absolute', top: '55px', right: '0', width: '340px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
              <div style={{ padding: '14px 16px', fontWeight: 'bold', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', color: '#374151' }}>系統通知</div>
              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                {notifications.length === 0 ? (
+                {displayedNotifs.length === 0 ? (
                   <div style={{ padding: '30px 24px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>目前沒有新通知</div>
                 ) : (
-                  notifications.map(n => (
+                  displayedNotifs.map((n: any) => (
                     <div 
                       key={n.id} 
                       onClick={() => { setShowNotifMenu(false); navigate(n.link); }} 
-                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: n.isUnread ? '#f0f7ff' : 'transparent' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#e0f0ff' : '#f9fafb'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#f0f7ff' : 'transparent'}
                     >
+                      {/* 🌟 藍色未讀小點點 */}
+                      {n.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0, marginRight: '10px' }}></div>}
+                      
                       <div style={{ flex: 1, paddingRight: '12px' }}>
                         <div style={{ fontSize: '14px', color: '#1f2937', marginBottom: '6px', lineHeight: '1.4' }}>{n.text}</div>
                         <div style={{ fontSize: '12px', color: '#9ca3af' }}>{new Date(n.time).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
@@ -148,7 +172,6 @@ export function ClientLayout() {
         )}
       </div>
 
-      {/* 🌟 新增：手機版專用 App Bar */}
       <div className="mobile-app-bar">
         <button className="menu-toggle-btn" onClick={() => setIsMobileMenuOpen(true)}>
           <Menu size={28} />
@@ -156,13 +179,11 @@ export function ClientLayout() {
         <div style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '18px' }}>委託人中心</div>
       </div>
 
-      {/* 🌟 新增：手機版側邊欄遮罩 */}
       <div 
         className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} 
         onClick={closeMobileMenu}
       ></div>
 
-      {/* 🌟 左側邊欄套用 open class */}
       <aside className={`client-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <h2>Arti 繪師小幫手</h2>
