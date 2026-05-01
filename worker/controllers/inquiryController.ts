@@ -64,7 +64,6 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 新增：如果是繪師，順便計算他本月已建單數量並回傳，讓前端可以顯示！
       let quotaInfo = null;
       if (currentUserId === data.artist_id) {
          const { results: countRes } = await env.commission_db.prepare(`
@@ -75,7 +74,7 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
          
          const isPro = data.artist_plan === 'pro' && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
          const isTrial = data.artist_plan === 'trial' && (!data.trial_end_at || new Date(data.trial_end_at) > new Date());
-         const max = (isPro || isTrial) ? -1 : 3; // -1 代表無限
+         const max = (isPro || isTrial) ? -1 : 3;
          
          quotaInfo = { used_quota: used, max_quota: max, plan_type: data.artist_plan };
       }
@@ -88,6 +87,7 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
+
 
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
@@ -134,6 +134,30 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 新增：繪師提案前的額度檢查
+      const artist = await env.commission_db.prepare(
+        "SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
+      ).bind(currentUserId).first() as any;
+
+      const isPro = artist?.plan_type === 'pro' && (!artist.pro_expires_at || new Date(artist.pro_expires_at) > new Date());
+      const isTrial = artist?.plan_type === 'trial' && (!artist.trial_end_at || new Date(artist.trial_end_at) > new Date());
+      
+      if (!isPro && !isTrial) {
+         const { results: countRes } = await env.commission_db.prepare(`
+            SELECT COUNT(*) as count FROM Commissions 
+            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
+         `).bind(currentUserId).all();
+         
+         const usedCount = (countRes[0]?.count as number) || 0;
+         if (usedCount >= 3) {
+            return new Response(JSON.stringify({ 
+              success: false, 
+              error: 'QUOTA_EXCEEDED', 
+              message: '您的本月建單額度已滿，請升級專業版以繼續提案。' 
+            }), { status: 403, headers: corsHeaders });
+         }
+      }
+
       await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ? AND artist_id = ?`
       ).bind(inquiryId, currentUserId).run();
@@ -158,7 +182,7 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
 
       if (!inquiry || !inquiry.negotiation_draft) throw new Error('草稿尚未準備好');
 
-      // 🌟 新增：成單前額度檢查 (針對繪師的額度)
+      // 🌟 安全防線：成單前仍檢查一次 (避免極端情況)
       const isPro = inquiry.plan_type === 'pro' && (!inquiry.pro_expires_at || new Date(inquiry.pro_expires_at) > new Date());
       const isTrial = inquiry.plan_type === 'trial' && (!inquiry.trial_end_at || new Date(inquiry.trial_end_at) > new Date());
       
@@ -173,13 +197,12 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
             return new Response(JSON.stringify({ 
               success: false, 
               error: 'QUOTA_EXCEEDED', 
-              message: '該繪師本月建單額度已滿，無法建立新訂單。' 
+              message: '該繪師本月建單額度已滿，暫時無法建立新訂單。' 
             }), { status: 403, headers: corsHeaders });
          }
       }
 
       const draft = JSON.parse(inquiry.negotiation_draft);
-      
       const timestampStr = Date.now().toString();
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
@@ -200,10 +223,7 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
       });
 
       const clientName = inquiry.client_name || '案主';
-      let finalProjectName = draft.project_name;
-      if (!finalProjectName || finalProjectName === inquiry.bulletin_content.substring(0, 30)) {
-        finalProjectName = `${clientName} 的許願池委託`;
-      }
+      let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
@@ -218,21 +238,6 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
         tosText
       ).run();
-
-      const oldMessages = await env.commission_db.prepare(
-        `SELECT sender_id, content, created_at FROM InquiryMessages WHERE inquiry_id = ?`
-      ).bind(inquiryId).all();
-
-      if (oldMessages.results && oldMessages.results.length > 0) {
-        const stmts = oldMessages.results.map((msg: any) => {
-          const role = msg.sender_id === inquiry.artist_id ? 'artist' : 'client';
-          return env.commission_db.prepare(
-            `INSERT INTO Messages (id, commission_id, sender_role, content, created_at) 
-             VALUES (?, ?, ?, ?, ?)`
-          ).bind(crypto.randomUUID(), commissionId, role, msg.content, msg.created_at);
-        });
-        await env.commission_db.batch(stmts);
-      }
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
