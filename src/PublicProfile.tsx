@@ -6,9 +6,6 @@ import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/re
 import { Globe, ChevronLeft, ChevronRight, X, User } from 'lucide-react';
 import './styles/PublicProfile.css';
 
-interface LayoutContext {
-  setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
-}
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -63,7 +60,6 @@ const getSocialIcon = (platform: string) => {
 
 export function PublicProfile() {
   const { artistId } = useParams();
-  const { setTheme } = useOutletContext<LayoutContext>();
   const currentArtistId = artistId || '';
 
   const [artist, setArtist] = useState<any>(null);
@@ -101,14 +97,7 @@ export function PublicProfile() {
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
 
-  useEffect(() => {
-    if (settings) {
-      setTheme({
-        primaryColor: settings.background_color || '#F4F0EB',
-        textColor: settings.theme_mode === 'light' ? 'black' : 'white'
-      });
-    }
-  }, [settings, setTheme]);
+
 
   useEffect(() => {
     const fetchArtistData = async () => {
