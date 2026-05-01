@@ -228,50 +228,54 @@ export const InquiryWorkspace: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
           
-          {/* 🌟 修正的許願池媒合軌跡區塊 (Email 引用風格) */}
+          {/* 🌟 修正的許願池媒合軌跡區塊 (動態身分視角) */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
               
-              <div style={{ background: '#F0F3F5', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #C1D6E8', marginBottom: '12px' }}>
-                <p style={{ margin: '0 0 8px 0', color: '#4A7294', fontWeight: 'bold' }}>引用原始貼文與設定：</p>
-                <p style={{ margin: '0 0 8px 0', whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</p>
+              {/* 原貼文區塊 */}
+              <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
                 {originalQuestions.length > 0 && (
-                  <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #C1D6E8' }}>
-                    <strong style={{ color: '#4A7294' }}>繪師預設提問：</strong>
-                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                  <div style={{ marginTop: '6px' }}>
+                    <strong style={{ color: '#A0978D' }}>提問設定：</strong>
+                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
                       {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
                     </ol>
                   </div>
                 )}
               </div>
 
-              {/* 🌟 根據接委託/徵委託動態渲染快照內容 */}
-              {isOffer ? (
-                // 接委託 (案主投遞繪師)
-                <>
-                  {parsedSnapshot.question_template && (
-                    <p style={{ margin: '0 0 8px 0' }}>
-                      <strong style={{ color: '#A0978D' }}>案主問卷回覆：</strong><br/>
-                      <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.question_template}</span>
-                    </p>
-                  )}
-                  {parsedSnapshot.message && (
-                    <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
-                      <strong style={{ color: '#A0978D' }}>案主備註留言：</strong><br/>
+              {/* 投遞回覆區塊 */}
+              <div>
+                <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                {isOffer ? (
+                  // 接委託 (案主去應徵繪師)
+                  <>
+                    {parsedSnapshot.question_template && (
+                      <div style={{ marginTop: '4px' }}>
+                        <strong style={{ color: '#A0978D' }}>問卷回覆：</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.question_template}</span>
+                      </div>
+                    )}
+                    {parsedSnapshot.message && (
+                      <div style={{ marginTop: '6px' }}>
+                        <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // 徵委託 (繪師去應徵案主)
+                  parsedSnapshot.message && (
+                    <div style={{ marginTop: '4px' }}>
                       <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
-                    </p>
-                  )}
-                </>
-              ) : (
-                // 徵委託 (繪師投遞案主)
-                parsedSnapshot.message && (
-                  <p style={{ margin: '0 0 8px 0' }}>
-                    <strong style={{ color: '#A0978D' }}>繪師自介/留言：</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
-                  </p>
-                )
-              )}
+                    </div>
+                  )
+                )}
+              </div>
+
             </div>
             
             <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>

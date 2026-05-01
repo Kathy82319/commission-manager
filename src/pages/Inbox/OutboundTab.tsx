@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-import { ImageIcon, ChevronDown, ChevronUp, FileText, User, HelpCircle, MessageSquare, Quote } from 'lucide-react';
+import { ImageIcon, ChevronDown, ChevronUp, User } from 'lucide-react';
 
 interface OutboundTabProps {
   artistInquiries: any[];
@@ -74,23 +74,18 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         artistInquiries.filter(filterOldItems).map((item) => {
           const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
           const bulletinImg = getBulletinImage(item.ref_image_key);
-          const isOffer = item.bulletin_category === 'offer'; // true = 案主投遞繪師(接委託), false = 繪師投遞案主(徵委託)
+          const isOffer = item.bulletin_category === 'offer'; 
           
           const isExpanded = expandedIds.includes(item.inquiry_id);
           const snapshot = parseSnapshot(item.artist_snapshot);
 
-          // 🌟 安全解析許願池原始內容與問卷題目
           let displayContent = item.bulletin_content;
           let originalQuestions: string[] = [];
           try {
             const parsedContent = JSON.parse(item.bulletin_content || '{}');
             displayContent = parsedContent.description || item.bulletin_content;
-            if (Array.isArray(parsedContent.questions)) {
-              originalQuestions = parsedContent.questions;
-            }
-          } catch (e) {
-            // 解析失敗維持原樣
-          }
+            if (Array.isArray(parsedContent.questions)) originalQuestions = parsedContent.questions;
+          } catch (e) {}
 
           return (
           <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
@@ -135,7 +130,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '20px',
                   cursor: 'pointer', transition: 'background 0.2s ease', position: 'relative'
                 }}
-                title="點擊查看/收起我的提案內容"
               >
                 {bulletinImg ? (
                   <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #EAE6E1', flexShrink: 0 }} />
@@ -157,86 +151,65 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
               </div>
 
               {isExpanded && (
-                <div style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '20px', marginBottom: '20px', animation: 'fadeIn 0.2s ease', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div style={{ background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '20px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
                   
-                  {/* 🌟 Email 風格：上方引用原貼文內容 */}
-                  <div style={{ background: '#F8FAFC', borderLeft: '4px solid #CBD5E1', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', marginBottom: '12px' }}>
-                      <Quote size={16} />
-                      <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>原始許願內容摘要</h4>
+                  {/* 🌟 區塊一：原許願池的描述與提問 */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>原許願池的描述與提問</h4>
+                    <div className="custom-scrollbar" style={{ background: '#F4F4F1', padding: '12px', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', border: '1px solid #EAE6E1' }}>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+                      {originalQuestions.length > 0 && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
+                          <strong style={{ color: '#7A7269' }}>繪師提問：</strong>
+                          <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#5D4A3E' }}>
+                            {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
+                          </ol>
+                        </div>
+                      )}
                     </div>
-                    <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-                      {displayContent}
-                    </p>
-                    {originalQuestions.length > 0 && (
-                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #CBD5E1' }}>
-                        <strong style={{ fontSize: '13px', color: '#64748B', display: 'block', marginBottom: '8px' }}>繪師提出的問卷：</strong>
-                        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
-                          {originalQuestions.map((q, idx) => (
-                            <li key={idx}>{q}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </div>
 
-                  {/* 🌟 下方：我的回覆與投遞 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #F3F4F6' }}>
-                    <FileText size={18} color="#3B82F6" />
-                    <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#1F2937' }}>我的回覆與投遞</h4>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '0 8px' }}>
-                    {isOffer ? (
-                      // === 案主投遞繪師(接委託)：顯示詳細問卷與回覆 ===
-                      <>
-                        {snapshot.question_template && (
+                  {/* 🌟 區塊二：我的回覆與備註 */}
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>我的回覆與備註</h4>
+                    <div className="custom-scrollbar" style={{ background: '#F4F4F1', padding: '12px', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', border: '1px solid #EAE6E1' }}>
+                      {isOffer ? (
+                        <>
+                          {snapshot.question_template && (
+                            <div>
+                              <strong style={{ color: '#7A7269' }}>問卷回覆：</strong>
+                              <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.question_template}</div>
+                            </div>
+                          )}
+                          {snapshot.message && (
+                            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
+                              <strong style={{ color: '#7A7269' }}>備註留言：</strong>
+                              <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.message}</div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        snapshot.message && (
                           <div>
-                            <strong style={{ fontSize: '13px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                              <HelpCircle size={14} /> 我的問卷回覆：
-                            </strong>
-                            <p style={{ margin: 0, fontSize: '14px', color: '#1F2937', whiteSpace: 'pre-wrap', lineHeight: '1.7', background: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #F3F4F6' }}>
-                              {snapshot.question_template}
-                            </p>
+                            <strong style={{ color: '#7A7269' }}>自我介紹 / 備註：</strong>
+                            <div style={{ whiteSpace: 'pre-wrap', marginTop: '4px' }}>{snapshot.message}</div>
                           </div>
-                        )}
-                        {snapshot.message && (
-                          <div style={{ marginTop: '8px' }}>
-                            <strong style={{ fontSize: '13px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                              <MessageSquare size={14} /> 備註與補充留言：
-                            </strong>
-                            <p style={{ margin: 0, fontSize: '14px', color: '#1F2937', whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>
-                              {snapshot.message}
-                            </p>
+                        )
+                      )}
+                      
+                      {snapshot.images && snapshot.images.length > 0 && (
+                        <div style={{ marginTop: '12px' }}>
+                          <strong style={{ color: '#7A7269' }}>附件圖片：</strong>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                            {snapshot.images.map((img: string, idx: number) => (
+                              <img key={idx} src={getFullUrl(img)} alt={`附件 ${idx + 1}`} referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DED9D3' }} />
+                            ))}
                           </div>
-                        )}
-                      </>
-                    ) : (
-                      // === 繪師投遞案主(徵委託)：顯示招呼語 ===
-                      snapshot.message && (
-                        <div>
-                          <strong style={{ fontSize: '13px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                            <MessageSquare size={14} /> 自我介紹 / 備註：
-                          </strong>
-                          <p style={{ margin: 0, fontSize: '14px', color: '#1F2937', whiteSpace: 'pre-wrap', lineHeight: '1.7', background: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #F3F4F6' }}>
-                            {snapshot.message}
-                          </p>
                         </div>
-                      )
-                    )}
-
-                    {/* 圖片一律顯示 */}
-                    {snapshot.images && snapshot.images.length > 0 && (
-                      <div style={{ marginTop: '8px' }}>
-                        <strong style={{ fontSize: '13px', color: '#6B7280', display: 'block', marginBottom: '12px' }}>附件圖片：</strong>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                          {snapshot.images.map((img: string, idx: number) => (
-                            <img key={idx} src={getFullUrl(img)} alt={`附件 ${idx + 1}`} referrerPolicy="no-referrer" style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
+
                 </div>
               )}
 
