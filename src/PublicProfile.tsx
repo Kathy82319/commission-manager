@@ -20,7 +20,7 @@ const decodeHTML = (html?: string) => {
 interface ProfileSettings {
   portfolio: string[];
   detailed_intro: string;
-  custom_sections: { id?: string; title: string; content: string }[];
+  custom_sections: { id: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
   splash_enabled?: boolean;
@@ -37,7 +37,7 @@ interface ProfileSettings {
     show_client_id: boolean;
     show_project_name: boolean;
   };
-  tab_order?: string[]; // 🌟 新增排序屬性
+  tab_order?: string[]; 
 }
 
 interface ShowcaseItem {
@@ -129,6 +129,13 @@ export function PublicProfile() {
               const rawSettings = userData.data.profile_settings;
               parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
               if (parsedSettings.splash_enabled === false) setShowSplash(false);
+              
+              // 補上遺失的 ID
+              const safeCustomSections = (parsedSettings.custom_sections || []).map((sec: any, idx: number) => ({
+                ...sec, id: sec.id || `custom_legacy_${idx}`
+              }));
+              parsedSettings.custom_sections = safeCustomSections;
+
               setSettings(parsedSettings);
             } catch (e) {
               console.error("JSON 解析失敗:", e);
@@ -220,20 +227,16 @@ export function PublicProfile() {
     );
   }, [showcaseItems, selectedTags]);
 
-  // 🌟 動態生成與排序分頁
+  // 🌟 動態生成與套用排序
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs: any[] = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
-    
-    // 檢查是否為免費方案
     const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
 
-    // 1. 推入所有可以顯示的分頁
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
     
-    // 免費版如果排單表有開可以看排單，但無法看到徵稿與自訂分頁
     if (settings.queue_settings?.enabled) {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
@@ -242,16 +245,14 @@ export function PublicProfile() {
       if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
       
       if (Array.isArray(settings.custom_sections)) {
-        settings.custom_sections.forEach((sec, index) => {
-          const generatedId = `custom_${index}`; 
-          if (!isHidden(generatedId) && sec.content) {
-            tabs.push({ id: generatedId, label: sec.title || `區塊 ${index + 1}` });
+        settings.custom_sections.forEach((sec) => {
+          if (!isHidden(sec.id) && sec.content) {
+            tabs.push({ id: sec.id, label: sec.title || '自訂分頁' });
           }
         });
       }
     }
 
-    // 2. 套用繪師設定的排序 (專業版才能自訂順序)
     if (!isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
       tabs.sort((a, b) => {
         let idxA = settings.tab_order!.indexOf(a.id);
@@ -440,10 +441,10 @@ export function PublicProfile() {
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />
               )}
 
-              {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec, index) => {
-                const generatedId = `custom_${index}`;
-                return currentTab === generatedId && (
-                  <div key={generatedId} className="rich-text-content" 
+              {/* 🌟 根據唯一 ID 匹配自訂分頁內容 */}
+              {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec) => {
+                return currentTab === sec.id && (
+                  <div key={sec.id} className="rich-text-content" 
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content || '')) }} />
                 );
               })}

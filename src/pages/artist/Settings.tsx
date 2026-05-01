@@ -5,12 +5,13 @@ import { BasicInfoTab } from './Settings/BasicInfoTab';
 import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
 import { SplashTab } from './Settings/SplashTab';
-import { CustomSectionsTab } from './Settings/CustomSectionsTab';
 import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
+import { OrderTab } from './Settings/OrderTab'; // 🌟 引入拖曳排序組件
+import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; // 🌟 引入單一分頁編輯組件
 import '../../styles/Settings.css';
 
 export interface CompleteSettings {
@@ -31,7 +32,7 @@ export interface CompleteSettings {
   bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
   question_template: string;
   queue_settings: QueueSettings;
-  tab_order: string[]; // 🌟 新增：用來記錄公開分頁的顯示順序
+  tab_order: string[]; 
 }
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
@@ -51,9 +52,7 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 interface MenuItem {
   id: string;
   label: string;
-  isAction?: boolean; 
   isCustom?: boolean;
-  index?: number;
 }
 
 interface MenuCategory {
@@ -114,15 +113,15 @@ export function Settings() {
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
+  // 🌟 動態整合自訂分頁，產生專屬 ID
   const menuGroups = useMemo(() => {
     return categories.map(group => {
       if (group.title.includes('內容管理')) {
         const sections = settings.custom_sections || [];
-        const dynamicItems: MenuItem[] = sections.map((section, index) => ({
-          id: `custom_${index}`,
-          label: section.title || `自訂區塊 ${index + 1}`,
-          isCustom: true,
-          index: index
+        const dynamicItems: MenuItem[] = sections.map((section) => ({
+          id: section.id,
+          label: section.title || `未命名分頁`,
+          isCustom: true
         }));
         return { ...group, items: [...group.items, ...dynamicItems] };
       }
@@ -157,10 +156,16 @@ export function Settings() {
             ? JSON.parse(data.data.profile_settings) 
             : data.data.profile_settings;
           
+          // 確保原本沒有獨立 ID 的舊資料，也能獲得 ID
+          const safeCustomSections = (parsed.custom_sections || []).map((sec: any, idx: number) => ({
+            ...sec,
+            id: sec.id || `custom_legacy_${idx}`
+          }));
+
           setSettings(prev => ({ 
             ...prev, 
             ...parsed,
-            custom_sections: parsed.custom_sections || [],
+            custom_sections: safeCustomSections,
             bulletin_card: parsed.bulletin_card || { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
             question_template: data.data.question_template || parsed.question_template || '',
             queue_settings: parsed.queue_settings || prev.queue_settings,
@@ -218,12 +223,13 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
-  // 🌟 免費版允許列表：已將 custom_manage 與 showcase 等移出，以觸發免費版遮罩
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
     'theme', 'bulletin_settings', 'queue_settings'
   ];
-  const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
+  
+  // 🌟 判定鎖定邏輯：如果不在允許清單，或者點選了 custom_ 分頁/變更排序，就觸發鎖定
+  const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
@@ -235,15 +241,35 @@ export function Settings() {
           <div className="sidebar-title">個人頁編輯</div>
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
-              <div className="group-label">
+              <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 {group.title}
+                {/* 🌟 只有變更排序按鈕 */}
                 {group.title.includes('內容管理') && (
-                  <button className="add-page-btn" onClick={() => { setActiveTab('custom_manage'); setHideGlobalSave(false); }}>+ 自訂分頁與排序</button>
+                  <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); }}>變更排序</button>
                 )}
               </div>
+              
               {group.items.map((item: MenuItem) => {
-                if (item.id === 'custom_manage') return null;
-                const isLocked = isFreePlan && !freeAllowedTabs.includes(item.id);
+                const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
+                
+                // 🌟 新增的虛線分頁設計
+                if (item.isCustom) {
+                  return (
+                    <button 
+                      key={item.id} 
+                      className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
+                      style={{ 
+                        border: activeTab === item.id ? '1px solid #5D4A3E' : '1px dashed #A0978D', 
+                        background: activeTab === item.id ? '#FFF' : 'transparent',
+                        marginBottom: '4px'
+                      }}
+                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
+                    >
+                      {item.label} {isLocked && '[鎖定]'}
+                    </button>
+                  );
+                }
+
                 return (
                   <button 
                     key={item.id} 
@@ -254,6 +280,31 @@ export function Settings() {
                   </button>
                 );
               })}
+
+              {/* 🌟 虛線新增按鈕 */}
+              {group.title.includes('內容管理') && (
+                <button 
+                  onClick={() => {
+                    if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
+                    if (settings.custom_sections.length >= 5) return;
+                    const newId = `custom_${Date.now()}`;
+                    setSettings(prev => ({
+                      ...prev,
+                      custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
+                    }));
+                    setActiveTab(newId);
+                    setHideGlobalSave(false);
+                  }}
+                  style={{
+                    padding: '10px 14px', marginTop: '6px', cursor: 'pointer', background: 'transparent',
+                    border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
+                    textAlign: 'left', fontSize: '14px', width: '100%',
+                    opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
+                  }}
+                >
+                  + 新增分頁
+                </button>
+              )}
             </div>
           ))}
         </aside>
@@ -261,7 +312,8 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
-            {['showcase', 'portfolio', 'detailed_intro', 'rules'].includes(activeTab) && (
+            {/* 🌟 右上角顯示開關：將自訂分頁也納入判斷 */}
+            {['showcase', 'portfolio', 'detailed_intro', 'rules', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
@@ -285,22 +337,26 @@ export function Settings() {
             {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
+            {activeTab === 'tab_order' && <OrderTab settings={settings} setSettings={setSettings} />}
             
             {['detailed_intro', 'rules'].includes(activeTab) && (
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
             )}
             
-            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash'].includes(activeTab) && (
-              <RichTextTab 
+            {/* 🌟 渲染單一自訂分頁 */}
+            {activeTab.startsWith('custom_') && (
+              <SingleCustomSectionTab 
                 key={activeTab}
-                isCustom 
-                customIndex={parseInt(activeTab.split('_')[1])} 
-                settings={settings as any} 
-                setSettings={setSettings as any} 
+                sectionId={activeTab} 
+                settings={settings} 
+                setSettings={setSettings} 
+                onDelete={() => {
+                  setSettings(prev => ({ ...prev, custom_sections: prev.custom_sections.filter(s => s.id !== activeTab) }));
+                  setActiveTab('profile_basic');
+                }}
               />
             )}
 
-            {activeTab === 'custom_manage' && <CustomSectionsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
             {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />}
