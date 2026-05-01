@@ -134,17 +134,9 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 )}
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>原許願池的描述與提問</h4>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>原許願池的描述</h4>
                   <div className="custom-scrollbar" style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere', paddingRight: '8px' }}>
                     <div style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
-                    {originalQuestions.length > 0 && (
-                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #DED9D3' }}>
-                        <strong style={{ color: '#A0978D' }}>{isOffer ? '繪師提問：' : '委託方提問：'}</strong>
-                        <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                          {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
-                        </ol>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
