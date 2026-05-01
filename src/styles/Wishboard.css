@@ -163,7 +163,19 @@
 .tag-warning { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
 .tag-license { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
 
-.meta-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.meta-info-grid { 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  gap: 12px; 
+}
+
+@media (min-width: 768px) {
+  .meta-info-grid { 
+
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+  }
+}
+
 .meta-item { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 14px; }
 .meta-icon { color: #94a3b8; }
 .highlight-price { color: #ff8c00; font-weight: 800; font-size: 16px; }
