@@ -145,7 +145,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   return (
                     <div key={item.inquiry_id}>
                       <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
-                        {/* 🌟 核心修正：如果已被婉拒/撤回，顯示原因區塊 */}
+                        {/* 🌟 注意：ArtistPostcard 內可能已經有顯示理由的邏輯，如果發現畫面出現兩次婉拒理由，或版面被擠壓，請直接把這段 div 刪除 */}
                         {item.inquiry_status === 'declined' && item.decline_reason && (
                           <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
                             <div className="text-[#EF4444] font-bold text-sm mb-1">終止/撤回原因：</div>
@@ -153,28 +153,27 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                           </div>
                         )}
 
-                        <div className="flex justify-end gap-3 w-full">
-                          {canDecline && (
-                            <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
-                              {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                            </button>
-                          )}
-                          {item.inquiry_status === 'pending' && (
-                            <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
-                              ✉️ 邀請詳談
-                            </button>
-                          )}
-                          {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                            <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                              💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
-                            </button>
-                          )}
-                          {item.inquiry_status === 'accepted' && (
-                            <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
-                              前往正式委託單
-                            </button>
-                          )}
-                        </div>
+                        {/* 🌟 移除外層 div，讓按鈕直接受到 ArtistPostcard 內部的 flex 樣式控制 */}
+                        {canDecline && (
+                          <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
+                            {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
+                          </button>
+                        )}
+                        {item.inquiry_status === 'pending' && (
+                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
+                            ✉️ 邀請詳談
+                          </button>
+                        )}
+                        {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
+                          <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
+                            💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
+                          </button>
+                        )}
+                        {item.inquiry_status === 'accepted' && (
+                          <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
+                            前往正式委託單
+                          </button>
+                        )}
                       </ArtistPostcard>
                     </div>
                   );
