@@ -45,9 +45,14 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const questions: string[] = parsedContent.questions || [];
   const tosContent: string = parsedContent.tos_content || '';
 
+  // 🌟 新增：在彈窗內也計算是否額滿，作為第二道防線
+  const selectionType = selectedBulletin.selection_type || parsedContent.selection_type || 'fcfs';
+  const maxSlots = parseInt(selectedBulletin.max_slots || parsedContent.max_slots || 1, 10);
+  const appliedCount = selectedBulletin.inquiry_count || (selectedBulletin.applied_artist_ids ? String(selectedBulletin.applied_artist_ids).split(',').length : 0);
+  const isFull = isOffer && selectionType === 'fcfs' && appliedCount >= maxSlots;
+
   const [hasAgreedTOS, setHasAgreedTOS] = useState(tosContent ? false : true);
 
-  // 🌟 修正 1：在元件載入時，直接將預設的空問題綁定到外層狀態
   useEffect(() => {
     if (isOffer && questions.length > 0 && !inquireDraft.answers) {
       setInquireDraft((prev: any) => ({
@@ -87,7 +92,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
   const handleAgreeTOS = () => setHasAgreedTOS(true);
 
-  // 🌟 修正 2：不需再做非同步字串組合，直接送出！
   const handleFinalSubmit = () => {
     onSubmit();
   };
@@ -134,6 +138,13 @@ export const InquireModal: React.FC<InquireModalProps> = ({
               : '與其丟文字履歷，不如直接給案主看您的作品！'}
           </p>
 
+          {/* 🌟 額滿警告提示 */}
+          {isFull && (
+            <div style={{ padding: '12px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', borderRadius: '8px', marginBottom: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={18} /> 此接委託名額已額滿，您目前無法送出表單。
+            </div>
+          )}
+
           <div className="form-section">
             <label className="section-title">
               {isOffer ? '附上參考設定圖 (最多 3 張)' : '附上參考圖 / 價目表 (最多 3 張)'}
@@ -168,7 +179,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                         placeholder="請輸入您的回答..." 
                         value={inquireDraft.answers?.[idx]?.answer || ''} 
                         onChange={(e) => {
-                          // 🌟 修正 3：即時將答案寫入外層的 inquireDraft 狀態中
                           const newAns = inquireDraft.answers ? [...inquireDraft.answers] : questions.map(qText => ({ question: qText, answer: '' }));
                           if(newAns[idx]) {
                             newAns[idx].answer = e.target.value;
@@ -263,8 +273,9 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>取消</button>
-          <button className="submit-post-btn" onClick={handleFinalSubmit} disabled={inquireUploading}>
-            {isOffer ? '送出需求單' : '發送專屬提案'}
+          {/* 🌟 額滿時同時禁用送出按鈕 */}
+          <button className="submit-post-btn" onClick={handleFinalSubmit} disabled={inquireUploading || isFull}>
+            {isFull ? '名額已滿' : (isOffer ? '送出需求單' : '發送專屬提案')}
           </button>
         </div>
       </div>

@@ -27,8 +27,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
   
-
-  // 🌟 修改：把原本的 !hasApplied 拿掉，只要額度滿了就是滿了
   const isQuotaFull = !isMyOwnPost && bulletin.category === 'request' && wishQuota && !wishQuota.is_pro && (wishQuota.request_inquire_used >= wishQuota.request_inquire_max);
 
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
@@ -71,7 +69,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   const appliedCount = bulletin.inquiry_count || (bulletin.applied_artist_ids ? String(bulletin.applied_artist_ids).split(',').length : 0);
   const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs';
-  const maxSlots = bulletin.max_slots || contentObj.max_slots || 1;
+  const maxSlots = parseInt(bulletin.max_slots || contentObj.max_slots || 1, 10);
+
+  // 🌟 新增：計算是否已達名額上限 (僅針對先搶先贏機制的接委託)
+  const isFull = bulletin.category === 'offer' && selectionType === 'fcfs' && appliedCount >= maxSlots;
 
   const posterName = bulletin.client_name || '匿名使用者';
   const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
@@ -253,10 +254,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             {isMyOwnPost ? (
               <button disabled className="btn-status-disabled">這是您發布的貼文</button>
             ) : isQuotaFull ? (
-              // 🌟 修改：把「額度已滿」的判斷拉到第二順位，優先級高於「已投遞」
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
             ) : hasApplied ? (
               <button disabled className="btn-status-disabled">已投遞過此案件</button>
+            ) : isFull ? (
+              // 🌟 新增：名額已滿的按鈕狀態
+              <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
             ) : (
               <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
                 {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
