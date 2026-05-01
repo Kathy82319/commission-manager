@@ -83,9 +83,11 @@ export function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           
-          {/* 繪師個人首頁 (動態路由) */}
-          <Route path="/:artistId" element={<PublicProfile />} />
+          
         </Route>
+
+        {/* 繪師個人首頁 (動態路由) */}
+          <Route path="/:artistId" element={<PublicProfile />} />
         
         {/* 管理員後台 (路徑已做簡單遮掩) */}
         <Route path="/adminbalabababa" element={<AdminLayout />}>
