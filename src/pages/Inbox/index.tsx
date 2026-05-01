@@ -19,7 +19,7 @@ export const Inbox: React.FC = () => {
 
   // 彈窗狀態管理
   const [showDeclineModal, setShowDeclineModal] = useState(false);
-  const [showRulesModal, setShowRulesModal] = useState(false); // 🌟 新增：規則說明彈窗狀態
+  const [showRulesModal, setShowRulesModal] = useState(false); 
   
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
@@ -107,7 +107,6 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  // 一鍵邀請直達功能
   const handleDirectInvite = async (inquiryToInvite: any) => {
     if (!inquiryToInvite) return;
     try {
@@ -139,7 +138,9 @@ export const Inbox: React.FC = () => {
   };
 
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
-  const handleViewCommission = (commissionId: string) => commissionId ? navigate(`/workspace/${commissionId}`) : alert('找不到關聯的委託單');
+  
+  // 🌟 核心修改：直接導向委託單管理總覽頁面，不依賴個別 commission_id
+  const handleViewCommission = () => navigate('/workspace');
 
   return (
     <div className="inbox-page-container">
@@ -147,7 +148,6 @@ export const Inbox: React.FC = () => {
         <h1 className="inbox-page-title">訊息中心</h1>
       </div>
 
-{/* 🌟 修改佈局：使用純 CSS 讓規則說明按鈕推到最右邊 */}
       <div className="inbox-tabs-wrapper">
         <div className="inbox-tabs-group">
           <button 
@@ -164,7 +164,6 @@ export const Inbox: React.FC = () => {
           </button>
         </div>
         
-        {/* 🌟 規則說明虛線按鈕 */}
         <button 
           onClick={() => setShowRulesModal(true)}
           className="inbox-rules-btn"
@@ -197,7 +196,6 @@ export const Inbox: React.FC = () => {
         />
       )}
 
-{/* 🌟 規則說明彈窗 (純 CSS 重構版) */}
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
@@ -226,7 +224,6 @@ export const Inbox: React.FC = () => {
               </li>
             </ul>
 
-            {/* 🌟 透過 rules-modal-footer 讓按鈕強制靠右 */}
             <div className="rules-modal-footer">
               <button className="btn-primary" onClick={() => setShowRulesModal(false)}>
                 我了解了
@@ -237,7 +234,6 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      {/* 婉拒彈窗 (動態支援單筆與批次) */}
       {showDeclineModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">

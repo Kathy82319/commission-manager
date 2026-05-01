@@ -9,7 +9,7 @@ interface OutboundTabProps {
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
-  handleViewCommission: (id: string) => void;
+  handleViewCommission: () => void; // 🌟 移除參數，改為無參數函式
 }
 
 export const OutboundTab: React.FC<OutboundTabProps> = ({
@@ -19,7 +19,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission
 }) => {
-  // 🌟 新增：用來記錄目前展開了哪些卡片的 ID
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   const toggleExpand = (id: string) => {
@@ -44,7 +43,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     }
   };
 
-  // 🛡️ 安全解析使用者的投遞內容 (防止 JSON 錯誤導致畫面崩潰)
   const parseSnapshot = (snapshotData: any) => {
     try {
       if (!snapshotData) return {};
@@ -84,7 +82,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
           return (
           <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
               
-              {/* 🌟 新增：投遞對象資訊區塊 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7A7269', marginBottom: '12px' }}>
                 <User size={14} style={{ opacity: 0.7 }} />
                 <span>投遞對象：</span>
@@ -96,7 +93,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </span>
               </div>
 
-              {/* 頭部標題與狀態 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
                 <span className={`inbox-badge status-${item.inquiry_status}`} style={{ margin: 0, flexShrink: 0 }}>
                   {getStatusLabel(item.inquiry_status)}
@@ -119,7 +115,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </span>
               </div>
 
-              {/* 🌟 許願池摘要區塊 (改為可點擊的手風琴觸發區) */}
               <div 
                 onClick={() => toggleExpand(item.inquiry_id)}
                 style={{ 
@@ -154,13 +149,11 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </div>
                 </div>
 
-                {/* 右側箭頭提示 */}
                 <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#A0978D' }}>
                   {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
               </div>
 
-              {/* 🌟 展開的提案明信片區塊 (安全渲染) */}
               {isExpanded && (
                 <div style={{ background: '#FAFAFA', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', marginBottom: '16px', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px' }}>
@@ -172,7 +165,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                     {snapshot.message && (
                       <div>
                         <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '4px' }}>招呼語 / 備註：</strong>
-                        {/* 🛡️ whiteSpace: pre-wrap 是防禦 XSS 又能顯示換行的最佳實踐 */}
                         <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{snapshot.message}</p>
                       </div>
                     )}
@@ -198,7 +190,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </div>
               )}
 
-              {/* 案主/繪師回覆區塊 */}
               {item.client_response && (
                 <div style={{ background: '#F8FAFC', borderLeft: '4px solid #4A7294', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
                   <strong style={{ color: '#4A7294', fontSize: '14px', marginBottom: '8px', display: 'block' }}>案主/繪師的回覆：</strong>
@@ -206,7 +197,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </div>
               )}
 
-              {/* 婉拒理由區塊 */}
               {item.inquiry_status === 'declined' && item.decline_reason && (
                 <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
                   <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/婉拒理由：</strong>
@@ -221,8 +211,9 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </button>
                 )}
                 {item.inquiry_status === 'accepted' && (
-                  <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
-                    前往正式委託單
+                  <button className="btn-success" onClick={() => handleViewCommission()}>
+                    {/* 🌟 核心修改：變更按鈕文字與邏輯 */}
+                    進入委託單管理
                   </button>
                 )}
                 

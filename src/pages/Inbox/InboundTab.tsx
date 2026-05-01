@@ -19,7 +19,8 @@ interface InboundTabProps {
   setShowDeclineModal: (show: boolean) => void;
   handleDirectInvite: (inquiry: any) => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
-  handleViewCommission: (id: string) => void;
+  // 🌟 修改：移除參數，改為無參數函式
+  handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
 }
 
@@ -170,8 +171,9 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                           </button>
                         )}
                         {item.inquiry_status === 'accepted' && (
-                          <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
-                            前往正式委託單
+                          // 🌟 核心修改：變更按鈕文字與移除參數
+                          <button className="btn-success" onClick={() => handleViewCommission()}>
+                            進入委託單管理
                           </button>
                         )}
                       </ArtistPostcard>
