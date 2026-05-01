@@ -15,7 +15,7 @@ export const paymentController = {
       const amount = 199;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.pages.dev";
-      const backendUrl = env.BACKEND_URL || "https://cath-commission-manager.pages.workers.dev";
+      const backendUrl = env.BACKEND_URL;
       
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
@@ -32,7 +32,7 @@ export const paymentController = {
         Email: "user@example.com", 
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`,
-        NotifyURL: `${absoluteFrontendUrl}/api/payment/notify`, 
+        NotifyURL: `${backendUrl}/api/payment/notify`,
         ClientBackURL: `${absoluteFrontendUrl}/artist/settings`,
       };
 

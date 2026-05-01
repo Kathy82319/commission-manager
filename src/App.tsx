@@ -94,8 +94,10 @@ export function App() {
           <Route index element={<Dashboard />} />
         </Route>
 
-        {/* 萬用路由：找不到頁面時一律回首頁 */}
+        {/* 萬用路由：找不到頁面時一律回首頁*/}
         <Route path="*" element={<Navigate to="/" replace />} />
+         {/*隨便導向一個現有的頁面，至少不要讓它真的 404 */}
+        <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=checking" replace />} />
       </Routes>
     </BrowserRouter>
   );
