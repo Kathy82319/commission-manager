@@ -156,7 +156,7 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-page-container">
       <div className="inbox-page-header">
-        <h1 className="inbox-page-title">訊息中心</h1>
+        <h1 className="inbox-page-title">許願收件匣</h1>
       </div>
 
       <div className="inbox-tabs-wrapper">
@@ -212,14 +212,14 @@ export const Inbox: React.FC = () => {
           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
             
             <div className="rules-modal-header">
-              <h2><span>📋</span> 訊息中心規則</h2>
+              <h2><span>📋</span> 許願與投遞規則</h2>
               <button className="rules-close-btn" onClick={() => setShowRulesModal(false)}>✕</button>
             </div>
             
             <ul className="rules-list">
               <li className="rules-list-item">
                 <span className="rules-bullet">•</span>
-                <div><span className="rules-highlight">刊登限額</span>：每種類型（徵稿 / 接稿 / 其他）限刊登一則，保持看板資訊簡潔。</div>
+                <div><span className="rules-highlight">刊登限額</span>：每種類型（徵稿 / 接稿 / 其他）限刊登一則。</div>
               </li>
               <li className="rules-list-item">
                 <span className="rules-bullet">•</span>

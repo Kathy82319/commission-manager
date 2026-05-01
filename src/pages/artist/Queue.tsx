@@ -48,10 +48,10 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
   };
 
   return (
-    <div ref={dropdownRef} className="dropdown-container">
-      <div onClick={toggleOpen} className="dropdown-button">
-        <span className="dropdown-text">{value || '設定狀態'}</span>
-        <span className="dropdown-arrow">▼</span>
+    <div ref={dropdownRef} className="dropdown-container" style={{ minWidth: '120px' }}> {/* 🌟 確保下拉選單有基本寬度 */}
+      <div onClick={toggleOpen} className="dropdown-button" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', whiteSpace: 'nowrap' }}> {/* 🌟 強制不換行，且兩端對齊 */}
+        <span className="dropdown-text" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{value || '設定狀態'}</span>
+        <span className="dropdown-arrow" style={{ marginLeft: '8px' }}>▼</span>
       </div>
       {isOpen && (
         <div className="dropdown-menu">
@@ -248,9 +248,10 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="當前進度">
-                  <div className="cell-content cell-status" onClick={e => e.stopPropagation()}>
+                  {/* 🌟 修改點：強制改用 flex 垂直排列，確保標籤和下拉選單不會被水平擠壓 */}
+                  <div className="cell-content cell-status" onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                     <div className="workflow-badge-wrapper">
-                      <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`}>
+                      <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ whiteSpace: 'nowrap' }}>
                         {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
                       </span>
                     </div>
@@ -318,8 +319,8 @@ export function Queue() {
           onClick={() => setIsQuoteModalOpen(false)} 
           style={{ 
             position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, 
-            display: 'flex', justifyContent: 'center', alignItems: 'flex-start', /* 改為 flex-start 讓視窗貼齊上方往下排 */
-            overflowY: 'auto', padding: '5vh 20px', cursor: 'default' /* 覆蓋放大鏡游標 */
+            display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+            overflowY: 'auto', padding: '5vh 20px', cursor: 'default'
           }}
         >
           <div 
