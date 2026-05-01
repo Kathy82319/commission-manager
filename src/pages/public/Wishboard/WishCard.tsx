@@ -196,15 +196,19 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
                 </div>
               )}
-              <div className="meta-item items-start">
-                <Calendar size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                <span className="flex-shrink-0 whitespace-nowrap">排單狀況：</span>
-                <span className="text-dark-600 break-words min-w-0 leading-snug">
-                  {bulletin.schedule_type === 'flexible' 
-                    ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
-                    : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
-                </span>
-              </div>
+ <div className="meta-item items-center">
+  <Calendar size={16} className="meta-icon flex-shrink-0" />
+  <span className="flex-shrink-0 whitespace-nowrap">排單狀況：</span>
+  {/* 🌟 換成 truncate 強制單行，並補上 title 讓滑鼠移過去能看見完整內容 */}
+  <span 
+    className="text-dark-600 truncate min-w-0 leading-snug" 
+    title={bulletin.schedule_type === 'flexible' ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
+  >
+    {bulletin.schedule_type === 'flexible' 
+      ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
+      : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
+  </span>
+</div>
               <div className="meta-item items-start">
                 <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
                 <span className="flex-shrink-0 whitespace-nowrap">付款方式：</span>
