@@ -1,5 +1,5 @@
 // src/pages/Inbox/OfferList/CardView.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { getStatusLabel, getExpiryInfo } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 
@@ -66,6 +66,21 @@ export const CardView: React.FC<CardViewProps> = ({
   const [imgIdx, setImgIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  // 🌟 動態高度測量邏輯
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [needsExpansion, setNeedsExpansion] = useState(false);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      // 若文字區塊實際高度大於 130px，代表內容過多，需要折疊
+      if (contentRef.current.scrollHeight > 130) {
+        setNeedsExpansion(true);
+      } else {
+        setNeedsExpansion(false);
+      }
+    }
+  }, [answers, note, inquiry.decline_reason]);
+
   const nextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     setImgIdx((prev) => (prev + 1) % validImages.length);
@@ -79,55 +94,70 @@ export const CardView: React.FC<CardViewProps> = ({
     if (validImages.length > 0) setLightboxOpen(true);
   };
 
-  // 取得過期資訊與警示樣式
   const expiryInfo = getExpiryInfo(inquiry.expires_at);
 
   return (
     <>
-      <div className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} onClick={onToggle}>
+      <div 
+        className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} 
+        onClick={onToggle}
+        style={{ cursor: 'pointer', display: 'flex', position: 'relative' }} // 確保佈局穩定
+      >
         
-        <div className="offer-card-gallery">
-        <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()}>
-          <input 
-            type="checkbox" 
-            className="card-checkbox" 
-            checked={isSelected} 
-            onChange={onSelect} 
-          />
-        </div>
+        {/* 🌟 左側圖片區塊：增加高度限制與比例保護 */}
+        <div 
+          className="offer-card-gallery" 
+          style={{ 
+            width: '160px', 
+            flexShrink: 0, 
+            maxHeight: (!isExpanded && needsExpansion) ? '180px' : '350px', // 未展開時鎖定高度，展開時最多350px
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
+          <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10 }}>
+            <input 
+              type="checkbox" 
+              className="card-checkbox" 
+              checked={isSelected} 
+              onChange={onSelect} 
+            />
+          </div>
           {validImages.length > 0 ? (
-            <div className="offer-carousel-wrapper" onClick={openLightbox}>
+            <div className="offer-carousel-wrapper" onClick={openLightbox} style={{ height: '100%', width: '100%' }}>
               <img 
                 src={validImages[imgIdx]} 
                 alt={`委託人參考圖 ${imgIdx + 1}`} 
                 className="offer-ref-img" 
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} // 強制圖片填滿容器不變形
               />
               {validImages.length > 1 && (
-                <div className="offer-img-counter">{imgIdx + 1} / {validImages.length}</div>
+                <div className="offer-img-counter" style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '11px', padding: '2px 6px', borderRadius: '4px' }}>
+                  {imgIdx + 1} / {validImages.length}
+                </div>
               )}
               {validImages.length > 1 && (
                 <>
-                  <button className="offer-img-nav offer-img-prev" onClick={prevImg}>❮</button>
-                  <button className="offer-img-nav offer-img-next" onClick={nextImg}>❯</button>
+                  <button className="offer-img-nav offer-img-prev" onClick={prevImg} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>❮</button>
+                  <button className="offer-img-nav offer-img-next" onClick={nextImg} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>❯</button>
                 </>
               )}
-              <div className="offer-img-overlay">
-                <span className="offer-img-overlay-text">點擊放大</span>
-              </div>
             </div>
           ) : (
-            <div className="offer-no-img">無附上參考圖</div>
+            <div className="offer-no-img" style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F4F1', color: '#A0978D', fontSize: '12px' }}>
+              無附上參考圖
+            </div>
           )}
         </div>
 
-        <div className="offer-card-content">
+        {/* 🌟 右側內容區塊 */}
+        <div className="offer-card-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div className="offer-card-header">
             <div className="offer-client-info flex flex-wrap items-center gap-2">
               <span className="client-name">{clientName}</span>
               <span className="client-id">@{clientId}</span>
-              {/* 只有在待確認且未過期時，顯示倒數標籤 */}
               {inquiry.inquiry_status === 'pending' && inquiry.expires_at && (
                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
                   ⏳ {expiryInfo.text}
@@ -139,7 +169,18 @@ export const CardView: React.FC<CardViewProps> = ({
             </span>
           </div>
 
-          <div className="offer-text-area">
+          {/* 🌟 文字區域：套用動態折疊與防爆版 CSS */}
+          <div 
+            className="offer-text-area" 
+            ref={contentRef}
+            style={{
+              maxHeight: (!isExpanded && needsExpansion) ? '120px' : 'none',
+              overflow: 'hidden',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              position: 'relative'
+            }}
+          >
             {answers.length > 0 ? (
               <>
                 {answers.map((ans: any, idx: number) => (
@@ -163,27 +204,42 @@ export const CardView: React.FC<CardViewProps> = ({
             ) : (
               <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
             )}
+
+            {isDeclined && inquiry.decline_reason && (
+              <div className="qa-block mt-4" style={{ background: '#FEF2F2', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #EF4444' }}>
+                <div className="q-text" style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '14px', lineHeight: 1 }}>⚠</span> 終止/撤回原因：
+                </div>
+                <div className="a-text" style={{ color: '#A05C5C', marginTop: '4px' }}>
+                  {inquiry.decline_reason}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 🌟 核心修改：在內容區下方顯示婉拒/撤回原因 */}
-          {isDeclined && inquiry.decline_reason && (
-            <div className="qa-block mt-4" style={{ 
-              background: '#FEF2F2', 
-              padding: '12px', 
-              borderRadius: '8px', 
-              borderLeft: '4px solid #EF4444',
+          {/* 🌟 過長文字的漸層遮罩與提示 (僅在需要折疊且未展開時顯示) */}
+          {!isExpanded && needsExpansion && (
+            <div style={{
+              height: '40px',
+              background: 'linear-gradient(transparent, #FFFFFF 80%)',
+              marginTop: '-40px',
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              paddingBottom: '4px',
+              color: '#A67B3E',
+              fontSize: '12px',
+              fontWeight: 'bold'
             }}>
-              <div className="q-text" style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '14px', lineHeight: 1 }}>⚠</span> 終止/撤回原因：
-              </div>
-              <div className="a-text" style={{ color: '#A05C5C', marginTop: '4px' }}>
-                {inquiry.decline_reason}
-              </div>
+              ▼ 點擊展開完整內容與操作
             </div>
           )}
 
-          {isExpanded && (
-            <div className="offer-actions" onClick={(e) => e.stopPropagation()}>
+          {/* 🌟 動作按鈕：展開時，或者內容本來就很少時，都會顯示按鈕 */}
+          {(isExpanded || !needsExpansion) && (
+            <div className="offer-actions" onClick={(e) => e.stopPropagation()} style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
                 <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
                   💬 進入聊天室
@@ -209,6 +265,7 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
+      {/* Lightbox Modal */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>
