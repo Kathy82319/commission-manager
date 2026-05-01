@@ -9,11 +9,11 @@ interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
+// 【資安防護】使用 DOMParser 替代 document.createElement("textarea") + innerHTML
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
-  const txt = document.createElement("textarea");
-  txt.innerHTML = html;
-  return txt.value;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.documentElement.textContent || '';
 };
 
 interface ProfileSettings {
@@ -277,7 +277,8 @@ export function PublicProfile() {
               <h1 className="profile-name">{artist.display_name}</h1>
               <div className="social-links">
                 {settings?.social_links?.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
+                  // 【資安防護】加上 noopener 防禦 Tabnabbing 攻擊
+                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="social-icon">
                     {getSocialIcon(link.platform)}
                   </a>
                 ))}

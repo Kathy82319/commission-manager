@@ -448,9 +448,30 @@
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
   .profile-bio { text-align: center; }
-  .showcase-content-box { flex-direction: column; height: 95vh; }
-  .showcase-cover { height: 40vh; flex: none; }
-  .showcase-details { padding: 30px; }
+  
+  /* 【手機版卡片滾動修復】改為外層整體滾動，釋放高度 */
+  .showcase-content-box { 
+    flex-direction: column; 
+    height: 90vh; 
+    overflow-y: auto; 
+  }
+  .showcase-cover { 
+    min-height: 35vh; 
+    height: auto; 
+    flex: none; 
+  }
+  .showcase-details { 
+    padding: 24px; 
+    height: auto; 
+    overflow: visible; 
+  }
+  .description-scroll-area {
+    overflow-y: visible;
+    height: auto;
+    flex: none;
+    border: none;
+    padding: 0;
+  }
 }
 
 /* ==========================================================================
