@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/WishCard.tsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // 🌟 新增：用於點擊跳轉
+import { useNavigate } from 'react-router-dom';
 import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users } from 'lucide-react';
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
 
@@ -16,7 +16,7 @@ const unescapeHtml = (str: string) => {
 };
 
 export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire }) => {
-  const navigate = useNavigate(); // 🌟 宣告 navigate
+  const navigate = useNavigate();
 
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
@@ -63,15 +63,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs';
   const maxSlots = bulletin.max_slots || contentObj.max_slots || 1;
 
-  // 🌟 提取發布者資訊 (若後端尚未提供 client_public_id，暫時 fallback 到 client_id)
   const posterName = bulletin.client_name || '匿名使用者';
   const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
 
-  // 🌟 處理點擊發布者名稱的跳轉邏輯
   const handleProfileClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 🛡️ 防護：阻止事件冒泡，避免觸發卡片其他點擊事件
+    e.stopPropagation(); 
     if (bulletin.category === 'offer' && posterId !== 'unknown') {
-      navigate(`/${posterId}`); // 假設你的個人頁面路由是 /:public_id
+      navigate(`/${posterId}`); 
     }
   };
 
@@ -129,12 +127,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
-              {/* 🌟 新增：發布者名稱與 ID 區塊 */}
               <div className="wish-card-author-wrapper">
                 <User size={14} className="wish-card-author-icon" />
                 
                 {bulletin.category === 'offer' && posterId !== 'unknown' ? (
-                  // 接委託：套用虛線與 Hover 變色樣式
                   <div 
                     className="wish-card-author-link"
                     onClick={handleProfileClick}
@@ -144,7 +140,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     <span className="wish-card-author-id">@{posterId}</span>
                   </div>
                 ) : (
-                  // 徵委託 (或無 ID 時)：純展示樣式
                   <div className="wish-card-author-text">
                     <span className="wish-card-author-name">{posterName}</span>
                     <span className="wish-card-author-id">@{posterId}</span>
@@ -164,13 +159,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <div className="tag-container">
                 {warningTags.length > 0 && (
                   <div className="tag-sub-group">
-                    <span className="group-label warning"><AlertTriangle size={12}/> 預警：</span>
+                    <span className="group-label warning"><AlertTriangle size={14}/> 預警：</span>
                     {warningTags.map((t: string) => <span key={t} className="tag-chip tag-warning">{t.replace('[預警]', '')}</span>)}
                   </div>
                 )}
                 {licenseTags.length > 0 && (
                   <div className="tag-sub-group">
-                    <span className="group-label license"><CheckCircle2 size={12}/> 範圍：</span>
+                    <span className="group-label license"><CheckCircle2 size={14}/> 範圍：</span>
                     {licenseTags.map((t: string) => <span key={t} className="tag-chip tag-license">{t.replace('[授權]', '')}</span>)}
                   </div>
                 )}
@@ -186,13 +181,15 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               {bulletin.category === 'request' && (
                 <div className="meta-item items-start">
                   <DollarSign size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                  <span className="flex-shrink-0">預算：</span>
+                  {/* 🌟 補上 whitespace-nowrap 防換行 */}
+                  <span className="flex-shrink-0 whitespace-nowrap">預算：</span>
                   <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
                 </div>
               )}
               <div className="meta-item items-start">
                 <Calendar size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                <span className="flex-shrink-0">排單狀況：</span>
+                {/* 🌟 補上 whitespace-nowrap 防換行 */}
+                <span className="flex-shrink-0 whitespace-nowrap">排單狀況：</span>
                 <span className="text-dark-600 break-words min-w-0 leading-snug">
                   {bulletin.schedule_type === 'flexible' 
                     ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
@@ -201,14 +198,16 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
               <div className="meta-item items-start">
                 <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                <span className="flex-shrink-0">付款方式：</span>
+                {/* 🌟 補上 whitespace-nowrap 防換行 */}
+                <span className="flex-shrink-0 whitespace-nowrap">付款方式：</span>
                 <span className="text-dark-600 break-words min-w-0 leading-snug">{paymentMethods.join(', ')}</span>
               </div>
 
               {bulletin.category === 'offer' && selectionType && (
                 <div className="meta-item items-start" style={{ gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309] mt-0.5 flex-shrink-0" />
-                  <span className="flex-shrink-0">徵集名額：</span>
+                  {/* 🌟 補上 whitespace-nowrap 防換行 */}
+                  <span className="flex-shrink-0 whitespace-nowrap">徵集名額：</span>
                   <span className="font-bold text-[#b45309] flex flex-wrap items-center gap-2 min-w-0 leading-snug">
                     {selectionType === 'curated' 
                       ? (

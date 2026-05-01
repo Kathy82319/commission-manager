@@ -198,7 +198,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
             </>
           ) : (
             <>
-              <p className="label-hint" style={{ marginTop: '10px' }}>以下資訊已由您的「接案設定」自動帶入：</p>
+              <p className="label-hint" >以下資訊已由您的「接案設定」自動帶入：</p>
               <div className="form-row">
                 <div className="form-group">
                   <label style={{ color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>

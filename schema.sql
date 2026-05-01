@@ -296,3 +296,12 @@ DELETE FROM Notifications;
 DELETE FROM InquiryMessages;
 DELETE FROM BulletinInquiries;
 DELETE FROM Bulletins;
+
+-- 塞入 5 筆投遞紀錄，直接灌滿免費版每月 5 次投遞額度
+INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, created_at, latest_update_at)
+VALUES 
+('new-test-uuid-1111-480f-9454-7eb6aee4cdd1', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('new-test-uuid-2222-480f-9454-7eb6aee4cdd2', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('new-test-uuid-3333-480f-9454-7eb6aee4cdd3', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('new-test-uuid-4444-480f-9454-7eb6aee4cdd4', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('new-test-uuid-5555-480f-9454-7eb6aee4cdd5', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
