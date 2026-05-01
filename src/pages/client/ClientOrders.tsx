@@ -18,6 +18,12 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
+// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 // 強健的時間轉換處理
 const ensureUTC = (dateStr?: string) => {
   if (!dateStr) return '';
@@ -51,7 +57,7 @@ const parseTime = (dateStr?: string) => {
 const getBulletinSource = (order?: CommissionDetail) => {
   if (!order || !order.origin_source) return null;
   try {
-    const parsed = JSON.parse(order.origin_source);
+    const parsed = JSON.parse(unescapeHtml(order.origin_source));
     if (parsed.source_type === 'bulletin') return parsed;
   } catch (e) {
     return null;
@@ -286,7 +292,6 @@ export function ClientOrders() {
     });
   }, [orders, filter, searchTerm]);
 
-  // 🌟 使用 Notebook.css 的 badge 標籤樣式
   const getStatusDisplay = (status: string, stage: string) => {
     if (status === 'completed') return <span className="card-tag badge-completed">已結案</span>;
     if (status === 'cancelled') return <span className="card-tag badge-cancelled">作廢</span>;
@@ -294,7 +299,6 @@ export function ClientOrders() {
     return <span className="card-tag badge-queue">安排中</span>;
   };
 
-  // 🌟 替換為 Notebook.css 的 Stage Box 樣式
   const renderClientStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = getLatestSubmissions()[stageKey];
     const isFinal = stageKey === 'final';
@@ -354,6 +358,34 @@ export function ClientOrders() {
   let finalTosHtml = '';
   if (selectedOrder?.agreed_tos_snapshot) finalTosHtml = selectedOrder.agreed_tos_snapshot;
   else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
+
+  // 🌟 解析許願池媒合軌跡的資料
+  const bulletinSource = getBulletinSource(selectedOrder);
+  let displayBulletinContent = '';
+  let parsedSnapshot: any = {};
+  let isOffer = false;
+
+  if (bulletinSource) {
+    isOffer = bulletinSource.bulletin_category === 'offer';
+    
+    // 原始許願內容還原亂碼
+    const rawBulletinContent = unescapeHtml(bulletinSource.bulletin_content || '');
+    displayBulletinContent = rawBulletinContent;
+    try {
+        const parsed = JSON.parse(rawBulletinContent);
+        if (parsed.description) displayBulletinContent = parsed.description;
+    } catch (e) {}
+
+    // 解析投遞快照內容，並雙重檢查解碼
+    try {
+      const snapshotStr = bulletinSource.artist_snapshot || bulletinSource.client_initial_response || '{}'; 
+      const rawSnapshot = unescapeHtml(snapshotStr);
+      parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+      if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
+    } catch (e) {
+      console.error("無法解析 snapshot", e);
+    }
+  }
 
   return (
     <div className="notebook-page">
@@ -449,16 +481,16 @@ export function ClientOrders() {
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   
-<div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'normal', overflow: 'visible' }}>
-  <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-    繪師項目名：{selectedOrder.project_name || '無'}
-  </span>
-  {getBulletinSource(selectedOrder) && (
-    <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', flexShrink: 0 }}>
-      來源：許願池
-    </span>
-  )}
-</div>
+                  <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'normal', overflow: 'visible' }}>
+                    <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      繪師項目名：{selectedOrder.project_name || '無'}
+                    </span>
+                    {getBulletinSource(selectedOrder) && (
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', flexShrink: 0 }}>
+                        來源：許願池
+                      </span>
+                    )}
+                  </div>
                   
                   <div className="main-meta-row">
                     <span>單號：{selectedOrder.id}</span>
@@ -499,25 +531,50 @@ export function ClientOrders() {
                 {activeTab === 'main' && (
                   <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {/* 許願池媒合軌跡 */}
-                    {getBulletinSource(selectedOrder) && (
-                      <div className="section-card" style={{ cursor: 'pointer' }} onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}>
+                    {/* 🌟 修復後的許願池媒合軌跡 */}
+                    {bulletinSource && (
+                      <div className="section-card" style={{ cursor: 'pointer', backgroundColor: '#FBFBF9' }} onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}>
                         <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
-                          <span>🔍 許願池媒合軌跡</span>
-                          <span style={{ fontSize: '11px', color: '#A0978D', fontWeight: 'normal' }}>
-                            {isTrajectoryExpanded ? '▲ 收合軌跡' : '▼ 展開軌跡'}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</span>
+                          <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold' }}>
+                            {isTrajectoryExpanded ? '▲ 收合軌跡' : '▼ 展開完整軌跡'}
                           </span>
                         </h3>
-                        <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6' }}>
-                          <p style={{ margin: '0 0 10px 0' }}><strong>1. 原始許願內容：</strong><br/>
-                            {getBulletinSource(selectedOrder).bulletin_content}
-                          </p>
-                          <p style={{ margin: '0 0 10px 0' }}><strong>2. 繪師提問單範本：</strong><br/>
-                            {getBulletinSource(selectedOrder).artist_initial_snapshot?.question_template || "無提問單"}
-                          </p>
-                          <p style={{ margin: 0 }}><strong>3. 我的初始回覆：</strong><br/>
-                            {getBulletinSource(selectedOrder).client_initial_response || "無回覆內容"}
-                          </p>
+                        <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                          
+                          <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                            <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                            <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
+                          </div>
+
+                          <div>
+                            <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                            
+                            {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
+                              <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                {parsedSnapshot.answers.map((ans: any, idx: number) => (
+                                  <div key={idx} style={{ marginTop: '4px' }}>
+                                    <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
+                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {parsedSnapshot.message && (
+                              <div style={{ marginTop: '4px' }}>
+                                <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(parsedSnapshot.message)}</span>
+                              </div>
+                            )}
+
+                            {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
+                              <div style={{ marginTop: '6px' }}>
+                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
+                                {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(parsedSnapshot.no_gos)}</div>}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}

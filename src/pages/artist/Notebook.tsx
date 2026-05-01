@@ -44,6 +44,12 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
+// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -94,7 +100,7 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
 const getBulletinSource = (order?: Commission) => {
   if (!order || !order.origin_source) return null;
   try {
-    const parsed = JSON.parse(order.origin_source);
+    const parsed = JSON.parse(unescapeHtml(order.origin_source));
     if (parsed.source_type === 'bulletin') return parsed;
   } catch (e) {
     return null;
@@ -395,7 +401,7 @@ export function Notebook() {
     return { text: '尚未付款', className: 'badge-unpaid' };
   };
 
-  // 🌟 修正 1：在這裡過濾掉身分不屬於繪師的委託單
+  // 🌟 過濾掉身分不屬於繪師的委託單
   const filteredOrders = useMemo(() => {
     return commissions.filter(order => {
       // 確保只顯示「我」是繪師的單據
@@ -514,6 +520,36 @@ export function Notebook() {
     );
   };
 
+  // 🌟 解析許願池媒合軌跡的資料
+  const bulletinSource = getBulletinSource(selectedOrder);
+  let displayBulletinContent = '';
+  let parsedSnapshot: any = {};
+  let originalQuestions: string[] = [];
+  let isOffer = false;
+
+  if (bulletinSource) {
+    isOffer = bulletinSource.bulletin_category === 'offer';
+    
+    // 原始許願內容還原亂碼
+    const rawBulletinContent = unescapeHtml(bulletinSource.bulletin_content || '');
+    displayBulletinContent = rawBulletinContent;
+    try {
+        const parsed = JSON.parse(rawBulletinContent);
+        if (parsed.description) displayBulletinContent = parsed.description;
+        if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
+    } catch (e) {}
+
+    // 解析投遞快照內容，並雙重檢查解碼
+    try {
+      const snapshotObj = bulletinSource.client_initial_response || bulletinSource.artist_initial_snapshot || bulletinSource.artist_snapshot || '{}';
+      const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
+      parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+      if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
+    } catch (e) {
+      console.error("無法解析 snapshot", e);
+    }
+  }
+
   return (
     <div className="notebook-page">
       <div className="notebook-container">
@@ -606,7 +642,6 @@ export function Notebook() {
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                     
-                    {/* 🌟 修正 4：標籤互斥顯示 */}
                     {getBulletinSource(selectedOrder) ? (
                       <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>
                         來源：許願池
@@ -695,31 +730,69 @@ export function Notebook() {
                     </div>
 
                     
-                    {/* 🌟 升級版：許願池媒合軌跡區塊 (可收合) */}
-                    {getBulletinSource(selectedOrder) && (
+                    {/* 🌟 修復後的許願池媒合軌跡區塊 (動態身分視角) */}
+                    {bulletinSource && (
                       <div 
                         className="section-card" 
                         style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', cursor: 'pointer' }}
                         onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}
                       >
                         <h3 className="section-title" style={{ color: '#5D4A3E', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>🔍 許願池媒合軌跡</span>
-                          <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}>
-                            {isTrajectoryExpanded ? '收合 ▲' : '展開 ▼'}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</span>
+                          <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'bold' }}>
+                            {isTrajectoryExpanded ? '▲ 收合軌跡' : '▼ 展開完整軌跡'}
                           </span>
                         </h3>
                         <div style={{ 
-                          fontSize: '13px', color: '#5D4A3E', marginTop: '12px', lineHeight: '1.6',
+                          fontSize: '13px', color: '#5D4A3E', marginTop: '12px', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere',
                           ...(isTrajectoryExpanded ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' })
                         }}>
-                          <p style={{ margin: 0 }}><strong>1. 原始許願內容：</strong><br/>{getBulletinSource(selectedOrder).bulletin_content}</p>
-                          <p style={{ margin: '10px 0 0 0' }}><strong>2. 繪師提問單範本：</strong><br/>{getBulletinSource(selectedOrder).artist_initial_snapshot?.question_template || "無提問單"}</p>
-                          <p style={{ margin: '10px 0 0 0' }}><strong>3. 案主初始回覆：</strong><br/>{getBulletinSource(selectedOrder).client_initial_response || "無回覆內容"}</p>
+                          
+                          <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                            <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                            <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
+                            {originalQuestions && originalQuestions.length > 0 && (
+                              <div style={{ marginTop: '6px' }}>
+                                <strong style={{ color: '#A0978D' }}>提問設定：</strong>
+                                <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
+                                  {originalQuestions.map((q, idx) => <li key={idx}>{unescapeHtml(q)}</li>)}
+                                </ol>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                            
+                            {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
+                              <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                {parsedSnapshot.answers.map((ans: any, idx: number) => (
+                                  <div key={idx} style={{ marginTop: '4px' }}>
+                                    <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
+                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {parsedSnapshot.message && (
+                              <div style={{ marginTop: '4px' }}>
+                                <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(parsedSnapshot.message)}</span>
+                              </div>
+                            )}
+
+                            {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
+                              <div style={{ marginTop: '6px' }}>
+                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
+                                {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(parsedSnapshot.no_gos)}</div>}
+                              </div>
+                            )}
+                          </div>
+
                         </div>
                       </div>
                     )}
-
-
 
                     <div className="section-card">
                       <div className="section-header-no-border">
@@ -731,7 +804,6 @@ export function Notebook() {
                       </div>
                       
                       <div className="details-grid">
-                        {/* 🌟 修正 6：解鎖項目名稱與交易方式，不再受到 renderRequestField 異動審核的限制 */}
                         <div className="request-field">
                           <span className="field-label">項目名稱 (繪師自訂)：</span>
                           <input className="form-input" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} />
@@ -741,7 +813,6 @@ export function Notebook() {
                           <input className="form-input" value={editData.payment_method || ''} onChange={e => setEditData({...editData, payment_method: e.target.value})} />
                         </div>
 
-                        {/* 下方維持合約屬性，需經過異動申請 */}
                         {renderRequestField('委託用途：', 'usage_type')}
                         {renderRequestField('是否急件：', 'is_rush', 'select', '', ['否', '是'])}
                         {renderRequestField('交稿方式：', 'delivery_method')}
