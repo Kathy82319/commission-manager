@@ -16,8 +16,6 @@ import '../../styles/Settings.css';
 export interface CompleteSettings {
   portfolio: string[];
   detailed_intro: string;
-  process: string;
-  payment: string;
   rules: string;
   custom_sections: any[];
   social_links: any[];
@@ -33,6 +31,7 @@ export interface CompleteSettings {
   bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
   question_template: string;
   queue_settings: QueueSettings;
+  tab_order: string[]; // 🌟 新增：用來記錄公開分頁的顯示順序
 }
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
@@ -73,8 +72,6 @@ export function Settings() {
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [], 
     detailed_intro: '', 
-    process: '', 
-    payment: '', 
     rules: '', 
     custom_sections: [], 
     social_links: [], 
@@ -89,7 +86,8 @@ export function Settings() {
     theme_mode: 'dark',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
-    queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true }
+    queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true },
+    tab_order: [] 
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -111,8 +109,6 @@ export function Settings() {
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '徵稿/販售區' },
-        { id: 'process', label: '委託流程' },
-        { id: 'payment', label: '付款方式' },
         { id: 'rules', label: '協議書範本' },
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
@@ -124,7 +120,7 @@ export function Settings() {
         const sections = settings.custom_sections || [];
         const dynamicItems: MenuItem[] = sections.map((section, index) => ({
           id: `custom_${index}`,
-          label: section.title || `自定義區塊 ${index + 1}`,
+          label: section.title || `自訂區塊 ${index + 1}`,
           isCustom: true,
           index: index
         }));
@@ -167,7 +163,8 @@ export function Settings() {
             custom_sections: parsed.custom_sections || [],
             bulletin_card: parsed.bulletin_card || { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
             question_template: data.data.question_template || parsed.question_template || '',
-            queue_settings: parsed.queue_settings || prev.queue_settings
+            queue_settings: parsed.queue_settings || prev.queue_settings,
+            tab_order: parsed.tab_order || []
           }));
         }
       }
@@ -221,9 +218,10 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
+  // 🌟 免費版允許列表：已將 custom_manage 與 showcase 等移出，以觸發免費版遮罩
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'theme', 'showcase', 'custom_manage', 'rules', 'process', 'payment', 'bulletin_settings', 'queue_settings'
+    'theme', 'bulletin_settings', 'queue_settings'
   ];
   const isCurrentTabLocked = isFreePlan && !freeAllowedTabs.includes(activeTab);
 
@@ -240,7 +238,7 @@ export function Settings() {
               <div className="group-label">
                 {group.title}
                 {group.title.includes('內容管理') && (
-                  <button className="add-page-btn" onClick={() => { setActiveTab('custom_manage'); setHideGlobalSave(false); }}>+ 新增分頁</button>
+                  <button className="add-page-btn" onClick={() => { setActiveTab('custom_manage'); setHideGlobalSave(false); }}>+ 自訂分頁與排序</button>
                 )}
               </div>
               {group.items.map((item: MenuItem) => {
@@ -263,7 +261,7 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="settings-header">
             <h3>內容編輯</h3>
-            {['showcase', 'portfolio', 'detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+            {['showcase', 'portfolio', 'detailed_intro', 'rules'].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
@@ -283,22 +281,16 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
-            {activeTab === 'bulletin_settings' && (
-              <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />
-            )}
-
-            {activeTab === 'queue_settings' && (
-              <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />
-            )}
-
+            {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
+            {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
             
-            {['detailed_intro', 'process', 'payment', 'rules'].includes(activeTab) && (
+            {['detailed_intro', 'rules'].includes(activeTab) && (
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
             )}
             
-            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash', 'process', 'payment'].includes(activeTab) && (
+            {activeTab.startsWith('custom_') && activeTab !== 'custom_manage' && !['rules', 'theme', 'splash'].includes(activeTab) && (
               <RichTextTab 
                 key={activeTab}
                 isCustom 

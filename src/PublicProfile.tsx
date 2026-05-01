@@ -20,9 +20,6 @@ const decodeHTML = (html?: string) => {
 interface ProfileSettings {
   portfolio: string[];
   detailed_intro: string;
-  process: string;
-  payment: string;
-  rules?: string; 
   custom_sections: { id?: string; title: string; content: string }[];
   social_links: { platform: string; url: string }[];
   hidden_sections: string[];
@@ -32,9 +29,7 @@ interface ProfileSettings {
   splash_text?: string;
   background_color?: string;
   gradient_enabled?: boolean;
-  gradient_type?: string; 
   gradient_direction?: string;
-  secondary_color?: string; 
   theme_mode?: 'light' | 'dark';
   queue_settings?: {
     enabled: boolean;
@@ -42,6 +37,7 @@ interface ProfileSettings {
     show_client_id: boolean;
     show_project_name: boolean;
   };
+  tab_order?: string[]; // 🌟 新增排序屬性
 }
 
 interface ShowcaseItem {
@@ -195,7 +191,6 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     showcaseItems.forEach(item => {
@@ -225,31 +220,50 @@ export function PublicProfile() {
     );
   }, [showcaseItems, selectedTags]);
 
+  // 🌟 動態生成與排序分頁
   const availableTabs = useMemo(() => {
     if (!settings) return [];
-    const tabs = [];
+    const tabs: any[] = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
     
+    // 檢查是否為免費方案
+    const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
+
+    // 1. 推入所有可以顯示的分頁
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-    if (!isHidden('process') && settings.process) tabs.push({ id: 'process', label: '委託流程' });
-    if (!isHidden('payment') && settings.payment) tabs.push({ id: 'payment', label: '付款方式' });
     
+    // 免費版如果排單表有開可以看排單，但無法看到徵稿與自訂分頁
     if (settings.queue_settings?.enabled) {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
-    if (Array.isArray(settings.custom_sections)) {
-      settings.custom_sections.forEach((sec, index) => {
-        const generatedId = `custom_${index}`; 
-        if (!isHidden(generatedId) && sec.content) {
-          tabs.push({ id: generatedId, label: sec.title || `區塊 ${index + 1}` });
-        }
+    if (!isFreePlan) {
+      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
+      
+      if (Array.isArray(settings.custom_sections)) {
+        settings.custom_sections.forEach((sec, index) => {
+          const generatedId = `custom_${index}`; 
+          if (!isHidden(generatedId) && sec.content) {
+            tabs.push({ id: generatedId, label: sec.title || `區塊 ${index + 1}` });
+          }
+        });
+      }
+    }
+
+    // 2. 套用繪師設定的排序 (專業版才能自訂順序)
+    if (!isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
+      tabs.sort((a, b) => {
+        let idxA = settings.tab_order!.indexOf(a.id);
+        let idxB = settings.tab_order!.indexOf(b.id);
+        idxA = idxA === -1 ? 999 : idxA;
+        idxB = idxB === -1 ? 999 : idxB;
+        return idxA - idxB;
       });
     }
+
     return tabs;
-  }, [settings, showcaseItems]);
+  }, [settings, showcaseItems, artist]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
   const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); 
@@ -271,7 +285,6 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-  // 🌟 動態色彩計算區塊：根據深淺色文字設定對應的透明度框線、底色
   const isDarkText = settings?.theme_mode === 'light';
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
   const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
@@ -339,7 +352,6 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 套用 textColor 確保表格文字強制隨主題變色，並使用動態背景 */}
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
@@ -423,9 +435,9 @@ export function PublicProfile() {
                 </div>
               )}
               
-              {['detailed_intro', 'process', 'payment'].includes(currentTab) && settings && (
+              {currentTab === 'detailed_intro' && settings && (
                 <div className="rich-text-content" 
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings[currentTab as keyof ProfileSettings] as any)) }} />
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />
               )}
 
               {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec, index) => {
