@@ -77,7 +77,8 @@
   .cell-content { display: flex; align-items: center; text-align: left; width: 100%; }
   .cell-date { white-space: nowrap; min-width: 100px; }
   
-  .cell-status { position: relative; display: flex; align-items: center; }
+  /* 🌟 修改點：確保電腦版狀態欄位內的元素能垂直對齊，不會亂擠 */
+  .cell-status { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
 }
 
 .dropdown-container { position: relative; width: 100%; }
@@ -107,13 +108,11 @@
 .dropdown-add-input { flex: 1; padding: 6px 10px; border: 1px solid #DED9D3; border-radius: 6px; outline: none; font-size: 13px; }
 .dropdown-add-button { padding: 6px 12px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
+/* 🌟 修改點：移除 absolute 定位，因為我們現在統一用 flex-column 排列 */
 .workflow-badge-wrapper {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
-.workflow-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+.workflow-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; white-space: nowrap; }
 .workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
 .workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
 
@@ -165,7 +164,8 @@
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    grid-template-columns: 40px 1fr 75px 46px 48px;
+    /* 🌟 修改點：稍微放寬第3欄(進度)與第4欄，避免標籤被擠壓 */
+    grid-template-columns: 40px 1fr 90px 46px 48px;
     gap: 4px;
     padding: 0 10px;
     border: none;
@@ -190,7 +190,8 @@
   
   .queue-table tbody tr {
     display: grid;
-    grid-template-columns: 40px 1fr 75px 46px 48px; 
+    /* 🌟 修改點：同步放寬第3欄(進度)與第4欄 */
+    grid-template-columns: 40px 1fr 90px 46px 48px; 
     gap: 4px;
     align-items: center;
     margin-bottom: 8px;
@@ -222,7 +223,15 @@
 
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-content { justify-content: flex-start; }
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] .cell-content-right { justify-content: flex-start; }
-  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { justify-content: center; }
+  
+  /* 🌟 修改點：確保手機版未展開時，進度欄位依然是垂直堆疊置中，且不過度壓縮 */
+  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { 
+    justify-content: center; 
+    flex-direction: column; 
+    gap: 4px; 
+    align-items: center; 
+  }
+  
   .queue-table tr:not(.is-expanded) td[data-label="預計完工"] .cell-content { justify-content: center; }
   .queue-table tr:not(.is-expanded) td[data-label="付款進度"] .cell-content { justify-content: center; }
 
@@ -242,8 +251,9 @@
   .queue-table tr:not(.is-expanded) .dropdown-button {
     min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: #F4F0EB; font-size: 11px; width: 100%; justify-content: center; text-align: center;
   }
-  .queue-table tr:not(.is-expanded) .dropdown-arrow,
-  .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: none; }
+  /* 🌟 修改點：讓 workflow-badge-wrapper (標準委託/自由紀錄) 顯示出來，這也是你圖片裡顯示的樣子 */
+  .queue-table tr:not(.is-expanded) .dropdown-arrow { display: none; }
+  .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: flex; justify-content: center; width: 100%; margin-bottom: 2px; }
   
   /* 🌟 手機版未展開：隱藏日曆 input，顯示純文字，且隱藏括號真名 */
   .queue-table tr:not(.is-expanded) .date-input { display: none !important; }
@@ -301,7 +311,7 @@
     width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3; background: #FBFBF9; display: block !important;
   }
   
-  .queue-table tr.is-expanded .workflow-badge-wrapper { position: relative; bottom: auto; display: block; margin-bottom: 4px; }
+  .queue-table tr.is-expanded .workflow-badge-wrapper { position: relative; bottom: auto; display: flex; margin-bottom: 4px; width: 100%; }
   
   .queue-table tr.is-expanded .note-input {
     text-align: left; width: 100%; background-color: #FBFBF9; padding: 12px; border: 1px solid #DED9D3; border-radius: 8px; box-sizing: border-box;
