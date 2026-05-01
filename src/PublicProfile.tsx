@@ -9,11 +9,13 @@ interface LayoutContext {
   setTheme: (theme: { primaryColor: string; textColor: 'white' | 'black' }) => void;
 }
 
-// 【資安防護】使用 DOMParser 替代 document.createElement("textarea") + innerHTML
+// 恢復使用 textarea 解析實體字元以保留排版。
+// 資安提醒：因為下方渲染時皆有搭配 DOMPurify.sanitize()，因此在此處還原標籤是安全的，不會引發 XSS 攻擊。
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.documentElement.textContent || '';
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
 };
 
 interface ProfileSettings {
@@ -314,7 +316,6 @@ export function PublicProfile() {
               
               {currentTab === 'showcase' && (
                 <div className="showcase-section">
-                  {/* 🌟 補回篩選 UI，解決 handleTagClick 未讀取的報錯 */}
                   {availableTags.length > 1 && (
                     <div className="tag-filter-bar">
                       {availableTags.map(tag => {
