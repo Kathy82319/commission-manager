@@ -533,16 +533,16 @@ export function ClientOrders() {
                     
                     {/* 🌟 修復後的許願池媒合軌跡 */}
                     {bulletinSource && (
-                      <div className="section-card" style={{ cursor: 'pointer', backgroundColor: '#FBFBF9' }} onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)}>
-                        <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</span>
-                          <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold' }}>
-                            {isTrajectoryExpanded ? '▲ 收合軌跡' : '▼ 展開完整軌跡'}
-                          </span>
-                        </h3>
+                      <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
+                          <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            🔍 許願池媒合軌跡
+                          </h3>
+                        </div>
+
                         <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                           
-                          <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                          <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
                             <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
                             <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
                           </div>
@@ -553,7 +553,7 @@ export function ClientOrders() {
                             {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                                 {parsedSnapshot.answers.map((ans: any, idx: number) => (
-                                  <div key={idx} style={{ marginTop: '4px' }}>
+                                  <div key={idx} style={{ marginTop: '8px' }}>
                                     <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
                                     <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
                                   </div>
@@ -562,20 +562,25 @@ export function ClientOrders() {
                             )}
 
                             {parsedSnapshot.message && (
-                              <div style={{ marginTop: '4px' }}>
+                              <div style={{ marginTop: '8px' }}>
                                 <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
                                 <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(parsedSnapshot.message)}</span>
                               </div>
                             )}
 
                             {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
-                              <div style={{ marginTop: '6px' }}>
-                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
+                              <div style={{ marginTop: '10px' }}>
+                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
                                 {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(parsedSnapshot.no_gos)}</div>}
                               </div>
                             )}
                           </div>
                         </div>
+
+                        {/* 獨立按鈕，防止選取文字時誤觸折疊 */}
+                        <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px', padding: '12px 0 0 0', width: '100%', textAlign: 'center', borderTop: '1px dashed #EAE6E1' }}>
+                          {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
+                        </button>
                       </div>
                     )}
 
