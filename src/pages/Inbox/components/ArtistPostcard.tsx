@@ -144,7 +144,8 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
             </div>
           )}
 
-          <div className="postcard-actions-wrapper mt-4">
+          {/* 🌟 針對按鈕區塊進行修改：加入 flex 排版與縮小按鈕的設定 */}
+          <div className="postcard-actions-wrapper mt-4 flex justify-end items-center gap-3 [&>*]:!text-sm [&>*]:!px-4 [&>*]:!py-1.5">
             {children}
           </div>
         </div>
