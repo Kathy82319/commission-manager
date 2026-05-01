@@ -1,3 +1,4 @@
+// src/pages/Inquiry/InquiryWorkspace.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
@@ -149,15 +150,28 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
+  // 🌟 解析許願池原始內容
   let displayBulletinContent = inquiry.bulletin_content;
   try {
-     const parsed = JSON.parse(inquiry.bulletin_content);
-     if (parsed.description) displayBulletinContent = parsed.description;
+      const parsed = JSON.parse(inquiry.bulletin_content);
+      if (parsed.description) displayBulletinContent = parsed.description;
   } catch (e) {}
 
+  // 🌟 解析投遞時的快照內容
+  let parsedSnapshot: any = {};
+  try {
+    if (inquiry.artist_snapshot) {
+      parsedSnapshot = typeof inquiry.artist_snapshot === 'string' ? JSON.parse(inquiry.artist_snapshot) : inquiry.artist_snapshot;
+    }
+  } catch (e) {
+    console.error("無法解析 artist_snapshot", e);
+  }
+
+  // 🌟 判斷這篇貼文是不是「接委託 (Offer)」
+  // 如果貼文的發布者是繪師，代表這是一篇「接委託」，而案主是來投遞(應徵)的
+  const isOffer = inquiry.artist_id === inquiry.bulletin_client_id; 
+
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
-  
-  // 🌟 修正點：使用 !! 強制轉換為 boolean 型別，解決 TypeScript null 指派錯誤
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
   return (
@@ -211,12 +225,47 @@ export const InquiryWorkspace: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '0px 8px 8px 8px', marginBottom: '12px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>🔍 許願池媒合軌跡</h4>
+          
+          {/* 🌟 修正的許願池媒合軌跡區塊 */}
+          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 8px 0' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6' }}>
-              <p><strong>原始許願內容：</strong><br/>{displayBulletinContent}</p>
+              <p style={{ margin: '0 0 8px 0' }}>
+                <strong style={{ color: '#A0978D' }}>原始許願內容：</strong><br/>
+                {displayBulletinContent}
+              </p>
+
+              {/* 🌟 根據接委託/徵委託動態渲染快照內容 */}
+              {isOffer ? (
+                // 接委託 (案主投遞繪師)
+                <>
+                  {parsedSnapshot.question_template && (
+                    <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
+                      <strong style={{ color: '#A0978D' }}>案主問卷回覆：</strong><br/>
+                      {parsedSnapshot.question_template}
+                    </p>
+                  )}
+                  {parsedSnapshot.message && (
+                    <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
+                      <strong style={{ color: '#A0978D' }}>案主留言：</strong><br/>
+                      {parsedSnapshot.message}
+                    </p>
+                  )}
+                </>
+              ) : (
+                // 徵委託 (繪師投遞案主)
+                parsedSnapshot.message && (
+                  <p style={{ margin: '0 0 8px 0', borderTop: '1px dashed #EAE6E1', paddingTop: '8px' }}>
+                    <strong style={{ color: '#A0978D' }}>繪師自介/留言：</strong><br/>
+                    {parsedSnapshot.message}
+                  </p>
+                )
+              )}
             </div>
-            <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '4px' }}>{isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}</button>
+            
+            <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>
+              {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

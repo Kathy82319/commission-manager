@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-import { ImageIcon, ChevronDown, ChevronUp, FileText, User } from 'lucide-react';
+import { ImageIcon, ChevronDown, ChevronUp, FileText, User, HelpCircle, MessageSquare } from 'lucide-react';
 
 interface OutboundTabProps {
   artistInquiries: any[];
@@ -74,18 +74,18 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         artistInquiries.filter(filterOldItems).map((item) => {
           const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
           const bulletinImg = getBulletinImage(item.ref_image_key);
-          const isOffer = item.bulletin_category === 'offer';
+          const isOffer = item.bulletin_category === 'offer'; // true = 繪師接委託, false = 案主發徵求
           
           const isExpanded = expandedIds.includes(item.inquiry_id);
           const snapshot = parseSnapshot(item.artist_snapshot);
 
-          // 🌟 核心修正：安全解析 bulletin_content，只取出 description
+          // 安全解析許願池原始內容
           let displayContent = item.bulletin_content;
           try {
             const parsedContent = JSON.parse(item.bulletin_content || '{}');
             displayContent = parsedContent.description || item.bulletin_content;
           } catch (e) {
-            // 如果解析失敗，就維持原樣 (兼容舊版資料)
+            // 解析失敗維持原樣
           }
 
           return (
@@ -142,9 +142,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 )}
                 
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '24px' }}>
-                  
-                  {/* 🌟 核心修正：移除了預算與排單日期的顯示，保持畫面清爽 */}
-                  
                   <div style={{ fontSize: '13px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
                     {displayContent}
                   </div>
@@ -163,22 +160,49 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {snapshot.message && (
-                      <div>
-                        <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '4px' }}>招呼語 / 備註：</strong>
-                        <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{snapshot.message}</p>
-                      </div>
-                    )}
                     
-                    {snapshot.question_template && (
-                      <div>
-                        <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '4px' }}>問卷回答：</strong>
-                        <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{snapshot.question_template}</p>
-                      </div>
+                    {/* 🌟 根據身分與許願類型動態顯示內容 */}
+                    {isOffer ? (
+                      // === 繪師接委託：簡短的招呼語 ===
+                      snapshot.message && (
+                        <div>
+                          <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                            <MessageSquare size={14} /> 自我介紹 / 備註：
+                          </strong>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6', background: '#FFF', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                            {snapshot.message}
+                          </p>
+                        </div>
+                      )
+                    ) : (
+                      // === 案主發徵求：顯示詳細問卷與回覆 ===
+                      <>
+                        {snapshot.question_template && (
+                          <div>
+                            <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                              <HelpCircle size={14} /> 我的需求問卷回覆：
+                            </strong>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6', background: '#FFF', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                              {snapshot.question_template}
+                            </p>
+                          </div>
+                        )}
+                        {snapshot.message && (
+                          <div style={{ marginTop: '8px' }}>
+                            <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                              <MessageSquare size={14} /> 補充留言：
+                            </strong>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                              {snapshot.message}
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
 
+                    {/* 圖片一律顯示 */}
                     {snapshot.images && snapshot.images.length > 0 && (
-                      <div>
+                      <div style={{ marginTop: '4px' }}>
                         <strong style={{ fontSize: '13px', color: '#9CA3AF', display: 'block', marginBottom: '8px' }}>附件圖片：</strong>
                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                           {snapshot.images.map((img: string, idx: number) => (
