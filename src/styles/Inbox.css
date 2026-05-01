@@ -50,10 +50,12 @@
 }
 
 /* ==========================================================================
-   🌟 2. 分頁標籤 (Tabs) 樣式修復 (對齊 TSX 的 ClassName)
+   🌟 2. 分頁標籤 (Tabs) 樣式修復 (已整併底部重複宣告)
    ========================================================================== */
 .inbox-tabs-wrapper {
   display: flex;
+  justify-content: space-between; /* 讓左邊的 Tab 群和右邊的按鈕分開 */
+  align-items: center;
   gap: 16px;
   border-bottom: 2px solid #EAE6E1;
   margin-bottom: 24px;
@@ -436,13 +438,22 @@
 .chip-bad { background-color: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
 .chip-info { background-color: #FBFBF9; color: #7A7269; border: 1px solid #EAE6E1; }
 
+/* 🌟 明信片按鈕區塊重構：加大間距與縮小按鈕 */
 .postcard-actions-wrapper {
   margin-top: auto; 
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 16px; /* 原本 12px，加大間距避免黏在一起 */
   border-top: 1px solid #EAE6E1;
   padding-top: 16px;
+}
+
+/* 透過強制覆寫，直接縮小傳進來的按鈕元件 */
+.postcard-actions-wrapper button,
+.postcard-actions-wrapper [class*="btn-"] {
+  padding: 6px 16px !important; /* 降低按鈕內部留白 */
+  font-size: 14px !important;   /* 縮小字體尺寸 */
 }
 
 /* 按鈕樣式 (符合大地色風格) */
@@ -952,8 +963,15 @@
   .postcard-header { gap: 12px; margin-bottom: 16px; }
   .postcard-avatar, .postcard-avatar-fallback { width: 44px; height: 44px; }
   .postcard-artist-name { font-size: 16px; }
+  
+  /* 確保手機版的按鈕一樣維持寬度滿版，且適當放大高度便於點擊 */
   .postcard-actions-wrapper { flex-direction: column; gap: 10px; }
-  .postcard-actions-wrapper button { width: 100%; text-align: center; }
+  .postcard-actions-wrapper button,
+  .postcard-actions-wrapper [class*="btn-"] { 
+    width: 100%; 
+    text-align: center; 
+    padding: 10px 16px !important; 
+  }
 
   /* 我投遞的履歷 (Artist Inquiry Card) */
   .artist-inquiry-card { padding: 16px; }
@@ -1026,15 +1044,7 @@
    🌟 訊息中心準則 (按鈕與彈窗) 純 CSS 實作
    ========================================================================== */
 
-/* 1. 分頁列容器優化 (讓按鈕能乖乖靠右) */
-.inbox-tabs-wrapper {
-  display: flex;
-  justify-content: space-between; /* 讓左邊的 Tab 群和右邊的按鈕分開 */
-  align-items: center;
-  border-bottom: 2px solid #EAE6E1;
-  margin-bottom: 24px;
-}
-
+/* (上方的 inbox-tabs-wrapper 已整併) */
 .inbox-tabs-group {
   display: flex;
   gap: 16px;
