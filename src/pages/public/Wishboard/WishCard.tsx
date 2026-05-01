@@ -27,8 +27,9 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
   
-  // 🌟 判斷全域額度是否已滿 (只有針對「徵委託 request」的投遞才算額度)
-  const isQuotaFull = !isMyOwnPost && !hasApplied && bulletin.category === 'request' && wishQuota && !wishQuota.is_pro && (wishQuota.request_inquire_used >= wishQuota.request_inquire_max);
+
+  // 🌟 修改：把原本的 !hasApplied 拿掉，只要額度滿了就是滿了
+  const isQuotaFull = !isMyOwnPost && bulletin.category === 'request' && wishQuota && !wishQuota.is_pro && (wishQuota.request_inquire_used >= wishQuota.request_inquire_max);
 
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -251,11 +252,11 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           <div className="card-actions">
             {isMyOwnPost ? (
               <button disabled className="btn-status-disabled">這是您發布的貼文</button>
+            ) : isQuotaFull ? (
+              // 🌟 修改：把「額度已滿」的判斷拉到第二順位，優先級高於「已投遞」
+              <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
             ) : hasApplied ? (
               <button disabled className="btn-status-disabled">已投遞過此案件</button>
-            ) : isQuotaFull ? (
-              // 🌟 新增：如果額度滿了，顯示灰色按鈕並提示
-              <button disabled className="btn-status-disabled" style={{ opacity: 0.7, cursor: 'not-allowed' }}>本月投遞額度已滿，請升級專業版</button>
             ) : (
               <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
                 {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
