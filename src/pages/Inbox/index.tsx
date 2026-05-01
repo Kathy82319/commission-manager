@@ -17,7 +17,6 @@ export const Inbox: React.FC = () => {
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
 
-  // 彈窗狀態管理
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
   
@@ -139,16 +138,20 @@ export const Inbox: React.FC = () => {
 
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   
-  // 🌟 核心修改：直接導向委託單管理總覽頁面，不依賴個別 commission_id
-  const handleViewCommission = () => {
-  // 如果當下是「我的許願池」(案主視角)，則跳轉至案主委託單列表
-  if (activeTab === 'client') {
-    navigate('/client/orders'); 
-  } else {
-    // 如果當下是「我投遞的履歷」(繪師視角)，則跳轉至繪師接案本
-    navigate('/artist/notebook'); 
-  }
-};
+  // 🌟 核心修正：接收 ID，並根據角色跳轉到正確路徑
+  const handleViewCommission = (commissionId?: string) => {
+    if (!commissionId) {
+      alert('無法取得委託單資訊，請直接前往工作區查看。');
+      navigate(activeTab === 'client' ? '/client/orders' : '/artist/notebook');
+      return;
+    }
+    
+    if (activeTab === 'client') {
+      navigate(`/client/orders?id=${commissionId}`); 
+    } else {
+      navigate(`/artist/notebook?id=${commissionId}`); 
+    }
+  };
 
   return (
     <div className="inbox-page-container">

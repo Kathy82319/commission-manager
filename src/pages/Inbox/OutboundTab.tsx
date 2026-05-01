@@ -9,7 +9,7 @@ interface OutboundTabProps {
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
-  handleViewCommission: () => void; // 🌟 移除參數，改為無參數函式
+  handleViewCommission: (id: string) => void; // 🌟 加回參數
 }
 
 export const OutboundTab: React.FC<OutboundTabProps> = ({
@@ -211,8 +211,8 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </button>
                 )}
                 {item.inquiry_status === 'accepted' && (
-                  <button className="btn-success" onClick={() => handleViewCommission()}>
-                    {/* 🌟 核心修改：變更按鈕文字與邏輯 */}
+                  // 🌟 恢復傳遞 commission_id
+                  <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
                     進入委託單管理
                   </button>
                 )}
