@@ -10,8 +10,8 @@ import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
-import { OrderTab } from './Settings/OrderTab'; // 🌟 引入拖曳排序組件
-import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; // 🌟 引入單一分頁編輯組件
+import { OrderTab } from './Settings/OrderTab'; 
+import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import '../../styles/Settings.css';
 
 export interface CompleteSettings {
@@ -113,7 +113,6 @@ export function Settings() {
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
-  // 🌟 動態整合自訂分頁，產生專屬 ID
   const menuGroups = useMemo(() => {
     return categories.map(group => {
       if (group.title.includes('內容管理')) {
@@ -156,7 +155,6 @@ export function Settings() {
             ? JSON.parse(data.data.profile_settings) 
             : data.data.profile_settings;
           
-          // 確保原本沒有獨立 ID 的舊資料，也能獲得 ID
           const safeCustomSections = (parsed.custom_sections || []).map((sec: any, idx: number) => ({
             ...sec,
             id: sec.id || `custom_legacy_${idx}`
@@ -223,12 +221,13 @@ export function Settings() {
   };
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
+  
+  // 🌟 修改這裡：將 'theme' 移出免費版允許名單，這會讓它自動觸發下面的 isCurrentTabLocked 鎖定邏輯
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'theme', 'bulletin_settings', 'queue_settings'
+    'bulletin_settings', 'queue_settings'
   ];
   
-  // 🌟 判定鎖定邏輯：如果不在允許清單，或者點選了 custom_ 分頁/變更排序，就觸發鎖定
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
@@ -243,7 +242,6 @@ export function Settings() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 {group.title}
-                {/* 🌟 只有變更排序按鈕 */}
                 {group.title.includes('內容管理') && (
                   <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); }}>變更排序</button>
                 )}
@@ -252,7 +250,6 @@ export function Settings() {
               {group.items.map((item: MenuItem) => {
                 const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
                 
-                // 🌟 新增的虛線分頁設計
                 if (item.isCustom) {
                   return (
                     <button 
@@ -281,7 +278,6 @@ export function Settings() {
                 );
               })}
 
-              {/* 🌟 虛線新增按鈕 */}
               {group.title.includes('內容管理') && (
                 <button 
                   onClick={() => {
@@ -311,8 +307,6 @@ export function Settings() {
 
         <div className="settings-content-area">
           <div className="settings-header">
-            <h3>內容編輯</h3>
-            {/* 🌟 右上角顯示開關：將自訂分頁也納入判斷 */}
             {['showcase', 'portfolio', 'detailed_intro', 'rules', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
@@ -343,7 +337,6 @@ export function Settings() {
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
             )}
             
-            {/* 🌟 渲染單一自訂分頁 */}
             {activeTab.startsWith('custom_') && (
               <SingleCustomSectionTab 
                 key={activeTab}
