@@ -14,7 +14,7 @@ export const paymentController = {
       
       const amount = 199;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      const absoluteFrontendUrl = "https://cath-commission-manager.pages.pages.dev";
+      const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
       const backendUrl = env.BACKEND_URL;
       
       await env.commission_db.prepare(
