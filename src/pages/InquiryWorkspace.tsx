@@ -235,14 +235,6 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
                 <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
                 <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
-                {originalQuestions.length > 0 && (
-                  <div style={{ marginTop: '6px' }}>
-                    <strong style={{ color: '#A0978D' }}>{isOffer ? '繪師' : '委託方'}提問：</strong>
-                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                      {originalQuestions.map((q, idx) => <li key={idx}>{q}</li>)}
-                    </ol>
-                  </div>
-                )}
               </div>
 
               <div>
