@@ -9,7 +9,7 @@ interface OutboundTabProps {
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
-  handleViewCommission: (id: string) => void; // 🌟 加回參數
+  handleViewCommission: (id: string) => void; 
 }
 
 export const OutboundTab: React.FC<OutboundTabProps> = ({
@@ -79,6 +79,15 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
           const isExpanded = expandedIds.includes(item.inquiry_id);
           const snapshot = parseSnapshot(item.artist_snapshot);
 
+          // 🌟 核心修正：安全解析 bulletin_content，只取出 description
+          let displayContent = item.bulletin_content;
+          try {
+            const parsedContent = JSON.parse(item.bulletin_content || '{}');
+            displayContent = parsedContent.description || item.bulletin_content;
+          } catch (e) {
+            // 如果解析失敗，就維持原樣 (兼容舊版資料)
+          }
+
           return (
           <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
               
@@ -133,19 +142,11 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 )}
                 
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '24px' }}>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {isOffer && (
-                      <span style={{ background: '#FFF5EB', color: '#ff8c00', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                        💰 預算/底價：{item.budget_min} ~ {item.budget_max}
-                      </span>
-                    )}
-                    <span style={{ background: '#E6F4EA', color: '#1E8E3E', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
-                      📅 排單：{item.schedule_type === 'flexible' ? '可接受排單' : item.specific_date}
-                    </span>
-                  </div>
+                  
+                  {/* 🌟 核心修正：移除了預算與排單日期的顯示，保持畫面清爽 */}
                   
                   <div style={{ fontSize: '13px', color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5' }}>
-                    {item.bulletin_content}
+                    {displayContent}
                   </div>
                 </div>
 
@@ -211,7 +212,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                   </button>
                 )}
                 {item.inquiry_status === 'accepted' && (
-                  // 🌟 恢復傳遞 commission_id
                   <button className="btn-success" onClick={() => handleViewCommission(item.commission_id)}>
                     進入委託單管理
                   </button>
