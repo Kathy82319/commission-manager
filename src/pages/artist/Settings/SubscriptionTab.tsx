@@ -1,3 +1,4 @@
+// src/pages/artist/Settings/SubscriptionTab.tsx
 import { useState } from 'react';
 import type { QuotaInfo } from '../Settings/types';
 
@@ -9,50 +10,60 @@ interface Props {
 
 export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
+  // 開啟 15 天試用邏輯 (測試 API 模式)
   const handleStartTrial = async () => {
-    // 功能目前暫停開放
-    onToast('試用功能維護中，暫不開放開啟', 'err');
-    /* 原有邏輯保留備用
+    if (isStartingTrial) return;
+    setIsStartingTrial(true);
     try {
-      const res = await fetch(`${API_BASE}/api/test/start-trial`, { method: 'POST', credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/test/start-trial`, { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
       const data = await res.json();
       if (data.success) {
-        onToast(data.message || '15 天試用已開啟', 'ok');
+        onToast(data.message || '15 天試用已成功開啟！', 'ok');
         fetchUserData();
       } else {
-        onToast(data.error || '開啟試用失敗', 'err');
+        onToast(data.error || '開啟試用失敗，請稍後再試', 'err');
       }
     } catch(e) { 
-      onToast('連線失敗', 'err'); 
+      onToast('伺服器連線失敗', 'err'); 
+    } finally {
+      setIsStartingTrial(false);
     }
-    */
   };
 
+  // 升級專業版邏輯 (目前仍為測試 API 模式)
   const handleUpgradeClick = async () => {
-    // 功能目前暫停開放
-    onToast('升級功能維護中，暫不開放訂閱', 'err');
-    /* 原有邏輯保留備用
+    if (isUpgrading) return;
     setIsUpgrading(true);
     try {
+      // 🌟 這裡暫時維持測試用路由，確認流程無誤再改為正式藍新路徑
       const response = await fetch(`${API_BASE}/api/payment/create`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan_type: "pro" })
       });
+      
       const result = await response.json();
+      
       if (result.success && result.data) {
+        // 建立隱藏表單並跳轉至藍新支付頁面
         const form = document.createElement("form");
         form.method = "POST";
         form.action = result.data.PayGateWay;
+        
         const params = {
           MerchantID: result.data.MerchantID,
           TradeInfo: result.data.TradeInfo,
           TradeSha: result.data.TradeSha,
           Version: result.data.Version,
         };
+        
         for (const [key, value] of Object.entries(params)) {
           const input = document.createElement("input");
           input.type = "hidden";
@@ -60,105 +71,134 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           input.value = value as string;
           form.appendChild(input);
         }
+        
         document.body.appendChild(form);
         form.submit(); 
       } else {
-        onToast("訂單建立失敗：" + (result.error || "請稍後再試"), 'err');
+        onToast("支付單建立失敗：" + (result.error || "請稍後再試"), 'err');
         setIsUpgrading(false);
       }
     } catch (error) {
-      console.error("升級失敗:", error);
-      onToast("系統連線異常", 'err');
+      console.error("支付流程異常:", error);
+      onToast("系統連線異常，請檢查網路狀態", 'err');
       setIsUpgrading(false);
     }
-    */
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         
-        <div style={{ border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'free' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+        {/* 1. 基礎免費版 */}
+        <div style={{ 
+          border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', 
+          borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
+          backgroundColor: quotaInfo?.plan_type === 'free' ? '#FFFFFF' : '#FBFBF9',
+          boxShadow: quotaInfo?.plan_type === 'free' ? '0 8px 24px rgba(93, 74, 62, 0.08)' : 'none',
+          position: 'relative'
+        }}>
+          {quotaInfo?.plan_type === 'free' && <div style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: '#5D4A3E', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>目前方案</div>}
           <h4 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}>基礎免費版</h4>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-            <li>每月最高建立 <strong>3 筆</strong>委託單</li>
-            <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-            <li>開放編輯「頭像與簡介、作品展示、詳細介紹」</li>
-            <li>公開頁面最多展示 <strong>前 6 張</strong>作品</li>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 0 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+          
+          <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
+          
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
+            <li>📋 每月可建立 <strong>3 筆</strong> 委託單 (含許願池訂單)</li>
+            <li>✨ 許願池：主動投遞 <strong>5 次</strong> / 月</li>
+            <li>✨ 許願池：發布接委託 <strong>1 則</strong> / 月</li>
+            <li>🖼️ 作品集展示上限 <strong>6 張</strong></li>
+            <li>📤 單檔上傳最高 5MB 限制</li>
           </ul>
-          {quotaInfo?.plan_type === 'free' ? (
-            <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontWeight: 'bold', backgroundColor: '#F0ECE7', borderRadius: '8px' }}>目前方案</div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>到期後將自動降級至此方案</div>
-          )}
+          
+          <div style={{ textAlign: 'center', padding: '14px', color: '#A0978D', fontSize: '14px', backgroundColor: '#F0ECE7', borderRadius: '12px', fontWeight: 'bold' }}>
+            {quotaInfo?.plan_type === 'free' ? '方案使用中' : '過期後將自動降級'}
+          </div>
         </div>
 
-        {/* 專業版 (15天試用) */}
-        <div style={{ border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'trial' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+        {/* 2. 專業版體驗 (Trial) */}
+        <div style={{ 
+          border: quotaInfo?.plan_type === 'trial' ? '2px solid #A67B3E' : '1px solid #EAE6E1', 
+          borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
+          backgroundColor: quotaInfo?.plan_type === 'trial' ? '#FFFFFF' : '#FBFBF9',
+          boxShadow: quotaInfo?.plan_type === 'trial' ? '0 8px 24px rgba(166, 123, 62, 0.08)' : 'none'
+        }}>
           <h4 style={{ margin: 0, fontSize: '18px', color: '#A67B3E' }}>專業版 (15天試用)</h4>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-            <li>試用期間可建立 <strong>20 筆</strong>委託單</li>
-            <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-            <li>解鎖編輯所有區塊權限</li>
-            <li>解鎖最高 <strong>20 張</strong>作品展示上限</li>
-            <li>解鎖最高 <strong>10 個</strong>徵稿/販售項目</li>
-            <li>解鎖「徵稿/販售區」開放展示 <strong>10 個</strong>項目</li>
-            <li style={{ color: '#A67B3E', listStyle: 'none', marginLeft: '-20px', marginTop: '10px' }}>降級保障：方案過期後，已設定的進階區塊與超過 6張的作品和徵稿不會刪除會持續展示，僅鎖定後台編輯權限。</li>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#5D4A3E' }}>免費體驗</div>
+          
+          <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
+          
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
+            <li>🚀 試用期間可建立 <strong>20 筆</strong> 委託單</li>
+            <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制</li>
+            <li>💎 <strong>解鎖</strong> 最高 20 張作品展示</li>
+            <li>💎 <strong>解鎖</strong>「徵稿/販售區」開放展示 10 個項目</li>
+            <li>💎 <strong>解鎖</strong> 所有進階編輯區塊權限</li>
+            <li style={{ color: '#A67B3E', fontSize: '12px', marginTop: '10px', lineHeight: '1.4' }}>💡 降級保障：試用結束後，已設定的區塊與超出張數的作品仍會持續展示，僅鎖定編輯權限。</li>
           </ul>
+          
           {quotaInfo?.plan_type === 'trial' ? (
-              <div style={{ textAlign: 'center', padding: '12px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '8px' }}>試用中</div>
+              <div style={{ textAlign: 'center', padding: '14px', color: '#A67B3E', fontWeight: 'bold', backgroundColor: '#FDF4E6', borderRadius: '12px' }}>試用進行中</div>
           ) : quotaInfo?.trial_start_at ? (
-              <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', fontSize: '13px' }}>您已經使用過免費試用額度</div>
+              <div style={{ textAlign: 'center', padding: '14px', color: '#A0978D', fontSize: '14px', backgroundColor: '#F0ECE7', borderRadius: '12px' }}>您已使用過試用額度</div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', backgroundColor: '#F0ECE7', borderRadius: '8px', fontSize: '14px' }}>
-              試用功能暫未開放
-            </div>
-            /* 暫時隱藏按鈕
-            <button onClick={handleStartTrial} style={{ padding: '12px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'opacity 0.2s' }}>開啟 15 天試用</button>
-            */
+            <button 
+              onClick={handleStartTrial} 
+              disabled={isStartingTrial}
+              className="action-button-hover"
+              style={{ 
+                padding: '14px', backgroundColor: '#A67B3E', color: '#FFF', border: 'none', 
+                borderRadius: '12px', cursor: isStartingTrial ? 'not-allowed' : 'pointer', 
+                fontWeight: 'bold', fontSize: '15px'
+              }}
+            >
+              {isStartingTrial ? '處理中...' : '開啟 15 天免費試用'}
+            </button>
           )}
         </div>
 
-        {/* 專業版 */}
-        <div style={{ border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9', boxShadow: quotaInfo?.plan_type === 'pro' ? '0 4px 16px rgba(0,0,0,0.05)' : 'none' }}>
+        {/* 3. 專業版 (Pro) */}
+        <div style={{ 
+          border: quotaInfo?.plan_type === 'pro' ? '2px solid #4E7A5A' : '1px solid #EAE6E1', 
+          borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
+          backgroundColor: quotaInfo?.plan_type === 'pro' ? '#FFFFFF' : '#FBFBF9',
+          boxShadow: '0 12px 32px rgba(78, 122, 90, 0.12)',
+          position: 'relative'
+        }}>
+          <div style={{ position: 'absolute', top: '-12px', right: '20px', backgroundColor: '#4E7A5A', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>最強功能</div>
           <h4 style={{ margin: 0, fontSize: '18px', color: '#4E7A5A' }}>專業版</h4>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
-          <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-            <li><strong>無限制建立委託單數量</strong></li>
-            <li>解鎖編輯「所有」進階區塊編輯權限</li>
-            <li>單檔上傳最高 <strong>5MB</strong> 限制</li>
-            <li>解鎖最高 <strong>30 張</strong>作品展示上限</li>
-            <li>「徵稿/販售區」開放展示 <strong>30 個</strong>項目</li>
-            <li>享有未來所有進階功能更新</li>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#5D4A3E' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+          
+          <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
+          
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
+            <li>👑 <strong>無限制</strong> 建立委託單數量</li>
+            <li>👑 <strong>無限制</strong> 許願池投遞與發布次數*</li>
+            <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
+            <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>
+            <li>👑 享有優先客服與新功能搶先體驗</li>
+            <li style={{ fontSize: '11px', color: '#A0978D', marginTop: '4px' }}>* 同時間同類型僅限刊登一則，以維護版面整潔</li>
           </ul>
+          
           {quotaInfo?.plan_type === 'pro' ? (
-              <div style={{ textAlign: 'center', padding: '12px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '8px' }}>已訂閱專業版</div>
+              <div style={{ textAlign: 'center', padding: '14px', color: '#4E7A5A', fontWeight: 'bold', backgroundColor: '#E8F3EB', borderRadius: '12px' }}>已訂閱專業版</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ textAlign: 'center', padding: '12px', color: '#A0978D', backgroundColor: '#F0ECE7', borderRadius: '8px', fontSize: '14px' }}>
-                訂閱功能升級中，暫不開放
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center', lineHeight: '1.4' }}>
-                目前系統正在進行金流模組維護。
-              </div>
-              {/* 暫時隱藏按鈕與政策連結
-              <div style={{ fontSize: '12px', color: '#A05C5C', textAlign: 'center', lineHeight: '1.4' }}>
-                點擊按鈕即代表同意<a href="/refund-policy" target="_blank" rel="noreferrer" style={{ color: '#A05C5C', textDecoration: 'underline' }}>退款政策</a>，<br/>數位內容一經啟用恕不退費。
+                點擊即代表同意<a href="/refund-policy" target="_blank" rel="noreferrer" style={{ color: '#4E7A5A', textDecoration: 'underline' }}>退款政策</a>，內容一經啟用恕不退費。
               </div>                        
               <button 
                 onClick={handleUpgradeClick} 
                 disabled={isUpgrading}
                 style={{ 
-                  padding: '12px', backgroundColor: isUpgrading ? '#C4BDB5' : '#4E7A5A', color: '#FFF', 
-                  border: 'none', borderRadius: '8px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
-                  fontWeight: 'bold', transition: 'opacity 0.2s', width: '100%'
+                  padding: '16px', backgroundColor: isUpgrading ? '#C4BDB5' : '#4E7A5A', color: '#FFF', 
+                  border: 'none', borderRadius: '12px', cursor: isUpgrading ? 'not-allowed' : 'pointer', 
+                  fontWeight: 'bold', fontSize: '16px', transition: 'all 0.2s', width: '100%'
                 }} 
               >
-                {isUpgrading ? '導向安全支付頁面...' : '升級專業版 (線上刷卡)'}
+                {isUpgrading ? '導向安全支付頁面...' : '立即升級專業版'}
               </button>
-              */}
             </div>
           )}
         </div>
