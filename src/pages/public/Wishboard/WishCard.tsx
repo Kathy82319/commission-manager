@@ -8,7 +8,6 @@ interface WishCardProps {
   bulletin: any;
   currentUser: any;
   onInquire: (bulletin: any) => void;
-  // 🌟 接收外部傳來的額度狀態
   wishQuota?: { 
     is_pro: boolean, 
     offer_used: number, offer_max: number, 
@@ -71,7 +70,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const selectionType = bulletin.selection_type || contentObj.selection_type || 'fcfs';
   const maxSlots = parseInt(bulletin.max_slots || contentObj.max_slots || 1, 10);
 
-  // 🌟 新增：計算是否已達名額上限 (僅針對先搶先贏機制的接委託)
   const isFull = bulletin.category === 'offer' && selectionType === 'fcfs' && appliedCount >= maxSlots;
 
   const posterName = bulletin.client_name || '匿名使用者';
@@ -188,47 +186,56 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
             </div>
 
+            {/* 🌟 核心修正：使用 Inline Styles 強制阻斷 CSS 權重，確保單行顯示與優雅省略 */}
             <div className="meta-info-grid">
               {bulletin.category === 'request' && (
-                <div className="meta-item items-start">
-                  <DollarSign size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                  <span className="flex-shrink-0 whitespace-nowrap">預算：</span>
-                  <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
+                  <DollarSign size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
+                  <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>預算：</span>
+                  <span className="highlight-price" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    ${bulletin.budget_min} ~ ${bulletin.budget_max}
+                  </span>
                 </div>
               )}
- <div className="meta-item items-center">
-  <Calendar size={16} className="meta-icon flex-shrink-0" />
-  <span className="flex-shrink-0 whitespace-nowrap">排單狀況：</span>
-  {/* 🌟 換成 truncate 強制單行，並補上 title 讓滑鼠移過去能看見完整內容 */}
-  <span 
-    className="text-dark-600 truncate min-w-0 leading-snug" 
-    title={bulletin.schedule_type === 'flexible' ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
-  >
-    {bulletin.schedule_type === 'flexible' 
-      ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
-      : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
-  </span>
-</div>
-              <div className="meta-item items-start">
-                <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                <span className="flex-shrink-0 whitespace-nowrap">付款方式：</span>
-                <span className="text-dark-600 break-words min-w-0 leading-snug">{paymentMethods.join(', ')}</span>
+              
+              <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
+                <Calendar size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
+                <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>排單狀況：</span>
+                <span 
+                  className="text-dark-600" 
+                  style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                  title={bulletin.schedule_type === 'flexible' ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
+                >
+                  {bulletin.schedule_type === 'flexible' 
+                    ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') 
+                    : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
+                </span>
+              </div>
+              
+              <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
+                <Send size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
+                <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>付款方式：</span>
+                <span 
+                  className="text-dark-600" 
+                  style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                  title={paymentMethods.join(', ')}
+                >
+                  {paymentMethods.join(', ')}
+                </span>
               </div>
 
               {bulletin.category === 'offer' && selectionType && (
-                <div className="meta-item items-start" style={{ gridColumn: '1 / -1' }}>
-                  <Users size={16} className="meta-icon text-[#b45309] mt-0.5 flex-shrink-0" />
-                  <span className="flex-shrink-0 whitespace-nowrap">徵集名額：</span>
-                  <span className="font-bold text-[#b45309] flex flex-wrap items-center gap-2 min-w-0 leading-snug">
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
+                  <Users size={16} className="meta-icon text-[#b45309]" style={{ flexShrink: 0, marginRight: '4px' }} />
+                  <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>徵集名額：</span>
+                  <span 
+                    className="font-bold text-[#b45309]" 
+                    style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                    title={selectionType === 'curated' ? `預計招收 ${maxSlots} 名 (繪師選設)` : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`}
+                  >
                     {selectionType === 'curated' 
-                      ? (
-                        <>
-                          預計招收 {maxSlots} 名 <span className="text-[12px] bg-[#FEF3C7] px-2 py-0.5 rounded text-[#92400E] font-normal mt-1 sm:mt-0">💡 繪師會選擇適恰設定來接單</span>
-                        </>
-                      ) 
-                      : (
-                        `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`
-                      )
+                      ? `預計招收 ${maxSlots} 名 (💡繪師選設)` 
+                      : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`
                     }
                   </span>
                 </div>
@@ -262,7 +269,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             ) : hasApplied ? (
               <button disabled className="btn-status-disabled">已投遞過此案件</button>
             ) : isFull ? (
-              // 🌟 新增：名額已滿的按鈕狀態
               <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
             ) : (
               <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
