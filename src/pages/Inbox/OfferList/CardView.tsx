@@ -108,9 +108,10 @@ export const CardView: React.FC<CardViewProps> = ({
         <div 
           className="offer-card-gallery" 
           style={{ 
-            width: '160px', 
+            width: '220px',      // 👈 把這裡改寬 (依你喜好調整數值)
+            minWidth: '220px',   // 👈 建議加上這行
             flexShrink: 0, 
-            maxHeight: (!isExpanded && needsExpansion) ? '180px' : '350px', // 未展開時鎖定高度，展開時最多350px
+            maxHeight: (!isExpanded && needsExpansion) ? '180px' : '350px',
             overflow: 'hidden',
             position: 'relative'
           }}
