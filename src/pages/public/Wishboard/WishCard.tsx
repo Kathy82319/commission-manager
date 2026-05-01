@@ -8,6 +8,12 @@ interface WishCardProps {
   bulletin: any;
   currentUser: any;
   onInquire: (bulletin: any) => void;
+  // 🌟 接收外部傳來的額度狀態
+  wishQuota?: { 
+    is_pro: boolean, 
+    offer_used: number, offer_max: number, 
+    request_inquire_used: number, request_inquire_max: number 
+  } | null;
 }
 
 const unescapeHtml = (str: string) => {
@@ -15,12 +21,15 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire }) => {
+export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota }) => {
   const navigate = useNavigate();
 
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
   
+  // 🌟 判斷全域額度是否已滿 (只有針對「徵委託 request」的投遞才算額度)
+  const isQuotaFull = !isMyOwnPost && !hasApplied && bulletin.category === 'request' && wishQuota && !wishQuota.is_pro && (wishQuota.request_inquire_used >= wishQuota.request_inquire_max);
+
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
@@ -181,14 +190,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               {bulletin.category === 'request' && (
                 <div className="meta-item items-start">
                   <DollarSign size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                  {/* 🌟 補上 whitespace-nowrap 防換行 */}
                   <span className="flex-shrink-0 whitespace-nowrap">預算：</span>
                   <span className="highlight-price break-words min-w-0">${bulletin.budget_min} ~ ${bulletin.budget_max}</span>
                 </div>
               )}
               <div className="meta-item items-start">
                 <Calendar size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                {/* 🌟 補上 whitespace-nowrap 防換行 */}
                 <span className="flex-shrink-0 whitespace-nowrap">排單狀況：</span>
                 <span className="text-dark-600 break-words min-w-0 leading-snug">
                   {bulletin.schedule_type === 'flexible' 
@@ -198,7 +205,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
               <div className="meta-item items-start">
                 <Send size={16} className="meta-icon mt-0.5 flex-shrink-0" />
-                {/* 🌟 補上 whitespace-nowrap 防換行 */}
                 <span className="flex-shrink-0 whitespace-nowrap">付款方式：</span>
                 <span className="text-dark-600 break-words min-w-0 leading-snug">{paymentMethods.join(', ')}</span>
               </div>
@@ -206,7 +212,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               {bulletin.category === 'offer' && selectionType && (
                 <div className="meta-item items-start" style={{ gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309] mt-0.5 flex-shrink-0" />
-                  {/* 🌟 補上 whitespace-nowrap 防換行 */}
                   <span className="flex-shrink-0 whitespace-nowrap">徵集名額：</span>
                   <span className="font-bold text-[#b45309] flex flex-wrap items-center gap-2 min-w-0 leading-snug">
                     {selectionType === 'curated' 
@@ -248,6 +253,9 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <button disabled className="btn-status-disabled">這是您發布的貼文</button>
             ) : hasApplied ? (
               <button disabled className="btn-status-disabled">已投遞過此案件</button>
+            ) : isQuotaFull ? (
+              // 🌟 新增：如果額度滿了，顯示灰色按鈕並提示
+              <button disabled className="btn-status-disabled" style={{ opacity: 0.7, cursor: 'not-allowed' }}>本月投遞額度已滿，請升級專業版</button>
             ) : (
               <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
                 {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}

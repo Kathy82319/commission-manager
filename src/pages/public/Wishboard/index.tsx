@@ -299,7 +299,8 @@ export const Wishboard: React.FC = () => {
         {loading ? <div className="loading">載入中...</div> : (
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
-            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} />)
+            // 🌟 將 wishQuota 傳遞給 WishCard
+            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} />)
         )}
       </main>
 
