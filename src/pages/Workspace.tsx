@@ -16,6 +16,12 @@ interface OrderData {
   origin_source?: string; // 新增來源欄位
 }
 
+// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題並防止 JSON.parse 崩潰
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export function Workspace() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -41,13 +47,46 @@ export function Workspace() {
     });
   };
 
-  // 判斷是否來自許願池
+  // 🌟 修改：深度解析許願池來源，處理雙重 JSON 與亂碼
   const getBulletinSource = (currentOrder: OrderData | null) => {
     if (!currentOrder || !currentOrder.origin_source) return null;
     try {
-      const parsed = JSON.parse(currentOrder.origin_source);
-      if (parsed.source_type === 'bulletin') return parsed;
+      // 1. 先解碼最外層字串並解析
+      const rawSource = unescapeHtml(currentOrder.origin_source);
+      const parsed = JSON.parse(rawSource);
+      
+      if (parsed.source_type === 'bulletin') {
+        const isOffer = parsed.bulletin_category === 'offer';
+        
+        // 2. 嘗試解析深層的快照資料 (投遞時填寫的表單)
+        const snapshotObj = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+        const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
+        
+        let parsedSnapshot: any = {};
+        try {
+          parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+          if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
+        } catch (e) {
+          console.error("快照深層解析失敗", e);
+        }
+
+        // 3. 確保問題陣列存在
+        let questions = [];
+        try {
+           if (typeof parsed.questions === 'string') questions = JSON.parse(unescapeHtml(parsed.questions));
+           else if (Array.isArray(parsed.questions)) questions = parsed.questions;
+        } catch (e) {}
+
+        return {
+          ...parsed,
+          description: parsed.description || parsed.bulletin_content,
+          questions,
+          isOffer,
+          parsedSnapshot
+        };
+      }
     } catch (e) {
+      console.error("許願池來源解析失敗", e);
       return null;
     }
     return null;
@@ -243,7 +282,7 @@ export function Workspace() {
           gap: '16px',
           backgroundColor: '#FBFBF9' 
         }}>
-          {/* 許願池媒合軌跡區塊 - 置頂顯示 */}
+          {/* 🌟 擴充：許願池媒合軌跡區塊 (置頂顯示完整資訊) */}
           {bulletinData && (
             <div style={{
               backgroundColor: '#FDFBFE',
@@ -254,23 +293,55 @@ export function Workspace() {
               fontSize: '13px',
               color: '#4B5563',
               lineHeight: '1.6',
-              boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)'
+              boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
             }}>
               <div style={{ color: '#9333EA', fontWeight: 'bold', borderBottom: '1px solid #F3E8FF', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>
-                許願池媒合軌跡
+                🔍 許願池媒合軌跡
               </div>
-              <div style={{ marginBottom: '8px' }}>
-                <strong style={{ color: '#5D4A3E' }}>原始許願內容：</strong> {bulletinData.bulletin_content}
+              
+              <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #E9D5FF', marginBottom: '12px' }}>
+                <strong style={{ color: '#A67B3E' }}>【{bulletinData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.description}</span>
+                {bulletinData.questions && bulletinData.questions.length > 0 && (
+                  <div style={{ marginTop: '6px' }}>
+                    <strong style={{ color: '#A0978D' }}>提問設定：</strong>
+                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
+                      {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{unescapeHtml(q)}</li>)}
+                    </ol>
+                  </div>
+                )}
               </div>
-              <div style={{ marginBottom: '8px' }}>
-                <strong style={{ color: '#5D4A3E' }}>繪師投遞規格：</strong> 
-                {bulletinData.artist_initial_snapshot?.title} ({bulletinData.artist_initial_snapshot?.price})
+
+              <div>
+                <strong style={{ color: '#4A7294' }}>【{bulletinData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                
+                {bulletinData.parsedSnapshot?.answers && bulletinData.parsedSnapshot.answers.length > 0 && (
+                  <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                    {bulletinData.parsedSnapshot.answers.map((ans: any, idx: number) => (
+                      <div key={idx} style={{ marginTop: '8px' }}>
+                        <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {bulletinData.parsedSnapshot?.message && (
+                  <div style={{ marginTop: '8px' }}>
+                    <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(bulletinData.parsedSnapshot.message)}</span>
+                  </div>
+                )}
+
+                {!bulletinData.isOffer && (bulletinData.parsedSnapshot?.specialties || bulletinData.parsedSnapshot?.no_gos) && (
+                  <div style={{ marginTop: '10px' }}>
+                    {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(bulletinData.parsedSnapshot.specialties)}</div>}
+                    {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(bulletinData.parsedSnapshot.no_gos)}</div>}
+                  </div>
+                )}
               </div>
-              {bulletinData.client_initial_response && (
-                <div>
-                  <strong style={{ color: '#5D4A3E' }}>案主提問回覆：</strong> {bulletinData.client_initial_response}
-                </div>
-              )}
             </div>
           )}
 
