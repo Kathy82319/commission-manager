@@ -226,6 +226,7 @@ export function Notebook() {
       ? { ...editData } 
       : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
 
+    // 🛡️ [資安提醒]: 後端 commController.ts 必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -264,6 +265,7 @@ export function Notebook() {
 
     if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
 
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changes })
@@ -287,6 +289,7 @@ export function Notebook() {
     const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
     if (!window.confirm(confirmMsg)) return;
     
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -299,6 +302,7 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -309,6 +313,7 @@ export function Notebook() {
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, { 
       method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ payment_status: newStatus }) 
@@ -321,6 +326,7 @@ export function Notebook() {
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整的記帳資訊喔！");
     if (isNaN(amountNum) || amountNum <= 0) return alert("請輸入有效的金額！");
 
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ ...newPayment, amount: amountNum }) 
@@ -333,6 +339,7 @@ export function Notebook() {
 
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE', credentials: 'include' });
     fetchPayments(selectedId);
   };
@@ -353,6 +360,8 @@ export function Notebook() {
       const lowResPreviewBlob = await compressPreviewBlob(resultBlobs.preview, 800, 0.5);
       const previewType = 'image/jpeg'; 
       
+      // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
+      // 且後端需嚴格驗證 contentType 與副檔名，防止上傳惡意檔案
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview_${stageKey}.jpg`, folder: 'commissions' })
@@ -370,6 +379,7 @@ export function Notebook() {
         const origType = resultBlobs.original.type || 'application/octet-stream';
         const origName = (resultBlobs.original as File).name || 'final_original.zip';
         
+        // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contentType: origType, bucketType: 'private', originalName: origName, folder: 'commissions' })
@@ -524,7 +534,6 @@ export function Notebook() {
   const bulletinSource = getBulletinSource(selectedOrder);
   let displayBulletinContent = '';
   let parsedSnapshot: any = {};
-  let originalQuestions: string[] = [];
   let isOffer = false;
 
   if (bulletinSource) {
@@ -536,12 +545,11 @@ export function Notebook() {
     try {
         const parsed = JSON.parse(rawBulletinContent);
         if (parsed.description) displayBulletinContent = parsed.description;
-        if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
     } catch (e) {}
 
-    // 解析投遞快照內容，並雙重檢查解碼
+    // 解析投遞快照內容，並確保對齊後端 `inquiryController.ts` 寫入的 Key: `artist_initial_snapshot`
     try {
-      const snapshotObj = bulletinSource.client_initial_response || bulletinSource.artist_initial_snapshot || bulletinSource.artist_snapshot || '{}';
+      const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}';
       const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
       parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
       if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
@@ -744,19 +752,12 @@ export function Notebook() {
                           <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
                             <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
                             <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
-                            {originalQuestions && originalQuestions.length > 0 && (
-                              <div style={{ marginTop: '6px' }}>
-                                <strong style={{ color: '#A0978D' }}>提問設定：</strong>
-                                <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                                  {originalQuestions.map((q, idx) => <li key={idx}>{unescapeHtml(q)}</li>)}
-                                </ol>
-                              </div>
-                            )}
                           </div>
 
                           <div>
                             <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                             
+                            {/* Q&A 內容，已對齊 artist_initial_snapshot */}
                             {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                                 {parsedSnapshot.answers.map((ans: any, idx: number) => (

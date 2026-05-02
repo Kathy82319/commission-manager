@@ -143,7 +143,7 @@ export function ClientOrders() {
 
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
-      setIsTrajectoryExpanded(false);
+      setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -201,6 +201,7 @@ export function ClientOrders() {
 
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!selectedId) return;
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-response`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -216,6 +217,7 @@ export function ClientOrders() {
   const handleSaveTitle = async () => {
     if (!selectedId || saveStatus === 'saving') return;
     setSaveStatus('saving');
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -237,6 +239,7 @@ export function ClientOrders() {
       if (!window.confirm('⚠️ 注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？')) return;
     }
     setIsProcessing(true);
+    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/review`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -259,6 +262,7 @@ export function ClientOrders() {
         return;
       }
 
+      // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id (或有權限的繪師)
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commissionId: selectedId, fileName: privatePath, bucketType: 'private' })
@@ -376,10 +380,10 @@ export function ClientOrders() {
         if (parsed.description) displayBulletinContent = parsed.description;
     } catch (e) {}
 
-    // 解析投遞快照內容，並雙重檢查解碼
+    // 解析投遞快照內容，並確保對齊後端寫入的 Key: `artist_initial_snapshot`
     try {
-      const snapshotStr = bulletinSource.artist_snapshot || bulletinSource.client_initial_response || '{}'; 
-      const rawSnapshot = unescapeHtml(snapshotStr);
+      const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}'; 
+      const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
       parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
       if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
     } catch (e) {
@@ -500,6 +504,7 @@ export function ClientOrders() {
                 <div className="main-header-actions">
                   <button 
                     onClick={() => {
+                      // 🛡️ [資安提醒]: 後端應確保只有相關人可更新此狀態
                       fetch(`${API_BASE}/api/commissions/${selectedOrder.id}`, {
                         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                         body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
@@ -550,6 +555,7 @@ export function ClientOrders() {
                           <div>
                             <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                             
+                            {/* Q&A 內容，已對齊 artist_initial_snapshot */}
                             {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                                 {parsedSnapshot.answers.map((ans: any, idx: number) => (

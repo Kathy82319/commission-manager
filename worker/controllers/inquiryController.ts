@@ -1,4 +1,4 @@
-// worker/controllers/inquiryController.ts
+// worker/controllers/inquiryController.ts (打包許願池表單用的)
 import type { Env } from '../shared/types';
 
 export const inquiryController = {
