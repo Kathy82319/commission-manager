@@ -2,6 +2,17 @@
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
 
+// 🌟 輔助函式：建立帶有 JSON 宣告的 Response，一勞永逸解決 Content-Type 問題
+const createJsonResponse = (body: any, status: number, corsHeaders: HeadersInit) => {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json;charset=UTF-8'
+    }
+  });
+};
+
 async function syncToCRM(env: Env, artistId: string, clientId: string, clientDisplayName: string) {
   try {
     const clientInfo = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).first<{ public_id: string }>();
@@ -53,7 +64,7 @@ export const commController = {
       ORDER BY c.order_date DESC
     `;
     const { results } = await env.commission_db.prepare(query).bind(currentUserId, currentUserId).all();
-    return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
   },
 
   async getDetail(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -76,20 +87,20 @@ export const commController = {
       WHERE c.id = ?
     `).bind(id).all();
 
-    if (results.length === 0) return new Response(JSON.stringify({ success: false, message: "找不到此委託單" }), { status: 404, headers: corsHeaders });
+    if (results.length === 0) return createJsonResponse({ success: false, message: "找不到此委託單" }, 404, corsHeaders);
     const commission = results[0] as any;
     const isArtist = currentUserId === commission.artist_id;
     const isClient = currentUserId === commission.client_id;
     const isPublicQuote = !commission.client_id && (commission.status === 'quote_created' || commission.status === 'unpaid');
-    if (!isArtist && !isClient && !isPublicQuote) return new Response(JSON.stringify({ success: false, error: "無權存取" }), { status: 403, headers: corsHeaders });
-    return new Response(JSON.stringify({ success: true, data: commission }), { status: 200, headers: corsHeaders });
+    if (!isArtist && !isClient && !isPublicQuote) return createJsonResponse({ success: false, error: "無權存取" }, 403, corsHeaders);
+    return createJsonResponse({ success: true, data: commission }, 200, corsHeaders);
   },
 
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const user = await env.commission_db.prepare("SELECT plan_type, role FROM Users WHERE id = ?").bind(currentUserId).first<any>();
     
-    if (!user) return new Response(JSON.stringify({ success: false, error: "找不到使用者資料" }), { status: 404, headers: corsHeaders });
-    if (user.role === 'deleted') return new Response(JSON.stringify({ success: false, error: "帳號已停用" }), { status: 403, headers: corsHeaders });
+    if (!user) return createJsonResponse({ success: false, error: "找不到使用者資料" }, 404, corsHeaders);
+    if (user.role === 'deleted') return createJsonResponse({ success: false, error: "帳號已停用" }, 403, corsHeaders);
 
     const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
@@ -98,7 +109,7 @@ export const commController = {
     const currentLimit = planLimits[user.plan_type as string] || 3;
 
     if (user.plan_type !== 'pro' && totalCount >= currentLimit) {
-      return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "免費版本已達上限" }, 403, corsHeaders);
     }
 
     const body: CreateCommissionBody = await request.json();
@@ -135,13 +146,13 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'create', '繪師已建立委託單')").bind(crypto.randomUUID(), newOrderId)
     ]);
     
-    return new Response(JSON.stringify({ success: true, id: newOrderId }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true, id: newOrderId }, 200, corsHeaders);
   },
 
   async update(request: Request, id: string, currentUserId: string | null, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: Record<string, any> = await request.json();
     const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
-    if (check.length === 0) return new Response(JSON.stringify({ success: false, error: "找不到該單據" }), { status: 404, headers: corsHeaders });
+    if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     const comm = check[0] as any;
 
     let isBinding = false;
@@ -154,7 +165,7 @@ export const commController = {
     }
 
     if (!isBinding && currentUserId !== comm.artist_id && currentUserId !== comm.client_id) {
-      return new Response(JSON.stringify({ success: false, error: "權限不足" }), { status: 403, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "權限不足" }, 403, corsHeaders);
     }
 
     const updates = [];
@@ -196,34 +207,34 @@ export const commController = {
       
       await env.commission_db.batch(batch);
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async getDeliverables(id: string, pathType: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
     if (check[0]?.client_id && currentUserId !== check[0]?.client_id && currentUserId !== check[0]?.artist_id) {
-      return new Response(JSON.stringify({ success: false, error: "無權限查看進度" }), { status: 403, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "無權限查看進度" }, 403, corsHeaders);
     }
 
     const { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     
     if (pathType === "deliverables") {
-      return new Response(JSON.stringify({ success: true, data: { logs, submissions } }), { status: 200, headers: corsHeaders });
+      return createJsonResponse({ success: true, data: { logs, submissions } }, 200, corsHeaders);
     } else if (pathType === "submissions") {
-      return new Response(JSON.stringify({ success: true, data: submissions }), { status: 200, headers: corsHeaders });
+      return createJsonResponse({ success: true, data: submissions }, 200, corsHeaders);
     } else {
-      return new Response(JSON.stringify({ success: true, data: logs }), { status: 200, headers: corsHeaders });
+      return createJsonResponse({ success: true, data: logs }, 200, corsHeaders);
     }
   },
 
   async submitArtwork(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { stage: string; file_url: string } = await request.json();
-    if (!isValidSafeUrl(body.file_url) && !body.file_url.includes('|')) return new Response(JSON.stringify({ success: false, error: "不安全的檔案網址" }), { status: 400, headers: corsHeaders });
+    if (!isValidSafeUrl(body.file_url) && !body.file_url.includes('|')) return createJsonResponse({ success: false, error: "不安全的檔案網址" }, 400, corsHeaders);
 
     const { results: comm } = await env.commission_db.prepare("SELECT artist_id, current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
-    if (comm.length === 0) return new Response(JSON.stringify({ success: false, error: "找不到委託單" }), { status: 404, headers: corsHeaders });
-    if (currentUserId !== comm[0].artist_id) return new Response(JSON.stringify({ success: false, error: "無權限上傳" }), { status: 403, headers: corsHeaders });
+    if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到委託單" }, 404, corsHeaders);
+    if (currentUserId !== comm[0].artist_id) return createJsonResponse({ success: false, error: "無權限上傳" }, 403, corsHeaders);
     
     const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
     const version = ((results[0]?.count as number) || 0) + 1;
@@ -236,13 +247,13 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(newStageStatus, id),
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
     ]);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async reviewArtwork(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
     const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-    if (comm.length === 0) return new Response(JSON.stringify({ success: false, error: "找不到單據" }), { status: 404, headers: corsHeaders });
+    if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到單據" }, 404, corsHeaders);
     
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
     let nextStageStatus = '';
@@ -266,7 +277,7 @@ export const commController = {
     if (globalStatusUpdate) batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
     
     await env.commission_db.batch(batchOps);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async changeRequest(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -275,13 +286,13 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(changes), id),
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'change_request', '繪師提交了規格異動申請')").bind(crypto.randomUUID(), id)
     ]);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async respondToChange(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { action } = await request.json() as any;
     const { results } = await env.commission_db.prepare("SELECT pending_changes FROM Commissions WHERE id = ?").bind(id).all();
-    if (!results[0]?.pending_changes) return new Response(JSON.stringify({ success: false, error: "無待處理申請" }), { status: 400, headers: corsHeaders });
+    if (!results[0]?.pending_changes) return createJsonResponse({ success: false, error: "無待處理申請" }, 400, corsHeaders);
 
     const changes = JSON.parse(results[0].pending_changes as string);
     const logMsg = action === 'approve' ? '委託人已同意規格異動' : '委託人已拒絕規格異動';
@@ -304,12 +315,12 @@ export const commController = {
         env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'change_reject', ?)").bind(crypto.randomUUID(), id, logMsg)
       ]);
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async getMessages(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results } = await env.commission_db.prepare("SELECT * FROM Messages WHERE commission_id = ? ORDER BY created_at ASC").bind(id).all();
-    return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
   },
 
   async postMessage(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -322,7 +333,7 @@ export const commController = {
     `).bind(id, body.sender_role, oneMinuteAgo).all();
 
     if (((recentMsgs[0]?.count as number) || 0) >= 30) {
-      return new Response(JSON.stringify({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }), { status: 429, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }, 429, corsHeaders);
     }
 
     const msgId = crypto.randomUUID();
@@ -333,12 +344,12 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
     ]);
     
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async getPayments(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results } = await env.commission_db.prepare("SELECT * FROM PaymentRecords WHERE commission_id = ? ORDER BY record_date ASC, created_at ASC").bind(id).all();
-    return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
   },
 
   async postPayment(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -351,16 +362,16 @@ export const commController = {
     `).bind(id, oneMinuteAgo).all();
 
     if (((recentPayments[0]?.count as number) || 0) >= 5) {
-      return new Response(JSON.stringify({ success: false, error: "新增帳目頻率過高，請稍後再試。" }), { status: 429, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "新增帳目頻率過高，請稍後再試。" }, 429, corsHeaders);
     }
 
     await env.commission_db.prepare("INSERT INTO PaymentRecords (id, commission_id, record_date, item_name, amount) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, body.record_date, body.item_name, body.amount).run();
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async deletePayment(paymentId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   // 🌟 修正點：轉換前端傳入的 public_id 成資料庫用的 UUID，確保排單表找得到資料
@@ -369,7 +380,7 @@ export const commController = {
       const artist = await env.commission_db.prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string}>();
       
       if (!artist) {
-        return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: corsHeaders });
+        return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
       const query = `
@@ -387,10 +398,10 @@ export const commController = {
         ORDER BY c.order_date ASC
       `;
       const { results } = await env.commission_db.prepare(query).bind(artist.id).all();
-      return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
+      return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
     } catch (e) {
       console.error("無法讀取公開排單表:", e);
-      return new Response(JSON.stringify({ success: false, error: "無法讀取排單表" }), { status: 500, headers: corsHeaders });
+      return createJsonResponse({ success: false, error: "無法讀取排單表" }, 500, corsHeaders);
     }
   }
 };
