@@ -202,7 +202,7 @@
   }
 
   .queue-hide-mobile { display: none !important; }
-  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center;  }
+  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
   .cell-content.cell-status {
     position: relative;
     width: 100%;
