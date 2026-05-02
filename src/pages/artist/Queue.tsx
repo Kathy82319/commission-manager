@@ -48,8 +48,8 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
   };
 
   return (
-    <div ref={dropdownRef} className="dropdown-container" style={{ minWidth: '120px' }}> {/* 🌟 確保下拉選單有基本寬度 */}
-      <div onClick={toggleOpen} className="dropdown-button" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', whiteSpace: 'nowrap' }}> {/* 🌟 強制不換行，且兩端對齊 */}
+    <div ref={dropdownRef} className="dropdown-container" style={{ minWidth: '120px' }}>
+      <div onClick={toggleOpen} className="dropdown-button" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', whiteSpace: 'nowrap' }}>
         <span className="dropdown-text" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{value || '設定狀態'}</span>
         <span className="dropdown-arrow" style={{ marginLeft: '8px' }}>▼</span>
       </div>
@@ -85,27 +85,46 @@ export function Queue() {
 
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
+  // 取得環境變數，並加上容錯處理
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
   const fetchQueue = async () => {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/commissions`, { credentials: 'include' });
-    const data = await res.json();
-    if (data.success) {
-      let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-      const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
-      if (savedOrder.length > 0) {
-        list.sort((a: any, b: any) => {
-          const idxA = savedOrder.indexOf(a.id);
-          const idxB = savedOrder.indexOf(b.id);
-          if (idxA === -1 && idxB === -1) return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
-          if (idxA === -1) return 1;
-          if (idxB === -1) return -1;
-          return idxA - idxB;
-        });
-      } else {
-        list.sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+    try {
+      const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
+      
+      // 🌟 防止把 HTML 當成 JSON 解析的保護機制
+      const contentType = res.headers.get("content-type");
+      if (!res.ok) {
+        console.error("API 請求失敗，狀態碼:", res.status);
+        return;
       }
-      setCommissions(list);
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("API 回傳的不是 JSON！可能是路由錯誤或環境變數沒抓到。回傳格式為:", contentType);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
+        const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
+        if (savedOrder.length > 0) {
+          list.sort((a: any, b: any) => {
+            const idxA = savedOrder.indexOf(a.id);
+            const idxB = savedOrder.indexOf(b.id);
+            if (idxA === -1 && idxB === -1) return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+          });
+        } else {
+          list.sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+        }
+        setCommissions(list);
+      }
+    } catch (error) {
+      console.error("獲取排單列表失敗:", error);
     }
   };
   
@@ -120,12 +139,22 @@ export function Queue() {
   
   const handleUpdateField = async (id: string, field: string, value: string) => {
     setIsSaving(true);
-    await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/commissions/${id}`, {
-      method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [field]: value })
-    });
-    setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-    setIsSaving(false);
+    // 🛡️ [資安提醒]: 後端必須嚴格驗證 current_user_id === commissions.artist_id，防止 IDOR 越權竄改。
+    try {
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+      
+      if (!res.ok) throw new Error(`更新失敗，狀態碼: ${res.status}`);
+      
+      setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+    } catch (error) {
+      console.error("欄位更新失敗:", error);
+      alert("更新失敗，請檢查網路連線或稍後再試。");
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -248,7 +277,6 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="當前進度">
-                  {/* 🌟 修改點：強制改用 flex 垂直排列，確保標籤和下拉選單不會被水平擠壓 */}
                   <div className="cell-content cell-status" onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                     <div className="workflow-badge-wrapper">
                       <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ whiteSpace: 'nowrap' }}>
