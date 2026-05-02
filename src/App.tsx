@@ -22,6 +22,7 @@ import { CustomerDetail } from './pages/artist/CustomerDetail';
 // Client Pages
 import { ClientForm } from './pages/client/ClientForm'; 
 import { ClientOrders } from './pages/client/ClientOrders';
+import { ClientSettings } from './pages/client/ClientSettings';
 
 // Public & Common Pages
 import { PublicProfile } from './PublicProfile';
@@ -65,6 +66,7 @@ export function App() {
           <Route path="order/:id" element={<Navigate to="/client/orders" replace />} />
           <Route path="form/:id" element={<ClientForm />} />
           <Route path="inbox" element={<Inbox />} />
+          <Route path="settings" element={<ClientSettings />} />
         </Route>
 
         {/* 洽談與工作區路由 */}

@@ -14,7 +14,7 @@ export function PublicLayout() {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [, setUserRole] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
