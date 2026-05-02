@@ -6,7 +6,7 @@ interface Props {
 }
 
 export function ThemeTab({ settings, setSettings }: Props) {
-  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`;
+  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #b5d4f8)`;
 
   const updateTheme = (updates: Partial<ProfileSettings>) => {
     setSettings(prev => ({
