@@ -1,15 +1,6 @@
 // worker/controllers/bulletinController.ts
 import type { Env } from "../shared/types";
-
-function escapeHtml(str: string) {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+import { sanitizeAndLimit, sanitizeObject } from "../utils/security";
 
 export const bulletinController = {
   async getList(request: Request, env: Env, corsHeaders: any) {
@@ -101,21 +92,27 @@ export const bulletinController = {
         }), { status: 400, headers: corsHeaders });
       }
 
-      const safeTitle = escapeHtml(title.substring(0, 100));
-      const safeTags = JSON.stringify(Array.isArray(tags) ? tags.map(t => escapeHtml(String(t))) : []);
-      const safePayments = JSON.stringify(Array.isArray(payment_methods) ? payment_methods.map(p => escapeHtml(String(p))) : []);
+      // 🌟 使用安全過濾工具，確保 JSON 結構不被破壞
+      const safeTitle = sanitizeAndLimit(title, 100);
+      
+      const safeTagsArr = sanitizeObject(Array.isArray(tags) ? tags : [], 50);
+      const safeTags = JSON.stringify(safeTagsArr);
+      
+      const safePaymentsArr = sanitizeObject(Array.isArray(payment_methods) ? payment_methods : [], 50);
+      const safePayments = JSON.stringify(safePaymentsArr);
 
-      const safeContentObj = {
-        description: escapeHtml(content),
+      const rawContentObj = {
+        description: content,
         max_slots: Math.max(1, parseInt(max_slots) || 1), 
         selection_type: selection_type === 'fcfs' ? 'fcfs' : 'curated',
         commission_items: Array.isArray(commission_items) ? commission_items : [],
-        questions: Array.isArray(questions) ? questions.map(q => escapeHtml(String(q))) : [],
-        payment_timing: escapeHtml(String(payment_timing || '')),
-        payment_timing_detail: escapeHtml(String(payment_timing_detail || '')),
-        tos_content: escapeHtml(String(tos_content || ''))
+        questions: Array.isArray(questions) ? questions : [],
+        payment_timing: payment_timing || '',
+        payment_timing_detail: payment_timing_detail || '',
+        tos_content: tos_content || ''
       };
 
+      const safeContentObj = sanitizeObject(rawContentObj, 5000);
       const finalContentStr = JSON.stringify(safeContentObj);
 
       const id = crypto.randomUUID();
@@ -293,7 +290,6 @@ export const bulletinController = {
         ORDER BY created_at DESC
       `).bind(currentUserId).all();
 
-      // 🌟 核心修正：使用子查詢找出對應的 commission_id
       const { results: myInquiries } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, b.id as bulletin_id, b.title as bulletin_title, 
                i.artist_id, i.status as inquiry_status, u.display_name as artist_name, 
@@ -320,7 +316,6 @@ export const bulletinController = {
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 核心修正：使用子查詢找出對應的 commission_id
       const { results } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
                i.latest_update_at, i.artist_snapshot, b.client_id,

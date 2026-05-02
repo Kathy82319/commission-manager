@@ -1,4 +1,4 @@
-// worker/controllers/inquiryController.ts (打包許願池表單用的)
+// worker/controllers/inquiryController.ts
 import type { Env } from '../shared/types';
 
 export const inquiryController = {
@@ -43,7 +43,7 @@ export const inquiryController = {
     }
   },
 
-async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+  async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id,
@@ -87,7 +87,6 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
-
 
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
@@ -134,7 +133,6 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 新增：繪師提案前的額度檢查
       const artist = await env.commission_db.prepare(
         "SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
       ).bind(currentUserId).first() as any;
@@ -167,7 +165,7 @@ async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsH
     }
   },
 
-async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+  async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, 
@@ -182,7 +180,6 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
 
       if (!inquiry || !inquiry.negotiation_draft) throw new Error('草稿尚未準備好');
 
-      // 🌟 安全防線：成單前仍檢查一次 (避免極端情況)
       const isPro = inquiry.plan_type === 'pro' && (!inquiry.pro_expires_at || new Date(inquiry.pro_expires_at) > new Date());
       const isTrial = inquiry.plan_type === 'trial' && (!inquiry.trial_end_at || new Date(inquiry.trial_end_at) > new Date());
       
@@ -213,12 +210,23 @@ async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHead
         if (settings.terms_of_service) tosText = settings.terms_of_service;
       } catch (e) {}
 
+      // 🌟 核心修復：先嘗試將所有的字串解析為 Object，確保不會發生雙重打包
+      let parsedBulletinContent = inquiry.bulletin_content;
+      try { parsedBulletinContent = JSON.parse(inquiry.bulletin_content); } catch (e) {}
+
+      let parsedClientResponse = inquiry.client_response;
+      try { parsedClientResponse = JSON.parse(inquiry.client_response); } catch (e) {}
+
+      let parsedArtistSnapshot = inquiry.artist_snapshot;
+      try { parsedArtistSnapshot = JSON.parse(inquiry.artist_snapshot); } catch (e) {}
+
+      // 🌟 將原生的 Object 組裝起來，只做最後一次的 stringify
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
-        bulletin_content: inquiry.bulletin_content,
+        bulletin_content: parsedBulletinContent,
         bulletin_category: inquiry.bulletin_category,
-        artist_initial_snapshot: JSON.parse(inquiry.artist_snapshot),
-        client_initial_response: inquiry.client_response,
+        artist_initial_snapshot: parsedArtistSnapshot,
+        client_initial_response: parsedClientResponse,
         final_negotiation_draft: draft
       });
 
