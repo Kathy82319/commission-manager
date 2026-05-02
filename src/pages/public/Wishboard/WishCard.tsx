@@ -1,7 +1,7 @@
 // src/pages/public/Wishboard/WishCard.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users } from 'lucide-react';
+import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart } from 'lucide-react'; // 🌟 加入 Heart
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
 
 interface WishCardProps {
@@ -22,6 +22,7 @@ const unescapeHtml = (str: string) => {
 
 export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota }) => {
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const isMyOwnPost = currentUser && bulletin.client_id === currentUser.id;
   const hasApplied = currentUser && bulletin.applied_artist_ids && String(bulletin.applied_artist_ids).split(',').includes(currentUser.id);
@@ -31,6 +32,61 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
+
+  // 🌟 收藏狀態管理
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  // 🌟 檢查是否已收藏
+  useEffect(() => {
+    let isMounted = true;
+    const checkFavoriteStatus = async () => {
+      if (!currentUser || isMyOwnPost || !bulletin.client_id) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/relations`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && isMounted) {
+            const myRel = data.data.find((r: any) => r.target_user_id === bulletin.client_id);
+            if (myRel && myRel.relation_type === 'favorite') {
+              setIsFavorited(true);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('無法讀取收藏狀態', e);
+      }
+    };
+    checkFavoriteStatus();
+    return () => { isMounted = false; };
+  }, [currentUser, bulletin.client_id, isMyOwnPost, API_BASE]);
+
+  // 🌟 處理點擊收藏
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) {
+      alert("請先登入系統後再進行操作喔！");
+      return;
+    }
+    try {
+      if (isFavorited) {
+        const res = await fetch(`${API_BASE}/api/relations/${bulletin.client_id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (res.ok) setIsFavorited(false);
+      } else {
+        const res = await fetch(`${API_BASE}/api/relations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetId: bulletin.client_id, type: 'favorite', note: '' }),
+          credentials: 'include'
+        });
+        if (res.ok) setIsFavorited(true);
+      }
+    } catch (err) {
+      console.error("更新收藏狀態失敗", err);
+    }
+  };
 
   const getTimeRemaining = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - new Date().getTime();
@@ -136,7 +192,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
-              <div className="wish-card-author-wrapper">
+              <div className="wish-card-author-wrapper" style={{ display: 'flex', alignItems: 'center' }}>
                 <User size={14} className="wish-card-author-icon" />
                 
                 {bulletin.category === 'offer' && posterId !== 'unknown' ? (
@@ -153,6 +209,24 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     <span className="wish-card-author-name">{posterName}</span>
                     <span className="wish-card-author-id">@{posterId}</span>
                   </div>
+                )}
+
+                {/* 🌟 快速收藏按鈕 */}
+                {!isMyOwnPost && bulletin.client_id && (
+                  <button
+                    onClick={handleToggleFavorite}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 0 6px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', color: isFavorited ? '#ef4444' : '#cbd5e1',
+                      transition: 'transform 0.1s', outline: 'none'
+                    }}
+                    title={isFavorited ? "取消收藏" : "加入收藏"}
+                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <Heart size={16} fill={isFavorited ? '#ef4444' : 'none'} />
+                  </button>
                 )}
               </div>
             </div>

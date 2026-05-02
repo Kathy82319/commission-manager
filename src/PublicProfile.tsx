@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X, User } from 'lucide-react';
+import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react'; // 🌟 新增 Heart, Ban
 import './styles/PublicProfile.css';
 
 
@@ -76,12 +76,16 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(false);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
+  // 🌟 處理收藏與黑名單的狀態
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
+
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#003e77';     
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to bottom';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #021122))` };
+      return { background: `linear-gradient(${direction}, ${baseColor}, #021122)` }; // 🌟 修正了多餘的右括號
     }
     return { background: baseColor };
   }, [settings]);
@@ -173,20 +177,36 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
+  // 🌟 載入目前使用者的關係狀態
   useEffect(() => {
-    if (!loading && settings?.splash_enabled !== false && showSplash) {
-      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
-      let removeTimer: ReturnType<typeof setTimeout>;
-      const timer = setTimeout(() => {
-        setIsSplashClosing(true);
-        removeTimer = setTimeout(() => setShowSplash(false), 800);
-      }, duration);
-      return () => {
-        clearTimeout(timer);
-        if (removeTimer) clearTimeout(removeTimer);
-      };
+    const fetchViewerAndRelations = async () => {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            setViewerId(data.data.id);
+            // 讀取關係
+            const relRes = await fetch(`${API_BASE}/api/relations`, { credentials: 'include' });
+            const relData = await relRes.json();
+            if (relData.success) {
+              // 找找看有沒有對這個頁面繪師的標記
+              const myRel = relData.data.find((r: any) => r.target_user_id === artist?.id);
+              if (myRel) {
+                setRelationStatus(myRel.relation_type);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("未登入或無法讀取狀態", e);
+      }
+    };
+    if (artist && artist.id) {
+      fetchViewerAndRelations();
     }
-  }, [loading, settings, showSplash]);
+  }, [artist]);
 
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
@@ -217,7 +237,6 @@ export function PublicProfile() {
     );
   }, [showcaseItems, selectedTags]);
 
-  // 🌟 動態生成與套用排序
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs: any[] = [];
@@ -273,6 +292,56 @@ export function PublicProfile() {
     }
   };
 
+  useEffect(() => {
+    if (!loading && settings?.splash_enabled !== false && showSplash) {
+      const duration = settings?.splash_duration ? settings.splash_duration * 1000 : 2000;
+      let removeTimer: ReturnType<typeof setTimeout>;
+      const timer = setTimeout(() => {
+        setIsSplashClosing(true);
+        removeTimer = setTimeout(() => setShowSplash(false), 800);
+      }, duration);
+      return () => {
+        clearTimeout(timer);
+        if (removeTimer) clearTimeout(removeTimer);
+      };
+    }
+  }, [loading, settings, showSplash]);
+
+  // 🌟 處理點擊收藏與黑名單
+  const handleToggleRelation = async (type: 'favorite' | 'blacklist') => {
+    if (!viewerId) {
+      alert("請先登入系統後再進行操作喔！");
+      return;
+    }
+    if (viewerId === artist?.id) {
+      alert("您無法將自己的頁面加入名單中。");
+      return;
+    }
+
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+    try {
+      if (relationStatus === type) {
+        // 如果目前狀態已經是點擊的狀態，代表要「取消」
+        const res = await fetch(`${API_BASE}/api/relations/${artist.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (res.ok) setRelationStatus('none');
+      } else {
+        // 否則就是「新增/更新」關係
+        const res = await fetch(`${API_BASE}/api/relations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetId: artist.id, type, note: '' }),
+          credentials: 'include'
+        });
+        if (res.ok) setRelationStatus(type);
+      }
+    } catch (err) {
+      console.error("更新標記狀態失敗", err);
+    }
+  };
+
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
@@ -314,6 +383,41 @@ export function PublicProfile() {
                   </a>
                 ))}
               </div>
+              
+              {/* 🌟 關注與黑名單按鈕 */}
+              {viewerId !== artist?.id && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
+                  <button 
+                    onClick={() => handleToggleRelation('favorite')}
+                    style={{ 
+                      display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', 
+                      borderRadius: '20px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`,
+                      background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                      color: relationStatus === 'favorite' ? '#ef4444' : textColor,
+                      cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s',
+                      backdropFilter: 'blur(4px)'
+                    }}
+                  >
+                    <Heart size={14} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
+                    {relationStatus === 'favorite' ? '已收藏' : '收藏繪師'}
+                  </button>
+                  
+                  <button 
+                    onClick={() => handleToggleRelation('blacklist')}
+                    style={{ 
+                      display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', 
+                      borderRadius: '20px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`,
+                      background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent',
+                      color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor,
+                      cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s',
+                      backdropFilter: 'blur(4px)'
+                    }}
+                  >
+                    <Ban size={14} />
+                    {relationStatus === 'blacklist' ? '已封鎖' : '黑名單'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
