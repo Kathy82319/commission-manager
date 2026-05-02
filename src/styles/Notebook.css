@@ -500,7 +500,8 @@
 .payment-summary {
     flex-wrap: nowrap;
     justify-content: space-between;
-    gap: 4px;
+    justify-content: flex-end;
+    gap: 12px;
     padding: 12px;
     font-size: 12px;
   }
