@@ -44,18 +44,14 @@ export function PublicLayout() {
     } finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
-      // 修正：導向根目錄防止 404
       window.location.href = '/';
     }
   };
 
   const handleDashboardClick = () => {
-    // 🌟 UX 升級：在點擊當下才去 localStorage 抓取「最後活躍身分」
-    // 這樣就算在另一個分頁切換了身分，這裡也能抓到最新的狀態
     const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
 
     if (lastActiveRole === 'artist') {
-      // 🌟 修正：明確導向 /artist/queue 確保不跑版
       navigate('/artist/queue');
     } else if (lastActiveRole === 'client') {
       navigate('/client/orders');
@@ -88,10 +84,10 @@ export function PublicLayout() {
         <div className="header-actions">
           {isLoggedIn ? (
             <div className="logged-in-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
-              <button onClick={handleDashboardClick} className="dashboard-btn" style={{ backgroundColor: 'var(--artist-text-color)', color: 'var(--artist-theme-color)', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+              <button onClick={handleDashboardClick} className="dashboard-btn" style={{ backgroundColor: 'var(--artist-text-color)', color: 'var(--artist-theme-color)', padding: '8px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
                 回到管理後台
               </button>
-              <button onClick={handleLogout} className="logout-btn" style={{ backgroundColor: 'transparent', color: 'var(--artist-text-color)', padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--artist-text-color)', cursor: 'pointer', fontSize: '13px', opacity: 0.8 }}>
+              <button onClick={handleLogout} className="logout-btn" style={{ backgroundColor: 'transparent', color: 'var(--artist-text-color)', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--artist-text-color)', cursor: 'pointer', fontSize: '13px', opacity: 0.8 }}>
                 登出
               </button>
             </div>
