@@ -77,13 +77,11 @@ export function PublicProfile() {
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#5cb0ff'; 
-    
-    const isGradient = settings?.gradient_enabled !== false; 
-    
+    const baseColor = settings?.background_color || '#177ad6';     
+    const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to bottom right';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #021122ce))` };
+      return { background: `linear-gradient(${direction}, ${baseColor}, #021122))` };
     }
     return { background: baseColor };
   }, [settings]);
