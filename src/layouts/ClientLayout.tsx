@@ -1,7 +1,7 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User } from 'lucide-react'; // 🌟 引入 User 圖示
+import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User, Heart } from 'lucide-react';
 import '../styles/ClientLayout.css'; 
 
 export function ClientLayout() {
@@ -178,7 +178,9 @@ export function ClientLayout() {
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
             <ClipboardList size={20} /><span>委託單管理</span>
           </NavLink>
-          {/* 🌟 新增：個人設定頁的入口 */}
+            <NavLink to="/client/favorites" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+                <Heart size={20} /><span>繪師追蹤名單</span>
+            </NavLink>          
           <NavLink to="/client/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
             <User size={20} /><span>個人設定</span>
           </NavLink>

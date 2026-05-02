@@ -80,7 +80,7 @@ export function PublicProfile() {
     const baseColor = settings?.background_color || '#003e77';     
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
-      const direction = settings?.gradient_direction || 'to bottom right';
+      const direction = settings?.gradient_direction || 'to bottom';
       return { background: `linear-gradient(${direction}, ${baseColor}, #021122))` };
     }
     return { background: baseColor };

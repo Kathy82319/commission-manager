@@ -279,6 +279,19 @@ ALTER TABLE Bulletins ADD COLUMN budget_max INTEGER DEFAULT 0;
 ALTER TABLE Bulletins ADD COLUMN schedule_type TEXT DEFAULT 'flexible';
 ALTER TABLE Bulletins ADD COLUMN specific_date DATETIME;     
 
+-- 使用者關係表 (收藏/黑名單)
+CREATE TABLE UserRelations (
+    id TEXT PRIMARY KEY,
+    source_user_id TEXT NOT NULL,  -- 操作者 (我是誰)
+    target_user_id TEXT NOT NULL,  -- 被標記的人 (對方是誰)
+    relation_type TEXT NOT NULL,   -- 'favorite' (收藏) 或 'blacklist' (黑名單)
+    custom_note TEXT DEFAULT '',   -- 私人小備註
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (source_user_id) REFERENCES Users(id),
+    FOREIGN KEY (target_user_id) REFERENCES Users(id),
+    UNIQUE(source_user_id, target_user_id) -- 確保兩個人之間只有一筆關係紀錄
+);
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

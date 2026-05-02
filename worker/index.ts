@@ -13,6 +13,7 @@ import { customerController } from "./controllers/customerController";
 import { bulletinController } from "./controllers/bulletinController"; 
 import { inquiryController } from './controllers/inquiryController';
 import { notificationController } from "./controllers/notificationController";
+import { userRelationController } from "./controllers/userRelationController"; // 🌟 新增：引入 userRelationController
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -62,6 +63,26 @@ export default {
         // 🌟 新增的消除紅點 (標記已讀) 路由
         if (sanitizedPath === "/api/notifications/read" && request.method === "POST") {
           return notificationController.markAsRead(request, currentUserId!, env, corsHeaders);
+        }
+      }
+
+      // --- 🌟 使用者關係 (收藏/黑名單) 相關路由 ---
+      if (sanitizedPath.startsWith("/api/relations")) {
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+
+        if (sanitizedPath === "/api/relations" && request.method === "GET") {
+          return userRelationController.getMyRelations(currentUserId!, env, corsHeaders);
+        }
+
+        if (sanitizedPath === "/api/relations" && request.method === "POST") {
+          const { targetId, type, note } = await request.json();
+          return userRelationController.upsertRelation(currentUserId!, targetId, type, note || '', env, corsHeaders);
+        }
+
+        if (sanitizedPath.startsWith("/api/relations/") && request.method === "DELETE") {
+          const targetId = pathParts[3]; // 取出目標 ID
+          return userRelationController.deleteRelation(currentUserId!, targetId, env, corsHeaders);
         }
       }
 
