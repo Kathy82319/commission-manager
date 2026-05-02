@@ -283,31 +283,15 @@ export const Wishboard: React.FC = () => {
       )}
 
       {currentUser && wishQuota && !wishQuota.is_pro && (
-  <div style={{ 
-    padding: '12px 20px', 
-    backgroundColor: '#FDF4E6', 
-    borderBottom: '1px solid #FDE0B5', 
-    color: '#A67B3E', 
-    fontSize: '13px', 
-    display: 'flex', 
-    flexWrap: 'wrap', /* 🌟 允許在手機版自動斷行 */
-    gap: '12px',      /* 🌟 斷行後的垂直間距 */
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
-  }}>
-    <span style={{ flex: '1 1 100%', minWidth: '200px', lineHeight: '1.5' }}>
-      ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
-    </span>
-    <button onClick={() => navigate('/artist/settings')} style={{ 
-      background: '#A67B3E', color: 'white', border: 'none', padding: '8px 16px', 
-      borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
-      whiteSpace: 'nowrap', /* 🌟 防止按鈕內的文字被切斷 */
-      width: 'auto' 
-    }}>
-      升級專業版解鎖限制
-    </button>
-  </div>
-)}
+        <div style={{ padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
+          </span>
+          <button onClick={() => navigate('/artist/settings')} style={{ background: '#A67B3E', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+            升級專業版解鎖限制
+          </button>
+        </div>
+      )}
 
       <FilterBar 
         activeTab={activeTab} setActiveTab={setActiveTab} 
