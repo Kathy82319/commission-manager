@@ -51,7 +51,7 @@ const getTime = (dateStr?: string) => {
   return new Date(str).getTime();
 };
 
-function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle, isExpanded }: any) {
+function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [newVal, setNewVal] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);

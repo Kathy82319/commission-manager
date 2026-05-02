@@ -724,14 +724,28 @@ export function Notebook() {
                         <table className="custom-table">
                           <tbody>
                             {payments.length === 0 && <tr><td colSpan={4} className="table-empty">尚無記帳紀錄</td></tr>}
-                            {payments.map(p => (
-                              <tr key={p.id} className="table-row">
-                                <td className="col-date">{p.record_date}</td>
-                                <td className="col-item">{p.item_name}</td>
-                                <td className="col-amount">+ NT$ {p.amount}</td>
-                                <td style={{ textAlign: 'right' }}><button className="btn-delete" onClick={() => handleDeletePayment(p.id)}>刪除</button></td>
-                              </tr>
-                            ))}
+                            {payments.map(p => {
+                              // 🌟 將日期拆分為「年」與「月日」，方便手機版單獨隱藏年份
+                              const dateParts = p.record_date.split('-');
+                              const yearStr = dateParts.length === 3 ? `${dateParts[0]}-` : '';
+                              const mdStr = dateParts.length === 3 ? `${dateParts[1]}-${dateParts[2]}` : p.record_date;
+
+                              return (
+                                <tr key={p.id} className="table-row">
+                                  <td className="col-date">
+                                    <span className="hide-on-mobile">{yearStr}</span>
+                                    <span>{mdStr}</span>
+                                  </td>
+                                  <td className="col-item">{p.item_name}</td>
+                                  <td className="col-amount">
+                                    <span className="hide-on-mobile">+ NT$ </span>
+                                    <span className="show-on-mobile" style={{ display: 'none' }}>+$</span>
+                                    {p.amount}
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}><button className="btn-delete" onClick={() => handleDeletePayment(p.id)}>刪除</button></td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
