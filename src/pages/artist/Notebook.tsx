@@ -7,7 +7,7 @@ import '../../styles/Notebook.css';
 
 interface Commission {
   id: string; 
-  artist_id: string; // 🌟 為了過濾雙身分，加入 artist_id
+  artist_id: string; 
   client_id: string;
   client_name: string; 
   contact_memo: string; 
@@ -44,10 +44,25 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
-// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題
-const unescapeHtml = (str: string) => {
+// 🌟 安全版：解除 HTML 實體編碼 (不會因為丟入 Object 而當機)
+const unescapeHtml = (str: any) => {
+  if (typeof str !== 'string') return str;
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
+// 🌟 新增：防護盾版 JSON 解析器 (遇到純文字不會崩潰，遇到物件直接放行)
+const safeParse = (data: any) => {
+  if (typeof data !== 'string') return data;
+  try {
+    const unescaped = unescapeHtml(data);
+    if (unescaped.trim().startsWith('{') || unescaped.trim().startsWith('[')) {
+      return JSON.parse(unescaped);
+    }
+    return unescaped;
+  } catch (e) {
+    return data;
+  }
 };
 
 const formatLocalTime = (dateStr: string) => {
@@ -97,13 +112,34 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
   });
 }
 
-const getBulletinSource = (order?: Commission) => {
-  if (!order || !order.origin_source) return null;
+// 🌟 安全版：許願池來源解析
+const getBulletinSource = (currentOrder: Commission | null | undefined) => {
+  if (!currentOrder || !currentOrder.origin_source) return null;
   try {
-    const parsed = JSON.parse(unescapeHtml(order.origin_source));
-    if (parsed.source_type === 'bulletin') return parsed;
+    const parsed = safeParse(currentOrder.origin_source);
+    
+    if (parsed && parsed.source_type === 'bulletin') {
+      const isOffer = parsed.bulletin_category === 'offer';
+      
+      const bulletinContent = safeParse(parsed.bulletin_content);
+      
+      const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+      const parsedSnapshot = safeParse(rawSnapshot);
+
+      let questions = [];
+      if (bulletinContent && bulletinContent.questions) questions = bulletinContent.questions;
+      else if (parsed.questions) questions = safeParse(parsed.questions);
+
+      return {
+        ...parsed,
+        description: bulletinContent?.description || parsed.description || parsed.bulletin_content || '',
+        questions: Array.isArray(questions) ? questions : [],
+        isOffer,
+        parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot }
+      };
+    }
   } catch (e) {
-    return null;
+    console.error("許願池來源解析失敗", e);
   }
   return null;
 };
@@ -116,7 +152,7 @@ export function Notebook() {
   const initialSelectedId = queryParams.get('id');
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
-  const [myId, setMyId] = useState<string>(''); // 🌟 儲存當前使用者 ID
+  const [myId, setMyId] = useState<string>(''); 
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
     { id: 'all', label: '全部' },
@@ -140,10 +176,8 @@ export function Notebook() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
-  // 🌟 控制 Notebook 內媒合軌跡的收合狀態
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
-  // 🌟 獲取當前登入者 ID，確保後續能正確過濾委託單
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
       .then(res => res.json())
@@ -204,7 +238,7 @@ export function Notebook() {
     setSelectedId(order.id);
     setEditData(order);
     setIsEditingRequest(false);
-    setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
+    setIsTrajectoryExpanded(false); 
     fetchPayments(order.id);
     fetchDeliverables(order.id);
 
@@ -226,7 +260,6 @@ export function Notebook() {
       ? { ...editData } 
       : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
 
-    // 🛡️ [資安提醒]: 後端 commController.ts 必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -265,7 +298,6 @@ export function Notebook() {
 
     if (!window.confirm("請確定是否要更改委託單，此異動須經委託人同意方能變更完成")) return;
 
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-request`, {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changes })
@@ -289,7 +321,6 @@ export function Notebook() {
     const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
     if (!window.confirm(confirmMsg)) return;
     
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -302,7 +333,6 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -313,7 +343,6 @@ export function Notebook() {
 
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, { 
       method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ payment_status: newStatus }) 
@@ -326,7 +355,6 @@ export function Notebook() {
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整的記帳資訊喔！");
     if (isNaN(amountNum) || amountNum <= 0) return alert("請輸入有效的金額！");
 
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify({ ...newPayment, amount: amountNum }) 
@@ -339,7 +367,6 @@ export function Notebook() {
 
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
     await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE', credentials: 'include' });
     fetchPayments(selectedId);
   };
@@ -360,8 +387,6 @@ export function Notebook() {
       const lowResPreviewBlob = await compressPreviewBlob(resultBlobs.preview, 800, 0.5);
       const previewType = 'image/jpeg'; 
       
-      // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
-      // 且後端需嚴格驗證 contentType 與副檔名，防止上傳惡意檔案
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: previewType, bucketType: 'public', originalName: `preview_${stageKey}.jpg`, folder: 'commissions' })
@@ -379,7 +404,6 @@ export function Notebook() {
         const origType = resultBlobs.original.type || 'application/octet-stream';
         const origName = (resultBlobs.original as File).name || 'final_original.zip';
         
-        // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.artist_id
         const privateTicketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contentType: origType, bucketType: 'private', originalName: origName, folder: 'commissions' })
@@ -411,10 +435,8 @@ export function Notebook() {
     return { text: '尚未付款', className: 'badge-unpaid' };
   };
 
-  // 🌟 過濾掉身分不屬於繪師的委託單，同時保留對舊單據 contact_memo 的搜尋支援
   const filteredOrders = useMemo(() => {
     return commissions.filter(order => {
-      // 確保只顯示「我」是繪師的單據
       if (myId && order.artist_id !== myId) return false;
 
       let tabMatch = true;
@@ -428,7 +450,7 @@ export function Notebook() {
         const paymentLabel = getPaymentBadge(order.payment_status).text;
         return (
           (order.client_name && order.client_name.toLowerCase().includes(term)) ||
-          (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) || // 🌟 保留舊有備註的搜尋能力
+          (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) || 
           (order.project_name && order.project_name.toLowerCase().includes(term)) ||
           (order.id.toLowerCase().includes(term)) ||
           (order.client_public_id && order.client_public_id.toLowerCase().includes(term)) ||
@@ -443,7 +465,6 @@ export function Notebook() {
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
   
-  // 🌟 修改：直接顯示真實名稱，若無則顯示 (未綁定)
   const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
   
   const getStatusBadge = (status: string) => {
@@ -532,35 +553,8 @@ export function Notebook() {
     );
   };
 
-  // 🌟 解析許願池媒合軌跡的資料
-  const bulletinSource = getBulletinSource(selectedOrder);
-  let displayBulletinContent = '';
-  let parsedSnapshot: any = {};
-  let originalQuestions: string[] = [];
-  let isOffer = false;
-
-  if (bulletinSource) {
-    isOffer = bulletinSource.bulletin_category === 'offer';
-    
-    // 原始許願內容還原亂碼
-    const rawBulletinContent = unescapeHtml(bulletinSource.bulletin_content || '');
-    displayBulletinContent = rawBulletinContent;
-    try {
-        const parsed = JSON.parse(rawBulletinContent);
-        if (parsed.description) displayBulletinContent = parsed.description;
-        if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
-    } catch (e) {}
-
-    // 解析投遞快照內容，並雙重檢查解碼
-    try {
-      const snapshotObj = bulletinSource.client_initial_response || bulletinSource.artist_initial_snapshot || bulletinSource.artist_snapshot || '{}';
-      const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
-      parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
-      if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
-    } catch (e) {
-      console.error("無法解析 snapshot", e);
-    }
-  }
+  // 🌟 使用新的、安全的資料來源解析函式
+  const bulletinData = getBulletinSource(selectedOrder);
 
   return (
     <div className="notebook-page">
@@ -598,7 +592,6 @@ export function Notebook() {
                     )}
                   </div>
                   <div className="card-title-row">
-                    {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
                     <span className="card-client-name" title={getClientNameDisplay(order)}>{getClientNameDisplay(order)}</span>
                     <span className="card-price">NT$ {order.total_price}</span>
                   </div>
@@ -636,7 +629,6 @@ export function Notebook() {
                   </button>
 
                   <div className="main-title-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
                     <h2 className="main-title" style={{ margin: 0 }}>{getClientNameDisplay(selectedOrder)}</h2>
                     {selectedOrder.client_custom_label === '黑名單' && (
                       <span 
@@ -725,7 +717,6 @@ export function Notebook() {
                           <tbody>
                             {payments.length === 0 && <tr><td colSpan={4} className="table-empty">尚無記帳紀錄</td></tr>}
                             {payments.map(p => {
-                              // 🌟 將日期拆分為「年」與「月日」，方便手機版單獨隱藏年份
                               const dateParts = p.record_date.split('-');
                               const yearStr = dateParts.length === 3 ? `${dateParts[0]}-` : '';
                               const mdStr = dateParts.length === 3 ? `${dateParts[1]}-${dateParts[2]}` : p.record_date;
@@ -758,8 +749,8 @@ export function Notebook() {
                     </div>
 
                     
-                    {/* 🌟 修復後的許願池媒合軌跡區塊 (動態身分視角) */}
-                    {bulletinSource && (
+                    {/* 🌟 修復後的許願池媒合軌跡區塊 (直接使用 bulletinData 渲染) */}
+                    {bulletinData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
                           <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -770,49 +761,48 @@ export function Notebook() {
                         <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                           
                           <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
-                            <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                            <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
-                            {originalQuestions && originalQuestions.length > 0 && (
+                            <strong style={{ color: '#A67B3E' }}>【{bulletinData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                            <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.description}</span>
+                            {bulletinData.questions && bulletinData.questions.length > 0 && (
                               <div style={{ marginTop: '6px' }}>
                                 <strong style={{ color: '#A0978D' }}>提問設定：</strong>
                                 <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                                  {originalQuestions.map((q, idx) => <li key={idx}>{unescapeHtml(q)}</li>)}
+                                  {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
                                 </ol>
                               </div>
                             )}
                           </div>
 
                           <div>
-                            <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                            <strong style={{ color: '#4A7294' }}>【{bulletinData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                             
-                            {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
+                            {bulletinData.parsedSnapshot?.answers && bulletinData.parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                                {parsedSnapshot.answers.map((ans: any, idx: number) => (
+                                {bulletinData.parsedSnapshot.answers.map((ans: any, idx: number) => (
                                   <div key={idx} style={{ marginTop: '8px' }}>
-                                    <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
-                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                                    <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
+                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
                                   </div>
                                 ))}
                               </div>
                             )}
 
-                            {parsedSnapshot.message && (
+                            {bulletinData.parsedSnapshot?.message && (
                               <div style={{ marginTop: '8px' }}>
                                 <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                                <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(parsedSnapshot.message)}</span>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.parsedSnapshot.message}</span>
                               </div>
                             )}
 
-                            {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
+                            {!bulletinData.isOffer && (bulletinData.parsedSnapshot?.specialties || bulletinData.parsedSnapshot?.no_gos) && (
                               <div style={{ marginTop: '10px' }}>
-                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
-                                {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(parsedSnapshot.no_gos)}</div>}
+                                {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{bulletinData.parsedSnapshot.specialties}</div>}
+                                {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{bulletinData.parsedSnapshot.no_gos}</div>}
                               </div>
                             )}
                           </div>
                         </div>
 
-                        {/* 獨立按鈕，防止選取文字時誤觸折疊 */}
                         <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px', padding: '12px 0 0 0', width: '100%', textAlign: 'center', borderTop: '1px dashed #EAE6E1' }}>
                           {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
                         </button>

@@ -16,10 +16,25 @@ interface OrderData {
   origin_source?: string; // 新增來源欄位
 }
 
-// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題並防止 JSON.parse 崩潰
-const unescapeHtml = (str: string) => {
+// 🌟 安全版：解除 HTML 實體編碼 (不會因為丟入 Object 而當機)
+const unescapeHtml = (str: any) => {
+  if (typeof str !== 'string') return str;
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
+// 🌟 新增：防護盾版 JSON 解析器 (遇到純文字不會崩潰，遇到物件直接放行)
+const safeParse = (data: any) => {
+  if (typeof data !== 'string') return data;
+  try {
+    const unescaped = unescapeHtml(data);
+    if (unescaped.trim().startsWith('{') || unescaped.trim().startsWith('[')) {
+      return JSON.parse(unescaped);
+    }
+    return unescaped;
+  } catch (e) {
+    return data;
+  }
 };
 
 export function Workspace() {
@@ -47,42 +62,30 @@ export function Workspace() {
     });
   };
 
-  // 🌟 修改：深度解析許願池來源，處理雙重 JSON 與亂碼
+  // 🌟 修改：使用安全解析器深度解析許願池來源，相容新舊資料
   const getBulletinSource = (currentOrder: OrderData | null) => {
     if (!currentOrder || !currentOrder.origin_source) return null;
     try {
-      // 1. 先解碼最外層字串並解析
-      const rawSource = unescapeHtml(currentOrder.origin_source);
-      const parsed = JSON.parse(rawSource);
+      const parsed = safeParse(currentOrder.origin_source);
       
-      if (parsed.source_type === 'bulletin') {
+      if (parsed && parsed.source_type === 'bulletin') {
         const isOffer = parsed.bulletin_category === 'offer';
         
-        // 2. 嘗試解析深層的快照資料 (投遞時填寫的表單)
-        const snapshotObj = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
-        const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
+        const bulletinContent = safeParse(parsed.bulletin_content);
         
-        let parsedSnapshot: any = {};
-        try {
-          parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
-          if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
-        } catch (e) {
-          console.error("快照深層解析失敗", e);
-        }
+        const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+        const parsedSnapshot = safeParse(rawSnapshot);
 
-        // 3. 確保問題陣列存在
         let questions = [];
-        try {
-           if (typeof parsed.questions === 'string') questions = JSON.parse(unescapeHtml(parsed.questions));
-           else if (Array.isArray(parsed.questions)) questions = parsed.questions;
-        } catch (e) {}
+        if (bulletinContent && bulletinContent.questions) questions = bulletinContent.questions;
+        else if (parsed.questions) questions = safeParse(parsed.questions);
 
         return {
           ...parsed,
-          description: parsed.description || parsed.bulletin_content,
-          questions,
+          description: bulletinContent?.description || parsed.description || parsed.bulletin_content || '',
+          questions: Array.isArray(questions) ? questions : [],
           isOffer,
-          parsedSnapshot
+          parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot }
         };
       }
     } catch (e) {
@@ -282,7 +285,7 @@ export function Workspace() {
           gap: '16px',
           backgroundColor: '#FBFBF9' 
         }}>
-          {/* 🌟 擴充：許願池媒合軌跡區塊 (置頂顯示完整資訊) */}
+          {/* 許願池媒合軌跡區塊 */}
           {bulletinData && (
             <div style={{
               backgroundColor: '#FDFBFE',
@@ -308,7 +311,7 @@ export function Workspace() {
                   <div style={{ marginTop: '6px' }}>
                     <strong style={{ color: '#A0978D' }}>提問設定：</strong>
                     <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                      {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{unescapeHtml(q)}</li>)}
+                      {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
                     </ol>
                   </div>
                 )}
@@ -321,8 +324,8 @@ export function Workspace() {
                   <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                     {bulletinData.parsedSnapshot.answers.map((ans: any, idx: number) => (
                       <div key={idx} style={{ marginTop: '8px' }}>
-                        <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
-                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                        <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
                       </div>
                     ))}
                   </div>
@@ -331,14 +334,14 @@ export function Workspace() {
                 {bulletinData.parsedSnapshot?.message && (
                   <div style={{ marginTop: '8px' }}>
                     <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(bulletinData.parsedSnapshot.message)}</span>
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.parsedSnapshot.message}</span>
                   </div>
                 )}
 
                 {!bulletinData.isOffer && (bulletinData.parsedSnapshot?.specialties || bulletinData.parsedSnapshot?.no_gos) && (
                   <div style={{ marginTop: '10px' }}>
-                    {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(bulletinData.parsedSnapshot.specialties)}</div>}
-                    {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(bulletinData.parsedSnapshot.no_gos)}</div>}
+                    {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{bulletinData.parsedSnapshot.specialties}</div>}
+                    {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{bulletinData.parsedSnapshot.no_gos}</div>}
                   </div>
                 )}
               </div>
