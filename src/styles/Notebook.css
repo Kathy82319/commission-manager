@@ -447,8 +447,34 @@
 .payment-status-wrapper { display: flex; align-items: center; gap: 10px; }
 .payment-status-label { font-size: 13px; color: #7A7269; font-weight: bold; }
 .select-status { width: auto; padding: 8px 12px; font-weight: bold; }
-.payment-inputs { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-.btn-add-payment { padding: 10px 20px; white-space: nowrap; }
+
+/* 🌟 修改重點：不論螢幕寬度，一律橫向排列，且支援左右滑動 */
+.payment-inputs { 
+  display: flex; 
+  flex-direction: row; 
+  align-items: stretch;
+  gap: 12px; 
+  margin-bottom: 20px; 
+  overflow-x: auto; 
+  padding-bottom: 4px; /* 預留一點捲動條空間 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 讓裡面的 input 和 button 有基本寬度，確保橫排時不會被過度擠壓 */
+.payment-inputs > input {
+  min-width: 90px;
+  flex: 1;
+}
+
+.payment-inputs > input[type="date"] {
+  min-width: 120px; /* 日期選擇器需要多一點空間 */
+}
+
+.btn-add-payment { 
+  padding: 10px 20px; 
+  white-space: nowrap; 
+  flex: 0 0 auto; 
+}
 
 .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .custom-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: auto; }
@@ -665,5 +691,6 @@
 
 @media (min-width: 1280px) {
   .details-grid { grid-template-columns: 1fr 1fr; }
-  .payment-inputs { flex-direction: row; align-items: stretch; }
+  /* 🌟 注意：這行已經被移除，因為我們讓所有尺寸都預設為 row 了 */
+  /* .payment-inputs { flex-direction: row; align-items: stretch; } */
 }
