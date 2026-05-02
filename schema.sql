@@ -89,19 +89,6 @@ CREATE TABLE Commissions (
     FOREIGN KEY (type_id) REFERENCES CommissionTypes(id)
 );
 
--- 5. 獨立附件管理表
-CREATE TABLE Attachments (
-    id TEXT PRIMARY KEY,
-    commission_id TEXT NOT NULL,
-    uploader_id TEXT NOT NULL,
-    file_type TEXT NOT NULL,
-    r2_key TEXT NOT NULL,
-    is_locked INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (commission_id) REFERENCES Commissions(id),
-    FOREIGN KEY (uploader_id) REFERENCES Users(id)
-);
-
 -- 6. 歷程紀錄表
 CREATE TABLE ActionLogs (
     id TEXT PRIMARY KEY,
@@ -179,14 +166,7 @@ CREATE TABLE ShowcaseItems (
     FOREIGN KEY (artist_id) REFERENCES Users(id)
 );
 
-CREATE TABLE Blacklist (
-    id TEXT PRIMARY KEY,
-    artist_id TEXT NOT NULL,
-    target_line_id TEXT NOT NULL,
-    reason TEXT, 
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (artist_id) REFERENCES Users(id)
-);
+
 
 -- 客戶紀錄表
 CREATE TABLE CustomerRecords (
@@ -303,6 +283,9 @@ INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimate
 VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-01
+--https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=Ue29d02da79b805e9df46bdf6442aa24c
+--https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=U0342c94360fe25872c7caa43ab588c87
+
 
 --刪除許願池收件匣用
 DELETE FROM Notifications;

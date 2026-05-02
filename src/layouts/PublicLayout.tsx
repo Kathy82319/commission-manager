@@ -87,7 +87,7 @@ export function PublicLayout() {
       <header className="public-header">
         <div className="header-actions">
           {isLoggedIn ? (
-            <div className="logged-in-group" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="logged-in-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
               <button onClick={handleDashboardClick} className="dashboard-btn" style={{ backgroundColor: 'var(--artist-text-color)', color: 'var(--artist-theme-color)', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
                 回到管理後台
               </button>

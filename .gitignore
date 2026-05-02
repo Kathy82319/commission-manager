@@ -61,3 +61,4 @@ credentials.json
 worker-configuration.d.ts
 package-lock.json
 lib.dom.d.ts
+desktop.ini
