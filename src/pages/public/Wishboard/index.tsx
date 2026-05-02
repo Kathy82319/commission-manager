@@ -309,22 +309,44 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-      {/* 🌟 新增：身分升級引導 Modal */}
+{/* 🌟 新增：身分升級引導 Modal (已美化 UI) */}
       {showUpgradeGuide.show && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center', padding: '30px' }}>
-            <ShieldAlert size={48} color="#4A90E2" style={{ marginBottom: '16px' }} />
-            <h2 style={{ marginBottom: '12px' }}>需要開通創作者身分</h2>
-            <p style={{ color: '#64748b', lineHeight: '1.6', marginBottom: '24px' }}>
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          zIndex: 10000, padding: '20px' 
+        }}>
+          <div style={{ 
+            backgroundColor: '#ffffff', borderRadius: '20px', padding: '32px 24px', 
+            width: '100%', maxWidth: '380px', textAlign: 'center', 
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
+          }}>
+            <ShieldAlert size={56} color="#3b82f6" style={{ margin: '0 auto 16px auto', opacity: 0.9 }} />
+            <h2 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '20px', fontWeight: 'bold' }}>需要開通創作者身分</h2>
+            <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', margin: '0 0 28px 0' }}>
               {showUpgradeGuide.type === 'post' 
                 ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' 
                 : '主動向案主投遞應徵需要創作者身分，以便案主查看您的作品集並與您洽談。'}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button className="cancel-btn" onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })}>
+              <button 
+                onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })}
+                style={{ 
+                  flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #cbd5e1', 
+                  backgroundColor: '#f8fafc', color: '#475569', fontSize: '15px', fontWeight: '600', cursor: 'pointer' 
+                }}
+              >
                 先不用
               </button>
-              <button className="confirm-btn" onClick={() => navigate('/portal')}>
+              <button 
+                onClick={() => navigate('/portal')}
+                style={{ 
+                  flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', 
+                  backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '15px', fontWeight: '600', 
+                  cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' 
+                }}
+              >
                 前往開通
               </button>
             </div>
