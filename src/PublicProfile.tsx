@@ -87,8 +87,10 @@ export function PublicProfile() {
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
       return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` }; 
+      backgroundAttachment: 'fixed'
     }
     return { background: baseColor };
+    backgroundAttachment: 'fixed'
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {
