@@ -86,11 +86,13 @@ export function PublicProfile() {
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` }; 
+      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)`,
       backgroundAttachment: 'fixed'
+      };
     }
-    return { background: baseColor };
+    return { background: baseColor,
     backgroundAttachment: 'fixed'
+    };
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {

@@ -2,7 +2,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    min-height: 100vh;
+    /*min-height: 100vh;*/
     width: 100%;
     overflow-x: hidden; /* 防止出現多餘的橫向捲軸 */
 }
