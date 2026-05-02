@@ -6,8 +6,7 @@ interface Props {
 }
 
 export function ThemeTab({ settings, setSettings }: Props) {
-  // 【修改這裡】將 #00000015 與 background_color 的順序對調
-  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, #00000015, ${settings.background_color || '#F4F0EB'})`;
+  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #00000015)`;
 
   const updateTheme = (updates: Partial<ProfileSettings>) => {
     setSettings(prev => ({
@@ -46,11 +45,11 @@ export function ThemeTab({ settings, setSettings }: Props) {
           onChange={(e) => updateTheme({ gradient_direction: e.target.value })}
           style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DED9D3', outline: 'none', background: '#FFF' }}
         >
-          <option value="to bottom right">對角線 (左上到右下)</option>
-          <option value="to right">由左至右</option>
-          <option value="to left">由右至左</option>
-          <option value="to bottom">由上至下</option>
-          <option value="to top">由下至上</option>
+          <option value="to top left">對角線 (左上到右下)</option>
+          <option value="to left">由左至右</option>
+          <option value="to right">由右至左</option>
+          <option value="to top">由上至下</option>
+          <option value="to bottom">由下至上</option>
         </select>
       </div>
 
@@ -72,18 +71,23 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
+      {/* 實際預覽區塊 */}
       <div style={{ 
-        padding: '40px 24px', 
+        height: '160px', // 增加高度讓漸層更明顯
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         borderRadius: '12px', 
         background: previewBackground, 
         color: settings.theme_mode === 'dark' ? '#FFF' : '#333', 
         border: '1px solid #EAE6E1', 
-        textAlign: 'center', 
-        fontWeight: 'bold', 
-        fontSize: '18px',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)', // 增加一點質感
         transition: 'all 0.3s ease'
       }}>
-        背景實際預覽區塊
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '14px', opacity: 0.8, marginBottom: '4px' }}>PREVIEW</div>
+          <div style={{ fontWeight: 'bold', fontSize: '18px' }}>背景實際預覽區塊</div>
+        </div>
       </div>
     </div>
   );
