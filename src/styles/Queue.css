@@ -122,11 +122,11 @@
 }
 .workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
 .workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
-.bulletin-badge { background-color: #F3EEFF; color: #8b5cf6; } /* 🌟 許願池專屬顏色 */
+.bulletin-badge { background-color: #F3EEFF; color: #8E7E8E; } /* 🌟 已同步煙燻藕紫 */
 
 .rush-badge { background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; white-space: nowrap; }
 
-/* 全域/網頁版預設顯示邏輯 */
+/* 全域預設顯示邏輯 */
 .date-text-display { display: none; }
 .date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; height: 38px; display: block; width: 100%; box-sizing: border-box; }
 
@@ -163,7 +163,6 @@
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    /* 🌟 修改點：優化網格比例，確保名字區塊(1fr)最大，其餘縮小 */
     grid-template-columns: 40px 1fr 85px 44px 44px;
     gap: 4px;
     padding: 0 10px;
@@ -205,14 +204,26 @@
   .queue-hide-mobile { display: none !important; }
   .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 
-  /* [手機版] "未展開" 狀態 */
+  /* --------------------------------------------------------- */
+  /* [手機版] "未展開" 狀態的顯示邏輯 */
+  /* --------------------------------------------------------- */
+  
+  /* 🌟 修改點：手機版未展開時，隱藏標籤包裝器 */
+  .queue-table tr:not(.is-expanded) .workflow-badge-wrapper {
+    display: none !important;
+  }
+
+  /* 🌟 修改點：點擊優化。讓 cell 內的元件不攔截點擊，使點擊能穿透到整行 tr */
+  .queue-table tr:not(.is-expanded) td {
+    pointer-events: none;
+  }
+
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
   .queue-table tr:not(.is-expanded) .client-details-extra {
     display: none;
   }
 
-  /* 🌟 修改點：讓名字與標籤在手機版未展開時能自動換行並靠左 */
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] > div {
     display: flex;
     flex-wrap: wrap;
@@ -233,7 +244,6 @@
   }
   .queue-table tr:not(.is-expanded) .dropdown-arrow { display: none; }
   
-  /* 🌟 修改點：確保未展開時，進度欄位內的標籤也能置中 */
   .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { 
     align-items: center; 
     justify-content: center;
@@ -248,7 +258,10 @@
     appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
 
-  /* [手機版] "已展開" 狀態 */
+  /* --------------------------------------------------------- */
+  /* [手機版] "已展開" 狀態的顯示邏輯 */
+  /* --------------------------------------------------------- */
+  
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
@@ -258,8 +271,13 @@
     cursor: default;
   }
 
+  /* 🌟 修改點：已展開時，恢復互動能力 */
+  .queue-table tr.is-expanded td {
+    pointer-events: auto;
+  }
+
   .queue-table tr.is-expanded .cell-content { 
-    width: 100%; pointer-events: auto; align-items: flex-start;
+    width: 100%; align-items: flex-start;
   }
 
   .queue-table tr.is-expanded td::before {
@@ -289,6 +307,12 @@
     width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3; background: #FBFBF9; display: block !important;
   }
   
+  /* 🌟 修改點：展開後顯現標籤 */
+  .queue-table tr.is-expanded .workflow-badge-wrapper {
+    display: flex !important;
+    margin-top: 4px;
+  }
+
   .queue-table tr.is-expanded .note-input {
     text-align: left; width: 100%; background-color: #FBFBF9; padding: 12px; border: 1px solid #DED9D3; border-radius: 8px; box-sizing: border-box;
   }

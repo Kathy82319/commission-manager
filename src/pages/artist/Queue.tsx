@@ -10,13 +10,13 @@ interface Commission {
   type_name: string; payment_status: string; end_date: string; artist_note: string; is_rush: string;
   status: string; workflow_mode: string; 
   queue_status: string;
-  artist_id?: string; // 🌟 確保能透過 artist_id 過濾
+  artist_id?: string;
   latest_message_at?: string;
   last_read_at_artist?: string;
   client_public_id?: string;
   client_custom_label?: string;
   crm_record_id?: string;
-  origin_source?: string; // 🌟 確保包含這個欄位以判斷許願池
+  origin_source?: string;
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -27,13 +27,11 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
 
-// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題並防止 JSON.parse 崩潰
 const unescapeHtml = (str: string) => {
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 🌟 新增：判斷是否為許願池來源的函式
 const getBulletinSource = (order?: Commission) => {
   if (!order || !order.origin_source) return null;
   try {
@@ -45,7 +43,6 @@ const getBulletinSource = (order?: Commission) => {
   return null;
 };
 
-// 確保時間解析安全
 const getTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   let str = dateStr.trim();
@@ -54,7 +51,7 @@ const getTime = (dateStr?: string) => {
   return new Date(str).getTime();
 };
 
-function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
+function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle, isExpanded }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [newVal, setNewVal] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,7 +67,9 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onToggle]);
 
-  const toggleOpen = () => {
+  const toggleOpen = (e: React.MouseEvent) => {
+    // 只有在展開狀態下，點擊按鈕才阻止冒泡，避免點擊選單時收合行
+    if (isExpanded) e.stopPropagation(); 
     const nextState = !isOpen;
     setIsOpen(nextState);
     onToggle(nextState);
@@ -83,7 +82,7 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
         <span className="dropdown-arrow" style={{ marginLeft: '8px' }}>▼</span>
       </div>
       {isOpen && (
-        <div className="dropdown-menu">
+        <div className="dropdown-menu" onClick={e => e.stopPropagation()}>
           {stages.map((s: string) => (
             <div key={s} className="dropdown-item">
               <span onClick={() => { onChange(s); setIsOpen(false); onToggle(false); }} className="dropdown-item-text">{s}</span>
@@ -104,7 +103,7 @@ export function Queue() {
   const navigate = useNavigate();
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
-  const [myId, setMyId] = useState<string>(''); // 🌟 對齊 Notebook：取得當前繪師 ID
+  const [myId, setMyId] = useState<string>('');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -114,10 +113,8 @@ export function Queue() {
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
-  // 🌟 獲取當前登入者 ID
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
       .then(res => res.json())
@@ -132,9 +129,7 @@ export function Queue() {
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
-        // 先篩選掉結案與作廢
         let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-        
         const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
         if (savedOrder.length > 0) {
           list.sort((a: any, b: any) => {
@@ -150,9 +145,7 @@ export function Queue() {
         }
         setCommissions(list);
       }
-    } catch (e) {
-      console.error("獲取排單列表失敗:", e);
-    }
+    } catch (e) {}
   };
   
   useEffect(() => { fetchQueue(); }, []);
@@ -166,18 +159,14 @@ export function Queue() {
   
   const handleUpdateField = async (id: string, field: string, value: string) => {
     setIsSaving(true);
-    // 🛡️ [資安提醒]: 後端必須嚴格驗證 current_user_id === commissions.artist_id，防止 IDOR 越權竄改。
     try {
+      // 🛡️ [資安提醒]: 後端需驗證當前使用者是否為此單繪師
       await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
       setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-    } catch (error) {
-      console.error("欄位更新失敗:", error);
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (error) {} finally { setIsSaving(false); }
   };
   
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -193,19 +182,11 @@ export function Queue() {
     setCommissions(newCommissions);
   };
 
-  // 🌟 對齊 Notebook：嚴格的過濾條件，並防範搜尋字串造成 null reference
-  // 同時保留對舊有 contact_memo 欄位的搜尋支援
   const filteredCommissions = useMemo(() => {
     return commissions.filter(c => {
-      // 確保只顯示「我」是繪師的單據
       if (myId && c.artist_id !== myId) return false;
-
-      // 檢查月份
       if (selectedMonth !== 'all' && (!c.order_date || !c.order_date.startsWith(selectedMonth))) return false;
-      
-      // 如果搜尋框為空，直接通過，避免後續 undefined 被濾掉
       if (!searchTerm.trim()) return true;
-
       const term = searchTerm.toLowerCase();
       return (
         (c.client_name && c.client_name.toLowerCase().includes(term)) || 
@@ -217,28 +198,20 @@ export function Queue() {
     });
   }, [commissions, selectedMonth, searchTerm, myId]);
 
-  // 🌟 修改：直接顯示真實名稱，若無則顯示 (未綁定)
   const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
 
   return (
     <div className="queue-container">
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
-        <div className="queue-controls" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="queue-controls">
           <input placeholder="搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-        
-          
-          <button 
-            onClick={() => setIsQuoteModalOpen(true)} 
-            className="create-quote-btn" 
-            style={{ padding: '8px 12px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-            + 建立新委託單
-          </button>
-
+          <button onClick={() => navigate('/artist/settings')} className="queue-settings-btn" style={{ padding: '8px 12px', background: '#F4F0EB', border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>設定顯示範圍</button>
+          <button onClick={() => setIsQuoteModalOpen(true)} className="create-quote-btn" style={{ padding: '8px 12px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>+ 建立新委託單</button>
           {isSaving && <span className="updating-hint">儲存中...</span>}
         </div>
       </div>
@@ -247,81 +220,53 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th>日期</th>
-              <th>委託人</th>
-              <th>進度</th>
-              <th>完工</th>
-              <th>收款</th>
-              <th className="queue-hide-mobile">備註欄位</th>
-              <th className="queue-hide-mobile">操作</th>
+              <th>日期</th><th>委託人</th><th>進度</th><th>完工</th><th>付款</th><th className="queue-hide-mobile">備註欄位</th><th className="queue-hide-mobile">操作</th>
             </tr>
           </thead>
           <tbody>
             {filteredCommissions.map((order, idx) => {
               const isExpanded = expandedId === order.id;
-              const isBulletin = getBulletinSource(order) !== null; // 🌟 判斷是否為許願池來源
+              const isBulletin = getBulletinSource(order) !== null;
               
               return (
               <tr 
                 key={order.id}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                className={`
-                  ${draggedIdx === idx ? 'dragging' : ''} 
-                  ${openDropdownId === order.id ? 'active-row' : ''}
-                  ${isExpanded ? 'is-expanded' : ''} 
-                `}
+                className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
               >
                 <td data-label="日期">
                   <div className="cell-content cell-date">
-                    <div 
-                      draggable 
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragEnd={() => setDraggedIdx(null)}
-                      className="drag-handle queue-hide-mobile"
-                    >
-                      <GripVertical size={16} />
-                    </div>
+                    <div draggable onDragStart={() => handleDragStart(idx)} onDragEnd={() => setDraggedIdx(null)} className="drag-handle queue-hide-mobile"><GripVertical size={16} /></div>
                     <span>{order.order_date ? order.order_date.substring(5, 10).replace('-', '/') : '未定'}</span>
                   </div>
                 </td>
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    
-                    {/* 🌟 名字與標籤的區塊 */}
                     <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 'bold' }}>
-                        {getClientNameDisplay(order)}
-                      </span>
-                      {/* 🌟 將 workflow 標籤移至此處，並支援許願池 */}
-                      {isBulletin ? (
-                        <span style={{ backgroundColor: '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                          許願池
-                        </span>
-                      ) : (
-                        <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                          {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
-                        </span>
-                      )}
+                      <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
+                      {/* 🌟 標籤包裝器：由 CSS 控制在手機版未展開時隱藏 */}
+                      <div className="workflow-badge-wrapper">
+                        {isBulletin ? (
+                          <span className="bulletin-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>許願池</span>
+                        ) : (
+                          <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                            {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    
                     <div className="client-details-extra">
-                      <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                        <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#7A7269' }}>
-                        <span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>
-                          {order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})
-                        </span>                    
-                      </div>
+                      <div style={{ fontSize: '13px', color: '#7A7269' }}><strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}</div>
+                      <div style={{ fontSize: '13px', color: '#7A7269' }}><span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>{order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})</span></div>
                     </div>
                   </div>
                 </td>
                 <td data-label="當前進度">
-                  <div className="cell-content cell-status" onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                    {/* 🌟 原本在這裡的 workflow-badge 已經移除了 */}
+                  <div className="cell-content cell-status">
                     <StageDropdown 
                       value={order.queue_status} 
+                      isExpanded={isExpanded}
                       onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} 
                       stages={stages} 
                       onAdd={(v:any) => setStages([...stages, v])} 
@@ -331,45 +276,29 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="預計完工">
-                  <div className="cell-content cell-date-input" onClick={e => e.stopPropagation()}>
-                    <span className="date-text-display">
-                      {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
-                    </span>
-                    <input 
-                      type="date" 
-                      defaultValue={order.end_date} 
-                      onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} 
-                      className="date-input" 
-                    />
+                  <div className="cell-content cell-date-input">
+                    <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
+                    <input type="date" defaultValue={order.end_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
                   </div>
                 </td>
                 <td data-label="付款進度">
-                  <div className="cell-content cell-payment" onClick={e => e.stopPropagation()}>
-                    <select value={order.payment_status} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
+                  <div className="cell-content cell-payment">
+                    <select value={order.payment_status} onClick={e => isExpanded && e.stopPropagation()} onChange={e => handleUpdateField(order.id, 'payment_status', e.target.value)} style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text }} className="payment-select">
                       <option value="unpaid">未付</option><option value="partial">訂金</option><option value="paid">已付</option>
                     </select>
                   </div>
                 </td>
                 <td data-label="備註欄位">
-                  <div className="cell-content cell-note" onClick={e => e.stopPropagation()}>
+                  <div className="cell-content cell-note">
                     {order.client_custom_label === '黑名單' && (
-                      <span 
-                        className="queue-blacklist-tag"
-                        onClick={() => navigate(`/artist/customers?id=${order.crm_record_id}`)}
-                        title="點擊查看黑名單原因"
-                        style={{ cursor: 'pointer', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}
-                      >
-                        黑名單
-                      </span>
+                      <span className="queue-blacklist-tag" onClick={(e) => { e.stopPropagation(); navigate(`/artist/customers?id=${order.crm_record_id}`); }} title="點擊查看黑名單原因" style={{ cursor: 'pointer', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}>黑名單</span>
                     )}
                     {order.is_rush === '是' && <span className="rush-badge">急單</span>}
-                    <input defaultValue={order.artist_note} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
+                    <input defaultValue={order.artist_note} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
                   </div>
                 </td>
                 <td data-label="操作管理">
-                  <div className="cell-content cell-manage" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => navigate(`/artist/notebook?id=${order.id}`)} className="manage-button">管理</button>
-                  </div>
+                  <div className="cell-content cell-manage"><button onClick={(e) => { e.stopPropagation(); navigate(`/artist/notebook?id=${order.id}`); }} className="manage-button">管理</button></div>
                 </td>
               </tr>
             )})}
@@ -377,42 +306,14 @@ export function Queue() {
         </table>
       </div>
 
-      {/* 🌟 建立新委託單的 Modal */}
       {isQuoteModalOpen && (
-        <div 
-          className="quote-modal-overlay" 
-          onClick={() => setIsQuoteModalOpen(false)} 
-          style={{ 
-            position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, 
-            display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-            overflowY: 'auto', padding: '5vh 20px', cursor: 'default'
-          }}
-        >
-          <div 
-            className="quote-modal-content" 
-            onClick={e => e.stopPropagation()} 
-            style={{ 
-              width: '100%', maxWidth: '800px', background: '#FAFAFA', padding: '24px', 
-              borderRadius: '12px', position: 'relative', cursor: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-            }}
-          >
-            <button 
-              onClick={() => setIsQuoteModalOpen(false)} 
-              style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}
-            >
-              <X size={28}/>
-            </button>
-            <QuoteBuilder 
-              isModal 
-              onSuccess={() => { 
-                setIsQuoteModalOpen(false); 
-                fetchQueue(); 
-              }} 
-            />
+        <div className="quote-modal-overlay" onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px', cursor: 'default' }}>
+          <div className="quote-modal-content" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '800px', background: '#FAFAFA', padding: '24px', borderRadius: '12px', position: 'relative', cursor: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
+            <button onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}><X size={28}/></button>
+            <QuoteBuilder isModal onSuccess={() => { setIsQuoteModalOpen(false); fetchQueue(); }} />
           </div>
         </div>
       )}
-
     </div>
   );
 }
