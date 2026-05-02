@@ -2,10 +2,6 @@
 import type { Env } from '../shared/types';
 
 export const userRelationController = {
-  /**
-   * 取得我標記的所有關係名單 (收藏或黑名單)
-   * 會 JOIN Users 表格以取得對方的基本資訊
-   */
   async getMyRelations(userId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
@@ -30,36 +26,46 @@ export const userRelationController = {
     }
   },
 
-  /**
-   * 新增或更新關係 (收藏 / 黑名單)
-   */
-  async upsertRelation(userId: string, targetId: string, type: 'favorite' | 'blacklist', note: string, env: Env, corsHeaders: any) {
+  async upsertRelation(userId: string, targetId: string, type: string, note: string, env: Env, corsHeaders: any) {
+    // 🛡️ 防禦 1：禁止標記自己
     if (userId === targetId) {
-      return new Response(JSON.stringify({ success: false, error: "您不能標記自己" }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: "您不能標記自己" }), { status: 400, headers: corsHeaders });
+    }
+
+    // 🛡️ 防禦 2：Runtime 類型白名單驗證 (防止惡意寫入奇怪的 type)
+    if (type !== 'favorite' && type !== 'blacklist') {
+      return new Response(JSON.stringify({ success: false, error: "無效的標記類型" }), { status: 400, headers: corsHeaders });
+    }
+
+    // 🛡️ 防禦 3：字元長度限制 (防止資料庫被塞爆，限制 200 字以內)
+    const safeNote = note ? note.trim() : '';
+    if (safeNote.length > 200) {
+      return new Response(JSON.stringify({ success: false, error: "備註內容過長，請限制在 200 字以內" }), { status: 400, headers: corsHeaders });
     }
 
     try {
       const relationId = crypto.randomUUID();
       
-      // 使用 ON CONFLICT 處理重複建立的情況
       await env.commission_db.prepare(`
         INSERT INTO UserRelations (id, source_user_id, target_user_id, relation_type, custom_note)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(source_user_id, target_user_id) DO UPDATE SET
           relation_type = excluded.relation_type,
           custom_note = excluded.custom_note
-      `).bind(relationId, userId, targetId, type, note).run();
+      `).bind(relationId, userId, targetId, type, safeNote).run();
 
       return new Response(JSON.stringify({ success: true, message: "關係已更新" }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
 
-  /**
-   * 移除關係
-   */
   async deleteRelation(userId: string, targetId: string, env: Env, corsHeaders: any) {
+    // 🛡️ 防禦 4：基本格式驗證
+    if (!targetId || targetId.trim() === '') {
+      return new Response(JSON.stringify({ success: false, error: "缺少目標 ID" }), { status: 400, headers: corsHeaders });
+    }
+
     try {
       await env.commission_db.prepare(`
         DELETE FROM UserRelations 
@@ -68,7 +74,7 @@ export const userRelationController = {
 
       return new Response(JSON.stringify({ success: true, message: "關係已移除" }), { headers: corsHeaders });
     } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   }
 };

@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react'; // 🌟 新增 Heart, Ban
+import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
 import './styles/PublicProfile.css';
 
 
@@ -79,13 +79,14 @@ export function PublicProfile() {
   // 🌟 處理收藏與黑名單的狀態
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
+  const [isViewerLoading, setIsViewerLoading] = useState(true); // 🌟 新增：讀取狀態，防止畫面閃爍
 
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#003e77';     
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
-      const direction = settings?.gradient_direction || 'to bottom';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #021122)` }; // 🌟 修正了多餘的右括號
+      const direction = settings?.gradient_direction || 'to top';
+      return { background: `linear-gradient(${direction}, ${baseColor}, #021122)` }; 
     }
     return { background: baseColor };
   }, [settings]);
@@ -177,9 +178,9 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
-  // 🌟 載入目前使用者的關係狀態
   useEffect(() => {
     const fetchViewerAndRelations = async () => {
+      setIsViewerLoading(true); // 🌟 開始讀取
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
@@ -191,7 +192,6 @@ export function PublicProfile() {
             const relRes = await fetch(`${API_BASE}/api/relations`, { credentials: 'include' });
             const relData = await relRes.json();
             if (relData.success) {
-              // 找找看有沒有對這個頁面繪師的標記
               const myRel = relData.data.find((r: any) => r.target_user_id === artist?.id);
               if (myRel) {
                 setRelationStatus(myRel.relation_type);
@@ -201,6 +201,8 @@ export function PublicProfile() {
         }
       } catch (e) {
         console.error("未登入或無法讀取狀態", e);
+      } finally {
+        setIsViewerLoading(false); // 🌟 讀取結束
       }
     };
     if (artist && artist.id) {
@@ -307,7 +309,6 @@ export function PublicProfile() {
     }
   }, [loading, settings, showSplash]);
 
-  // 🌟 處理點擊收藏與黑名單
   const handleToggleRelation = async (type: 'favorite' | 'blacklist') => {
     if (!viewerId) {
       alert("請先登入系統後再進行操作喔！");
@@ -321,14 +322,12 @@ export function PublicProfile() {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     try {
       if (relationStatus === type) {
-        // 如果目前狀態已經是點擊的狀態，代表要「取消」
         const res = await fetch(`${API_BASE}/api/relations/${artist.id}`, {
           method: 'DELETE',
           credentials: 'include'
         });
         if (res.ok) setRelationStatus('none');
       } else {
-        // 否則就是「新增/更新」關係
         const res = await fetch(`${API_BASE}/api/relations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -383,41 +382,6 @@ export function PublicProfile() {
                   </a>
                 ))}
               </div>
-              
-              {/* 🌟 關注與黑名單按鈕 */}
-              {viewerId !== artist?.id && (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
-                  <button 
-                    onClick={() => handleToggleRelation('favorite')}
-                    style={{ 
-                      display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', 
-                      borderRadius: '20px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`,
-                      background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                      color: relationStatus === 'favorite' ? '#ef4444' : textColor,
-                      cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s',
-                      backdropFilter: 'blur(4px)'
-                    }}
-                  >
-                    <Heart size={14} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
-                    {relationStatus === 'favorite' ? '已收藏' : '收藏繪師'}
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleToggleRelation('blacklist')}
-                    style={{ 
-                      display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', 
-                      borderRadius: '20px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`,
-                      background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent',
-                      color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor,
-                      cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s',
-                      backdropFilter: 'blur(4px)'
-                    }}
-                  >
-                    <Ban size={14} />
-                    {relationStatus === 'blacklist' ? '已封鎖' : '黑名單'}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -440,6 +404,41 @@ export function PublicProfile() {
                 </button>
               ))}
             </nav>
+
+            {/* 🌟 關注與黑名單按鈕 (移到分頁下方，並加入 isViewerLoading 判斷防閃爍) */}
+            {!isViewerLoading && viewerId !== artist?.id && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'center', flexDirection: 'column' }}>
+                <button 
+                  onClick={() => handleToggleRelation('favorite')}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', 
+                    borderRadius: '8px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`,
+                    background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                    color: relationStatus === 'favorite' ? '#ef4444' : textColor,
+                    cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s',
+                    backdropFilter: 'blur(4px)'
+                  }}
+                >
+                  <Heart size={16} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
+                  {relationStatus === 'favorite' ? '已收藏' : '收藏繪師'}
+                </button>
+                
+                <button 
+                  onClick={() => handleToggleRelation('blacklist')}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', 
+                    borderRadius: '8px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`,
+                    background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent',
+                    color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor,
+                    cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s',
+                    backdropFilter: 'blur(4px)'
+                  }}
+                >
+                  <Ban size={16} />
+                  {relationStatus === 'blacklist' ? '已封鎖' : '黑名單'}
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -535,7 +534,6 @@ export function PublicProfile() {
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />
               )}
 
-              {/* 🌟 根據唯一 ID 匹配自訂分頁內容 */}
               {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec) => {
                 return currentTab === sec.id && (
                   <div key={sec.id} className="rich-text-content" 

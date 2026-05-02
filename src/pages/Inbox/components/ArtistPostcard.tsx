@@ -1,12 +1,14 @@
 // src/pages/Inbox/components/ArtistPostcard.tsx
 import React, { useState } from 'react';
 import { getStatusLabel, renderChips, getExpiryInfo } from '../utils/formatters';
+import { Ban } from 'lucide-react'; // 🌟 引入黑名單圖示
 
 interface ArtistPostcardProps {
   item: any;
   snapshot: any;
   navigate: (path: string) => void;
   children?: React.ReactNode;
+  isBlacklisted?: boolean; // 🌟 加上這個屬性定義，解決 InboundTab.tsx 的報錯
 }
 
 const unescapeHtml = (str: string) => {
@@ -14,7 +16,7 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, navigate, children }) => {
+export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, navigate, children, isBlacklisted = false }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
 
@@ -107,13 +109,19 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
                     </span>
                   )}
                 </div>
-                <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
                   <span className="postcard-artist-name block truncate font-bold text-xl text-[#5D4A3E] cursor-pointer hover:underline" onClick={handleArtistClick} title="前往繪師個人頁">
                     {artistName}
                   </span>
-                  <span className="text-[#A0978D] text-sm font-mono">
+                  <span className="text-[#A0978D] text-sm font-mono mr-1">
                     @{artistId}
                   </span>
+                  {/* 🌟 黑名單標籤：緊接在名字和 ID 之後 */}
+                  {isBlacklisted && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
+                      <Ban size={10} strokeWidth={3} /> 黑名單
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

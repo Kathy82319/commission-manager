@@ -4,7 +4,6 @@ import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-import { Ban } from 'lucide-react'; // 🌟 引入 Ban 圖示
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -22,7 +21,7 @@ interface InboundTabProps {
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
-  blacklistedIds?: string[]; // 🌟 接收黑名單清單
+  blacklistedIds?: string[];
 }
 
 const unescapeHtml = (str: string) => {
@@ -40,7 +39,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission,
   setSelectedIdsForBatch,
-  blacklistedIds = [] // 🌟 預設為空陣列
+  blacklistedIds = []
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -113,7 +112,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
                   handleViewCommission={handleViewCommission}
                   setSelectedIdsForBatch={setSelectedIdsForBatch}
-                  blacklistedIds={blacklistedIds} // 🌟 也把黑名單傳給 OfferList 讓它處理
+                  blacklistedIds={blacklistedIds}
                 />
               ) : (
                 currentInquiries.map(item => {
@@ -144,19 +143,18 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   
                   const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
                   
-                  // 🌟 判斷投遞的繪師是否在我的黑名單中
+                  // 🌟 判斷是否為黑名單
                   const isBlacklisted = blacklistedIds.includes(item.artist_id);
 
                   return (
                     <div key={item.inquiry_id} style={{ position: 'relative' }}>
-                      {/* 🌟 若為黑名單，在卡片上方顯示警告標籤 */}
-                      {isBlacklisted && (
-                        <div style={{ position: 'absolute', top: '-12px', right: '16px', background: '#FEF2F2', color: '#EF4444', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FECACA', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(239, 68, 68, 0.15)' }}>
-                          <Ban size={14} /> 黑名單繪師
-                        </div>
-                      )}
-                      
-                      <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
+                      {/* 🌟 修改：將 isBlacklisted 傳入 ArtistPostcard，由它內部負責顯示 */}
+                      <ArtistPostcard 
+                        item={item} 
+                        snapshot={snapshot} 
+                        navigate={navigate}
+                        isBlacklisted={isBlacklisted} 
+                      >
                         
                         {item.inquiry_status === 'declined' && item.decline_reason && (
                           <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
