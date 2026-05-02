@@ -77,10 +77,10 @@ export function PublicProfile() {
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#021122';
+    const baseColor = settings?.background_color || '#5cb0ff';
     if (settings?.gradient_enabled) {
       const direction = settings.gradient_direction || 'to bottom right';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
+      return { background: `linear-gradient(${direction}, ${baseColor}, #021122ce)` };
     }
     return { background: baseColor };
   }, [settings]);
