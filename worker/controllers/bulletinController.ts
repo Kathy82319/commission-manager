@@ -31,7 +31,7 @@ export const bulletinController = {
       const { results } = await env.commission_db.prepare(query).bind(...params).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("getList Error:", error);
+      console.error("getList Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '讀取列表發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -137,7 +137,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("create Bulletin Error:", error);
+      console.error("create Bulletin Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '發布發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -232,7 +232,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true, message: '已成功投遞' }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("inquire Error:", error);
+      console.error("inquire Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '投遞發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -248,7 +248,7 @@ export const bulletinController = {
       ]);
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("closeBulletin Error:", error);
+      console.error("closeBulletin Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -271,7 +271,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("declineInquiry Error:", error);
+      console.error("declineInquiry Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -294,7 +294,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
-      console.error("submitResponse Error:", error);
+      console.error("submitResponse Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '回覆發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -328,7 +328,7 @@ export const bulletinController = {
         data: { bulletins: myBulletins, inquiries: myInquiries }
       }), { headers: corsHeaders });
     } catch (error: any) { 
-      console.error("getClientInbox Error:", error);
+      console.error("getClientInbox Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '讀取發生異常，請稍後再試' }), { status: 500, headers: corsHeaders }); 
     }
   },
@@ -353,7 +353,7 @@ export const bulletinController = {
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) { 
-      console.error("getArtistInbox Error:", error);
+      console.error("getArtistInbox Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '讀取發生異常，請稍後再試' }), { status: 500, headers: corsHeaders }); 
     }
   },
@@ -395,7 +395,7 @@ export const bulletinController = {
       }), { headers: corsHeaders });
 
     } catch (error: any) {
-      console.error("batchDecline Error:", error);
+      console.error("batchDecline Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '批次處理發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
@@ -431,8 +431,92 @@ export const bulletinController = {
         }
       }), { headers });
     } catch (error: any) {
-      console.error("getQuota Error:", error);
+      console.error("getQuota Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '讀取額度發生異常' }), { status: 500, headers: corsHeaders });
     }
+  },
+
+  /**
+   * 🌟 許願池檢舉 API (具備防重複檢舉與權重計算機制)
+   */
+  async reportBulletin(request: Request, targetId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      const body: any = await request.json();
+      
+      // 🛡️ 資安防護 1：限制檢舉原因長度與去除惡意 HTML 標籤 (XSS 防護)
+      const reason = body.reason ? String(body.reason).substring(0, 200).replace(/[<>]/g, '') : "無提供原因";
+
+      // 1. 取得檢舉者的真實角色 (防前端偽造)
+      const { results: userRes } = await env.commission_db.prepare(
+        "SELECT role FROM Users WHERE id = ?"
+      ).bind(currentUserId).all();
+      
+      if (userRes.length === 0) {
+        return new Response(JSON.stringify({ error: "找不到使用者" }), { status: 404, headers: corsHeaders });
+      }
+      const reporterRole = userRes[0].role as string;
+
+      // 🛡️ 資安防護 2：防止重複檢舉 (防腳本洗版)
+      const { results: existingReport } = await env.commission_db.prepare(
+        "SELECT id FROM Reports WHERE bulletin_id = ? AND reporter_id = ?"
+      ).bind(targetId, currentUserId).all();
+
+      if (existingReport.length > 0) {
+        return new Response(JSON.stringify({ error: "您已經檢舉過此貼文，系統已記錄。" }), { status: 400, headers: corsHeaders });
+      }
+
+      // 2. 寫入檢舉紀錄
+      await env.commission_db.prepare(`
+        INSERT INTO Reports (bulletin_id, reporter_id, reporter_role, reason)
+        VALUES (?, ?, ?, ?)
+      `).bind(targetId, currentUserId, reporterRole, reason).run();
+
+      // 3. 檢查「繪師 (artist)」的檢舉權重是否達標 (滿 10 次自動隱藏)
+      const { results: weightRes } = await env.commission_db.prepare(`
+        SELECT COUNT(DISTINCT reporter_id) as artist_count 
+        FROM Reports 
+        WHERE bulletin_id = ? AND reporter_role = 'artist'
+      `).bind(targetId).all();
+
+      // 確保轉型為 Number
+      const artistCount = Number(weightRes[0]?.artist_count) || 0;
+
+      // 4. 觸發自動隱藏機制與安全通報
+      if (artistCount >= 10) {
+        // 4-1. 將貼文狀態改為 hidden_under_review
+        await env.commission_db.prepare(`
+          UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?
+        `).bind(targetId).run();
+        
+        // 4-2. 撈出所有管理員，發送系統警報通知
+        const { results: admins } = await env.commission_db.prepare(`
+          SELECT id FROM Users WHERE role = 'admin'
+        `).all();
+
+        if (admins.length > 0) {
+          const stmt = env.commission_db.prepare(`
+            INSERT INTO Notifications (user_id, type, title, message, reference_id, is_read)
+            VALUES (?, 'SYSTEM_ALERT', '🚨 社群風控警報', ?, ?, 0)
+          `);
+
+          const message = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
+
+          // 產生批次寫入陣列
+          const batchStatements = admins.map(admin => 
+            stmt.bind(admin.id, message, targetId)
+          );
+
+          // 一次性寫入所有管理員的通知
+          await env.commission_db.batch(batchStatements);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "檢舉已送出，感謝您協助維護社群環境。" }), { status: 200, headers: corsHeaders });
+
+    } catch (error: any) {
+      console.error(`[Report Error] ID: ${targetId}`, error.message);
+      return new Response(JSON.stringify({ error: "檢舉處理失敗，請稍後再試" }), { status: 500, headers: corsHeaders });
+    }
   }
+
 };

@@ -1,7 +1,7 @@
 // src/pages/public/Wishboard/WishCard.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart } from 'lucide-react'; // 🌟 加入 Heart
+import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart, Flag } from 'lucide-react'; // 🌟 加入 Flag
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
 
 interface WishCardProps {
@@ -35,6 +35,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   // 🌟 收藏狀態管理
   const [isFavorited, setIsFavorited] = useState(false);
+
+  // 🌟 檢舉狀態管理
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState('洗版與重複發文');
+  const [reportText, setReportText] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
 
   // 🌟 檢查是否已收藏
   useEffect(() => {
@@ -85,6 +91,39 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       }
     } catch (err) {
       console.error("更新收藏狀態失敗", err);
+    }
+  };
+
+  // 🌟 處理送出檢舉
+  const handleReportSubmit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    if (isReporting) return;
+
+    setIsReporting(true);
+    try {
+      // 組合檢舉原因，並在前端做第一層長度防護
+      const finalReason = `[${reportType}] ${reportText}`.trim().substring(0, 200);
+      
+      const res = await fetch(`${API_BASE}/api/bulletins/${bulletin.id}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: finalReason }),
+        credentials: 'include'
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('檢舉已送出，感謝您協助維護社群環境。');
+        setIsReportModalOpen(false);
+        setReportText(''); // 清空輸入框
+      } else {
+        alert(`檢舉失敗: ${data.error || '發生未知錯誤'}`);
+      }
+    } catch (err) {
+      alert('系統連線異常，請稍後再試。');
+    } finally {
+      setIsReporting(false);
     }
   };
 
@@ -228,6 +267,23 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     <Heart size={16} fill={isFavorited ? '#ef4444' : 'none'} />
                   </button>
                 )}
+
+                {/* 🌟 檢舉按鈕 */}
+                {!isMyOwnPost && currentUser && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 0 8px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', color: '#cbd5e1',
+                      transition: 'color 0.2s', outline: 'none'
+                    }}
+                    title="檢舉此貼文"
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
+                  >
+                    <Flag size={15} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -260,7 +316,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
             </div>
 
-            {/* 🌟 核心修正：使用 Inline Styles 強制阻斷 CSS 權重，確保單行顯示與優雅省略 */}
             <div className="meta-info-grid">
               {bulletin.category === 'request' && (
                 <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
@@ -353,6 +408,60 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
+      {/* 🌟 檢舉表單 Modal */}
+      {isReportModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsReportModalOpen(false)}>
+          <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#111827', fontSize: '18px' }}>
+              <Flag size={20} color="#ef4444" /> 檢舉此貼文
+            </h3>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#374151' }}>選擇檢舉原因</label>
+              <select 
+                value={reportType} 
+                onChange={e => setReportType(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', backgroundColor: '#f9fafb' }}
+              >
+                <option value="洗版與重複發文">洗版與重複發文</option>
+                <option value="詐騙或可疑廣告">詐騙或可疑廣告</option>
+                <option value="含有色情或暴力等不當內容">含有色情或暴力等不當內容</option>
+                <option value="內容不實或惡意攻擊">內容不實或惡意攻擊</option>
+                <option value="其他原因">其他原因</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#374151' }}>補充說明 (選填)</label>
+              <textarea 
+                value={reportText}
+                onChange={e => setReportText(e.target.value)}
+                placeholder="請簡短描述具體違規情況（最多 150 字）..."
+                maxLength={150}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', height: '80px', resize: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={() => setIsReportModalOpen(false)}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#fff', cursor: 'pointer', fontWeight: 'bold', color: '#4b5563' }}
+              >
+                取消
+              </button>
+              <button 
+                onClick={handleReportSubmit}
+                disabled={isReporting}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: '#fff', cursor: isReporting ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: isReporting ? 0.7 : 1 }}
+              >
+                {isReporting ? '送出中...' : '確認檢舉'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 燈泡箱 Lightbox */}
       {isLightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}><X size={32} /></button>

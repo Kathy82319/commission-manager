@@ -1,16 +1,10 @@
+// src/pages/admin/Dashboard.tsx
 import { useState } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { OverviewTab } from './OverviewTab';
 import { UsersTab } from './UsersTab';
 import { CommissionsTab } from './CommissionsTab';
-
-// 許願池審核的 Placeholder (Phase 3 實作)
-const WishboardTabPlaceholder = () => (
-  <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#FFF', borderRadius: '12px', border: '1px dashed #D1D5DB' }}>
-    <h2>✨ 許願池審核 (開發中)</h2>
-    <p style={{ color: '#6B7280' }}>這裡將會實作徵/接委託列表、關鍵字管理區塊，以及檢舉原因審核。</p>
-  </div>
-);
+import { WishboardTab } from './WishboardTab'; // 🌟 引入新的許願池審核頁面
 
 export function Dashboard() {
   // 控制目前顯示的選單
@@ -22,7 +16,7 @@ export function Dashboard() {
       case 'overview': return <OverviewTab />;
       case 'users': return <UsersTab />;
       case 'commissions': return <CommissionsTab />;
-      case 'wishboard': return <WishboardTabPlaceholder />;
+      case 'wishboard': return <WishboardTab />; // 🌟 替換為真實元件
       default: return <OverviewTab />;
     }
   };

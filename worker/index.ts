@@ -13,7 +13,7 @@ import { customerController } from "./controllers/customerController";
 import { bulletinController } from "./controllers/bulletinController"; 
 import { inquiryController } from './controllers/inquiryController';
 import { notificationController } from "./controllers/notificationController";
-import { userRelationController } from "./controllers/userRelationController"; // 🌟 新增：引入 userRelationController
+import { userRelationController } from "./controllers/userRelationController";
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -60,7 +60,6 @@ export default {
         if (sanitizedPath === "/api/notifications" && request.method === "GET") {
           return notificationController.getNotifications(request, currentUserId!, env, corsHeaders);
         }
-        // 🌟 新增的消除紅點 (標記已讀) 路由
         if (sanitizedPath === "/api/notifications/read" && request.method === "POST") {
           return notificationController.markAsRead(request, currentUserId!, env, corsHeaders);
         }
@@ -81,7 +80,7 @@ export default {
         }
 
         if (sanitizedPath.startsWith("/api/relations/") && request.method === "DELETE") {
-          const targetId = pathParts[3]; // 取出目標 ID
+          const targetId = pathParts[3]; 
           return userRelationController.deleteRelation(currentUserId!, targetId, env, corsHeaders);
         }
       }
@@ -122,6 +121,12 @@ export default {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.closeBulletin(targetId, currentUserId!, env, corsHeaders);
+        } 
+        // 🌟 Phase 3 新增：一般用戶對貼文送出檢舉的路由
+        else if (targetId && subAction === "report" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.reportBulletin(request, targetId, currentUserId!, env, corsHeaders);
         }
       }
 
@@ -233,11 +238,27 @@ export default {
       if (sanitizedPath.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
+        
         if (request.method === "GET" && sanitizedPath === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
         if (request.method === "GET" && sanitizedPath === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
         if (request.method === "GET" && sanitizedPath === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
+        
         if (request.method === "PATCH" && pathParts[3] === "users" && pathParts.length === 5) {
           return adminController.updateUser(request, pathParts[4], currentUserId!, env, corsHeaders);
+        }
+
+        // 🌟 Phase 3 新增：關鍵字與許願池審核路由
+        if (pathParts[3] === "keywords") {
+          if (request.method === "GET" && !pathParts[4]) return adminController.getKeywords(currentUserId!, env, corsHeaders);
+          if (request.method === "POST" && !pathParts[4]) return adminController.addKeyword(request, currentUserId!, env, corsHeaders);
+          if (request.method === "DELETE" && pathParts[4]) return adminController.deleteKeyword(pathParts[4], currentUserId!, env, corsHeaders);
+        }
+
+        if (pathParts[3] === "wishboard") {
+          if (request.method === "GET" && pathParts[4] === "reported") return adminController.getReportedBulletins(request, currentUserId!, env, corsHeaders);
+          if (request.method === "PATCH" && pathParts[4] && pathParts[5] === "status") {
+            return adminController.updateBulletinStatus(request, pathParts[4], currentUserId!, env, corsHeaders);
+          }
         }
       }
 
@@ -252,8 +273,6 @@ export default {
         if (request.method === "PATCH") return userController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
         if (request.method === "DELETE" && targetId === "me") return userController.deleteUser(currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/complete-onboarding")) return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
-        
-        // 🌟 新增：身分升級路由 (POST /api/users/me/upgrade)
         if (request.method === "POST" && sanitizedPath.endsWith("/upgrade")) return userController.upgradeToArtist(currentUserId!, env, corsHeaders);
       }
 
