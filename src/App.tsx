@@ -5,7 +5,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout } from './layouts/PublicLayout';
 import { ArtistLayout } from './layouts/ArtistLayout';
 import { ClientLayout } from './layouts/ClientLayout';
-import { AdminLayout } from './layouts/AdminLayout';
 
 // Auth Pages
 import { Login } from './pages/auth/Login';
@@ -95,9 +94,7 @@ export function App() {
           <Route path="/:artistId" element={<PublicProfile />} />
         
         {/* 管理員後台 (路徑已做簡單遮掩) */}
-        <Route path="/adminbalabababa" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-        </Route>
+        <Route path="/adminbalabababa" element={<Dashboard />} />
 
         {/* 萬用路由：找不到頁面時一律回首頁*/}
         <Route path="*" element={<Navigate to="/" replace />} />

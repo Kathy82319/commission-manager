@@ -75,9 +75,20 @@ export function CommissionsTab() {
           </tbody>
         </table>
       </div>
+
+      {/* 分頁按鈕區塊 */}
+      <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
+        <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ ...btnStyle, opacity: page === 1 ? 0.5 : 1 }}>上一頁</button>
+          <div style={{ padding: '8px 16px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', fontWeight: 'bold', color: '#2563EB' }}>{page}</div>
+          <button disabled={dataList.length < 20} onClick={() => setPage(p => p + 1)} style={{ ...btnStyle, opacity: dataList.length < 20 ? 0.5 : 1 }}>下一頁</button>
+        </div>
+      </div>
     </div>
   );
 }
 
 const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold' };
 const tdStyle = { padding: '16px', fontSize: '14px', verticalAlign: 'top' as const };
+const btnStyle = { padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' };

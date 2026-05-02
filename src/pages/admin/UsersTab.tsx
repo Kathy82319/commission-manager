@@ -6,10 +6,26 @@ export function UsersTab() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [myId, setMyId] = useState('');
   
   // Modal 狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 表單狀態
+  const [formData, setFormData] = useState({
+    plan_type: 'free',
+    pro_expires_at: '',
+    custom_quota: '',
+    role: 'client',
+    wishboard_status: 'active',
+    mute_expires_at: ''
+  });
+
+  useEffect(() => { 
+    apiClient.get('/api/users/me').then(res => setMyId(res.data.id));
+  }, []);
 
   useEffect(() => { fetchListData(); }, [page, search]);
 
@@ -23,7 +39,41 @@ export function UsersTab() {
 
   const openManageModal = (user: any) => {
     setSelectedUser(user);
+    setFormData({
+      plan_type: user.plan_type || 'free',
+      pro_expires_at: user.pro_expires_at ? user.pro_expires_at.split('T')[0] : '',
+      custom_quota: user.custom_quota?.toString() || '',
+      role: user.role || 'client',
+      wishboard_status: user.wishboard_status || 'active',
+      mute_expires_at: user.mute_expires_at ? user.mute_expires_at.split('T')[0] : ''
+    });
     setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (selectedUser.id === myId && formData.role !== 'admin') {
+      alert('⚠️ 資安防呆：你不能拔除自己的管理員權限！');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        ...formData,
+        custom_quota: formData.custom_quota ? parseInt(formData.custom_quota) : null,
+        pro_expires_at: formData.pro_expires_at ? new Date(formData.pro_expires_at).toISOString() : null,
+        mute_expires_at: formData.mute_expires_at ? new Date(formData.mute_expires_at).toISOString() : null,
+      };
+
+      await apiClient.patch(`/api/admin/users/${selectedUser.id}`, payload);
+      alert('更新成功');
+      setIsModalOpen(false);
+      fetchListData(); // 重新撈取資料
+    } catch (e: any) {
+      alert(`更新失敗: ${e.response?.data?.error || '未知錯誤'}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -45,7 +95,7 @@ export function UsersTab() {
             <tr>
               <th style={thStyle}>用戶資訊</th>
               <th style={thStyle}>目前方案 / 到期日</th>
-              <th style={thStyle}>單量與金額統計</th>
+              <th style={thStyle}>單量統計</th>
               <th style={thStyle}>許願池狀態</th>
               <th style={thStyle}>操作</th>
             </tr>
@@ -55,7 +105,8 @@ export function UsersTab() {
               <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                 <td style={tdStyle}>
                   <div style={{ fontWeight: 'bold', color: item.role === 'deleted' ? '#EF4444' : '#111827' }}>
-                    {item.display_name} {item.role === 'deleted' && '(🚫 已停權)'}
+                    {item.display_name} {item.role === 'deleted' && '(🚫 全站停權)'}
+                    {item.role === 'admin' && ' (👑 管理員)'}
                   </div>
                   <div style={{ fontSize: '11px', color: '#9CA3AF' }}>ID: {item.public_id}</div>
                 </td>
@@ -69,17 +120,21 @@ export function UsersTab() {
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontSize: '13px' }}>累積: {item.total_commissions} 單</div>
-                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>結案數/總金額 (待實作 API)</div>
+                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>上限: {item.custom_quota || '預設'}</div>
                 </td>
                 <td style={tdStyle}>
-                  <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ECFDF5', color: '#059669' }}>
-                    正常 (待實作)
-                  </span>
+                  {item.wishboard_status === 'banned' ? (
+                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#FEF2F2', color: '#DC2626' }}>永久封鎖</span>
+                  ) : item.wishboard_status === 'muted' ? (
+                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#FFFBEB', color: '#D97706' }}>禁言中</span>
+                  ) : (
+                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ECFDF5', color: '#059669' }}>正常</span>
+                  )}
                 </td>
                 <td style={tdStyle}>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <a href={`/artist/${item.public_id}`} target="_blank" rel="noreferrer" style={actionLinkStyle}>查看首頁</a>
-                    <button onClick={() => openManageModal(item)} style={{...actionLinkStyle, color: '#DC2626'}}>管理</button>
+                    <a href={`/${item.public_id}`} target="_blank" rel="noreferrer" style={actionLinkStyle}>查看首頁</a>
+                    <button onClick={() => openManageModal(item)} style={{...actionLinkStyle, color: '#DC2626'}}>管理設定</button>
                   </div>
                 </td>
               </tr>
@@ -88,14 +143,75 @@ export function UsersTab() {
         </table>
       </div>
 
-      {/* Modal 骨架 (Phase 2 將會豐富這裡) */}
+      {/* 分頁按鈕區塊 */}
+      <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
+        <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ ...btnStyle, opacity: page === 1 ? 0.5 : 1 }}>上一頁</button>
+          <div style={{ padding: '8px 16px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', fontWeight: 'bold', color: '#2563EB' }}>{page}</div>
+          <button disabled={dataList.length < 20} onClick={() => setPage(p => p + 1)} style={{ ...btnStyle, opacity: dataList.length < 20 ? 0.5 : 1 }}>下一頁</button>
+        </div>
+      </div>
+
+      {/* 管理 Modal 表單 */}
       {isModalOpen && selectedUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ marginTop: 0 }}>管理用戶: {selectedUser.display_name}</h2>
-            <p style={{ color: '#6B7280' }}>這部分將在 Phase 2 實作編輯方案、停權與許願池禁言等表單。</p>
-            <div style={{ marginTop: '24px', textAlign: 'right' }}>
-              <button onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#FFF', cursor: 'pointer' }}>關閉</button>
+          <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <h2 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px' }}>設定用戶：{selectedUser.display_name}</h2>
+            
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>站內角色 (Role)</label>
+              <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={inputStyle}>
+                <option value="client">一般用戶 (Client/Artist)</option>
+                <option value="admin">管理員 (Admin)</option>
+                <option value="deleted">🚫 全站停權 (Deleted)</option>
+              </select>
+            </div>
+
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>方案類型</label>
+              <select value={formData.plan_type} onChange={e => setFormData({...formData, plan_type: e.target.value})} style={inputStyle}>
+                <option value="free">🎨 基礎免費版 (Free)</option>
+                <option value="trial">⏳ 專業版試用 (Trial)</option>
+                <option value="pro">💎 專業版 (Pro)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>方案到期日</label>
+                <input type="date" value={formData.pro_expires_at} onChange={e => setFormData({...formData, pro_expires_at: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>接單配額上限</label>
+                <input type="number" placeholder="空白為系統預設" value={formData.custom_quota} onChange={e => setFormData({...formData, custom_quota: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+
+            <hr style={{ margin: '24px 0', borderColor: '#E5E7EB' }} />
+            <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#374151' }}>許願池專屬設定</h3>
+
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>許願池狀態</label>
+              <select value={formData.wishboard_status} onChange={e => setFormData({...formData, wishboard_status: e.target.value})} style={inputStyle}>
+                <option value="active">🟢 正常發言 (Active)</option>
+                <option value="muted">🟡 暫時禁言 (Muted)</option>
+                <option value="banned">🔴 永久封鎖 (Banned)</option>
+              </select>
+            </div>
+
+            {formData.wishboard_status === 'muted' && (
+              <div style={formGroupStyle}>
+                <label style={labelStyle}>禁言解除日期</label>
+                <input type="date" value={formData.mute_expires_at} onChange={e => setFormData({...formData, mute_expires_at: e.target.value})} style={inputStyle} />
+              </div>
+            )}
+
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#FFF', cursor: 'pointer' }}>取消</button>
+              <button onClick={handleSave} disabled={isSaving} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#2563EB', color: '#FFF', fontWeight: 'bold', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1 }}>
+                {isSaving ? '儲存中...' : '確認儲存'}
+              </button>
             </div>
           </div>
         </div>
@@ -104,6 +220,11 @@ export function UsersTab() {
   );
 }
 
+// Styles
 const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold' };
 const tdStyle = { padding: '16px', fontSize: '14px', verticalAlign: 'top' as const };
 const actionLinkStyle = { background: 'none', border: 'none', color: '#2563EB', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', padding: 0, fontWeight: 'bold' };
+const formGroupStyle = { marginBottom: '16px' };
+const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' };
+const inputStyle = { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', outline: 'none', boxSizing: 'border-box' as const };
+const btnStyle = { padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' };
