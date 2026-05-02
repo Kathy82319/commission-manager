@@ -6,7 +6,10 @@
 }
 
 .public-header {
-  position: relative; /* 從 absolute 拔除，讓他推開下方內容 */
+  /* 🌟 電腦版預設：維持妳要的絕對定位（懸浮），不佔空間，不擠壓背景 */
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 100%;
   display: flex;
   justify-content: flex-end;
@@ -36,14 +39,12 @@
   flex-direction: column;
 }
 
-/* 上一頁按鈕外層容器樣式 */
 .back-btn-container {
   display: flex;
   justify-content: center;
   padding: 20px 24px 0;
 }
 
-/* 上一頁按鈕樣式 */
 .back-btn {
   padding: 8px 24px;
   background-color: transparent;
@@ -90,15 +91,18 @@
   opacity: 1;
 }
 
-/* 手機版優化：按鈕換行並置中對齊 */
-@media (max-width: 480px) {
+/* =========================================================
+   🌟 手機/平板版優化 (螢幕寬度小於 768px 時生效)
+   在這裡把 absolute 拔掉，變成 relative 把內容往下推
+   ========================================================= */
+@media (max-width: 768px) {
   .public-header {
+    position: relative; /* 取消懸浮 */
     padding: 12px 16px;
-    justify-content: center;
+    justify-content: center; /* 按鈕置中 */
   }
   
   .logged-in-group {
-    flex-wrap: wrap;
     justify-content: center !important;
   }
 }
