@@ -86,7 +86,7 @@ export function PublicProfile() {
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #003e77)` }; 
+      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` }; 
     }
     return { background: baseColor };
   }, [settings]);
