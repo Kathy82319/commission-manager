@@ -6,11 +6,13 @@
 }
 
 .public-header {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 1000;
+  /* 🌟 將 position 從 absolute 改為 relative，讓它佔據實際高度，避免跟下方內容重疊 */
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end; /* 讓按鈕靠右對齊 */
   padding: 16px 24px;
+  z-index: 1000;
 }
 
 .login-btn {
