@@ -73,11 +73,11 @@ export function PublicProfile() {
   const [selectedShowcase, setSelectedShowcase] = useState<ShowcaseItem | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
   
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#f4f0eb67';
+    const baseColor = settings?.background_color || '#021122';
     if (settings?.gradient_enabled) {
       const direction = settings.gradient_direction || 'to bottom right';
       return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)` };
@@ -117,7 +117,7 @@ export function PublicProfile() {
             try {
               const rawSettings = userData.data.profile_settings;
               parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
-              if (parsedSettings.splash_enabled === false) setShowSplash(false);
+              if (parsedSettings.splash_enabled === true) setShowSplash(true);
               
               // 補上遺失的 ID
               const safeCustomSections = (parsedSettings.custom_sections || []).map((sec: any, idx: number) => ({
