@@ -1,47 +1,55 @@
-// src/layouts/AdminLayout.tsx
-import { Outlet, useNavigate } from 'react-router-dom';
+import React from 'react';
 
-export function AdminLayout() {
-  const navigate = useNavigate();
+interface AdminLayoutProps {
+  activeTab: string;
+  onTabChange: (tab: 'overview' | 'users' | 'commissions' | 'wishboard') => void;
+  children: React.ReactNode;
+}
+
+export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutProps) {
+  const menuItems = [
+    { id: 'overview', label: '📊 營運數據儀表板' },
+    { id: 'users', label: '👥 用戶管理' },
+    { id: 'commissions', label: '🎨 全站委託總覽' },
+    { id: 'wishboard', label: '✨ 許願池審核' },
+  ] as const;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
-      <aside style={{ width: '260px', backgroundColor: '#111827', color: '#F9FAFB', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh' }}>
-        <div style={{ padding: '32px 24px', fontSize: '20px', fontWeight: '900', color: '#FFF', borderBottom: '1px solid #1F2937' }}>
-          <span style={{ color: '#3B82F6' }}>ADMIN</span> PANEL
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F3F4F6', fontFamily: 'system-ui, sans-serif' }}>
+      {/* 左側固定的側邊欄 */}
+      <aside style={{ width: '260px', backgroundColor: '#111827', color: '#FFF', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '24px', fontSize: '20px', fontWeight: '900', borderBottom: '1px solid #374151' }}>
+          Arti 營運後台
         </div>
-        
-        <nav style={{ flex: 1, padding: '24px 16px' }}>
-          <div style={{ padding: '12px 16px', backgroundColor: '#1F2937', borderRadius: '8px', color: '#FFF', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-             📊 營運數據儀表板
-          </div>
+        <nav style={{ flex: 1, padding: '16px 0' }}>
+          {menuItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '16px 24px',
+                backgroundColor: activeTab === item.id ? '#374151' : 'transparent',
+                border: 'none',
+                color: activeTab === item.id ? '#60A5FA' : '#D1D5DB',
+                fontSize: '15px',
+                fontWeight: activeTab === item.id ? 'bold' : 'normal',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
-
-        <div style={{ padding: '24px', borderTop: '1px solid #1F2937' }}>
-          <button 
-            onClick={() => navigate('/portal')}
-            style={{ 
-              width: '100%', 
-              padding: '12px', 
-              backgroundColor: 'transparent', 
-              color: '#9CA3AF', 
-              border: '1px solid #374151', 
-              borderRadius: '8px', 
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#FFF'; e.currentTarget.style.borderColor = '#4B5563'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.borderColor = '#374151'; }}
-          >
-            ← 返回一般入口
-          </button>
-        </div>
       </aside>
 
-      <main style={{ flex: 1, marginLeft: '260px', padding: '40px' }}>
-        <Outlet />
+      {/* 右側主要內容區 */}
+      <main style={{ flex: 1, padding: '32px', overflowY: 'auto', height: '100vh', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          {children}
+        </div>
       </main>
     </div>
   );

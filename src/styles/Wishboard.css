@@ -181,7 +181,7 @@
 .highlight-price { color: #ff8c00; font-weight: 800; font-size: 16px; }
 
 .commission-items-preview { margin-top: 4px; }
-.section-small-title { fontSize: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px; }
+.section-small-title { font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px; }
 .items-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .item-pill { background: #fff5eb; color: #ea580c; padding: 4px 12px; border-radius: 12px; font-size: 13px; border: 1px solid #fed7aa; display: flex; align-items: center; gap: 6px; }
 
