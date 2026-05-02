@@ -301,7 +301,7 @@ export function Queue() {
                       </span>
                       {/* 🌟 將 workflow 標籤移至此處，並支援許願池 */}
                       {isBulletin ? (
-                        <span style={{ backgroundColor: '#8b5cf6', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                        <span style={{ backgroundColor: '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                           許願池
                         </span>
                       ) : (

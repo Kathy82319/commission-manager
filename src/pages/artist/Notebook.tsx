@@ -591,7 +591,7 @@ export function Notebook() {
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
                     {isBulletin && (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', marginLeft: '6px' }}>許願池</span>
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', marginLeft: '6px' }}>許願池</span>
                     )}
                     {order.client_custom_label === '黑名單' && (
                       <span className="card-mode-badge mode-blacklist" style={{ marginLeft: '6px' }}>黑名單</span>
@@ -657,7 +657,7 @@ export function Notebook() {
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                     
                     {getBulletinSource(selectedOrder) ? (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff' }}>
                         來源：許願池
                       </span>
                     ) : (

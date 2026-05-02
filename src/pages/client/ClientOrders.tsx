@@ -448,7 +448,7 @@ export function ClientOrders() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span>{formatLocalDate(order.order_date)}</span>
                         {isBulletin && (
-                          <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff' }}>許願池</span>
+                          <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff' }}>許願池</span>
                         )}
                       </div>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span className="card-tag badge-new-msg">🔥 急件</span>)}
@@ -490,7 +490,7 @@ export function ClientOrders() {
                       繪師項目名：{selectedOrder.project_name || '無'}
                     </span>
                     {getBulletinSource(selectedOrder) && (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8b5cf6', color: '#fff', flexShrink: 0 }}>
+                      <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', flexShrink: 0 }}>
                         來源：許願池
                       </span>
                     )}
