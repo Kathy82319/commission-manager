@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
-import { AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
+// 🌟 引入 ScrollText 和 X 圖示
+import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-react';
 
 import { API_BASE } from './constants';
 import { WishCard } from './WishCard';
@@ -26,6 +27,9 @@ export const Wishboard: React.FC = () => {
 
   // 🌟 新增：身分升級引導彈窗狀態
   const [showUpgradeGuide, setShowUpgradeGuide] = useState<{ show: boolean, type: 'post' | 'inquire' }>({ show: false, type: 'post' });
+  
+  // 🌟 新增：規則 Modal 狀態
+  const [showRulesModal, setShowRulesModal] = useState(false);
   
   const [isUploading, setIsUploading] = useState(false);
   const [inquireUploading, setInquireUploading] = useState(false); 
@@ -309,7 +313,76 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-{/* 🌟 新增：身分升級引導 Modal (已美化 UI) */}
+      {/* 🌟 新增：右下角浮動規則按鈕 */}
+      <button 
+        className="rules-floating-btn"
+        onClick={() => setShowRulesModal(true)}
+        title="查看許願池規則"
+      >
+        <ScrollText size={20} />
+        <span>許願規則</span>
+      </button>
+
+      {/* 🌟 新增：規則說明 Modal */}
+      {showRulesModal && (
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          zIndex: 10000, padding: '20px' 
+        }} onClick={() => setShowRulesModal(false)}>
+          <div style={{ 
+            backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', 
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh'
+          }} onClick={e => e.stopPropagation()}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ScrollText size={20} color="#3b82f6" /> 創作許願池 規範與約定
+              </h2>
+              <button onClick={() => setShowRulesModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖販售</strong>
+                為保護純手繪創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿或販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
+                本平台介面為全齡向，許願池內嚴禁發布色情、血腥等限制級圖文，違者一律移除。如果有需要發布 R18 相關委託，請務必在私訊中洽談，並在許願池貼文中清楚標明「此為 R18 委託，請在私訊內洽談」。
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '4px' }}>⚠️ 授權與版權證明</strong>
+                若為代接委託或使用非原創模板，必須附上原作者授權證明截圖。嚴禁盜圖或侵權二創成品直接販售。
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🛡️ 透明度與實名</strong>
+                為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。
+              </div>
+              <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
+                <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>
+                初犯將移除貼文並給予系統警告；再犯將處以 <strong>28 天許願池禁言</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
+                <span style={{ color: '#64748b' }}>※ 貼文若舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提供圖層等證明以利重新上架。</span>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right', backgroundColor: '#f8fafc' }}>
+              <button 
+                onClick={() => setShowRulesModal(false)}
+                style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                我了解了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 新增：身分升級引導 Modal (已美化 UI) */}
       {showUpgradeGuide.show && (
         <div style={{ 
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
