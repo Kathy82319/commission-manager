@@ -1,6 +1,7 @@
 // src/pages/client/ClientSettings.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react'; // 🌟 引入預覽按鈕使用的圖示
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
 import type { FormDataState } from '../artist/Settings/types';
@@ -13,6 +14,7 @@ export function ClientSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
+  const [publicId, setPublicId] = useState<string>(''); // 🌟 新增：儲存使用者的 public_id
 
   // 委託人只需要最基礎的 settings 結構
   const [settings, setSettings] = useState<any>({
@@ -21,7 +23,7 @@ export function ClientSettings() {
     custom_sections: [],
     hidden_sections: [],
     theme_mode: 'dark', // 預設給個深色模式
-    background_color: '#f4f0eb67'
+    background_color: '#021122'
   });
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -46,6 +48,9 @@ export function ClientSettings() {
           navigate('/artist/settings');
           return;
         }
+
+        // 🌟 儲存 public_id 以供預覽連結使用
+        setPublicId(data.data.public_id || data.data.id || '');
 
         setFormData({
           display_name: data.data.display_name || '',
@@ -175,8 +180,26 @@ export function ClientSettings() {
         </aside>
 
         <div className="settings-content-area">
-          <div className="settings-header">
+          {/* 🌟 調整：加上 flex 佈局與預覽按鈕 */}
+          <div className="settings-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3>{activeTab === 'profile_basic' ? '頭像與基礎資料' : '自訂公開詳細介紹'}</h3>
+            {publicId && (
+              <button 
+                onClick={() => window.open(`/${publicId}`, '_blank')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFF', color: '#475569', fontSize: '14px', 
+                  fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFF'}
+              >
+                <ExternalLink size={16} />
+                預覽個人頁
+              </button>
+            )}
           </div>
 
           <div className="tab-body">
