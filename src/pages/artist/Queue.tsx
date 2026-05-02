@@ -68,12 +68,12 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle, isE
   }, [onToggle]);
 
   const toggleOpen = (e: React.MouseEvent) => {
-    // 只有在展開狀態下，點擊按鈕才阻止冒泡，避免點擊選單時收合行
-    if (isExpanded) e.stopPropagation(); 
-    const nextState = !isOpen;
-    setIsOpen(nextState);
-    onToggle(nextState);
-  };
+  // 🔴 修改：不論是否展開，點擊按鈕都要阻止冒泡，避免觸發 tr 的 onClick 導致行縮回
+  e.stopPropagation(); 
+  const nextState = !isOpen;
+  setIsOpen(nextState);
+  onToggle(nextState);
+};
 
   return (
     <div ref={dropdownRef} className="dropdown-container" style={{ minWidth: '120px' }}>
@@ -205,7 +205,7 @@ export function Queue() {
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
-          <input placeholder="搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
+          <input placeholder="搜尋項目" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
@@ -263,6 +263,7 @@ export function Queue() {
                 </td>
                 <td data-label="當前進度">
                   <div className="cell-content cell-status">
+                    <div className="cell-content cell-status" onClick={e => e.stopPropagation()}></div>
                     <StageDropdown 
                       value={order.queue_status} 
                       isExpanded={isExpanded}

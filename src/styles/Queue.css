@@ -202,8 +202,11 @@
   }
 
   .queue-hide-mobile { display: none !important; }
-  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-
+  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center;  }
+  .cell-content.cell-status {
+    position: relative;
+    width: 100%;
+  }
   /* --------------------------------------------------------- */
   /* [手機版] "未展開" 狀態的顯示邏輯 */
   /* --------------------------------------------------------- */
