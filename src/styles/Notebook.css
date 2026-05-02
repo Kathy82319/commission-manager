@@ -498,8 +498,9 @@
 }
 
 .payment-summary {
+    display: flex;
     flex-wrap: nowrap;
-    justify-content: space-between;
+    
     justify-content: flex-end;
     gap: 12px;
     padding: 12px;
