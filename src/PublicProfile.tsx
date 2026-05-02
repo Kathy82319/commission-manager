@@ -82,11 +82,11 @@ export function PublicProfile() {
   const [isViewerLoading, setIsViewerLoading] = useState(true); // 🌟 新增：讀取狀態，防止畫面閃爍
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#003e77';     
+    const baseColor = settings?.background_color || '#021122';     
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #021122)` }; 
+      return { background: `linear-gradient(${direction}, ${baseColor}, #003e77)` }; 
     }
     return { background: baseColor };
   }, [settings]);
