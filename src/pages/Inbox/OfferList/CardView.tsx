@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getStatusLabel, getExpiryInfo } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
+import { Ban } from 'lucide-react'; // 🌟 引入 Ban 圖示
 
 interface CardViewProps {
   inquiry: any;
@@ -15,6 +16,7 @@ interface CardViewProps {
   onSelect: () => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
+  blacklistedIds?: string[]; // 🌟 接收黑名單清單
 }
 
 const unescapeHtml = (str: string) => {
@@ -33,13 +35,17 @@ export const CardView: React.FC<CardViewProps> = ({
   isSelected,
   onSelect,
   handleEnterInquiryWorkspace,
-  handleViewCommission
+  handleViewCommission,
+  blacklistedIds = [] // 🌟 預設為空陣列
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
   const isDeclined = inquiry.inquiry_status === 'declined';
 
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
+
+  // 🌟 判斷來投遞的繪師是否在我的黑名單中
+  const isBlacklisted = blacklistedIds.includes(inquiry.artist_id);
 
   let images: string[] = [];
   try {
@@ -66,13 +72,11 @@ export const CardView: React.FC<CardViewProps> = ({
   const [imgIdx, setImgIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // 🌟 動態高度測量邏輯
   const contentRef = useRef<HTMLDivElement>(null);
   const [needsExpansion, setNeedsExpansion] = useState(false);
 
   useEffect(() => {
     if (contentRef.current) {
-      // 若文字區塊實際高度大於 130px，代表內容過多，需要折疊
       if (contentRef.current.scrollHeight > 130) {
         setNeedsExpansion(true);
       } else {
@@ -101,15 +105,15 @@ export const CardView: React.FC<CardViewProps> = ({
       <div 
         className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} 
         onClick={onToggle}
-        style={{ cursor: 'pointer', display: 'flex', position: 'relative' }} // 確保佈局穩定
+        style={{ cursor: 'pointer', display: 'flex', position: 'relative' }} 
       >
         
-        {/* 🌟 左側圖片區塊：增加高度限制與比例保護 */}
+        {/* 🌟 左側圖片區塊 */}
         <div 
           className="offer-card-gallery" 
           style={{ 
-            width: '220px',      // 👈 把這裡改寬 (依你喜好調整數值)
-            minWidth: '220px',   // 👈 建議加上這行
+            width: '220px',      
+            minWidth: '220px',   
             flexShrink: 0, 
             maxHeight: (!isExpanded && needsExpansion) ? '180px' : '350px',
             overflow: 'hidden',
@@ -132,7 +136,7 @@ export const CardView: React.FC<CardViewProps> = ({
                 className="offer-ref-img" 
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} // 強制圖片填滿容器不變形
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
               />
               {validImages.length > 1 && (
                 <div className="offer-img-counter" style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '11px', padding: '2px 6px', borderRadius: '4px' }}>
@@ -164,13 +168,18 @@ export const CardView: React.FC<CardViewProps> = ({
                   ⏳ {expiryInfo.text}
                 </span>
               )}
+              {/* 🌟 顯示黑名單標記 */}
+              {isBlacklisted && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
+                  <Ban size={12} /> 黑名單繪師
+                </span>
+              )}
             </div>
             <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
               {getStatusLabel(inquiry.inquiry_status)}
             </span>
           </div>
 
-          {/* 🌟 文字區域：套用動態折疊與防爆版 CSS */}
           <div 
             className="offer-text-area" 
             ref={contentRef}
@@ -218,7 +227,6 @@ export const CardView: React.FC<CardViewProps> = ({
             )}
           </div>
 
-          {/* 🌟 過長文字的漸層遮罩與提示 (僅在需要折疊且未展開時顯示) */}
           {!isExpanded && needsExpansion && (
             <div style={{
               height: '40px',
@@ -238,7 +246,6 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-          {/* 🌟 動作按鈕：展開時，或者內容本來就很少時，都會顯示按鈕 */}
           {(isExpanded || !needsExpansion) && (
             <div className="offer-actions" onClick={(e) => e.stopPropagation()} style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
@@ -266,7 +273,6 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* Lightbox Modal */}
       {lightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>

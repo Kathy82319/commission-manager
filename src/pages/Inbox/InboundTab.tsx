@@ -4,6 +4,7 @@ import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
+import { Ban } from 'lucide-react'; // 🌟 引入 Ban 圖示
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -19,9 +20,9 @@ interface InboundTabProps {
   setShowDeclineModal: (show: boolean) => void;
   handleDirectInvite: (inquiry: any) => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
-  // 🌟 修改：移除參數，改為無參數函式
   handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
+  blacklistedIds?: string[]; // 🌟 接收黑名單清單
 }
 
 const unescapeHtml = (str: string) => {
@@ -38,7 +39,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   handleDirectInvite,
   handleEnterInquiryWorkspace,
   handleViewCommission,
-  setSelectedIdsForBatch
+  setSelectedIdsForBatch,
+  blacklistedIds = [] // 🌟 預設為空陣列
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -103,7 +105,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
               </div>
             ) : (
               activeBulletinCategory === 'offer' ? (
-                /* 🌟 接稿文：顯示理由的邏輯需要去 OfferList.tsx 修改 */
                 <OfferList 
                   inquiries={currentInquiries} 
                   setSelectedInquiry={setSelectedInquiry}
@@ -112,9 +113,9 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
                   handleViewCommission={handleViewCommission}
                   setSelectedIdsForBatch={setSelectedIdsForBatch}
+                  blacklistedIds={blacklistedIds} // 🌟 也把黑名單傳給 OfferList 讓它處理
                 />
               ) : (
-                /* 🌟 徵稿文：在這裡補上婉拒理由顯示 */
                 currentInquiries.map(item => {
                   let snapshot: any = {};
                   try { 
@@ -142,11 +143,21 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   );
                   
                   const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
+                  
+                  // 🌟 判斷投遞的繪師是否在我的黑名單中
+                  const isBlacklisted = blacklistedIds.includes(item.artist_id);
 
                   return (
-                    <div key={item.inquiry_id}>
+                    <div key={item.inquiry_id} style={{ position: 'relative' }}>
+                      {/* 🌟 若為黑名單，在卡片上方顯示警告標籤 */}
+                      {isBlacklisted && (
+                        <div style={{ position: 'absolute', top: '-12px', right: '16px', background: '#FEF2F2', color: '#EF4444', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FECACA', zIndex: 10, display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(239, 68, 68, 0.15)' }}>
+                          <Ban size={14} /> 黑名單繪師
+                        </div>
+                      )}
+                      
                       <ArtistPostcard item={item} snapshot={snapshot} navigate={navigate}>
-                        {/* 🌟 注意：ArtistPostcard 內可能已經有顯示理由的邏輯，如果發現畫面出現兩次婉拒理由，或版面被擠壓，請直接把這段 div 刪除 */}
+                        
                         {item.inquiry_status === 'declined' && item.decline_reason && (
                           <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
                             <div className="text-[#EF4444] font-bold text-sm mb-1">終止/撤回原因：</div>
@@ -154,7 +165,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                           </div>
                         )}
 
-                        {/* 🌟 移除外層 div，讓按鈕直接受到 ArtistPostcard 內部的 flex 樣式控制 */}
                         {canDecline && (
                           <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
                             {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
@@ -171,7 +181,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                           </button>
                         )}
                         {item.inquiry_status === 'accepted' && (
-                          // 🌟 核心修改：變更按鈕文字與移除參數
                           <button className="btn-success" onClick={() => handleViewCommission()}>
                             進入委託單管理
                           </button>

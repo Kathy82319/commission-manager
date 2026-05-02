@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-import { ImageIcon, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { ImageIcon, User, Ban } from 'lucide-react'; // 🌟 移除了未使用的 ChevronDown, ChevronUp
 
 interface OutboundTabProps {
   artistInquiries: any[];
@@ -10,6 +10,7 @@ interface OutboundTabProps {
   setShowDeclineModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void; 
+  blacklistedIds?: string[];
 }
 
 export const OutboundTab: React.FC<OutboundTabProps> = ({
@@ -17,7 +18,8 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   setSelectedInquiry,
   setShowDeclineModal,
   handleEnterInquiryWorkspace,
-  handleViewCommission
+  handleViewCommission,
+  blacklistedIds = []
 }) => {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
@@ -78,19 +80,20 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
           
           const isExpanded = expandedIds.includes(item.inquiry_id);
           const snapshot = parseSnapshot(item.artist_snapshot);
+          
+          const isBlacklisted = blacklistedIds.includes(item.client_id);
 
           let displayContent = item.bulletin_content;
-          let originalQuestions: string[] = [];
+          // 🌟 移除了未使用的 originalQuestions 變數
           try {
             const parsedContent = JSON.parse(item.bulletin_content || '{}');
             displayContent = parsedContent.description || item.bulletin_content;
-            if (Array.isArray(parsedContent.questions)) originalQuestions = parsedContent.questions;
           } catch (e) {}
 
           return (
           <div key={item.inquiry_id} style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7A7269', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7A7269', marginBottom: '12px', flexWrap: 'wrap' }}>
                 <User size={14} style={{ opacity: 0.7 }} />
                 <span>投遞對象：</span>
                 <span style={{ fontWeight: 'bold', color: '#5D4A3E' }}>
@@ -99,6 +102,12 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 <span style={{ fontFamily: 'monospace', opacity: 0.6 }}>
                   @{item.client_public_id || 'unknown'}
                 </span>
+                
+                {isBlacklisted && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FECACA', marginLeft: 'auto' }}>
+                    <Ban size={12} /> 已列入黑名單
+                  </span>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
@@ -123,7 +132,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </span>
               </div>
 
-              {/* 🌟 常駐顯示：原許願池的描述與提問 */}
               <div style={{ display: 'flex', gap: '20px', background: '#F4F4F1', border: '1px solid #EAE6E1', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
                 {bulletinImg ? (
                   <img src={bulletinImg} alt="參考圖" referrerPolicy="no-referrer" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #DED9D3', flexShrink: 0 }} />
@@ -148,13 +156,11 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 {isExpanded ? <>▲ 收起我的投遞與回覆</> : <>▼ 查看我的投遞與回覆</>}
               </button>
 
-              {/* 🌟 展開顯示：我的回覆與備註 */}
               {isExpanded && (
                 <div style={{ background: '#F4F4F1', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '20px', animation: 'fadeIn 0.2s ease' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#7A7269', fontWeight: 'bold' }}>我的回覆與備註</h4>
                   <div className="custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere', paddingRight: '8px' }}>
                     
-                    {/* 🌟 正確解析 answers 陣列 */}
                     {snapshot.answers && snapshot.answers.length > 0 && (
                       <div style={{ marginBottom: '12px' }}>
                         {snapshot.answers.map((ans: any, idx: number) => (
@@ -173,7 +179,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                       </div>
                     )}
 
-                    {/* 如果是繪師投遞，顯示舒適圈與雷點 */}
                     {!isOffer && (snapshot.specialties || snapshot.no_gos) && (
                       <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #DED9D3' }}>
                         {snapshot.specialties && <div style={{ marginBottom: '4px' }}><strong style={{ color: '#ff8c00' }}>舒適圈/擅長：</strong> {snapshot.specialties}</div>}
@@ -205,7 +210,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
 
               {item.inquiry_status === 'declined' && item.decline_reason && (
                 <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
-                  <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/婉拒理由：</strong>
+                  <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/撤回原因：</strong>
                   <p style={{ margin: 0, fontSize: '14px', color: '#A05C5C', lineHeight: '1.6' }}>{item.decline_reason}</p>
                 </div>
               )}

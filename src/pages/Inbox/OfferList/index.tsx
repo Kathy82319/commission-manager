@@ -6,20 +6,22 @@ interface OfferListProps {
   inquiries: any[];
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
-  handleDirectInvite: (inquiry: any) => void; // 🌟 取代舊的 setShowInviteModal
+  handleDirectInvite: (inquiry: any) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
+  blacklistedIds?: string[]; // 🌟 新增接收黑名單清單
 }
 
 export const OfferList: React.FC<OfferListProps> = ({
   inquiries,
   setSelectedInquiry,
   setShowDeclineModal,
-  handleDirectInvite, // 🌟 取用
+  handleDirectInvite, 
   handleEnterInquiryWorkspace,
   handleViewCommission,
-  setSelectedIdsForBatch
+  setSelectedIdsForBatch,
+  blacklistedIds = [] // 🌟 設定預設值
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -84,10 +86,10 @@ export const OfferList: React.FC<OfferListProps> = ({
             onSelect={() => toggleSelect(inquiry.inquiry_id)}
             setSelectedInquiry={setSelectedInquiry}
             setShowDeclineModal={() => handleSingleDecline(inquiry)}
-            // 🌟 傳遞給 CardView
             handleDirectInvite={handleDirectInvite}
             handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
             handleViewCommission={handleViewCommission}
+            blacklistedIds={blacklistedIds} // 🌟 傳遞給 CardView
           />
         );
       })}

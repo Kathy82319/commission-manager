@@ -17,6 +17,9 @@ export const Inbox: React.FC = () => {
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
 
+  // 🌟 新增：儲存黑名單的繪師 IDs
+  const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
+
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
   
@@ -37,7 +40,12 @@ export const Inbox: React.FC = () => {
   const fetchInbox = async () => {
     setLoading(true);
     try {
-      const meData = await apiClient.get('/api/users/me');
+      // 🌟 同步拉取自己的資料與黑名單資料
+      const [meData, relData] = await Promise.all([
+        apiClient.get('/api/users/me'),
+        apiClient.get('/api/relations')
+      ]);
+
       if (meData.success) {
         setCurrentUser(meData.data);
         try {
@@ -46,6 +54,14 @@ export const Inbox: React.FC = () => {
             setDeclineTemplates(settings.decline_templates);
           }
         } catch(e) {}
+      }
+
+      // 🌟 處理黑名單資料
+      if (relData.success && relData.data) {
+        const bIds = relData.data
+          .filter((r: any) => r.relation_type === 'blacklist')
+          .map((r: any) => r.target_user_id);
+        setBlacklistedIds(bIds);
       }
 
       if (activeTab === 'client') {
@@ -138,7 +154,6 @@ export const Inbox: React.FC = () => {
 
   const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
   
-  // 🌟 核心修正：接收 ID，並根據角色跳轉到正確路徑
   const handleViewCommission = (commissionId?: string) => {
     if (!commissionId) {
       alert('無法取得委託單資訊，請直接前往工作區查看。');
@@ -196,6 +211,7 @@ export const Inbox: React.FC = () => {
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
           setSelectedIdsForBatch={setBatchDeclineIds}
+          blacklistedIds={blacklistedIds} // 🌟 傳遞黑名單給 InboundTab
         />
       ) : (
         <OutboundTab 
@@ -204,6 +220,7 @@ export const Inbox: React.FC = () => {
           setShowDeclineModal={setShowDeclineModal}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
+          blacklistedIds={blacklistedIds} // 🌟 傳遞黑名單給 OutboundTab
         />
       )}
 
