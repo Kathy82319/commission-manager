@@ -230,13 +230,7 @@ export function Queue() {
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          
-          <button 
-            onClick={() => navigate('/artist/settings')} 
-            className="queue-settings-btn" 
-            style={{ padding: '8px 12px', background: '#F4F0EB', border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>
-            設定顯示範圍
-          </button>
+        
           
           <button 
             onClick={() => setIsQuoteModalOpen(true)} 

@@ -76,11 +76,10 @@
 
   .cell-content { display: flex; align-items: center; text-align: left; width: 100%; }
   .cell-date { white-space: nowrap; min-width: 100px; }
-  
-  /* 🌟 修改點：確保電腦版狀態欄位內的元素能垂直對齊，不會亂擠 */
   .cell-status { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
 }
 
+/* 下拉選單通用樣式 */
 .dropdown-container { position: relative; width: 100%; }
 .dropdown-button {
   padding: 8px 12px; border: 1px solid #DED9D3; border-radius: 8px;
@@ -108,17 +107,26 @@
 .dropdown-add-input { flex: 1; padding: 6px 10px; border: 1px solid #DED9D3; border-radius: 6px; outline: none; font-size: 13px; }
 .dropdown-add-button { padding: 6px 12px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-/* 🌟 修改點：移除 absolute 定位，因為我們現在統一用 flex-column 排列 */
+/* 標籤樣式 */
 .workflow-badge-wrapper {
-  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.workflow-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; white-space: nowrap; }
+.workflow-badge, .bulletin-badge { 
+  font-size: 10px; 
+  padding: 2px 6px; 
+  border-radius: 4px; 
+  font-weight: bold; 
+  white-space: nowrap; 
+}
 .workflow-badge.free { background-color: #FDF4E6; color: #A67B3E; }
 .workflow-badge.standard { background-color: #E8F3EB; color: #4E7A5A; }
+.bulletin-badge { background-color: #F3EEFF; color: #8b5cf6; } /* 🌟 許願池專屬顏色 */
 
 .rush-badge { background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; white-space: nowrap; }
 
-/* 🌟 全域/網頁版預設顯示邏輯 */
+/* 全域/網頁版預設顯示邏輯 */
 .date-text-display { display: none; }
 .date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; height: 38px; display: block; width: 100%; box-sizing: border-box; }
 
@@ -126,11 +134,6 @@
 .note-input { border: none; border-bottom: 1px solid #EAE6E1; background: transparent; outline: none; padding: 4px 0; color: #5D4A3E; width: 100%; min-width: 100px; }
 
 .manage-button { padding: 8px 16px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-
-.client-name-row { font-size: 15px; font-weight: bold; color: #5D4A3E; margin-bottom: 4px; }
-.client-sub-text { font-size: 13px; color: #A0978D; font-weight: normal; margin-left: 5px; }
-.project-name-row { font-size: 14px; color: #7A7269; }
-.order-id-row { font-size: 12px; color: #A0978D; font-family: monospace; margin-top: 4px; }
 
 .drag-handle { cursor: grab; color: #C4BDB5; padding-right: 12px; }
 
@@ -147,10 +150,6 @@
   width: 100%;
 }
 
-.note-input {
-  flex-grow: 1;
-}
-
 /* ========================================================= */
 /* 🌟 手機版樣式區塊 (@media max-width: 1023px) */
 /* ========================================================= */
@@ -164,8 +163,8 @@
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   .queue-table thead tr {
     display: grid;
-    /* 🌟 修改點：稍微放寬第3欄(進度)與第4欄，避免標籤被擠壓 */
-    grid-template-columns: 40px 1fr 90px 46px 48px;
+    /* 🌟 修改點：優化網格比例，確保名字區塊(1fr)最大，其餘縮小 */
+    grid-template-columns: 40px 1fr 85px 44px 44px;
     gap: 4px;
     padding: 0 10px;
     border: none;
@@ -181,7 +180,7 @@
     width: auto !important; 
   }
   .queue-table th:nth-child(1) { text-align: left; } 
-  .queue-table th:nth-child(2) { text-align: left; padding-left: 2px; } 
+  .queue-table th:nth-child(2) { text-align: left; } 
   .queue-table th:nth-child(3) { text-align: center; } 
   .queue-table th:nth-child(4) { text-align: center; } 
   .queue-table th:nth-child(5) { text-align: center; } 
@@ -190,8 +189,7 @@
   
   .queue-table tbody tr {
     display: grid;
-    /* 🌟 修改點：同步放寬第3欄(進度)與第4欄 */
-    grid-template-columns: 40px 1fr 90px 46px 48px; 
+    grid-template-columns: 40px 1fr 85px 44px 44px; 
     gap: 4px;
     align-items: center;
     margin-bottom: 8px;
@@ -205,59 +203,43 @@
   }
 
   .queue-hide-mobile { display: none !important; }
-  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; }
+  .queue-table td { padding: 0; border: none; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 
-  /* --------------------------------------------------------- */
-  /* [手機版] "未展開" 狀態的顯示邏輯 */
-  /* --------------------------------------------------------- */
+  /* [手機版] "未展開" 狀態 */
   .queue-table tr:not(.is-expanded) td[data-label="備註欄位"],
   .queue-table tr:not(.is-expanded) td[data-label="操作管理"],
   .queue-table tr:not(.is-expanded) .client-details-extra {
     display: none;
   }
 
-  .queue-table tr:not(.is-expanded) .cell-content,
-  .queue-table tr:not(.is-expanded) .cell-content-right { 
-    pointer-events: none; width: 100%; align-items: center; justify-content: center;
-  }
-
-  .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-content { justify-content: flex-start; }
-  .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] .cell-content-right { justify-content: flex-start; }
-  
-  /* 🌟 修改點：確保手機版未展開時，進度欄位依然是垂直堆疊置中，且不過度壓縮 */
-  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { 
-    justify-content: center; 
-    flex-direction: column; 
-    gap: 4px; 
-    align-items: center; 
-  }
-  
-  .queue-table tr:not(.is-expanded) td[data-label="預計完工"] .cell-content { justify-content: center; }
-  .queue-table tr:not(.is-expanded) td[data-label="付款進度"] .cell-content { justify-content: center; }
-
-  .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] { 
-    min-width: 0; padding: 0 4px; align-items: flex-start; justify-content: center;
-  }
+  /* 🌟 修改點：讓名字與標籤在手機版未展開時能自動換行並靠左 */
   .queue-table tr:not(.is-expanded) td[data-label="委託人資訊"] > div {
-    width: 100%; word-break: break-all; white-space: normal; line-height: 1.3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    word-break: break-all;
+    line-height: 1.3;
   }
 
-  .queue-table tr:not(.is-expanded) td::before { display: none; }
-  
   .queue-table tr:not(.is-expanded) td[data-label="日期"] .cell-date span {
-    font-size: 11px; font-weight: bold; color: #7A7269; text-align: left; width: 100%;
+    font-size: 11px; font-weight: bold; color: #7A7269; text-align: left;
   }
 
   .queue-table tr:not(.is-expanded) .dropdown-button {
-    min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: #F4F0EB; font-size: 11px; width: 100%; justify-content: center; text-align: center;
+    min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: #F4F0EB; font-size: 11px; width: 100%; justify-content: center;
   }
-  /* 🌟 修改點：讓 workflow-badge-wrapper (標準委託/自由紀錄) 顯示出來，這也是你圖片裡顯示的樣子 */
   .queue-table tr:not(.is-expanded) .dropdown-arrow { display: none; }
-  .queue-table tr:not(.is-expanded) .workflow-badge-wrapper { display: flex; justify-content: center; width: 100%; margin-bottom: 2px; }
   
-  /* 🌟 手機版未展開：隱藏日曆 input，顯示純文字，且隱藏括號真名 */
+  /* 🌟 修改點：確保未展開時，進度欄位內的標籤也能置中 */
+  .queue-table tr:not(.is-expanded) td[data-label="當前進度"] .cell-content { 
+    align-items: center; 
+    justify-content: center;
+  }
+
   .queue-table tr:not(.is-expanded) .date-input { display: none !important; }
-  .queue-table tr:not(.is-expanded) .client-real-name { display: none; }
   .queue-table tr:not(.is-expanded) td[data-label="預計完工"] .date-text-display {
     font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%; display: block;
   }
@@ -266,9 +248,7 @@
     appearance: none; -webkit-appearance: none; padding: 4px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
 
-  /* --------------------------------------------------------- */
-  /* [手機版] "已展開" 狀態的顯示邏輯 */
-  /* --------------------------------------------------------- */
+  /* [手機版] "已展開" 狀態 */
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
@@ -278,8 +258,7 @@
     cursor: default;
   }
 
-  .queue-table tr.is-expanded .cell-content,
-  .queue-table tr.is-expanded .cell-content-right { 
+  .queue-table tr.is-expanded .cell-content { 
     width: 100%; pointer-events: auto; align-items: flex-start;
   }
 
@@ -302,7 +281,6 @@
   .queue-table tr.is-expanded td[data-label="備註欄位"],
   .queue-table tr.is-expanded td[data-label="操作管理"] { grid-column: 1 / -1; }
 
-  /* 🌟 手機版展開：隱藏純文字，顯示日曆 input */
   .queue-table tr.is-expanded .date-text-display { display: none !important; }
   
   .queue-table tr.is-expanded .dropdown-button,
@@ -311,16 +289,13 @@
     width: 100% !important; height: 42px; box-sizing: border-box; margin-top: 4px; border: 1px solid #DED9D3; background: #FBFBF9; display: block !important;
   }
   
-  .queue-table tr.is-expanded .workflow-badge-wrapper { position: relative; bottom: auto; display: flex; margin-bottom: 4px; width: 100%; }
-  
   .queue-table tr.is-expanded .note-input {
     text-align: left; width: 100%; background-color: #FBFBF9; padding: 12px; border: 1px solid #DED9D3; border-radius: 8px; box-sizing: border-box;
   }
-  .queue-table tr.is-expanded .cell-note { flex-wrap: wrap; gap: 8px; }
   
   .queue-table tr.is-expanded td[data-label="操作管理"] {
     margin-top: 8px; padding-top: 16px; border-top: 1px solid #F0ECE7;
   }
   .queue-table tr.is-expanded td[data-label="操作管理"]::before { display: none; }
-  .queue-table tr.is-expanded .manage-button { width: 100%; height: 48px; font-size: 16px; border-radius: 12px; margin-top: 0; }
+  .queue-table tr.is-expanded .manage-button { width: 100%; height: 48px; font-size: 16px; border-radius: 12px; }
 }
