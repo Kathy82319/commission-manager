@@ -85,7 +85,6 @@ export function ThemeTab({ settings, setSettings }: Props) {
         transition: 'all 0.3s ease'
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '14px', opacity: 0.8, marginBottom: '4px' }}>PREVIEW</div>
           <div style={{ fontWeight: 'bold', fontSize: '18px' }}>背景實際預覽區塊</div>
         </div>
       </div>
