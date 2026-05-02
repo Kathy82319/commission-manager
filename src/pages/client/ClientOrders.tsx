@@ -12,6 +12,7 @@ interface CommissionDetail {
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
+  artist_id?: string; // 🌟 確保介面包含 artist_id
   origin_source?: string;
 }
 
@@ -78,6 +79,9 @@ export function ClientOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isListLoading, setIsListLoading] = useState(true);
 
+  // 🌟 新增：儲存黑名單繪師的 ID 列表
+  const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
+
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -98,13 +102,27 @@ export function ClientOrders() {
 
   const fetchOrders = async () => {
     try {
-      const [res, meRes] = await Promise.all([
+      // 🌟 同步拉取委託單、使用者資料與關係名單 (Relations)
+      const [res, meRes, relRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions`, { credentials: 'include' }),
-        fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+        fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
+        fetch(`${API_BASE}/api/relations`, { credentials: 'include' })
       ]);
+      
       const data = await res.json();
       const meData = await meRes.json();
       const myId = meData.data?.id;
+
+      // 🌟 處理黑名單邏輯
+      if (relRes.ok) {
+        const relData = await relRes.json();
+        if (relData.success) {
+          const bIds = relData.data
+            .filter((r: any) => r.relation_type === 'blacklist')
+            .map((r: any) => r.target_user_id);
+          setBlacklistedIds(bIds);
+        }
+      }
 
       if (data.success) {
         const validOrders = data.data.filter((o: CommissionDetail) => 
@@ -201,7 +219,6 @@ export function ClientOrders() {
 
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!selectedId) return;
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-response`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -217,7 +234,6 @@ export function ClientOrders() {
   const handleSaveTitle = async () => {
     if (!selectedId || saveStatus === 'saving') return;
     setSaveStatus('saving');
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -239,7 +255,6 @@ export function ClientOrders() {
       if (!window.confirm('⚠️ 注意：同意此完稿後將立即結案，並解鎖無浮水印原檔下載。\n\n確定要同意嗎？')) return;
     }
     setIsProcessing(true);
-    // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/review`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -262,7 +277,6 @@ export function ClientOrders() {
         return;
       }
 
-      // 🛡️ [資安提醒]: 後端必須驗證 current_user_id === commissions.client_id (或有權限的繪師)
       const res = await fetch(`${API_BASE}/api/r2/download-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commissionId: selectedId, fileName: privatePath, bucketType: 'private' })
@@ -363,7 +377,6 @@ export function ClientOrders() {
   if (selectedOrder?.agreed_tos_snapshot) finalTosHtml = selectedOrder.agreed_tos_snapshot;
   else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
 
-  // 🌟 解析許願池媒合軌跡的資料
   const bulletinSource = getBulletinSource(selectedOrder);
   let displayBulletinContent = '';
   let parsedSnapshot: any = {};
@@ -372,7 +385,6 @@ export function ClientOrders() {
   if (bulletinSource) {
     isOffer = bulletinSource.bulletin_category === 'offer';
     
-    // 原始許願內容還原亂碼
     const rawBulletinContent = unescapeHtml(bulletinSource.bulletin_content || '');
     displayBulletinContent = rawBulletinContent;
     try {
@@ -380,7 +392,6 @@ export function ClientOrders() {
         if (parsed.description) displayBulletinContent = parsed.description;
     } catch (e) {}
 
-    // 解析投遞快照內容，並確保對齊後端寫入的 Key: `artist_initial_snapshot`
     try {
       const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}'; 
       const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
@@ -412,7 +423,7 @@ export function ClientOrders() {
 
       <div className="notebook-container">
         
-        {/* 🌟 左側列表區 (套用 Notebook.css) */}
+        {/* 🌟 左側列表區 */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div className="sidebar-header">
             <span className="sidebar-title">委託單列表</span>
@@ -441,6 +452,7 @@ export function ClientOrders() {
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
                 const isBulletin = getBulletinSource(order) !== null;
+                const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); // 🌟 檢查是否黑名單
 
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
@@ -467,6 +479,12 @@ export function ClientOrders() {
 
                     <div className="card-tags-row">
                       {getStatusDisplay(order.status, order.current_stage)}
+                      {/* 🌟 渲染黑名單標籤 */}
+                      {isBlacklisted && (
+                        <span className="card-tag" style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>
+                          🚫 黑名單繪師
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -475,7 +493,7 @@ export function ClientOrders() {
           </div>
         </div>
 
-        {/* 🌟 右側主內容區 (套用 Notebook.css) */}
+        {/* 🌟 右側主內容區 */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? <div className="main-empty">請從列表選擇一張委託單以檢視詳情</div> : (
             <div className="main-content-wrapper">
@@ -485,6 +503,13 @@ export function ClientOrders() {
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   
+                  {/* 🌟 右側主畫面的黑名單警告 */}
+                  {selectedOrder.artist_id && blacklistedIds.includes(selectedOrder.artist_id) && (
+                    <div style={{ display: 'inline-block', padding: '4px 10px', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #fecaca', marginTop: '6px', marginBottom: '6px' }}>
+                      ⚠️ 提醒：此繪師已被您列入黑名單
+                    </div>
+                  )}
+
                   <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'normal', overflow: 'visible' }}>
                     <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       繪師項目名：{selectedOrder.project_name || '無'}
@@ -504,7 +529,6 @@ export function ClientOrders() {
                 <div className="main-header-actions">
                   <button 
                     onClick={() => {
-                      // 🛡️ [資安提醒]: 後端應確保只有相關人可更新此狀態
                       fetch(`${API_BASE}/api/commissions/${selectedOrder.id}`, {
                         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                         body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
@@ -536,7 +560,6 @@ export function ClientOrders() {
                 {activeTab === 'main' && (
                   <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {/* 🌟 修復後的許願池媒合軌跡 */}
                     {bulletinSource && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
@@ -555,7 +578,6 @@ export function ClientOrders() {
                           <div>
                             <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                             
-                            {/* Q&A 內容，已對齊 artist_initial_snapshot */}
                             {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                                 {parsedSnapshot.answers.map((ans: any, idx: number) => (
@@ -583,7 +605,6 @@ export function ClientOrders() {
                           </div>
                         </div>
 
-                        {/* 獨立按鈕，防止選取文字時誤觸折疊 */}
                         <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px', padding: '12px 0 0 0', width: '100%', textAlign: 'center', borderTop: '1px dashed #EAE6E1' }}>
                           {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
                         </button>
