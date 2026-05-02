@@ -24,7 +24,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   const [workflowMode, setWorkflowMode] = useState<'standard' | 'free'>('standard');
 
   const [formData, setFormData] = useState({
-    client_name: '',
     project_name: '',
     usage_type: '非商用',
     is_rush: '否',
@@ -112,7 +111,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
 
   const handleSubmit = async () => {
     if (isQuotaExceeded) return alert('建單額度已用盡，請升級方案！');
-    if (!formData.client_name.trim()) return alert('請填寫委託人名稱，以利系統辨識！');
     
     if (workflowMode === 'standard') {
         if (formData.usage_type === '其他' && !customFields.usage_type.trim()) return alert('請填寫委託用途');
@@ -228,10 +226,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
         <div className="quote-card">
           <h3 className="quote-card-title">基本資訊設定</h3>
           <div className="form-grid">
-            <div className="form-grid-full">
-              <label className="form-label">委託人名稱 (FB暱稱/ID等備註)</label>
-              <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} className="form-input" placeholder="例如：FB - 王小明" />
-            </div>
             
             <div className="form-grid-full">
               <label className="form-label">項目名稱</label>

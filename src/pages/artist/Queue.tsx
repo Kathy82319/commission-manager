@@ -175,6 +175,7 @@ export function Queue() {
   };
 
   // 🌟 對齊 Notebook：嚴格的過濾條件，並防範搜尋字串造成 null reference
+  // 同時保留對舊有 contact_memo 欄位的搜尋支援
   const filteredCommissions = useMemo(() => {
     return commissions.filter(c => {
       // 確保只顯示「我」是繪師的單據
@@ -189,13 +190,16 @@ export function Queue() {
       const term = searchTerm.toLowerCase();
       return (
         (c.client_name && c.client_name.toLowerCase().includes(term)) || 
-        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) || 
+        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) || // 🌟 保留舊有備註的搜尋能力
         (c.project_name && c.project_name.toLowerCase().includes(term)) ||
         (c.id && c.id.toLowerCase().includes(term)) ||
         (c.client_custom_label && c.client_custom_label.toLowerCase().includes(term))
       );
     });
   }, [commissions, selectedMonth, searchTerm, myId]);
+
+  // 🌟 修改：直接顯示真實名稱，若無則顯示 (未綁定)
+  const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
 
   return (
     <div className="queue-container">
@@ -270,11 +274,9 @@ export function Queue() {
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
+                      {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
                       <span style={{ fontWeight: 'bold' }}>
-                        {order.contact_memo || '未命名'}
-                      </span>
-                      <span className="client-real-name" style={{ color: '#A0978D', marginLeft: '4px' }}>
-                        ({order.client_name || '無暱稱'})  
+                        {getClientNameDisplay(order)}
                       </span>
                     </div>
                     <div className="client-details-extra">

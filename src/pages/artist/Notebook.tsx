@@ -411,7 +411,7 @@ export function Notebook() {
     return { text: '尚未付款', className: 'badge-unpaid' };
   };
 
-  // 🌟 過濾掉身分不屬於繪師的委託單
+  // 🌟 過濾掉身分不屬於繪師的委託單，同時保留對舊單據 contact_memo 的搜尋支援
   const filteredOrders = useMemo(() => {
     return commissions.filter(order => {
       // 確保只顯示「我」是繪師的單據
@@ -428,7 +428,7 @@ export function Notebook() {
         const paymentLabel = getPaymentBadge(order.payment_status).text;
         return (
           (order.client_name && order.client_name.toLowerCase().includes(term)) ||
-          (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) ||
+          (order.contact_memo && order.contact_memo.toLowerCase().includes(term)) || // 🌟 保留舊有備註的搜尋能力
           (order.project_name && order.project_name.toLowerCase().includes(term)) ||
           (order.id.toLowerCase().includes(term)) ||
           (order.client_public_id && order.client_public_id.toLowerCase().includes(term)) ||
@@ -442,7 +442,9 @@ export function Notebook() {
   const selectedOrder = commissions.find(c => c.id === selectedId);
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
-  const getDualName = (order: Commission) => `${order.contact_memo || '未知'} (${order.client_name ? `暱稱: ${order.client_name}` : '未綁定'})`;
+  
+  // 🌟 修改：直接顯示真實名稱，若無則顯示 (未綁定)
+  const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
   
   const getStatusBadge = (status: string) => {
     if (status === 'completed') return { text: '已結案', className: 'badge-completed' };
@@ -534,6 +536,7 @@ export function Notebook() {
   const bulletinSource = getBulletinSource(selectedOrder);
   let displayBulletinContent = '';
   let parsedSnapshot: any = {};
+  let originalQuestions: string[] = [];
   let isOffer = false;
 
   if (bulletinSource) {
@@ -545,11 +548,12 @@ export function Notebook() {
     try {
         const parsed = JSON.parse(rawBulletinContent);
         if (parsed.description) displayBulletinContent = parsed.description;
+        if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
     } catch (e) {}
 
-    // 解析投遞快照內容，並確保對齊後端 `inquiryController.ts` 寫入的 Key: `artist_initial_snapshot`
+    // 解析投遞快照內容，並雙重檢查解碼
     try {
-      const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}';
+      const snapshotObj = bulletinSource.client_initial_response || bulletinSource.artist_initial_snapshot || bulletinSource.artist_snapshot || '{}';
       const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
       parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
       if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
@@ -594,7 +598,8 @@ export function Notebook() {
                     )}
                   </div>
                   <div className="card-title-row">
-                    <span className="card-client-name" title={getDualName(order)}>{getDualName(order)}</span>
+                    {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
+                    <span className="card-client-name" title={getClientNameDisplay(order)}>{getClientNameDisplay(order)}</span>
                     <span className="card-price">NT$ {order.total_price}</span>
                   </div>
                   <div className="card-project-row">
@@ -631,7 +636,8 @@ export function Notebook() {
                   </button>
 
                   <div className="main-title-container" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    <h2 className="main-title" style={{ margin: 0 }}>{getDualName(selectedOrder)}</h2>
+                    {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
+                    <h2 className="main-title" style={{ margin: 0 }}>{getClientNameDisplay(selectedOrder)}</h2>
                     {selectedOrder.client_custom_label === '黑名單' && (
                       <span 
                         className="blacklist-alert-tag" 
@@ -752,12 +758,19 @@ export function Notebook() {
                           <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
                             <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
                             <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
+                            {originalQuestions && originalQuestions.length > 0 && (
+                              <div style={{ marginTop: '6px' }}>
+                                <strong style={{ color: '#A0978D' }}>提問設定：</strong>
+                                <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
+                                  {originalQuestions.map((q, idx) => <li key={idx}>{unescapeHtml(q)}</li>)}
+                                </ol>
+                              </div>
+                            )}
                           </div>
 
                           <div>
                             <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                             
-                            {/* Q&A 內容，已對齊 artist_initial_snapshot */}
                             {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                               <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                                 {parsedSnapshot.answers.map((ans: any, idx: number) => (
