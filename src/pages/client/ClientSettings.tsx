@@ -25,7 +25,7 @@ export function ClientSettings() {
     theme_mode: 'dark', // 預設給個深色模式
     background_color: '#021122',
     gradient_enabled: true,               // 🌟 新增：預設漸層開啟
-    gradient_direction: 'to bottom down' // 🌟 新增：預設漸層方向
+    gradient_direction: 'to bottom' // 🌟 新增：預設漸層方向
   });
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';

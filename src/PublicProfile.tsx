@@ -77,7 +77,7 @@ export function PublicProfile() {
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#177ad6';     
+    const baseColor = settings?.background_color || '#003e77';     
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to bottom right';
