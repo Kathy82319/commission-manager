@@ -10,6 +10,7 @@ interface Commission {
   type_name: string; payment_status: string; end_date: string; artist_note: string; is_rush: string;
   status: string; workflow_mode: string; 
   queue_status: string;
+  artist_id?: string; // 🌟 確保能透過 artist_id 過濾
   latest_message_at?: string;
   last_read_at_artist?: string;
   client_public_id?: string;
@@ -24,6 +25,15 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 };
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
+
+// 確保時間解析安全
+const getTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  let str = dateStr.trim();
+  if (!str.includes('T')) str = str.replace(' ', 'T');
+  if (!str.endsWith('Z') && !str.includes('+')) str += 'Z';
+  return new Date(str).getTime();
+};
 
 function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: any) {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,6 +83,9 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
 
 export function Queue() {
   const navigate = useNavigate();
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  
+  const [myId, setMyId] = useState<string>(''); // 🌟 對齊 Notebook：取得當前繪師 ID
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -85,46 +98,41 @@ export function Queue() {
 
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
-  // 取得環境變數，並加上容錯處理
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  // 🌟 獲取當前登入者 ID
+  useEffect(() => {
+    fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => { if (data.success) setMyId(data.data.id); })
+      .catch(err => console.error("取得使用者身分失敗", err));
+  }, [API_BASE]);
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
   const fetchQueue = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
-      
-      // 🌟 防止把 HTML 當成 JSON 解析的保護機制
-      const contentType = res.headers.get("content-type");
-      if (!res.ok) {
-        console.error("API 請求失敗，狀態碼:", res.status);
-        return;
-      }
-      if (!contentType || !contentType.includes("application/json")) {
-        console.error("API 回傳的不是 JSON！可能是路由錯誤或環境變數沒抓到。回傳格式為:", contentType);
-        return;
-      }
-
       const data = await res.json();
       if (data.success) {
+        // 先篩選掉結案與作廢
         let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
+        
         const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
         if (savedOrder.length > 0) {
           list.sort((a: any, b: any) => {
             const idxA = savedOrder.indexOf(a.id);
             const idxB = savedOrder.indexOf(b.id);
-            if (idxA === -1 && idxB === -1) return new Date(a.order_date).getTime() - new Date(b.order_date).getTime();
+            if (idxA === -1 && idxB === -1) return getTime(a.order_date) - getTime(b.order_date);
             if (idxA === -1) return 1;
             if (idxB === -1) return -1;
             return idxA - idxB;
           });
         } else {
-          list.sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+          list.sort((a: any, b: any) => getTime(a.order_date) - getTime(b.order_date));
         }
         setCommissions(list);
       }
-    } catch (error) {
-      console.error("獲取排單列表失敗:", error);
+    } catch (e) {
+      console.error("獲取排單列表失敗:", e);
     }
   };
   
@@ -141,17 +149,13 @@ export function Queue() {
     setIsSaving(true);
     // 🛡️ [資安提醒]: 後端必須嚴格驗證 current_user_id === commissions.artist_id，防止 IDOR 越權竄改。
     try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
+      await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
       });
-      
-      if (!res.ok) throw new Error(`更新失敗，狀態碼: ${res.status}`);
-      
       setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
     } catch (error) {
       console.error("欄位更新失敗:", error);
-      alert("更新失敗，請檢查網路連線或稍後再試。");
     } finally {
       setIsSaving(false);
     }
@@ -170,19 +174,28 @@ export function Queue() {
     setCommissions(newCommissions);
   };
 
+  // 🌟 對齊 Notebook：嚴格的過濾條件，並防範搜尋字串造成 null reference
   const filteredCommissions = useMemo(() => {
     return commissions.filter(c => {
-      if (selectedMonth !== 'all' && !c.order_date.startsWith(selectedMonth)) return false;
+      // 確保只顯示「我」是繪師的單據
+      if (myId && c.artist_id !== myId) return false;
+
+      // 檢查月份
+      if (selectedMonth !== 'all' && (!c.order_date || !c.order_date.startsWith(selectedMonth))) return false;
+      
+      // 如果搜尋框為空，直接通過，避免後續 undefined 被濾掉
+      if (!searchTerm.trim()) return true;
+
       const term = searchTerm.toLowerCase();
       return (
-        c.client_name?.toLowerCase().includes(term) || 
-        c.contact_memo?.toLowerCase().includes(term) || 
-        c.project_name?.toLowerCase().includes(term) ||
-        c.id.includes(term) ||
-        c.client_custom_label?.toLowerCase().includes(term)
+        (c.client_name && c.client_name.toLowerCase().includes(term)) || 
+        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) || 
+        (c.project_name && c.project_name.toLowerCase().includes(term)) ||
+        (c.id && c.id.toLowerCase().includes(term)) ||
+        (c.client_custom_label && c.client_custom_label.toLowerCase().includes(term))
       );
     });
-  }, [commissions, selectedMonth, searchTerm]);
+  }, [commissions, selectedMonth, searchTerm, myId]);
 
   return (
     <div className="queue-container">
@@ -192,7 +205,7 @@ export function Queue() {
           <input placeholder="搜尋項目/暱稱/單號/標籤..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
-            {Array.from(new Set(commissions.map(c => c.order_date.substring(0, 7)))).map(m => <option key={m} value={m}>{m}</option>)}
+            {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           
           <button 
@@ -251,7 +264,7 @@ export function Queue() {
                     >
                       <GripVertical size={16} />
                     </div>
-                    <span>{order.order_date.substring(5, 10).replace('-', '/')}</span>
+                    <span>{order.order_date ? order.order_date.substring(5, 10).replace('-', '/') : '未定'}</span>
                   </div>
                 </td>
                 <td data-label="委託人資訊">
