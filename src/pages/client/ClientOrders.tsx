@@ -593,7 +593,7 @@ export function ClientOrders() {
                     {/* 自訂名稱 */}
                     <div className="section-card">
                       <div className="section-header-no-border">
-                        <h3 className="section-title">自訂委託名稱 (僅您可見)</h3>
+                        <h3 className="section-title">自訂委託名稱</h3>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />

@@ -16,6 +16,7 @@ interface Commission {
   client_public_id?: string;
   client_custom_label?: string;
   crm_record_id?: string;
+  origin_source?: string; // 🌟 確保包含這個欄位以判斷許願池
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -25,6 +26,24 @@ const paymentColors: Record<string, { bg: string; text: string; label: string }>
 };
 
 const INITIAL_STAGES = ['尚未開始', '構圖中', '待委託人確認', '尚未收款'];
+
+// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題並防止 JSON.parse 崩潰
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
+// 🌟 新增：判斷是否為許願池來源的函式
+const getBulletinSource = (order?: Commission) => {
+  if (!order || !order.origin_source) return null;
+  try {
+    const parsed = JSON.parse(unescapeHtml(order.origin_source));
+    if (parsed.source_type === 'bulletin') return parsed;
+  } catch (e) {
+    return null;
+  }
+  return null;
+};
 
 // 確保時間解析安全
 const getTime = (dateStr?: string) => {
@@ -190,7 +209,7 @@ export function Queue() {
       const term = searchTerm.toLowerCase();
       return (
         (c.client_name && c.client_name.toLowerCase().includes(term)) || 
-        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) || // 🌟 保留舊有備註的搜尋能力
+        (c.contact_memo && c.contact_memo.toLowerCase().includes(term)) || 
         (c.project_name && c.project_name.toLowerCase().includes(term)) ||
         (c.id && c.id.toLowerCase().includes(term)) ||
         (c.client_custom_label && c.client_custom_label.toLowerCase().includes(term))
@@ -246,6 +265,7 @@ export function Queue() {
           <tbody>
             {filteredCommissions.map((order, idx) => {
               const isExpanded = expandedId === order.id;
+              const isBulletin = getBulletinSource(order) !== null; // 🌟 判斷是否為許願池來源
               
               return (
               <tr 
@@ -273,12 +293,24 @@ export function Queue() {
                 </td>
                 <td data-label="委託人資訊">
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E' }}>
-                      {/* 🌟 修改：應用乾淨的名稱顯示方式 */}
+                    
+                    {/* 🌟 名字與標籤的區塊 */}
+                    <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 'bold' }}>
                         {getClientNameDisplay(order)}
                       </span>
+                      {/* 🌟 將 workflow 標籤移至此處，並支援許願池 */}
+                      {isBulletin ? (
+                        <span style={{ backgroundColor: '#8b5cf6', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                          許願池
+                        </span>
+                      ) : (
+                        <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                          {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                        </span>
+                      )}
                     </div>
+                    
                     <div className="client-details-extra">
                       <div style={{ fontSize: '13px', color: '#7A7269' }}>
                         <strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'} 
@@ -293,11 +325,7 @@ export function Queue() {
                 </td>
                 <td data-label="當前進度">
                   <div className="cell-content cell-status" onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                    <div className="workflow-badge-wrapper">
-                      <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ whiteSpace: 'nowrap' }}>
-                        {order.workflow_mode === 'free' ? '自由記錄' : '標準委託'}
-                      </span>
-                    </div>
+                    {/* 🌟 原本在這裡的 workflow-badge 已經移除了 */}
                     <StageDropdown 
                       value={order.queue_status} 
                       onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} 
