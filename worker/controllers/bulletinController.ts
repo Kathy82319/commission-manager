@@ -39,10 +39,26 @@ export const bulletinController = {
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
-      
+      const { category } = body;
+      const currentCategory = category || 'request';
+
+      // 🌟 【防護 1】檢查發布者的身分與權限
+      const user = await env.commission_db.prepare("SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      if (!user) {
+         return new Response(JSON.stringify({ success: false, message: '找不到使用者資訊' }), { status: 404, headers: corsHeaders });
+      }
+
+      // 如果是發布「接委託 (offer)」，必須是 artist
+      if (currentCategory === 'offer' && user.role !== 'artist') {
+         return new Response(JSON.stringify({ 
+           success: false, 
+           message: '必須開通創作者身分才能發布接委託貼文。' 
+         }), { status: 403, headers: corsHeaders });
+      }
+
       const { 
         title, content, tags, payment_methods, budget_min, budget_max, 
-        schedule_type, specific_date, ref_image_key, category,
+        schedule_type, specific_date, ref_image_key, 
         max_slots, selection_type, commission_items, questions, 
         payment_timing, payment_timing_detail, tos_content
       } = body;
@@ -57,12 +73,10 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '最低預算不得高於最高預算' }), { status: 400, headers: corsHeaders });
       }
 
-      const currentCategory = category || 'request';
-
+      // 檢查配額邏輯
       if (currentCategory === 'offer') {
-          const user = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
-          const isPro = user?.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
-          const isTrial = user?.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
+          const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+          const isTrial = user.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
           
           if (!isPro && !isTrial) {
               const { results: countRes } = await env.commission_db.prepare(`
@@ -92,12 +106,9 @@ export const bulletinController = {
         }), { status: 400, headers: corsHeaders });
       }
 
-      // 🌟 使用安全過濾工具，確保 JSON 結構不被破壞
       const safeTitle = sanitizeAndLimit(title, 100);
-      
       const safeTagsArr = sanitizeObject(Array.isArray(tags) ? tags : [], 50);
       const safeTags = JSON.stringify(safeTagsArr);
-      
       const safePaymentsArr = sanitizeObject(Array.isArray(payment_methods) ? payment_methods : [], 50);
       const safePayments = JSON.stringify(safePaymentsArr);
 
@@ -133,6 +144,15 @@ export const bulletinController = {
 
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 【防護 2】檢查投遞者的身分
+      const user = await env.commission_db.prepare("SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      if (!user || user.role !== 'artist') {
+         return new Response(JSON.stringify({ 
+           success: false, 
+           message: '必須開通創作者身分才能向案主投遞應徵。' 
+         }), { status: 403, headers: corsHeaders });
+      }
+
       const existingActive = await env.commission_db.prepare(
         `SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ? AND status NOT IN ('declined', 'closed', 'cancelled')`
       ).bind(bulletinId, currentUserId).first();
@@ -159,9 +179,8 @@ export const bulletinController = {
       }
 
       if (bulletin.category === 'request') {
-          const user = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
-          const isPro = user?.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
-          const isTrial = user?.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
+          const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+          const isTrial = user.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
           
           if (!isPro && !isTrial) {
               const { results: countRes } = await env.commission_db.prepare(`

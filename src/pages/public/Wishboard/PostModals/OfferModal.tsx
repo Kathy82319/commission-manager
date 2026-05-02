@@ -42,7 +42,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   const [itemInput, setItemInput] = useState({ name: '', price: '' });
   const [showPortfolioPicker, setShowPortfolioPicker] = useState(false);
   
-  // 🌟 新增：控制機制說明的顯示與隱藏
+  // 🌟 控制機制說明的顯示與隱藏
   const [showMechanismInfo, setShowMechanismInfo] = useState(false);
 
   // --- 圖片處理 ---
@@ -75,7 +75,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   // --- 標籤處理核心邏輯 ---
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
     setForm((prev: any) => {
-      let list = prev[field];
+      let list = prev[field] || []; // 防呆確保為陣列
       const exclusiveTag = field === 'tags' ? '不限' : '皆可配合';
       
       if (tag === exclusiveTag) {
@@ -97,7 +97,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   };
 
   const removeTag = (tag: string, field: 'tags' | 'payment_methods') => {
-    setForm((prev: any) => ({ ...prev, [field]: prev[field].filter((t: string) => t !== tag) }));
+    setForm((prev: any) => ({ ...prev, [field]: (prev[field] || []).filter((t: string) => t !== tag) }));
   };
 
   // 🌟 共用的處理標籤輸入邏輯
@@ -131,9 +131,15 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   };
 
   // --- 提問模板與接案項目 ---
-  const addQuestion = () => { if (form.questions.length < 3) setForm((prev: any) => ({ ...prev, questions: [...prev.questions, ''] })); };
-  const updateQuestion = (index: number, value: string) => { const n = [...form.questions]; n[index] = value; setForm((prev: any) => ({ ...prev, questions: n })); };
-  const removeQuestion = (index: number) => { setForm((prev: any) => ({ ...prev, questions: form.questions.filter((_: any, i: number) => i !== index) })); };
+  const addQuestion = () => { 
+    if (form.questions.length < 3) setForm((prev: any) => ({ ...prev, questions: [...prev.questions, ''] })); 
+  };
+  const updateQuestion = (index: number, value: string) => { 
+    const n = [...form.questions]; n[index] = value; setForm((prev: any) => ({ ...prev, questions: n })); 
+  };
+  const removeQuestion = (index: number) => { 
+    setForm((prev: any) => ({ ...prev, questions: form.questions.filter((_: any, i: number) => i !== index) })); 
+  };
   
   const addCommissionItem = () => {
     if (!itemInput.name.trim()) return;
@@ -142,7 +148,9 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     setForm((prev: any) => ({ ...prev, commission_items: [...prev.commission_items, { name: safeName, price: itemInput.price }] }));
     setItemInput({ name: '', price: '' });
   };
-  const removeCommissionItem = (index: number) => { setForm((prev: any) => ({ ...prev, commission_items: prev.commission_items.filter((_: any, i: number) => i !== index) })); };
+  const removeCommissionItem = (index: number) => { 
+    setForm((prev: any) => ({ ...prev, commission_items: prev.commission_items.filter((_: any, i: number) => i !== index) })); 
+  };
 
   return (
     <div className="modal-overlay">
@@ -160,32 +168,32 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label className="section-title">作品範例 / 價目表 (最多 5 張)</label>
-              {userShowcase.length > 0 && (
+              {userShowcase && userShowcase.length > 0 && (
                 <button type="button" onClick={() => setShowPortfolioPicker(!showPortfolioPicker)} className="add-btn-circle" style={{ background: '#f1f5f9', color: '#475569' }}>
                   <ImageIcon size={14} /> {showPortfolioPicker ? "隱藏作品集" : "從作品集挑選"}
                 </button>
               )}
             </div>
 
-            {showPortfolioPicker && (
+            {showPortfolioPicker && userShowcase && (
               <div className="portfolio-picker-grid">
                 {userShowcase.filter((item: any) => item && item.cover_url).map((item: any) => (
-                  <div key={item.id} className={`portfolio-item ${form.ref_images.includes(item.cover_url) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(item.cover_url)}>
+                  <div key={item.id} className={`portfolio-item ${(form.ref_images || []).includes(item.cover_url) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(item.cover_url)}>
                     <img src={getFullUrl(item.cover_url)} alt={item.title || "Portfolio"} />
-                    {form.ref_images.includes(item.cover_url) && <div className="check-overlay"><Plus size={24} /></div>}
+                    {(form.ref_images || []).includes(item.cover_url) && <div className="check-overlay"><Plus size={24} /></div>}
                   </div>
                 ))}
               </div>
             )}
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              {form.ref_images.map((url: string, idx: number) => (
+              {(form.ref_images || []).map((url: string, idx: number) => (
                 <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
                   <img src={getFullUrl(url)} alt="預覽" />
                   <button type="button" className="remove-image-btn" onClick={() => removeImage(idx)}><X size={14}/></button>
                 </div>
               ))}
-              {form.ref_images.length < 5 && (
+              {(form.ref_images || []).length < 5 && (
                 <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 上傳圖片"} maxSizeMB={3} />
                 </div>
@@ -196,7 +204,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-row">
             <div className="form-group" style={{ flex: '1 1 300px' }}>
               <label>標題</label>
-              <input type="text" placeholder="例如：接長期立繪、Q版頭貼..." value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+              <input type="text" placeholder="例如：接長期立繪、Q版頭貼..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} required />
             </div>
 
             <div className="form-group" style={{ flex: '1 1 300px' }}>
@@ -204,7 +212,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               <div className="radio-group">
                 <label className="radio-label"><input type="radio" checked={form.schedule_type === 'flexible'} onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} /> 目前空閒可排單</label>
                 <label className="radio-label"><input type="radio" checked={form.schedule_type === 'fixed'} onChange={() => setForm({...form, schedule_type: 'fixed'})} /> 排單至指定日期之後</label>
-                {form.schedule_type === 'fixed' && <input type="date" className="date-input" value={form.specific_date} onChange={e => setForm({...form, specific_date: e.target.value})} required />}
+                {form.schedule_type === 'fixed' && <input type="date" className="date-input" value={form.specific_date || ''} onChange={e => setForm({...form, specific_date: e.target.value})} required />}
               </div>
             </div>
           </div>
@@ -217,8 +225,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               <button type="button" onClick={addCommissionItem} className="add-btn-circle"><Plus size={18}/></button>
             </div>
             <div className="item-manage-box">
-              {form.commission_items.length === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>尚未新增接案項目</p>}
-              {form.commission_items.map((item: any, idx: number) => (
+              {(form.commission_items || []).length === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>尚未新增接案項目</p>}
+              {(form.commission_items || []).map((item: any, idx: number) => (
                 <div key={idx} className="item-row">
                   <span style={{ fontWeight: '500', color: '#334155' }}>{item.name} <span style={{ color: '#ff8c00', marginLeft: '8px' }}>${item.price}~</span></span>
                   <button type="button" onClick={() => removeCommissionItem(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={16}/></button>
@@ -227,7 +235,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
           </div>
 
-          {/* 🌟 修改名額與徵集機制區塊 */}
           <div className="form-section selection-mechanism-box">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, margin: 0 }}>名額與徵集機制</label>
@@ -240,7 +247,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               </div>
             </div>
             
-            {/* 🌟 點擊問號後展開的說明區塊 */}
             {showMechanismInfo && (
               <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#92400E', lineHeight: '1.6' }}>
                 <strong style={{ display: 'block', marginBottom: '4px' }}>如何選擇機制？</strong>
@@ -262,11 +268,10 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>預計招收名額：</span>
-                <input type="number" min="1" value={form.max_slots} onChange={e => setForm({...form, max_slots: e.target.value})} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
+                <input type="number" min="1" value={form.max_slots || 1} onChange={e => setForm({...form, max_slots: e.target.value})} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
               </div>
             </div>
             
-            {/* 🌟 明確告知繪師案主端會看到的字眼 */}
             <p style={{ fontSize: '13px', color: '#b45309', margin: '8px 0 0 0', fontWeight: '500' }}>
               {form.selection_type === 'curated' 
                 ? '💡 案主端將顯示：繪師會選擇適恰設定來接案' 
@@ -284,15 +289,15 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               ))}
             </div>
             {(form.payment_timing === 'deposit' || form.payment_timing === 'other') && (
-              <input type="text" placeholder="請詳細描述您的收款時機... (例如：草稿確認後收50%訂金)" value={form.payment_timing_detail} onChange={e => setForm({...form, payment_timing_detail: e.target.value})} style={{ marginTop: '12px' }} required />
+              <input type="text" placeholder="請詳細描述您的收款時機... (例如：草稿確認後收50%訂金)" value={form.payment_timing_detail || ''} onChange={e => setForm({...form, payment_timing_detail: e.target.value})} style={{ marginTop: '12px' }} required />
             )}
             
             <label className="section-title" style={{ marginTop: '16px' }}>收款方式 (多選)</label>
             <div className="tag-selector">
               {PAY_TAGS.map(t => (
-                <span key={t} className={`selectable-tag ${form.payment_methods.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
+                <span key={t} className={`selectable-tag ${(form.payment_methods || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
               ))}
-              {form.payment_methods.filter((t: string) => !PAY_TAGS.includes(t) && t !== '皆可配合').map((t: string) => (
+              {(form.payment_methods || []).filter((t: string) => !PAY_TAGS.includes(t) && t !== '皆可配合').map((t: string) => (
                 <span key={t} className="selectable-tag selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'payment_methods'); }} /></span>
               ))}
               <input 
@@ -309,19 +314,19 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="form-section">
             <label className="section-title">提問模板 (案主投單時需回答，最多 3 題)</label>
-            {form.questions.map((q: string, idx: number) => (
+            {(form.questions || []).map((q: string, idx: number) => (
               <div key={idx} className="dynamic-question-row">
                 <input type="text" placeholder={`請輸入題目 ${idx + 1}`} value={q} onChange={e => updateQuestion(idx, e.target.value)} style={{ flex: 1 }} />
                 <button type="button" onClick={() => removeQuestion(idx)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '8px' }}><Trash2 size={18}/></button>
               </div>
             ))}
-            {form.questions.length < 3 && <button type="button" onClick={addQuestion} className="add-btn-circle" style={{ width: 'fit-content', marginTop: '4px' }}><Plus size={14} /> 新增題目</button>}
+            {(form.questions || []).length < 3 && <button type="button" onClick={addQuestion} className="add-btn-circle" style={{ width: 'fit-content', marginTop: '4px' }}><Plus size={14} /> 新增題目</button>}
           </div>
 
           <div className="form-section">
             <label className="section-title">委託服務條款 (TOS)</label>
             <p className="label-hint" style={{ margin: '0 0 8px 0' }}>案主在填寫需求單前，必須先點擊同意此條款。</p>
-            <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權說明、修改次數限制、退款政策等..." value={form.tos_content} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
+            <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權說明、修改次數限制、退款政策等..." value={form.tos_content || ''} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
           </div>
 
           <div className="form-section">
@@ -330,8 +335,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             <div className="tag-selector-group">
               <span className="label-hint">風格預警 (紅色標籤)</span>
               <div className="tag-selector">
-                {STYLE_WARNINGS.map(t => <span key={t} className={`selectable-tag warning ${form.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
-                {form.tags.filter((t: string) => t.startsWith('[預警]')).map((t: string) => (
+                {STYLE_WARNINGS.map(t => <span key={t} className={`selectable-tag warning ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                {(form.tags || []).filter((t: string) => t.startsWith('[預警]')).map((t: string) => (
                   <span key={t} className="selectable-tag warning selected custom-tag">{t.replace('[預警]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
                 <input 
@@ -349,8 +354,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             <div className="tag-selector-group">
               <span className="label-hint">授權 / 接受範圍 (綠色標籤)</span>
               <div className="tag-selector">
-                {LICENSE_TAGS.map(t => <span key={t} className={`selectable-tag license ${form.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
-                {form.tags.filter((t: string) => t.startsWith('[授權]')).map((t: string) => (
+                {LICENSE_TAGS.map(t => <span key={t} className={`selectable-tag license ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                {(form.tags || []).filter((t: string) => t.startsWith('[授權]')).map((t: string) => (
                   <span key={t} className="selectable-tag license selected custom-tag">{t.replace('[授權]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
                 <input 
@@ -368,8 +373,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             <div className="tag-selector-group">
               <span className="label-hint">風格類型與自定義 (灰色標籤)</span>
               <div className="tag-selector">
-                {REQ_TAGS.map(t => <span key={t} className={`selectable-tag style ${form.tags.includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
-                {form.tags.filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]')).map((t: string) => (
+                {REQ_TAGS.map(t => <span key={t} className={`selectable-tag style ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                {(form.tags || []).filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]')).map((t: string) => (
                   <span key={t} className="selectable-tag style selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
                 ))}
                 <input 
@@ -387,7 +392,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="form-section">
             <label className="section-title">詳細接案說明</label>
-            <textarea rows={4} className="detail-textarea" placeholder="除了上述設定外，還有其他想補充的細節嗎？" value={form.content} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
+            <textarea rows={4} className="detail-textarea" placeholder="除了上述設定外，還有其他想補充的細節嗎？" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
           </div>
 
           <div className="modal-footer">

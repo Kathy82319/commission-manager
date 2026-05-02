@@ -232,15 +232,74 @@ export const userController = {
     });
   },
 
+  /**
+   * 完成新手引導 (POST /api/users/onboarding)
+   */
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
     const newRole = body.role === 'artist' ? 'artist' : 'client';
     const newName = sanitizeAndLimit(body.display_name || '未命名', 100);
 
-    await env.commission_db.prepare(`
+    const updateQuery = env.commission_db.prepare(`
       UPDATE Users SET display_name = ?, role = ? WHERE id = ?
-    `).bind(newName, newRole, currentUserId).run();
+    `).bind(newName, newRole, currentUserId);
+
+    // 如果一開始就選擇當創作者，順便初始化他的 ArtistProfiles 資料
+    if (newRole === 'artist') {
+      const initProfileQuery = env.commission_db.prepare(`
+        INSERT INTO ArtistProfiles (user_id) VALUES (?)
+        ON CONFLICT(user_id) DO NOTHING
+      `).bind(currentUserId);
+      await env.commission_db.batch([updateQuery, initProfileQuery]);
+    } else {
+      await updateQuery.run();
+    }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+  },
+
+  /**
+   * 升級為創作者身分 (POST /api/users/me/upgrade)
+   */
+  async upgradeToArtist(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      // 1. 取得當前使用者狀態
+      const { results } = await env.commission_db.prepare(
+        "SELECT role FROM Users WHERE id = ?"
+      ).bind(currentUserId).all();
+
+      if (results.length === 0) {
+        return new Response(JSON.stringify({ success: false, error: "找不到使用者" }), { status: 404, headers: corsHeaders });
+      }
+
+      const user: any = results[0];
+
+      // 若已經是 artist 則直接回傳成功
+      if (user.role === 'artist') {
+        return new Response(JSON.stringify({ success: true, message: "您已經是創作者身分" }), { status: 200, headers: corsHeaders });
+      }
+
+      if (user.role === 'deleted') {
+        return new Response(JSON.stringify({ success: false, error: "帳號已停用，無法升級" }), { status: 403, headers: corsHeaders });
+      }
+
+      // 2. 準備更新身分的 SQL
+      const upgradeUserQuery = env.commission_db.prepare(`
+        UPDATE Users SET role = 'artist' WHERE id = ?
+      `).bind(currentUserId);
+
+      // 3. 準備初始化 ArtistProfiles 的 SQL (確保資料表內有該使用者的紀錄)
+      const initProfileQuery = env.commission_db.prepare(`
+        INSERT INTO ArtistProfiles (user_id) VALUES (?) 
+        ON CONFLICT(user_id) DO NOTHING
+      `).bind(currentUserId);
+
+      // 4. 使用 batch 一併執行
+      await env.commission_db.batch([upgradeUserQuery, initProfileQuery]);
+
+      return new Response(JSON.stringify({ success: true, message: "身分升級成功" }), { status: 200, headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };

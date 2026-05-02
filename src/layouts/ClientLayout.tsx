@@ -76,28 +76,6 @@ export function ClientLayout() {
     }
   };
 
-  const handleSwitchToArtist = async () => {
-    if (!profile) return;
-    if (profile.role === 'artist' || profile.role === 'admin') {
-      window.location.href = '/artist/queue';
-      return;
-    }
-    if (window.confirm("確定要開通繪師管理頁嗎？")) {
-      try {
-        const res = await fetch(`${API_BASE}/api/users/me/complete-onboarding`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ display_name: profile.display_name, role: 'artist' })
-        });
-        const result = await res.json();
-        if (result.success) {
-          alert("開通成功！");
-          window.location.href = '/artist/queue';
-        }
-      } catch (error) { alert('網路錯誤'); }
-    }
-  };
-
   // 🌟 處理打開鈴鐺並消除紅點的邏輯
   const handleOpenNotifMenu = async () => {
     const nextState = !showNotifMenu;
@@ -203,9 +181,13 @@ export function ClientLayout() {
         </nav>
 
         <div className="sidebar-footer">
-          <button onClick={handleSwitchToArtist} className="switch-btn">
-            {(profile?.role === 'artist' || profile?.role === 'admin') ? '切換至繪師後台' : '開通繪師管理頁'}
-          </button>
+          {/* 🌟 重點修改：僅當身分為 artist 或 admin 時，才顯示切換按鈕，維持純委託人介面乾淨 */}
+          {(profile?.role === 'artist' || profile?.role === 'admin') && (
+            <button onClick={() => window.location.href = '/artist/queue'} className="switch-btn">
+              切換至繪師後台
+            </button>
+          )}
+          
           <button onClick={handleLogout} className="logout-action-link" style={{ marginTop: '12px', background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', width: '100%' }}>
             <LogOut size={14} /> 登出系統
           </button>

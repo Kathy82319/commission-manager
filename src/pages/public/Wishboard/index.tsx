@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 import { API_BASE } from './constants';
 import { WishCard } from './WishCard';
@@ -23,20 +23,21 @@ export const Wishboard: React.FC = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<any | null>(null);
+
+  // 🌟 新增：身分升級引導彈窗狀態
+  const [showUpgradeGuide, setShowUpgradeGuide] = useState<{ show: boolean, type: 'post' | 'inquire' }>({ show: false, type: 'post' });
   
   const [isUploading, setIsUploading] = useState(false);
   const [inquireUploading, setInquireUploading] = useState(false); 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userShowcase, setUserShowcase] = useState<any[]>([]);
 
-  // 🌟 新增：儲存本月許願池相關的額度使用量
   const [wishQuota, setWishQuota] = useState<{ 
     is_pro: boolean, 
     offer_used: number, offer_max: number, 
     request_inquire_used: number, request_inquire_max: number 
   } | null>(null);
 
-  // 徵委託狀態
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
     budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', 
@@ -44,7 +45,6 @@ export const Wishboard: React.FC = () => {
   };
   const [requestForm, setRequestForm] = useState(initialRequestForm);
 
-  // 接委託狀態
   const getInitialOfferForm = () => ({
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
     schedule_type: 'flexible', specific_date: '', ref_images: [] as string[],
@@ -55,7 +55,6 @@ export const Wishboard: React.FC = () => {
   });
   const [offerForm, setOfferForm] = useState(getInitialOfferForm());
 
-  // 投單狀態
   const [inquireDraft, setInquireDraft] = useState({
     message: '', specialties: '', no_gos: '', payment_methods: '', 
     question_template: '', images: [] as string[]
@@ -99,7 +98,6 @@ export const Wishboard: React.FC = () => {
       const resUser = await apiClient.get('/api/users/me');
       if (resUser.success) {
         setCurrentUser(resUser.data);
-        // 🌟 登入狀態下，額外請求一次本月額度資訊
         const resQuota = await apiClient.get('/api/bulletins/quota');
         if (resQuota.success) setWishQuota(resQuota.data);
       }
@@ -175,8 +173,17 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  // 🌟 新增：攔截發布按鈕，進行發佈額度判斷
+  // 🌟 修改：攔截發布按鈕，加入身分升級判斷
   const handlePostTrigger = () => {
+    if (!currentUser) return navigate('/login');
+
+    // 判斷身分：若是發布接案且非 artist，引導升級
+    if (activeTab === 'offer' && currentUser.role === 'client') {
+      setShowUpgradeGuide({ show: true, type: 'post' });
+      return;
+    }
+
+    // 額度判斷
     if (activeTab === 'offer' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.offer_used >= wishQuota.offer_max) {
            showToast('免費版每月僅能發佈 1 則接委託，您的額度已用盡。', 'error');
@@ -186,8 +193,17 @@ export const Wishboard: React.FC = () => {
     setShowPostModal(true);
   };
 
-  // 🌟 新增：攔截投遞按鈕，進行投遞額度判斷
+  // 🌟 修改：攔截投遞按鈕，加入身分升級判斷
   const openInquireModal = (bulletin: any) => {
+    if (!currentUser) return navigate('/login');
+
+    // 判斷身分：向案主投遞應徵必須是 artist
+    if (currentUser.role === 'client') {
+      setShowUpgradeGuide({ show: true, type: 'inquire' });
+      return;
+    }
+
+    // 額度判斷
     if (bulletin.category === 'request' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.request_inquire_used >= wishQuota.request_inquire_max) {
            showToast('免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。', 'error');
@@ -216,15 +232,10 @@ export const Wishboard: React.FC = () => {
         if (Number(requestForm.budget_min) < 0 || Number(requestForm.budget_max) < 0) {
           return showToast("金額不可為負數", "error");
         }
-        payload = { 
-          ...payload, 
-          ...requestForm, 
-          ref_image_key: requestForm.ref_image,
-        };
+        payload = { ...payload, ...requestForm, ref_image_key: requestForm.ref_image };
       } else {
         payload = {
-          ...payload, 
-          ...offerForm,
+          ...payload, ...offerForm,
           ref_image_key: JSON.stringify(offerForm.ref_images),
           questions: offerForm.questions.filter(q => q.trim() !== '') 
         };
@@ -236,7 +247,7 @@ export const Wishboard: React.FC = () => {
         setShowPostModal(false);
         if (activeTab === 'request') setRequestForm(initialRequestForm);
         else setOfferForm(getInitialOfferForm());
-        initData(); // 重新整理資料，包含最新額度
+        initData();
       } else showToast(res.message || "發布失敗", "error");
     } catch (err: any) { 
       showToast(err.message || "發布發生錯誤", "error"); 
@@ -252,17 +263,13 @@ export const Wishboard: React.FC = () => {
       if (res.success) {
         showToast("投遞成功！");
         setShowInquireModal(false);
-        initData(); // 重新整理資料，包含最新額度
+        initData();
       } else {
         showToast(res.message || res.error || "投遞失敗", "error");
       }
     } catch (error: any) { 
       const errorMsg = error.response?.data?.message || error.message || "操作發生錯誤，請稍後再試";
-      if (errorMsg === 'Failed to fetch') {
-        showToast("網路連線異常，請檢查您的網路狀態", "error");
-      } else {
-        showToast(errorMsg, "error"); 
-      }
+      showToast(errorMsg, "error"); 
     }
   };
 
@@ -275,7 +282,6 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 新增：免費版額度提示橫幅 */}
       {currentUser && wishQuota && !wishQuota.is_pro && (
         <div style={{ padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>
@@ -292,17 +298,39 @@ export const Wishboard: React.FC = () => {
         selectedFilters={selectedFilters} 
         toggleTag={(tag) => setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} 
         currentUser={currentUser} 
-        onPostTrigger={handlePostTrigger} // 🌟 替換為攔截函式
+        onPostTrigger={handlePostTrigger} 
       />
 
       <main className="wish-grid">
         {loading ? <div className="loading">載入中...</div> : (
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
-            // 🌟 將 wishQuota 傳遞給 WishCard
             .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} />)
         )}
       </main>
+
+      {/* 🌟 新增：身分升級引導 Modal */}
+      {showUpgradeGuide.show && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center', padding: '30px' }}>
+            <ShieldAlert size={48} color="#4A90E2" style={{ marginBottom: '16px' }} />
+            <h2 style={{ marginBottom: '12px' }}>需要開通創作者身分</h2>
+            <p style={{ color: '#64748b', lineHeight: '1.6', marginBottom: '24px' }}>
+              {showUpgradeGuide.type === 'post' 
+                ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' 
+                : '主動向案主投遞應徵需要創作者身分，以便案主查看您的作品集並與您洽談。'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button className="cancel-btn" onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })}>
+                先不用
+              </button>
+              <button className="confirm-btn" onClick={() => navigate('/portal')}>
+                前往開通
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPostModal && activeTab === 'request' && (
         <RequestModal 

@@ -118,6 +118,12 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 【防護】檢查是否為創作者身分
+      const user = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      if (!user || user.role !== 'artist') {
+        return new Response(JSON.stringify({ success: false, error: '只有創作者可以儲存草稿' }), { status: 403, headers: corsHeaders });
+      }
+
       const body = await request.json() as any;
       const { draft_json } = body;
       const result = await env.commission_db.prepare(
@@ -133,9 +139,14 @@ export const inquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 【防護】撈取 user 資料時一併撈取 role 進行身分檢查
       const artist = await env.commission_db.prepare(
-        "SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
+        "SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
       ).bind(currentUserId).first() as any;
+
+      if (!artist || artist.role !== 'artist') {
+        return new Response(JSON.stringify({ success: false, message: '必須為創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
+      }
 
       const isPro = artist?.plan_type === 'pro' && (!artist.pro_expires_at || new Date(artist.pro_expires_at) > new Date());
       const isTrial = artist?.plan_type === 'trial' && (!artist.trial_end_at || new Date(artist.trial_end_at) > new Date());
@@ -164,6 +175,7 @@ export const inquiryController = {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
+
 
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
@@ -210,7 +222,6 @@ export const inquiryController = {
         if (settings.terms_of_service) tosText = settings.terms_of_service;
       } catch (e) {}
 
-      // 🌟 核心修復：先嘗試將所有的字串解析為 Object，確保不會發生雙重打包
       let parsedBulletinContent = inquiry.bulletin_content;
       try { parsedBulletinContent = JSON.parse(inquiry.bulletin_content); } catch (e) {}
 
@@ -220,7 +231,6 @@ export const inquiryController = {
       let parsedArtistSnapshot = inquiry.artist_snapshot;
       try { parsedArtistSnapshot = JSON.parse(inquiry.artist_snapshot); } catch (e) {}
 
-      // 🌟 將原生的 Object 組裝起來，只做最後一次的 stringify
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
         bulletin_content: parsedBulletinContent,
@@ -243,7 +253,8 @@ export const inquiryController = {
       ).bind(
         commissionId, currentUserId, inquiry.artist_id, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
-        draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
+        draft.draw_scope || '未定', // 🌟 修正：這裡原本漏掉了 draft.
+        draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
         tosText
       ).run();
 

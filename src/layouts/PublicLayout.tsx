@@ -55,7 +55,8 @@ export function PublicLayout() {
     const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
 
     if (lastActiveRole === 'artist') {
-      navigate('/artist');
+      // 🌟 修正：明確導向 /artist/queue 確保不跑版
+      navigate('/artist/queue');
     } else if (lastActiveRole === 'client') {
       navigate('/client/orders');
     } else {
