@@ -12,6 +12,7 @@ export const adminController = {
     return null;
   },
 
+  // worker/controllers/adminController.ts (部分更新)
   async getDashboardStats(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -19,10 +20,21 @@ export const adminController = {
     const { results: userStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, plan_type FROM Users GROUP BY plan_type").all();
     const { results: newUsers } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Users WHERE created_at >= date('now', 'start of month')").all();
     const { results: commStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, status FROM Commissions GROUP BY status").all();
+    
+    // 🌟 方案 A 新增：撈取需要審核的許願池貼文總數
+    const { results: pendingReports } = await env.commission_db.prepare(`
+      SELECT COUNT(*) as total FROM Bulletins b 
+      WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
+    `).all();
 
     return new Response(JSON.stringify({ 
       success: true, 
-      data: { users: userStats, new_users_this_month: newUsers[0]?.total || 0, commissions: commStats } 
+      data: { 
+        users: userStats, 
+        new_users_this_month: newUsers[0]?.total || 0, 
+        commissions: commStats,
+        pending_reports_count: pendingReports[0]?.total || 0 // 🌟 回傳給前端做紅點標示
+      } 
     }), { status: 200, headers: corsHeaders });
   },
 

@@ -348,20 +348,24 @@ export const Wishboard: React.FC = () => {
 
             <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
               <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖販售</strong>
-                為保護純手繪創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿或販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
+                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
+                為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿或販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
-                本平台介面為全齡向，許願池內嚴禁發布色情、血腥等限制級圖文，違者一律移除。如果有需要發布 R18 相關委託，請務必在私訊中洽談，並在許願池貼文中清楚標明「此為 R18 委託，請在私訊內洽談」。
+                本平台介面為全齡向，許願池內嚴禁發布色情、血腥等限制級圖文，違者一律移除。如果有需要發布 R18 相關委託，請在私訊中洽談，並在許願池貼文中標明「此為 R18 委託，請在私訊內洽談」，請勿直接將例圖放在許願池上。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '4px' }}>⚠️ 授權與版權證明</strong>
-                若為代接委託或使用非原創模板，必須附上原作者授權證明截圖。嚴禁盜圖或侵權二創成品直接販售。
+                嚴禁盜圖、侵權二創、抄襲等行為。若使用他人作品作為例圖，請在貼文中清楚標明「已獲原作者授權使用此圖作為例圖」，並保留相關授權證明以備查驗。
               </div>
               <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🛡️ 透明度與實名</strong>
+                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>⚠️ 透明度與實名</strong>
                 為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
+                目前許願池僅限繪圖相關的徵稿與接委託貼文，請先不要發布與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
               </div>
               <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
                 <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>

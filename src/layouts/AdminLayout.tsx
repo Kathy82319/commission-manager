@@ -1,12 +1,14 @@
+// src/layouts/AdminLayout.tsx
 import React from 'react';
 
 interface AdminLayoutProps {
   activeTab: string;
   onTabChange: (tab: 'overview' | 'users' | 'commissions' | 'wishboard') => void;
+  pendingReportCount?: number; // 🌟 新增：接收未處理的檢舉數量
   children: React.ReactNode;
 }
 
-export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutProps) {
+export function AdminLayout({ activeTab, onTabChange, pendingReportCount = 0, children }: AdminLayoutProps) {
   const menuItems = [
     { id: 'overview', label: '📊 營運數據儀表板' },
     { id: 'users', label: '👥 用戶管理' },
@@ -16,7 +18,6 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F3F4F6', fontFamily: 'system-ui, sans-serif' }}>
-      {/* 左側固定的側邊欄 */}
       <aside style={{ width: '260px', backgroundColor: '#111827', color: '#FFF', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '24px', fontSize: '20px', fontWeight: '900', borderBottom: '1px solid #374151' }}>
           Arti 營運後台
@@ -36,16 +37,33 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
                 fontSize: '15px',
                 fontWeight: activeTab === item.id ? 'bold' : 'normal',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}
             >
-              {item.label}
+              <span>{item.label}</span>
+              
+              {/* 🌟 方案 A 的紅點 UI */}
+              {item.id === 'wishboard' && pendingReportCount > 0 && (
+                <span style={{ 
+                  backgroundColor: '#EF4444', 
+                  color: '#FFF', 
+                  fontSize: '12px', 
+                  padding: '2px 8px', 
+                  borderRadius: '99px', 
+                  fontWeight: 'bold',
+                  boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
+                }}>
+                  {pendingReportCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
       </aside>
 
-      {/* 右側主要內容區 */}
       <main style={{ flex: 1, padding: '32px', overflowY: 'auto', height: '100vh', boxSizing: 'border-box' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           {children}
