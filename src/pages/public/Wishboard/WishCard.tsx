@@ -1,8 +1,9 @@
 // src/pages/public/Wishboard/WishCard.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart, Flag } from 'lucide-react'; // 🌟 加入 Flag
-import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL } from './constants';
+import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart, Flag } from 'lucide-react';
+// 🌟 修正 1：引入 PAYMENT_TIMING 常數，以便將英文代碼轉為中文標籤
+import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL, PAYMENT_TIMING } from './constants';
 
 interface WishCardProps {
   bulletin: any;
@@ -33,16 +34,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
 
-  // 🌟 收藏狀態管理
   const [isFavorited, setIsFavorited] = useState(false);
 
-  // 🌟 檢舉狀態管理
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState('洗版與重複發文');
   const [reportText, setReportText] = useState('');
   const [isReporting, setIsReporting] = useState(false);
 
-  // 🌟 檢查是否已收藏
   useEffect(() => {
     let isMounted = true;
     const checkFavoriteStatus = async () => {
@@ -66,7 +64,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     return () => { isMounted = false; };
   }, [currentUser, bulletin.client_id, isMyOwnPost, API_BASE]);
 
-  // 🌟 處理點擊收藏
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) {
@@ -94,7 +91,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  // 🌟 處理送出檢舉
   const handleReportSubmit = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentUser) return;
@@ -102,7 +98,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
     setIsReporting(true);
     try {
-      // 組合檢舉原因，並在前端做第一層長度防護
       const finalReason = `[${reportType}] ${reportText}`.trim().substring(0, 200);
       
       const res = await fetch(`${API_BASE}/api/bulletins/${bulletin.id}/report`, {
@@ -116,7 +111,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       if (res.ok && data.success) {
         alert('檢舉已送出，感謝您協助維護社群環境。');
         setIsReportModalOpen(false);
-        setReportText(''); // 清空輸入框
+        setReportText(''); 
       } else {
         alert(`檢舉失敗: ${data.error || '發生未知錯誤'}`);
       }
@@ -146,6 +141,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   const tags = JSON.parse(bulletin.tags || '[]');
   const paymentMethods = JSON.parse(bulletin.payment_methods || '[]');
+  
+  // 🌟 處理支付時機資料
+  const paymentTimingValue = bulletin.payment_timing || contentObj.payment_timing || '';
+  const paymentTimingDetail = bulletin.payment_timing_detail || contentObj.payment_timing_detail || '';
+  const paymentTimingObj = PAYMENT_TIMING.find(t => t.value === paymentTimingValue);
+  const paymentTimingLabel = paymentTimingObj ? paymentTimingObj.label : paymentTimingValue;
   
   let images: string[] = [];
   try {
@@ -195,7 +196,8 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   return (
     <>
       <div className="wish-card-wide">
-        <div className="wish-card-image-wrapper">
+        {/* 🌟 修正 2：鎖定外層容器高度為 220px，並隱藏超出的部分，確保排版整齊不跑位 */}
+        <div className="wish-card-image-wrapper" style={{ height: '220px', minHeight: '220px', position: 'relative', overflow: 'hidden' }}>
           {validImages.length > 0 ? (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
               <img 
@@ -204,6 +206,8 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 className="wish-card-img" 
                 onClick={openLightbox}
                 referrerPolicy="no-referrer"
+                // 🌟 修正 3：確保圖片能完美裁切填滿框框 (objectFit: 'cover')
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', cursor: 'pointer' }}
               />
               <div className="zoom-hint"><Maximize2 size={18} /></div>
               
@@ -216,7 +220,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               )}
             </div>
           ) : (
-            <div className="empty-image-placeholder">
+            <div className="empty-image-placeholder" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <User size={64} opacity={0.3} />
               <span>無提供範例圖</span>
             </div>
@@ -250,7 +254,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </div>
                 )}
 
-                {/* 🌟 快速收藏按鈕 */}
                 {!isMyOwnPost && bulletin.client_id && (
                   <button
                     onClick={handleToggleFavorite}
@@ -268,7 +271,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </button>
                 )}
 
-                {/* 🌟 檢舉按鈕 */}
                 {!isMyOwnPost && currentUser && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }}
@@ -353,6 +355,21 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
 
+              {/* 🌟 修正 4：將支付時機與說明補上，讓接案卡片能顯示此項資訊 */}
+              {bulletin.category === 'offer' && paymentTimingLabel && (
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
+                  <DollarSign size={16} className="meta-icon text-[#059669]" style={{ flexShrink: 0, marginRight: '4px' }} />
+                  <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>支付時機：</span>
+                  <span 
+                    className="font-bold text-[#059669]" 
+                    style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                    title={`${paymentTimingLabel}${paymentTimingDetail ? ` - ${paymentTimingDetail}` : ''}`}
+                  >
+                    {paymentTimingLabel} {paymentTimingDetail && <span style={{ fontWeight: 'normal', fontSize: '13px', opacity: 0.9 }}>({paymentTimingDetail})</span>}
+                  </span>
+                </div>
+              )}
+
               {bulletin.category === 'offer' && selectionType && (
                 <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309]" style={{ flexShrink: 0, marginRight: '4px' }} />
@@ -408,7 +425,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 🌟 檢舉表單 Modal */}
       {isReportModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsReportModalOpen(false)}>
           <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -461,7 +477,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       )}
 
-      {/* 燈泡箱 Lightbox */}
       {isLightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}><X size={32} /></button>

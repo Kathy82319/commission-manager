@@ -204,7 +204,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-row">
             <div className="form-group" style={{ flex: '1 1 300px' }}>
               <label>標題</label>
-              <input type="text" placeholder="例如：接長期立繪、Q版頭貼..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} required />
+              <input type="text" placeholder="例如：接立繪、Q版頭貼..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} required />
             </div>
 
             <div className="form-group" style={{ flex: '1 1 300px' }}>
@@ -220,7 +220,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-section">
             <label className="section-title">接案項目與底價 (選填)</label>
             <div className="dynamic-question-row">
-              <input type="text" placeholder="項目名稱 (如：全彩半身)" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2 }} />
+              <input type="text" placeholder="項目名稱 (如：Q版頭貼...)" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2 }} />
               <input type="number" placeholder="底價" value={itemInput.price} onChange={e => setItemInput({...itemInput, price: e.target.value})} style={{ flex: 1 }} />
               <button type="button" onClick={addCommissionItem} className="add-btn-circle"><Plus size={18}/></button>
             </div>
@@ -252,7 +252,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                 <strong style={{ display: 'block', marginBottom: '4px' }}>如何選擇機制？</strong>
                 <ul style={{ paddingLeft: '20px', margin: 0 }}>
                   <li style={{ marginBottom: '4px' }}><strong>先搶先贏：</strong>適合確認較快的委託，名額一旦收滿將自動停止接收投遞。</li>
-                  <li><strong>繪師選設：</strong>適合需要評估角色設定的委託。我們不採用秒殺機制，您可以慢慢挑選心儀的設定來洽談。</li>
+                  <li><strong>繪師選設：</strong>適合需要評估角色設定的委託。不採用秒殺機制，沒有投遞的名額限制，只有呈現你預計最終會選擇的稿件數量，您可以慢慢挑選心儀的設定來洽談。</li>
                 </ul>
               </div>
             )}
@@ -280,7 +280,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           </div>
 
           <div className="form-section">
-            <label className="section-title">支付時機說明 (僅告知)</label>
+            <label className="section-title">支付時機說明</label>
             <div className="radio-group">
               {PAYMENT_TIMING.map(t => (
                 <label key={t.value} className="radio-label">
@@ -289,7 +289,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               ))}
             </div>
             {(form.payment_timing === 'deposit' || form.payment_timing === 'other') && (
-              <input type="text" placeholder="請詳細描述您的收款時機... (例如：草稿確認後收50%訂金)" value={form.payment_timing_detail || ''} onChange={e => setForm({...form, payment_timing_detail: e.target.value})} style={{ marginTop: '12px' }} required />
+              <input type="text" placeholder="請詳細描述您的收款時機... (例如：草稿確認後收30%訂金)" value={form.payment_timing_detail || ''} onChange={e => setForm({...form, payment_timing_detail: e.target.value})} style={{ marginTop: '12px' }} required />
             )}
             
             <label className="section-title" style={{ marginTop: '16px' }}>收款方式 (多選)</label>
@@ -325,15 +325,15 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="form-section">
             <label className="section-title">委託服務條款 (TOS)</label>
-            <p className="label-hint" style={{ margin: '0 0 8px 0' }}>案主在填寫需求單前，必須先點擊同意此條款。</p>
-            <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權說明、修改次數限制、退款政策等..." value={form.tos_content || ''} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
+            <p className="label-hint" style={{ margin: '0 0 8px 0' }}>案主在填寫需求單前，必須先點擊同意此條款，此服務條款會持續顯示在雙方的委託單管理頁中。</p>
+            <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權說明、修改次數限制、禁止項目等..." value={form.tos_content || ''} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
           </div>
 
           <div className="form-section">
             <label className="section-title">標籤與規格</label>
             
             <div className="tag-selector-group">
-              <span className="label-hint">風格預警 (紅色標籤)</span>
+              <span className="label-hint">風格預警</span>
               <div className="tag-selector">
                 {STYLE_WARNINGS.map(t => <span key={t} className={`selectable-tag warning ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
                 {(form.tags || []).filter((t: string) => t.startsWith('[預警]')).map((t: string) => (
@@ -352,7 +352,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
 
             <div className="tag-selector-group">
-              <span className="label-hint">授權 / 接受範圍 (綠色標籤)</span>
+              <span className="label-hint">授權 / 接受範圍</span>
               <div className="tag-selector">
                 {LICENSE_TAGS.map(t => <span key={t} className={`selectable-tag license ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
                 {(form.tags || []).filter((t: string) => t.startsWith('[授權]')).map((t: string) => (
@@ -371,7 +371,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
 
             <div className="tag-selector-group">
-              <span className="label-hint">風格類型與自定義 (灰色標籤)</span>
+              <span className="label-hint">風格類型與自定義</span>
               <div className="tag-selector">
                 {REQ_TAGS.map(t => <span key={t} className={`selectable-tag style ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
                 {(form.tags || []).filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]')).map((t: string) => (
