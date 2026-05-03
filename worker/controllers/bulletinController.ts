@@ -522,27 +522,35 @@ export const bulletinController = {
 
       const artistCount = Number(weightRes[0]?.artist_count) || 0;
 
-      if (artistCount >= 1) {
-        await env.commission_db.prepare(`
-          UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?
-        `).bind(targetId).run();
+      // 🛡️ 測試時這裡如果是 1，記得改回 10
+      if (artistCount >= 10) { 
+        const batchStatements = [];
+
+        batchStatements.push(
+          env.commission_db.prepare(`UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?`).bind(targetId)
+        );
         
         const { results: admins } = await env.commission_db.prepare(`
           SELECT id FROM Users WHERE role = 'admin'
         `).all();
 
         if (admins.length > 0) {
+          // 🌟 修正 1：對齊你真實的欄位名稱 (content, link_to) 與增加 id 欄位
           const stmt = env.commission_db.prepare(`
-            INSERT INTO Notifications (user_id, type, title, message, reference_id, is_read)
-            VALUES (?, 'SYSTEM_ALERT', '🚨 社群風控警報', ?, ?, 0)
+            INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read)
+            VALUES (?, ?, 'SYSTEM_ALERT', '🚨 社群風控警報', ?, ?, 0)
           `);
 
-          const message = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
+          const alertContent = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
 
-          const batchStatements = admins.map(admin => 
-            stmt.bind(admin.id, message, targetId)
-          );
+          admins.forEach(admin => {
+            // 🌟 修正 2：手動產生 crypto.randomUUID() 塞入 TEXT PRIMARY KEY
+            batchStatements.push(stmt.bind(crypto.randomUUID(), admin.id, alertContent, targetId));
+          });
+        }
 
+        // 一次性執行所有更新與新增
+        if (batchStatements.length > 0) {
           await env.commission_db.batch(batchStatements);
         }
       }
