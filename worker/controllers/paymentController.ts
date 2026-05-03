@@ -52,8 +52,8 @@ export const paymentController = {
         .join('&');
 
       const { newebpay } = await import("../utils/crypto");
-      const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
-      const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
+      const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
+      const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
 
       return new Response(JSON.stringify({
         success: true,
@@ -96,15 +96,15 @@ export const paymentController = {
       if (status !== "SUCCESS" || !tradeInfo || !tradeSha) return new Response("OK");
 
       const { newebpay } = await import("../utils/crypto");
-
-      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
+      
+      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
       if (computedSha !== tradeSha) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
           .bind(`🚨 雜湊驗證失敗！疑似偽造請求。`).run();
         return new Response("OK");
       }
 
-      const decrypted = await newebpay.decrypt(tradeInfo.trim(), env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
+      const decrypted = await newebpay.decrypt(tradeInfo.trim(), env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
       const decodedData = decodeURIComponent(decrypted.replace(/\+/g, " "));
       const data = JSON.parse(decodedData);
       

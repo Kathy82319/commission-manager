@@ -4,8 +4,8 @@
 export const newebpay = {
   async encrypt(dataString: string, key: string, iv: string): Promise<string> {
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(key);
-    const ivData = encoder.encode(iv);
+    const keyData = encoder.encode(key.trim()); // 👈 加這
+    const ivData = encoder.encode(iv.trim());   // 👈 加這
     const textData = encoder.encode(dataString);
 
     const cryptoKey = await crypto.subtle.importKey(
@@ -28,9 +28,9 @@ export const newebpay = {
 
   async decrypt(encryptedHex: string, key: string, iv: string): Promise<string> {
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(key);
-    const ivData = encoder.encode(iv);
-
+    const keyData = encoder.encode(key.trim()); // 👈 加這
+    const ivData = encoder.encode(iv.trim());   // 👈 加這
+    
     const encryptedBytes = new Uint8Array(
       encryptedHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
     );
@@ -57,6 +57,7 @@ export const newebpay = {
     const combinedString = `HashKey=${key}&${aesString}&HashIV=${iv}`;
     const encoder = new TextEncoder();
     const data = encoder.encode(combinedString);
+
     
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
