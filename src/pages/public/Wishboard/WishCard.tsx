@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, DollarSign, Tag, Clock, Send, User, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Maximize2, X, Users, Heart, Flag } from 'lucide-react';
-// 🌟 修正 1：引入 PAYMENT_TIMING 常數，以便將英文代碼轉為中文標籤
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL, PAYMENT_TIMING } from './constants';
 
 interface WishCardProps {
@@ -142,7 +141,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const tags = JSON.parse(bulletin.tags || '[]');
   const paymentMethods = JSON.parse(bulletin.payment_methods || '[]');
   
-  // 🌟 處理支付時機資料
   const paymentTimingValue = bulletin.payment_timing || contentObj.payment_timing || '';
   const paymentTimingDetail = bulletin.payment_timing_detail || contentObj.payment_timing_detail || '';
   const paymentTimingObj = PAYMENT_TIMING.find(t => t.value === paymentTimingValue);
@@ -196,23 +194,23 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   return (
     <>
       <div className="wish-card-wide">
-        {/* 🌟 修正 2：鎖定外層容器高度為 220px，並隱藏超出的部分，確保排版整齊不跑位 */}
-        <div className="wish-card-image-wrapper" style={{ height: '220px', minHeight: '220px', position: 'relative', overflow: 'hidden' }}>
+        {/* 🌟 核心修正：移除固定的 220px，改用 height: '100%' 與 flex 讓容器自動向下延展填滿卡片高度 */}
+        <div className="wish-card-image-wrapper" style={{ position: 'relative', overflow: 'hidden', height: '100%', minHeight: '220px', display: 'flex', flexDirection: 'column' }}>
           {validImages.length > 0 ? (
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div style={{ position: 'relative', width: '100%', flex: 1, minHeight: '220px' }}>
               <img 
                 src={validImages[currentImageIdx]} 
                 alt="預覽圖" 
                 className="wish-card-img" 
                 onClick={openLightbox}
                 referrerPolicy="no-referrer"
-                // 🌟 修正 3：確保圖片能完美裁切填滿框框 (objectFit: 'cover')
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', cursor: 'pointer' }}
+                // 🌟 使用絕對定位 (absolute) 搭配 cover，強制圖片像壁紙一樣完全貼合容器，不再留白
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', cursor: 'pointer', display: 'block' }}
               />
-              <div className="zoom-hint"><Maximize2 size={18} /></div>
+              <div className="zoom-hint" style={{ position: 'absolute' }}><Maximize2 size={18} /></div>
               
               {validImages.length > 1 && (
-                <div className="card-image-nav">
+                <div className="card-image-nav" style={{ position: 'absolute' }}>
                   <ChevronLeft className="nav-btn" onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === 0 ? validImages.length - 1 : prev - 1); }} />
                   <span>{currentImageIdx + 1} / {validImages.length}</span>
                   <ChevronRight className="nav-btn" onClick={(e) => { e.stopPropagation(); setCurrentImageIdx(prev => prev === validImages.length - 1 ? 0 : prev + 1); }} />
@@ -355,7 +353,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
 
-              {/* 🌟 修正 4：將支付時機與說明補上，讓接案卡片能顯示此項資訊 */}
               {bulletin.category === 'offer' && paymentTimingLabel && (
                 <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
                   <DollarSign size={16} className="meta-icon text-[#059669]" style={{ flexShrink: 0, marginRight: '4px' }} />
