@@ -5,8 +5,15 @@ export const paymentController = {
 
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
-      if (!env.NEWEBPAY_MERCHANT_ID || !env.commission_db) {
-        return new Response(JSON.stringify({ success: false, error: "系統環境配置錯誤" }), { status: 500, headers: corsHeaders });
+      // 🌟 1. 精準攔截：明確告訴我們到底是哪個環境變數不見了
+      if (!env.commission_db) {
+        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：找不到 D1 資料庫綁定 (commission_db)" }), { status: 500, headers: corsHeaders });
+      }
+      if (!env.NEWEBPAY_MERCHANT_ID) {
+        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：缺少商店代號 (NEWEBPAY_MERCHANT_ID)" }), { status: 500, headers: corsHeaders });
+      }
+      if (!env.NEWEBPAY_HASH_KEY || !env.NEWEBPAY_HASH_IV) {
+        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：缺少 HashKey 或 HashIV" }), { status: 500, headers: corsHeaders });
       }
 
       const body = await request.json().catch(() => ({}));
@@ -51,7 +58,8 @@ export const paymentController = {
           TradeInfo: aesString,
           TradeSha: shaString,
           Version: "2.0",
-          PayGateWay: "https://ccore.newebpay.com/MPG/mpg_gateway"
+          // 🌟 2. 關鍵修正：將 ccore (測試區) 改為 core (正式區)
+          PayGateWay: "https://core.newebpay.com/MPG/mpg_gateway"
         }
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -99,7 +107,7 @@ export const paymentController = {
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-            const order = await env.commission_db.prepare("SELECT status, user_id FROM PaymentOrders WHERE id = ?").bind(orderId).first();
+      const order = await env.commission_db.prepare("SELECT status, user_id FROM PaymentOrders WHERE id = ?").bind(orderId).first();
       if (!order) return new Response("OK");
 
       if (order.status === 'paid') {
@@ -132,7 +140,7 @@ export const paymentController = {
       }
 
       return new Response("OK");
-        } catch (error: any) {
+    } catch (error: any) {
       try {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
           .bind(`🚨 Notify 處理異常: ${error.message}`).run();
