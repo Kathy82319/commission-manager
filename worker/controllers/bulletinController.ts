@@ -113,15 +113,15 @@ export const bulletinController = {
           }
       }
 
-      // 🌟 總量管制：全站同一時間每人最多只能擁有「1 則」上架中的貼文 (不分 category)
+      // 🌟 總量管制修正：全站同一時間每人「每種分類 (徵/接)」最多只能擁有 1 則上架中的貼文
       const existingPost = await env.commission_db.prepare(
-        `SELECT id FROM Bulletins WHERE client_id = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
-      ).bind(currentUserId).first();
+        `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
+      ).bind(currentUserId, currentCategory).first();
 
       if (existingPost) {
         return new Response(JSON.stringify({ 
           success: false, 
-          message: '您目前已經有一篇刊登中的貼文（每人限刊登一則），請先關閉舊貼文再發佈新的。' 
+          message: `您目前已經有一篇刊登中的「${currentCategory === 'offer' ? '接委託' : '徵委託'}」貼文，請先關閉舊貼文再發佈新的。` 
         }), { status: 400, headers: corsHeaders });
       }
 
