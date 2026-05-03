@@ -523,7 +523,7 @@ export const bulletinController = {
       const artistCount = Number(weightRes[0]?.artist_count) || 0;
 
       // 🛡️ 測試時這裡如果是 1，記得改回 10
-      if (artistCount >= 10) { 
+      if (artistCount >= 1) { 
         const batchStatements = [];
 
         batchStatements.push(
