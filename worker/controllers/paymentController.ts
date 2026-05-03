@@ -10,7 +10,11 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：找不到 D1 資料庫綁定 (commission_db)" }), { status: 500, headers: corsHeaders });
       }
       if (!env.NEWEBPAY_MERCHANT_ID) {
-        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：缺少商店代號 (NEWEBPAY_MERCHANT_ID)" }), { status: 500, headers: corsHeaders });
+        const availableKeys = Object.keys(env).join(', ');
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `系統配置錯誤：缺少商店代號。系統目前讀取到的變數有：[${availableKeys}]` 
+        }), { status: 500, headers: corsHeaders });
       }
       if (!env.NEWEBPAY_HASH_KEY || !env.NEWEBPAY_HASH_IV) {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：缺少 HashKey 或 HashIV" }), { status: 500, headers: corsHeaders });
