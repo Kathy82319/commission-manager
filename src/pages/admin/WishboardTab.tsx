@@ -2,23 +2,28 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { KeywordManager } from './components/KeywordManager';
+import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert } from 'lucide-react'; // 🌟 加入 icon 提升質感
 
 export function WishboardTab() {
   const [dataList, setDataList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<'request' | 'offer'>('request'); // 🌟 新增：子分頁狀態
+  const [activeCategory, setActiveCategory] = useState<'request' | 'offer'>('request');
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // 當分頁或分類改變時，重新撈取資料
+  // 🌟 Modal 狀態
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(null);
+  const [reportDetails, setReportDetails] = useState<any[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+
   useEffect(() => { 
     fetchPosts(); 
   }, [page, activeCategory]);
 
   const fetchPosts = async () => {
     try {
-      // API 路徑加上 category 參數
       const res = await apiClient.get(`/api/admin/wishboard/reported?page=${page}&category=${activeCategory}`);
       setDataList(res.data);
       if (res.pagination) setTotal(res.pagination.total);
@@ -30,7 +35,7 @@ export function WishboardTab() {
     setIsUpdating(true);
     try {
       await apiClient.patch(`/api/admin/wishboard/${id}/status`, { status: newStatus });
-      fetchPosts(); // 重新整理清單
+      fetchPosts(); 
     } catch (e) {
       alert('更新失敗');
     } finally {
@@ -38,21 +43,46 @@ export function WishboardTab() {
     }
   };
 
-  // 檢查貼文內容是否觸發關鍵字
+  // 🌟 處理開啟檢舉彈窗
+  const openReportModal = async (bulletinId: string) => {
+    setSelectedBulletinId(bulletinId);
+    setIsModalOpen(true);
+    setIsLoadingReports(true);
+    try {
+      const res = await apiClient.get(`/api/admin/wishboard/${bulletinId}/reports`);
+      setReportDetails(res.data || []);
+    } catch (e) {
+      alert('無法讀取檢舉名單');
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
+
   const checkKeywordTrigger = (content: string) => {
     if (!content) return null;
     const hit = activeKeywords.find(k => content.includes(k));
     return hit;
   };
 
+  // 🌟 解決 JSON 顯示問題的解析函式
+  const parseContent = (rawContent: string) => {
+    if (!rawContent) return '無內容';
+    try {
+      // 若後端存的是 JSON 字串，嘗試解開它拿出 description
+      const parsed = JSON.parse(rawContent);
+      return parsed.description || rawContent;
+    } catch {
+      // 若不是 JSON (原本就是純文字)，直接回傳
+      return rawContent;
+    }
+  };
+
   return (
     <div>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '24px' }}>✨ 許願池審核與風控</h1>
       
-      {/* 關鍵字管理區塊 */}
       <KeywordManager onKeywordsChange={setActiveKeywords} />
 
-      {/* 🌟 子分頁切換按鈕 */}
       <div style={{ display: 'flex', backgroundColor: '#F3F4F6', padding: '4px', borderRadius: '8px', marginBottom: '16px', width: 'fit-content' }}>
         <button 
           onClick={() => { setActiveCategory('request'); setPage(1); }} 
@@ -72,65 +102,84 @@ export function WishboardTab() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
           <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
             <tr>
-              <th style={thStyle}>刊登資訊</th>
-              <th style={thStyle}>貼文內容與預警</th>
-              <th style={thStyle}>檢舉狀況</th>
-              <th style={thStyle}>審核操作</th>
+              <th style={{...thStyle, width: '18%'}}>刊登資訊</th>
+              <th style={{...thStyle, width: '40%'}}>貼文內容</th>
+              <th style={{...thStyle, width: '12%'}}>檢舉次數</th>
+              <th style={{...thStyle, width: '15%'}}>目前顯示狀態</th>
+              <th style={{...thStyle, width: '15%'}}>審核操作</th>
             </tr>
           </thead>
           <tbody>
             {dataList.length === 0 ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>目前沒有貼文資料</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>目前沒有貼文資料</td></tr>
             ) : dataList.map((item) => {
-              const hitKeyword = checkKeywordTrigger(item.content || '');
+              const textContent = parseContent(item.content);
+              const hitKeyword = checkKeywordTrigger(textContent);
               const isHidden = item.status === 'hidden_under_review';
               
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
+                  
+                  {/* 1. 刊登資訊 */}
                   <td style={tdStyle}>
-                    <div style={{ fontWeight: 'bold', color: '#111827' }}>作者: {item.author_name}</div>
-                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>ID: {item.id.slice(0,8)}...</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
-                      刊登於: {new Date(item.created_at).toLocaleString()}
+                    <div style={{ fontWeight: 'bold', color: '#111827', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <User size={14} /> {item.author_name}
+                    </div>
+                    {/* 🌟 修正：顯示 author_public_id */}
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>ID: {item.author_public_id || '未知'}</div>
+                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>
+                      {new Date(item.created_at).toLocaleString()}
                     </div>
                   </td>
-                  <td style={tdStyle}>
-                    {/* 🌟 關鍵字觸發警示 UI */}
+
+                  {/* 2. 貼文內容 */}
+                  <td style={{...tdStyle, paddingRight: '24px'}}>
                     {hitKeyword && (
-                      <div style={{ display: 'inline-block', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
-                        ⚠️ 觸發監控關鍵字: {hitKeyword}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
+                        <AlertCircle size={14} /> 觸發監控關鍵字: {hitKeyword}
                       </div>
                     )}
-                    <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5', maxHeight: '80px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                      {/* React 預設會防護 XSS，我們可以直接印出字串 */}
-                      {item.content}
+                    <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                      {textContent}
                     </div>
                   </td>
+
+                  {/* 3. 檢舉次數 */}
                   <td style={tdStyle}>
-                    <div style={{ fontWeight: 'bold', color: item.report_count >= 10 ? '#DC2626' : (item.report_count > 0 ? '#D97706' : '#059669') }}>
-                      被檢舉次數: {item.report_count}
+                    <div style={{ fontWeight: 'bold', fontSize: '16px', color: item.report_count >= 10 ? '#DC2626' : (item.report_count > 0 ? '#D97706' : '#059669') }}>
+                      {item.report_count} 次
                     </div>
-                    {/* 🌟 顯示最新一筆檢舉原因 */}
-                    {item.report_count > 0 && item.latest_report_reason && (
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px', backgroundColor: '#F3F4F6', padding: '6px', borderRadius: '6px' }}>
-                        <strong>最新原因：</strong><br/>
-                        {item.latest_report_reason}
-                      </div>
+                    {item.report_count > 0 && (
+                      <button 
+                        onClick={() => openReportModal(item.id)}
+                        style={{ marginTop: '8px', background: 'none', border: 'none', color: '#2563EB', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                      >
+                        查看檢舉原因
+                      </button>
                     )}
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px' }}>
-                      目前狀態: {isHidden ? '🛑 隱藏審核中' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉')}
+                  </td>
+
+                  {/* 4. 目前顯示狀態 */}
+                  <td style={tdStyle}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 'bold', 
+                      backgroundColor: isHidden ? '#FEF2F2' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6'),
+                      color: isHidden ? '#DC2626' : (item.status === 'open' ? '#059669' : '#6B7280'),
+                      border: `1px solid ${isHidden ? '#FCA5A5' : (item.status === 'open' ? '#6EE7B7' : '#D1D5DB')}`
+                    }}>
+                      {isHidden ? '🛑 隱藏審核中' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉')}
                     </div>
                   </td>
+
+                  {/* 5. 審核操作 */}
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {/* 🌟 隱藏 / 顯示 操作按鈕 */}
                       {!isHidden ? (
-                        <button onClick={() => handleUpdateStatus(item.id, 'hidden_under_review')} disabled={isUpdating} style={{...actionBtnStyle, color: '#DC2626', borderColor: '#FCA5A5', backgroundColor: '#FEF2F2'}}>
-                          隱藏貼文
+                        <button onClick={() => handleUpdateStatus(item.id, 'hidden_under_review')} disabled={isUpdating} style={{...actionBtnStyle, color: '#DC2626', borderColor: '#DC2626', backgroundColor: '#FFF'}}>
+                          強制隱藏貼文
                         </button>
                       ) : (
-                        <button onClick={() => handleUpdateStatus(item.id, 'open')} disabled={isUpdating} style={{...actionBtnStyle, color: '#059669', borderColor: '#6EE7B7', backgroundColor: '#ECFDF5'}}>
-                          顯示貼文 (駁回檢舉)
+                        <button onClick={() => handleUpdateStatus(item.id, 'open')} disabled={isUpdating} style={{...actionBtnStyle, color: '#059669', borderColor: '#059669', backgroundColor: '#FFF'}}>
+                          顯示 (駁回檢舉)
                         </button>
                       )}
                     </div>
@@ -142,7 +191,7 @@ export function WishboardTab() {
         </table>
       </div>
 
-      {/* 分頁按鈕 */}
+      {/* 分頁 */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -151,13 +200,61 @@ export function WishboardTab() {
           <button disabled={dataList.length < 20} onClick={() => setPage(p => p + 1)} style={{ ...pageBtnStyle, opacity: dataList.length < 20 ? 0.5 : 1 }}>下一頁</button>
         </div>
       </div>
+
+      {/* 🌟 檢舉原因彈窗 (Modal) */}
+      {isModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
+          <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: '#111827' }}>
+                <ShieldAlert size={20} color="#DC2626" /> 檢舉紀錄詳情
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
+              {isLoadingReports ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>載入中...</div>
+              ) : reportDetails.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>查無檢舉紀錄</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {reportDetails.map(report => (
+                    <div key={report.id} style={{ backgroundColor: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#111827', fontSize: '14px' }}>檢舉人: {report.reporter_name}</div>
+                          <div style={{ fontSize: '12px', color: '#6B7280' }}>ID: {report.reporter_public_id} | 角色: {report.reporter_role}</div>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={12} /> {new Date(report.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#374151', backgroundColor: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid #D1D5DB', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <MessageSquare size={16} color="#9CA3AF" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <span style={{ lineHeight: '1.5', wordBreak: 'break-word' }}>
+                          {report.reason || '無提供原因'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div style={{ marginTop: '24px', textAlign: 'right', borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
+              <button onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' }}>關閉視窗</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // Styles
-const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold' };
-const tdStyle = { padding: '16px', fontSize: '14px', verticalAlign: 'top' as const };
-const actionBtnStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%', transition: 'all 0.2s' };
+const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold', borderBottom: '2px solid #E5E7EB' };
+const tdStyle = { padding: '20px 16px', fontSize: '14px', verticalAlign: 'top' as const };
+const actionBtnStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%', transition: 'all 0.2s' };
 const pageBtnStyle = { padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' };
 const tabBtnStyle = { padding: '8px 16px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' };

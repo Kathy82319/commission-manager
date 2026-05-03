@@ -174,21 +174,21 @@ export const adminController = {
   },
 
   // 🌟 修改：撈取指定分類的所有貼文，並附帶檢舉資訊
+  // 🌟 修改：撈取指定分類的所有貼文 (修正撈取 public_id)
   async getReportedBulletins(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
 
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
-    const category = url.searchParams.get('category') || 'request'; // 新增：透過前端傳遞分類
+    const category = url.searchParams.get('category') || 'request';
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 🛡️ 效能優化：使用子查詢，一次把所有貼文、檢舉次數、最新一筆檢舉原因撈出來
+    // 🛡️ 效能優化：移除原本直接撈取 latest_report_reason 的子查詢，改在彈窗中獲取
     const { results } = await env.commission_db.prepare(`
-      SELECT b.*, u.display_name as author_name, 
-      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count,
-      (SELECT reason FROM Reports r WHERE r.bulletin_id = b.id ORDER BY created_at DESC LIMIT 1) as latest_report_reason
+      SELECT b.*, u.display_name as author_name, u.public_id as author_public_id,
+      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count
       FROM Bulletins b
       LEFT JOIN Users u ON b.client_id = u.id
       WHERE b.category = ?
@@ -201,6 +201,23 @@ export const adminController = {
     `).bind(category).all();
 
     return new Response(JSON.stringify({ success: true, data: results, pagination: { total: countRes[0]?.total || 0, page, limit } }), { status: 200, headers: corsHeaders });
+  },
+
+  // 🌟 新增：取得單篇貼文的所有檢舉紀錄 (附帶檢舉人資訊)
+  async getBulletinReports(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
+    if (adminCheck) return adminCheck;
+
+    const { results } = await env.commission_db.prepare(`
+      SELECT r.id, r.reason, r.created_at, r.reporter_role,
+             u.display_name as reporter_name, u.public_id as reporter_public_id
+      FROM Reports r
+      LEFT JOIN Users u ON r.reporter_id = u.id
+      WHERE r.bulletin_id = ?
+      ORDER BY r.created_at DESC
+    `).bind(bulletinId).all();
+
+    return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
   },
 
   async updateBulletinStatus(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {

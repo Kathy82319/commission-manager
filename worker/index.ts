@@ -256,6 +256,9 @@ export default {
 
         if (pathParts[3] === "wishboard") {
           if (request.method === "GET" && pathParts[4] === "reported") return adminController.getReportedBulletins(request, currentUserId!, env, corsHeaders);
+          if (request.method === "GET" && pathParts[4] && pathParts[5] === "reports") {
+            return adminController.getBulletinReports(request, pathParts[4], currentUserId!, env, corsHeaders);
+          }
           if (request.method === "PATCH" && pathParts[4] && pathParts[5] === "status") {
             return adminController.updateBulletinStatus(request, pathParts[4], currentUserId!, env, corsHeaders);
           }
