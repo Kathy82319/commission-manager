@@ -6,7 +6,7 @@ import { calculateDaysLeft, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 const SLOT_TYPES = [
-  { id: 'request', label: '徵稿文', icon: '📝', desc: '尋找繪師來為您繪製作品' },
+  { id: 'request', label: '徵委託', icon: '📝', desc: '尋找繪師來為您繪製作品' },
   { id: 'offer', label: '接稿文', icon: '🎨', desc: '展示自己尋找需要繪製的案主' },
   { id: 'other', label: '其他/手作', icon: '✨', desc: '非純繪圖的委託或交流' }
 ];
@@ -112,7 +112,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   style={{ cursor: isOther ? 'not-allowed' : 'pointer', filter: isOther ? 'grayscale(0.3)' : 'none' }}
                   onClick={() => {
                     if (isOther) return; 
-                    navigate(`/wishboard?tab=${slotType.id}`);
+                    navigate(`/?tab=${slotType.id}`);
                   }}
                 >
                   <div className="empty-content">
