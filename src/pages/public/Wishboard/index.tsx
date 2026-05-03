@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // 🌟 引入 useLocation 接收跳轉參數
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
 import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-react';
@@ -19,7 +19,6 @@ export const Wishboard: React.FC = () => {
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 🌟 初始化 activeTab 時，先看網址有沒有 ?tab=offer
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -96,8 +95,11 @@ export const Wishboard: React.FC = () => {
   const initData = async () => {
     setLoading(true);
     try {
-      const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
-      if (resBulletins.success) setBulletins(resBulletins.data);
+      // 🛡️ 如果是 other，就不用去後端撈資料了，節省資源
+      if (activeTab !== 'other') {
+        const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
+        if (resBulletins.success) setBulletins(resBulletins.data);
+      }
       
       const resUser = await apiClient.get('/api/users/me');
       if (resUser.success) {
@@ -120,7 +122,6 @@ export const Wishboard: React.FC = () => {
     } catch (e) { console.error("作品集載入失敗"); }
   };
 
-  // 🌟 監聽網址變化，確保其他地方跳轉過來時能正確切換 Tab
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -188,6 +189,12 @@ export const Wishboard: React.FC = () => {
 
   const handlePostTrigger = () => {
     if (!currentUser) return navigate('/login');
+
+    // 如果在「其他」分類下按發布，直接阻擋
+    if (activeTab === 'other') {
+      showToast("該分類建置中，暫不開放發布。", "error");
+      return;
+    }
 
     if (activeTab === 'offer' && currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'post' });
@@ -289,8 +296,9 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
+      {/* 🌟 修復 Z-Index 疊層：加入 position: relative 與 zIndex: 20，確保不會被隱形遮罩覆蓋 */}
       {currentUser && wishQuota && !wishQuota.is_pro && (
-        <div style={{ padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 20, padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>
             ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
           </span>
@@ -309,7 +317,29 @@ export const Wishboard: React.FC = () => {
       />
 
       <main className="wish-grid">
-        {loading ? <div className="loading">載入中...</div> : (
+        {/* 🌟 新增：針對「其他」分頁的建置中攔截畫面 */}
+        {activeTab === 'other' ? (
+          <div style={{ 
+            gridColumn: '1 / -1', 
+            display: 'flex',             // 🌟 設為 flex 容器
+            flexDirection: 'column',     // 🌟 直向排列
+            alignItems: 'center',        // 🌟 水平置中
+            justifyContent: 'center',    // 🌟 垂直置中
+            minHeight: '40vh',           // 🌟 給予足夠的高度讓它能在畫面中間
+            padding: '40px 20px', 
+            textAlign: 'center', 
+            backgroundColor: '#FBFBF9', 
+            borderRadius: '16px', 
+            border: '2px dashed #EAE6E1', 
+            marginTop: '20px' 
+          }}>
+            <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🚧</span>
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px' }}>其他許願種類</h3>
+            <p style={{ color: '#A0978D', fontSize: '15px', margin: 0 }}>建置中，敬請期待！工程師正在努力趕工中 🛠️</p>
+          </div>
+        ) : loading ? (
+          <div className="loading">載入中...</div>
+        ) : (
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
             .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} />)
@@ -321,16 +351,9 @@ export const Wishboard: React.FC = () => {
         <span>許願規則</span>
       </button>
 
-      {/* 🌟 完整展開的規則 Modal */}
       {showRulesModal && (
-        <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} 
-          onClick={() => setShowRulesModal(false)}
-        >
-          <div 
-            style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} 
-            onClick={e => e.stopPropagation()}
-          >
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ScrollText size={20} color="#3b82f6" /> 創作許願池 規範與約定
@@ -377,7 +400,6 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 完整展開的身分引導 Modal */}
       {showUpgradeGuide.show && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '32px 24px', width: '100%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -398,7 +420,6 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 完整展開的表單 Modal */}
       {showPostModal && activeTab === 'request' && (
         <RequestModal 
           form={requestForm} 
