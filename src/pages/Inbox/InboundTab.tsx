@@ -1,7 +1,9 @@
 // src/pages/Inbox/InboundTab.tsx
 import React, { useState } from 'react';
+import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
+import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵委託', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -23,6 +25,11 @@ interface InboundTabProps {
   handleCancelBulletin?: (id: string) => void; 
 }
 
+const unescapeHtml = (str: string) => {
+  if (!str) return '';
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+};
+
 export const InboundTab: React.FC<InboundTabProps> = ({
   clientBulletins,
   clientInquiries,
@@ -36,12 +43,14 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   blacklistedIds = [],
   handleCancelBulletin 
 }) => {
-  const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
-    clientBulletins.length > 0 ? clientBulletins[0].id : null
-  );
+  
+  // 🌟 修復 1：預設選取時，優先尋找「開啟中(open)」的看板，避免卡在舊的已關閉紀錄
+  const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(() => {
+    const firstOpen = clientBulletins.find(b => b.status === 'open');
+    return firstOpen ? firstOpen.id : (clientBulletins.length > 0 ? clientBulletins[0].id : null);
+  });
 
-  // 這裡的變數目前用不到，但保留作為擴充判斷備用
-  // const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
+  const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
 
   const currentInquiries = clientInquiries
     .filter(i => i.bulletin_id === selectedBulletinId)
@@ -84,7 +93,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                         if (typeof handleCancelBulletin === 'function') {
                           handleCancelBulletin(bulletin.id);
                         } else {
-                          alert("⚠️ 系統提示：找不到撤銷功能！請確認您的 Inbox/index.tsx 有加入 handleCancelBulletin 並傳遞給 InboundTab。");
+                          alert("⚠️ 系統提示：找不到撤銷功能！");
                         }
                       }}
                     >
@@ -141,17 +150,90 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 目前沒有可顯示的提案喔！再等等吧～
               </div>
             ) : (
-              // 🌟 核心修正：不論是「徵委託」還是「接稿文」，只要是收件匣，一律統一使用 OfferList 來渲染正確的 CardView 卡片排版
-              <OfferList 
-                inquiries={currentInquiries} 
-                setSelectedInquiry={setSelectedInquiry}
-                setShowDeclineModal={setShowDeclineModal}
-                handleDirectInvite={handleDirectInvite}
-                handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-                handleViewCommission={handleViewCommission}
-                setSelectedIdsForBatch={setSelectedIdsForBatch}
-                blacklistedIds={blacklistedIds}
-              />
+              // 恢復你原本正確的設計：接稿文用 OfferList，徵委託用履歷卡片
+              activeBulletinCategory === 'offer' ? (
+                <OfferList 
+                  inquiries={currentInquiries} 
+                  setSelectedInquiry={setSelectedInquiry}
+                  setShowDeclineModal={setShowDeclineModal}
+                  handleDirectInvite={handleDirectInvite}
+                  handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+                  handleViewCommission={handleViewCommission}
+                  setSelectedIdsForBatch={setSelectedIdsForBatch}
+                  blacklistedIds={blacklistedIds}
+                />
+              ) : (
+                currentInquiries.map(item => {
+                  let snapshot: any = {};
+                  try { 
+                    const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
+                    const parsed = JSON.parse(rawSnapshot);
+                    snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+                  } catch(e) {}
+
+                  // 🌟 修復 2：拔除錯誤的備用機制。只抓取繪師履歷本身的圖片，絕對不抓取看板的圖片 (item.ref_image_key)
+                  let images: string[] = [];
+                  const rawImages = snapshot.images || []; 
+                  
+                  if (Array.isArray(rawImages)) {
+                    images = rawImages;
+                  } else if (typeof rawImages === 'string') {
+                    try {
+                      const parsedImgs = JSON.parse(unescapeHtml(rawImages));
+                      images = Array.isArray(parsedImgs) ? parsedImgs : [parsedImgs];
+                    } catch {
+                      images = [unescapeHtml(rawImages)];
+                    }
+                  }
+
+                  snapshot.images = images.filter(Boolean).map(url => 
+                    url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
+                  );
+                  
+                  const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
+                  const isBlacklisted = blacklistedIds.includes(item.artist_id);
+
+                  return (
+                    <div key={item.inquiry_id} style={{ position: 'relative' }}>
+                      <ArtistPostcard 
+                        item={item} 
+                        snapshot={snapshot} 
+                        navigate={navigate}
+                        isBlacklisted={isBlacklisted} 
+                      >
+                        
+                        {item.inquiry_status === 'declined' && item.decline_reason && (
+                          <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
+                            <div className="text-[#EF4444] font-bold text-sm mb-1">終止/撤回原因：</div>
+                            <div className="text-[#A05C5C] text-sm whitespace-pre-wrap">{item.decline_reason}</div>
+                          </div>
+                        )}
+
+                        {canDecline && (
+                          <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
+                            {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
+                          </button>
+                        )}
+                        {item.inquiry_status === 'pending' && (
+                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
+                            ✉️ 邀請詳談
+                          </button>
+                        )}
+                        {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
+                          <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
+                            💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
+                          </button>
+                        )}
+                        {item.inquiry_status === 'accepted' && (
+                          <button className="btn-success" onClick={() => handleViewCommission()}>
+                            進入委託單管理
+                          </button>
+                        )}
+                      </ArtistPostcard>
+                    </div>
+                  );
+                })
+              )
             )}
           </div>
         )}
