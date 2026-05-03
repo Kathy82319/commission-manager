@@ -17,18 +17,21 @@ export const Inbox: React.FC = () => {
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
 
-  // 🌟 新增：儲存黑名單的繪師 IDs
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
+  
+  // 🌟 新增：撤銷貼文的彈窗狀態
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [isCanceling, setIsCanceling] = useState(false);
   
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
   const isBatchMode = batchDeclineIds.size > 0;
 
   const [declineReason, setDeclineReason] = useState('');
-
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
     '目前檔期較滿，暫不接單', 
     '經過評估，可能有預算或價格考量', 
@@ -40,7 +43,6 @@ export const Inbox: React.FC = () => {
   const fetchInbox = async () => {
     setLoading(true);
     try {
-      // 🌟 同步拉取自己的資料與黑名單資料
       const [meData, relData] = await Promise.all([
         apiClient.get('/api/users/me'),
         apiClient.get('/api/relations')
@@ -56,7 +58,6 @@ export const Inbox: React.FC = () => {
         } catch(e) {}
       }
 
-      // 🌟 處理黑名單資料
       if (relData.success && relData.data) {
         const bIds = relData.data
           .filter((r: any) => r.relation_type === 'blacklist')
@@ -168,19 +169,31 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  // 🌟 新增：撤銷許願貼文邏輯
-  const handleCancelBulletin = async (bulletinId: string) => {
-    if (!window.confirm('確定要撤銷此許願貼文嗎？\n一旦撤銷，此貼文將會關閉，且所有尚未處理的提案也會一併拒絕。')) return;
+  // 🌟 修改：這兩個函式取代原本的 window.confirm 邏輯
+  // 1. 點擊撤銷按鈕時：打開彈窗並記下 ID
+  const handleCancelBulletinTrigger = (bulletinId: string) => {
+    setCancelTargetId(bulletinId);
+    setShowCancelModal(true);
+  };
+
+  // 2. 在彈窗內點擊「確認撤銷」時：真正發送 API
+  const confirmCancelBulletin = async () => {
+    if (!cancelTargetId) return;
+    setIsCanceling(true);
     try {
-      const res = await apiClient.patch(`/api/bulletins/${bulletinId}/close`, {});
+      const res = await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, {});
       if (res.success) {
         alert('許願貼文已成功撤銷。');
-        fetchInbox(); // 重新拉取資料，更新畫面狀態
+        fetchInbox(); 
+        setShowCancelModal(false);
+        setCancelTargetId(null);
       } else {
         alert(res.message || '撤銷失敗');
       }
     } catch (error: any) {
       alert(error.message || '操作發生異常，請稍後再試。');
+    } finally {
+      setIsCanceling(false);
     }
   };
 
@@ -206,10 +219,7 @@ export const Inbox: React.FC = () => {
           </button>
         </div>
         
-        <button 
-          onClick={() => setShowRulesModal(true)}
-          className="inbox-rules-btn"
-        >
+        <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">
           <span className="info-icon">?</span> 說明
         </button>
       </div>
@@ -228,8 +238,7 @@ export const Inbox: React.FC = () => {
           handleViewCommission={handleViewCommission}
           setSelectedIdsForBatch={setBatchDeclineIds}
           blacklistedIds={blacklistedIds}
-          // 🌟 將 API 傳入子元件
-          handleCancelBulletin={handleCancelBulletin}
+          handleCancelBulletin={handleCancelBulletinTrigger} // 🌟 傳遞新的觸發器
         />
       ) : (
         <OutboundTab 
@@ -242,10 +251,38 @@ export const Inbox: React.FC = () => {
         />
       )}
 
+      {/* 🌟 新增：撤銷許願的精美 Modal */}
+      {showCancelModal && (
+        <div className="inbox-modal-overlay" onClick={() => setShowCancelModal(false)}>
+          <div className="inbox-modal-content decline-mode" onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title red">⚠️ 確認撤銷許願貼文</h2>
+            <p className="modal-desc red-border" style={{ marginTop: '16px', marginBottom: '24px' }}>
+              您確定要撤銷此貼文嗎？一旦撤銷，此貼文將會關閉，且<strong>所有尚未處理的提案也會一併被拒絕並終止洽談</strong>。這項操作無法復原。
+            </p>
+            
+            <div className="modal-actions" style={{ marginTop: '32px' }}>
+              <button 
+                className="btn-cancel" 
+                onClick={() => { setShowCancelModal(false); setCancelTargetId(null); }}
+                disabled={isCanceling}
+              >
+                取消
+              </button>
+              <button 
+                className="btn-submit-red" 
+                onClick={confirmCancelBulletin} 
+                disabled={isCanceling}
+              >
+                {isCanceling ? '處理中...' : '確認撤銷並關閉'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
-            
             <div className="rules-modal-header">
               <h2><span>📋</span> 許願與投遞規則</h2>
               <button className="rules-close-btn" onClick={() => setShowRulesModal(false)}>✕</button>
@@ -275,7 +312,6 @@ export const Inbox: React.FC = () => {
                 我了解了
               </button>
             </div>
-
           </div>
         </div>
       )}
@@ -320,17 +356,7 @@ export const Inbox: React.FC = () => {
                   <div className="template-edit-hint">在此修改您的 3 則常用婉拒/撤回原因，儲存後下次也可直接使用。</div>
                   {tempTemplates.map((temp, idx) => (
                     <div key={idx} className="template-input-row">
-                      <input 
-                        type="text" 
-                        value={temp} 
-                        onChange={(e) => {
-                          const newT = [...tempTemplates];
-                          newT[idx] = e.target.value;
-                          setTempTemplates(newT);
-                        }} 
-                        placeholder={`罐頭訊息 ${idx + 1}`}
-                        className="template-input"
-                      />
+                      <input type="text" value={temp} onChange={(e) => { const newT = [...tempTemplates]; newT[idx] = e.target.value; setTempTemplates(newT); }} placeholder={`罐頭訊息 ${idx + 1}`} className="template-input" />
                     </div>
                   ))}
                   <div className="template-save-row">
@@ -342,12 +368,7 @@ export const Inbox: React.FC = () => {
                   {declineTemplates.map((template, idx) => {
                     if (!template.trim()) return null;
                     return (
-                      <button 
-                        key={idx}
-                        type="button"
-                        className="template-chip"
-                        onClick={() => setDeclineReason(template)}
-                      >
+                      <button key={idx} type="button" className="template-chip" onClick={() => setDeclineReason(template)}>
                         {template}
                       </button>
                     );
@@ -366,21 +387,10 @@ export const Inbox: React.FC = () => {
             ></textarea>
             
             <div className="modal-actions">
-              <button 
-                className="btn-cancel" 
-                onClick={() => { 
-                  setShowDeclineModal(false); 
-                  setIsEditingTemplates(false);
-                  setBatchDeclineIds(new Set()); 
-                }}
-              >
+              <button className="btn-cancel" onClick={() => { setShowDeclineModal(false); setIsEditingTemplates(false); setBatchDeclineIds(new Set()); }}>
                 再想想
               </button>
-              <button 
-                className="btn-submit-red" 
-                onClick={handleConfirmDecline} 
-                disabled={isEditingTemplates}
-              >
+              <button className="btn-submit-red" onClick={handleConfirmDecline} disabled={isEditingTemplates}>
                 確認送出
               </button>
             </div>

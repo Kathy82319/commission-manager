@@ -117,12 +117,11 @@ export default {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
-        } else if (targetId && subAction === "close" && request.method === "POST") {
+        } else if (targetId && subAction === "close" && request.method === "PATCH") { // 🌟 修正：從 POST 改為 PATCH
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.closeBulletin(targetId, currentUserId!, env, corsHeaders);
         } 
-        // 🌟 Phase 3 新增：一般用戶對貼文送出檢舉的路由
         else if (targetId && subAction === "report" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -247,7 +246,6 @@ export default {
           return adminController.updateUser(request, pathParts[4], currentUserId!, env, corsHeaders);
         }
 
-        // 🌟 Phase 3 新增：關鍵字與許願池審核路由
         if (pathParts[3] === "keywords") {
           if (request.method === "GET" && !pathParts[4]) return adminController.getKeywords(currentUserId!, env, corsHeaders);
           if (request.method === "POST" && !pathParts[4]) return adminController.addKeyword(request, currentUserId!, env, corsHeaders);
