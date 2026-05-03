@@ -208,7 +208,8 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </div>
               )}
 
-              {item.inquiry_status === 'declined' && item.decline_reason && (
+              {/* 🌟 核心修改：當狀態為 declined 或 closed，且有 decline_reason 時，顯示原因 */}
+              {(item.inquiry_status === 'declined' || item.inquiry_status === 'closed') && item.decline_reason && (
                 <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
                   <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/撤回原因：</strong>
                   <p style={{ margin: 0, fontSize: '14px', color: '#A05C5C', lineHeight: '1.6' }}>{item.decline_reason}</p>
