@@ -3,6 +3,31 @@ import type { Env } from "../shared/types";
 import { sanitizeAndLimit, sanitizeObject } from "../utils/security";
 
 export const bulletinController = {
+  // 🌟 只覆蓋這一個 closeBulletin 函式！
+  async closeBulletin(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      // 🌟 解析前端傳來的婉拒理由
+      const body = await request.json().catch(() => ({})) as any;
+      const decline_reason = body.decline_reason || '案主已撤銷許願 / 結束徵件';
+      
+      // 🛡️ XSS 與長度防護
+      const safeReason = sanitizeAndLimit(decline_reason, 200).replace(/[<>]/g, '');
+
+      // 🛡️ BOLA 越權防護：依然檢查是否為發文者本人
+      const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
+      if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
+
+      // 🌟 一併將理由寫入 Inquiries 表格中
+      await env.commission_db.batch([
+        env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId),
+        env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'closed', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE bulletin_id = ? AND status = 'pending'`).bind(safeReason, bulletinId)
+      ]);
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (error: any) {
+      console.error("closeBulletin Error:", error.message);
+      return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
+    }
+  },
   async getList(request: Request, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
@@ -281,22 +306,6 @@ export const bulletinController = {
     } catch (error: any) {
       console.error("inquire Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '投遞發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
-    }
-  },
-
-  async closeBulletin(bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
-      if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
-
-      await env.commission_db.batch([
-        env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId),
-        env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'closed', latest_update_at = CURRENT_TIMESTAMP WHERE bulletin_id = ? AND status = 'pending'`).bind(bulletinId)
-      ]);
-      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-    } catch (error: any) {
-      console.error("closeBulletin Error:", error.message);
-      return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
 

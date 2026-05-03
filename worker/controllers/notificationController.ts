@@ -7,7 +7,7 @@ interface NotificationItem {
   text: string;
   link: string;
   time: string;
-  isUnread: boolean; // 🌟 新增：讓前端知道這則是否為未讀
+  isUnread: boolean;
 }
 
 const safeParseTime = (dateStr: string | null | undefined) => {
@@ -41,16 +41,25 @@ export const notificationController = {
       (clientInboxQuery.results || []).forEach((item: any) => {
         const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_client);
         
-        // 🌟 即使已讀，我們也把最近更新的紀錄抓出來，前端才能固定顯示 5 則
-        let text = `🌟 關於許願「${item.title || '未命名'}」，您有新的洽談進度！`;
-        let linkUrl = `/inquiry/workspace/${item.id}`;
+        let text = '';
+        let linkUrl = '';
 
-        if (item.status === 'pending') {
-          text = `🌟 您的許願「${item.title || '未命名'}」收到了新提案！`;
-          linkUrl = '/client/inbox';
-        } else if (item.status === 'declined') {
-          text = `🌟 繪師已撤回針對「${item.title || '未命名'}」的提案。`;
-          linkUrl = '/client/inbox'; // 🌟 避免進入死胡同
+        // 🌟 防護升級：嚴謹的狀態判斷
+        switch(item.status) {
+          case 'pending':
+            text = `🌟 您的許願「${item.title || '未命名'}」收到了新提案！`;
+            linkUrl = '/client/inbox';
+            break;
+          case 'declined':
+            text = `🌟 繪師已撤回針對「${item.title || '未命名'}」的提案。`;
+            linkUrl = '/client/inbox';
+            break;
+          case 'proposed':
+            text = `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`;
+            linkUrl = `/inquiry/workspace/${item.id}`;
+            break;
+          default:
+            return; // 遇到 submitted, closed, accepted 都不主動跳通知給案主
         }
 
         if (isUnread) unreadCount++;
@@ -111,33 +120,51 @@ export const notificationController = {
       `).bind(currentUserId).all();
 
       (artistInboxQuery.results || []).forEach((item: any) => {
-        // 🌟 防護：如果是繪師自己撤回 (狀態 declined 且沒有特定的案主婉拒字眼)，則不通知繪師
         const isWithdrawnByArtist = item.status === 'declined' && item.decline_reason && item.decline_reason.includes('撤回');
-        
-        if (!isWithdrawnByArtist && item.status !== 'pending') {
-          const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_artist);
-          
-          let text = `🌟 關於提案「${item.title || '未命名'}」，案主已開啟洽談。`;
-          let linkUrl = `/inquiry/workspace/${item.id}`;
-
-          if (item.status === 'submitted') {
-            text = `🌟 案主已回填您的提問單：「${item.title || '未命名'}」，請前往確認。`;
-          } else if (item.status === 'declined') {
-            text = `🌟 關於提案「${item.title || '未命名'}」，案主已婉拒或終止洽談。`;
-            linkUrl = '/artist/inbox'; // 🌟 避免進入死胡同
-          }
-
-          if (isUnread) unreadCount++;
-          
-          notifications.push({
-            id: `artist_inquiry_${item.id}`,
-            type: 'inquiry_msg',
-            text,
-            link: linkUrl,
-            time: item.latest_update_at,
-            isUnread
-          });
+        if (isWithdrawnByArtist || item.status === 'pending') {
+          return;
         }
+
+        const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_artist);
+        let text = '';
+        let linkUrl = '';
+
+        // 🌟 防護升級：捨棄預設值，確保每個狀態都有絕對明確的對應
+        switch(item.status) {
+          case 'submitted':
+            text = `🌟 案主已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`;
+            linkUrl = `/inquiry/workspace/${item.id}`;
+            break;
+          case 'declined':
+            text = `🌟 關於提案「${item.title || '未命名'}」，案主已婉拒洽談。`;
+            linkUrl = '/artist/inbox';
+            break;
+          case 'closed':
+            text = `🌟 關於提案「${item.title || '未命名'}」，案主已撤銷許願或結束徵件。`;
+            linkUrl = '/artist/inbox';
+            break;
+          case 'proposed':
+            text = `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`;
+            linkUrl = `/inquiry/workspace/${item.id}`;
+            break;
+          case 'accepted':
+            text = `🌟 恭喜！「${item.title || '未命名'}」的提案已正式成立委託單。`;
+            linkUrl = `/artist/notebook`; 
+            break;
+          default:
+            return; // 遇到不認識的狀態，直接丟棄防呆
+        }
+
+        if (isUnread) unreadCount++;
+        
+        notifications.push({
+          id: `artist_inquiry_${item.id}`,
+          type: 'inquiry_msg',
+          text,
+          link: linkUrl,
+          time: item.latest_update_at,
+          isUnread
+        });
       });
 
       const artistCommQuery = await env.commission_db.prepare(`
@@ -148,7 +175,6 @@ export const notificationController = {
 
       (artistCommQuery.results || []).forEach((order: any) => {
         if (order.pending_changes) {
-          // 如果有異動，代表通常是繪師發起的，除非你有實作雙向異動。這裡先視為提醒
           const isUnread = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_artist);
           if (isUnread) unreadCount++;
           
@@ -175,7 +201,6 @@ export const notificationController = {
         });
       });
 
-      // 🌟 排序並永遠回傳最新的 15 則紀錄 (不論已讀未讀)，讓前端有足夠的資料來決定要顯示幾則
       notifications.sort((a, b) => safeParseTime(b.time) - safeParseTime(a.time));
       const topNotifications = notifications.slice(0, 15);
 
@@ -189,14 +214,13 @@ export const notificationController = {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
-  // 加入在 notificationController.ts 裡面
+
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
       const role = url.searchParams.get('role');
 
       if (role === 'client') {
-        // 更新案主視角的所有最後閱讀時間
         await env.commission_db.batch([
           env.commission_db.prepare(`
             UPDATE BulletinInquiries 
@@ -210,7 +234,6 @@ export const notificationController = {
           `).bind(currentUserId)
         ]);
       } else if (role === 'artist') {
-        // 更新繪師視角的所有最後閱讀時間
         await env.commission_db.batch([
           env.commission_db.prepare(`
             UPDATE BulletinInquiries 

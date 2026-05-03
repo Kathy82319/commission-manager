@@ -22,14 +22,14 @@ export const Inbox: React.FC = () => {
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
   
-  // 🌟 新增：撤銷貼文的彈窗狀態
-  const [showCancelModal, setShowCancelModal] = useState(false);
+  // 🌟 新增：撤銷許願的目標 ID 狀態 (用來取代舊的 showCancelModal 邏輯)
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
-  const [isCanceling, setIsCanceling] = useState(false);
   
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
+  
   const isBatchMode = batchDeclineIds.size > 0;
+  const isCancelMode = !!cancelTargetId; // 🌟 判斷目前是否為撤銷整篇文章模式
 
   const [declineReason, setDeclineReason] = useState('');
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
@@ -86,37 +86,53 @@ export const Inbox: React.FC = () => {
 
   useEffect(() => { fetchInbox(); }, [activeTab]);
 
+  // 🛡️ 防護重點：統一的關閉彈窗與清空狀態邏輯，防止狀態污染
+  const handleCloseModal = () => {
+    setShowDeclineModal(false);
+    setIsEditingTemplates(false);
+    setBatchDeclineIds(new Set());
+    setSelectedInquiry(null);
+    setCancelTargetId(null);
+    setDeclineReason('');
+  };
+
+  // 🌟 核心修改：合併處理單筆婉拒、批次婉拒與撤銷許願
   const handleConfirmDecline = async () => {
-    if (!isBatchMode && !selectedInquiry) return;
+    if (!isBatchMode && !selectedInquiry && !isCancelMode) return;
     
-    const defaultReason = (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist')
-      ? '繪師已撤回投遞' 
-      : '已找到合適人選 / 終止洽談';
+    // 動態決定預設理由
+    const defaultReason = isCancelMode 
+      ? '案主已撤銷許願 / 結束徵件' 
+      : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist')
+        ? '繪師已撤回投遞' 
+        : '已找到合適人選 / 終止洽談';
+        
     const finalReason = declineReason || defaultReason;
 
     try {
-      if (isBatchMode) {
+      if (isCancelMode && cancelTargetId) {
+        // 🌟 1. 撤銷整篇許願文章模式，帶入理由給後端
+        const res = await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, { decline_reason: finalReason });
+        if (!res.success) throw new Error(res.message);
+        alert('許願貼文已成功撤銷，並已發送婉拒通知給相關繪師。');
+        
+      } else if (isBatchMode) {
+        // 2. 批次婉拒模式
         const targetIds = Array.from(batchDeclineIds);
         const res = await apiClient.post('/api/inquiries/batch-decline', { 
           inquiry_ids: targetIds,
           decline_reason: finalReason 
         });
-
-        if (res.success) {
-          alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
-        } else {
-          throw new Error(res.message);
-        }
-      } else {
+        if (!res.success) throw new Error(res.message);
+        alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
+        
+      } else if (selectedInquiry) {
+        // 3. 單筆婉拒模式
         await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: finalReason });
         alert('已傳送婉拒/撤回通知，對話已關閉。');
       }
 
-      setShowDeclineModal(false);
-      setDeclineReason('');
-      setIsEditingTemplates(false);
-      setBatchDeclineIds(new Set()); 
-      setSelectedInquiry(null);      
+      handleCloseModal(); // 清除狀態並關閉彈窗
       fetchInbox(); 
     } catch (error: any) { 
       alert(error.message || '操作發生錯誤，請稍後再試。'); 
@@ -169,32 +185,10 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  // 🌟 修改：這兩個函式取代原本的 window.confirm 邏輯
-  // 1. 點擊撤銷按鈕時：打開彈窗並記下 ID
+  // 🌟 修改：觸發撤銷許願時，將 ID 存入並開啟共用的婉拒視窗
   const handleCancelBulletinTrigger = (bulletinId: string) => {
     setCancelTargetId(bulletinId);
-    setShowCancelModal(true);
-  };
-
-  // 2. 在彈窗內點擊「確認撤銷」時：真正發送 API
-  const confirmCancelBulletin = async () => {
-    if (!cancelTargetId) return;
-    setIsCanceling(true);
-    try {
-      const res = await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, {});
-      if (res.success) {
-        alert('許願貼文已成功撤銷。');
-        fetchInbox(); 
-        setShowCancelModal(false);
-        setCancelTargetId(null);
-      } else {
-        alert(res.message || '撤銷失敗');
-      }
-    } catch (error: any) {
-      alert(error.message || '操作發生異常，請稍後再試。');
-    } finally {
-      setIsCanceling(false);
-    }
+    setShowDeclineModal(true);
   };
 
   return (
@@ -251,35 +245,6 @@ export const Inbox: React.FC = () => {
         />
       )}
 
-      {/* 🌟 新增：撤銷許願的精美 Modal */}
-      {showCancelModal && (
-        <div className="inbox-modal-overlay" onClick={() => setShowCancelModal(false)}>
-          <div className="inbox-modal-content decline-mode" onClick={e => e.stopPropagation()}>
-            <h2 className="modal-title red">⚠️ 確認撤銷許願貼文</h2>
-            <p className="modal-desc red-border" style={{ marginTop: '16px', marginBottom: '24px' }}>
-              您確定要撤銷此貼文嗎？一旦撤銷，此貼文將會關閉，且<strong>所有尚未處理的提案也會一併被拒絕並終止洽談</strong>。這項操作無法復原。
-            </p>
-            
-            <div className="modal-actions" style={{ marginTop: '32px' }}>
-              <button 
-                className="btn-cancel" 
-                onClick={() => { setShowCancelModal(false); setCancelTargetId(null); }}
-                disabled={isCanceling}
-              >
-                取消
-              </button>
-              <button 
-                className="btn-submit-red" 
-                onClick={confirmCancelBulletin} 
-                disabled={isCanceling}
-              >
-                {isCanceling ? '處理中...' : '確認撤銷並關閉'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
@@ -316,20 +281,27 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
+      {/* 🌟 共用的大型處理 Modal */}
       {showDeclineModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">
             <h2 className="modal-title red">
-              {isBatchMode 
-                ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
-                : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案')
+              {/* 🌟 動態判斷標題 */}
+              {isCancelMode 
+                ? '⚠️ 撤銷許願與婉拒提案' 
+                : isBatchMode 
+                  ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
+                  : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案')
               }
             </h2>
             
             <p className="modal-desc red-border">
-              {isBatchMode
-                ? '您即將同時婉拒多筆委託提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
-                : '這將會終止與此對象的洽談，建議附上簡單理由以示尊重。'
+              {/* 🌟 動態判斷說明文字 */}
+              {isCancelMode
+                ? '您即將撤銷這篇許願貼文。這將會關閉該貼文，並將所有尚未處理的提案一併婉拒。請填寫統一的婉拒理由以示尊重。'
+                : isBatchMode
+                  ? '您即將同時婉拒多筆委託提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
+                  : '這將會終止與此對象的洽談，建議附上簡單理由以示尊重。'
               }
             </p>
 
@@ -356,7 +328,17 @@ export const Inbox: React.FC = () => {
                   <div className="template-edit-hint">在此修改您的 3 則常用婉拒/撤回原因，儲存後下次也可直接使用。</div>
                   {tempTemplates.map((temp, idx) => (
                     <div key={idx} className="template-input-row">
-                      <input type="text" value={temp} onChange={(e) => { const newT = [...tempTemplates]; newT[idx] = e.target.value; setTempTemplates(newT); }} placeholder={`罐頭訊息 ${idx + 1}`} className="template-input" />
+                      <input 
+                        type="text" 
+                        value={temp} 
+                        onChange={(e) => {
+                          const newT = [...tempTemplates];
+                          newT[idx] = e.target.value;
+                          setTempTemplates(newT);
+                        }} 
+                        placeholder={`罐頭訊息 ${idx + 1}`}
+                        className="template-input"
+                      />
                     </div>
                   ))}
                   <div className="template-save-row">
@@ -368,7 +350,12 @@ export const Inbox: React.FC = () => {
                   {declineTemplates.map((template, idx) => {
                     if (!template.trim()) return null;
                     return (
-                      <button key={idx} type="button" className="template-chip" onClick={() => setDeclineReason(template)}>
+                      <button 
+                        key={idx}
+                        type="button"
+                        className="template-chip"
+                        onClick={() => setDeclineReason(template)}
+                      >
                         {template}
                       </button>
                     );
@@ -383,14 +370,22 @@ export const Inbox: React.FC = () => {
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               disabled={isEditingTemplates}
+              maxLength={200} // 🛡️ 防護重點：長度限制防呆
               style={{ opacity: isEditingTemplates ? 0.5 : 1 }}
             ></textarea>
             
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => { setShowDeclineModal(false); setIsEditingTemplates(false); setBatchDeclineIds(new Set()); }}>
+              <button 
+                className="btn-cancel" 
+                onClick={handleCloseModal} // 🌟 統一呼叫防污染清除函式
+              >
                 再想想
               </button>
-              <button className="btn-submit-red" onClick={handleConfirmDecline} disabled={isEditingTemplates}>
+              <button 
+                className="btn-submit-red" 
+                onClick={handleConfirmDecline} 
+                disabled={isEditingTemplates}
+              >
                 確認送出
               </button>
             </div>
