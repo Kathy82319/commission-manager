@@ -12,7 +12,6 @@ export const adminController = {
     return null;
   },
 
-  // worker/controllers/adminController.ts (部分更新)
   async getDashboardStats(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -21,7 +20,7 @@ export const adminController = {
     const { results: newUsers } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Users WHERE created_at >= date('now', 'start of month')").all();
     const { results: commStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, status FROM Commissions GROUP BY status").all();
     
-    // 🌟 方案 A 新增：撈取需要審核的許願池貼文總數
+    // 撈取需要審核的許願池貼文總數 (紅點通知)
     const { results: pendingReports } = await env.commission_db.prepare(`
       SELECT COUNT(*) as total FROM Bulletins b 
       WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
@@ -33,7 +32,7 @@ export const adminController = {
         users: userStats, 
         new_users_this_month: newUsers[0]?.total || 0, 
         commissions: commStats,
-        pending_reports_count: pendingReports[0]?.total || 0 // 🌟 回傳給前端做紅點標示
+        pending_reports_count: pendingReports[0]?.total || 0
       } 
     }), { status: 200, headers: corsHeaders });
   },
@@ -107,7 +106,7 @@ export const adminController = {
       return new Response(JSON.stringify({ success: false, error: "安全防護：您無法拔除自身的管理員權限或將自己停權。" }), { status: 403, headers: corsHeaders });
     }
 
-    const allowedRoles = ['admin', 'client', 'deleted'];
+    const allowedRoles = ['admin', 'client', 'artist', 'deleted'];
     const allowedPlans = ['free', 'trial', 'pro'];
     const allowedWishboardStatus = ['active', 'muted', 'banned'];
 
@@ -140,7 +139,7 @@ export const adminController = {
   },
 
   // ==========================================
-  // 🌟 Phase 3 新增：關鍵字與許願池審核防護 API
+  // 🌟 Phase 3: 關鍵字與許願池審核防護 API
   // ==========================================
 
   async getKeywords(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -162,7 +161,6 @@ export const adminController = {
       await env.commission_db.prepare("INSERT INTO MonitoredKeywords (keyword) VALUES (?)").bind(keyword.trim()).run();
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
     } catch (e: any) {
-      // 若 D1 表設定了 UNIQUE，重複寫入會拋出錯誤
       return new Response(JSON.stringify({ error: "關鍵字可能已存在" }), { status: 400, headers: corsHeaders });
     }
   },
@@ -175,31 +173,32 @@ export const adminController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 撈取被檢舉的貼文 (包含隱藏或檢舉數 > 0)
+  // 🌟 修改：撈取指定分類的所有貼文，並附帶檢舉資訊
   async getReportedBulletins(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
 
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+    const category = url.searchParams.get('category') || 'request'; // 新增：透過前端傳遞分類
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 🛡️ 效能優化：使用 LEFT JOIN 將貼文與檢舉數合併，避免 N+1 查詢
+    // 🛡️ 效能優化：使用子查詢，一次把所有貼文、檢舉次數、最新一筆檢舉原因撈出來
     const { results } = await env.commission_db.prepare(`
       SELECT b.*, u.display_name as author_name, 
-      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count
+      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count,
+      (SELECT reason FROM Reports r WHERE r.bulletin_id = b.id ORDER BY created_at DESC LIMIT 1) as latest_report_reason
       FROM Bulletins b
-      LEFT JOIN Users u ON b.user_id = u.id
-      WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
+      LEFT JOIN Users u ON b.client_id = u.id
+      WHERE b.category = ?
       ORDER BY b.status DESC, report_count DESC, b.created_at DESC
       LIMIT ? OFFSET ?
-    `).bind(limit, offset).all();
+    `).bind(category, limit, offset).all();
 
     const { results: countRes } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as total FROM Bulletins b 
-      WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
-    `).all();
+      SELECT COUNT(*) as total FROM Bulletins WHERE category = ?
+    `).bind(category).all();
 
     return new Response(JSON.stringify({ success: true, data: results, pagination: { total: countRes[0]?.total || 0, page, limit } }), { status: 200, headers: corsHeaders });
   },
@@ -209,7 +208,7 @@ export const adminController = {
     if (adminCheck) return adminCheck;
 
     const { status } = await request.json() as any;
-    if (!['active', 'hidden_under_review', 'deleted'].includes(status)) {
+    if (!['active', 'open', 'hidden_under_review', 'closed', 'deleted'].includes(status)) {
       return new Response(JSON.stringify({ error: "無效的狀態" }), { status: 400, headers: corsHeaders });
     }
 
