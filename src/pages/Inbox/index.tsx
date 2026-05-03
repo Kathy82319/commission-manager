@@ -168,6 +168,22 @@ export const Inbox: React.FC = () => {
     }
   };
 
+  // 🌟 新增：撤銷許願貼文邏輯
+  const handleCancelBulletin = async (bulletinId: string) => {
+    if (!window.confirm('確定要撤銷此許願貼文嗎？\n一旦撤銷，此貼文將會關閉，且所有尚未處理的提案也會一併拒絕。')) return;
+    try {
+      const res = await apiClient.patch(`/api/bulletins/${bulletinId}/close`, {});
+      if (res.success) {
+        alert('許願貼文已成功撤銷。');
+        fetchInbox(); // 重新拉取資料，更新畫面狀態
+      } else {
+        alert(res.message || '撤銷失敗');
+      }
+    } catch (error: any) {
+      alert(error.message || '操作發生異常，請稍後再試。');
+    }
+  };
+
   return (
     <div className="inbox-page-container">
       <div className="inbox-page-header">
@@ -211,7 +227,9 @@ export const Inbox: React.FC = () => {
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
           setSelectedIdsForBatch={setBatchDeclineIds}
-          blacklistedIds={blacklistedIds} // 🌟 傳遞黑名單給 InboundTab
+          blacklistedIds={blacklistedIds}
+          // 🌟 將 API 傳入子元件
+          handleCancelBulletin={handleCancelBulletin}
         />
       ) : (
         <OutboundTab 
@@ -220,7 +238,7 @@ export const Inbox: React.FC = () => {
           setShowDeclineModal={setShowDeclineModal}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
-          blacklistedIds={blacklistedIds} // 🌟 傳遞黑名單給 OutboundTab
+          blacklistedIds={blacklistedIds} 
         />
       )}
 

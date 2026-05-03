@@ -22,8 +22,8 @@ interface InboundTabProps {
   handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
   blacklistedIds?: string[];
-  // 🌟 新增：接收來自 index.tsx 的撤銷 API 函式
-  handleCancelBulletin: (id: string) => void;
+  // 接收撤銷 API 函式
+  handleCancelBulletin?: (id: string) => void; 
 }
 
 const unescapeHtml = (str: string) => {
@@ -42,7 +42,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   handleViewCommission,
   setSelectedIdsForBatch,
   blacklistedIds = [],
-  handleCancelBulletin // 🌟 解構出來使用
+  handleCancelBulletin 
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -59,15 +59,14 @@ export const InboundTab: React.FC<InboundTabProps> = ({
       <div className="mb-8">
         <div className="dashboard-slots-grid">
           {SLOT_TYPES.map(slotType => {
-            const bulletin = clientBulletins.find(b => b.category === slotType.id);
+            // 🌟 關鍵修復：只抓取狀態為 'open' 的貼文！這樣撤銷後，格子才會恢復為「尚有空缺」
+            const bulletin = clientBulletins.find(b => b.category === slotType.id && b.status === 'open');
             const isSelected = selectedBulletinId === bulletin?.id;
             
             if (bulletin) {
               return (
-                // 🌟 加上 position: 'relative' 以便讓剩餘天數定位到右上角
                 <div key={slotType.id} className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedBulletinId(bulletin.id)} style={{ position: 'relative' }}>
                   
-                  {/* 🌟 需求 3：剩餘天數移到右上角 */}
                   <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '12px', fontWeight: 'bold', color: '#D97706', backgroundColor: '#FFFBEB', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
                     {calculateDaysLeft(bulletin.expires_at)}
                   </div>
@@ -80,7 +79,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   <div className="slot-stats" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="stat-item"><span className="stat-num">{bulletin.inquiry_count || 0}</span> 份提案</div>
                     
-                    {/* 🌟 需求 3：原位置改為撤銷按鈕，並加上 e.stopPropagation() */}
                     <button 
                       style={{ 
                         padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', color: '#EF4444', 
@@ -90,8 +88,13 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                       onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
                       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFF')}
                       onClick={(e) => {
-                        e.stopPropagation(); // 防止觸發外層卡片的 onClick
-                        handleCancelBulletin(bulletin.id);
+                        e.stopPropagation(); 
+                        // 🌟 防呆除錯：確保函式存在才呼叫，否則彈出提示
+                        if (typeof handleCancelBulletin === 'function') {
+                          handleCancelBulletin(bulletin.id);
+                        } else {
+                          alert("⚠️ 系統提示：找不到撤銷功能！請確認您的 Inbox/index.tsx 有加入 handleCancelBulletin 並傳遞給 InboundTab。");
+                        }
                       }}
                     >
                       撤銷許願
@@ -100,18 +103,15 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 </div>
               );
             } else {
-              // 🌟 需求 1：判斷是否為「其他/手作」
               const isOther = slotType.id === 'other';
 
               return (
                 <div 
                   key={slotType.id} 
-                  // 如果是 other，調整透明度並改掉 cursor
                   className={`dashboard-slot empty-slot transition ${isOther ? 'opacity-60' : ''}`} 
                   style={{ cursor: isOther ? 'not-allowed' : 'pointer', filter: isOther ? 'grayscale(0.3)' : 'none' }}
                   onClick={() => {
-                    if (isOther) return; // 🌟 阻擋點擊
-                    // 🌟 需求 2：精準跳轉至 /wishboard 並且帶入 tab 參數
+                    if (isOther) return; 
                     navigate(`/wishboard?tab=${slotType.id}`);
                   }}
                 >
@@ -123,7 +123,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     <div className="text-xs text-[#A0978D] mb-3">{slotType.desc}</div>
                     <button 
                       className="btn-outline-primary text-sm py-1 px-3"
-                      // 🌟 按鈕樣式變更為灰色不可按
                       style={isOther ? { borderColor: '#D1D5DB', color: '#9CA3AF', backgroundColor: '#F3F4F6', cursor: 'not-allowed' } : {}}
                       disabled={isOther}
                     >

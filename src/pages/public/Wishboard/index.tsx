@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // 🌟 引入 useLocation
+import { useNavigate, useLocation } from 'react-router-dom'; // 🌟 引入 useLocation 接收跳轉參數
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
 import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-react';
@@ -14,7 +14,7 @@ import { InquireModal } from './InquireModals';
 
 export const Wishboard: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // 🌟 獲取當前網址資訊
+  const location = useLocation(); 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,10 +321,16 @@ export const Wishboard: React.FC = () => {
         <span>許願規則</span>
       </button>
 
+      {/* 🌟 完整展開的規則 Modal */}
       {showRulesModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
-            
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} 
+          onClick={() => setShowRulesModal(false)}
+        >
+          <div 
+            style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} 
+            onClick={e => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ScrollText size={20} color="#3b82f6" /> 創作許願池 規範與約定
@@ -371,6 +377,7 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
+      {/* 🌟 完整展開的身分引導 Modal */}
       {showUpgradeGuide.show && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '32px 24px', width: '100%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
@@ -391,16 +398,44 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
+      {/* 🌟 完整展開的表單 Modal */}
       {showPostModal && activeTab === 'request' && (
-        <RequestModal form={requestForm} setForm={setRequestForm} isUploading={isUploading} onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleRequestImageUpload} />
+        <RequestModal 
+          form={requestForm} 
+          setForm={setRequestForm} 
+          isUploading={isUploading} 
+          onClose={() => setShowPostModal(false)} 
+          onSubmit={handlePostSubmit} 
+          onImageUpload={handleRequestImageUpload} 
+        />
       )}
 
       {showPostModal && activeTab === 'offer' && (
-        <OfferModal form={offerForm} setForm={setOfferForm} isUploading={isUploading} onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleOfferImageUpload} userShowcase={userShowcase} onSaveDraft={saveDraft} onLoadDraft={loadSavedDraft} />
+        <OfferModal 
+          form={offerForm} 
+          setForm={setOfferForm} 
+          isUploading={isUploading} 
+          onClose={() => setShowPostModal(false)} 
+          onSubmit={handlePostSubmit} 
+          onImageUpload={handleOfferImageUpload} 
+          userShowcase={userShowcase} 
+          onSaveDraft={saveDraft} 
+          onLoadDraft={loadSavedDraft} 
+        />
       )}
 
       {showInquireModal && (
-        <InquireModal selectedBulletin={selectedBulletin} inquireDraft={inquireDraft} setInquireDraft={setInquireDraft} inquireTagInputs={inquireTagInputs} setInquireTagInputs={setInquireTagInputs} inquireUploading={inquireUploading} onClose={() => setShowInquireModal(false)} onSubmit={handleInquireSubmit} onImageUpload={handleInquireImageUpload} />
+        <InquireModal 
+          selectedBulletin={selectedBulletin} 
+          inquireDraft={inquireDraft} 
+          setInquireDraft={setInquireDraft} 
+          inquireTagInputs={inquireTagInputs} 
+          setInquireTagInputs={setInquireTagInputs} 
+          inquireUploading={inquireUploading} 
+          onClose={() => setShowInquireModal(false)} 
+          onSubmit={handleInquireSubmit} 
+          onImageUpload={handleInquireImageUpload} 
+        />
       )}
     </div>
   );
