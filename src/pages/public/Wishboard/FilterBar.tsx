@@ -7,8 +7,7 @@ interface FilterBarProps {
   activeTab: 'request' | 'offer' | 'other';
   setActiveTab: (tab: 'request' | 'offer' | 'other') => void;
   selectedFilters: string[];
-  // 🌟 修正 1：配合 index.tsx，將這裡的參數改為只接收單一 tag 字串
-  toggleTag: (tag: string) => void;
+  toggleTag: (tag: string, field: 'filters') => void;
   currentUser: any;
   onPostTrigger: () => void;
 }
@@ -49,8 +48,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         
         <div className="tag-selector filter-tags-scroll" style={{ flex: 1, margin: 0 }}>
           {REQ_TAGS.map(tag => {
-            // 🌟 修正 2：將判斷邏輯抽出來。
-            // 如果是「不限」，只要陣列是空的它就亮起；如果是其他標籤，就看陣列有沒有包含它。
+            // 🌟 將判斷邏輯抽離，清楚明瞭
             const isSelected = tag === '不限' 
               ? selectedFilters.length === 0 
               : selectedFilters.includes(tag);
@@ -59,7 +57,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <button 
                 key={tag} 
                 className={`selectable-tag ${isSelected ? 'selected' : ''}`} 
-                onClick={() => toggleTag(tag)}
+                onClick={() => toggleTag(tag, 'filters')}
               >
                 {tag}
               </button>

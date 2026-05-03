@@ -95,7 +95,6 @@ export const Wishboard: React.FC = () => {
   const initData = async () => {
     setLoading(true);
     try {
-      // 🛡️ 如果是 other，就不用去後端撈資料了，節省資源
       if (activeTab !== 'other') {
         const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
         if (resBulletins.success) setBulletins(resBulletins.data);
@@ -190,7 +189,6 @@ export const Wishboard: React.FC = () => {
   const handlePostTrigger = () => {
     if (!currentUser) return navigate('/login');
 
-    // 如果在「其他」分類下按發布，直接阻擋
     if (activeTab === 'other') {
       showToast("該分類建置中，暫不開放發布。", "error");
       return;
@@ -296,7 +294,6 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 修復 Z-Index 疊層：加入 position: relative 與 zIndex: 20，確保不會被隱形遮罩覆蓋 */}
       {currentUser && wishQuota && !wishQuota.is_pro && (
         <div style={{ position: 'relative', zIndex: 20, padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>
@@ -310,27 +307,31 @@ export const Wishboard: React.FC = () => {
       <FilterBar 
         activeTab={activeTab} setActiveTab={setActiveTab} 
         selectedFilters={selectedFilters} 
-        toggleTag={(tag) => setSelectedFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])} 
+        toggleTag={(tag) => {
+          // 🌟🌟 核心修復點 🌟🌟
+          if (tag === '不限') {
+            setSelectedFilters([]); // 如果點擊「不限」，一鍵清空所有篩選器
+          } else {
+            setSelectedFilters(prev => {
+              if (prev.includes(tag)) {
+                return prev.filter(t => t !== tag); // 已經存在就移除
+              } else {
+                return [...prev, tag]; // 不存在就新增
+              }
+            });
+          }
+        }} 
         currentUser={currentUser} 
         onPostTrigger={handlePostTrigger} 
       />
 
       <main className="wish-grid">
-        {/* 🌟 新增：針對「其他」分頁的建置中攔截畫面 */}
         {activeTab === 'other' ? (
           <div style={{ 
-            gridColumn: '1 / -1', 
-            display: 'flex',             // 🌟 設為 flex 容器
-            flexDirection: 'column',     // 🌟 直向排列
-            alignItems: 'center',        // 🌟 水平置中
-            justifyContent: 'center',    // 🌟 垂直置中
-            minHeight: '40vh',           // 🌟 給予足夠的高度讓它能在畫面中間
-            padding: '40px 20px', 
-            textAlign: 'center', 
-            backgroundColor: '#FBFBF9', 
-            borderRadius: '16px', 
-            border: '2px dashed #EAE6E1', 
-            marginTop: '20px' 
+            gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', 
+            alignItems: 'center', justifyContent: 'center', minHeight: '40vh', 
+            padding: '40px 20px', textAlign: 'center', backgroundColor: '#FBFBF9', 
+            borderRadius: '16px', border: '2px dashed #EAE6E1', marginTop: '20px' 
           }}>
             <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🚧</span>
             <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px' }}>其他許願種類</h3>
