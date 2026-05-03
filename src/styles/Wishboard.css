@@ -12,10 +12,6 @@
   --wish-border: #cbd5e1;
 }
 
-body {
-  overflow-x: hidden; /* 🌟 終極防護：防止任何元素超出版面產生左右滑動 */
-}
-
 .wishboard-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -24,7 +20,8 @@ body {
   min-height: 100vh;
   color: var(--wish-text-main);
   font-family: inherit;
-  box-sizing: border-box; /* 🌟 確保 padding 不會撐破寬度 */
+  box-sizing: border-box;
+  overflow-x: hidden; /* 🌟 防護橫向滾動條移至此處，避免 body 卡死 */
 }
 
 /* Toast 通知 */
@@ -86,29 +83,30 @@ body {
 
 .wish-card-wide { 
   display: flex; 
+  flex-direction: row;
   background: white; 
   border-radius: 16px; 
   overflow: hidden; 
   box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
   border: 1px solid #f0f0f0; 
   transition: transform 0.2s; 
-  align-items: stretch; /* 🌟 確保左右兩側高度一致 */
+  align-items: stretch; 
   margin-bottom: 20px;
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
 .wish-card-image-wrapper { 
   width: 360px; 
+  max-width: 360px; /* 🌟 電腦版鎖定最大寬度 */
   min-height: 320px;
   position: relative; 
-  flex-shrink: 0; 
+  flex: 0 0 auto; /* 🌟 防止變形 */
   background-color: #fafafa; 
   border-right: 1px solid #f0f0f0; 
   overflow: hidden; 
   cursor: zoom-in;
 }
 
-/* 🌟 新增：讓圖片做絕對定位，完美填滿被內容撐開的高度 */
 .wish-card-img-inner {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -209,7 +207,7 @@ body {
    🌟 彈窗系統 (Modal)
    ================================================== */
 .modal-overlay { 
-  position: fixed; top: 0; left: 0; width: 100%; height: 100vh; /* 🌟 修正 100vw 問題 */
+  position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
   background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; 
   z-index: 9999; padding: 20px; box-sizing: border-box;
@@ -349,7 +347,6 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
   .filter-section { flex-direction: column !important; align-items: flex-start !important; padding: 12px !important; gap: 12px !important; }
   .filter-label { margin: 0 !important; }
   
-  /* 🌟 修正 100vw 問題，改為 100% 確保不溢出螢幕 */
   .filter-tags-scroll {
     display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important;
     width: 100% !important; max-width: 100% !important; padding-bottom: 8px !important; gap: 8px !important;
@@ -379,9 +376,20 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
   .modal-footer { padding: 12px; flex-direction: column-reverse; gap: 8px; }
   .modal-footer button { width: 100%; padding: 10px; font-size: 14px; }
 
-  .wish-card-wide { flex-direction: column; }
-  .wish-card-image-wrapper { width: 100%; height: 260px; min-height: 260px; border-right: none; }
-  .wish-card-info { padding: 16px; gap: 12px; }
+  /* 🌟 核心修正區：強制手機版滿版，解除 360px 卡死鎖定 */
+  .wish-card-wide { flex-direction: column !important; width: 100% !important; }
+  
+  .wish-card-image-wrapper { 
+    width: 100% !important; 
+    max-width: none !important; /* 🌟 覆蓋電腦版 360px 限制 */
+    height: 65vw !important; /* 🌟 使用 65vw 讓圖片在任何尺寸的手機都能維持漂亮的橫幅比例 */
+    min-height: 200px !important; 
+    flex: none !important; /* 🌟 覆蓋 flex: 0 0 auto 防止變形 */
+    border-right: none !important; 
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .wish-card-info { padding: 16px !important; gap: 12px; }
 
   .lightbox-nav-btn { padding: 10px 5px; }
   .lightbox-nav-btn.prev { left: 5px; }
