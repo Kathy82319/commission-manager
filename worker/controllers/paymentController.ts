@@ -23,7 +23,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 1;
+      const amount = 1; // 目前為 1 供測試，正式營業請記得改回 150
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
       const backendUrl = env.BACKEND_URL;
@@ -31,7 +31,7 @@ export const paymentController = {
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
       ).bind(orderId, currentUserId, amount, plan_type).run();
- 
+
       const tradeInfoObj: any = {
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
         RespondType: "JSON",
@@ -53,6 +53,7 @@ export const paymentController = {
 
       const { newebpay } = await import("../utils/crypto");
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
+      // 這裡維持預設 false，因為是發送給藍新
       const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
 
       return new Response(JSON.stringify({
@@ -62,7 +63,6 @@ export const paymentController = {
           TradeInfo: aesString,
           TradeSha: shaString,
           Version: "2.0",
-          // 🌟 2. 關鍵修正：將 ccore (測試區) 改為 core (正式區)
           PayGateWay: "https://core.newebpay.com/MPG/mpg_gateway"
         }
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -97,16 +97,20 @@ export const paymentController = {
 
       const { newebpay } = await import("../utils/crypto");
       
-      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
+      // 🌟 修正 1：加上 true 參數，切換為藍新回傳的 IV -> Info -> Key 排序
+      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim(), true);
+      
       if (computedSha !== tradeSha) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
-          .bind(`🚨 雜湊驗證失敗！疑似偽造請求。`).run();
+          .bind(`🚨 雜湊驗證失敗！預期: ${tradeSha}, 計算結果: ${computedSha}`).run();
         return new Response("OK");
       }
 
       const decrypted = await newebpay.decrypt(tradeInfo.trim(), env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
-      const decodedData = decodeURIComponent(decrypted.replace(/\+/g, " "));
-      const data = JSON.parse(decodedData);
+      
+      // 🌟 修正 2 & 3：過濾掉老舊 AES 演算法解密後產生的不可見 Padding 字元，確保 JSON 解析不崩潰
+      const cleanJson = decrypted.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+      const data = JSON.parse(cleanJson);
       
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
