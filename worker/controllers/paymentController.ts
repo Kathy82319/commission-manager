@@ -23,7 +23,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 199;
+      const amount = 1;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
       const backendUrl = env.BACKEND_URL;
