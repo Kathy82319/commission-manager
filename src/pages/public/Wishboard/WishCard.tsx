@@ -333,23 +333,22 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             </div>
 
             <div className="meta-info-grid">
-              {/* 🌟 防爆鎖定：所有跨行文字加上 flex: 1 與 minWidth: 0，確保不撐破父元素 */}
               {bulletin.category === 'request' && (
-                <div className="meta-item">
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
                   <DollarSign size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
                   <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>預算：</span>
-                  <span className="highlight-price" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="highlight-price" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     ${bulletin.budget_min} ~ ${bulletin.budget_max}
                   </span>
                 </div>
               )}
               
-              <div className="meta-item">
+              <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
                 <Calendar size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
                 <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>排單狀況：</span>
                 <span 
                   className="text-dark-600" 
-                  style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                  style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
                   title={bulletin.schedule_type === 'flexible' ? (bulletin.category === 'offer' ? '目前空閒可排單' : '可接受排單') : `預計排單至 ${unescapeHtml(bulletin.specific_date)} 之後`}
                 >
                   {bulletin.schedule_type === 'flexible' 
@@ -358,12 +357,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
               
-              <div className="meta-item">
+              <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0 }}>
                 <Send size={16} className="meta-icon" style={{ flexShrink: 0, marginRight: '4px' }} />
                 <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>付款方式：</span>
                 <span 
                   className="text-dark-600" 
-                  style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                  style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
                   title={paymentMethods.join(', ')}
                 >
                   {paymentMethods.join(', ')}
@@ -371,12 +370,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
 
               {bulletin.category === 'offer' && paymentTimingLabel && (
-                <div className="meta-item" style={{ gridColumn: '1 / -1' }}>
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
                   <DollarSign size={16} className="meta-icon text-[#059669]" style={{ flexShrink: 0, marginRight: '4px' }} />
                   <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>支付時機：</span>
                   <span 
                     className="font-bold text-[#059669]" 
-                    style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                    style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
                     title={`${paymentTimingLabel}${paymentTimingDetail ? ` - ${paymentTimingDetail}` : ''}`}
                   >
                     {paymentTimingLabel} {paymentTimingDetail && <span style={{ fontWeight: 'normal', fontSize: '13px', opacity: 0.9 }}>({paymentTimingDetail})</span>}
@@ -385,12 +384,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               )}
 
               {bulletin.category === 'offer' && selectionType && (
-                <div className="meta-item" style={{ gridColumn: '1 / -1' }}>
+                <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
                   <Users size={16} className="meta-icon text-[#b45309]" style={{ flexShrink: 0, marginRight: '4px' }} />
                   <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>徵集名額：</span>
                   <span 
                     className="font-bold text-[#b45309]" 
-                    style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                    style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
                     title={selectionType === 'curated' ? `預計招收 ${maxSlots} 名 (繪師會選設定接搞)` : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`}
                   >
                     {selectionType === 'curated' 
@@ -439,7 +438,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 🌟 檢舉表單 Modal */}
       {isReportModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsReportModalOpen(false)}>
           <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -492,7 +490,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       )}
 
-      {/* 🌟 燈泡箱 Lightbox */}
       {isLightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}>
