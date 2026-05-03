@@ -13,14 +13,15 @@ export function UsersTab() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 表單狀態
+  // 表單狀態 (🌟 新增 admin_note)
   const [formData, setFormData] = useState({
     plan_type: 'free',
     pro_expires_at: '',
     custom_quota: '',
     role: 'client',
     wishboard_status: 'active',
-    mute_expires_at: ''
+    mute_expires_at: '',
+    admin_note: ''
   });
 
   useEffect(() => { 
@@ -45,7 +46,8 @@ export function UsersTab() {
       custom_quota: user.custom_quota?.toString() || '',
       role: user.role || 'client',
       wishboard_status: user.wishboard_status || 'active',
-      mute_expires_at: user.mute_expires_at ? user.mute_expires_at.split('T')[0] : ''
+      mute_expires_at: user.mute_expires_at ? user.mute_expires_at.split('T')[0] : '',
+      admin_note: user.admin_note || '' // 🌟 載入備註
     });
     setIsModalOpen(true);
   };
@@ -68,12 +70,36 @@ export function UsersTab() {
       await apiClient.patch(`/api/admin/users/${selectedUser.id}`, payload);
       alert('更新成功');
       setIsModalOpen(false);
-      fetchListData(); // 重新撈取資料
+      fetchListData(); 
     } catch (e: any) {
       alert(`更新失敗: ${e.response?.data?.error || '未知錯誤'}`);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // 🌟 輔助函式：翻譯與預設值計算
+  const getRoleDisplay = (role: string) => {
+    switch(role) {
+      case 'client': return '委託人';
+      case 'artist': return '繪師';
+      case 'admin': return '👑 管理員';
+      case 'deleted': return '🚫 全站停權';
+      default: return role;
+    }
+  };
+
+  const getPlanDisplay = (plan: string) => {
+    switch(plan) {
+      case 'free': return '免費版';
+      case 'trial': return '試用版';
+      case 'pro': return '專業版';
+      default: return plan;
+    }
+  };
+
+  const getDefaultQuota = (plan: string) => {
+    return (plan === 'pro' || plan === 'trial') ? 20 : 3;
   };
 
   return (
@@ -105,14 +131,19 @@ export function UsersTab() {
               <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                 <td style={tdStyle}>
                   <div style={{ fontWeight: 'bold', color: item.role === 'deleted' ? '#EF4444' : '#111827' }}>
-                    {item.display_name} {item.role === 'deleted' && '(🚫 全站停權)'}
-                    {item.role === 'admin' && ' (👑 管理員)'}
+                    {item.display_name} <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: 'normal' }}>({getRoleDisplay(item.role)})</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#9CA3AF' }}>ID: {item.public_id}</div>
+                  {/* 🌟 顯示管理員備註 */}
+                  {item.admin_note && (
+                    <div style={{ fontSize: '11px', color: '#4B5563', backgroundColor: '#FEF3C7', padding: '4px 8px', borderRadius: '4px', marginTop: '8px', display: 'inline-block' }}>
+                      📝 備註: {item.admin_note}
+                    </div>
+                  )}
                 </td>
                 <td style={tdStyle}>
                   <span style={{ fontWeight: 'bold', color: item.plan_type === 'pro' ? '#7C3AED' : '#374151' }}>
-                    {item.plan_type.toUpperCase()}
+                    {getPlanDisplay(item.plan_type)}
                   </span>
                   <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
                     {item.pro_expires_at ? item.pro_expires_at.split('T')[0] : '無期限'}
@@ -120,13 +151,16 @@ export function UsersTab() {
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontSize: '13px' }}>累積: {item.total_commissions} 單</div>
-                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>上限: {item.custom_quota || '預設'}</div>
+                  {/* 🌟 動態顯示真實配額 */}
+                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                    上限: {item.custom_quota || getDefaultQuota(item.plan_type)} {item.custom_quota ? '(自訂)' : '(預設)'}
+                  </div>
                 </td>
                 <td style={tdStyle}>
                   {item.wishboard_status === 'banned' ? (
                     <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#FEF2F2', color: '#DC2626' }}>永久封鎖</span>
                   ) : item.wishboard_status === 'muted' ? (
-                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#FFFBEB', color: '#D97706' }}>禁言中</span>
+                    <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#FFFBEB', color: '#D97706' }}>禁止使用</span>
                   ) : (
                     <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ECFDF5', color: '#059669' }}>正常</span>
                   )}
@@ -143,7 +177,6 @@ export function UsersTab() {
         </table>
       </div>
 
-      {/* 分頁按鈕區塊 */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -153,16 +186,16 @@ export function UsersTab() {
         </div>
       </div>
 
-      {/* 管理 Modal 表單 */}
       {isModalOpen && selectedUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+          <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '450px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <h2 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px' }}>設定用戶：{selectedUser.display_name}</h2>
             
             <div style={formGroupStyle}>
               <label style={labelStyle}>站內角色 (Role)</label>
               <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} style={inputStyle}>
-                <option value="client">一般用戶 (Client/Artist)</option>
+                <option value="client">委託人 (Client)</option>
+                <option value="artist">繪師 (Artist)</option>
                 <option value="admin">管理員 (Admin)</option>
                 <option value="deleted">🚫 全站停權 (Deleted)</option>
               </select>
@@ -188,6 +221,18 @@ export function UsersTab() {
               </div>
             </div>
 
+            {/* 🌟 備註輸入區 */}
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>內部管理員備註 (不會對外顯示)</label>
+              <textarea 
+                rows={3} 
+                placeholder="例如：2026/05 此用戶疑似多開分身，先列入觀察名單..." 
+                value={formData.admin_note} 
+                onChange={e => setFormData({...formData, admin_note: e.target.value})} 
+                style={{...inputStyle, resize: 'vertical'}} 
+              />
+            </div>
+
             <hr style={{ margin: '24px 0', borderColor: '#E5E7EB' }} />
             <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#374151' }}>許願池專屬設定</h3>
 
@@ -195,7 +240,7 @@ export function UsersTab() {
               <label style={labelStyle}>許願池狀態</label>
               <select value={formData.wishboard_status} onChange={e => setFormData({...formData, wishboard_status: e.target.value})} style={inputStyle}>
                 <option value="active">🟢 正常發言 (Active)</option>
-                <option value="muted">🟡 暫時禁止使用許願池 (Muted)</option>
+                <option value="muted">🟡 禁止使用許願池 (Suspended)</option>
                 <option value="banned">🔴 永久封鎖 (Banned)</option>
               </select>
             </div>

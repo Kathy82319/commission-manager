@@ -28,7 +28,7 @@ export function CommissionsTab() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '---';
     const d = new Date(dateStr);
-    return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+    return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
   return (
@@ -54,7 +54,8 @@ export function CommissionsTab() {
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontWeight: '600' }}>{item.artist_name}</div>
-                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>UID: {item.artist_id?.slice(0, 10)}...</div>
+                  {/* 🌟 顯示 public_id */}
+                  <div style={{ fontSize: '11px', color: '#9CA3AF' }}>UID: {item.artist_public_id || item.artist_id?.slice(0, 8)}</div>
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontWeight: 'bold', color: '#2563EB', fontSize: '16px' }}>${item.total_price}</div>
@@ -64,7 +65,9 @@ export function CommissionsTab() {
                   {item.client_name ? (
                     <div>
                       <div style={{ fontWeight: '600', color: '#059669' }}>👤 {item.client_name}</div>
-                      <div style={{ fontSize: '11px', color: '#6B7280' }}>綁定日: {formatDate(item.updated_at)}</div>
+                      {/* 🌟 顯示 public_id 與精確的 bind_date */}
+                      <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px' }}>UID: {item.client_public_id || '未知'}</div>
+                      <div style={{ fontSize: '11px', color: '#6B7280' }}>綁定日: {formatDate(item.bind_date)}</div>
                     </div>
                   ) : (
                     <div style={{ color: '#9CA3AF', fontSize: '12px', fontStyle: 'italic' }}>🔘 尚未綁定</div>
@@ -76,7 +79,6 @@ export function CommissionsTab() {
         </table>
       </div>
 
-      {/* 分頁按鈕區塊 */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>

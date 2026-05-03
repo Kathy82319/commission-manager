@@ -296,7 +296,7 @@ CREATE TABLE Reports (
 -- 為檢舉表建立索引，加速權重計算
 CREATE INDEX idx_reports_bulletin ON Reports(bulletin_id);
 
-
+ALTER TABLE Users ADD COLUMN admin_note TEXT DEFAULT '';
 
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)

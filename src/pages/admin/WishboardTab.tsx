@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { KeywordManager } from './components/KeywordManager';
-import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert } from 'lucide-react'; // 🌟 加入 icon 提升質感
+import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock } from 'lucide-react'; 
 
 export function WishboardTab() {
   const [dataList, setDataList] = useState<any[]>([]);
@@ -12,7 +12,6 @@ export function WishboardTab() {
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // 🌟 Modal 狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [, setSelectedBulletinId] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState<any[]>([]);
@@ -43,7 +42,6 @@ export function WishboardTab() {
     }
   };
 
-  // 🌟 處理開啟檢舉彈窗
   const openReportModal = async (bulletinId: string) => {
     setSelectedBulletinId(bulletinId);
     setIsModalOpen(true);
@@ -64,17 +62,25 @@ export function WishboardTab() {
     return hit;
   };
 
-  // 🌟 解決 JSON 顯示問題的解析函式
-  const parseContent = (rawContent: string) => {
-    if (!rawContent) return '無內容';
+  // 🌟 強化版內容解析：提取完整資料結構
+  const parsePostData = (item: any) => {
+    let description = item.content || '無內容';
+    let payments = [];
     try {
-      // 若後端存的是 JSON 字串，嘗試解開它拿出 description
-      const parsed = JSON.parse(rawContent);
-      return parsed.description || rawContent;
-    } catch {
-      // 若不是 JSON (原本就是純文字)，直接回傳
-      return rawContent;
-    }
+      const parsedContent = JSON.parse(item.content);
+      if (parsedContent.description) description = parsedContent.description;
+    } catch {}
+
+    try {
+      payments = JSON.parse(item.payment_methods || '[]');
+    } catch {}
+
+    return {
+      description,
+      payments: payments.length > 0 ? payments.join('、') : '未指定',
+      budget: item.budget_min === 0 && item.budget_max === 0 ? '依報價討論' : `$${item.budget_min} ~ $${item.budget_max}`,
+      schedule: item.schedule_type === 'urgent' ? '🔥 急件' : (item.schedule_type === 'specific' ? '📅 指定日期' : '🕒 時間彈性')
+    };
   };
 
   return (
@@ -103,7 +109,7 @@ export function WishboardTab() {
           <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
             <tr>
               <th style={{...thStyle, width: '18%'}}>刊登資訊</th>
-              <th style={{...thStyle, width: '40%'}}>貼文內容</th>
+              <th style={{...thStyle, width: '40%'}}>貼文詳細內容</th>
               <th style={{...thStyle, width: '12%'}}>檢舉次數</th>
               <th style={{...thStyle, width: '15%'}}>目前顯示狀態</th>
               <th style={{...thStyle, width: '15%'}}>審核操作</th>
@@ -113,9 +119,10 @@ export function WishboardTab() {
             {dataList.length === 0 ? (
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>目前沒有貼文資料</td></tr>
             ) : dataList.map((item) => {
-              const textContent = parseContent(item.content);
-              const hitKeyword = checkKeywordTrigger(textContent);
+              const postDetails = parsePostData(item);
+              const hitKeyword = checkKeywordTrigger(postDetails.description);
               const isHidden = item.status === 'hidden_under_review';
+              const isExpired = new Date(item.expires_at) < new Date();
               
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
@@ -125,22 +132,32 @@ export function WishboardTab() {
                     <div style={{ fontWeight: 'bold', color: '#111827', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <User size={14} /> {item.author_name}
                     </div>
-                    {/* 🌟 修正：顯示 author_public_id */}
                     <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>ID: {item.author_public_id || '未知'}</div>
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>
-                      {new Date(item.created_at).toLocaleString()}
+                      發佈: {new Date(item.created_at).toLocaleString()}
                     </div>
                   </td>
 
-                  {/* 2. 貼文內容 */}
+                  {/* 2. 貼文詳細內容 (🌟 擴充標題、預算、付款) */}
                   <td style={{...tdStyle, paddingRight: '24px'}}>
                     {hitKeyword && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
                         <AlertCircle size={14} /> 觸發監控關鍵字: {hitKeyword}
                       </div>
                     )}
+                    
+                    <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#111827', marginBottom: '8px' }}>
+                      {item.title || '無標題'}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      <span style={badgeStyle}>💰 {postDetails.budget}</span>
+                      <span style={badgeStyle}>⏱️ {postDetails.schedule}</span>
+                      <span style={{...badgeStyle, backgroundColor: '#F3F4F6', color: '#4B5563'}}>💳 {postDetails.payments}</span>
+                    </div>
+
                     <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
-                      {textContent}
+                      {postDetails.description}
                     </div>
                   </td>
 
@@ -162,11 +179,15 @@ export function WishboardTab() {
                   {/* 4. 目前顯示狀態 */}
                   <td style={tdStyle}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 'bold', 
-                      backgroundColor: isHidden ? '#FEF2F2' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6'),
-                      color: isHidden ? '#DC2626' : (item.status === 'open' ? '#059669' : '#6B7280'),
-                      border: `1px solid ${isHidden ? '#FCA5A5' : (item.status === 'open' ? '#6EE7B7' : '#D1D5DB')}`
+                      backgroundColor: isHidden ? '#FEF2F2' : (isExpired ? '#F3F4F6' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6')),
+                      color: isHidden ? '#DC2626' : (isExpired ? '#6B7280' : (item.status === 'open' ? '#059669' : '#6B7280')),
+                      border: `1px solid ${isHidden ? '#FCA5A5' : (isExpired ? '#D1D5DB' : (item.status === 'open' ? '#6EE7B7' : '#D1D5DB'))}`
                     }}>
-                      {isHidden ? '🛑 隱藏審核中' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉')}
+                      {isHidden ? '🛑 隱藏審核中' : (isExpired ? '⌛ 已到期' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉'))}
+                    </div>
+                    {/* 🌟 顯示下架時間 */}
+                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={12} /> {new Date(item.expires_at).toLocaleString()}
                     </div>
                   </td>
 
@@ -258,3 +279,4 @@ const tdStyle = { padding: '20px 16px', fontSize: '14px', verticalAlign: 'top' a
 const actionBtnStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%', transition: 'all 0.2s' };
 const pageBtnStyle = { padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' };
 const tabBtnStyle = { padding: '8px 16px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' };
+const badgeStyle = { fontSize: '12px', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 'bold', border: '1px solid #E0E7FF' };

@@ -51,7 +51,7 @@ export const adminController = {
       SELECT 
         u.id, u.public_id, u.display_name, u.role, u.plan_type, 
         u.pro_expires_at, u.custom_quota, u.bio, u.created_at,
-        u.wishboard_status, u.mute_expires_at,
+        u.wishboard_status, u.mute_expires_at, u.admin_note,
         (SELECT COUNT(*) FROM Commissions WHERE artist_id = u.id) as total_commissions
       FROM Users u
     `;
@@ -83,8 +83,12 @@ export const adminController = {
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    // 🌟 修正：擴充雙方 public_id，並利用子查詢安全撈出 ActionLogs 裡的最新的 bind_date
     const { results } = await env.commission_db.prepare(`
-      SELECT c.*, a.display_name as artist_name, u.display_name as client_name
+      SELECT c.*, 
+             a.display_name as artist_name, a.public_id as artist_public_id, 
+             u.display_name as client_name, u.public_id as client_public_id,
+             (SELECT created_at FROM ActionLogs WHERE commission_id = c.id AND action_type = 'bind' ORDER BY created_at DESC LIMIT 1) as bind_date
       FROM Commissions c
       LEFT JOIN Users a ON c.artist_id = a.id
       LEFT JOIN Users u ON c.client_id = u.id
@@ -123,6 +127,14 @@ export const adminController = {
         updates.push(`${field} = ?`);
         params.push(body[field] === "" ? null : body[field]);
       }
+    }
+
+    // 🌟 新增：處理 admin_note 寫入與 XSS 防護
+    if (body.admin_note !== undefined) {
+      updates.push("admin_note = ?");
+      // 移除可能構成腳本攻擊的角括號，並限制長度
+      const safeNote = String(body.admin_note).replace(/[<>]/g, '');
+      params.push(sanitizeAndLimit(safeNote, 2000));
     }
 
     if (body.role === 'deleted' && body.ban_reason) {
@@ -173,8 +185,6 @@ export const adminController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // 🌟 修改：撈取指定分類的所有貼文，並附帶檢舉資訊
-  // 🌟 修改：撈取指定分類的所有貼文 (修正撈取 public_id)
   async getReportedBulletins(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -185,7 +195,6 @@ export const adminController = {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 🛡️ 效能優化：移除原本直接撈取 latest_report_reason 的子查詢，改在彈窗中獲取
     const { results } = await env.commission_db.prepare(`
       SELECT b.*, u.display_name as author_name, u.public_id as author_public_id,
       (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count
@@ -203,7 +212,6 @@ export const adminController = {
     return new Response(JSON.stringify({ success: true, data: results, pagination: { total: countRes[0]?.total || 0, page, limit } }), { status: 200, headers: corsHeaders });
   },
 
-  // 🌟 新增：取得單篇貼文的所有檢舉紀錄 (附帶檢舉人資訊)
   async getBulletinReports(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
