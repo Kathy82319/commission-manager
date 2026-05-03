@@ -5,25 +5,17 @@ export const paymentController = {
 
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
-      // 🌟 1. 精準攔截：明確告訴我們到底是哪個環境變數不見了
       if (!env.commission_db) {
-        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：找不到 D1 資料庫綁定 (commission_db)" }), { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：找不到 D1 資料庫綁定" }), { status: 500, headers: corsHeaders });
       }
-      if (!env.NEWEBPAY_MERCHANT_ID) {
-        const availableKeys = Object.keys(env).join(', ');
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: `系統配置錯誤：缺少商店代號。系統目前讀取到的變數有：[${availableKeys}]` 
-        }), { status: 500, headers: corsHeaders });
-      }
-      if (!env.NEWEBPAY_HASH_KEY || !env.NEWEBPAY_HASH_IV) {
-        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：缺少 HashKey 或 HashIV" }), { status: 500, headers: corsHeaders });
+      if (!env.NEWEBPAY_MERCHANT_ID || !env.NEWEBPAY_HASH_KEY || !env.NEWEBPAY_HASH_IV) {
+        return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 1; // 目前為 1 供測試，正式營業請記得改回 150
+      const amount = 1; // 💡 等測試通過後，請記得改回 150
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
       const backendUrl = env.BACKEND_URL;
@@ -52,9 +44,8 @@ export const paymentController = {
         .join('&');
 
       const { newebpay } = await import("../utils/crypto");
-      const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
-      // 這裡維持預設 false，因為是發送給藍新
-      const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
+      const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
+      const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
 
       return new Response(JSON.stringify({
         success: true,
@@ -97,20 +88,17 @@ export const paymentController = {
 
       const { newebpay } = await import("../utils/crypto");
       
-      // 🌟 修正 1：加上 true 參數，切換為藍新回傳的 IV -> Info -> Key 排序
-      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim(), true);
-      
+      const computedSha = await newebpay.generateSha(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       if (computedSha !== tradeSha) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
           .bind(`🚨 雜湊驗證失敗！預期: ${tradeSha}, 計算結果: ${computedSha}`).run();
         return new Response("OK");
       }
 
-      const decrypted = await newebpay.decrypt(tradeInfo.trim(), env.NEWEBPAY_HASH_KEY.trim(), env.NEWEBPAY_HASH_IV.trim());
-      
-      // 🌟 修正 2 & 3：過濾掉老舊 AES 演算法解密後產生的不可見 Padding 字元，確保 JSON 解析不崩潰
-      const cleanJson = decrypted.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
-      const data = JSON.parse(cleanJson);
+      // 解密並還原 JSON 資料
+      const decrypted = await newebpay.decrypt(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
+      const decodedData = decodeURIComponent(decrypted.replace(/\+/g, " "));
+      const data = JSON.parse(decodedData);
       
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
