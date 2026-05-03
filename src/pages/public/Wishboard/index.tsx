@@ -353,24 +353,25 @@ export const Wishboard: React.FC = () => {
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
-                本平台介面為全齡向，許願池內嚴禁發布色情、血腥等限制級圖文，違者一律移除。如果有需要發布 R18 相關委託，請在私訊中洽談，並在許願池貼文中標明「此為 R18 委託，請在私訊內洽談」，請勿直接將例圖放在許願池上。
+                本平台介面為全齡向，嚴禁發布色情、血腥等限制級圖文，違者一律移除。如有需要發布 R18 相關委託，請在私訊中洽談，並在貼文中標明「此為 R18 委託，請在私訊內洽談」，請勿直接將例圖放在許願池上。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '4px' }}>⚠️ 授權與版權證明</strong>
-                嚴禁盜圖、侵權二創、抄襲等行為。若使用他人作品作為例圖，請在貼文中清楚標明「已獲原作者授權使用此圖作為例圖」，並保留相關授權證明以備查驗。
+                嚴禁盜圖、侵權二創、抄襲等行為。若使用他人作品作為例圖，請在貼文中清楚標明「已獲原作者授權使用此圖」，並建議保留相關授權證明。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>⚠️ 透明度與實名</strong>
                 為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。
+                本平台僅提供媒合，不涉入雙方爭議，若對方發生除了上述違規行為以外的行為(如跑單、作品不如預期等)，請善用黑單功能屏蔽對方，請勿濫用檢舉功能。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
-                目前許願池僅限繪圖相關的徵稿與接委託貼文，請先不要發布與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
+                目前許願池僅限繪圖相關的徵稿與接委託貼文，請先不要發佈與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
               </div>
               <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
                 <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>
-                初犯將移除貼文並給予系統警告；再犯將處以 <strong>28 天許願池禁言</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
-                <span style={{ color: '#64748b' }}>※ 貼文若舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提供圖層等證明以利重新上架。</span>
+                初犯將移除貼文並給予系統警告；再犯者將 <strong>28 天許願池禁言</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
+                <span style={{ color: '#64748b' }}>※ 貼文若檢舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提出證明以利重新上架。</span>
               </div>
             </div>
 
@@ -379,7 +380,7 @@ export const Wishboard: React.FC = () => {
                 onClick={() => setShowRulesModal(false)}
                 style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
-                我了解了
+                我知道了
               </button>
             </div>
           </div>

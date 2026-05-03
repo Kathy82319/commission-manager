@@ -272,6 +272,30 @@ CREATE TABLE UserRelations (
     UNIQUE(source_user_id, target_user_id) -- 確保兩個人之間只有一筆關係紀錄
 );
 
+-- 1. 擴充 Users 表
+ALTER TABLE Users ADD COLUMN wishboard_status TEXT DEFAULT 'active';
+ALTER TABLE Users ADD COLUMN mute_expires_at DATETIME;
+
+-- 2. 建立監控關鍵字表
+CREATE TABLE MonitoredKeywords (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bulletin_id TEXT NOT NULL,
+    reporter_id TEXT NOT NULL,
+    reporter_role TEXT NOT NULL,
+    reason TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bulletin_id) REFERENCES Bulletins(id)
+);
+
+-- 為檢舉表建立索引，加速權重計算
+CREATE INDEX idx_reports_bulletin ON Reports(bulletin_id);
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
