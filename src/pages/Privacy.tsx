@@ -52,7 +52,7 @@ export function Privacy() {
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>隱私權政策 (Privacy Policy)</h1>
-      <p style={{ marginBottom: '32px', color: 'rgba(248, 249, 250, 0.8)' }}>
+      <p style={{ marginBottom: '32px', color: '#000018' }}>
         本平台（以下簡稱「本工具」）致力於保障用戶的隱私與資安。請詳細閱讀以下隱私權保護政策：
       </p>
 

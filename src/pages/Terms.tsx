@@ -7,7 +7,7 @@ export function Terms() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#F8F9FA', 
+    color: '#000000', 
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 
@@ -52,7 +52,7 @@ export function Terms() {
   const nestedListStyle: React.CSSProperties = {
     paddingLeft: '20px',
     marginTop: '4px',
-    color: 'rgba(248, 249, 250, 0.9)', 
+    color: 'rgba(1, 8, 15, 0.9)', 
   };
 
   return (

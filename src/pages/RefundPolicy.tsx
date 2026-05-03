@@ -7,7 +7,7 @@ export function RefundPolicy() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#F8F9FA', 
+    color: '#000408', 
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 

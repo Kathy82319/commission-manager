@@ -108,7 +108,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>📋 每月可建立 <strong>3 筆</strong> 委託單 (含許願池訂單)</li>
             <li>✨ 許願池：投遞徵委託區 <strong>5 次</strong> / 月</li>
             <li>✨ 許願池：接委託區發佈 <strong>1 則</strong> / 月</li>
-            <li>🚀 委託人介面：接委託區發佈 <strong>1 則</strong> / 月</li>
             <li>🖼️ 作品集展示上限 <strong>6 張</strong></li>
             <li>📤 單檔上傳最高 5MB 限制</li>
           </ul>

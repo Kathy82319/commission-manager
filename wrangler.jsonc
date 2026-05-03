@@ -8,8 +8,8 @@
     },
     "upload_source_maps": true,
     "compatibility_flags": [
-    "nodejs_compat"
-  ],
+        "nodejs_compat"
+    ],
     "vars": {
         "LINE_REDIRECT_URI": "https://cath-commission-manager.pages.dev/api/auth/line/callback", //切換測試機要改這裡
         "FRONTEND_URL": "https://cath-commission-manager.pages.dev",  //切換測試機要改這裡
