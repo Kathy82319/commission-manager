@@ -13,6 +13,7 @@ import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTa
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import '../../styles/Settings.css';
+import { useLocation } from 'react-router-dom';
 
 export interface CompleteSettings {
   portfolio: string[];
@@ -61,7 +62,23 @@ interface MenuCategory {
 }
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState('profile_basic');
+  const location = useLocation();
+  
+  // 🌟 修正：合併並只保留這一個 activeTab 宣告，去抓網址的參數
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || 'profile_basic';
+  });
+
+  // 🌟 新增：監聽網址變化，確保在同一個頁面內點擊也能順利切換分頁
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -222,7 +239,6 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 🌟 修改這裡：將 'theme' 移出免費版允許名單，這會讓它自動觸發下面的 isCurrentTabLocked 鎖定邏輯
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
     'bulletin_settings', 'queue_settings'
