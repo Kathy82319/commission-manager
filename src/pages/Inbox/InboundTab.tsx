@@ -1,9 +1,7 @@
 // src/pages/Inbox/InboundTab.tsx
 import React, { useState } from 'react';
-import { ArtistPostcard } from './components/ArtistPostcard';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
-import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 
 const SLOT_TYPES = [
   { id: 'request', label: '徵委託', icon: '📝', desc: '尋找繪師來為您繪製作品' },
@@ -22,14 +20,8 @@ interface InboundTabProps {
   handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
   blacklistedIds?: string[];
-  // 接收撤銷 API 函式
   handleCancelBulletin?: (id: string) => void; 
 }
-
-const unescapeHtml = (str: string) => {
-  if (!str) return '';
-  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
-};
 
 export const InboundTab: React.FC<InboundTabProps> = ({
   clientBulletins,
@@ -48,7 +40,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     clientBulletins.length > 0 ? clientBulletins[0].id : null
   );
 
-  const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
+  // 這裡的變數目前用不到，但保留作為擴充判斷備用
+  // const activeBulletinCategory = clientBulletins.find(b => b.id === selectedBulletinId)?.category;
 
   const currentInquiries = clientInquiries
     .filter(i => i.bulletin_id === selectedBulletinId)
@@ -59,7 +52,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
       <div className="mb-8">
         <div className="dashboard-slots-grid">
           {SLOT_TYPES.map(slotType => {
-            // 🌟 關鍵修復：只抓取狀態為 'open' 的貼文！這樣撤銷後，格子才會恢復為「尚有空缺」
             const bulletin = clientBulletins.find(b => b.category === slotType.id && b.status === 'open');
             const isSelected = selectedBulletinId === bulletin?.id;
             
@@ -89,7 +81,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFF')}
                       onClick={(e) => {
                         e.stopPropagation(); 
-                        // 🌟 防呆除錯：確保函式存在才呼叫，否則彈出提示
                         if (typeof handleCancelBulletin === 'function') {
                           handleCancelBulletin(bulletin.id);
                         } else {
@@ -150,88 +141,17 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 目前沒有可顯示的提案喔！再等等吧～
               </div>
             ) : (
-              activeBulletinCategory === 'offer' ? (
-                <OfferList 
-                  inquiries={currentInquiries} 
-                  setSelectedInquiry={setSelectedInquiry}
-                  setShowDeclineModal={setShowDeclineModal}
-                  handleDirectInvite={handleDirectInvite}
-                  handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-                  handleViewCommission={handleViewCommission}
-                  setSelectedIdsForBatch={setSelectedIdsForBatch}
-                  blacklistedIds={blacklistedIds}
-                />
-              ) : (
-                currentInquiries.map(item => {
-                  let snapshot: any = {};
-                  try { 
-                    const rawSnapshot = unescapeHtml(item.artist_snapshot || '{}');
-                    const parsed = JSON.parse(rawSnapshot);
-                    snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-                  } catch(e) {}
-
-                  let images: string[] = [];
-                  const rawImages = snapshot.images || snapshot.ref_images || item.ref_images || item.ref_image_key || [];
-                  
-                  if (Array.isArray(rawImages)) {
-                    images = rawImages;
-                  } else if (typeof rawImages === 'string') {
-                    try {
-                      const parsedImgs = JSON.parse(unescapeHtml(rawImages));
-                      images = Array.isArray(parsedImgs) ? parsedImgs : [parsedImgs];
-                    } catch {
-                      images = [unescapeHtml(rawImages)];
-                    }
-                  }
-
-                  snapshot.images = images.filter(Boolean).map(url => 
-                    url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`
-                  );
-                  
-                  const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
-                  const isBlacklisted = blacklistedIds.includes(item.artist_id);
-
-                  return (
-                    <div key={item.inquiry_id} style={{ position: 'relative' }}>
-                      <ArtistPostcard 
-                        item={item} 
-                        snapshot={snapshot} 
-                        navigate={navigate}
-                        isBlacklisted={isBlacklisted} 
-                      >
-                        
-                        {item.inquiry_status === 'declined' && item.decline_reason && (
-                          <div className="w-full mb-4 p-4 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded-r-lg">
-                            <div className="text-[#EF4444] font-bold text-sm mb-1">終止/撤回原因：</div>
-                            <div className="text-[#A05C5C] text-sm whitespace-pre-wrap">{item.decline_reason}</div>
-                          </div>
-                        )}
-
-                        {canDecline && (
-                          <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(item); setShowDeclineModal(true); }}>
-                            {item.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                          </button>
-                        )}
-                        {item.inquiry_status === 'pending' && (
-                          <button className="btn-primary" onClick={() => handleDirectInvite(item)}>
-                            ✉️ 邀請詳談
-                          </button>
-                        )}
-                        {(item.inquiry_status === 'submitted' || item.inquiry_status === 'proposed') && (
-                          <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(item.inquiry_id)}>
-                            💬 進入聊天室 {item.inquiry_status === 'proposed' && "(繪師已發送協議)"}
-                          </button>
-                        )}
-                        {item.inquiry_status === 'accepted' && (
-                          <button className="btn-success" onClick={() => handleViewCommission()}>
-                            進入委託單管理
-                          </button>
-                        )}
-                      </ArtistPostcard>
-                    </div>
-                  );
-                })
-              )
+              // 🌟 核心修正：不論是「徵委託」還是「接稿文」，只要是收件匣，一律統一使用 OfferList 來渲染正確的 CardView 卡片排版
+              <OfferList 
+                inquiries={currentInquiries} 
+                setSelectedInquiry={setSelectedInquiry}
+                setShowDeclineModal={setShowDeclineModal}
+                handleDirectInvite={handleDirectInvite}
+                handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+                handleViewCommission={handleViewCommission}
+                setSelectedIdsForBatch={setSelectedIdsForBatch}
+                blacklistedIds={blacklistedIds}
+              />
             )}
           </div>
         )}
