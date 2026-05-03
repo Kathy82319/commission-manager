@@ -1,9 +1,8 @@
 // src/pages/public/Wishboard/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // 🌟 引入 useLocation
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
-// 🌟 引入 ScrollText 和 X 圖示
 import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-react';
 
 import { API_BASE } from './constants';
@@ -15,27 +14,28 @@ import { InquireModal } from './InquireModals';
 
 export const Wishboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // 🌟 獲取當前網址資訊
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>('request');
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   
+  // 🌟 初始化 activeTab 時，先看網址有沒有 ?tab=offer
+  const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    return (tabParam === 'offer' || tabParam === 'other') ? tabParam : 'request';
+  });
+  
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showInquireModal, setShowInquireModal] = useState(false);
   const [selectedBulletin, setSelectedBulletin] = useState<any | null>(null);
-
-  // 🌟 新增：身分升級引導彈窗狀態
   const [showUpgradeGuide, setShowUpgradeGuide] = useState<{ show: boolean, type: 'post' | 'inquire' }>({ show: false, type: 'post' });
-  
-  // 🌟 新增：規則 Modal 狀態
   const [showRulesModal, setShowRulesModal] = useState(false);
-  
   const [isUploading, setIsUploading] = useState(false);
   const [inquireUploading, setInquireUploading] = useState(false); 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userShowcase, setUserShowcase] = useState<any[]>([]);
-
   const [wishQuota, setWishQuota] = useState<{ 
     is_pro: boolean, 
     offer_used: number, offer_max: number, 
@@ -120,6 +120,15 @@ export const Wishboard: React.FC = () => {
     } catch (e) { console.error("作品集載入失敗"); }
   };
 
+  // 🌟 監聽網址變化，確保其他地方跳轉過來時能正確切換 Tab
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'offer' || tabParam === 'request' || tabParam === 'other') {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
+
   useEffect(() => { initData(); }, [activeTab]);
 
   useEffect(() => {
@@ -177,17 +186,14 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  // 🌟 修改：攔截發布按鈕，加入身分升級判斷
   const handlePostTrigger = () => {
     if (!currentUser) return navigate('/login');
 
-    // 判斷身分：若是發布接案且非 artist，引導升級
     if (activeTab === 'offer' && currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'post' });
       return;
     }
 
-    // 額度判斷
     if (activeTab === 'offer' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.offer_used >= wishQuota.offer_max) {
            showToast('免費版每月僅能發佈 1 則接委託，您的額度已用盡。', 'error');
@@ -197,17 +203,14 @@ export const Wishboard: React.FC = () => {
     setShowPostModal(true);
   };
 
-  // 🌟 修改：攔截投遞按鈕，加入身分升級判斷
   const openInquireModal = (bulletin: any) => {
     if (!currentUser) return navigate('/login');
 
-    // 判斷身分：向案主投遞應徵必須是 artist
     if (currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'inquire' });
       return;
     }
 
-    // 額度判斷
     if (bulletin.category === 'request' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.request_inquire_used >= wishQuota.request_inquire_max) {
            showToast('免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。', 'error');
@@ -313,29 +316,14 @@ export const Wishboard: React.FC = () => {
         )}
       </main>
 
-      {/* 🌟 新增：右下角浮動規則按鈕 */}
-      <button 
-        className="rules-floating-btn"
-        onClick={() => setShowRulesModal(true)}
-        title="查看許願池規則"
-      >
+      <button className="rules-floating-btn" onClick={() => setShowRulesModal(true)} title="查看許願池規則">
         <ScrollText size={20} />
         <span>許願規則</span>
       </button>
 
-      {/* 🌟 新增：規則說明 Modal */}
       {showRulesModal && (
-        <div style={{ 
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          zIndex: 10000, padding: '20px' 
-        }} onClick={() => setShowRulesModal(false)}>
-          <div style={{ 
-            backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', 
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh'
-          }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -345,7 +333,7 @@ export const Wishboard: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-
+            
             <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
@@ -361,8 +349,7 @@ export const Wishboard: React.FC = () => {
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>⚠️ 透明度與實名</strong>
-                為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。
-                本平台僅提供媒合，不涉入雙方爭議，若對方發生除了上述違規行為以外的行為(如跑單、作品不如預期等)，請善用黑單功能屏蔽對方，請勿濫用檢舉功能。
+                為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。本平台僅提供媒合，不涉入雙方爭議，若對方發生除了上述違規行為以外的行為(如跑單、作品不如預期等)，請善用黑單功能屏蔽對方，請勿濫用檢舉功能。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
@@ -374,12 +361,9 @@ export const Wishboard: React.FC = () => {
                 <span style={{ color: '#64748b' }}>※ 貼文若檢舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提出證明以利重新上架。</span>
               </div>
             </div>
-
+            
             <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right', backgroundColor: '#f8fafc' }}>
-              <button 
-                onClick={() => setShowRulesModal(false)}
-                style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
+              <button onClick={() => setShowRulesModal(false)} style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 我知道了
               </button>
             </div>
@@ -387,44 +371,19 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      {/* 🌟 新增：身分升級引導 Modal (已美化 UI) */}
       {showUpgradeGuide.show && (
-        <div style={{ 
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          zIndex: 10000, padding: '20px' 
-        }}>
-          <div style={{ 
-            backgroundColor: '#ffffff', borderRadius: '20px', padding: '32px 24px', 
-            width: '100%', maxWidth: '380px', textAlign: 'center', 
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' 
-          }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '32px 24px', width: '100%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
             <ShieldAlert size={56} color="#3b82f6" style={{ margin: '0 auto 16px auto', opacity: 0.9 }} />
             <h2 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '20px', fontWeight: 'bold' }}>需要開通創作者身分</h2>
             <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', margin: '0 0 28px 0' }}>
-              {showUpgradeGuide.type === 'post' 
-                ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' 
-                : '主動向案主投遞應徵需要創作者身分，以便案主查看您的作品集並與您洽談。'}
+              {showUpgradeGuide.type === 'post' ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' : '主動向案主投遞應徵需要創作者身分，以便案主查看您的作品集並與您洽談。'}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button 
-                onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })}
-                style={{ 
-                  flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #cbd5e1', 
-                  backgroundColor: '#f8fafc', color: '#475569', fontSize: '15px', fontWeight: '600', cursor: 'pointer' 
-                }}
-              >
+              <button onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#475569', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>
                 先不用
               </button>
-              <button 
-                onClick={() => navigate('/portal')}
-                style={{ 
-                  flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', 
-                  backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '15px', fontWeight: '600', 
-                  cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' 
-                }}
-              >
+              <button onClick={() => navigate('/portal')} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#3b82f6', color: '#ffffff', fontSize: '15px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' }}>
                 前往開通
               </button>
             </div>
@@ -433,27 +392,15 @@ export const Wishboard: React.FC = () => {
       )}
 
       {showPostModal && activeTab === 'request' && (
-        <RequestModal 
-          form={requestForm} setForm={setRequestForm} isUploading={isUploading}
-          onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleRequestImageUpload}
-        />
+        <RequestModal form={requestForm} setForm={setRequestForm} isUploading={isUploading} onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleRequestImageUpload} />
       )}
 
       {showPostModal && activeTab === 'offer' && (
-        <OfferModal 
-          form={offerForm} setForm={setOfferForm} isUploading={isUploading}
-          onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleOfferImageUpload}
-          userShowcase={userShowcase} onSaveDraft={saveDraft} onLoadDraft={loadSavedDraft}
-        />
+        <OfferModal form={offerForm} setForm={setOfferForm} isUploading={isUploading} onClose={() => setShowPostModal(false)} onSubmit={handlePostSubmit} onImageUpload={handleOfferImageUpload} userShowcase={userShowcase} onSaveDraft={saveDraft} onLoadDraft={loadSavedDraft} />
       )}
 
       {showInquireModal && (
-        <InquireModal 
-          selectedBulletin={selectedBulletin} inquireDraft={inquireDraft} setInquireDraft={setInquireDraft}
-          inquireTagInputs={inquireTagInputs} setInquireTagInputs={setInquireTagInputs} inquireUploading={inquireUploading}
-          onClose={() => setShowInquireModal(false)} onSubmit={handleInquireSubmit} 
-          onImageUpload={handleInquireImageUpload} 
-        />
+        <InquireModal selectedBulletin={selectedBulletin} inquireDraft={inquireDraft} setInquireDraft={setInquireDraft} inquireTagInputs={inquireTagInputs} setInquireTagInputs={setInquireTagInputs} inquireUploading={inquireUploading} onClose={() => setShowInquireModal(false)} onSubmit={handleInquireSubmit} onImageUpload={handleInquireImageUpload} />
       )}
     </div>
   );

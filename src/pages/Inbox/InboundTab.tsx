@@ -22,6 +22,8 @@ interface InboundTabProps {
   handleViewCommission: () => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
   blacklistedIds?: string[];
+  // 🌟 新增：接收來自 index.tsx 的撤銷 API 函式
+  handleCancelBulletin: (id: string) => void;
 }
 
 const unescapeHtml = (str: string) => {
@@ -39,7 +41,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission,
   setSelectedIdsForBatch,
-  blacklistedIds = []
+  blacklistedIds = [],
+  handleCancelBulletin // 🌟 解構出來使用
 }) => {
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(
     clientBulletins.length > 0 ? clientBulletins[0].id : null
@@ -61,26 +64,71 @@ export const InboundTab: React.FC<InboundTabProps> = ({
             
             if (bulletin) {
               return (
-                <div key={slotType.id} className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedBulletinId(bulletin.id)}>
+                // 🌟 加上 position: 'relative' 以便讓剩餘天數定位到右上角
+                <div key={slotType.id} className={`dashboard-slot active-slot ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedBulletinId(bulletin.id)} style={{ position: 'relative' }}>
+                  
+                  {/* 🌟 需求 3：剩餘天數移到右上角 */}
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '12px', fontWeight: 'bold', color: '#D97706', backgroundColor: '#FFFBEB', padding: '4px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
+                    {calculateDaysLeft(bulletin.expires_at)}
+                  </div>
+
                   <div className="slot-header">
                     <span className="slot-icon">{slotType.icon}</span>
                     <span className="slot-category">{slotType.label}刊登中</span>
                   </div>
                   <h3 className="slot-title" title={bulletin.title}>{bulletin.title || '未命名貼文'}</h3>
-                  <div className="slot-stats">
+                  <div className="slot-stats" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="stat-item"><span className="stat-num">{bulletin.inquiry_count || 0}</span> 份提案</div>
-                    <div className="stat-item expiry">{calculateDaysLeft(bulletin.expires_at)}</div>
+                    
+                    {/* 🌟 需求 3：原位置改為撤銷按鈕，並加上 e.stopPropagation() */}
+                    <button 
+                      style={{ 
+                        padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', color: '#EF4444', 
+                        backgroundColor: '#FFF', border: '1px solid #EF4444', borderRadius: '6px', 
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFF')}
+                      onClick={(e) => {
+                        e.stopPropagation(); // 防止觸發外層卡片的 onClick
+                        handleCancelBulletin(bulletin.id);
+                      }}
+                    >
+                      撤銷許願
+                    </button>
                   </div>
                 </div>
               );
             } else {
+              // 🌟 需求 1：判斷是否為「其他/手作」
+              const isOther = slotType.id === 'other';
+
               return (
-                <div key={slotType.id} className="dashboard-slot empty-slot cursor-pointer transition" onClick={() => navigate(`/?category=${slotType.id}`)}>
+                <div 
+                  key={slotType.id} 
+                  // 如果是 other，調整透明度並改掉 cursor
+                  className={`dashboard-slot empty-slot transition ${isOther ? 'opacity-60' : ''}`} 
+                  style={{ cursor: isOther ? 'not-allowed' : 'pointer', filter: isOther ? 'grayscale(0.3)' : 'none' }}
+                  onClick={() => {
+                    if (isOther) return; // 🌟 阻擋點擊
+                    // 🌟 需求 2：精準跳轉至 /wishboard 並且帶入 tab 參數
+                    navigate(`/wishboard?tab=${slotType.id}`);
+                  }}
+                >
                   <div className="empty-content">
                     <span className="empty-icon text-3xl mb-2 opacity-50">{slotType.icon}</span>
-                    <div className="text-[#7A7269] font-bold mb-1">{slotType.label} 尚有空缺</div>
+                    <div className="text-[#7A7269] font-bold mb-1">
+                      {slotType.label} {isOther ? '即將開放' : '尚有空缺'}
+                    </div>
                     <div className="text-xs text-[#A0978D] mb-3">{slotType.desc}</div>
-                    <button className="btn-outline-primary text-sm py-1 px-3">+ 前往發布</button>
+                    <button 
+                      className="btn-outline-primary text-sm py-1 px-3"
+                      // 🌟 按鈕樣式變更為灰色不可按
+                      style={isOther ? { borderColor: '#D1D5DB', color: '#9CA3AF', backgroundColor: '#F3F4F6', cursor: 'not-allowed' } : {}}
+                      disabled={isOther}
+                    >
+                      {isOther ? '🚧 建置中' : '+ 前往發布'}
+                    </button>
                   </div>
                 </div>
               );
@@ -142,13 +190,10 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                   );
                   
                   const canDecline = !['accepted', 'declined', 'closed'].includes(item.inquiry_status);
-                  
-                  // 🌟 判斷是否為黑名單
                   const isBlacklisted = blacklistedIds.includes(item.artist_id);
 
                   return (
                     <div key={item.inquiry_id} style={{ position: 'relative' }}>
-                      {/* 🌟 修改：將 isBlacklisted 傳入 ArtistPostcard，由它內部負責顯示 */}
                       <ArtistPostcard 
                         item={item} 
                         snapshot={snapshot} 
