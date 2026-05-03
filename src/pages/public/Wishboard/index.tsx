@@ -381,7 +381,7 @@ export const Wishboard: React.FC = () => {
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
-                目前許願池僅限繪圖相關的徵稿與接委託貼文，請先不要發佈與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
+                目前許願池僅限繪圖相關的徵委託與接委託貼文，請先不要發佈與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
               </div>
               <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
                 <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>

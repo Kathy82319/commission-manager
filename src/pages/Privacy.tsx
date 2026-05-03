@@ -21,14 +21,14 @@ export function Privacy() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#FFFFFF', 
+    color: '#000018', 
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#E8D5C4', 
+    color: '#000000', 
     display: 'flex',
     alignItems: 'center',
   };
@@ -44,7 +44,7 @@ export function Privacy() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#FFFFFF',  
+    color: '#000018',  
     textDecoration: 'underline',
     textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };
@@ -89,7 +89,7 @@ export function Privacy() {
         <p>
           您可隨時透過聯繫開發者（Email: cath40286@gmail.com）申請刪除帳號。
           <br />
-          <span style={{ ...highlightStyle, color: '#FFD7D7' }}> 帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
+          <span style={{ ...highlightStyle, color: '#df4949' }}> 帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
         </p>
       </section>
 
@@ -110,7 +110,7 @@ export function Privacy() {
         <p>
           您可以隨時透過 LINE 登入後修改您的個人資料。若對本政策或資料處理有任何疑問，請聯繫開發者：
           <br />
-          <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#FFFFFF' }}>客服信箱：cath40286@gmail.com</span>
+          <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#000018' }}>客服信箱：cath40286@gmail.com</span>
         </p>
       </section>
     </div>

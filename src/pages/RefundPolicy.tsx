@@ -21,14 +21,14 @@ export function RefundPolicy() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#FFFFFF', 
+    color: '#000018', 
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#E8D5C4',
+    color: '#000000',
   };
 
   return (

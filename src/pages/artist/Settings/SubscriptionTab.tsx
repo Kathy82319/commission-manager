@@ -106,8 +106,9 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
             <li>📋 每月可建立 <strong>3 筆</strong> 委託單 (含許願池訂單)</li>
-            <li>✨ 許願池：主動投遞 <strong>5 次</strong> / 月</li>
-            <li>✨ 許願池：發布接委託 <strong>1 則</strong> / 月</li>
+            <li>✨ 許願池：投遞徵委託區 <strong>5 次</strong> / 月</li>
+            <li>✨ 許願池：接委託區發佈 <strong>1 則</strong> / 月</li>
+            <li>🚀 委託人介面：接委託區發佈 <strong>1 則</strong> / 月</li>
             <li>🖼️ 作品集展示上限 <strong>6 張</strong></li>
             <li>📤 單檔上傳最高 5MB 限制</li>
           </ul>
@@ -130,10 +131,10 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
-            <li>🚀 試用期間可建立 <strong>20 筆</strong> 委託單</li>
+            <li>💎 試用期間可建立 <strong>20 筆</strong> 委託單</li>
             <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制</li>
             <li>💎 <strong>解鎖</strong> 最高 20 張作品展示</li>
-            <li>💎 <strong>解鎖</strong>「徵稿/販售區」開放展示 10 個項目</li>
+            <li>💎 <strong>解鎖</strong>「販售區」開放展示 10 個項目</li>
             <li>💎 <strong>解鎖</strong> 所有進階編輯區塊權限</li>
             <li style={{ color: '#A67B3E', fontSize: '12px', marginTop: '10px', lineHeight: '1.4' }}>💡 降級保障：試用結束後，已設定的區塊與超出張數的作品仍會持續展示，僅鎖定編輯權限。</li>
           </ul>
@@ -173,11 +174,11 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-            <li>👑 <strong>無限制</strong> 建立委託單數量</li>
-            <li>👑 <strong>無限制</strong> 許願池投遞與發布次數*</li>
+            <li>👑  建立委託單數量 <strong>99張</strong></li>
+            <li>👑  許願池投遞與發布次數<strong>無限制*</strong></li>
             <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
-            <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>
-            <li>👑 享有優先客服與新功能搶先體驗</li>
+            <li>👑 <strong>解鎖</strong>「販售區」開放展示 30 個項目</li>
+            <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>            
             <li style={{ fontSize: '11px', color: '#A0978D', marginTop: '4px' }}>* 同時間同類型僅限刊登一則，以維護版面整潔</li>
           </ul>
           

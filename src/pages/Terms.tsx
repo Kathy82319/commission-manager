@@ -21,14 +21,14 @@ export function Terms() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#FFFFFF', 
+    color: '#000018', 
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#E8D5C4',
+    color: '#000000',
     display: 'flex',
     alignItems: 'center',
   };
@@ -44,7 +44,7 @@ export function Terms() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#FFFFFF', 
+    color: '#000018', 
     textDecoration: 'underline',
     textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };
@@ -88,9 +88,9 @@ export function Terms() {
           <li style={itemStyle}>
             <span style={highlightStyle}>專業版 (Pro)：</span>
             <ul style={nestedListStyle}>
-              <li><span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買)。</li>
+              <li><span style={{ color: '#000018', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買)。</li>
               <li>無接單數量限制。</li>
-              <li>作品區、徵稿區上傳限制提高至 30 張。</li>
+              <li>作品區、販售區上傳限制提高至 30 張。</li>
               <li>個人展示頁面：可編輯背景色、開場動畫、數個文字說明介面</li>
             </ul>
           </li>
@@ -111,8 +111,7 @@ export function Terms() {
         <h2 style={subTitleStyle}>四、 違規與法律責任</h2>
         <p style={itemStyle}>1. <span style={highlightStyle}>禁止行為：</span>用戶不得利用本服務儲存、發布或傳送任何非法、具威脅性、誹謗、猥褻、色情、侵權或違反公共秩序之內容。若上傳之畫作涉及版權爭議，由上傳用戶自行承擔所有法律責任。</p>
         <p style={itemStyle}>2. <span style={highlightStyle}>紀錄之真實性義務：</span>繪師於本平台內針對委託過程所作之紀錄（如：標註跑單、溝通狀況等），應基於客觀事實。若用戶故意捏造虛假事實導致他人名譽受損，相關法律責任須由該用戶負擔。</p>
-        <p style={itemStyle}>3. <span style={highlightStyle}>異常使用防範：</span>用戶不得利用自動化程式或人為惡意手段進行不合理之資源耗損行為，包含但不限於短時間內大量建立單據（如一分鐘內連續建單）、大量上傳無關或冗餘圖檔、或執行任何足以導致伺服器效能受損之行為。</p>
-        <p style={itemStyle}>4. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定或有異常使用之情事，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」、「永久刪除帳號」或「限制 IP 訪問」等措施。</p>
+        <p style={itemStyle}>3. <span style={highlightStyle}>平台處置權：</span>若用戶違反上述規定或有異常使用之情事，本平台有權不經通知即採取「暫停帳號功能」、「限制存取權限」、「永久刪除帳號」或「限制 IP 訪問」等措施。</p>
       </section>
 
 

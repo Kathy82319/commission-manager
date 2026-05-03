@@ -257,7 +257,7 @@ export function PublicProfile() {
     }
 
     if (!isFreePlan) {
-      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '徵稿/販售項目' });
+      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '販售項目' });
       
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {

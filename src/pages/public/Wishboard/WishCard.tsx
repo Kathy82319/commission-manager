@@ -426,7 +426,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 <option value="AI製圖">AI製圖</option>
                 <option value="侵害版權、盜圖、抄襲等等">侵害版權、盜圖、抄襲等等</option>
                 <option value="含有色情或暴力等不當內容">含有色情或暴力等不當內容</option>
-                <option value="內容不實、惡意攻擊、與徵稿/接委託不相關">內容不實、惡意攻擊、與徵稿/接委託不相關</option>
+                <option value="內容不實、惡意攻擊、與徵委託/接委託不相關">內容不實、惡意攻擊、與徵稿/接委託不相關</option>
                 <option value="其他原因">其他原因</option>
               </select>
             </div>
