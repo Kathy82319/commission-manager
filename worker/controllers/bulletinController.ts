@@ -10,14 +10,14 @@ export const bulletinController = {
       const body = await request.json().catch(() => ({})) as any;
       const decline_reason = body.decline_reason || '案主已撤銷許願 / 結束徵件';
       
-      // 🛡️ XSS 與長度防護
-      const safeReason = sanitizeAndLimit(decline_reason, 200).replace(/[<>]/g, '');
+      // 🛡️ XSS 防護
+      const safeReason = decline_reason.substring(0, 200).replace(/[<>]/g, '');
 
-      // 🛡️ BOLA 越權防護：依然檢查是否為發文者本人
+      // 🛡️ BOLA 越權防護
       const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
 
-      // 🌟 一併將理由寫入 Inquiries 表格中
+      // 🌟 關閉貼文，並將理由寫入所有 pending 的提案中
       await env.commission_db.batch([
         env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'closed', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE bulletin_id = ? AND status = 'pending'`).bind(safeReason, bulletinId)

@@ -117,10 +117,11 @@ export default {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
-        } else if (targetId && subAction === "close" && request.method === "PATCH") { // 🌟 修正：從 POST 改為 PATCH
+        } else if (targetId && subAction === "close" && request.method === "PATCH") { 
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
-          return bulletinController.closeBulletin(targetId, currentUserId!, env, corsHeaders);
+          // 🌟 修正：補上 request 參數，對齊 Controller 的規格
+          return bulletinController.closeBulletin(request, targetId, currentUserId!, env, corsHeaders);
         } 
         else if (targetId && subAction === "report" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
