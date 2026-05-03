@@ -15,9 +15,9 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 1; // 💡 等測試通過後，請記得改回 150
+      const amount = 150; // 💡 等測試通過後，請記得改回 150
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      const absoluteFrontendUrl = "https://cath-commission-manager.pages.dev";
+      const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
       const backendUrl = env.BACKEND_URL;
       
       await env.commission_db.prepare(
