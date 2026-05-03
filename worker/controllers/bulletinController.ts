@@ -522,7 +522,7 @@ export const bulletinController = {
 
       const artistCount = Number(weightRes[0]?.artist_count) || 0;
 
-      if (artistCount >= 10) {
+      if (artistCount >= 1) {
         await env.commission_db.prepare(`
           UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?
         `).bind(targetId).run();
