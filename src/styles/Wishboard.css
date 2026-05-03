@@ -1,7 +1,7 @@
 /* src/styles/Wishboard.css */
 
 /* ==================================================
-   🌟 基礎頁面佈局與變數
+   🌟 基礎頁面佈局與變數 (終極防撐破版)
    ================================================== */
 :root {
   --wish-primary: var(--artist-theme-color, #ff8c00);
@@ -12,7 +12,17 @@
   --wish-border: #cbd5e1;
 }
 
+/* 🌟 全域防爆鎖定：確保所有 padding 和 border 都在 width 的計算範圍內 */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 .wishboard-page {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -20,26 +30,21 @@
   min-height: 100vh;
   color: var(--wish-text-main);
   font-family: inherit;
-  box-sizing: border-box;
-  overflow-x: hidden; /* 🌟 防護橫向滾動條移至此處，避免 body 卡死 */
+  overflow-x: hidden;
+}
+
+/* 通用截斷類別 */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  display: block;
 }
 
 /* Toast 通知 */
 .toast-notification {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
-  animation: slideDown 0.3s ease-out;
+  position: fixed; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 30px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); z-index: 10000; animation: slideDown 0.3s ease-out;
 }
 .toast-notification.success { background-color: #22c55e; color: white; }
 .toast-notification.error { background-color: #ef4444; color: white; }
@@ -48,143 +53,88 @@
 /* ==================================================
    🌟 許願池主視覺 (Hero) 與 篩選列 (FilterBar)
    ================================================== */
-.wishboard-hero { 
-  text-align: center; 
-  padding: 40px 20px; 
-  background: linear-gradient(135deg, #fff5eb 0%, #ffffff 100%); 
-  border-radius: 20px; 
-  margin-bottom: 20px; 
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-}
-
+.wishboard-hero { text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #fff5eb 0%, #ffffff 100%); border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
 .tab-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
-.tab-group button { 
-  padding: 10px 25px; border-radius: 30px; border: 1px solid var(--wish-border); 
-  background: white; cursor: pointer; font-weight: 600; color: var(--wish-text-muted); 
-  transition: all 0.3s ease; 
-}
-.tab-group button.active { 
-  background: var(--wish-primary); color: white; border-color: var(--wish-primary); 
-  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); 
-}
+.tab-group button { padding: 10px 25px; border-radius: 30px; border: 1px solid var(--wish-border); background: white; cursor: pointer; font-weight: 600; color: var(--wish-text-muted); transition: all 0.3s ease; }
+.tab-group button.active { background: var(--wish-primary); color: white; border-color: var(--wish-primary); box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 
 .filter-section {
   display: flex; align-items: center; padding: 16px; background: white; 
   border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 2px;
+  width: 100%; min-width: 0;
 }
-.filter-label {
-  display: flex; align-items: center; gap: 4px; flex-shrink: 0; font-weight: bold; color: var(--wish-text-main); margin-right: 12px;
-}
+.filter-label { display: flex; align-items: center; gap: 4px; flex-shrink: 0; font-weight: bold; color: var(--wish-text-main); margin-right: 12px; }
 
 /* ==================================================
    🌟 許願池卡片排版 (WishCard)
    ================================================== */
-.wish-grid { display: flex; flex-direction: column; gap: 20px; }
+.wish-grid { display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 0; }
 
 .wish-card-wide { 
-  display: flex; 
-  flex-direction: row;
-  background: white; 
-  border-radius: 16px; 
-  overflow: hidden; 
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
-  border: 1px solid #f0f0f0; 
-  transition: transform 0.2s; 
-  align-items: stretch; 
-  margin-bottom: 20px;
+  display: flex; flex-direction: row; background: white; border-radius: 16px; 
+  overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f0f0f0; 
+  transition: transform 0.2s; align-items: stretch; margin-bottom: 20px;
+  width: 100%; min-width: 0;
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
 .wish-card-image-wrapper { 
-  width: 360px; 
-  max-width: 360px; /* 🌟 電腦版鎖定最大寬度 */
-  min-height: 320px;
-  position: relative; 
-  flex: 0 0 auto; /* 🌟 防止變形 */
-  background-color: #fafafa; 
-  border-right: 1px solid #f0f0f0; 
-  overflow: hidden; 
-  cursor: zoom-in;
+  width: 360px; max-width: 360px; min-height: 320px; position: relative; 
+  flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; 
+  overflow: hidden; cursor: zoom-in; min-width: 0;
 }
-
-.wish-card-img-inner {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-}
-
-.wish-card-img { 
-  width: 100%; 
-  height: 100%; 
-  object-fit: cover; 
-  display: block; 
-  transition: transform 0.3s ease;
-}
+.wish-card-img-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
 .wish-card-image-wrapper:hover .wish-card-img { transform: scale(1.03); }
 
-.empty-image-placeholder {
-  width: 100%; height: 100%; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; color: #cbd5e1; gap: 12px;
-  position: absolute; top: 0; left: 0;
-}
+.empty-image-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #cbd5e1; gap: 12px; position: absolute; top: 0; left: 0; }
 .empty-image-placeholder span { font-size: 14px; color: #94a3b8; }
-
-.wish-expiry-badge {
-  position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); 
-  color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; 
-  display: flex; align-items: center; gap: 4px; z-index: 10;
-}
-.card-image-nav {
-  position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); 
-  color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; 
-  display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px); z-index: 5;
-}
+.wish-expiry-badge { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 4px; z-index: 10; }
+.card-image-nav { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px); z-index: 5; }
 .card-image-nav .nav-btn { cursor: pointer; opacity: 0.8; transition: 0.2s; }
 .card-image-nav .nav-btn:hover { opacity: 1; transform: scale(1.2); }
-.zoom-hint {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.4); color: white; padding: 10px; border-radius: 50%;
-  opacity: 0; transition: 0.3s; pointer-events: none;
-}
+.zoom-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.4); color: white; padding: 10px; border-radius: 50%; opacity: 0; transition: 0.3s; pointer-events: none; }
 .wish-card-image-wrapper:hover .zoom-hint { opacity: 1; }
 
-.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.wish-card-header { display: flex; justify-content: space-between; align-items: center; }
-.wish-card-header h3 { font-size: 20px; color: var(--wish-text-main); margin: 0; font-weight: 800; }
+.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow: hidden; width: 100%; }
+.wish-card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-width: 0; }
+.wish-card-header h3 { font-size: 20px; color: var(--wish-text-main); margin: 0; font-weight: 800; min-width: 0; }
 
-.category-badge { padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 800; }
+.category-badge { padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
 .category-badge.request { background: #f1f5f9; color: #475569; }
 .category-badge.offer { background: #fffbeb; color: #d97706; }
 
-.wish-card-meta-list { display: flex; flex-direction: column; gap: 12px; }
-.meta-tag-row { display: flex; gap: 8px; align-items: flex-start; }
-.tag-container { display: flex; flex-direction: column; gap: 8px; }
-.tag-sub-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.group-label { font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 2px; }
+.wish-card-meta-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.meta-tag-row { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.tag-container { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tag-sub-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.group-label { font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 2px; white-space: nowrap; }
 .group-label.warning { color: #e11d48; }
 .group-label.license { color: #16a34a; }
 
-.tag-chip { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.tag-chip { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .tag-style { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .tag-warning { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
 .tag-license { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
 
-.meta-info-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+/* 🌟 防爆鎖定網格 */
+.meta-info-grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; min-width: 0; }
 @media (min-width: 768px) { .meta-info-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
 
-.meta-item { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 14px; }
-.meta-icon { color: #94a3b8; }
+.meta-item { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 14px; min-width: 0; width: 100%; }
+.meta-icon { color: #94a3b8; flex-shrink: 0; }
 .highlight-price { color: #ff8c00; font-weight: 800; font-size: 16px; }
 
-.commission-items-preview { margin-top: 4px; }
+.commission-items-preview { margin-top: 4px; min-width: 0; }
 .section-small-title { font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px; }
 .items-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .item-pill { background: #fff5eb; color: #ea580c; padding: 4px 12px; border-radius: 12px; font-size: 13px; border: 1px solid #fed7aa; display: flex; align-items: center; gap: 6px; }
 
-.wish-description-box { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; margin-top: auto; max-height: 150px; overflow-y: auto; }
+.wish-description-box { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; margin-top: auto; max-height: 150px; overflow-y: auto; min-width: 0; }
 .description-label { color: #0f172a; }
-.description-text { margin: 6px 0 0 0; line-height: 1.6; color: #475569; font-size: 14px; white-space: pre-wrap; }
+.description-text { margin: 6px 0 0 0; line-height: 1.6; color: #475569; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
 
-.card-actions { margin-top: 16px; }
+.card-actions { margin-top: 16px; width: 100%; }
 .btn-status-disabled { background: #f1f5f9; color: #94a3b8; padding: 12px 32px; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; width: 100%; cursor: not-allowed; }
 .full-width { width: 100%; display: flex; justify-content: center; }
 
@@ -192,7 +142,7 @@
    🌟 燈箱系統 (Lightbox)
    ================================================== */
 .lightbox-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; align-items: center; justify-content: center; z-index: 10001; cursor: zoom-out; animation: fadeIn 0.3s ease; }
-.lightbox-content { position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; }
+.lightbox-content { position: relative; width: 100%; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; }
 .lightbox-img { max-width: 100%; max-height: 85vh; object-fit: contain; box-shadow: 0 0 40px rgba(0,0,0,0.5); border-radius: 4px; }
 .lightbox-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; border: none; padding: 20px 10px; cursor: pointer; border-radius: 8px; transition: 0.2s; z-index: 10002; }
 .lightbox-nav-btn:hover { background: rgba(255,255,255,0.2); }
@@ -210,7 +160,7 @@
   position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
   background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; 
-  z-index: 9999; padding: 20px; box-sizing: border-box;
+  z-index: 9999; padding: 20px;
 }
 
 .post-modal { 
@@ -219,32 +169,12 @@
   overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
 }
 
-.modal-header { 
-  padding: 20px 24px; background: white; border-bottom: 1px solid #f1f5f9; 
-  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; 
-  position: relative;
-}
-.modal-header h2 { margin: 0; font-size: 22px; color: var(--wish-text-main); font-weight: 800; }
+.modal-header { padding: 20px 24px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; position: relative; }
+.modal-header h2 { margin: 0; font-size: 22px; color: var(--wish-text-main); font-weight: 800; min-width: 0; }
+.post-form { padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; flex-grow: 1; }
 
-.post-form { 
-  padding: 10px; overflow-y: auto; display: flex; flex-direction: column; 
-  gap: 12px; background: #f8fafc; flex-grow: 1;
-}
-
-/* ==================================================
-   🌟 表單核心元件
-   ================================================== */
-.form-section { 
-  background: white; padding: 24px; border-radius: 16px; 
-  border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-
-.section-title { 
-  font-size: 16px; font-weight: 800; color: #0f172a; 
-  border-left: 4px solid var(--wish-primary); padding-left: 10px; margin: 0 0 4px 0;
-}
-
+.form-section { background: white; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.section-title { font-size: 16px; font-weight: 800; color: #0f172a; border-left: 4px solid var(--wish-primary); padding-left: 10px; margin: 0 0 4px 0; }
 .form-row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
 .form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 260px; }
 .form-group label { font-weight: 700; color: var(--wish-text-main); font-size: 14px; }
@@ -252,18 +182,14 @@
 
 input[type="text"], input[type="number"], input[type="date"], textarea, .date-input {
   width: 100%; padding: 12px 16px; border: 1.5px solid var(--wish-border); 
-  border-radius: 10px; font-size: 14px; color: var(--wish-text-main); 
-  background: white; transition: all 0.2s; font-family: inherit; box-sizing: border-box;
+  border-radius: 10px; font-size: 14px; color: var(--wish-text-main); background: white; transition: all 0.2s; font-family: inherit;
 }
 input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.1); }
 .detail-textarea { min-height: 120px; resize: vertical; }
 
-.budget-inputs { display: flex; align-items: center; gap: 12px; }
+.budget-inputs { display: flex; align-items: center; gap: 12px; width: 100%; }
 .budget-separator { color: var(--wish-text-muted); font-weight: bold; }
 
-/* ==================================================
-   🌟 圖片預覽與作品集網格
-   ================================================== */
 .image-preview-box { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; background: #f1f5f9; flex-shrink: 0; }
 .image-preview-box img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block; }
 .remove-image-btn { position: absolute; top: 6px; right: 6px; background: rgba(15, 23, 42, 0.6); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: 0.2s; }
@@ -275,82 +201,65 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
 .portfolio-item.selected { border-color: #9333ea; transform: scale(0.95); }
 .portfolio-item .check-overlay { position: absolute; inset: 0; background: rgba(147, 51, 234, 0.4); display: flex; align-items: center; justify-content: center; color: white; }
 
-/* ==================================================
-   🌟 標籤系統 (Tags)
-   ================================================== */
 .tag-selector-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.tag-selector { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-
+.tag-selector { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-width: 0; }
 .selectable-tag { padding: 8px 16px; border: 1.5px solid var(--wish-border); border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--wish-text-muted); cursor: pointer; background: white; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
 .selectable-tag:hover { background: #f1f5f9; border-color: #94a3b8; color: var(--wish-text-main); }
 .selectable-tag.selected { background: var(--wish-primary); color: white; border-color: var(--wish-primary); }
-
 .selectable-tag.warning.selected { background: #e11d48; border-color: #e11d48; }
 .selectable-tag.license.selected { background: #16a34a; border-color: #16a34a; }
 .selectable-tag.style.selected { background: #64748b; border-color: #64748b; }
+.compact-tag-input { width: 140px !important; padding: 8px 16px !important; border: 1.5px dashed var(--wish-border) !important; background: transparent !important; border-radius: 20px !important; font-size: 13px !important; }
 
-.compact-tag-input { width: 140px !important; padding: 8px 16px !important; border: 1.5px dashed var(--wish-border) !important; background: transparent !important; border-radius: 20px !important; font-size: 13px !important; box-sizing: border-box; }
-
-/* ==================================================
-   🌟 互動按鈕與特殊區塊
-   ================================================== */
 .modal-footer { padding: 20px 24px; background: white; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 16px; flex-shrink: 0; }
 .submit-post-btn, .btn-cancel, .save-hint-btn, .add-btn-circle { white-space: nowrap !important; }
-
 .submit-post-btn { background: var(--wish-primary); color: white; padding: 12px 32px; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 140, 0, 0.25); transition: 0.2s; display: flex; align-items: center; gap: 8px; justify-content: center; }
 .submit-post-btn:hover:not(:disabled) { background: var(--wish-primary-hover); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(255, 140, 0, 0.35); }
 .submit-post-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; opacity: 0.7; }
-
 .btn-cancel { background: white; color: var(--wish-text-muted); padding: 12px 28px; border: 1px solid var(--wish-border); border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 .btn-cancel:hover { background: #f1f5f9; color: var(--wish-text-main); }
-
 .add-btn-circle { display: flex; align-items: center; gap: 6px; background: #f3e8ff; color: #9333ea; border: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
 .add-btn-circle:hover { background: #e9d5ff; transform: scale(1.02); }
-
 .save-hint-btn { background: white; border: 1px solid var(--wish-border); color: var(--wish-text-muted); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s; }
 .save-hint-btn:hover { color: var(--wish-primary); border-color: var(--wish-primary); background: #fff5eb; }
-
 .close-modal-btn { background: none; border: none; color: #94a3b8; padding: 8px; cursor: pointer; border-radius: 50%; display: flex; transition: 0.2s; }
 .close-modal-btn:hover { background: #f1f5f9; color: var(--wish-text-main); }
 
-.radio-group { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
-.radio-label { display: flex; align-items: center; gap: 8px; font-weight: 600 !important; color: var(--wish-text-main) !important; cursor: pointer; font-size: 14px; }
+.radio-group { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 6px; align-items: center; min-width: 0; }
+.radio-label { display: flex; align-items: center; gap: 8px; font-weight: 600 !important; color: var(--wish-text-main) !important; cursor: pointer; font-size: 14px; white-space: nowrap; }
 .radio-label input[type="radio"] { width: 18px; height: 18px; accent-color: var(--wish-primary); cursor: pointer; margin: 0; }
-
 .selection-mechanism-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 24px; border-radius: 16px; }
 .mechanism-radio-group { display: flex; gap: 24px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
-
-.dynamic-question-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-
-.item-manage-box { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.dynamic-question-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; width: 100%; }
+.item-manage-box { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; width: 100%; }
 .item-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
 
-.wish-card-author-wrapper { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: #7A7269; }
+.wish-card-author-wrapper { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 14px; color: #7A7269; min-width: 0; }
 .wish-card-author-icon { opacity: 0.7; flex-shrink: 0; }
-.wish-card-author-link { display: flex; align-items: baseline; gap: 4px; cursor: pointer; border-bottom: 1px dashed #A0978D; padding-bottom: 1px; transition: all 0.2s ease; }
+.wish-card-author-link { display: flex; align-items: baseline; gap: 4px; cursor: pointer; border-bottom: 1px dashed #A0978D; padding-bottom: 1px; transition: all 0.2s ease; min-width: 0; }
 .wish-card-author-link:hover { border-bottom-color: #b45309; }
 .wish-card-author-link:hover .wish-card-author-name, .wish-card-author-link:hover .wish-card-author-id { color: #b45309; opacity: 1; }
-.wish-card-author-name { font-weight: bold; color: #5D4A3E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; transition: color 0.2s ease; }
+.wish-card-author-name { font-weight: bold; color: #5D4A3E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; transition: color 0.2s ease; }
 @media (min-width: 640px) { .wish-card-author-name { max-width: 200px; } }
 .wish-card-author-id { font-size: 12px; font-family: monospace; opacity: 0.6; transition: all 0.2s ease; }
-.wish-card-author-text { display: flex; align-items: baseline; gap: 4px; }
+.wish-card-author-text { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
 
 .rules-floating-btn { position: fixed; bottom: 30px; right: 30px; background-color: #ffffff; color: #475569; border: 1px solid #cbd5e1; border-radius: 99px; padding: 10px 18px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); transition: all 0.2s ease; z-index: 900; }
 .rules-floating-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); color: #3b82f6; border-color: #bfdbfe; }
 
 /* ==================================================
-   📱 手機版適配 (RWD)
+   📱 手機版適配 (RWD - 終極排版解鎖)
    ================================================== */
 @media (max-width: 768px) {
-  .wishboard-page { padding: 12px; }
+  .wishboard-page { padding: 12px; width: 100%; overflow-x: hidden; }
 
-  .filter-section { flex-direction: column !important; align-items: flex-start !important; padding: 12px !important; gap: 12px !important; }
+  .filter-section { flex-direction: column !important; align-items: flex-start !important; padding: 12px !important; gap: 12px !important; width: 100% !important; overflow: hidden !important; }
   .filter-label { margin: 0 !important; }
   
   .filter-tags-scroll {
     display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; overflow-y: hidden !important;
-    width: 100% !important; max-width: 100% !important; padding-bottom: 8px !important; gap: 8px !important;
-    -webkit-overflow-scrolling: touch !important; scrollbar-width: none; box-sizing: border-box;
+    width: 100% !important; padding-bottom: 8px !important; gap: 8px !important;
+    -webkit-overflow-scrolling: touch !important; scrollbar-width: none;
   }
   .filter-tags-scroll::-webkit-scrollbar { display: none; }
   .filter-tags-scroll .selectable-tag { flex-shrink: 0 !important; white-space: nowrap !important; }
@@ -369,27 +278,27 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
   .radio-label { font-size: 13px !important; }
 
   .modal-overlay { padding: 0; align-items: flex-end; } 
-  .post-modal { max-height: 94vh; height: 94vh; border-radius: 20px 20px 0 0; }
+  .post-modal { max-height: 94vh; height: 94vh; border-radius: 20px 20px 0 0; width: 100%; }
   .form-section > div[style*="space-between"] { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
   .dynamic-question-row { flex-wrap: wrap; gap: 6px; }
   .dynamic-question-row > input { width: 100%; flex: 1 1 100%; }
   .modal-footer { padding: 12px; flex-direction: column-reverse; gap: 8px; }
   .modal-footer button { width: 100%; padding: 10px; font-size: 14px; }
 
-  /* 🌟 核心修正區：強制手機版滿版，解除 360px 卡死鎖定 */
-  .wish-card-wide { flex-direction: column !important; width: 100% !important; }
+  /* 🌟 手機版卡片：強制解開鎖定，滿版延展 */
+  .wish-card-wide { flex-direction: column !important; width: 100% !important; max-width: 100% !important; }
   
   .wish-card-image-wrapper { 
     width: 100% !important; 
-    max-width: none !important; /* 🌟 覆蓋電腦版 360px 限制 */
-    height: 65vw !important; /* 🌟 使用 65vw 讓圖片在任何尺寸的手機都能維持漂亮的橫幅比例 */
+    max-width: 100% !important; 
+    height: 65vw !important; 
     min-height: 200px !important; 
-    flex: none !important; /* 🌟 覆蓋 flex: 0 0 auto 防止變形 */
+    flex: none !important; 
     border-right: none !important; 
     border-bottom: 1px solid #f0f0f0;
   }
   
-  .wish-card-info { padding: 16px !important; gap: 12px; }
+  .wish-card-info { padding: 16px !important; gap: 12px; width: 100% !important; max-width: 100% !important; }
 
   .lightbox-nav-btn { padding: 10px 5px; }
   .lightbox-nav-btn.prev { left: 5px; }
