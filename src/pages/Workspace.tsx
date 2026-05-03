@@ -1,5 +1,8 @@
+// src/pages/Workspace
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+
+const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
 
 interface Message {
   id: string;
@@ -13,17 +16,15 @@ interface OrderData {
   client_name: string;
   status: string;
   total_price: number;
-  origin_source?: string; // 新增來源欄位
+  origin_source?: string;
 }
 
-// 🌟 安全版：解除 HTML 實體編碼 (不會因為丟入 Object 而當機)
 const unescapeHtml = (str: any) => {
   if (typeof str !== 'string') return str;
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 🌟 新增：防護盾版 JSON 解析器 (遇到純文字不會崩潰，遇到物件直接放行)
 const safeParse = (data: any) => {
   if (typeof data !== 'string') return data;
   try {
@@ -43,36 +44,33 @@ export function Workspace() {
   const role = searchParams.get('role') || 'client'; 
   const navigate = useNavigate();
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  
   const [order, setOrder] = useState<OrderData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
   
+  // 🌟 新增：圖片上傳狀態與 Ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesLengthRef = useRef<number>(0); 
 
   const formatLocalTime = (dateStr: string) => {
     if (!dateStr) return '';
     const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-    return new Date(utcStr).toLocaleTimeString('zh-TW', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
-    });
+    return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 🌟 修改：使用安全解析器深度解析許願池來源，相容新舊資料
   const getBulletinSource = (currentOrder: OrderData | null) => {
     if (!currentOrder || !currentOrder.origin_source) return null;
     try {
       const parsed = safeParse(currentOrder.origin_source);
-      
       if (parsed && parsed.source_type === 'bulletin') {
         const isOffer = parsed.bulletin_category === 'offer';
-        
         const bulletinContent = safeParse(parsed.bulletin_content);
-        
         const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
         const parsedSnapshot = safeParse(rawSnapshot);
 
@@ -90,7 +88,6 @@ export function Workspace() {
       }
     } catch (e) {
       console.error("許願池來源解析失敗", e);
-      return null;
     }
     return null;
   };
@@ -100,33 +97,23 @@ export function Workspace() {
     const field = role === 'artist' ? 'last_read_at_artist' : 'last_read_at_client';
     try {
       await fetch(`${API_BASE}/api/commissions/${id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: new Date().toISOString() })
       });
-    } catch (error) {
-      console.error("更新已讀時間失敗", error);
-    }
+    } catch (error) {}
   };
 
   const fetchOrderData = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}`, {
-        credentials: 'include'
-      });
+      const res = await fetch(`${API_BASE}/api/commissions/${id}`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) setOrder(data.data);
-    } catch (error) {
-      console.error("無法讀取訂單", error);
-    }
+    } catch (error) { console.error("無法讀取訂單", error); }
   };
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
-        credentials: 'include'
-      });
+      const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setMessages(prev => {
@@ -140,75 +127,162 @@ export function Workspace() {
            return prev;
         });
       }
-    } catch (error) {
-      console.error("無法讀取訊息", error);
-    }
+    } catch (error) {}
   };
 
   useEffect(() => {
     const initData = async () => {
-      await fetchOrderData();
-      await fetchMessages();
-      await updateReadTime(); 
+      await fetchOrderData(); await fetchMessages(); await updateReadTime(); 
       setLoading(false);
     };
     initData();
-
-    const intervalId = setInterval(() => {
-      fetchMessages();
-    }, 3000);
-
+    const intervalId = setInterval(fetchMessages, 3000);
     return () => clearInterval(intervalId);
   }, [id, role]);
 
   useEffect(() => {
     if (!loading && messages.length > 0) {
-      const timer = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 150); 
+      const timer = setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 150); 
       return () => clearTimeout(timer);
     }
   }, [messages, loading]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
-
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_role: role, content: inputText })
       });
       const data = await res.json();
-      
       if (data.success) {
-        setInputText('');
-        fetchMessages(); 
-      } else {
-        alert("發送失敗：" + data.error);
+        setInputText(''); fetchMessages(); 
+      } else alert("發送失敗：" + data.error);
+    } catch (error) { alert('發送失敗，網路連線異常'); }
+  };
+
+  // 🌟 核心防護：靜默壓縮與洗除 EXIF 資訊
+  const silentCompressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIMENSION = 1600; 
+          let { width, height } = img;
+          
+          if (width > height && width > MAX_DIMENSION) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          } else if (height > MAX_DIMENSION) {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+          
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+              if (blob) resolve(blob); else reject(new Error('壓縮失敗'));
+            }, 'image/jpeg', 0.82 
+          );
+        };
+        img.onerror = () => reject(new Error('圖片解析失敗'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 🌟 處理圖片上傳
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('只能上傳圖片喔！');
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    try {
+      const compressedBlob = await silentCompressImage(file);
+      
+      if (compressedBlob.size > 1.5 * 1024 * 1024) {
+        alert('您的圖片尺寸過於龐大或比例極端，為保護空間資源請縮小後再傳！');
+        return;
       }
-    } catch (error) {
-      alert('發送失敗，網路連線異常');
+
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contentType: 'image/jpeg', bucketType: 'public', 
+          originalName: `chat_${Date.now()}.jpg`, folder: 'chat-images' 
+        })
+      });
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error);
+
+      const putRes = await fetch(ticketData.uploadUrl, {
+        method: 'PUT', body: compressedBlob, headers: { 'Content-Type': 'image/jpeg' }
+      });
+      if (!putRes.ok) throw new Error('上傳至雲端失敗');
+
+      // 送出圖片 Markdown 語法
+      await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender_role: role, content: `![image](${ticketData.fileName})` })
+      });
+      fetchMessages(); 
+
+    } catch (err: any) {
+      alert('圖片上傳失敗：' + err.message);
+    } finally {
+      setIsUploadingImage(false);
+      if (e.target) e.target.value = ''; 
     }
   };
 
+  // 🌟 解析 Markdown 圖片語法為實際圖片
+  const renderMessageContent = (content: string) => {
+    const imgRegex = /!\[image\]\((.*?)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = imgRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(<span key={lastIndex}>{content.substring(lastIndex, match.index)}</span>);
+      }
+      const imgUrl = match[1];
+      const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${R2_PUBLIC_URL}/${imgUrl}`;
+      parts.push(
+        <div key={match.index} style={{ margin: '8px 0' }}>
+          <img 
+            src={fullUrl} alt="chat-upload" 
+            style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', cursor: 'zoom-in', display: 'block', border: '1px solid rgba(0,0,0,0.1)' }} 
+            onClick={() => window.open(fullUrl, '_blank')}
+          />
+        </div>
+      );
+      lastIndex = imgRegex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+      parts.push(<span key={lastIndex}>{content.substring(lastIndex)}</span>);
+    }
+    return parts.length > 0 ? parts : content;
+  };
+
   if (loading) return (
-    <div style={{ 
-      height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
-      backgroundColor: '#FBFBF9', 
-      color: '#5D4A3E', fontSize: '15px' 
-    }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', color: '#5D4A3E', fontSize: '15px' }}>
       載入聊天室中...
     </div>
   );
 
   if (!order) return (
-    <div style={{ 
-      height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', 
-      backgroundColor: '#FBFBF9', 
-      color: '#A05C5C', fontSize: '15px' 
-    }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', color: '#A05C5C', fontSize: '15px' }}>
       找不到此委託空間，或發生異常。
     </div>
   );
@@ -216,13 +290,7 @@ export function Workspace() {
   const bulletinData = getBulletinSource(order);
 
   return (
-    <div style={{ 
-      height: '100vh', 
-      display: 'flex', 
-      justifyContent: 'center', 
-      backgroundColor: '#FBFBF9',
-      overflow: 'hidden' 
-    }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
       <style>{`
         @media (max-width: 600px) {
           .chat-main-area { padding: 15px 10px !important; }
@@ -231,75 +299,23 @@ export function Workspace() {
         }
       `}</style>
 
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '800px',
-        display: 'flex', 
-        flexDirection: 'column', 
-        backgroundColor: '#FFFFFF', 
-        position: 'relative' 
-      }}>
-        <header style={{ 
-          backgroundColor: '#FFFFFF', 
-          padding: '10px 16px', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          borderBottom: '1px solid #EAE6E1', 
-          position: 'sticky', 
-          top: 0, 
-          zIndex: 10 
-        }}>
+      <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
+        <header style={{ backgroundColor: '#FFFFFF', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button 
-              onClick={() => navigate(-1)} 
-              style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '18px', cursor: 'pointer', padding: '5px' }}
-            >
-              ←返回
-            </button>
+            <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '18px', cursor: 'pointer', padding: '5px' }}>←返回</button>
             <div>
-              <h2 className="header-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>
-                {order.client_name || '未命名委託人'}
-              </h2>
+              <h2 className="header-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E' }}>{order.client_name || '未命名委託人'}</h2>
               <div style={{ fontSize: '10px', color: '#A0978D' }}>單號: {order.id}</div>
             </div>
           </div>
-          <div style={{ 
-            padding: '4px 10px', 
-            borderRadius: '12px', 
-            fontSize: '11px', 
-            fontWeight: 'bold', 
-            backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7',
-            color: '#5D4A3E'
-          }}>
+          <div style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: role === 'artist' ? '#EAE6E1' : '#EBF2F7', color: '#5D4A3E' }}>
             {role === 'artist' ? '🎨 繪師' : '👤 委託人'}
           </div>
         </header>
 
-        <main className="chat-main-area" style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
-          padding: '20px 15px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '16px',
-          backgroundColor: '#FBFBF9' 
-        }}>
-          {/* 許願池媒合軌跡區塊 */}
+        <main className="chat-main-area" style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           {bulletinData && (
-            <div style={{
-              backgroundColor: '#FDFBFE',
-              border: '1px solid #E9D5FF',
-              borderRadius: '12px',
-              padding: '16px',
-              marginBottom: '10px',
-              fontSize: '13px',
-              color: '#4B5563',
-              lineHeight: '1.6',
-              boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)',
-              wordBreak: 'break-word',
-              overflowWrap: 'anywhere'
-            }}>
+            <div style={{ backgroundColor: '#FDFBFE', border: '1px solid #E9D5FF', borderRadius: '12px', padding: '16px', marginBottom: '10px', fontSize: '13px', color: '#4B5563', lineHeight: '1.6', boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               <div style={{ color: '#9333EA', fontWeight: 'bold', borderBottom: '1px solid #F3E8FF', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>
                 🔍 許願池媒合軌跡
               </div>
@@ -348,38 +364,17 @@ export function Workspace() {
             </div>
           )}
 
-          {/* 訊息列表 */}
           {messages.map(msg => {
             const isMe = msg.sender_role === role;
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '6px', 
-                  marginBottom: '4px', 
-                  fontSize: '11px', 
-                  color: '#A0978D', 
-                  flexDirection: isMe ? 'row-reverse' : 'row' 
-                }}>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
                   <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
-                  <span style={{ color: '#C4BDB5' }}>
-                    {formatLocalTime(msg.created_at)}
-                  </span>
+                  <span style={{ color: '#C4BDB5' }}>{formatLocalTime(msg.created_at)}</span>
                 </div>
-                <div className="message-wrapper" style={{ 
-                  maxWidth: '85%', 
-                  padding: '10px 14px', 
-                  fontSize: '15px',
-                  backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF',
-                  color: isMe ? '#FFFFFF' : '#4A4A4A',
-                  borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  border: isMe ? 'none' : '1px solid #EAE6E1',
-                  wordBreak: 'break-word',
-                  whiteSpace: 'pre-wrap',
-                  lineHeight: '1.4'
-                }}>
-                  {msg.content}
+                {/* 🌟 渲染圖片或文字 */}
+                <div className="message-wrapper" style={{ maxWidth: '85%', padding: '10px 14px', fontSize: '15px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#4A4A4A', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                  {renderMessageContent(msg.content)}
                 </div>
               </div>
             );
@@ -387,56 +382,25 @@ export function Workspace() {
           <div ref={messagesEndRef} />
         </main>
 
-        <footer style={{ 
-          backgroundColor: '#FFFFFF', 
-          padding: '12px 12px 24px 12px', 
-          borderTop: '1px solid #EAE6E1', 
-          display: 'flex', 
-          gap: '8px', 
-          alignItems: 'flex-end' 
-        }}>
-          <textarea 
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onFocus={() => setFocusedField(true)}
-            onBlur={() => setFocusedField(false)}
-            onKeyDown={(e) => { 
-              if (e.key === 'Enter' && !e.shiftKey) { 
-                e.preventDefault(); 
-                handleSendMessage(); 
-              } 
-            }}
-            placeholder="請輸入訊息..."
-            style={{ 
-              flex: 1, 
-              padding: '10px 14px', 
-              borderRadius: '20px', 
-              border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3',
-              backgroundColor: '#FBFBF9', 
-              fontSize: '15px', 
-              minHeight: '40px', 
-              maxHeight: '120px', 
-              outline: 'none',
-              resize: 'none',
-              lineHeight: '1.4'
-            }}
-          />
+        <footer style={{ backgroundColor: '#FFFFFF', padding: '12px 12px 24px 12px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+          {/* 🌟 圖片上傳按鈕 */}
+          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
           <button 
-            onClick={handleSendMessage}
-            disabled={!inputText.trim()}
-            style={{ 
-              padding: '10px 18px', 
-              borderRadius: '20px', 
-              backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3',
-              color: '#FFFFFF',
-              border: 'none',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              marginBottom: '2px'
-            }}
+            onClick={() => fileInputRef.current?.click()} 
+            disabled={isUploadingImage}
+            style={{ padding: '10px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '50%', color: '#64748B', cursor: isUploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, opacity: isUploadingImage ? 0.5 : 1 }}
+            title="上傳圖片 (建議 1MB 內)"
           >
-            傳送
+            <span style={{ fontSize: '20px' }}>{isUploadingImage ? '⏳' : '🖼️'}</span>
           </button>
+
+          <textarea 
+            value={inputText} onChange={(e) => setInputText(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} 
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+            placeholder="請輸入訊息..."
+            style={{ flex: 1, padding: '10px 14px', borderRadius: '20px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '15px', minHeight: '40px', maxHeight: '120px', outline: 'none', resize: 'none', lineHeight: '1.4' }}
+          />
+          <button onClick={handleSendMessage} disabled={!inputText.trim()} style={{ padding: '10px 18px', borderRadius: '20px', backgroundColor: inputText.trim() ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginBottom: '2px' }}>傳送</button>
         </footer>
       </div>
     </div>

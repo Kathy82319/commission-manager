@@ -5,9 +5,13 @@ import { apiClient } from '../api/client';
 import DOMPurify from 'dompurify';
 import '../styles/Workspace.css';
 
+const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
+
 export const InquiryWorkspace: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
   const [inquiry, setInquiry] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -19,6 +23,10 @@ export const InquiryWorkspace: React.FC = () => {
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showMobileAside, setShowMobileAside] = useState(false);
+
+  // 🌟 新增：圖片上傳狀態與 Ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
@@ -78,12 +86,123 @@ export const InquiryWorkspace: React.FC = () => {
 
   useEffect(() => { if (!isAccepted) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isAccepted]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!newMessage.trim()) return;
     await apiClient.post(`/api/inquiries/${id}/messages`, { content: newMessage });
     setNewMessage('');
     fetchData();
+  };
+
+  // 🌟 核心防護：靜默壓縮與洗除 EXIF 資訊
+  const silentCompressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIMENSION = 1600; 
+          let { width, height } = img;
+          
+          if (width > height && width > MAX_DIMENSION) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          } else if (height > MAX_DIMENSION) {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+          
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('壓縮失敗'));
+            }, 'image/jpeg', 0.82 
+          );
+        };
+        img.onerror = () => reject(new Error('圖片解析失敗'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('檔案讀取失敗'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 🌟 處理圖片上傳
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('只能上傳圖片喔！');
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    try {
+      const compressedBlob = await silentCompressImage(file);
+      
+      if (compressedBlob.size > 1.5 * 1024 * 1024) {
+        alert('您的圖片尺寸過於龐大或比例極端，為保護空間資源請縮小後再傳！');
+        return;
+      }
+
+      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          contentType: 'image/jpeg', bucketType: 'public', 
+          originalName: `chat_${Date.now()}.jpg`, folder: 'chat-images' 
+        })
+      });
+      const ticketData = await ticketRes.json();
+      if (!ticketData.success) throw new Error(ticketData.error);
+
+      const putRes = await fetch(ticketData.uploadUrl, {
+        method: 'PUT', body: compressedBlob, headers: { 'Content-Type': 'image/jpeg' }
+      });
+      if (!putRes.ok) throw new Error('上傳至雲端失敗');
+
+      await apiClient.post(`/api/inquiries/${id}/messages`, { content: `![image](${ticketData.fileName})` });
+      fetchData(); 
+
+    } catch (err: any) {
+      alert('圖片上傳失敗：' + err.message);
+    } finally {
+      setIsUploadingImage(false);
+      if (e.target) e.target.value = ''; 
+    }
+  };
+
+  // 🌟 解析 Markdown 圖片語法為實際圖片
+  const renderMessageContent = (content: string) => {
+    const imgRegex = /!\[image\]\((.*?)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = imgRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(<span key={lastIndex}>{content.substring(lastIndex, match.index)}</span>);
+      }
+      const imgUrl = match[1];
+      const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${R2_PUBLIC_URL}/${imgUrl}`;
+      parts.push(
+        <div key={match.index} style={{ margin: '8px 0' }}>
+          <img 
+            src={fullUrl} alt="chat-upload" 
+            style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', cursor: 'zoom-in', display: 'block', border: '1px solid rgba(0,0,0,0.1)' }} 
+            onClick={() => window.open(fullUrl, '_blank')}
+          />
+        </div>
+      );
+      lastIndex = imgRegex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+      parts.push(<span key={lastIndex}>{content.substring(lastIndex)}</span>);
+    }
+    return parts.length > 0 ? parts : content;
   };
 
   const handleSaveDraft = async () => {
@@ -95,7 +214,6 @@ export const InquiryWorkspace: React.FC = () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
        return alert('抱歉，您本月的建單額度 (3張) 已滿。請升級為專業版以解鎖無限接案次數！');
     }
-
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
       await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
@@ -104,9 +222,7 @@ export const InquiryWorkspace: React.FC = () => {
         alert('已送出正式提案給案主！');
         setShowMobileAside(false); 
         fetchData();
-      } else {
-        alert(res.message || '送出提案失敗');
-      }
+      } else alert(res.message || '送出提案失敗');
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
@@ -117,9 +233,7 @@ export const InquiryWorkspace: React.FC = () => {
       if (res.success) {
         setShowFinalModal(false);
         fetchData();
-      } else { 
-        alert('成單失敗：' + (res.message || res.error));
-      }
+      } else alert('成單失敗：' + (res.message || res.error));
     } catch (error: any) { alert('系統異常，成單失敗'); }
   };
 
@@ -150,7 +264,6 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  // 🌟 解析許願池原始內容與問題
   let displayBulletinContent = inquiry.bulletin_content;
   let originalQuestions: string[] = [];
   try {
@@ -159,7 +272,6 @@ export const InquiryWorkspace: React.FC = () => {
       if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
   } catch (e) {}
 
-  // 🌟 解析投遞時的快照內容
   let parsedSnapshot: any = {};
   try {
     if (inquiry.artist_snapshot) {
@@ -169,9 +281,7 @@ export const InquiryWorkspace: React.FC = () => {
     console.error("無法解析 artist_snapshot", e);
   }
 
-  // 🌟 修正點：使用 bulletin_category 判斷是不是接委託
   const isOffer = inquiry.bulletin_category === 'offer'; 
-
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
@@ -198,7 +308,10 @@ export const InquiryWorkspace: React.FC = () => {
                   <span>{msg.sender_id === inquiry.artist_id ? '繪師' : '委託人'}</span>
                   <span>{formatLocalTime(msg.created_at)}</span>
                 </div>
-                <div className="iw-chat-bubble" style={{ maxWidth: '80%', padding: '10px 14px', fontSize: '14px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{msg.content}</div>
+                {/* 🌟 渲染圖片或文字 */}
+                <div className="iw-chat-bubble" style={{ maxWidth: '80%', padding: '10px 14px', fontSize: '14px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                  {renderMessageContent(msg.content)}
+                </div>
               </div>
             );
           })}
@@ -206,6 +319,17 @@ export const InquiryWorkspace: React.FC = () => {
         </main>
 
         <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          {/* 🌟 圖片上傳按鈕 */}
+          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            disabled={isUploadingImage}
+            style={{ padding: '10px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '50%', color: '#64748B', cursor: isUploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, opacity: isUploadingImage ? 0.5 : 1 }}
+            title="上傳圖片 (建議 1MB 內)"
+          >
+            <span style={{ fontSize: '20px' }}>{isUploadingImage ? '⏳' : '🖼️'}</span>
+          </button>
+
           <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none' }} />
           <button onClick={handleSendMessage} disabled={!newMessage.trim()} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: newMessage.trim() ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>傳送</button>
         </footer>
@@ -226,8 +350,6 @@ export const InquiryWorkspace: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-          
-          {/* 🌟 許願池媒合軌跡區塊 */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -239,8 +361,6 @@ export const InquiryWorkspace: React.FC = () => {
 
               <div>
                 <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
-                
-                {/* 正確解析 answers 陣列 */}
                 {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                   <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                     {parsedSnapshot.answers.map((ans: any, idx: number) => (
@@ -266,7 +386,6 @@ export const InquiryWorkspace: React.FC = () => {
                   </div>
                 )}
               </div>
-
             </div>
             
             <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>
