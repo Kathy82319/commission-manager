@@ -274,8 +274,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             
             <p style={{ fontSize: '13px', color: '#b45309', margin: '8px 0 0 0', fontWeight: '500' }}>
               {form.selection_type === 'curated' 
-                ? '💡 案主端將顯示：繪師會選擇適恰設定來接案' 
-                : '💡 案主端將顯示：目前已投遞人數 / 預計招收名額'}
+                ? '💡 許願池將顯示：繪師會選擇設定來接稿，預計招收' 
+                : '💡 許願池將顯示：目前已投遞人數 / 預計招收名額'}
             </p>
           </div>
 

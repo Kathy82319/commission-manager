@@ -11,7 +11,7 @@ export const PAY_TAGS = [
 ];
 
 // 🌟 風格預警與授權標籤 (分開定義)
-export const STYLE_WARNINGS = ['會有雜線', '會有溢色', '不接受指定動作', '不接受指定背景', '風格較陰沈'];
+export const STYLE_WARNINGS = ['會有雜線', '會有溢色', '不接受指定動作', '不接受指定背景', '風格特殊'];
 export const LICENSE_TAGS = ['接受商用', '接受二改/液化', '作品將作為範例展示'];
 
 // 🌟 支付時機選項
