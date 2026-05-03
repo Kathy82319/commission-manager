@@ -42,13 +42,31 @@ export const bulletinController = {
       const { category } = body;
       const currentCategory = category || 'request';
 
-      // 🌟 【防護 1】檢查發布者的身分與權限
-      const user = await env.commission_db.prepare("SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      // 🌟 【防護 1】檢查發布者的身分與風控狀態
+      const user = await env.commission_db.prepare(
+        "SELECT role, plan_type, pro_expires_at, trial_end_at, wishboard_status, mute_expires_at FROM Users WHERE id = ?"
+      ).bind(currentUserId).first() as any;
+      
       if (!user) {
          return new Response(JSON.stringify({ success: false, message: '找不到使用者資訊' }), { status: 404, headers: corsHeaders });
       }
 
-      // 如果是發布「接委託 (offer)」，必須是 artist
+      // 🛡️ 風控狀態攔截：禁止發佈
+      if (user.wishboard_status === 'banned') {
+        return new Response(JSON.stringify({ success: false, message: '您已被永久禁止使用許願池功能。' }), { status: 403, headers: corsHeaders });
+      }
+      if (user.wishboard_status === 'muted') {
+        const now = new Date();
+        const expiresAt = user.mute_expires_at ? new Date(user.mute_expires_at) : now;
+        if (now < expiresAt) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: `您目前已被禁止使用許願池功能，暫時無法發佈貼文。解除時間：${expiresAt.toLocaleString()}` 
+          }), { status: 403, headers: corsHeaders });
+        }
+      }
+
+      // 角色限制：如果是發布「接委託 (offer)」，必須是 artist
       if (currentCategory === 'offer' && user.role !== 'artist') {
          return new Response(JSON.stringify({ 
            success: false, 
@@ -73,7 +91,7 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '最低預算不得高於最高預算' }), { status: 400, headers: corsHeaders });
       }
 
-      // 檢查配額邏輯
+      // 保留原本的免費版/專業版配額邏輯 (Offer Quota)
       if (currentCategory === 'offer') {
           const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
           const isTrial = user.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
@@ -95,14 +113,15 @@ export const bulletinController = {
           }
       }
 
+      // 🌟 總量管制：全站同一時間每人最多只能擁有「1 則」上架中的貼文 (不分 category)
       const existingPost = await env.commission_db.prepare(
-        `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
-      ).bind(currentUserId, currentCategory).first();
+        `SELECT id FROM Bulletins WHERE client_id = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
+      ).bind(currentUserId).first();
 
       if (existingPost) {
         return new Response(JSON.stringify({ 
           success: false, 
-          message: '您目前已經有一篇刊登中的相同類型貼文，請先關閉舊貼文再發布新的。' 
+          message: '您目前已經有一篇刊登中的貼文（每人限刊登一則），請先關閉舊貼文再發佈新的。' 
         }), { status: 400, headers: corsHeaders });
       }
 
@@ -144,15 +163,48 @@ export const bulletinController = {
 
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 【防護 2】檢查投遞者的身分
-      const user = await env.commission_db.prepare("SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
-      if (!user || user.role !== 'artist') {
+      // 🌟 【防護 2】先取得使用者資訊與風控狀態
+      const user = await env.commission_db.prepare(
+        "SELECT role, plan_type, pro_expires_at, trial_end_at, wishboard_status, mute_expires_at FROM Users WHERE id = ?"
+      ).bind(currentUserId).first() as any;
+      
+      if (!user) {
+        return new Response(JSON.stringify({ success: false, message: '找不到使用者資訊' }), { status: 404, headers: corsHeaders });
+      }
+
+      // 🛡️ 風控狀態攔截：禁止投遞
+      if (user.wishboard_status === 'banned') {
+        return new Response(JSON.stringify({ success: false, message: '您已被永久禁止使用許願池功能，無法投遞。' }), { status: 403, headers: corsHeaders });
+      }
+      if (user.wishboard_status === 'muted') {
+        const now = new Date();
+        const expiresAt = user.mute_expires_at ? new Date(user.mute_expires_at) : now;
+        if (now < expiresAt) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: `您目前已被禁止使用許願池功能，暫時無法進行投遞。解除時間：${expiresAt.toLocaleString()}` 
+          }), { status: 403, headers: corsHeaders });
+        }
+      }
+
+      // 🌟 先取得目標貼文資訊，再來決定權限
+      const bulletin = await env.commission_db.prepare(`SELECT content, client_id, category FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first() as any;
+      if (!bulletin) {
+        return new Response(JSON.stringify({ success: false, message: '此許願池文章不存在或已關閉' }), { status: 404, headers: corsHeaders });
+      }
+      if (bulletin.client_id === currentUserId) {
+         return new Response(JSON.stringify({ success: false, message: '無法投遞給自己' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 🌟 修復 Bug：如果是目標是「徵委託(request)」，才限制只有繪師能投遞
+      if (bulletin.category === 'request' && user.role !== 'artist') {
          return new Response(JSON.stringify({ 
            success: false, 
-           message: '必須開通創作者身分才能向案主投遞應徵。' 
+           message: '這是一篇徵委託貼文，必須開通創作者身分才能向案主投遞應徵。' 
          }), { status: 403, headers: corsHeaders });
       }
 
+      // 檢查是否已重複投遞
       const existingActive = await env.commission_db.prepare(
         `SELECT id FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ? AND status NOT IN ('declined', 'closed', 'cancelled')`
       ).bind(bulletinId, currentUserId).first();
@@ -161,6 +213,7 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '您目前已有處理中的投遞，請勿重複投遞' }), { status: 400, headers: corsHeaders });
       }
 
+      // 投遞次數上限檢查
       const historyCountResult = await env.commission_db.prepare(
         `SELECT count(*) as count FROM BulletinInquiries WHERE bulletin_id = ? AND artist_id = ?`
       ).bind(bulletinId, currentUserId).first();
@@ -170,14 +223,7 @@ export const bulletinController = {
         return new Response(JSON.stringify({ success: false, message: '您已達到此許願池的投遞次數上限 (最多 2 次)' }), { status: 403, headers: corsHeaders });
       }
 
-      const bulletin = await env.commission_db.prepare(`SELECT content, client_id, category FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first() as any;
-      if (!bulletin) {
-        return new Response(JSON.stringify({ success: false, message: '此許願池文章不存在或已關閉' }), { status: 404, headers: corsHeaders });
-      }
-      if (bulletin.client_id === currentUserId) {
-         return new Response(JSON.stringify({ success: false, message: '無法投遞給自己' }), { status: 400, headers: corsHeaders });
-      }
-
+      // 保留原本的免費版/專業版配額邏輯 (Request Inquire Quota)
       if (bulletin.category === 'request') {
           const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
           const isTrial = user.plan_type === 'trial' && (!user.trial_end_at || new Date(user.trial_end_at) > new Date());
@@ -212,6 +258,7 @@ export const bulletinController = {
       const isFcfs = contentObj.selection_type === 'fcfs';
       const maxSlots = parseInt(contentObj.max_slots) || 1;
 
+      // FCFS 搶單邏輯
       if (isFcfs) {
         const currentCountResult = await env.commission_db.prepare(
           `SELECT count(*) as count FROM BulletinInquiries WHERE bulletin_id = ? AND status != 'cancelled'`
@@ -443,10 +490,8 @@ export const bulletinController = {
     try {
       const body: any = await request.json();
       
-      // 🛡️ 資安防護 1：限制檢舉原因長度與去除惡意 HTML 標籤 (XSS 防護)
       const reason = body.reason ? String(body.reason).substring(0, 200).replace(/[<>]/g, '') : "無提供原因";
 
-      // 1. 取得檢舉者的真實角色 (防前端偽造)
       const { results: userRes } = await env.commission_db.prepare(
         "SELECT role FROM Users WHERE id = ?"
       ).bind(currentUserId).all();
@@ -456,7 +501,6 @@ export const bulletinController = {
       }
       const reporterRole = userRes[0].role as string;
 
-      // 🛡️ 資安防護 2：防止重複檢舉 (防腳本洗版)
       const { results: existingReport } = await env.commission_db.prepare(
         "SELECT id FROM Reports WHERE bulletin_id = ? AND reporter_id = ?"
       ).bind(targetId, currentUserId).all();
@@ -465,30 +509,24 @@ export const bulletinController = {
         return new Response(JSON.stringify({ error: "您已經檢舉過此貼文，系統已記錄。" }), { status: 400, headers: corsHeaders });
       }
 
-      // 2. 寫入檢舉紀錄
       await env.commission_db.prepare(`
         INSERT INTO Reports (bulletin_id, reporter_id, reporter_role, reason)
         VALUES (?, ?, ?, ?)
       `).bind(targetId, currentUserId, reporterRole, reason).run();
 
-      // 3. 檢查「繪師 (artist)」的檢舉權重是否達標 (滿 10 次自動隱藏)
       const { results: weightRes } = await env.commission_db.prepare(`
         SELECT COUNT(DISTINCT reporter_id) as artist_count 
         FROM Reports 
         WHERE bulletin_id = ? AND reporter_role = 'artist'
       `).bind(targetId).all();
 
-      // 確保轉型為 Number
       const artistCount = Number(weightRes[0]?.artist_count) || 0;
 
-      // 4. 觸發自動隱藏機制與安全通報
       if (artistCount >= 10) {
-        // 4-1. 將貼文狀態改為 hidden_under_review
         await env.commission_db.prepare(`
           UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?
         `).bind(targetId).run();
         
-        // 4-2. 撈出所有管理員，發送系統警報通知
         const { results: admins } = await env.commission_db.prepare(`
           SELECT id FROM Users WHERE role = 'admin'
         `).all();
@@ -501,12 +539,10 @@ export const bulletinController = {
 
           const message = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
 
-          // 產生批次寫入陣列
           const batchStatements = admins.map(admin => 
             stmt.bind(admin.id, message, targetId)
           );
 
-          // 一次性寫入所有管理員的通知
           await env.commission_db.batch(batchStatements);
         }
       }

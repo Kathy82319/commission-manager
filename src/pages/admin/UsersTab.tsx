@@ -195,7 +195,7 @@ export function UsersTab() {
               <label style={labelStyle}>許願池狀態</label>
               <select value={formData.wishboard_status} onChange={e => setFormData({...formData, wishboard_status: e.target.value})} style={inputStyle}>
                 <option value="active">🟢 正常發言 (Active)</option>
-                <option value="muted">🟡 暫時禁言 (Muted)</option>
+                <option value="muted">🟡 暫時禁止使用許願池 (Muted)</option>
                 <option value="banned">🔴 永久封鎖 (Banned)</option>
               </select>
             </div>

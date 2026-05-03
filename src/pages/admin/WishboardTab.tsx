@@ -14,7 +14,7 @@ export function WishboardTab() {
 
   // 🌟 Modal 狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(null);
+  const [, setSelectedBulletinId] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState<any[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
 

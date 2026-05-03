@@ -370,7 +370,7 @@ export const Wishboard: React.FC = () => {
               </div>
               <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
                 <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>
-                初犯將移除貼文並給予系統警告；再犯者將 <strong>28 天許願池禁言</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
+                初犯將移除貼文並給予系統警告；再犯者將 <strong>禁止使用許願池 28 天</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
                 <span style={{ color: '#64748b' }}>※ 貼文若檢舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提出證明以利重新上架。</span>
               </div>
             </div>

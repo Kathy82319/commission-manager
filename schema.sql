@@ -317,6 +317,13 @@ DELETE FROM InquiryMessages;
 DELETE FROM BulletinInquiries;
 DELETE FROM Bulletins;
 
+-- 1. 先清空所有依賴於貼文的「檢舉紀錄」
+DELETE FROM Reports;
+-- 2. 再清空所有依賴於貼文的「投遞/應徵紀錄」
+DELETE FROM BulletinInquiries;
+-- 3. 最後，既然子資料都清空了，現在可以安全地刪除主表的「貼文」了！
+DELETE FROM Bulletins;
+
 -- 塞入 5 筆投遞紀錄，直接灌滿免費版每月 5 次投遞額度
 INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, created_at, latest_update_at)
 VALUES 
