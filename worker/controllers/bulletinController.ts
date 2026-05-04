@@ -112,8 +112,8 @@ export const bulletinController = {
         }
       }
 
-      // 角色限制：如果是發布「接委託 (offer)」，必須是 artist
-      if (currentCategory === 'offer' && user.role !== 'artist') {
+// 角色限制：如果是發布「接委託 (offer)」，必須是 artist 或 admin
+      if (currentCategory === 'offer' && user.role !== 'artist' && user.role !== 'admin') {
          return new Response(JSON.stringify({ 
            success: false, 
            message: '必須開通創作者身分才能發布接委託貼文。' 
@@ -242,8 +242,8 @@ export const bulletinController = {
          return new Response(JSON.stringify({ success: false, message: '無法投遞給自己' }), { status: 400, headers: corsHeaders });
       }
 
-      // 🌟 修復 Bug：如果是目標是「徵委託(request)」，才限制只有繪師能投遞
-      if (bulletin.category === 'request' && user.role !== 'artist') {
+      // 🌟 修復 Bug：如果是目標是「徵委託(request)」，才限制只有繪師或管理員能投遞
+      if (bulletin.category === 'request' && user.role !== 'artist' && user.role !== 'admin') {
          return new Response(JSON.stringify({ 
            success: false, 
            message: '這是一篇徵委託貼文，必須開通創作者身分才能向案主投遞應徵。' 
