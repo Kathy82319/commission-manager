@@ -17,7 +17,7 @@ interface Commission {
   client_custom_label?: string;
   crm_record_id?: string;
   origin_source?: string;
-  total_price?: number; // 🌟 新增：加入總價屬性以利計算
+  total_price?: number;
 }
 
 const paymentColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -110,7 +110,6 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   
-  // 🌟 新增：存放每個委託單的「已收款總額」
   const [paidAmounts, setPaidAmounts] = useState<Record<string, number>>({});
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -119,6 +118,14 @@ export function Queue() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
+  // 🌟 新增：Toast 提示狀態
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 2500); // 2.5秒後自動消失
+  };
 
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
@@ -129,7 +136,6 @@ export function Queue() {
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
-  // 🌟 新增：獲取單一委託單的財務紀錄加總
   const fetchPaymentForOrder = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
@@ -165,8 +171,6 @@ export function Queue() {
           list.sort((a: any, b: any) => getTime(a.order_date) - getTime(b.order_date));
         }
         setCommissions(list);
-        
-        // 取得列表後，連帶撈取各筆的金額
         list.forEach((c: Commission) => fetchPaymentForOrder(c.id));
       }
     } catch (e) {}
@@ -189,16 +193,16 @@ export function Queue() {
         body: JSON.stringify({ [field]: value })
       });
       setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+      showToast('✅ 自動儲存成功'); // 🌟 觸發 Toast
     } catch (error) {} finally { setIsSaving(false); }
   };
 
-  // 🌟 新增：連動記帳的狀態變更函式
   const handlePaymentChange = async (order: Commission, newStatus: string) => {
     if (newStatus === order.payment_status) return;
 
     if (newStatus === 'partial') {
       const amountStr = window.prompt('請輸入收到的【訂金金額】\n(系統將自動在委託單為您新增一筆記帳明細)：');
-      if (amountStr === null) return; // 使用者按取消
+      if (amountStr === null) return; 
       
       const amount = Number(amountStr);
       if (isNaN(amount) || amount <= 0) {
@@ -208,16 +212,18 @@ export function Queue() {
       
       setIsSaving(true);
       try {
-        const today = new Date().toLocaleDateString('en-CA'); // 轉為 YYYY-MM-DD
-        // 1. 新增帳務明細
+        const today = new Date().toLocaleDateString('en-CA'); 
         await fetch(`${API_BASE}/api/commissions/${order.id}/payments`, {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ record_date: today, item_name: '訂金', amount })
         });
-        // 2. 更新訂單狀態
-        await handleUpdateField(order.id, 'payment_status', 'partial');
-        // 3. 重新抓取金額更新 UI
+        await fetch(`${API_BASE}/api/commissions/${order.id}`, {
+          method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_status: 'partial' })
+        });
+        setCommissions(prev => prev.map(c => c.id === order.id ? { ...c, payment_status: 'partial' } : c));
         await fetchPaymentForOrder(order.id);
+        showToast('✅ 已自動記帳並儲存狀態'); // 🌟 觸發 Toast
       } catch (e) {} finally { setIsSaving(false); }
 
     } else if (newStatus === 'paid') {
@@ -227,7 +233,6 @@ export function Queue() {
 
       setIsSaving(true);
       try {
-        // 如果還有未收餘額，自動新增尾款明細
         if (remainder > 0) {
           const today = new Date().toLocaleDateString('en-CA');
           await fetch(`${API_BASE}/api/commissions/${order.id}/payments`, {
@@ -235,22 +240,23 @@ export function Queue() {
             body: JSON.stringify({ record_date: today, item_name: '尾款結清', amount: remainder })
           });
         }
-        // 更新狀態為已付全額
-        await handleUpdateField(order.id, 'payment_status', 'paid');
+        await fetch(`${API_BASE}/api/commissions/${order.id}`, {
+          method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_status: 'paid' })
+        });
+        setCommissions(prev => prev.map(c => c.id === order.id ? { ...c, payment_status: 'paid' } : c));
         await fetchPaymentForOrder(order.id);
+        showToast('✅ 尾款已結清並儲存狀態'); // 🌟 觸發 Toast
       } catch (e) {} finally { setIsSaving(false); }
 
     } else {
-      // 狀態改為未付款
       if (window.confirm('確定要改為「未付款」嗎？\n注意：這不會自動刪除您已建立的記帳明細，若需修改實際金額請至管理頁面處理。')) {
         await handleUpdateField(order.id, 'payment_status', 'unpaid');
       }
     }
   };
   
-  const handleDragStart = (id: string) => {
-    setDraggedId(id);
-  };
+  const handleDragStart = (id: string) => { setDraggedId(id); };
 
   const handleDragOver = (e: React.DragEvent, targetId: string) => {
     e.preventDefault(); 
@@ -276,9 +282,7 @@ export function Queue() {
     setDraggedId(null); setDragOverId(null);
   };
 
-  const handleDragEnd = () => {
-    setDraggedId(null); setDragOverId(null);
-  };
+  const handleDragEnd = () => { setDraggedId(null); setDragOverId(null); };
 
   const filteredCommissions = useMemo(() => {
     return commissions.filter(c => {
@@ -300,6 +304,13 @@ export function Queue() {
 
   return (
     <div className="queue-container">
+      {/* 🌟 頂部 Toast 提示組件 */}
+      {toastMsg && (
+        <div className="toast-notification">
+          {toastMsg}
+        </div>
+      )}
+
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
@@ -309,7 +320,7 @@ export function Queue() {
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <button onClick={() => setIsQuoteModalOpen(true)} className="create-quote-btn" style={{ padding: '8px 12px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>+ 建立新委託單</button>
-          {isSaving && <span className="updating-hint">儲存中...</span>}
+          {isSaving && <span className="updating-hint queue-hide-mobile">儲存中...</span>}
         </div>
       </div>
 
@@ -325,7 +336,6 @@ export function Queue() {
               const isExpanded = expandedId === order.id;
               const isBulletin = getBulletinSource(order) !== null;
               
-              // 🌟 計算餘額標示
               const total = order.total_price || 0;
               const paid = paidAmounts[order.id] || 0;
               const hasAmountData = total > 0;
@@ -392,8 +402,7 @@ export function Queue() {
                   </div>
                 </td>
                 <td data-label="付款進度">
-                  {/* 🌟 複合式標籤：上方選單，下方顯示金額比例 */}
-                  <div className="cell-content cell-payment" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                  <div className="cell-content cell-payment" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', width: '100%' }}>
                     <select 
                       value={order.payment_status} 
                       onClick={e => isExpanded && e.stopPropagation()} 
@@ -406,7 +415,7 @@ export function Queue() {
                       <option value="paid">已付</option>
                     </select>
                     {hasAmountData && (
-                      <div style={{ fontSize: '11px', color: '#8A7A7A', whiteSpace: 'nowrap', marginTop: '2px', alignSelf: 'center' }}>
+                      <div className="payment-amount-text" style={{ color: '#8A7A7A', whiteSpace: 'nowrap', marginTop: '2px', alignSelf: 'center' }}>
                         ${paid} / ${total}
                       </div>
                     )}
