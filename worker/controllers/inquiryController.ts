@@ -72,7 +72,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 核心修正：找到真正的繪師 ID，才去算他的額度
       const isOffer = data.bulletin_category === 'offer';
       const actualArtistId = isOffer ? data.bulletin_client_id : data.artist_id;
 
@@ -84,7 +83,6 @@ export const inquiryController = {
          `).bind(actualArtistId).all();
          const used = countRes[0]?.count || 0;
          
-         // 注意：在 Offer 中，如果繪師是 bulletin_client，我們需要去撈他的 plan_type (這裡用補撈的方式最安全)
          const artistData = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
          
          const isPro = artistData?.plan_type === 'pro' && (!artistData.pro_expires_at || new Date(artistData.pro_expires_at) > new Date());
@@ -133,7 +131,6 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 核心防護：找出真正的繪師是誰
       const inquiryData = await env.commission_db.prepare(`
         SELECT b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
@@ -151,7 +148,6 @@ export const inquiryController = {
       const body = await request.json() as any;
       const { draft_json } = body;
       
-      // 🌟 修正：拔除錯誤的 artist_id 條件，只靠 inquiryId 鎖定更新 (因為前面已驗證過權限)
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET negotiation_draft = ? WHERE id = ?`
       ).bind(draft_json, inquiryId).run();
@@ -223,7 +219,6 @@ export const inquiryController = {
 
       if (!inquiryData || !inquiryData.negotiation_draft) throw new Error('草稿尚未準備好');
 
-      // 🌟 核心防護：找出真正的案主與繪師
       const isOffer = inquiryData.bulletin_category === 'offer';
       const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
       const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
@@ -232,7 +227,6 @@ export const inquiryController = {
         throw new Error('只有案主有權限正式確認委託單');
       }
 
-      // 取得雙方最新資料
       const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at, profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
       const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(actualClientId).first() as any;
 
@@ -260,17 +254,14 @@ export const inquiryController = {
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
 
-      // 🌟🌟🌟 修復重點：精準抓取貼文專屬的 TOS 🌟🌟🌟
       let parsedBulletinContent: any = {};
       try { parsedBulletinContent = JSON.parse(inquiryData.bulletin_content); } catch (e) {}
 
       let tosText = "繪師未提供專屬協議說明。";
       
       if (parsedBulletinContent && parsedBulletinContent.tos_content && parsedBulletinContent.tos_content.trim() !== '') {
-        // 優先抓取這篇貼文專屬的 TOS
         tosText = parsedBulletinContent.tos_content;
       } else {
-        // 沒有填寫的話，才退而求其次抓取繪師個人主頁的預設 TOS
         try {
           const settings = JSON.parse(artistInfo?.profile_settings || '{}');
           if (settings.terms_of_service && settings.terms_of_service.trim() !== '') {
@@ -285,8 +276,10 @@ export const inquiryController = {
       let parsedArtistSnapshot = inquiryData.artist_snapshot;
       try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
+      // 🌟🌟🌟 核心修復點：把 inquiry_id (舊洽談室的鑰匙) 存進來源資料中！ 🌟🌟🌟
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
+        inquiry_id: inquiryId, // ⬅️ 加上這行，前端才有辦法撈到舊紀錄
         bulletin_content: parsedBulletinContent,
         bulletin_category: inquiryData.bulletin_category,
         artist_initial_snapshot: parsedArtistSnapshot,
@@ -297,7 +290,6 @@ export const inquiryController = {
       const clientName = clientInfo?.display_name || '案主';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
-      // 🌟 將正確的 IDs 與 TOS 寫入正式委託單中
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
@@ -309,7 +301,7 @@ export const inquiryController = {
         commissionId, actualClientId, actualArtistId, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
-        tosText // ⬅️ 這裡就會寫入正確的合約內容了！
+        tosText
       ).run();
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
