@@ -109,8 +109,10 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   
-  // 🔴 修改點 1：將拖曳狀態改為記錄 ID
+  // 記錄正在被拖曳的項目 ID
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  // 記錄滑鼠目前懸停的目標項目 ID (用來顯示指示線)
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -169,19 +171,30 @@ export function Queue() {
     } catch (error) {} finally { setIsSaving(false); }
   };
   
-  // 🔴 修改點 2：實作基於 ID 的拖曳邏輯
+  // 優化後的拖曳邏輯
   const handleDragStart = (id: string) => {
     setDraggedId(id);
   };
 
-  const handleDragEnter = (e: React.DragEvent, targetId: string) => {
+  const handleDragOver = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault(); 
+    if (draggedId && draggedId !== targetId && dragOverId !== targetId) {
+      setDragOverId(targetId);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    if (!draggedId || draggedId === targetId) return;
+    
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
 
     setCommissions(prev => {
       const oldIdx = prev.findIndex(c => c.id === draggedId);
       const newIdx = prev.findIndex(c => c.id === targetId);
-
       if (oldIdx === -1 || newIdx === -1) return prev;
 
       const newCommissions = [...prev];
@@ -189,10 +202,14 @@ export function Queue() {
       newCommissions.splice(newIdx, 0, draggedItem);
       return newCommissions;
     });
+
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   const handleDragEnd = () => {
     setDraggedId(null);
+    setDragOverId(null);
   };
 
   const filteredCommissions = useMemo(() => {
@@ -243,14 +260,13 @@ export function Queue() {
               return (
               <tr 
                 key={order.id}
-                onDragOver={(e) => e.preventDefault()} // 🔴 修改點 3：改為 preventDefault 成為可放置區域
-                onDragEnter={(e) => handleDragEnter(e, order.id)} // 🔴 修改點 4：改用 onDragEnter 觸發位置交換
+                onDragOver={(e) => handleDragOver(e, order.id)}
+                onDrop={(e) => handleDrop(e, order.id)}
                 onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                className={`${draggedId === order.id ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
+                className={`${draggedId === order.id ? 'is-dragging' : ''} ${dragOverId === order.id ? 'drag-over-target' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
               >
                 <td data-label="日期">
                   <div className="cell-content cell-date">
-                    {/* 🔴 修改點 5：更新拖曳把手的事件綁定 */}
                     <div 
                       draggable 
                       onDragStart={() => handleDragStart(order.id)} 
