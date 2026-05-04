@@ -250,6 +250,20 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <div className="wish-card-author-wrapper">
                 <User size={14} className="wish-card-author-icon" />
                 
+                
+
+                {bulletin.category === 'offer' && posterId !== 'unknown' ? (
+                  <div className="wish-card-author-link" onClick={handleProfileClick} title="前往繪師個人頁">
+                    <span className="wish-card-author-name">{posterName}</span>
+                    <span className="wish-card-author-id">@{posterId}</span>
+                  </div>
+                ) : (
+                  <div className="wish-card-author-text">
+                    <span className="wish-card-author-name">{posterName}</span>
+                    <span className="wish-card-author-id">@{posterId}</span>
+                  </div>
+                )}
+
                 {/* 🌟 管理員專屬標記 */}
                 {bulletin.creator_role === 'admin' && (
                   <span style={{
@@ -266,18 +280,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   }}>
                     管理員
                   </span>
-                )}
-
-                {bulletin.category === 'offer' && posterId !== 'unknown' ? (
-                  <div className="wish-card-author-link" onClick={handleProfileClick} title="前往繪師個人頁">
-                    <span className="wish-card-author-name">{posterName}</span>
-                    <span className="wish-card-author-id">@{posterId}</span>
-                  </div>
-                ) : (
-                  <div className="wish-card-author-text">
-                    <span className="wish-card-author-name">{posterName}</span>
-                    <span className="wish-card-author-id">@{posterId}</span>
-                  </div>
                 )}
 
                 {!isMyOwnPost && bulletin.client_id && (
