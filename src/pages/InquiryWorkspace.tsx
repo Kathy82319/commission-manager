@@ -49,6 +49,17 @@ export const InquiryWorkspace: React.FC = () => {
     return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
+  const getPaymentTimingLabel = (val: string) => {
+    const map: Record<string, string> = {
+      upfront: '全額付清後動筆',
+      deposit: '需先付定金',
+      after_draft: '草稿確認後付款',
+      after_completion: '完稿後付款',
+      other: '其他'
+    };
+    return map[val] || val;
+  };
+
   const fetchData = async () => {
     if (isAccepted) return;
     try {
@@ -79,7 +90,14 @@ export const InquiryWorkspace: React.FC = () => {
              let defaultName = "許願池委託";
              try {
                 const parsedContent = JSON.parse(data.bulletin_content);
-                if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
+                // 🌟 修正：優先抓取標題，沒有才去抓內容
+                if (parsedContent.title) {
+                  defaultName = parsedContent.title;
+                } else if (parsedContent.description) {
+                  defaultName = parsedContent.description.substring(0, 30);
+                } else if (parsedContent.content) {
+                  defaultName = parsedContent.content.substring(0, 30);
+                }
              } catch(e) {
                 defaultName = data.bulletin_content.substring(0, 30);
              }
@@ -109,7 +127,6 @@ export const InquiryWorkspace: React.FC = () => {
     fetchData();
   };
 
-  // 🌟 核心防護：靜默壓縮與洗除 EXIF 資訊
   const silentCompressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -146,7 +163,6 @@ export const InquiryWorkspace: React.FC = () => {
     });
   };
 
-  // 🌟 處理圖片上傳
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -190,7 +206,6 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  // 🌟 解析 Markdown 圖片語法為實際圖片
   const renderMessageContent = (content: string) => {
     const imgRegex = /!\[image\]\((.*?)\)/g;
     const parts = [];
@@ -279,12 +294,14 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
+  // 🌟 解析顯示用的內容與完整的 JSON
   let displayBulletinContent = inquiry.bulletin_content;
-  let originalQuestions: string[] = [];
+  let parsedBulletin: any = {};
   try {
-      const parsed = JSON.parse(inquiry.bulletin_content);
-      if (parsed.description) displayBulletinContent = parsed.description;
-      if (Array.isArray(parsed.questions)) originalQuestions = parsed.questions;
+      parsedBulletin = JSON.parse(inquiry.bulletin_content);
+      // 優先使用 content，若無則使用 description
+      if (parsedBulletin.content) displayBulletinContent = parsedBulletin.content;
+      else if (parsedBulletin.description) displayBulletinContent = parsedBulletin.description;
   } catch (e) {}
 
   let parsedSnapshot: any = {};
@@ -297,7 +314,20 @@ export const InquiryWorkspace: React.FC = () => {
   }
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
-  const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
+
+  // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
+
+  // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
+  let artistTos = "繪師未提供額外協議說明。";
+  if (parsedBulletin && parsedBulletin.tos_content) {
+    artistTos = parsedBulletin.tos_content;
+  } else {
+    try {
+      const settings = JSON.parse(inquiry.artist_settings || '{}');
+      if (settings.terms_of_service) artistTos = settings.terms_of_service;
+    } catch(e) {}
+  }
+
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
   return (
@@ -306,23 +336,23 @@ export const InquiryWorkspace: React.FC = () => {
         <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold' }}>← 返回</button>
-            <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>洽談：{displayBulletinContent.substring(0, 20)}...</h2>
+            {/* 🌟 標題優化：優先顯示設定好的標題 */}
+            <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              洽談：{parsedBulletin.title ? parsedBulletin.title.substring(0, 20) : displayBulletinContent.substring(0, 20)}...
+            </h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button className="iw-mobile-toggle-btn" onClick={() => setShowMobileAside(!showMobileAside)} style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}>{showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}</button>
-            {/* 🌟 根據 isArtist 精準顯示右上角身分標籤 */}
             <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>{isArtist ? '🎨 您目前身分：繪師' : '👤 您目前身分：委託人'}</div>
           </div>
         </header>
 
         <main className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           {messages.map((msg) => {
-            // 🌟 根據 currentUserId 判斷左右氣泡，絕對不會錯
             const isMe = msg.sender_id === currentUserId;
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                  {/* 🌟 根據 actualArtistId 判定每則訊息是誰發的 */}
                   <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
                   <span>{formatLocalTime(msg.created_at)}</span>
                 </div>
@@ -336,7 +366,6 @@ export const InquiryWorkspace: React.FC = () => {
         </main>
 
         <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-          {/* 🌟 完整修復：上傳圖片按鈕區塊回歸 */}
           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
           <button 
             onClick={() => fileInputRef.current?.click()} 
@@ -374,6 +403,7 @@ export const InquiryWorkspace: React.FC = () => {
               
               <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
                 <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                {parsedBulletin.title && <div style={{ fontWeight: 'bold', marginTop: '4px', marginBottom: '4px' }}>{parsedBulletin.title}</div>}
                 <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
               </div>
 
@@ -449,8 +479,11 @@ export const InquiryWorkspace: React.FC = () => {
         <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
           <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
+            
             <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
+              
+              {/* 🌟 區塊一：本次委託規格摘要 */}
               <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                 <h4 style={{ color: '#A67B3E', borderBottom: '1px solid #FDE0B5', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>本次委託規格摘要</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
@@ -460,13 +493,57 @@ export const InquiryWorkspace: React.FC = () => {
                   <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                   <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
                   <p style={{ margin: 0 }}><strong>急件需求：</strong> {draft.is_rush}</p>
+                  <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong>委託用途：</strong> {draft.usage_type}</p>
                 </div>
               </div>
+
+              {/* 🌟 區塊二：繪師接案基本規範 (僅在發布接委託時顯示完整細節) */}
+              {isOffer && (
+                <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+                  <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E' }}>
+                    
+                    {parsedBulletin.payment_timing && (
+                      <p style={{ margin: 0 }}>
+                        <strong>支付時機與說明：</strong> {getPaymentTimingLabel(parsedBulletin.payment_timing)} 
+                        {parsedBulletin.payment_timing_detail ? ` (${parsedBulletin.payment_timing_detail})` : ''}
+                      </p>
+                    )}
+                    
+                    {parsedBulletin.payment_methods && parsedBulletin.payment_methods.length > 0 && (
+                      <p style={{ margin: 0 }}><strong>可接受收款方式：</strong> {parsedBulletin.payment_methods.join('、')}</p>
+                    )}
+
+                    {parsedBulletin.commission_items && parsedBulletin.commission_items.length > 0 && (
+                      <div style={{ margin: 0 }}>
+                        <strong style={{ display: 'block', marginBottom: '4px' }}>接案項目與底價參考：</strong>
+                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', lineHeight: '1.6' }}>
+                          {parsedBulletin.commission_items.map((item: any, idx: number) => (
+                            <li key={idx}>{item.name}：NT$ {item.price} 起</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {parsedBulletin.content && (
+                      <div style={{ margin: 0 }}>
+                        <strong style={{ display: 'block', marginBottom: '4px' }}>詳細接案說明：</strong>
+                        <div style={{ padding: '12px', backgroundColor: '#FBFBF9', borderRadius: '8px', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'pre-wrap', fontSize: '13px', lineHeight: '1.6' }}>
+                          {parsedBulletin.content}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 🌟 區塊三：繪師專屬協議條款 (TOS) */}
               <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                 <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
                 <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(artistTos) }} />
               </div>
             </div>
+
             <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB' }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '20px' }}>
                 <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px' }} />
