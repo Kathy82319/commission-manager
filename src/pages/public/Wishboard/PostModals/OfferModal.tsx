@@ -201,21 +201,99 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group" style={{ flex: '1 1 300px' }}>
-              <label>標題</label>
-              <input type="text" placeholder="例如：接立繪、Q版頭貼..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} required />
-            </div>
+{/* 委託標題區塊 */}
+<div className="form-section">
+  <label className="section-title">委託標題</label>
+  <div className="dynamic-question-row">
+    <input 
+      type="text" 
+      placeholder="例如：接立繪、Q版頭貼..." 
+      value={form.title || ''} 
+      onChange={e => setForm({...form, title: e.target.value})} 
+      required 
+      style={{ flex: 1 }} 
+    />
+  </div>
+  {/* 這裡可以選擇性顯示目前設定的標題預覽，讓它跟底下的項目清單風格統一 */}
+  <div className="item-manage-box">
+    {!form.title ? (
+      <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>尚未輸入標題</p>
+    ) : (
+      <div className="item-row">
+        <span style={{ fontWeight: '500', color: '#334155' }}>
+          目前的標題：<span style={{ color: '#ff8c00', marginLeft: '8px' }}>{form.title}</span>
+        </span>
+      </div>
+    )}
+  </div>
+</div>
 
-            <div className="form-group" style={{ flex: '1 1 300px' }}>
-              <label>目前排單狀況</label>
-              <div className="radio-group">
-                <label className="radio-label"><input type="radio" checked={form.schedule_type === 'flexible'} onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} /> 目前空閒可排單</label>
-                <label className="radio-label"><input type="radio" checked={form.schedule_type === 'fixed'} onChange={() => setForm({...form, schedule_type: 'fixed'})} /> 排單至指定日期之後</label>
-                {form.schedule_type === 'fixed' && <input type="date" className="date-input" value={form.specific_date || ''} onChange={e => setForm({...form, specific_date: e.target.value})} required />}
-              </div>
+{/* 目前排單狀況區塊 */}
+<div className="form-section">
+  <label className="section-title">目前排單狀況</label>
+  <div className="dynamic-question-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
+    <div className="radio-group" style={{ width: '100%' }}>
+      <label className="radio-label">
+        <input 
+          type="radio" 
+          checked={form.schedule_type === 'flexible'} 
+          onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} 
+        /> 
+        目前空閒可排單
+      </label>
+      <label className="radio-label">
+        <input 
+          type="radio" 
+          checked={form.schedule_type === 'fixed'} 
+          onChange={() => setForm({...form, schedule_type: 'fixed'})} 
+        /> 
+        排單至指定日期之後
+      </label>
+    </div>
+    
+    {form.schedule_type === 'fixed' && (
+      <input 
+        type="date" 
+        className="date-input" 
+        style={{ width: '100%', marginTop: '4px' }}
+        value={form.specific_date || ''} 
+        onChange={e => setForm({...form, specific_date: e.target.value})} 
+        required 
+      />
+    )}
+  </div>
+  
+  <div className="item-manage-box">
+    <div className="item-row">
+      <span style={{ fontWeight: '500', color: '#334155' }}>
+        狀態：
+        <span style={{ color: '#ff8c00', marginLeft: '8px' }}>
+          {form.schedule_type === 'flexible' ? '隨時可接單' : (form.specific_date ? `${form.specific_date} 後才接單` : '尚未選擇日期')}
+        </span>
+      </span>
+    </div>
+  </div>
+</div>
+
+          <div className="form-section">
+            <label className="section-title">接案項目與底價 (選填)</label>
+            <div className="dynamic-question-row">
+              <input type="text" placeholder="項目名稱 (如：Q版頭貼...)" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2 }} />
+              <input type="number" placeholder="底價" value={itemInput.price} onChange={e => setItemInput({...itemInput, price: e.target.value})} style={{ flex: 1 }} />
+              <button type="button" onClick={addCommissionItem} className="add-btn-circle"><Plus size={18}/></button>
+            </div>
+            <div className="item-manage-box">
+              {(form.commission_items || []).length === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>尚未新增接案項目</p>}
+              {(form.commission_items || []).map((item: any, idx: number) => (
+                <div key={idx} className="item-row">
+                  <span style={{ fontWeight: '500', color: '#334155' }}>{item.name} <span style={{ color: '#ff8c00', marginLeft: '8px' }}>${item.price}~</span></span>
+                  <button type="button" onClick={() => removeCommissionItem(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={16}/></button>
+                </div>
+              ))}
             </div>
           </div>
+
+
 
           <div className="form-section">
             <label className="section-title">接案項目與底價 (選填)</label>
