@@ -9,12 +9,16 @@ export const inquiryController = {
       const role = url.searchParams.get('role'); 
 
       let query = "";
+      // 🌟 核心修正：將 category 納入考量，精準判定「誰才是案主/繪師」
       if (role === 'client') {
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
           JOIN Bulletins b ON i.bulletin_id = b.id
-          WHERE b.client_id = ? 
+          WHERE (
+            (b.category = 'request' AND b.client_id = ?) OR 
+            (b.category = 'offer' AND i.artist_id = ?)
+          )
           AND i.status != 'cancelled'
           AND (
             (i.latest_update_at > IFNULL(i.last_read_at_client, '1970-01-01 00:00:00'))
@@ -25,7 +29,11 @@ export const inquiryController = {
         query = `
           SELECT COUNT(*) as count 
           FROM BulletinInquiries i
-          WHERE i.artist_id = ? 
+          JOIN Bulletins b ON i.bulletin_id = b.id
+          WHERE (
+            (b.category = 'request' AND i.artist_id = ?) OR 
+            (b.category = 'offer' AND b.client_id = ?)
+          )
           AND i.status != 'cancelled'
           AND (
             (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
@@ -34,7 +42,7 @@ export const inquiryController = {
         `;
       }
 
-      const { results } = await env.commission_db.prepare(query).bind(currentUserId).all();
+      const { results } = await env.commission_db.prepare(query).bind(currentUserId, currentUserId).all();
       const count = results[0]?.count || 0;
 
       return new Response(JSON.stringify({ success: true, count }), { headers: corsHeaders });
@@ -64,22 +72,29 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
+      // 🌟 核心修正：找到真正的繪師 ID，才去算他的額度
+      const isOffer = data.bulletin_category === 'offer';
+      const actualArtistId = isOffer ? data.bulletin_client_id : data.artist_id;
+
       let quotaInfo = null;
-      if (currentUserId === data.artist_id) {
+      if (currentUserId === actualArtistId) {
          const { results: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
             WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
-         `).bind(currentUserId).all();
+         `).bind(actualArtistId).all();
          const used = countRes[0]?.count || 0;
          
-         const isPro = data.artist_plan === 'pro' && (!data.pro_expires_at || new Date(data.pro_expires_at) > new Date());
-         const isTrial = data.artist_plan === 'trial' && (!data.trial_end_at || new Date(data.trial_end_at) > new Date());
+         // 注意：在 Offer 中，如果繪師是 bulletin_client，我們需要去撈他的 plan_type (這裡用補撈的方式最安全)
+         const artistData = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
+         
+         const isPro = artistData?.plan_type === 'pro' && (!artistData.pro_expires_at || new Date(artistData.pro_expires_at) > new Date());
+         const isTrial = artistData?.plan_type === 'trial' && (!artistData.trial_end_at || new Date(artistData.trial_end_at) > new Date());
          const max = (isPro || isTrial) ? -1 : 3;
          
-         quotaInfo = { used_quota: used, max_quota: max, plan_type: data.artist_plan };
+         quotaInfo = { used_quota: used, max_quota: max, plan_type: artistData?.plan_type };
       }
 
-      const updateField = data.artist_id === currentUserId ? 'last_read_at_artist' : 'last_read_at_client';
+      const updateField = currentUserId === actualArtistId ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ success: true, data, quota: quotaInfo }), { headers: corsHeaders });
@@ -118,19 +133,30 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 【防護】檢查是否為創作者身分
-      const user = await env.commission_db.prepare("SELECT role FROM Users WHERE id = ?").bind(currentUserId).first() as any;
-      if (!user || user.role !== 'artist') {
-        return new Response(JSON.stringify({ success: false, error: '只有創作者可以儲存草稿' }), { status: 403, headers: corsHeaders });
+      // 🌟 核心防護：找出真正的繪師是誰
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (!inquiryData) throw new Error('找不到該筆洽談');
+
+      const isOffer = inquiryData.bulletin_category === 'offer';
+      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+
+      if (currentUserId !== actualArtistId) {
+        return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
       }
 
       const body = await request.json() as any;
       const { draft_json } = body;
+      
+      // 🌟 修正：拔除錯誤的 artist_id 條件，只靠 inquiryId 鎖定更新 (因為前面已驗證過權限)
       const result = await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET negotiation_draft = ? WHERE id = ? AND artist_id = ?`
-      ).bind(draft_json, inquiryId, currentUserId).run();
+        `UPDATE BulletinInquiries SET negotiation_draft = ? WHERE id = ?`
+      ).bind(draft_json, inquiryId).run();
 
-      if (result.meta.changes === 0) throw new Error('儲存失敗');
+      if (result.meta.changes === 0) throw new Error('儲存失敗或資料未變更');
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
@@ -139,14 +165,23 @@ export const inquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 【防護】撈取 user 資料時一併撈取 role 進行身分檢查
-      const artist = await env.commission_db.prepare(
-        "SELECT role, plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
-      ).bind(currentUserId).first() as any;
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
 
-      if (!artist || artist.role !== 'artist') {
-        return new Response(JSON.stringify({ success: false, message: '必須為創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
+      if (!inquiryData) throw new Error('找不到該筆洽談');
+
+      const isOffer = inquiryData.bulletin_category === 'offer';
+      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+
+      if (currentUserId !== actualArtistId) {
+        return new Response(JSON.stringify({ success: false, message: '必須為該委託的創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
       }
+
+      const artist = await env.commission_db.prepare(
+        "SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?"
+      ).bind(actualArtistId).first() as any;
 
       const isPro = artist?.plan_type === 'pro' && (!artist.pro_expires_at || new Date(artist.pro_expires_at) > new Date());
       const isTrial = artist?.plan_type === 'trial' && (!artist.trial_end_at || new Date(artist.trial_end_at) > new Date());
@@ -155,7 +190,7 @@ export const inquiryController = {
          const { results: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
             WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
-         `).bind(currentUserId).all();
+         `).bind(actualArtistId).all();
          
          const usedCount = (countRes[0]?.count as number) || 0;
          if (usedCount >= 3) {
@@ -168,38 +203,47 @@ export const inquiryController = {
       }
 
       await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ? AND artist_id = ?`
-      ).bind(inquiryId, currentUserId).run();
+        `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
+      ).bind(inquiryId).run();
+      
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
 
-
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiry = await env.commission_db.prepare(
-        `SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, 
-                u.display_name as client_name, a.profile_settings as artist_settings,
-                a.plan_type, a.pro_expires_at, a.trial_end_at
-         FROM BulletinInquiries i 
-         JOIN Bulletins b ON i.bulletin_id = b.id 
-         LEFT JOIN Users u ON b.client_id = u.id
-         LEFT JOIN Users a ON i.artist_id = a.id
-         WHERE i.id = ? AND b.client_id = ?`
-      ).bind(inquiryId, currentUserId).first() as any;
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
+        FROM BulletinInquiries i 
+        JOIN Bulletins b ON i.bulletin_id = b.id 
+        WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
 
-      if (!inquiry || !inquiry.negotiation_draft) throw new Error('草稿尚未準備好');
+      if (!inquiryData || !inquiryData.negotiation_draft) throw new Error('草稿尚未準備好');
 
-      const isPro = inquiry.plan_type === 'pro' && (!inquiry.pro_expires_at || new Date(inquiry.pro_expires_at) > new Date());
-      const isTrial = inquiry.plan_type === 'trial' && (!inquiry.trial_end_at || new Date(inquiry.trial_end_at) > new Date());
+      // 🌟 核心防護：找出真正的案主與繪師
+      const isOffer = inquiryData.bulletin_category === 'offer';
+      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
+
+      if (currentUserId !== actualClientId) {
+        throw new Error('只有案主有權限正式確認委託單');
+      }
+
+      // 取得雙方最新資料
+      const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at, profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
+      const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(actualClientId).first() as any;
+
+      const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
+      const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
       
       if (!isPro && !isTrial) {
          const { results: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
             WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
-         `).bind(inquiry.artist_id).all();
+         `).bind(actualArtistId).all();
          
          const usedCount = (countRes[0]?.count as number) || 0;
          if (usedCount >= 3) {
@@ -211,38 +255,39 @@ export const inquiryController = {
          }
       }
 
-      const draft = JSON.parse(inquiry.negotiation_draft);
+      const draft = JSON.parse(inquiryData.negotiation_draft);
       const timestampStr = Date.now().toString();
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
 
       let tosText = "繪師未提供專屬協議說明。";
       try {
-        const settings = JSON.parse(inquiry.artist_settings || '{}');
+        const settings = JSON.parse(artistInfo?.profile_settings || '{}');
         if (settings.terms_of_service) tosText = settings.terms_of_service;
       } catch (e) {}
 
-      let parsedBulletinContent = inquiry.bulletin_content;
-      try { parsedBulletinContent = JSON.parse(inquiry.bulletin_content); } catch (e) {}
+      let parsedBulletinContent = inquiryData.bulletin_content;
+      try { parsedBulletinContent = JSON.parse(inquiryData.bulletin_content); } catch (e) {}
 
-      let parsedClientResponse = inquiry.client_response;
-      try { parsedClientResponse = JSON.parse(inquiry.client_response); } catch (e) {}
+      let parsedClientResponse = inquiryData.client_response;
+      try { parsedClientResponse = JSON.parse(inquiryData.client_response); } catch (e) {}
 
-      let parsedArtistSnapshot = inquiry.artist_snapshot;
-      try { parsedArtistSnapshot = JSON.parse(inquiry.artist_snapshot); } catch (e) {}
+      let parsedArtistSnapshot = inquiryData.artist_snapshot;
+      try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
         bulletin_content: parsedBulletinContent,
-        bulletin_category: inquiry.bulletin_category,
+        bulletin_category: inquiryData.bulletin_category,
         artist_initial_snapshot: parsedArtistSnapshot,
         client_initial_response: parsedClientResponse,
         final_negotiation_draft: draft
       });
 
-      const clientName = inquiry.client_name || '案主';
+      const clientName = clientInfo?.display_name || '案主';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
+      // 🌟 將正確的 IDs 寫入正式委託單中
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
@@ -251,10 +296,9 @@ export const inquiryController = {
           delivery_method, workflow_mode, latest_message_at, agreed_tos_snapshot
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP, ?)`
       ).bind(
-        commissionId, currentUserId, inquiry.artist_id, 'type-01', finalProjectName,
+        commissionId, actualClientId, actualArtistId, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
-        draft.draw_scope || '未定', // 🌟 修正：這裡原本漏掉了 draft.
-        draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
+        draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
         tosText
       ).run();
 
