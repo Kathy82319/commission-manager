@@ -15,19 +15,21 @@ export const InquiryWorkspace: React.FC = () => {
   const [inquiry, setInquiry] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  
+  // 🌟 角色判定相關狀態
   const [isArtist, setIsArtist] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [actualArtistId, setActualArtistId] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
-  
-  // 🌟 新增：儲存當前使用者的 ID，讓對話框左右判斷不再錯亂
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showMobileAside, setShowMobileAside] = useState(false);
 
-  // 🌟 新增：圖片上傳狀態與 Ref
+  // 🌟 圖片上傳狀態與 Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -52,32 +54,34 @@ export const InquiryWorkspace: React.FC = () => {
     try {
       const resInquiry = await apiClient.get(`/api/inquiries/${id}`);
       if (resInquiry.success) {
-        setInquiry(resInquiry.data);
+        const data = resInquiry.data;
+        setInquiry(data);
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
 
         const resUser = await apiClient.get('/api/users/me');
-        setCurrentUserId(resUser.data.id);
+        const myId = resUser.data.id;
+        setCurrentUserId(myId);
 
-        // 🌟 核心修正：判斷誰才是真正的「繪師」
-        // 如果是接委託 (offer)，發文者 (bulletin_client_id) 才是繪師；否則投遞者 (artist_id) 才是繪師
-        const isOfferCat = resInquiry.data.bulletin_category === 'offer';
-        const actualArtistId = isOfferCat ? resInquiry.data.bulletin_client_id : resInquiry.data.artist_id;
+        // 🌟 核心角色判定：誰是這場委託的真正繪師？
+        const isOfferCat = data.bulletin_category === 'offer';
+        const targetArtistId = isOfferCat ? data.bulletin_client_id : data.artist_id;
+        setActualArtistId(targetArtistId);
         
-        const currentUserIsArtist = resUser.data.id === actualArtistId;
+        const currentUserIsArtist = (myId === targetArtistId);
         setIsArtist(currentUserIsArtist);
         
-        if (resInquiry.data.status === 'accepted') setIsAccepted(true);
+        if (data.status === 'accepted') setIsAccepted(true);
 
-        if (isFirstLoad.current || !currentUserIsArtist || resInquiry.data.status !== 'submitted') {
-          if (resInquiry.data.negotiation_draft) {
-            setDraft(JSON.parse(resInquiry.data.negotiation_draft));
+        if (isFirstLoad.current || !currentUserIsArtist || data.status !== 'submitted') {
+          if (data.negotiation_draft) {
+            setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
              let defaultName = "許願池委託";
              try {
-                const parsedContent = JSON.parse(resInquiry.data.bulletin_content);
+                const parsedContent = JSON.parse(data.bulletin_content);
                 if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
              } catch(e) {
-                defaultName = resInquiry.data.bulletin_content.substring(0, 30);
+                defaultName = data.bulletin_content.substring(0, 30);
              }
             setDraft((prev: any) => ({ ...prev, project_name: defaultName }));
           }
@@ -293,10 +297,6 @@ export const InquiryWorkspace: React.FC = () => {
   }
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
-  
-  // 🌟 用於畫面渲染的真正繪師 ID
-  const actualArtistId = isOffer ? inquiry.bulletin_client_id : inquiry.artist_id;
-
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
@@ -310,22 +310,22 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button className="iw-mobile-toggle-btn" onClick={() => setShowMobileAside(!showMobileAside)} style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}>{showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}</button>
-            <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>{isArtist ? '🎨 繪師' : '👤 案主'}</div>
+            {/* 🌟 根據 isArtist 精準顯示右上角身分標籤 */}
+            <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>{isArtist ? '🎨 您目前身分：繪師' : '👤 您目前身分：委託人'}</div>
           </div>
         </header>
 
         <main className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           {messages.map((msg) => {
-            // 🌟 精準判斷是否為自己發送的訊息
+            // 🌟 根據 currentUserId 判斷左右氣泡，絕對不會錯
             const isMe = msg.sender_id === currentUserId;
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                  {/* 🌟 根據真正的繪師 ID 判定標籤 */}
+                  {/* 🌟 根據 actualArtistId 判定每則訊息是誰發的 */}
                   <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
                   <span>{formatLocalTime(msg.created_at)}</span>
                 </div>
-                {/* 🌟 渲染圖片或文字 */}
                 <div className="iw-chat-bubble" style={{ maxWidth: '80%', padding: '10px 14px', fontSize: '14px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                   {renderMessageContent(msg.content)}
                 </div>
@@ -336,7 +336,7 @@ export const InquiryWorkspace: React.FC = () => {
         </main>
 
         <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-          {/* 🌟 圖片上傳按鈕 */}
+          {/* 🌟 完整修復：上傳圖片按鈕區塊回歸 */}
           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
           <button 
             onClick={() => fileInputRef.current?.click()} 
@@ -348,7 +348,7 @@ export const InquiryWorkspace: React.FC = () => {
           </button>
 
           <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none' }} />
-          <button onClick={handleSendMessage} disabled={!newMessage.trim()} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: newMessage.trim() ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>傳送</button>
+          <button onClick={handleSendMessage} disabled={!newMessage.trim() && !isUploadingImage} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: (newMessage.trim() || isUploadingImage) ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>傳送</button>
         </footer>
       </div>
 
