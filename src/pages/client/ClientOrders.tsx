@@ -372,9 +372,37 @@ export function ClientOrders() {
 
   const fieldMap: Record<string, string> = { usage_type: '委託用途', is_rush: '急件', delivery_method: '交稿方式', total_price: '總金額', draw_scope: '繪畫範圍', char_count: '人物數量', bg_type: '背景設定', add_ons: '附加選項' };
 
+  // 🌟 強化版 TOS 解析邏輯
   let finalTosHtml = '';
-  if (selectedOrder?.agreed_tos_snapshot) finalTosHtml = selectedOrder.agreed_tos_snapshot;
-  else if (selectedOrder?.artist_settings) { try { finalTosHtml = JSON.parse(selectedOrder.artist_settings).rules || ''; } catch(e) {} }
+  if (selectedOrder?.agreed_tos_snapshot) {
+    // 1. 嘗試解開 HTML 實體編碼，避免標籤被破壞導致無法渲染
+    const unescapedTos = unescapeHtml(selectedOrder.agreed_tos_snapshot);
+    // 2. 防呆：有時候存進去的是一個加上引號的字串 JSON 格式，例如 '"內容"'，嘗試解開它
+    try {
+      const parsed = JSON.parse(unescapedTos);
+      if (typeof parsed === 'string') {
+        finalTosHtml = parsed;
+      } else {
+        finalTosHtml = unescapedTos;
+      }
+    } catch (e) {
+      // 解析 JSON 失敗代表它本來就是純文字或 HTML 字串，直接使用
+      finalTosHtml = unescapedTos;
+    }
+  } else if (selectedOrder?.artist_settings) {
+    // 備用方案：從繪師設定中抓取
+    try {
+      const settings = JSON.parse(unescapeHtml(selectedOrder.artist_settings));
+      if (settings.rules) {
+        finalTosHtml = settings.rules;
+      } else if (settings.terms_of_service) {
+        // 相容不同版本的設定名稱
+        finalTosHtml = settings.terms_of_service;
+      }
+    } catch(e) {
+      console.error("無法解析 artist_settings 作為 TOS", e);
+    }
+  }
 
   const bulletinSource = getBulletinSource(selectedOrder);
   let displayBulletinContent = '';
