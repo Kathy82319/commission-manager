@@ -12,15 +12,16 @@ interface CommissionDetail {
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
-  artist_id?: string; // 🌟 確保介面包含 artist_id
+  artist_id?: string;
   origin_source?: string;
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 新增：解除 HTML 實體編碼的函式，修復亂碼問題
-const unescapeHtml = (str: string) => {
+// 🌟 核心防護：解除 HTML 實體編碼的函式 (加上物件防呆，避免 .replace 報錯)
+const unescapeHtml = (str: any) => {
+  if (typeof str !== 'string') return str; // 如果不是字串(如 Object)，就直接原樣丟回去，不要 .replace
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
@@ -79,7 +80,7 @@ export function ClientOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isListLoading, setIsListLoading] = useState(true);
 
-  // 🌟 新增：儲存黑名單繪師的 ID 列表
+  // 🌟 儲存黑名單繪師的 ID 列表
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
@@ -102,7 +103,6 @@ export function ClientOrders() {
 
   const fetchOrders = async () => {
     try {
-      // 🌟 同步拉取委託單、使用者資料與關係名單 (Relations)
       const [res, meRes, relRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions`, { credentials: 'include' }),
         fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
@@ -113,7 +113,6 @@ export function ClientOrders() {
       const meData = await meRes.json();
       const myId = meData.data?.id;
 
-      // 🌟 處理黑名單邏輯
       if (relRes.ok) {
         const relData = await relRes.json();
         if (relData.success) {
@@ -161,7 +160,7 @@ export function ClientOrders() {
 
       setCustomTitle(orderData.client_custom_title || '');
       setSavedTitle(orderData.client_custom_title || '');
-      setIsTrajectoryExpanded(false); // 切換單據時自動收合軌跡
+      setIsTrajectoryExpanded(false); 
 
       const [subRes, logRes] = await Promise.all([
         fetch(`${API_BASE}/api/commissions/${targetId}/submissions`, { credentials: 'include' }),
@@ -382,15 +381,19 @@ export function ClientOrders() {
   let parsedSnapshot: any = {};
   let isOffer = false;
 
+  // 🌟 解析 bulletin_content 變得更聰明且強健
   if (bulletinSource) {
     isOffer = bulletinSource.bulletin_category === 'offer';
     
-    const rawBulletinContent = unescapeHtml(bulletinSource.bulletin_content || '');
-    displayBulletinContent = rawBulletinContent;
-    try {
-        const parsed = JSON.parse(rawBulletinContent);
-        if (parsed.description) displayBulletinContent = parsed.description;
-    } catch (e) {}
+    let parsedBulletinContent: any = bulletinSource.bulletin_content || {};
+    // 如果它剛好還是字串，再嘗試 Parse 一次
+    if (typeof parsedBulletinContent === 'string') {
+      try {
+        parsedBulletinContent = JSON.parse(unescapeHtml(parsedBulletinContent));
+      } catch (e) {}
+    }
+    
+    displayBulletinContent = parsedBulletinContent.description || parsedBulletinContent.content || (typeof parsedBulletinContent === 'string' ? parsedBulletinContent : '(無詳細內容)');
 
     try {
       const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}'; 
@@ -452,7 +455,7 @@ export function ClientOrders() {
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
                 const isBulletin = getBulletinSource(order) !== null;
-                const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); // 🌟 檢查是否黑名單
+                const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); 
 
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
