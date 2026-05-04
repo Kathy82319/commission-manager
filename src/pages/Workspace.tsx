@@ -1,4 +1,5 @@
 // src/pages/Workspace
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -9,6 +10,8 @@ interface Message {
   sender_role: string;
   content: string;
   created_at: string;
+  // 🌟 新增：用來區分這筆訊息是來自過去的洽談，還是現在的委託
+  is_history?: boolean; 
 }
 
 interface OrderData {
@@ -46,12 +49,15 @@ export function Workspace() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
   const [order, setOrder] = useState<OrderData | null>(null);
+  
+  // 🌟 新增：存放舊洽談紀錄的狀態
+  const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
   
-  // 🌟 新增：圖片上傳狀態與 Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -71,8 +77,25 @@ export function Workspace() {
       if (parsed && parsed.source_type === 'bulletin') {
         const isOffer = parsed.bulletin_category === 'offer';
         const bulletinContent = safeParse(parsed.bulletin_content);
-        const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
-        const parsedSnapshot = safeParse(rawSnapshot);
+        
+        // 🌟 修復許願池媒合軌跡：統一且強健的解析
+        let rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+        
+        // 有些時候它會被字串化兩次，所以我們試著安全解析兩次
+        let parsedSnapshot = safeParse(rawSnapshot);
+        if (typeof parsedSnapshot === 'string') {
+          parsedSnapshot = safeParse(parsedSnapshot);
+        }
+        
+        // 確保結構正確
+        if (typeof parsedSnapshot !== 'object' || parsedSnapshot === null) {
+            parsedSnapshot = { message: parsedSnapshot };
+        }
+        
+        // 確保 answers 是陣列
+        if (parsedSnapshot.answers && typeof parsedSnapshot.answers === 'string') {
+            parsedSnapshot.answers = safeParse(parsedSnapshot.answers);
+        }
 
         let questions = [];
         if (bulletinContent && bulletinContent.questions) questions = bulletinContent.questions;
@@ -83,7 +106,7 @@ export function Workspace() {
           description: bulletinContent?.description || parsed.description || parsed.bulletin_content || '',
           questions: Array.isArray(questions) ? questions : [],
           isOffer,
-          parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot }
+          parsedSnapshot
         };
       }
     } catch (e) {
@@ -103,13 +126,56 @@ export function Workspace() {
     } catch (error) {}
   };
 
+  // 🌟 核心修改：取得訂單資料後，若發現有舊的 inquiry_id，就去撈舊訊息
   const fetchOrderData = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, { credentials: 'include' });
       const data = await res.json();
-      if (data.success) setOrder(data.data);
+      if (data.success) {
+        setOrder(data.data);
+        
+        // 嘗試撈取舊洽談訊息
+        const originSource = safeParse(data.data.origin_source);
+        if (originSource && originSource.source_type === 'bulletin' && originSource.inquiry_id) {
+            fetchHistoryMessages(originSource.inquiry_id);
+        }
+      }
     } catch (error) { console.error("無法讀取訂單", error); }
   };
+
+  // 🌟 新增：去拿舊洽談室的訊息
+  const fetchHistoryMessages = async (inquiryId: string) => {
+    try {
+        const res = await fetch(`${API_BASE}/api/inquiries/${inquiryId}/messages`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success) {
+            // 標記這些訊息為歷史訊息，以便後續渲染時能區分（若需要）
+            const historyMsgs = data.data.map((msg: any) => ({
+                ...msg,
+                // 洽談室的 sender_id 會是字串（使用者ID），我們需要把它轉成 role ('artist' | 'client') 才能跟新的委託訊息相容
+                // 這裡我們暫時用一個簡單的判斷，或者依賴外層的 currentUserId
+                is_history: true
+            }));
+            
+            // 處理發送者角色問題：因為舊資料可能存的是 sender_id，新資料存的是 sender_role
+            // 我們利用取得使用者自身身分的 API 或直接從 role 來推斷
+            const userRes = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
+            const userData = await userRes.json();
+            const myUserId = userData.data.id;
+            
+            const processedHistory = historyMsgs.map((msg: any) => {
+                // 如果舊訊息的發送者 ID 等於現在登入的使用者 ID，那他的角色就跟現在登入的 role 一樣
+                // 反之則是對立角色
+                const senderRole = msg.sender_id === myUserId ? role : (role === 'artist' ? 'client' : 'artist');
+                return { ...msg, sender_role: senderRole };
+            });
+
+            setHistoryMessages(processedHistory);
+        }
+    } catch (e) {
+        console.error("無法讀取歷史訊息", e);
+    }
+  }
 
   const fetchMessages = async () => {
     try {
@@ -141,11 +207,11 @@ export function Workspace() {
   }, [id, role]);
 
   useEffect(() => {
-    if (!loading && messages.length > 0) {
+    if (!loading && (messages.length > 0 || historyMessages.length > 0)) {
       const timer = setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 150); 
       return () => clearTimeout(timer);
     }
-  }, [messages, loading]);
+  }, [messages, historyMessages, loading]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -161,7 +227,6 @@ export function Workspace() {
     } catch (error) { alert('發送失敗，網路連線異常'); }
   };
 
-  // 🌟 核心防護：靜默壓縮與洗除 EXIF 資訊
   const silentCompressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -197,7 +262,6 @@ export function Workspace() {
     });
   };
 
-  // 🌟 處理圖片上傳
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -230,7 +294,6 @@ export function Workspace() {
       });
       if (!putRes.ok) throw new Error('上傳至雲端失敗');
 
-      // 送出圖片 Markdown 語法
       await fetch(`${API_BASE}/api/commissions/${id}/messages`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_role: role, content: `![image](${ticketData.fileName})` })
@@ -245,7 +308,6 @@ export function Workspace() {
     }
   };
 
-  // 🌟 解析 Markdown 圖片語法為實際圖片
   const renderMessageContent = (content: string) => {
     const imgRegex = /!\[image\]\((.*?)\)/g;
     const parts = [];
@@ -288,6 +350,9 @@ export function Workspace() {
   );
 
   const bulletinData = getBulletinSource(order);
+
+  // 🌟 將歷史訊息與新訊息接在一起
+  const allMessages = [...historyMessages, ...messages];
 
   return (
     <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
@@ -364,26 +429,39 @@ export function Workspace() {
             </div>
           )}
 
-          {messages.map(msg => {
+          {/* 🌟 渲染合併後的訊息 (歷史 + 新增) */}
+          {allMessages.map((msg, index) => {
             const isMe = msg.sender_role === role;
+            
+            // 🌟 加入一個歷史訊息到正式訊息的視覺分隔線
+            const isFirstNewMessage = !msg.is_history && index > 0 && allMessages[index - 1].is_history;
+
             return (
-              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                  <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
-                  <span style={{ color: '#C4BDB5' }}>{formatLocalTime(msg.created_at)}</span>
+              <React.Fragment key={msg.id || index}>
+                {isFirstNewMessage && (
+                   <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', opacity: 0.7 }}>
+                     <div style={{ flex: 1, height: '1px', backgroundColor: '#EAE6E1' }}></div>
+                     <span style={{ padding: '0 12px', fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>以上為成單前洽談紀錄</span>
+                     <div style={{ flex: 1, height: '1px', backgroundColor: '#EAE6E1' }}></div>
+                   </div>
+                )}
+                
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', opacity: msg.is_history ? 0.85 : 1 }}>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                    <span>{msg.sender_role === 'artist' ? '繪師' : '委託人'}</span>
+                    <span style={{ color: '#C4BDB5' }}>{formatLocalTime(msg.created_at)}</span>
+                  </div>
+                  <div className="message-wrapper" style={{ maxWidth: '85%', padding: '10px 14px', fontSize: '15px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#4A4A4A', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                    {renderMessageContent(msg.content)}
+                  </div>
                 </div>
-                {/* 🌟 渲染圖片或文字 */}
-                <div className="message-wrapper" style={{ maxWidth: '85%', padding: '10px 14px', fontSize: '15px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#4A4A4A', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', wordBreak: 'break-word', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                  {renderMessageContent(msg.content)}
-                </div>
-              </div>
+              </React.Fragment>
             );
           })}
           <div ref={messagesEndRef} />
         </main>
 
         <footer style={{ backgroundColor: '#FFFFFF', padding: '12px 12px 24px 12px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-          {/* 🌟 圖片上傳按鈕 */}
           <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
           <button 
             onClick={() => fileInputRef.current?.click()} 
