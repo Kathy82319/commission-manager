@@ -45,13 +45,19 @@ export function ClientSettings() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        // 如果發現是繪師，強制導流回繪師設定頁！
+        
+        // 🌟 修改處：偵測身分但不強制跳轉，改為詢問使用者
         if (data.data.role === 'artist' || data.data.role === 'admin') {
-          navigate('/artist/settings');
-          return;
+          const confirmJump = window.confirm(
+            "偵測到您的繪師身分，若要編輯個人頁請至功能較健全的繪師個人設定編輯，是否現在跳轉？"
+          );
+          if (confirmJump) {
+            navigate('/artist/settings');
+            return; // 結束 function，直接跳轉
+          }
+          // 如果使用者按「取消」，程式會繼續往下執行，讓他們留在目前頁面
         }
 
-        // 🌟 儲存 public_id 以供預覽連結使用
         setPublicId(data.data.public_id || data.data.id || '');
 
         setFormData({
