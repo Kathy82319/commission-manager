@@ -16,7 +16,6 @@ export const InquiryWorkspace: React.FC = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   
-  // 🌟 角色判定相關狀態
   const [isArtist, setIsArtist] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [actualArtistId, setActualArtistId] = useState<string | null>(null);
@@ -87,12 +86,14 @@ export const InquiryWorkspace: React.FC = () => {
           } else if (isFirstLoad.current) {
              let defaultName = "許願池委託";
              try {
+                // 🌟 最終極致解法：精準解析 json
                 const parsedContent = JSON.parse(data.bulletin_content);
-                // 🌟 修正：精準抓取「接案項目」或「標題」作為預設名稱，不再去抓說明內容
                 if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
                   defaultName = parsedContent.commission_items[0].name;
-                } else if (parsedContent.title) {
-                  defaultName = parsedContent.title;
+                } else if (parsedContent.description) {
+                  defaultName = parsedContent.description.substring(0, 30);
+                } else {
+                  defaultName = data.bulletin_content.substring(0, 30);
                 }
              } catch(e) {
                 defaultName = data.bulletin_content.substring(0, 30);
@@ -282,8 +283,10 @@ export const InquiryWorkspace: React.FC = () => {
   let parsedBulletin: any = {};
   try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
-      if (parsedBulletin.content) displayBulletinContent = parsedBulletin.content;
-      else if (parsedBulletin.description) displayBulletinContent = parsedBulletin.description;
+      // 因為後端把原本文字放在 description 欄位，所以我們要優先取出來
+      if (parsedBulletin.description) {
+        displayBulletinContent = parsedBulletin.description;
+      }
   } catch (e) {}
 
   let parsedSnapshot: any = {};
@@ -294,15 +297,17 @@ export const InquiryWorkspace: React.FC = () => {
   } catch (e) {}
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
-  
+
   // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
   let artistTos = "繪師未提供額外協議說明。";
-  if (parsedBulletin && parsedBulletin.tos_content) {
+  if (parsedBulletin && parsedBulletin.tos_content && parsedBulletin.tos_content.trim() !== '') {
     artistTos = parsedBulletin.tos_content;
   } else {
     try {
       const settings = JSON.parse(inquiry.artist_settings || '{}');
-      if (settings.terms_of_service) artistTos = settings.terms_of_service;
+      if (settings.terms_of_service && settings.terms_of_service.trim() !== '') {
+        artistTos = settings.terms_of_service;
+      }
     } catch(e) {}
   }
 
@@ -315,7 +320,7 @@ export const InquiryWorkspace: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold' }}>← 返回</button>
             <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              洽談：{parsedBulletin.title ? parsedBulletin.title.substring(0, 20) : displayBulletinContent.substring(0, 20)}...
+              洽談：{displayBulletinContent.substring(0, 20)}...
             </h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -380,7 +385,6 @@ export const InquiryWorkspace: React.FC = () => {
               
               <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
                 <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                {parsedBulletin.title && <div style={{ fontWeight: 'bold', marginTop: '4px', marginBottom: '4px' }}>{parsedBulletin.title}</div>}
                 <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
               </div>
 
@@ -460,7 +464,7 @@ export const InquiryWorkspace: React.FC = () => {
             <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
               
-              {/* 🌟 區塊一：本次委託規格摘要 */}
+              
               <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                 <h4 style={{ color: '#A67B3E', borderBottom: '1px solid #FDE0B5', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>本次委託規格摘要</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
@@ -474,7 +478,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              {/* 🌟 區塊二：繪師接案基本規範 (僅在發布接委託時顯示完整細節) */}
+              
               {isOffer && (
                 <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                   <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
@@ -502,12 +506,12 @@ export const InquiryWorkspace: React.FC = () => {
                       </div>
                     )}
 
-                    {/* 🌟 補上「詳細接案說明」 */}
-                    {parsedBulletin.content && (
+                    
+                    {parsedBulletin.description && (
                       <div style={{ margin: 0 }}>
                         <strong style={{ display: 'block', marginBottom: '4px' }}>詳細接案說明：</strong>
                         <div style={{ padding: '12px', backgroundColor: '#FBFBF9', borderRadius: '8px', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'pre-wrap', fontSize: '13px', lineHeight: '1.6' }}>
-                          {parsedBulletin.content}
+                          {parsedBulletin.description}
                         </div>
                       </div>
                     )}
@@ -515,7 +519,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               )}
 
-              {/* 🌟 區塊三：繪師專屬協議條款 (TOS) */}
+              
               <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                 <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
                 <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(artistTos) }} />
