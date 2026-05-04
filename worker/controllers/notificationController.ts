@@ -13,13 +13,14 @@ export const notificationController = {
   // ==========================================
   // 內部工具：給其他 Controller 呼叫來「發送通知」
   // ==========================================
-  async createNotification(env: Env, userId: string, type: string, text: string, link: string) {
+  async createNotification(env: Env, userId: string, type: string, text: string, linkUrl: string) {
     try {
       const id = crypto.randomUUID();
+      // 🌟 核心修復：對齊你資料庫真實的欄位名稱 (title, content, link_to)
       await env.commission_db.prepare(`
-        INSERT INTO Notifications (id, user_id, type, text, link, is_read) 
-        VALUES (?, ?, ?, ?, ?, 0)
-      `).bind(id, userId, type, text, link).run();
+        INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read) 
+        VALUES (?, ?, ?, '系統通知', ?, ?, 0)
+      `).bind(id, userId, type, text, linkUrl).run();
     } catch (e) {
       console.error("發送通知失敗:", e);
     }
@@ -37,9 +38,9 @@ export const notificationController = {
       `).bind(currentUserId).first();
       const unreadCount = (countRes?.count as number) || 0;
 
-      // 2. 撈取最新的 15 筆通知
+      // 2. 撈取最新的 15 筆通知 (🌟 修正：撈取 content 和 link_to)
       const { results } = await env.commission_db.prepare(`
-        SELECT id, type, text, link, created_at, is_read 
+        SELECT id, type, title, content, link_to, created_at, is_read 
         FROM Notifications 
         WHERE user_id = ? 
         ORDER BY created_at DESC 
@@ -50,8 +51,9 @@ export const notificationController = {
       const notifications = results.map((n: any) => ({
         id: n.id,
         type: n.type,
-        text: n.text,
-        link: n.link,
+        // 🌟 這裡負責把後端的 content 轉成前端畫面預期的 text
+        text: n.content, 
+        link: n.link_to, 
         time: formatOutputTime(n.created_at),
         isUnread: n.is_read === 0
       }));
@@ -63,6 +65,7 @@ export const notificationController = {
       }), { headers: corsHeaders });
 
     } catch (error: any) {
+      console.error("讀取通知失敗:", error.message);
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
@@ -90,7 +93,6 @@ export const notificationController = {
   // ==========================================
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 暴力且安全：把你名下所有的通知都標記為 1 (已讀)
       await env.commission_db.prepare(`
         UPDATE Notifications 
         SET is_read = 1 

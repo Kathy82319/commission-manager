@@ -875,7 +875,7 @@ export function Notebook() {
                         {renderRequestField('繪畫範圍：', 'draw_scope')}
                         {renderRequestField('人物數量：', 'char_count', 'number', ' 人')}
                         {renderRequestField('背景設定：', 'bg_type')}
-                        {renderRequestField('附加選項：', 'add_ons')}
+                        {renderRequestField('附加項目：', 'add_ons')}
                       </div>
 
                       <div className="detailed-settings-wrapper">
