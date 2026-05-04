@@ -1,49 +1,18 @@
 // worker/controllers/inquiryController.ts
 import type { Env } from '../shared/types';
+import { notificationController } from './notificationController'; // 🌟 引入通知控制器
 
 export const inquiryController = {
   
+  // 🌟 核心修正：改為從 Notifications 資料表撈取未讀數量
   async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const url = new URL(request.url);
-      const role = url.searchParams.get('role'); 
-
-      let query = "";
-      // 🌟 核心修正：將 category 納入考量，精準判定「誰才是案主/繪師」
-      if (role === 'client') {
-        query = `
-          SELECT COUNT(*) as count 
-          FROM BulletinInquiries i
-          JOIN Bulletins b ON i.bulletin_id = b.id
-          WHERE (
-            (b.category = 'request' AND b.client_id = ?) OR 
-            (b.category = 'offer' AND i.artist_id = ?)
-          )
-          AND i.status != 'cancelled'
-          AND (
-            (i.latest_update_at > IFNULL(i.last_read_at_client, '1970-01-01 00:00:00'))
-            OR (i.last_read_at_client IS NULL)
-          )
-        `;
-      } else {
-        query = `
-          SELECT COUNT(*) as count 
-          FROM BulletinInquiries i
-          JOIN Bulletins b ON i.bulletin_id = b.id
-          WHERE (
-            (b.category = 'request' AND i.artist_id = ?) OR 
-            (b.category = 'offer' AND b.client_id = ?)
-          )
-          AND i.status != 'cancelled'
-          AND (
-            (i.latest_update_at > IFNULL(i.last_read_at_artist, '1970-01-01 00:00:00'))
-            OR (i.last_read_at_artist IS NULL AND i.status != 'pending') 
-          )
-        `;
-      }
-
-      const { results } = await env.commission_db.prepare(query).bind(currentUserId, currentUserId).all();
-      const count = results[0]?.count || 0;
+      const countRes = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM Notifications 
+        WHERE user_id = ? AND is_read = 0
+      `).bind(currentUserId).first();
+      
+      const count = (countRes?.count as number) || 0;
 
       return new Response(JSON.stringify({ success: true, count }), { headers: corsHeaders });
     } catch (error: any) {
@@ -123,6 +92,18 @@ export const inquiryController = {
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
       ]);
 
+      // 🌟 發送通知給對方
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (inquiryData) {
+        const targetUserId = currentUserId === inquiryData.artist_id ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+        const text = `💬 洽談室「${inquiryData.title || '未命名'}」有新的聊天訊息。`;
+        await notificationController.createNotification(env, targetUserId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
+      }
+
       return new Response(JSON.stringify({ success: true, data: { id, content } }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
@@ -162,7 +143,7 @@ export const inquiryController = {
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
-        SELECT b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+        SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
       `).bind(inquiryId).first() as any;
 
@@ -170,6 +151,7 @@ export const inquiryController = {
 
       const isOffer = inquiryData.bulletin_category === 'offer';
       const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
 
       if (currentUserId !== actualArtistId) {
         return new Response(JSON.stringify({ success: false, message: '必須為該委託的創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
@@ -202,6 +184,10 @@ export const inquiryController = {
         `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
       
+      // 🌟 發送通知給案主
+      const text = `🌟 繪師已送出「${inquiryData.title || '未命名'}」的合作協議，請前往確認。`;
+      await notificationController.createNotification(env, actualClientId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
+
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
@@ -211,7 +197,7 @@ export const inquiryController = {
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
-        SELECT i.*, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
+        SELECT i.*, b.title, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
         FROM BulletinInquiries i 
         JOIN Bulletins b ON i.bulletin_id = b.id 
         WHERE i.id = ?
@@ -276,10 +262,9 @@ export const inquiryController = {
       let parsedArtistSnapshot = inquiryData.artist_snapshot;
       try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
-      // 🌟🌟🌟 核心修復點：把 inquiry_id (舊洽談室的鑰匙) 存進來源資料中！ 🌟🌟🌟
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
-        inquiry_id: inquiryId, // ⬅️ 加上這行，前端才有辦法撈到舊紀錄
+        inquiry_id: inquiryId, 
         bulletin_content: parsedBulletinContent,
         bulletin_category: inquiryData.bulletin_category,
         artist_initial_snapshot: parsedArtistSnapshot,
@@ -305,6 +290,10 @@ export const inquiryController = {
       ).run();
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+
+      // 🌟 發送通知給繪師
+      const text = `🌟 恭喜！案主已同意「${inquiryData.title || '未命名'}」的協議，正式成立委託單。`;
+      await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, '/artist/notebook');
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
     } catch (error: any) {

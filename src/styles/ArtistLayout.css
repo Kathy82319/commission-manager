@@ -9,7 +9,6 @@
 
 .mobile-app-bar {
   display: flex;
-  align-items: center;
   gap: 16px;
   padding: 0 20px;
   height: 64px;

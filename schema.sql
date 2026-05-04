@@ -298,6 +298,19 @@ CREATE INDEX idx_reports_bulletin ON Reports(bulletin_id);
 
 ALTER TABLE Users ADD COLUMN admin_note TEXT DEFAULT '';
 
+CREATE TABLE IF NOT EXISTS Notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,      
+    type TEXT NOT NULL,          
+    text TEXT NOT NULL,          
+    link TEXT NOT NULL,            
+    is_read INTEGER DEFAULT 0,  
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 建立索引以加快查詢速度
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON Notifications(user_id);
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

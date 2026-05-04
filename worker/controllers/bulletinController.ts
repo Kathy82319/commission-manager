@@ -1,9 +1,10 @@
 // worker/controllers/bulletinController.ts
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit, sanitizeObject } from "../utils/security";
+import { notificationController } from "./notificationController"; // 🌟 引入通知控制器
 
 export const bulletinController = {
-  // 🌟 只覆蓋這一個 closeBulletin 函式！
+  // 🌟 只覆蓋這一個 closeBulletin 函式！ (以及新增後續的通知邏輯)
   async closeBulletin(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       // 🌟 解析前端傳來的婉拒理由
@@ -17,17 +18,35 @@ export const bulletinController = {
       const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
 
+      // 🌟 寫入通知前，先撈出所有即將被關閉的 pending 提案
+      const { results: pendingInquiries } = await env.commission_db.prepare(`
+        SELECT i.artist_id, b.title, b.category
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id
+        WHERE b.id = ? AND i.status = 'pending'
+      `).bind(bulletinId).all();
+
       // 🌟 關閉貼文，並將理由寫入所有 pending 的提案中
       await env.commission_db.batch([
         env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId),
         env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'closed', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE bulletin_id = ? AND status = 'pending'`).bind(safeReason, bulletinId)
       ]);
+
+      // 🌟 針對那些被關閉的提案，發送通知給投遞者
+      for (const item of pendingInquiries as any[]) {
+        const title = item.title || '未命名';
+        const isOffer = item.category === 'offer';
+        const text = isOffer ? `🌟 「${title}」已額滿或結束招收。` : `🌟 關於提案「${title}」，案主已撤銷許願或結束徵件。`;
+        const link = isOffer ? '/client/inbox' : '/artist/inbox';
+        await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
+      }
+
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       console.error("closeBulletin Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '操作發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
     }
   },
+  
   async getList(request: Request, env: Env, corsHeaders: any) {
     try {
       const url = new URL(request.url);
@@ -212,8 +231,8 @@ export const bulletinController = {
         }
       }
 
-      // 🌟 先取得目標貼文資訊，再來決定權限
-      const bulletin = await env.commission_db.prepare(`SELECT content, client_id, category FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first() as any;
+      // 🌟 先取得目標貼文資訊，包含 title 以供通知使用
+      const bulletin = await env.commission_db.prepare(`SELECT title, content, client_id, category FROM Bulletins WHERE id = ? AND status = 'open'`).bind(bulletinId).first() as any;
       if (!bulletin) {
         return new Response(JSON.stringify({ success: false, message: '此許願池文章不存在或已關閉' }), { status: 404, headers: corsHeaders });
       }
@@ -302,6 +321,13 @@ export const bulletinController = {
          VALUES (?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`
       ).bind(crypto.randomUUID(), bulletinId, currentUserId, snapshotStr).run();
 
+      // 🌟 寫入通知：有人來投遞了 (通知發文者)
+      const title = bulletin.title || '未命名';
+      const isOffer = bulletin.category === 'offer';
+      const text = isOffer ? `🌟 您的接委託「${title}」收到了新委託人的投遞！` : `🌟 您的徵委託「${title}」收到了新繪師的提案！`;
+      const link = isOffer ? '/artist/inbox' : '/client/inbox';
+      await notificationController.createNotification(env, String(bulletin.client_id), 'inquiry_msg', text, link);
+
       return new Response(JSON.stringify({ success: true, message: '已成功投遞' }), { headers: corsHeaders });
     } catch (error: any) {
       console.error("inquire Error:", error.message);
@@ -313,6 +339,12 @@ export const bulletinController = {
     try {
       const body = await request.json() as any;
       const { decline_reason } = body;
+
+      // 🌟 更新前先取得貼文與身分資訊，以便判定是誰婉拒誰
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT i.artist_id, b.title, b.category, b.client_id as bulletin_client_id
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
       
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
@@ -323,6 +355,24 @@ export const bulletinController = {
 
       if (result.meta.changes === 0) {
         return new Response(JSON.stringify({ success: false, message: '操作失敗或權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
+      // 🌟 寫入通知：婉拒或撤回
+      if (inquiryData) {
+        const title = inquiryData.title || '未命名';
+        const isOffer = inquiryData.category === 'offer';
+        
+        if (currentUserId === inquiryData.artist_id) {
+           // 投遞者自己撤回 -> 通知發文者
+           const text = isOffer ? `🌟 委託人已撤回對「${title}」的洽談申請。` : `🌟 繪師已撤回針對「${title}」的提案。`;
+           const link = isOffer ? '/artist/inbox' : '/client/inbox';
+           await notificationController.createNotification(env, String(inquiryData.bulletin_client_id), 'inquiry_msg', text, link);
+        } else {
+           // 發文者婉拒 -> 通知投遞者
+           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，案主已婉拒洽談。`;
+           const link = isOffer ? '/client/inbox' : '/artist/inbox';
+           await notificationController.createNotification(env, String(inquiryData.artist_id), 'inquiry_msg', text, link);
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -337,6 +387,12 @@ export const bulletinController = {
       const body = await request.json() as any;
       const { client_response } = body;
 
+      // 🌟 更新前先取得身分資訊
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT i.artist_id, b.title, b.category 
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
       const result = await env.commission_db.prepare(
         `UPDATE BulletinInquiries 
          SET status = 'submitted', client_response = ?, latest_update_at = CURRENT_TIMESTAMP 
@@ -346,6 +402,14 @@ export const bulletinController = {
 
       if (result.meta.changes === 0) {
         return new Response(JSON.stringify({ success: false, message: '操作失敗或權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
+      // 🌟 寫入通知：發文者邀請詳談 -> 通知投遞者
+      if (inquiryData) {
+        const title = inquiryData.title || '未命名';
+        const isOffer = inquiryData.category === 'offer';
+        const text = isOffer ? `🌟 繪師已邀請您針對「${title}」進行詳談，請前往確認。` : `🌟 案主已邀請您針對「${title}」進行詳談，請前往確認。`;
+        await notificationController.createNotification(env, String(inquiryData.artist_id), 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
       }
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -430,6 +494,13 @@ export const bulletinController = {
       const finalReason = decline_reason || '已找到合適人選 / 終止洽談';
       const placeholders = inquiry_ids.map(() => '?').join(',');
 
+      // 🌟 批次更新前先撈取受影響的投遞資訊
+      const { results: pendingInquiries } = await env.commission_db.prepare(`
+        SELECT i.artist_id, b.title, b.category
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id
+        WHERE i.id IN (${placeholders}) AND i.status = 'pending'
+      `).bind(...inquiry_ids).all();
+
       const query = `
         UPDATE BulletinInquiries 
         SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
@@ -443,6 +514,17 @@ export const bulletinController = {
 
       const params = [finalReason, ...inquiry_ids, currentUserId, currentUserId];
       const result = await env.commission_db.prepare(query).bind(...params).run();
+
+      // 🌟 批次發送通知給那些被婉拒的投遞者
+      if (result.meta.changes > 0) {
+         for (const item of pendingInquiries as any[]) {
+           const title = item.title || '未命名';
+           const isOffer = item.category === 'offer';
+           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，案主已婉拒洽談。`;
+           const link = isOffer ? '/client/inbox' : '/artist/inbox';
+           await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
+         }
+      }
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -544,7 +626,7 @@ export const bulletinController = {
         `).all();
 
         if (admins.length > 0) {
-          // 🌟 修正 1：對齊你真實的欄位名稱 (content, link_to) 與增加 id 欄位
+          // 🌟 保留原有的內部手動通知給管理員的寫法
           const stmt = env.commission_db.prepare(`
             INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read)
             VALUES (?, ?, 'SYSTEM_ALERT', '🚨 社群風控警報', ?, ?, 0)
@@ -553,12 +635,10 @@ export const bulletinController = {
           const alertContent = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
 
           admins.forEach(admin => {
-            // 🌟 修正 2：手動產生 crypto.randomUUID() 塞入 TEXT PRIMARY KEY
             batchStatements.push(stmt.bind(crypto.randomUUID(), admin.id, alertContent, targetId));
           });
         }
 
-        // 一次性執行所有更新與新增
         if (batchStatements.length > 0) {
           await env.commission_db.batch(batchStatements);
         }

@@ -1,8 +1,8 @@
 // worker/controllers/commController.ts
 import type { Env, CreateCommissionBody } from "../shared/types";
 import { sanitizeAndLimit, limitRichText, isValidSafeUrl } from "../utils/security";
+import { notificationController } from './notificationController'; 
 
-// 🌟 輔助函式：建立帶有 JSON 宣告的 Response，一勞永逸解決 Content-Type 問題
 const createJsonResponse = (body: any, status: number, corsHeaders: HeadersInit) => {
   return new Response(JSON.stringify(body), {
     status,
@@ -146,6 +146,11 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'create', '繪師已建立委託單')").bind(crypto.randomUUID(), newOrderId)
     ]);
     
+    // 🌟 明確將 clientId 轉為字串
+    if (!body.is_external && clientId) {
+       await notificationController.createNotification(env, String(clientId), 'commission_msg', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?open=${newOrderId}`);
+    }
+    
     return createJsonResponse({ success: true, id: newOrderId }, 200, corsHeaders);
   },
 
@@ -168,8 +173,8 @@ export const commController = {
       return createJsonResponse({ success: false, error: "權限不足" }, 403, corsHeaders);
     }
 
-    const updates = [];
-    const params = [];
+    const updates: string[] = [];
+    const params: any[] = [];
     const fieldLimits: Record<string, number> = {
       'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
       'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
@@ -203,6 +208,9 @@ export const commController = {
         
         const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
+        
+        // 🌟 明確轉換型別
+        await notificationController.createNotification(env, String(comm.artist_id), 'commission_msg', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}`);
       }
       
       await env.commission_db.batch(batch);
@@ -232,13 +240,14 @@ export const commController = {
     const body: { stage: string; file_url: string } = await request.json();
     if (!isValidSafeUrl(body.file_url) && !body.file_url.includes('|')) return createJsonResponse({ success: false, error: "不安全的檔案網址" }, 400, corsHeaders);
 
-    const { results: comm } = await env.commission_db.prepare("SELECT artist_id, current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name, current_stage, workflow_mode FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = commResults as any[];
     if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到委託單" }, 404, corsHeaders);
     if (currentUserId !== comm[0].artist_id) return createJsonResponse({ success: false, error: "無權限上傳" }, 403, corsHeaders);
     
     const { results } = await env.commission_db.prepare("SELECT COUNT(*) as count FROM Submissions WHERE commission_id = ? AND stage = ?").bind(id, body.stage).all();
     const version = ((results[0]?.count as number) || 0) + 1;
-    const newStageStatus = (comm[0] as any).workflow_mode === 'free' ? (comm[0] as any).current_stage : `${body.stage}_reviewing`; 
+    const newStageStatus = comm[0].workflow_mode === 'free' ? comm[0].current_stage : `${body.stage}_reviewing`; 
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
 
     await env.commission_db.batch([
@@ -247,12 +256,19 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(newStageStatus, id),
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
     ]);
+
+    // 🌟 明確轉換型別
+    if (comm[0].client_id) {
+       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?open=${id}`);
+    }
+
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async reviewArtwork(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { stage: string; action: 'approve' | 'reject' | 'read_only'; comment?: string } = await request.json();
-    const { results: comm } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = commResults as any[];
     if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到單據" }, 404, corsHeaders);
     
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
@@ -277,29 +293,48 @@ export const commController = {
     if (globalStatusUpdate) batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
     
     await env.commission_db.batch(batchOps);
+
+    // 🌟 明確轉換型別
+    const text = body.action === 'reject' 
+      ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
+      : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
+    await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_msg', text, `/artist/notebook?id=${id}&tab=delivery`);
+
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async changeRequest(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { changes } = await request.json() as any;
+    
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = commResults as any[];
+    if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到單據" }, 404, corsHeaders);
+
     await env.commission_db.batch([
       env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(changes), id),
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'change_request', '繪師提交了規格異動申請')").bind(crypto.randomUUID(), id)
     ]);
+    
+    // 🌟 明確轉換型別
+    if (comm[0].client_id) {
+       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?open=${id}`);
+    }
+
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async respondToChange(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { action } = await request.json() as any;
-    const { results } = await env.commission_db.prepare("SELECT pending_changes FROM Commissions WHERE id = ?").bind(id).all();
-    if (!results[0]?.pending_changes) return createJsonResponse({ success: false, error: "無待處理申請" }, 400, corsHeaders);
+    const { results } = await env.commission_db.prepare("SELECT pending_changes, artist_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = results as any[];
+    if (!comm[0]?.pending_changes) return createJsonResponse({ success: false, error: "無待處理申請" }, 400, corsHeaders);
 
-    const changes = JSON.parse(results[0].pending_changes as string);
+    const changes = JSON.parse(comm[0].pending_changes as string);
     const logMsg = action === 'approve' ? '委託人已同意規格異動' : '委託人已拒絕規格異動';
 
     if (action === 'approve') {
-      const updates = [];
-      const params = [];
+      const updates: string[] = [];
+      const params: any[] = [];
       for (const key in changes) {
         updates.push(`${key} = ?`);
         params.push(changes[key]);
@@ -315,6 +350,13 @@ export const commController = {
         env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'change_reject', ?)").bind(crypto.randomUUID(), id, logMsg)
       ]);
     }
+
+    // 🌟 明確轉換型別
+    const text = action === 'approve' 
+       ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
+       : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
+    await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_change', text, `/artist/notebook?id=${id}&tab=details`);
+
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
@@ -344,6 +386,18 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
     ]);
     
+    // 🌟 明確轉換型別
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = commResults as any[];
+    if (comm.length > 0) {
+       const targetUserId = body.sender_role === 'artist' ? comm[0].client_id : comm[0].artist_id;
+       const roleQuery = body.sender_role === 'artist' ? '' : '?role=artist';
+       
+       if (targetUserId) {
+         await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 工作區「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
+       }
+    }
+
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
@@ -374,7 +428,6 @@ export const commController = {
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
-  // 🌟 修正點：轉換前端傳入的 public_id 成資料庫用的 UUID，確保排單表找得到資料
   async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const artist = await env.commission_db.prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string}>();

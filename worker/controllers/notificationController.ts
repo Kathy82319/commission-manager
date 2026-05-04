@@ -1,253 +1,65 @@
 // worker/controllers/notificationController.ts
 import type { Env } from "../shared/types";
 
-interface NotificationItem {
-  id: string;
-  type: string;
-  text: string;
-  link: string;
-  time: string;
-  isUnread: boolean;
-}
-
-const safeParseTime = (dateStr: string | null | undefined) => {
-  if (!dateStr) return 0;
-  try {
-    const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-    const time = new Date(utcStr).getTime();
-    return isNaN(time) ? 0 : time;
-  } catch (e) {
-    return 0;
-  }
-};
-
-// 🌟 修正版：只幫「有時間」的資料補上 Z (轉為台灣時間)，如果原本是空的就保持原樣，絕不自作主張給現在時間！
+// 確保輸出給前端的時間格式是標準 ISO UTC 格式
 const formatOutputTime = (dateStr: string | null | undefined) => {
-  if (!dateStr) return dateStr; // ⬅️ 關鍵修復：是空的就還你空的！
+  if (!dateStr) return new Date().toISOString();
   if (dateStr.includes('Z')) return dateStr;
   return dateStr.includes('T') ? dateStr + 'Z' : dateStr.replace(' ', 'T') + 'Z';
 };
 
 export const notificationController = {
+  
+  // ==========================================
+  // 內部工具：給其他 Controller 呼叫來「發送通知」
+  // ==========================================
+  async createNotification(env: Env, userId: string, type: string, text: string, link: string) {
+    try {
+      const id = crypto.randomUUID();
+      await env.commission_db.prepare(`
+        INSERT INTO Notifications (id, user_id, type, text, link, is_read) 
+        VALUES (?, ?, ?, ?, ?, 0)
+      `).bind(id, userId, type, text, link).run();
+    } catch (e) {
+      console.error("發送通知失敗:", e);
+    }
+  },
+
+  // ==========================================
+  // 1. 取得使用者的所有通知 (給小鈴鐺下拉選單用)
+  // ==========================================
   async getNotifications(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const notifications: NotificationItem[] = [];
-      let unreadCount = 0;
+      // 1. 算未讀數量
+      const countRes = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM Notifications 
+        WHERE user_id = ? AND is_read = 0
+      `).bind(currentUserId).first();
+      const unreadCount = (countRes?.count as number) || 0;
 
-      // ==========================================
-      // 1. 撈取「貼文發布者 (Post Owner)」的通知
-      // 對應資料庫的 b.client_id
-      // ==========================================
-      
-      const clientInboxQuery = await env.commission_db.prepare(`
-        SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.last_read_at_client, i.status, i.decline_reason 
-        FROM BulletinInquiries i
-        JOIN Bulletins b ON i.bulletin_id = b.id
-        WHERE b.client_id = ? AND i.status != 'cancelled'
+      // 2. 撈取最新的 15 筆通知
+      const { results } = await env.commission_db.prepare(`
+        SELECT id, type, text, link, created_at, is_read 
+        FROM Notifications 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 15
       `).bind(currentUserId).all();
 
-      (clientInboxQuery.results || []).forEach((item: any) => {
-        const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_client);
-        let text = '';
-        let linkUrl = '';
-
-        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
-        // 若為 Offer，發文者其實是「繪師」；若為 Request，發文者才是「案主」
-        const isOffer = item.bulletin_category === 'offer';
-
-        switch(item.status) {
-          case 'pending':
-            text = isOffer 
-              ? `🌟 您的接委託「${item.title || '未命名'}」收到了新委託人的投遞！`
-              : `🌟 您的徵委託「${item.title || '未命名'}」收到了新繪師的提案！`;
-            linkUrl = isOffer ? '/artist/inbox' : '/client/inbox';
-            break;
-          case 'declined':
-            text = isOffer
-              ? `🌟 委託人已撤回對「${item.title || '未命名'}」的洽談申請。`
-              : `🌟 繪師已撤回針對「${item.title || '未命名'}」的提案。`;
-            linkUrl = isOffer ? '/artist/inbox' : '/client/inbox';
-            break;
-          case 'proposed':
-            text = isOffer
-              ? `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`
-              : `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`;
-            linkUrl = `/inquiry/workspace/${item.id}`;
-            break;
-          case 'accepted':
-            if (isOffer) {
-              text = `🌟 恭喜！案主已同意「${item.title || '未命名'}」的協議，正式成立委託單。`;
-              linkUrl = '/artist/notebook';
-            } else {
-              return; // 案主自己點擊同意的，不需通知自己
-            }
-            break;
-          default:
-            return; 
-        }
-
-        if (isUnread) unreadCount++;
-        
-        notifications.push({
-          id: `owner_inquiry_${item.id}_${item.status}`,
-          type: 'inquiry_msg',
-          text,
-          link: linkUrl,
-          time: formatOutputTime(item.latest_update_at) as string,
-          isUnread
-        });
-      });
-
-      // 正式委託單的案主通知 (邏輯無誤，不需修改)
-      const clientCommQuery = await env.commission_db.prepare(`
-        SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
-        FROM Commissions 
-        WHERE client_id = ? AND status != 'cancelled'
-      `).bind(currentUserId).all();
-
-      (clientCommQuery.results || []).forEach((order: any) => {
-        if (order.pending_changes) {
-          const isUnread = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_client);
-          if (isUnread) unreadCount++;
-          
-          notifications.push({
-            id: `client_change_${order.id}`,
-            type: 'commission_change',
-            text: `📝 繪師針對委託單「${order.project_name || order.id}」提出了合約異動申請。`,
-            link: `/client/orders?open=${order.id}`,
-            time: formatOutputTime(order.latest_message_at) || new Date().toISOString(),
-            isUnread
-          });
-        }
-        
-        const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_client);
-        if (hasNewMsg) unreadCount++;
-        
-        notifications.push({
-          id: `client_msg_${order.id}`,
-          type: 'commission_msg',
-          text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
-          link: `/workspace/${order.id}`, 
-          time: formatOutputTime(order.latest_message_at) as string,
-          isUnread: hasNewMsg
-        });
-      });
-
-      // ==========================================
-      // 2. 撈取「投遞應徵者 (Applicant)」的通知
-      // 對應資料庫的 i.artist_id
-      // ==========================================
-
-      const artistInboxQuery = await env.commission_db.prepare(`
-        SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.status, i.last_read_at_artist, i.decline_reason
-        FROM BulletinInquiries i
-        JOIN Bulletins b ON i.bulletin_id = b.id
-        WHERE i.artist_id = ? AND i.status != 'cancelled'
-      `).bind(currentUserId).all();
-
-      (artistInboxQuery.results || []).forEach((item: any) => {
-        const isWithdrawnByApplicant = item.status === 'declined' && item.decline_reason && item.decline_reason.includes('撤回');
-        if (isWithdrawnByApplicant || item.status === 'pending') {
-          return;
-        }
-
-        const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_artist);
-        let text = '';
-        let linkUrl = '';
-        
-        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
-        // 若為 Offer，投遞者其實是「案主」；若為 Request，投遞者才是「繪師」
-        const isOffer = item.bulletin_category === 'offer';
-
-        switch(item.status) {
-          case 'submitted':
-            text = isOffer
-              ? `🌟 繪師已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`
-              : `🌟 案主已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`;
-            linkUrl = `/inquiry/workspace/${item.id}`;
-            break;
-          case 'declined':
-            text = isOffer
-              ? `🌟 關於投遞「${item.title || '未命名'}」，繪師已婉拒洽談。`
-              : `🌟 關於提案「${item.title || '未命名'}」，案主已婉拒洽談。`;
-            linkUrl = isOffer ? '/client/inbox' : '/artist/inbox';
-            break;
-          case 'closed':
-            text = isOffer
-              ? `🌟 「${item.title || '未命名'}」已額滿或結束招收。`
-              : `🌟 關於提案「${item.title || '未命名'}」，案主已撤銷許願或結束徵件。`;
-            linkUrl = isOffer ? '/client/inbox' : '/artist/inbox';
-            break;
-          case 'proposed':
-            text = isOffer
-              ? `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`
-              : `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`;
-            linkUrl = `/inquiry/workspace/${item.id}`;
-            break;
-          case 'accepted':
-            text = isOffer
-              ? `🌟 恭喜！「${item.title || '未命名'}」的提案已正式成立委託單。`
-              : `🌟 恭喜！案主已同意「${item.title || '未命名'}」的協議，正式成立委託單。`;
-            linkUrl = isOffer ? '/client/orders' : '/artist/notebook';
-            break;
-          default:
-            return; 
-        }
-
-        if (isUnread) unreadCount++;
-        
-        notifications.push({
-          id: `applicant_inquiry_${item.id}_${item.status}`,
-          type: 'inquiry_msg',
-          text,
-          link: linkUrl,
-          time: formatOutputTime(item.latest_update_at) as string,
-          isUnread
-        });
-      });
-
-      // 正式委託單的繪師通知 (邏輯無誤，不需修改)
-      const artistCommQuery = await env.commission_db.prepare(`
-        SELECT id, project_name, pending_changes, latest_message_at, last_read_at_artist 
-        FROM Commissions 
-        WHERE artist_id = ? AND status != 'cancelled'
-      `).bind(currentUserId).all();
-
-      (artistCommQuery.results || []).forEach((order: any) => {
-        if (order.pending_changes) {
-          const isUnread = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_artist);
-          if (isUnread) unreadCount++;
-          
-          notifications.push({
-            id: `artist_change_${order.id}`,
-            type: 'commission_change',
-            text: `📝 委託單「${order.project_name || order.id}」的合約異動待處理。`,
-            link: `/artist/notebook?id=${order.id}&tab=details`, 
-            time: formatOutputTime(order.latest_message_at) || new Date().toISOString(),
-            isUnread
-          });
-        }
-
-        const hasNewMsg = safeParseTime(order.latest_message_at) > safeParseTime(order.last_read_at_artist);
-        if (hasNewMsg) unreadCount++;
-        
-        notifications.push({
-          id: `artist_msg_${order.id}`,
-          type: 'commission_msg',
-          text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
-          link: `/workspace/${order.id}`,
-          time: formatOutputTime(order.latest_message_at) as string,
-          isUnread: hasNewMsg
-        });
-      });
-
-      notifications.sort((a, b) => safeParseTime(b.time) - safeParseTime(a.time));
-      const topNotifications = notifications.slice(0, 15);
+      // 3. 格式化給前端
+      const notifications = results.map((n: any) => ({
+        id: n.id,
+        type: n.type,
+        text: n.text,
+        link: n.link,
+        time: formatOutputTime(n.created_at),
+        isUnread: n.is_read === 0
+      }));
 
       return new Response(JSON.stringify({ 
         success: true, 
         unreadCount, 
-        notifications: topNotifications 
+        notifications 
       }), { headers: corsHeaders });
 
     } catch (error: any) {
@@ -255,38 +67,35 @@ export const notificationController = {
     }
   },
 
-  // 🌟 強健升級：一次把該使用者的所有狀態清空，不怕前端角色判定錯誤
+  // ==========================================
+  // 2. 取得未讀數量 (專門給畫面右上角的紅點用)
+  // ==========================================
+  async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const countRes = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM Notifications 
+        WHERE user_id = ? AND is_read = 0
+      `).bind(currentUserId).first();
+      
+      const count = (countRes?.count as number) || 0;
+
+      return new Response(JSON.stringify({ success: true, count }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, count: 0, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // ==========================================
+  // 3. 全部標示為已讀
+  // ==========================================
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      await env.commission_db.batch([
-        // 1. 清除使用者為「發文者 (Post Owner)」的通知
-        env.commission_db.prepare(`
-          UPDATE BulletinInquiries 
-          SET last_read_at_client = CURRENT_TIMESTAMP 
-          WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
-        `).bind(currentUserId),
-        
-        // 2. 清除使用者為「投遞者 (Applicant)」的通知
-        env.commission_db.prepare(`
-          UPDATE BulletinInquiries 
-          SET last_read_at_artist = CURRENT_TIMESTAMP 
-          WHERE artist_id = ?
-        `).bind(currentUserId),
-
-        // 3. 清除使用者在正式委託中為「案主」的通知
-        env.commission_db.prepare(`
-          UPDATE Commissions 
-          SET last_read_at_client = CURRENT_TIMESTAMP 
-          WHERE client_id = ?
-        `).bind(currentUserId),
-
-        // 4. 清除使用者在正式委託中為「繪師」的通知
-        env.commission_db.prepare(`
-          UPDATE Commissions 
-          SET last_read_at_artist = CURRENT_TIMESTAMP 
-          WHERE artist_id = ?
-        `).bind(currentUserId)
-      ]);
+      // 暴力且安全：把你名下所有的通知都標記為 1 (已讀)
+      await env.commission_db.prepare(`
+        UPDATE Notifications 
+        SET is_read = 1 
+        WHERE user_id = ? AND is_read = 0
+      `).bind(currentUserId).run();
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
