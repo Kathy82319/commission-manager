@@ -21,9 +21,9 @@ const safeParseTime = (dateStr: string | null | undefined) => {
   }
 };
 
-// 🌟 核心修復 1：遇到缺少時間的新通知，強制給予「當下時間」，並確保所有時間字串都有 Z (UTC) 標記
+// 🌟 修正版：只幫「有時間」的資料補上 Z (轉為台灣時間)，如果原本是空的就保持原樣，絕不自作主張給現在時間！
 const formatOutputTime = (dateStr: string | null | undefined) => {
-  if (!dateStr) return new Date().toISOString();
+  if (!dateStr) return dateStr; // ⬅️ 關鍵修復：是空的就還你空的！
   if (dateStr.includes('Z')) return dateStr;
   return dateStr.includes('T') ? dateStr + 'Z' : dateStr.replace(' ', 'T') + 'Z';
 };
@@ -93,12 +93,12 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: formatOutputTime(item.latest_update_at), // 確保時區轉換
+          time: formatOutputTime(item.latest_update_at) as string,
           isUnread
         });
       });
 
-      // 正式委託單的案主通知
+      // 正式委託單的案主通知 (邏輯無誤，不需修改)
       const clientCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
         FROM Commissions 
@@ -115,7 +115,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 繪師針對委託單「${order.project_name || order.id}」提出了合約異動申請。`,
             link: `/client/orders?open=${order.id}`,
-            time: formatOutputTime(order.latest_message_at), // 確保時區轉換
+            time: formatOutputTime(order.latest_message_at) || new Date().toISOString(),
             isUnread
           });
         }
@@ -128,7 +128,7 @@ export const notificationController = {
           type: 'commission_msg',
           text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
           link: `/workspace/${order.id}`, 
-          time: formatOutputTime(order.latest_message_at), // 確保時區轉換
+          time: formatOutputTime(order.latest_message_at) as string,
           isUnread: hasNewMsg
         });
       });
@@ -201,12 +201,12 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: formatOutputTime(item.latest_update_at), // 確保時區轉換
+          time: formatOutputTime(item.latest_update_at) as string,
           isUnread
         });
       });
 
-      // 正式委託單的繪師通知
+      // 正式委託單的繪師通知 (邏輯無誤，不需修改)
       const artistCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_artist 
         FROM Commissions 
@@ -223,7 +223,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 委託單「${order.project_name || order.id}」的合約異動待處理。`,
             link: `/artist/notebook?id=${order.id}&tab=details`, 
-            time: formatOutputTime(order.latest_message_at), // 確保時區轉換
+            time: formatOutputTime(order.latest_message_at) || new Date().toISOString(),
             isUnread
           });
         }
@@ -236,7 +236,7 @@ export const notificationController = {
           type: 'commission_msg',
           text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
           link: `/workspace/${order.id}`,
-          time: formatOutputTime(order.latest_message_at), // 確保時區轉換
+          time: formatOutputTime(order.latest_message_at) as string,
           isUnread: hasNewMsg
         });
       });
@@ -255,6 +255,7 @@ export const notificationController = {
     }
   },
 
+  // 🌟 強健升級：一次把該使用者的所有狀態清空，不怕前端角色判定錯誤
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.batch([
