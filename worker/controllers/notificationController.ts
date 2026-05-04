@@ -21,6 +21,13 @@ const safeParseTime = (dateStr: string | null | undefined) => {
   }
 };
 
+// 🌟 新增：確保輸出給前端的時間格式是標準 ISO UTC 格式，讓前端能正確轉換為台灣時間
+const formatOutputTime = (dateStr: string | null | undefined) => {
+  if (!dateStr) return new Date().toISOString();
+  if (dateStr.includes('Z')) return dateStr;
+  return dateStr.includes('T') ? dateStr + 'Z' : dateStr.replace(' ', 'T') + 'Z';
+};
+
 export const notificationController = {
   async getNotifications(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
@@ -45,7 +52,6 @@ export const notificationController = {
         let linkUrl = '';
 
         // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
-        // 若為 Offer，發文者其實是「繪師」；若為 Request，發文者才是「案主」
         const isOffer = item.bulletin_category === 'offer';
 
         switch(item.status) {
@@ -86,12 +92,12 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: item.latest_update_at,
+          time: formatOutputTime(item.latest_update_at), // 🌟 確保時間轉換
           isUnread
         });
       });
 
-      // 正式委託單的案主通知 (邏輯無誤，不需修改)
+      // 正式委託單的案主通知
       const clientCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
         FROM Commissions 
@@ -108,7 +114,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 繪師針對委託單「${order.project_name || order.id}」提出了合約異動申請。`,
             link: `/client/orders?open=${order.id}`,
-            time: order.latest_message_at || new Date().toISOString(),
+            time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
             isUnread
           });
         }
@@ -121,7 +127,7 @@ export const notificationController = {
           type: 'commission_msg',
           text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
           link: `/workspace/${order.id}`, 
-          time: order.latest_message_at,
+          time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
           isUnread: hasNewMsg
         });
       });
@@ -148,8 +154,6 @@ export const notificationController = {
         let text = '';
         let linkUrl = '';
         
-        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
-        // 若為 Offer，投遞者其實是「案主」；若為 Request，投遞者才是「繪師」
         const isOffer = item.bulletin_category === 'offer';
 
         switch(item.status) {
@@ -194,12 +198,12 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: item.latest_update_at,
+          time: formatOutputTime(item.latest_update_at), // 🌟 確保時間轉換
           isUnread
         });
       });
 
-      // 正式委託單的繪師通知 (邏輯無誤，不需修改)
+      // 正式委託單的繪師通知
       const artistCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_artist 
         FROM Commissions 
@@ -216,7 +220,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 委託單「${order.project_name || order.id}」的合約異動待處理。`,
             link: `/artist/notebook?id=${order.id}&tab=details`, 
-            time: order.latest_message_at || new Date().toISOString(),
+            time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
             isUnread
           });
         }
@@ -229,7 +233,7 @@ export const notificationController = {
           type: 'commission_msg',
           text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
           link: `/workspace/${order.id}`,
-          time: order.latest_message_at,
+          time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
           isUnread: hasNewMsg
         });
       });
@@ -248,7 +252,6 @@ export const notificationController = {
     }
   },
 
-  // 🌟 強健升級：一次把該使用者的所有狀態清空，不怕前端角色判定錯誤
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.batch([
