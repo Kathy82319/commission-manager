@@ -260,14 +260,24 @@ export const inquiryController = {
       const shortCode = timestampStr.substring(timestampStr.length - 6);
       const commissionId = `WB-${shortCode}`;
 
-      let tosText = "繪師未提供專屬協議說明。";
-      try {
-        const settings = JSON.parse(artistInfo?.profile_settings || '{}');
-        if (settings.terms_of_service) tosText = settings.terms_of_service;
-      } catch (e) {}
-
-      let parsedBulletinContent = inquiryData.bulletin_content;
+      // 🌟🌟🌟 修復重點：精準抓取貼文專屬的 TOS 🌟🌟🌟
+      let parsedBulletinContent: any = {};
       try { parsedBulletinContent = JSON.parse(inquiryData.bulletin_content); } catch (e) {}
+
+      let tosText = "繪師未提供專屬協議說明。";
+      
+      if (parsedBulletinContent && parsedBulletinContent.tos_content && parsedBulletinContent.tos_content.trim() !== '') {
+        // 優先抓取這篇貼文專屬的 TOS
+        tosText = parsedBulletinContent.tos_content;
+      } else {
+        // 沒有填寫的話，才退而求其次抓取繪師個人主頁的預設 TOS
+        try {
+          const settings = JSON.parse(artistInfo?.profile_settings || '{}');
+          if (settings.terms_of_service && settings.terms_of_service.trim() !== '') {
+            tosText = settings.terms_of_service;
+          }
+        } catch (e) {}
+      }
 
       let parsedClientResponse = inquiryData.client_response;
       try { parsedClientResponse = JSON.parse(inquiryData.client_response); } catch (e) {}
@@ -287,7 +297,7 @@ export const inquiryController = {
       const clientName = clientInfo?.display_name || '案主';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
-      // 🌟 將正確的 IDs 寫入正式委託單中
+      // 🌟 將正確的 IDs 與 TOS 寫入正式委託單中
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
@@ -299,7 +309,7 @@ export const inquiryController = {
         commissionId, actualClientId, actualArtistId, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
-        tosText
+        tosText // ⬅️ 這裡就會寫入正確的合約內容了！
       ).run();
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();

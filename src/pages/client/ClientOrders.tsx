@@ -296,7 +296,6 @@ export function ClientOrders() {
   };
 
   const selectedOrder = orders.find(o => o.id === selectedId);
-  console.log("👉 目前選中的委託單資料：", selectedOrder);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
