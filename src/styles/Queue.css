@@ -96,6 +96,14 @@
   .queue-table tr { position: relative; }
   .queue-table tr.active-row { z-index: 100 !important; }
 
+.queue-table tbody tr.active-row {
+    z-index: 100 !important;
+    position: relative;
+  }
+
+
+
+
   .cell-content { display: flex; align-items: center; text-align: left; width: 100%; }
   .cell-date { white-space: nowrap; min-width: 100px; }
   .cell-status { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
@@ -311,6 +319,7 @@
 
   .queue-table tr.is-expanded td {
     pointer-events: auto;
+    overflow: visible; /* 🌟 解鎖：讓下拉選單可以超出格子的邊界 */
   }
 
   .queue-table tr.is-expanded .cell-content { 
