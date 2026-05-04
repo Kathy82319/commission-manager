@@ -53,12 +53,14 @@ export const bulletinController = {
       const tagFilter = url.searchParams.get("tag");
       const categoryFilter = url.searchParams.get("category") || 'request';
 
+      // 🌟 修改：加入 u.role as creator_role 以供前端判斷是否為管理員
       let query = `
         SELECT b.*, 
           (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id AND status NOT IN ('declined', 'closed', 'cancelled')) as applied_artist_ids,
           u.display_name as client_name, 
           u.avatar_url as client_avatar,
-          u.public_id as client_public_id
+          u.public_id as client_public_id,
+          u.role as creator_role
         FROM Bulletins b 
         JOIN Users u ON b.client_id = u.id
         WHERE b.status = 'open' AND b.expires_at > CURRENT_TIMESTAMP 
@@ -455,6 +457,7 @@ export const bulletinController = {
 
   async getArtistInbox(currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修改：加入 u.role as creator_role 以便繪師收件匣中如果用到 WishCard 也能正確顯示
       const { results } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.status as inquiry_status, b.title as bulletin_title, 
                i.latest_update_at, i.artist_snapshot, b.client_id,
@@ -463,6 +466,7 @@ export const bulletinController = {
                i.decline_reason, i.client_response,
                u.display_name as client_name, 
                u.public_id as client_public_id,
+               u.role as creator_role,
                (SELECT c.id FROM Commissions c WHERE c.artist_id = i.artist_id AND c.client_id = b.client_id ORDER BY c.order_date DESC LIMIT 1) as commission_id
         FROM BulletinInquiries i 
         JOIN Bulletins b ON i.bulletin_id = b.id
