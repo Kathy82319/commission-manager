@@ -28,7 +28,6 @@ export default {
       return Response.redirect(redirectUrl.toString(), 303);
     }
     
-    // 🛡️ 資安防護：動態 CORS 白名單
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
@@ -44,7 +43,6 @@ export default {
       "Access-Control-Allow-Credentials": "true",
     };
 
-    // 處理預檢請求
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -52,7 +50,6 @@ export default {
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
-      // --- 🌟 通知 (Notifications) 相關路由 ---
       if (sanitizedPath.startsWith("/api/notifications")) {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
@@ -65,7 +62,6 @@ export default {
         }
       }
 
-      // --- 🌟 使用者關係 相關路由 ---
       if (sanitizedPath.startsWith("/api/relations")) {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
@@ -176,7 +172,6 @@ export default {
         }        
       }
 
-      // --- 客戶管理路由 ---
       if (sanitizedPath.startsWith("/api/customers")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -195,7 +190,6 @@ export default {
         }
       }
 
-      // --- 付款路由 ---
       if (sanitizedPath === "/api/payment/create" && request.method === "POST") {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -205,17 +199,14 @@ export default {
         return paymentController.handleNotify(request, env);
       }
 
-      // --- 認證路由 ---
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       
-      // ✅ 測試後門路由 (testing-bypass) 已移除
 
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
 
-      // --- 作品集與公開排單表路由 ---
       if (sanitizedPath.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;

@@ -2,8 +2,8 @@
    🌟 1. 基礎排版 (對齊 Queue 的滿版置中與寬度限制)
    ========================================================================== */
 .inbox-page-container { 
-  max-width: 1200px;  /* 限制最大寬度，避免在大螢幕過度擴張 */
-  margin: 40px auto;  /* 上下留白，左右置中對齊排單表 */
+  max-width: 1200px;  
+  margin: 40px auto;  
   padding: 0 24px; 
   min-height: calc(100vh - 64px);
 }
@@ -19,7 +19,6 @@
   margin: 0;
 }
 
-/* 網頁版標準的 Tab 樣式 (與其他管理頁面一致) */
 .inbox-tabs {
   display: flex;
   gap: 16px;
@@ -54,7 +53,7 @@
    ========================================================================== */
 .inbox-tabs-wrapper {
   display: flex;
-  justify-content: space-between; /* 讓左邊的 Tab 群和右邊的按鈕分開 */
+  justify-content: space-between; 
   align-items: center;
   gap: 16px;
   border-bottom: 2px solid #EAE6E1;
@@ -70,7 +69,7 @@
   color: #A0978D;
   cursor: pointer;
   border-bottom: 3px solid transparent;
-  margin-bottom: -2px; /* 往下位移，為了完美蓋住外框的底線 */
+  margin-bottom: -2px;
   transition: all 0.2s ease;
 }
 
@@ -84,7 +83,6 @@
 }
 
 
-/* 🌟 發布儀表板插槽設計 */
 .dashboard-slots-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
@@ -180,7 +178,6 @@
 .stat-num { font-size: 18px; font-weight: 900; color: #5D4A3E; }
 .stat-item.expiry { color: #A05C5C; background: #FCE8E6; padding: 2px 8px; border-radius: 6px; font-size: 11px; }
 
-/* 🌟 原本 Inbox 列表項目與狀態樣式 */
 .inbox-item { 
   padding: 20px; 
   display: flex; flex-direction: column; gap: 12px;
@@ -207,7 +204,7 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   margin-top: 4px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative; /* 為了讓郵戳絕對定位 */
+  position: relative; 
 }
 .postcard-container:hover {
   box-shadow: 0 12px 24px -8px rgba(93, 74, 62, 0.15);
@@ -221,7 +218,6 @@
   }
 }
 
-/* 🌟 狀態郵戳 (右上角) */
 .postcard-stamp {
   position: absolute;
   top: 16px;
@@ -244,7 +240,6 @@
 .stamp-accepted { background: #EAE6E1; color: #5D4A3E; border-color: #DED9D3; }
 .stamp-declined { background: #FCE8E6; color: #A05C5C; border-color: #F5C6C6; }
 
-/* 左側：圖片展示區 */
 .postcard-image-section {
   width: 100%;
   height: 220px;
@@ -256,7 +251,7 @@
 @media (min-width: 768px) {
   .postcard-image-section {
     width: 40%;
-    height: unset; /* 移除 auto，讓它跟隨右側內容的高度 */
+    height: unset;
     min-height: 280px;
     border-bottom: none;
     border-right: 1px solid #EAE6E1;
@@ -311,7 +306,6 @@
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* 🌟 明信片專屬輪播按鈕 (純 CSS 確保環境相容) */
 .postcard-img-nav {
   position: absolute;
   top: 50%;
@@ -328,17 +322,16 @@
   justify-content: center;
   font-size: 14px;
   z-index: 20;
-  opacity: 0; /* 預設隱藏 */
+  opacity: 0; 
   transition: all 0.2s ease;
 }
 .postcard-image-section:hover .postcard-img-nav {
-  opacity: 1; /* 滑鼠移入時顯示 */
+  opacity: 1;
 }
 .postcard-img-nav:hover { background: rgba(0, 0, 0, 0.7); }
 .postcard-img-prev { left: 12px; }
 .postcard-img-next { right: 12px; }
 
-/* 圖片張數提示 */
 .postcard-image-count {
   position: absolute;
   bottom: 12px;
@@ -354,7 +347,6 @@
   pointer-events: none;
 }
 
-/* 點擊放大遮罩 */
 .postcard-image-overlay {
   position: absolute;
   inset: 0;
@@ -380,7 +372,6 @@
   font-size: 14px; font-weight: bold;
 }
 
-/* 右側：內容資訊區 */
 .postcard-content-section {
   width: 100%;
   padding: 24px; 
@@ -431,32 +422,28 @@
   text-underline-offset: 4px;
 }
 
-/* 標籤群組 (Chips) */
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .chip-tag { font-size: 13px; padding: 4px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }
 .chip-good { background-color: #E8F3EB; color: #4E7A5A; border: 1px solid #C3E0CC; }
 .chip-bad { background-color: #FCE8E6; color: #A05C5C; border: 1px solid #F5C6C6; }
 .chip-info { background-color: #FBFBF9; color: #7A7269; border: 1px solid #EAE6E1; }
 
-/* 🌟 明信片按鈕區塊重構：加大間距與縮小按鈕 */
 .postcard-actions-wrapper {
   margin-top: auto; 
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 16px; /* 原本 12px，加大間距避免黏在一起 */
+  gap: 16px; 
   border-top: 1px solid #EAE6E1;
   padding-top: 16px;
 }
 
-/* 透過強制覆寫，直接縮小傳進來的按鈕元件 */
 .postcard-actions-wrapper button,
 .postcard-actions-wrapper [class*="btn-"] {
-  padding: 6px 16px !important; /* 降低按鈕內部留白 */
-  font-size: 14px !important;   /* 縮小字體尺寸 */
+  padding: 6px 16px !important; 
+  font-size: 14px !important;   
 }
 
-/* 按鈕樣式 (符合大地色風格) */
 .btn-primary { 
   background: #5D4A3E; color: white; padding: 10px 24px; border-radius: 8px; 
   font-weight: bold; border: none; cursor: pointer; transition: 0.2s; 
@@ -488,7 +475,6 @@
 .btn-outline-primary:hover { background: #5D4A3E; color: white; border-color: #5D4A3E; }
 
 
-/* 🌟 圖片燈箱 (Lightbox) */
 .lightbox-overlay {
   position: fixed;
   inset: 0;
@@ -568,7 +554,6 @@
 /* ==================================================
    🌟 信紙風格彈窗 (Modal & Inbox Modal 修復)
    ================================================== */
-/* 修復 JSX 中使用的 .inbox-modal-overlay 和 .inbox-modal-content，讓彈窗正常浮出置中 */
 .inbox-modal-overlay, .modal-overlay {
   position: fixed; 
   inset: 0; 
@@ -585,7 +570,7 @@
   background: #FDFDFB; 
   width: 100%; 
   max-width: 560px;
-  max-height: 90vh; /* 防止內容過長超出螢幕 */
+  max-height: 90vh; 
   overflow-y: auto;
   border-radius: 16px; 
   box-shadow: 0 25px 50px -12px rgba(93, 74, 62, 0.25);
@@ -594,7 +579,6 @@
   border: 1px solid #EAE6E1;
 }
 
-/* 婉拒模式的紅線特效 */
 .inbox-modal-content.decline-mode {
   border-top: 6px solid #e11d48;
 }
@@ -630,13 +614,11 @@
 .modal-textarea:focus, .paper-textarea:focus { border-color: #5D4A3E; }
 .decline-textarea:focus { border-color: #A05C5C; }
 
-/* Modal 標題與字體 */
 .modal-title { font-size: 22px; color: #5D4A3E; margin-bottom: 12px; font-weight: bold; }
 .modal-title.red { color: #e11d48; }
 .modal-desc { color: #7A7269; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
 .modal-desc.red-border { border-left: 3px solid #e11d48; padding-left: 12px; }
 
-/* Modal 操作區塊與按鈕 */
 .modal-actions {
   display: flex; justify-content: flex-end; gap: 16px; margin-top: 12px;
 }
@@ -660,7 +642,6 @@
 }
 .btn-submit-red:hover, .btn-paper-submit-red:hover { background: #be123c; transform: translateY(-2px); }
 
-/* 🌟 罐頭訊息編輯區塊 */
 .template-manager { background: #FAFAFA; border: 1px solid #EAE6E1; border-radius: 8px; padding: 16px; }
 .template-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .template-title { font-weight: bold; color: #5D4A3E; font-size: 14px; }
@@ -736,7 +717,7 @@
   top: 10px;
   z-index: 100;
   background: #FFFFFF;
-  border: 1px solid #e11d48; /* 莫蘭迪紅強調 */
+  border: 1px solid #e11d48; 
   padding: 12px 24px;
   border-radius: 12px;
   display: flex;
@@ -770,7 +751,7 @@
    ========================================================================== */
 .offer-card-container {
   position: relative; 
-  display: flex; /* 🌟 救回左右排版的關鍵！ */
+  display: flex;
   background: #FFFFFF;
   border: 1px solid #EAE6E1;
   border-radius: 12px;
@@ -788,13 +769,12 @@
   cursor: default; border-color: #A67B3E; box-shadow: 0 8px 24px rgba(166, 123, 62, 0.1); transform: none;
 }
 
-/* 🌟 勾選框定位 (浮於圖片左上角) */
 .card-checkbox-wrapper {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.85); /* 半透明底板 */
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
   padding: 6px;
   border-radius: 8px;
@@ -818,9 +798,8 @@
   margin: 0;
 }
 
-/* 🌟 左側圖片區塊 */
 .offer-card-gallery {
-  position: relative; /* 確保勾選框正確絕對定位 */
+  position: relative; 
   width: 260px;
   flex-shrink: 0;
   background: #FBFBF9;
@@ -848,7 +827,6 @@
   color: #A0978D; font-size: 14px; background: #F0ECE7;
 }
 
-/* 輪播導覽按鈕與提示 */
 .offer-img-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   background: rgba(0,0,0,0.4); color: white; border: none;
@@ -877,7 +855,7 @@
   padding: 4px 12px; border-radius: 20px; backdrop-filter: blur(4px);
 }
 
-/* 右側內容區 */
+
 .offer-card-content {
   flex: 1; padding: 24px; display: flex; flex-direction: column; min-width: 0; 
 }
@@ -888,7 +866,7 @@
 .client-name { font-size: 18px; font-weight: bold; color: #5D4A3E; }
 .client-id { font-size: 13px; color: #A0978D; font-family: monospace; }
 
-/* 🌟 問答區：漸層隱藏邏輯 (解決文字重疊) */
+
 .offer-text-area {
   position: relative;
   color: #7A7269;
@@ -896,7 +874,7 @@
   line-height: 1.6;
 }
 
-/* 未展開時：固定高度，超過部分隱藏，並加上底部白色漸層 */
+
 .offer-card-container:not(.is-expanded) .offer-text-area {
   max-height: 100px; 
   overflow: hidden;
@@ -927,7 +905,7 @@
    🌟 響應式設計 (Responsive Design) - 手機版適配
    ================================================== */
 @media (max-width: 768px) {
-  /* 基礎容器與標題 */
+  
   .inbox-page-container {
     padding: 16px;
     margin: 16px auto;
@@ -937,7 +915,7 @@
     margin-bottom: 16px;
   }
 
-  /* Tab 標籤切換：改為橫向滑動 */
+  
   .inbox-tabs-wrapper {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -950,11 +928,11 @@
   .inbox-tab-btn { padding: 10px 16px; font-size: 14px; }
   .inbox-rules-btn { flex-shrink: 0; }
 
-  /* 我的許願：單欄垂直 */
+  
   .dashboard-slots-grid { grid-template-columns: 1fr; gap: 12px; }
   .dashboard-slot { height: auto; min-height: 120px; }
 
-  /* 收到的繪師履歷 (明信片)：上圖下文 */
+  
   .postcard-container { flex-direction: column; }
   .postcard-image-section { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid #EAE6E1; }
   .postcard-content-section { width: 100%; padding: 16px; }
@@ -966,7 +944,7 @@
   .postcard-avatar, .postcard-avatar-fallback { width: 44px; height: 44px; }
   .postcard-artist-name { font-size: 16px; }
   
-  /* 確保手機版的按鈕一樣維持寬度滿版，且適當放大高度便於點擊 */
+  
   .postcard-actions-wrapper { flex-direction: column; gap: 10px; }
   .postcard-actions-wrapper button,
   .postcard-actions-wrapper [class*="btn-"] { 
@@ -978,7 +956,7 @@
   /* ====================================================================
      🌟 海選模式 (Offer CardView) - 修正圖片縮圖未滿版問題
      ==================================================================== */
-  /* 必須使用 !important 來覆寫 JSX 中的 style={{ width: '220px' }} */
+  
   .offer-card-container { flex-direction: column !important; }
   .offer-card-gallery { 
     width: 100% !important; 
@@ -997,11 +975,11 @@
   /* ====================================================================
      🌟 我投遞的履歷 (OutboundTab) - 強制覆寫 Inline Styles 適配手機版
      ==================================================================== */
-  /* 強制將卡片內距縮小 */
+  
   .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] {
     padding: 16px !important;
   }
-  /* 標題與狀態列：允許折行並強制讓標題佔滿一行 */
+  
   .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(2) {
     flex-wrap: wrap !important;
     gap: 8px !important;
@@ -1011,7 +989,7 @@
     white-space: normal !important;
     flex-basis: 100% !important;
   }
-  /* 圖片與描述區塊：改為上下排列，讓圖片寬度滿版 */
+  
   .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(3) {
     flex-direction: column !important;
     padding: 12px !important;
@@ -1022,7 +1000,7 @@
     width: 100% !important;
     height: 180px !important;
   }
-  /* 底部操作按鈕：改為上下滿版排列 */
+  
   .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:last-child {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -1033,7 +1011,7 @@
     justify-content: center !important;
   }
 
-  /* 彈出視窗 (Modal) */
+  
   .inbox-modal-overlay, .modal-overlay { padding: 12px; }
   .inbox-modal-content, .modal-content-paper { padding: 24px 16px; }
   .modal-title { font-size: 20px; }
@@ -1047,29 +1025,29 @@
    🌟 倒數計時與狀態警示標籤 (Expiry Tags)
    ========================================================================== */
 
-/* 1. 基礎安全狀態 (剩餘 > 24 小時) - 沉穩的莫蘭迪綠色 */
+
 .expiry-safe {
   color: #4E7A5A;
   background-color: #E8F3EB;
   border-color: #C3E0CC;
 }
 
-/* 2. 警告狀態 (剩餘 <= 24 小時) - 提醒的暖橘黃色 */
+
 .expiry-warning {
   color: #A67B3E;
   background-color: #FDF4E6;
   border-color: #FDE0B5;
 }
 
-/* 3. 危險狀態 (剩餘 <= 12 小時) - 緊迫的莫蘭迪紅色 + 呼吸燈微動畫 */
+
 .expiry-danger {
   color: #A05C5C;
   background-color: #FCE8E6;
   border-color: #F5C6C6;
-  animation: pulse-danger 2s infinite; /* 吸引視覺焦點的微閃爍 */
+  animation: pulse-danger 2s infinite; 
 }
 
-/* 4. 已過期狀態 - 視覺弱化的冷灰色 */
+
 .expiry-expired {
   color: #A0978D;
   background-color: #F0ECE7;
@@ -1077,7 +1055,7 @@
   opacity: 0.8;
 }
 
-/* 呼吸燈動畫 (僅用於不足 12 小時的緊急狀態) */
+
 @keyframes pulse-danger {
   0% { box-shadow: 0 0 0 0 rgba(160, 92, 92, 0.4); }
   70% { box-shadow: 0 0 0 4px rgba(160, 92, 92, 0); }
@@ -1088,13 +1066,13 @@
    🌟 訊息中心準則 (按鈕與彈窗) 純 CSS 實作
    ========================================================================== */
 
-/* (上方的 inbox-tabs-wrapper 已整併) */
+
 .inbox-tabs-group {
   display: flex;
   gap: 16px;
 }
 
-/* 2. 右側「準則說明」虛線按鈕 */
+
 .inbox-rules-btn {
   background: none;
   border: none;
@@ -1106,7 +1084,7 @@
   align-items: center;
   gap: 4px;
   padding: 0 0 2px 0;
-  margin-bottom: 8px; /* 對齊底線 */
+  margin-bottom: 8px; 
   transition: all 0.2s ease;
 }
 
@@ -1123,7 +1101,7 @@
   top: -1px;
 }
 
-/* 3. 規則彈窗專屬樣式 */
+
 .rules-modal-content {
   max-width: 480px;
   padding: 32px;
@@ -1162,7 +1140,7 @@
   color: #5D4A3E;
 }
 
-/* 4. 規則列表排版 */
+
 .rules-list {
   list-style: none;
   padding: 0;
@@ -1198,9 +1176,9 @@
   font-weight: bold;
 }
 
-/* 5. 底部按鈕靠右對齊 */
+
 .rules-modal-footer {
   margin-top: 32px;
   display: flex;
-  justify-content: flex-end; /* 強制內容靠右 */
+  justify-content: flex-end; 
 }

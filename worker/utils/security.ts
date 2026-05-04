@@ -34,14 +34,10 @@ export function sanitizeAndLimit(str: string | undefined | null, maxLength: numb
   const limitedStr = str.substring(0, maxLength); 
   return limitedStr.replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            // 💡 解除雙引號和單引號的封印，讓 JSON 可以活下去，但擋掉 XSS 標籤
-            // 注意：我們移除了對 " 和 ' 的轉換，因為這會破壞 JSON 結構
-            // 只要我們擋住了 < 和 >，XSS 腳本就無法執行
+            .replace(/>/g, '&gt;')           
             ;
 }
 
-// 🌟 新增：專門用來清理物件的遞迴函數
 export function sanitizeObject(obj: any, maxLength: number = 10000): any {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === 'string') return sanitizeAndLimit(obj, maxLength);

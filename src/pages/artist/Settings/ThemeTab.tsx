@@ -71,9 +71,9 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      {/* 實際預覽區塊 */}
+      
       <div style={{ 
-        height: '160px', // 增加高度讓漸層更明顯
+        height: '160px',  
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -81,7 +81,7 @@ export function ThemeTab({ settings, setSettings }: Props) {
         background: previewBackground, 
         color: settings.theme_mode === 'dark' ? '#FFF' : '#333', 
         border: '1px solid #EAE6E1', 
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)', // 增加一點質感
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)', 
         transition: 'all 0.3s ease'
       }}>
         <div style={{ textAlign: 'center' }}>

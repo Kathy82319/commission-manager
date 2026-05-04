@@ -27,17 +27,14 @@ export const userRelationController = {
   },
 
   async upsertRelation(userId: string, targetId: string, type: string, note: string, env: Env, corsHeaders: any) {
-    // 🛡️ 防禦 1：禁止標記自己
     if (userId === targetId) {
       return new Response(JSON.stringify({ success: false, error: "您不能標記自己" }), { status: 400, headers: corsHeaders });
     }
 
-    // 🛡️ 防禦 2：Runtime 類型白名單驗證 (防止惡意寫入奇怪的 type)
     if (type !== 'favorite' && type !== 'blacklist') {
       return new Response(JSON.stringify({ success: false, error: "無效的標記類型" }), { status: 400, headers: corsHeaders });
     }
 
-    // 🛡️ 防禦 3：字元長度限制 (防止資料庫被塞爆，限制 200 字以內)
     const safeNote = note ? note.trim() : '';
     if (safeNote.length > 200) {
       return new Response(JSON.stringify({ success: false, error: "備註內容過長，請限制在 200 字以內" }), { status: 400, headers: corsHeaders });
@@ -61,7 +58,6 @@ export const userRelationController = {
   },
 
   async deleteRelation(userId: string, targetId: string, env: Env, corsHeaders: any) {
-    // 🛡️ 防禦 4：基本格式驗證
     if (!targetId || targetId.trim() === '') {
       return new Response(JSON.stringify({ success: false, error: "缺少目標 ID" }), { status: 400, headers: corsHeaders });
     }

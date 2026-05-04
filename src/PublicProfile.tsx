@@ -79,7 +79,7 @@ export function PublicProfile() {
   // 🌟 處理收藏與黑名單的狀態
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
-  const [isViewerLoading, setIsViewerLoading] = useState(true); // 🌟 新增：讀取狀態，防止畫面閃爍
+  const [isViewerLoading, setIsViewerLoading] = useState(true); 
 
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#041b35';     
@@ -129,7 +129,6 @@ export function PublicProfile() {
               parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
               if (parsedSettings.splash_enabled === true) setShowSplash(true);
               
-              // 補上遺失的 ID
               const safeCustomSections = (parsedSettings.custom_sections || []).map((sec: any, idx: number) => ({
                 ...sec, id: sec.id || `custom_legacy_${idx}`
               }));
@@ -184,7 +183,7 @@ export function PublicProfile() {
 
   useEffect(() => {
     const fetchViewerAndRelations = async () => {
-      setIsViewerLoading(true); // 🌟 開始讀取
+      setIsViewerLoading(true); 
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
@@ -192,7 +191,6 @@ export function PublicProfile() {
           const data = await res.json();
           if (data.success && data.data) {
             setViewerId(data.data.id);
-            // 讀取關係
             const relRes = await fetch(`${API_BASE}/api/relations`, { credentials: 'include' });
             const relData = await relRes.json();
             if (relData.success) {
@@ -206,7 +204,7 @@ export function PublicProfile() {
       } catch (e) {
         console.error("未登入或無法讀取狀態", e);
       } finally {
-        setIsViewerLoading(false); // 🌟 讀取結束
+        setIsViewerLoading(false);  
       }
     };
     if (artist && artist.id) {

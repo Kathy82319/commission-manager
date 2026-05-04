@@ -151,7 +151,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     const url = editingItem.id ? `${API_BASE}/api/showcase/${editingItem.id}` : `${API_BASE}/api/showcase`;
     const method = editingItem.id ? 'PATCH' : 'POST';
 
-    // 將 tags 陣列序列化為 JSON 字串，確保後端儲存與前端讀取格式一致
     const payload = {
       ...editingItem,
       tags: JSON.stringify(editingItem.tags)
@@ -160,7 +159,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     try {
       const res = await fetch(url, {
         method, credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) // 發送處理過的 payload
+        body: JSON.stringify(payload) 
       });
       const data = await res.json();
       if (data.success) {

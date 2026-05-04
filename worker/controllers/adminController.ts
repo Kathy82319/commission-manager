@@ -20,7 +20,6 @@ export const adminController = {
     const { results: newUsers } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Users WHERE created_at >= date('now', 'start of month')").all();
     const { results: commStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, status FROM Commissions GROUP BY status").all();
     
-    // 撈取需要審核的許願池貼文總數 (紅點通知)
     const { results: pendingReports } = await env.commission_db.prepare(`
       SELECT COUNT(*) as total FROM Bulletins b 
       WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
@@ -83,7 +82,6 @@ export const adminController = {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 🌟 修正：擴充雙方 public_id，並利用子查詢安全撈出 ActionLogs 裡的最新的 bind_date
     const { results } = await env.commission_db.prepare(`
       SELECT c.*, 
              a.display_name as artist_name, a.public_id as artist_public_id, 
@@ -129,10 +127,8 @@ export const adminController = {
       }
     }
 
-    // 🌟 新增：處理 admin_note 寫入與 XSS 防護
     if (body.admin_note !== undefined) {
       updates.push("admin_note = ?");
-      // 移除可能構成腳本攻擊的角括號，並限制長度
       const safeNote = String(body.admin_note).replace(/[<>]/g, '');
       params.push(sanitizeAndLimit(safeNote, 2000));
     }

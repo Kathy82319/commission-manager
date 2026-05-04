@@ -8,7 +8,6 @@ const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnl
 
 export const authController = {
 
-  // ✅ 已移除 testingBypass 測試後門
 
   async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
@@ -76,7 +75,6 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-      // 🌟 公測手段：登入即更新為專業版，截止日設為 2026-06-15
       await env.commission_db.prepare(
         "UPDATE Users SET plan_type = 'pro', pro_expires_at = '2026-06-15 23:59:59' WHERE id = ?"
       ).bind(userId).run();

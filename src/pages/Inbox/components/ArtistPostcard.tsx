@@ -1,14 +1,14 @@
 // src/pages/Inbox/components/ArtistPostcard.tsx
 import React, { useState } from 'react';
 import { getStatusLabel, renderChips, getExpiryInfo } from '../utils/formatters';
-import { Ban } from 'lucide-react'; // 🌟 引入黑名單圖示
+import { Ban } from 'lucide-react'; 
 
 interface ArtistPostcardProps {
   item: any;
   snapshot: any;
   navigate: (path: string) => void;
   children?: React.ReactNode;
-  isBlacklisted?: boolean; // 🌟 加上這個屬性定義，解決 InboundTab.tsx 的報錯
+  isBlacklisted?: boolean; 
 }
 
 const unescapeHtml = (str: string) => {
@@ -44,7 +44,6 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
   const artistId = item.artist_public_id || snapshot.artist_public_id || 'unknown';
   const message = unescapeHtml(snapshot.message || item.message || '');
 
-  // 🌟 取得過期資訊與警示樣式
   const expiryInfo = getExpiryInfo(item.expires_at);
 
   return (
@@ -102,7 +101,7 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-[#A0978D]">投遞繪師</span>
-                  {/* 🌟 只有在待確認且未過期時，顯示倒數標籤 */}
+                  
                   {item.inquiry_status === 'pending' && item.expires_at && (
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
                       ⏳ {expiryInfo.text}
@@ -116,7 +115,7 @@ export const ArtistPostcard: React.FC<ArtistPostcardProps> = ({ item, snapshot, 
                   <span className="text-[#A0978D] text-sm font-mono mr-1">
                     @{artistId}
                   </span>
-                  {/* 🌟 黑名單標籤：緊接在名字和 ID 之後 */}
+                  
                   {isBlacklisted && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
                       <Ban size={10} strokeWidth={3} /> 黑名單

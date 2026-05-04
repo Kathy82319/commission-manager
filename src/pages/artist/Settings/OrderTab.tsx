@@ -9,7 +9,6 @@ interface Props {
 }
 
 export function OrderTab({ settings, setSettings }: Props) {
-  // 將所有可用的分頁列出
   const allPossibleTabs = [
     { id: 'portfolio', label: '作品展示' },
     { id: 'detailed_intro', label: '詳細介紹' },
@@ -18,7 +17,6 @@ export function OrderTab({ settings, setSettings }: Props) {
     ...settings.custom_sections.map((sec: any) => ({ id: sec.id, label: sec.title || '未命名分頁' }))
   ];
 
-  // 確保目前的 activeOrder 有包含所有有效分頁，並且過濾掉已經刪除的
   const activeOrder = (settings.tab_order || []).filter((id: string) => allPossibleTabs.some(t => t.id === id));
   allPossibleTabs.forEach(t => {
     if (!activeOrder.includes(t.id)) activeOrder.push(t.id);
@@ -29,7 +27,7 @@ export function OrderTab({ settings, setSettings }: Props) {
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
   
   const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault(); // 必須 preventDefault 才能正確觸發 Drop 視覺與事件
+    e.preventDefault(); 
     if (draggedIdx === null || draggedIdx === idx) return;
     const newOrder = [...activeOrder];
     const draggedItem = newOrder[draggedIdx];

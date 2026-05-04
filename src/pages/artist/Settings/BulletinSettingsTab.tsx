@@ -3,14 +3,13 @@ import type { ProfileSettings } from './types';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { X } from 'lucide-react';
 
-// 🌟 擴充型別以包含預設圖片
 export interface ExtendedSettings extends ProfileSettings {
   bulletin_card?: {
     specialties: string;
     no_gos: string;
     payment_methods: string;
     price_list: string;
-    images?: string[]; // 預設圖片路徑
+    images?: string[]; 
   };
   question_template?: string;
 }
@@ -76,7 +75,7 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
         設定後，當您在許願池按下「我有興趣」時，系統會自動帶入以下內容，省去重複輸入的時間。
       </p>
 
-      {/* 🌟 新增：預設價目表/參考圖管理 */}
+      
       <div className="form-group" style={{ marginBottom: '24px' }}>
         <label className="form-label">預算價目表 / 參考作品 (最多3張，圖片限制 3MB 以下)</label>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px' }}>

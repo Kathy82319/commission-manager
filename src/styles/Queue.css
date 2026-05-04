@@ -6,7 +6,6 @@
   margin: 0 auto;
 }
 
-/* 🌟 新增 Toast 提示樣式 */
 .toast-notification {
   position: fixed;
   top: 20px;
@@ -110,7 +109,7 @@
   .payment-amount-text { font-size: 11px; }
 }
 
-/* 下拉選單通用樣式 */
+
 .dropdown-container { position: relative; width: 100%; }
 .dropdown-button {
   padding: 8px 12px; border: 1px solid #DED9D3; border-radius: 8px;
@@ -138,7 +137,7 @@
 .dropdown-add-input { flex: 1; padding: 6px 10px; border: 1px solid #DED9D3; border-radius: 6px; outline: none; font-size: 13px; }
 .dropdown-add-button { padding: 6px 12px; background-color: #5D4A3E; color: #FFF; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-/* 標籤樣式 */
+
 .workflow-badge-wrapper {
   display: flex;
   align-items: center;
@@ -157,7 +156,7 @@
 
 .rush-badge { background-color: #F5EBEB; color: #A05C5C; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; white-space: nowrap; }
 
-/* 全域預設顯示邏輯 */
+
 .date-text-display { display: none; }
 .date-input { border: 1px solid #DED9D3; padding: 8px; border-radius: 8px; background: #FBFBF9; color: #5D4A3E; height: 38px; display: block; width: 100%; box-sizing: border-box; }
 
@@ -181,11 +180,11 @@
   width: 100%;
 }
 
-/* ========================================================= */
-/* 🌟 手機版樣式區塊 (@media max-width: 1023px) */
-/* ========================================================= */
+
+
+
 @media (max-width: 1023px) {
-  /* 🌟 修改點 1：將容器左右 padding 縮減，騰出空間給內部表格 */
+  
   .queue-container { padding: 10px; }
 
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -196,7 +195,7 @@
 
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   
-  /* 🌟 修改點 2：重新分配 Grid 寬度。將中間讓給委託人，進度縮減，付款拉長 */
+  
   .queue-table thead tr {
     display: grid;
     grid-template-columns: 40px 1fr 70px 40px 65px;
@@ -222,7 +221,7 @@
 
   .queue-table, .queue-table tbody { display: block; width: 100%; box-sizing: border-box; }
   
-  /* 🌟 同步 Grid 寬度給內容列 */
+  
   .queue-table tbody tr {
     display: grid;
     grid-template-columns: 40px 1fr 70px 40px 65px; 
@@ -245,9 +244,9 @@
     width: 100%;
   }
 
-  /* --------------------------------------------------------- */
-  /* [手機版] "未展開" 狀態的顯示邏輯 */
-  /* --------------------------------------------------------- */
+  
+  
+  
   
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper {
     display: none !important;
@@ -278,7 +277,7 @@
     font-size: 11px; font-weight: bold; color: #7A7269; text-align: left;
   }
 
-  /* 🌟 修改點 3：未展開時弱化下拉選單外觀，讓它像純文字標籤 */
+  
   .queue-table tr:not(.is-expanded) .dropdown-button {
     min-height: 0; padding: 4px; border-radius: 4px; border: none; background-color: transparent; font-size: 11px; width: 100%; justify-content: center;
   }
@@ -295,18 +294,18 @@
     font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%; display: block;
   }
 
-  /* 🌟 修改點 4：優化未展開的付款與金額標籤 */
+  
   .queue-table tr:not(.is-expanded) .payment-select {
     appearance: none; -webkit-appearance: none; padding: 2px 0; height: auto; font-size: 11px; border-radius: 12px; text-align: center; border: none; width: 100%;
   }
   .queue-table tr:not(.is-expanded) .payment-amount-text {
-    font-size: 9.5px; /* 縮小字體以防截斷 */
-    letter-spacing: -0.3px; /* 稍微縮小字距 */
+    font-size: 9.5px; 
+    letter-spacing: -0.3px; 
   }
 
-  /* --------------------------------------------------------- */
-  /* [手機版] "已展開" 狀態的顯示邏輯 */
-  /* --------------------------------------------------------- */
+  
+  
+  
   
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;
@@ -319,7 +318,7 @@
 
   .queue-table tr.is-expanded td {
     pointer-events: auto;
-    overflow: visible; /* 🌟 解鎖：讓下拉選單可以超出格子的邊界 */
+    overflow: visible; 
   }
 
   .queue-table tr.is-expanded .cell-content { 
@@ -383,13 +382,13 @@
   }
 }
 
-/* 正在被拖曳的那一行 (原位會變成半透明的佔位符) */
+
 tr.is-dragging {
   opacity: 0.3;
   background-color: #f9f9f9;
 }
 
-/* 滑鼠懸停的目標行 (顯示插入指示線) */
+
 tr.drag-over-target > td {
   border-top: 3px solid #5D4A3E !important; 
   background-color: rgba(93, 74, 62, 0.08) !important; 

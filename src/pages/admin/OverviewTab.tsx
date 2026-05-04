@@ -1,6 +1,5 @@
 // src/pages/admin/OverviewTab.tsx
 
-// 🌟 接收來自 Dashboard 的 props，移除內部獨立的 fetch 邏輯
 export function OverviewTab({ stats }: { stats: any }) {
   
   if (!stats) return <div style={{ padding: '50px', textAlign: 'center', color: '#666' }}>⚙️ 正在讀取最高權限資料...</div>;

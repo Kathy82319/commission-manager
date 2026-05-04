@@ -10,10 +10,8 @@ import { WishboardTab } from './WishboardTab';
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard'>('overview');
   
-  // 🌟 將狀態移至外層統一管理
   const [stats, setStats] = useState<any>(null);
 
-  // 每次切換 Tab 時都重新拉取一次狀態，確保紅點數字是最新的
   useEffect(() => {
     fetchStats();
   }, [activeTab]);
@@ -41,7 +39,7 @@ export function Dashboard() {
     <AdminLayout 
       activeTab={activeTab} 
       onTabChange={setActiveTab}
-      pendingReportCount={stats?.pending_reports_count || 0} // 🌟 傳遞紅點數字
+      pendingReportCount={stats?.pending_reports_count || 0}
     >
       {renderContent()}
     </AdminLayout>

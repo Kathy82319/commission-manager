@@ -1,10 +1,9 @@
 // worker/controllers/inquiryController.ts
 import type { Env } from '../shared/types';
-import { notificationController } from './notificationController'; // 🌟 引入通知控制器
+import { notificationController } from './notificationController'; 
 
 export const inquiryController = {
   
-  // 🌟 核心修正：改為從 Notifications 資料表撈取未讀數量
   async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const countRes = await env.commission_db.prepare(`
@@ -92,7 +91,6 @@ export const inquiryController = {
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
       ]);
 
-      // 🌟 發送通知給對方
       const inquiryData = await env.commission_db.prepare(`
         SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
@@ -184,7 +182,6 @@ export const inquiryController = {
         `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
       
-      // 🌟 發送通知給案主
       const text = `🌟 繪師已送出「${inquiryData.title || '未命名'}」的合作協議，請前往確認。`;
       await notificationController.createNotification(env, actualClientId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
 
@@ -291,7 +288,6 @@ export const inquiryController = {
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      // 🌟 發送通知給繪師
       const text = `🌟 恭喜！案主已同意「${inquiryData.title || '未命名'}」的協議，正式成立委託單。`;
       await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, '/artist/notebook');
 

@@ -264,7 +264,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </div>
                 )}
 
-                {/* 🌟 管理員專屬標記 */}
+                
                 {bulletin.creator_role === 'admin' && (
                   <span style={{
                     backgroundColor: '#FFD700',

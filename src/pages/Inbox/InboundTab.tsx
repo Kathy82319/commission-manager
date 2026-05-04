@@ -44,7 +44,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   handleCancelBulletin 
 }) => {
   
-  // 🌟 修復 1：預設選取時，優先尋找「開啟中(open)」的看板，避免卡在舊的已關閉紀錄
   const [selectedBulletinId, setSelectedBulletinId] = useState<string | null>(() => {
     const firstOpen = clientBulletins.find(b => b.status === 'open');
     return firstOpen ? firstOpen.id : (clientBulletins.length > 0 ? clientBulletins[0].id : null);
@@ -150,7 +149,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                 目前沒有可顯示的提案喔！再等等吧～
               </div>
             ) : (
-              // 恢復你原本正確的設計：接稿文用 OfferList，徵委託用履歷卡片
               activeBulletinCategory === 'offer' ? (
                 <OfferList 
                   inquiries={currentInquiries} 
@@ -171,7 +169,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
                     snapshot = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
                   } catch(e) {}
 
-                  // 🌟 修復 2：拔除錯誤的備用機制。只抓取繪師履歷本身的圖片，絕對不抓取看板的圖片 (item.ref_image_key)
                   let images: string[] = [];
                   const rawImages = snapshot.images || []; 
                   

@@ -15,7 +15,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 150; // 💡 等測試通過後，請記得改回 150
+      const amount = 150; // 💡 收費金額，很便宜吧
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
       const backendUrl = env.BACKEND_URL;
@@ -95,7 +95,6 @@ export const paymentController = {
         return new Response("OK");
       }
 
-      // 解密並還原 JSON 資料
       const decrypted = await newebpay.decrypt(tradeInfo, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const decodedData = decodeURIComponent(decrypted.replace(/\+/g, " "));
       const data = JSON.parse(decodedData);

@@ -146,7 +146,6 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'create', '繪師已建立委託單')").bind(crypto.randomUUID(), newOrderId)
     ]);
     
-    // 🌟 明確將 clientId 轉為字串
     if (!body.is_external && clientId) {
        await notificationController.createNotification(env, String(clientId), 'commission_msg', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?open=${newOrderId}`);
     }
@@ -209,7 +208,6 @@ export const commController = {
         const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
         
-        // 🌟 明確轉換型別
         await notificationController.createNotification(env, String(comm.artist_id), 'commission_msg', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}`);
       }
       
@@ -257,7 +255,7 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
     ]);
 
-    // 🌟 明確轉換型別
+    
     if (comm[0].client_id) {
        await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?open=${id}`);
     }
@@ -294,7 +292,7 @@ export const commController = {
     
     await env.commission_db.batch(batchOps);
 
-    // 🌟 明確轉換型別
+    
     const text = body.action === 'reject' 
       ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
       : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
@@ -315,7 +313,7 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'change_request', '繪師提交了規格異動申請')").bind(crypto.randomUUID(), id)
     ]);
     
-    // 🌟 明確轉換型別
+    
     if (comm[0].client_id) {
        await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?open=${id}`);
     }
@@ -351,7 +349,7 @@ export const commController = {
       ]);
     }
 
-    // 🌟 明確轉換型別
+    
     const text = action === 'approve' 
        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
@@ -386,7 +384,7 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
     ]);
     
-    // 🌟 明確轉換型別
+    
     const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
     const comm = commResults as any[];
     if (comm.length > 0) {

@@ -62,7 +62,6 @@ export function WishboardTab() {
     return hit;
   };
 
-  // 🌟 強化版內容解析：提取完整資料結構
   const parsePostData = (item: any) => {
     let description = item.content || '無內容';
     let payments = [];
@@ -127,7 +126,7 @@ export function WishboardTab() {
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
                   
-                  {/* 1. 刊登資訊 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ fontWeight: 'bold', color: '#111827', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <User size={14} /> {item.author_name}
@@ -138,7 +137,7 @@ export function WishboardTab() {
                     </div>
                   </td>
 
-                  {/* 2. 貼文詳細內容 (🌟 擴充標題、預算、付款) */}
+                  
                   <td style={{...tdStyle, paddingRight: '24px'}}>
                     {hitKeyword && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
@@ -161,7 +160,7 @@ export function WishboardTab() {
                     </div>
                   </td>
 
-                  {/* 3. 檢舉次數 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ fontWeight: 'bold', fontSize: '16px', color: item.report_count >= 10 ? '#DC2626' : (item.report_count > 0 ? '#D97706' : '#059669') }}>
                       {item.report_count} 次
@@ -176,7 +175,7 @@ export function WishboardTab() {
                     )}
                   </td>
 
-                  {/* 4. 目前顯示狀態 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 'bold', 
                       backgroundColor: isHidden ? '#FEF2F2' : (isExpired ? '#F3F4F6' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6')),
@@ -185,13 +184,13 @@ export function WishboardTab() {
                     }}>
                       {isHidden ? '🛑 隱藏審核中' : (isExpired ? '⌛ 已到期' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉'))}
                     </div>
-                    {/* 🌟 顯示下架時間 */}
+                    
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Clock size={12} /> {new Date(item.expires_at).toLocaleString()}
                     </div>
                   </td>
 
-                  {/* 5. 審核操作 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {!isHidden ? (
@@ -212,7 +211,7 @@ export function WishboardTab() {
         </table>
       </div>
 
-      {/* 分頁 */}
+      
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -222,7 +221,7 @@ export function WishboardTab() {
         </div>
       </div>
 
-      {/* 🌟 檢舉原因彈窗 (Modal) */}
+      
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>

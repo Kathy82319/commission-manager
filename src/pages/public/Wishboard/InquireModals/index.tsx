@@ -45,7 +45,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
   const questions: string[] = parsedContent.questions || [];
   const tosContent: string = parsedContent.tos_content || '';
 
-  // 🌟 新增：在彈窗內也計算是否額滿，作為第二道防線
   const selectionType = selectedBulletin.selection_type || parsedContent.selection_type || 'fcfs';
   const maxSlots = parseInt(selectedBulletin.max_slots || parsedContent.max_slots || 1, 10);
   const appliedCount = selectedBulletin.inquiry_count || (selectedBulletin.applied_artist_ids ? String(selectedBulletin.applied_artist_ids).split(',').length : 0);
@@ -66,7 +65,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
     const rawValue = inquireTagInputs[field];
     if (!rawValue) return;
 
-    // 🛡️ 資安防護：過濾危險字元
     const safeValue = rawValue.replace(/[<>"'&]/g, '');
     const value = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
 
@@ -138,7 +136,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
               : '與其丟文字履歷，不如直接給案主看您的作品！'}
           </p>
 
-          {/* 🌟 額滿警告提示 */}
+          
           {isFull && (
             <div style={{ padding: '12px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', borderRadius: '8px', marginBottom: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertTriangle size={18} /> 此接委託名額已額滿，您目前無法送出表單。
@@ -273,7 +271,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>取消</button>
-          {/* 🌟 額滿時同時禁用送出按鈕 */}
+          
           <button className="submit-post-btn" onClick={handleFinalSubmit} disabled={inquireUploading || isFull}>
             {isFull ? '名額已滿' : (isOffer ? '送出需求單' : '發送專屬提案')}
           </button>

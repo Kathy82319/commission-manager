@@ -13,7 +13,6 @@ export function ClientLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
   
-  // 🌟 通知狀態
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -76,13 +75,12 @@ export function ClientLayout() {
     }
   };
 
-  // 🌟 處理打開鈴鐺並消除紅點的邏輯
   const handleOpenNotifMenu = async () => {
     const nextState = !showNotifMenu;
     setShowNotifMenu(nextState);
 
     if (nextState && unreadCount > 0) {
-      setUnreadCount(0); // 樂觀更新，UI 立刻消除數字
+      setUnreadCount(0); 
       try {
         await fetch(`${API_BASE}/api/notifications/read?role=client`, {
           method: 'POST',
@@ -96,14 +94,12 @@ export function ClientLayout() {
 
   if (!isAuthorized) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#5a6e85', color: '#FFF' }}>載入中...</div>;
 
-  // 🌟 邏輯控制顯示數量：最少 5 則，若未讀大於 5 則就顯示全部未讀數量
   const displayCount = Math.max(unreadCount, 5);
   const displayedNotifs = notifications.slice(0, displayCount);
 
   return (
     <div className="client-layout-wrapper">
       
-      {/* 🌟 全域浮動小鈴鐺 */}
       <div ref={menuRef} style={{ position: 'fixed', top: '10px', right: '24px', zIndex: 9999 }}>
         <div 
           onClick={handleOpenNotifMenu}
@@ -132,7 +128,6 @@ export function ClientLayout() {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#e0f0ff' : '#f9fafb'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#f0f7ff' : 'transparent'}
                     >
-                      {/* 🌟 藍色未讀小點點 */}
                       {n.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0, marginRight: '10px' }}></div>}
                       
                       <div style={{ flex: 1, paddingRight: '12px' }}>
@@ -187,7 +182,6 @@ export function ClientLayout() {
         </nav>
 
         <div className="sidebar-footer">
-          {/* 🌟 重點修改：僅當身分為 artist 或 admin 時，才顯示切換按鈕，維持純委託人介面乾淨 */}
           {(profile?.role === 'artist' || profile?.role === 'admin') && (
             <button onClick={() => window.location.href = '/artist/queue'} className="switch-btn">
               切換至繪師後台

@@ -10,7 +10,7 @@ interface OfferListProps {
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
-  blacklistedIds?: string[]; // 🌟 新增接收黑名單清單
+  blacklistedIds?: string[]; 
 }
 
 export const OfferList: React.FC<OfferListProps> = ({
@@ -21,7 +21,7 @@ export const OfferList: React.FC<OfferListProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission,
   setSelectedIdsForBatch,
-  blacklistedIds = [] // 🌟 設定預設值
+  blacklistedIds = [] 
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -89,7 +89,7 @@ export const OfferList: React.FC<OfferListProps> = ({
             handleDirectInvite={handleDirectInvite}
             handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
             handleViewCommission={handleViewCommission}
-            blacklistedIds={blacklistedIds} // 🌟 傳遞給 CardView
+            blacklistedIds={blacklistedIds} 
           />
         );
       })}

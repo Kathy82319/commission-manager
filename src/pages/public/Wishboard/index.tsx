@@ -308,15 +308,14 @@ export const Wishboard: React.FC = () => {
         activeTab={activeTab} setActiveTab={setActiveTab} 
         selectedFilters={selectedFilters} 
         toggleTag={(tag) => {
-          // 🌟🌟 核心修復點 🌟🌟
           if (tag === '不限') {
-            setSelectedFilters([]); // 如果點擊「不限」，一鍵清空所有篩選器
+            setSelectedFilters([]); 
           } else {
             setSelectedFilters(prev => {
               if (prev.includes(tag)) {
-                return prev.filter(t => t !== tag); // 已經存在就移除
+                return prev.filter(t => t !== tag); 
               } else {
-                return [...prev, tag]; // 不存在就新增
+                return [...prev, tag]; 
               }
             });
           }

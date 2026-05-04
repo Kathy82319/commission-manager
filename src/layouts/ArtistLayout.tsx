@@ -13,7 +13,6 @@ export function ArtistLayout() {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 🌟 小鈴鐺通知專用狀態
   const [unreadCount, setUnreadCount] = useState(0); 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -98,13 +97,12 @@ export function ArtistLayout() {
     return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
   };
 
-  // 🌟 處理打開鈴鐺並消除紅點的邏輯
   const handleOpenNotifMenu = async () => {
     const nextState = !showNotifMenu;
     setShowNotifMenu(nextState);
 
     if (nextState && unreadCount > 0) {
-      setUnreadCount(0); // 樂觀更新，UI 立刻消除數字
+      setUnreadCount(0); 
       try {
         await fetch(`${API_BASE}/api/notifications/read?role=artist`, {
           method: 'POST',
@@ -160,13 +158,11 @@ export function ArtistLayout() {
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
 
-  // 🌟 邏輯控制顯示數量：最少 5 則，若未讀大於 5 則就顯示全部未讀數量
   const displayCount = Math.max(unreadCount, 5);
   const displayedNotifs = notifications.slice(0, displayCount);
 
   return (
     <>
-      {/* 🌟 全域鈴鐺 */}
       <div ref={menuRef} style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9999 }}>
         <div 
           onClick={handleOpenNotifMenu}
@@ -195,7 +191,6 @@ export function ArtistLayout() {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#e0f0ff' : '#f9fafb'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = n.isUnread ? '#f0f7ff' : 'transparent'}
                     >
-                      {/* 🌟 藍色未讀小點點 */}
                       {n.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0, marginRight: '10px' }}></div>}
                       
                       <div style={{ flex: 1, paddingRight: '12px' }}>

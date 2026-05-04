@@ -1,11 +1,11 @@
 // src/pages/client/ClientSettings.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react'; // 🌟 引入預覽按鈕使用的圖示
+import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
 import type { FormDataState } from '../artist/Settings/types';
-import '../../styles/Settings.css'; // 完全共用繪師設定頁的 CSS
+import '../../styles/Settings.css'; 
 
 export function ClientSettings() {
   const navigate = useNavigate();
@@ -14,18 +14,17 @@ export function ClientSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
-  const [publicId, setPublicId] = useState<string>(''); // 🌟 新增：儲存使用者的 public_id
+  const [publicId, setPublicId] = useState<string>('');
 
-  // 委託人只需要最基礎的 settings 結構
   const [settings, setSettings] = useState<any>({
     social_links: [],
     detailed_intro: '',
     custom_sections: [],
     hidden_sections: [],
-    theme_mode: 'dark', // 預設給個深色模式
+    theme_mode: 'dark',
     background_color: '#021122',
-    gradient_enabled: true,               // 🌟 新增：預設漸層開啟
-    gradient_direction: 'to bottom' // 🌟 新增：預設漸層方向
+    gradient_enabled: true,             
+    gradient_direction: 'to bottom' 
   });
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -46,16 +45,14 @@ export function ClientSettings() {
       const data = await res.json();
       if (data.success && data.data) {
         
-        // 🌟 修改處：偵測身分但不強制跳轉，改為詢問使用者
         if (data.data.role === 'artist' || data.data.role === 'admin') {
           const confirmJump = window.confirm(
             "偵測到您的繪師身分，若要編輯個人頁請至功能較健全的繪師個人設定編輯，是否現在跳轉？"
           );
           if (confirmJump) {
             navigate('/artist/settings');
-            return; // 結束 function，直接跳轉
+            return; 
           }
-          // 如果使用者按「取消」，程式會繼續往下執行，讓他們留在目前頁面
         }
 
         setPublicId(data.data.public_id || data.data.id || '');
@@ -126,7 +123,7 @@ export function ClientSettings() {
         if (data.success) {
           localStorage.setItem('user_role', 'artist');
           alert("開通成功！歡迎來到創作者後台。");
-          window.location.href = '/artist/settings'; // 導向繪師設定頁繼續完成設定
+          window.location.href = '/artist/settings'; 
         } else {
           alert(data.error || '升級失敗，請稍後再試。');
         }
@@ -167,7 +164,7 @@ export function ClientSettings() {
             </button>
           </div>
 
-          {/* 🌟 低調的升級入口 */}
+          
           <div className="sidebar-group" style={{ marginTop: 'auto', paddingTop: '40px' }}>
             <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
               <h4 style={{ margin: '0 0 8px 0', color: '#334155', fontSize: '14px' }}>想開始接案賺錢嗎？</h4>
@@ -188,7 +185,7 @@ export function ClientSettings() {
         </aside>
 
         <div className="settings-content-area">
-          {/* 🌟 調整：加上 flex 佈局與預覽按鈕 */}
+          
           <div className="settings-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3>{activeTab === 'profile_basic' ? '頭像與基礎資料' : '自訂公開詳細介紹'}</h3>
             {publicId && (

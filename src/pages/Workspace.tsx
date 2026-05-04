@@ -75,7 +75,6 @@ export function Workspace() {
         const isOffer = parsed.bulletin_category === 'offer';
         const bulletinContent = safeParse(parsed.bulletin_content);
         
-        // 🌟🌟🌟 核心修復：不管接稿還是徵稿，投遞的資料永遠在 artist_snapshot，優先取用它
         let rawSnapshot = parsed.artist_initial_snapshot || parsed.artist_snapshot;
         if (!rawSnapshot || (typeof rawSnapshot === 'object' && Object.keys(rawSnapshot).length === 0)) {
           rawSnapshot = parsed.client_initial_response || '{}';

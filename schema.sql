@@ -243,7 +243,6 @@ CREATE TABLE InquiryMessages (
 
 -- 增加草稿欄位
 ALTER TABLE BulletinInquiries ADD COLUMN negotiation_draft TEXT; 
-
 ALTER TABLE Commissions ADD COLUMN origin_source TEXT;
 ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_client DATETIME DEFAULT NULL;
 ALTER TABLE BulletinInquiries ADD COLUMN last_read_at_artist DATETIME DEFAULT NULL;
@@ -261,14 +260,14 @@ ALTER TABLE Bulletins ADD COLUMN specific_date DATETIME;
 -- 使用者關係表 (收藏/黑名單)
 CREATE TABLE UserRelations (
     id TEXT PRIMARY KEY,
-    source_user_id TEXT NOT NULL,  -- 操作者 (我是誰)
-    target_user_id TEXT NOT NULL,  -- 被標記的人 (對方是誰)
-    relation_type TEXT NOT NULL,   -- 'favorite' (收藏) 或 'blacklist' (黑名單)
-    custom_note TEXT DEFAULT '',   -- 私人小備註
+    source_user_id TEXT NOT NULL,  
+    target_user_id TEXT NOT NULL, 
+    relation_type TEXT NOT NULL,  
+    custom_note TEXT DEFAULT '',   
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_user_id) REFERENCES Users(id),
     FOREIGN KEY (target_user_id) REFERENCES Users(id),
-    UNIQUE(source_user_id, target_user_id) -- 確保兩個人之間只有一筆關係紀錄
+    UNIQUE(source_user_id, target_user_id) 
 );
 
 -- 1. 擴充 Users 表
@@ -340,11 +339,3 @@ DELETE FROM BulletinInquiries;
 -- 3. 最後，既然子資料都清空了，現在可以安全地刪除主表的「貼文」了！
 DELETE FROM Bulletins;
 
--- 塞入 5 筆投遞紀錄，直接灌滿免費版每月 5 次投遞額度
-INSERT INTO BulletinInquiries (id, bulletin_id, artist_id, artist_snapshot, status, created_at, latest_update_at)
-VALUES 
-('new-test-uuid-1111-480f-9454-7eb6aee4cdd1', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('new-test-uuid-2222-480f-9454-7eb6aee4cdd2', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('new-test-uuid-3333-480f-9454-7eb6aee4cdd3', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('new-test-uuid-4444-480f-9454-7eb6aee4cdd4', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('new-test-uuid-5555-480f-9454-7eb6aee4cdd5', '76abbe2d-0927-4285-916f-dbdaef671dd9', 'U0342c94360fe25872c7caa43ab588c87', '{}', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

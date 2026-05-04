@@ -1,7 +1,5 @@
 // src/pages/Inbox/utils/formatters.ts
 
-// 🔒 資安檢查：這裡的 {t} 是字串變數，React 預設會進行 HTML 逸出 (Escape)，
-// 因此即使案主在標籤輸入惡意的 <script>，也會被轉義為純文字，有效防範 XSS 攻擊。
 export const renderChips = (text: string, type: 'good' | 'bad' | 'info') => {
   if (!text || text.trim() === '') return <span className="text-[#A0978D] text-sm">未提供</span>;
   const tags = text.split(/[,、\s]+/).filter(t => t.trim() !== '');
@@ -28,46 +26,38 @@ export const getStatusLabel = (status: string) => {
 
 export const safeParseTime = (dateStr?: string) => {
   if (!dateStr) return 0;
-  // 處理 Safari 或部分舊版瀏覽器對 ISO 8601 時間格式解析的問題
   const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   return new Date(utcStr).getTime();
 };
 
-// 🌟 升級：區間式倒數計時判斷，回傳精確的文字與對應的 CSS 狀態類別
 export const getExpiryInfo = (expiresAt?: string) => {
   if (!expiresAt) return { text: '無限期', className: 'expiry-safe' };
 
   const diff = safeParseTime(expiresAt) - Date.now();
 
-  // 1. 已經過期
   if (diff <= 0) {
-    return { text: '已過期', className: 'expiry-expired' }; // 灰色，視覺上弱化
+    return { text: '已過期', className: 'expiry-expired' }; 
   }
 
   const hoursLeft = diff / (1000 * 60 * 60);
 
-  // 2. 區間判斷
   if (hoursLeft <= 12) {
-    return { text: '剩餘不足 12 小時', className: 'expiry-danger' }; // 紅色，高風險警示
+    return { text: '剩餘不足 12 小時', className: 'expiry-danger' };
   } else if (hoursLeft <= 24) {
-    return { text: '剩餘 1 天', className: 'expiry-warning' }; // 黃/橘色，提醒注意
+    return { text: '剩餘 1 天', className: 'expiry-warning' }; 
   } else if (hoursLeft <= 48) {
-    return { text: '剩餘 2 天', className: 'expiry-safe' }; // 一般安全色
+    return { text: '剩餘 2 天', className: 'expiry-safe' }; 
   } else {
-    // 若超過 48 小時，就換算成天數 (例如 48~72 算 3 天)
     const days = Math.ceil(hoursLeft / 24);
     return { text: `剩餘 ${days} 天`, className: 'expiry-safe' };
   }
 };
 
-// ⚠️ 相容性保留：給舊元件使用的過渡函式
 export const calculateDaysLeft = (expiresAt: string) => {
   return getExpiryInfo(expiresAt).text;
 };
 
-// 💡 邏輯提醒：這裡是依賴使用者本地端的時間 (Date.now()) 來過濾。
-// 雖然使用者若竄改電腦時間，可能會看到過期的婉拒單，但這僅屬於「顯示層」的過濾，
-// 並不影響實際資料庫權限，因此沒有嚴重的越權 (IDOR) 風險。
+
 export const filterOldItems = (item: any) => {
   if (item.inquiry_status === 'declined' || item.inquiry_status === 'cancelled') {
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;

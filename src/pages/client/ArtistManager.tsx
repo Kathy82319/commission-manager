@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, ExternalLink, Heart, ShieldAlert } from 'lucide-react';
-import '../../styles/Customers.css'; // 🌟 完美共用妳寫好的 CRM 樣式
+import '../../styles/Customers.css'; 
 
 interface ArtistRelation {
   id: string;
@@ -25,7 +25,6 @@ export function ArtistManager() {
   const [searchTerm, setSearchTerm] = useState(""); 
   const [toast, setToast] = useState<string | null>(null);
 
-  // 編輯 Modal 狀態
   const [modalMode, setModalMode] = useState<'none' | 'edit'>('none');
   const [selectedRel, setSelectedRel] = useState<ArtistRelation | null>(null);
   const [editNote, setEditNote] = useState('');

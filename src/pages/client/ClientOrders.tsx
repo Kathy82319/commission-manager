@@ -19,14 +19,12 @@ interface CommissionDetail {
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
 interface ActionLog { id: string; actor_role: string; content: string; created_at: string; }
 
-// 🌟 核心防護：解除 HTML 實體編碼的函式 (加上物件防呆，避免 .replace 報錯)
 const unescapeHtml = (str: any) => {
-  if (typeof str !== 'string') return str; // 如果不是字串(如 Object)，就直接原樣丟回去，不要 .replace
+  if (typeof str !== 'string') return str;
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 強健的時間轉換處理
 const ensureUTC = (dateStr?: string) => {
   if (!dateStr) return '';
   let str = dateStr.trim();
@@ -80,7 +78,6 @@ export function ClientOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isListLoading, setIsListLoading] = useState(true);
 
-  // 🌟 儲存黑名單繪師的 ID 列表
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
@@ -372,12 +369,9 @@ export function ClientOrders() {
 
   const fieldMap: Record<string, string> = { usage_type: '委託用途', is_rush: '急件', delivery_method: '交稿方式', total_price: '總金額', draw_scope: '繪畫範圍', char_count: '人物數量', bg_type: '背景設定', add_ons: '附加選項' };
 
-  // 🌟 強化版 TOS 解析邏輯
   let finalTosHtml = '';
   if (selectedOrder?.agreed_tos_snapshot) {
-    // 1. 嘗試解開 HTML 實體編碼，避免標籤被破壞導致無法渲染
     const unescapedTos = unescapeHtml(selectedOrder.agreed_tos_snapshot);
-    // 2. 防呆：有時候存進去的是一個加上引號的字串 JSON 格式，例如 '"內容"'，嘗試解開它
     try {
       const parsed = JSON.parse(unescapedTos);
       if (typeof parsed === 'string') {
@@ -386,17 +380,14 @@ export function ClientOrders() {
         finalTosHtml = unescapedTos;
       }
     } catch (e) {
-      // 解析 JSON 失敗代表它本來就是純文字或 HTML 字串，直接使用
       finalTosHtml = unescapedTos;
     }
   } else if (selectedOrder?.artist_settings) {
-    // 備用方案：從繪師設定中抓取
     try {
       const settings = JSON.parse(unescapeHtml(selectedOrder.artist_settings));
       if (settings.rules) {
         finalTosHtml = settings.rules;
       } else if (settings.terms_of_service) {
-        // 相容不同版本的設定名稱
         finalTosHtml = settings.terms_of_service;
       }
     } catch(e) {
@@ -409,12 +400,10 @@ export function ClientOrders() {
   let parsedSnapshot: any = {};
   let isOffer = false;
 
-  // 🌟 解析 bulletin_content 變得更聰明且強健
   if (bulletinSource) {
     isOffer = bulletinSource.bulletin_category === 'offer';
     
     let parsedBulletinContent: any = bulletinSource.bulletin_content || {};
-    // 如果它剛好還是字串，再嘗試 Parse 一次
     if (typeof parsedBulletinContent === 'string') {
       try {
         parsedBulletinContent = JSON.parse(unescapeHtml(parsedBulletinContent));
@@ -435,7 +424,6 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
-      {/* ⚠️ 異動申請彈窗 */}
       {parsedChanges && (
         <div className="lightbox-overlay" style={{ alignItems: 'center' }}>
           <div className="section-card" style={{ maxWidth: '500px', width: '90%', zIndex: 100000, position: 'relative' }}>
@@ -454,7 +442,6 @@ export function ClientOrders() {
 
       <div className="notebook-container">
         
-        {/* 🌟 左側列表區 */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div className="sidebar-header">
             <span className="sidebar-title">委託單列表</span>
@@ -510,7 +497,7 @@ export function ClientOrders() {
 
                     <div className="card-tags-row">
                       {getStatusDisplay(order.status, order.current_stage)}
-                      {/* 🌟 渲染黑名單標籤 */}
+                      
                       {isBlacklisted && (
                         <span className="card-tag" style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>
                           🚫 黑名單繪師
@@ -524,7 +511,7 @@ export function ClientOrders() {
           </div>
         </div>
 
-        {/* 🌟 右側主內容區 */}
+        
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? <div className="main-empty">請從列表選擇一張委託單以檢視詳情</div> : (
             <div className="main-content-wrapper">
@@ -534,7 +521,7 @@ export function ClientOrders() {
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
                   
-                  {/* 🌟 右側主畫面的黑名單警告 */}
+                  
                   {selectedOrder.artist_id && blacklistedIds.includes(selectedOrder.artist_id) && (
                     <div style={{ display: 'inline-block', padding: '4px 10px', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #fecaca', marginTop: '6px', marginBottom: '6px' }}>
                       ⚠️ 提醒：此繪師已被您列入黑名單
@@ -587,7 +574,7 @@ export function ClientOrders() {
 
               <div className="tab-content-area">
                 
-                {/* === 詳細內容 Tab === */}
+                
                 {activeTab === 'main' && (
                   <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
@@ -642,7 +629,7 @@ export function ClientOrders() {
                       </div>
                     )}
 
-                    {/* 自訂名稱 */}
+                    
                     <div className="section-card">
                       <div className="section-header-no-border">
                         <h3 className="section-title">自訂委託名稱</h3>
@@ -655,7 +642,7 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-                    {/* 委託規格 */}
+                    
                     <div className="section-card">
                       <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
                       <div className="details-grid">
@@ -672,7 +659,7 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-                    {/* 委託協議 */}
+                    
                     <div className="section-card">
                       <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託協議</h3>
                       <div className="tos-snapshot-wrapper" style={{ margin: 0 }}>
@@ -684,7 +671,7 @@ export function ClientOrders() {
                   </div>
                 )}
 
-                {/* === 稿件審閱 Tab === */}
+                
                 {activeTab === 'review' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {selectedOrder.delivery_method !== '一鍵出圖' && (
@@ -697,7 +684,7 @@ export function ClientOrders() {
                   </div>
                 )}
 
-                {/* === 歷程紀錄 Tab === */}
+                
                 {activeTab === 'history' && (
                    <div className="section-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
                      <h3 className="section-title logs-title">歷程紀錄</h3>

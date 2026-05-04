@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getStatusLabel, getExpiryInfo } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
-import { Ban } from 'lucide-react'; // 🌟 引入 Ban 圖示
+import { Ban } from 'lucide-react'; 
 
 interface CardViewProps {
   inquiry: any;
@@ -16,7 +16,7 @@ interface CardViewProps {
   onSelect: () => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
   handleViewCommission: (id: string) => void;
-  blacklistedIds?: string[]; // 🌟 接收黑名單清單
+  blacklistedIds?: string[]; 
 }
 
 const unescapeHtml = (str: string) => {
@@ -36,7 +36,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onSelect,
   handleEnterInquiryWorkspace,
   handleViewCommission,
-  blacklistedIds = [] // 🌟 預設為空陣列
+  blacklistedIds = [] 
 }) => {
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
   const isDeclined = inquiry.inquiry_status === 'declined';
@@ -44,7 +44,6 @@ export const CardView: React.FC<CardViewProps> = ({
   const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
 
-  // 🌟 判斷來投遞的繪師是否在我的黑名單中
   const isBlacklisted = blacklistedIds.includes(inquiry.artist_id);
 
   let images: string[] = [];
@@ -108,7 +107,7 @@ export const CardView: React.FC<CardViewProps> = ({
         style={{ cursor: 'pointer', display: 'flex', position: 'relative' }} 
       >
         
-        {/* 🌟 左側圖片區塊 */}
+        
         <div 
           className="offer-card-gallery" 
           style={{ 
@@ -157,7 +156,7 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
         </div>
 
-        {/* 🌟 右側內容區塊 */}
+        
         <div className="offer-card-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <div className="offer-card-header">
             <div className="offer-client-info flex flex-wrap items-center gap-2">
@@ -168,7 +167,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   ⏳ {expiryInfo.text}
                 </span>
               )}
-              {/* 🌟 顯示黑名單標記 */}
+              
               {isBlacklisted && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
                   <Ban size={12} /> 黑名單繪師

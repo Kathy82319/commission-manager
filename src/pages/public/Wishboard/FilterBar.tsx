@@ -48,7 +48,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         
         <div className="tag-selector filter-tags-scroll" style={{ flex: 1, margin: 0 }}>
           {REQ_TAGS.map(tag => {
-            // 🌟 將判斷邏輯抽離，清楚明瞭
             const isSelected = tag === '不限' 
               ? selectedFilters.length === 0 
               : selectedFilters.includes(tag);

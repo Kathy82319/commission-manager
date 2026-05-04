@@ -86,7 +86,6 @@ export const InquiryWorkspace: React.FC = () => {
           } else if (isFirstLoad.current) {
              let defaultName = "許願池委託";
              try {
-                // 🌟 最終極致解法：精準解析 json
                 const parsedContent = JSON.parse(data.bulletin_content);
                 if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
                   defaultName = parsedContent.commission_items[0].name;
@@ -278,12 +277,10 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  // 🌟 解析顯示用的內容與完整的 JSON
   let displayBulletinContent = inquiry.bulletin_content;
   let parsedBulletin: any = {};
   try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
-      // 因為後端把原本文字放在 description 欄位，所以我們要優先取出來
       if (parsedBulletin.description) {
         displayBulletinContent = parsedBulletin.description;
       }
@@ -298,7 +295,6 @@ export const InquiryWorkspace: React.FC = () => {
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
 
-  // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
   let artistTos = "繪師未提供額外協議說明。";
   if (parsedBulletin && parsedBulletin.tos_content && parsedBulletin.tos_content.trim() !== '') {
     artistTos = parsedBulletin.tos_content;

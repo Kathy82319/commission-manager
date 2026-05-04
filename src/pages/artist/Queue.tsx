@@ -119,12 +119,11 @@ export function Queue() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
-  // 🌟 新增：Toast 提示狀態
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 2500); // 2.5秒後自動消失
+    setTimeout(() => setToastMsg(null), 2500); 
   };
 
   useEffect(() => {
@@ -193,7 +192,7 @@ export function Queue() {
         body: JSON.stringify({ [field]: value })
       });
       setCommissions(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-      showToast('✅ 自動儲存成功'); // 🌟 觸發 Toast
+      showToast('✅ 自動儲存成功');  
     } catch (error) {} finally { setIsSaving(false); }
   };
 
@@ -223,7 +222,7 @@ export function Queue() {
         });
         setCommissions(prev => prev.map(c => c.id === order.id ? { ...c, payment_status: 'partial' } : c));
         await fetchPaymentForOrder(order.id);
-        showToast('✅ 已自動記帳並儲存狀態'); // 🌟 觸發 Toast
+        showToast('✅ 已自動記帳並儲存狀態');  
       } catch (e) {} finally { setIsSaving(false); }
 
     } else if (newStatus === 'paid') {
@@ -246,7 +245,7 @@ export function Queue() {
         });
         setCommissions(prev => prev.map(c => c.id === order.id ? { ...c, payment_status: 'paid' } : c));
         await fetchPaymentForOrder(order.id);
-        showToast('✅ 尾款已結清並儲存狀態'); // 🌟 觸發 Toast
+        showToast('✅ 尾款已結清並儲存狀態');
       } catch (e) {} finally { setIsSaving(false); }
 
     } else {
@@ -304,7 +303,7 @@ export function Queue() {
 
   return (
     <div className="queue-container">
-      {/* 🌟 頂部 Toast 提示組件 */}
+      
       {toastMsg && (
         <div className="toast-notification">
           {toastMsg}

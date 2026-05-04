@@ -13,7 +13,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-  // 開啟 15 天試用邏輯 (測試 API 模式)
   const handleStartTrial = async () => {
     if (isStartingTrial) return;
     setIsStartingTrial(true);
@@ -36,12 +35,10 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
     }
   };
 
-  // 升級專業版邏輯 (目前仍為測試 API 模式)
   const handleUpgradeClick = async () => {
     if (isUpgrading) return;
     setIsUpgrading(true);
     try {
-      // 🌟 這裡暫時維持測試用路由，確認流程無誤再改為正式藍新路徑
       const response = await fetch(`${API_BASE}/api/payment/create`, {
         method: "POST",
         credentials: "include",
@@ -52,7 +49,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
       const result = await response.json();
       
       if (result.success && result.data) {
-        // 建立隱藏表單並跳轉至藍新支付頁面
         const form = document.createElement("form");
         form.method = "POST";
         form.action = result.data.PayGateWay;
@@ -88,14 +84,14 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       
-      {/* 頂部公測提示 */}
+      
       <div style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '16px', borderRadius: '12px', border: '1px solid #BAE6FD', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
         ✨ 系統公測中：目前全站功能開放免費測試，無需額外開啟試用或訂閱。
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         
-        {/* 1. 基礎免費版 */}
+        
         <div style={{ 
           border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
@@ -122,7 +118,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           </div>
         </div>
 
-        {/* 2. 專業版體驗 (Trial) - 已禁用 */}
+        
         <div style={{ 
           border: '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
@@ -153,7 +149,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           </button>
         </div>
 
-        {/* 3. 專業版 (Pro) - 已禁用 */}
+        
         <div style={{ 
           border: '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 

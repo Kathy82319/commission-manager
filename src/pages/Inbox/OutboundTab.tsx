@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
-import { ImageIcon, User, Ban } from 'lucide-react'; // 🌟 移除了未使用的 ChevronDown, ChevronUp
-
+import { ImageIcon, User, Ban } from 'lucide-react'; 
 interface OutboundTabProps {
   artistInquiries: any[];
   setSelectedInquiry: (inquiry: any) => void;
@@ -84,7 +83,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
           const isBlacklisted = blacklistedIds.includes(item.client_id);
 
           let displayContent = item.bulletin_content;
-          // 🌟 移除了未使用的 originalQuestions 變數
           try {
             const parsedContent = JSON.parse(item.bulletin_content || '{}');
             displayContent = parsedContent.description || item.bulletin_content;
@@ -208,7 +206,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
                 </div>
               )}
 
-              {/* 🌟 核心修改：當狀態為 declined 或 closed，且有 decline_reason 時，顯示原因 */}
+              
               {(item.inquiry_status === 'declined' || item.inquiry_status === 'closed') && item.decline_reason && (
                 <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '20px' }}>
                   <strong style={{ color: '#EF4444', fontSize: '14px', marginBottom: '8px', display: 'block' }}>終止/撤回原因：</strong>

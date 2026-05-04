@@ -42,10 +42,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   const [itemInput, setItemInput] = useState({ name: '', price: '' });
   const [showPortfolioPicker, setShowPortfolioPicker] = useState(false);
   
-  // 🌟 控制機制說明的顯示與隱藏
   const [showMechanismInfo, setShowMechanismInfo] = useState(false);
 
-  // --- 圖片處理 ---
   const removeImage = (index: number) => {
     setForm((prev: any) => ({
       ...prev,
@@ -72,10 +70,9 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     return `${R2_PUBLIC_URL}/${url}`;
   };
 
-  // --- 標籤處理核心邏輯 ---
   const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
     setForm((prev: any) => {
-      let list = prev[field] || []; // 防呆確保為陣列
+      let list = prev[field] || [];
       const exclusiveTag = field === 'tags' ? '不限' : '皆可配合';
       
       if (tag === exclusiveTag) {
@@ -100,14 +97,12 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     setForm((prev: any) => ({ ...prev, [field]: (prev[field] || []).filter((t: string) => t !== tag) }));
   };
 
-  // 🌟 共用的處理標籤輸入邏輯
   const handleTagInput = (
     value: string, 
     setValue: React.Dispatch<React.SetStateAction<string>>, 
     field: 'tags' | 'payment_methods', 
     prefix: string = ''
   ) => {
-    // 🛡️ 資安防護：過濾潛在的危險字元
     let safeValue = value.replace(/[<>"'&]/g, ''); 
     const trimmed = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, ''); 
     
@@ -130,7 +125,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
     }
   };
 
-  // --- 提問模板與接案項目 ---
   const addQuestion = () => { 
     if (form.questions.length < 3) setForm((prev: any) => ({ ...prev, questions: [...prev.questions, ''] })); 
   };
@@ -143,7 +137,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   
   const addCommissionItem = () => {
     if (!itemInput.name.trim()) return;
-    // 🛡️ 資安防護：過濾項目名稱
     const safeName = itemInput.name.replace(/[<>"'&]/g, '');
     setForm((prev: any) => ({ ...prev, commission_items: [...prev.commission_items, { name: safeName, price: itemInput.price }] }));
     setItemInput({ name: '', price: '' });
@@ -204,7 +197,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-section">
   <label className="section-title">委託基本資訊</label>
   <div className="dynamic-question-row" style={{ alignItems: 'flex-start', gap: '20px' }}>
-    {/* 標題部分 */}
+    
     <div className="form-group" style={{ flex: 1, margin: 0 }}>
       <label>標題</label>
       <input 
@@ -217,7 +210,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
       />
     </div>
 
-    {/* 目前排單狀況部分 */}
+    
     <div className="form-group" style={{ flex: 1, margin: 0 }}>
       <label>目前排單狀況</label>
       <div className="radio-group">

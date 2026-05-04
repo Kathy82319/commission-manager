@@ -14,7 +14,6 @@ export function Portal() {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
   const [user, setUser] = useState<UserProfile | null>(null);
   
-  // 🌟 新增：處理升級彈窗的狀態
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
 
@@ -43,17 +42,14 @@ export function Portal() {
     navigate(rolePath);
   };
 
-  // 🌟 新增：創作者卡片點擊處理邏輯
   const handleArtistCardClick = () => {
     if (user?.role === 'client') {
       setShowUpgradeModal(true);
     } else {
-      // artist 或 admin，直接進入 (對應你的需求：進入 queue)
       handleRoleSelection('/artist/queue', 'artist');
     }
   };
 
-  // 🌟 新增：呼叫升級 API
   const confirmUpgrade = async () => {
     setIsUpgrading(true);
     try {
@@ -64,7 +60,6 @@ export function Portal() {
       const data = await res.json();
       
       if (data.success) {
-        // 更新本地端暫存的身分並導向排單表
         localStorage.setItem('user_role', 'artist');
         navigate('/artist/queue');
       } else {
@@ -162,7 +157,6 @@ export function Portal() {
   );
 }
 
-// 簡易 Modal 樣式防撞 (避免 Portal.css 尚未設定樣式導致跑版)
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
   backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',

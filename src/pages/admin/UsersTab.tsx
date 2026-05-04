@@ -13,7 +13,6 @@ export function UsersTab() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 表單狀態 (🌟 新增 admin_note)
   const [formData, setFormData] = useState({
     plan_type: 'free',
     pro_expires_at: '',
@@ -47,7 +46,7 @@ export function UsersTab() {
       role: user.role || 'client',
       wishboard_status: user.wishboard_status || 'active',
       mute_expires_at: user.mute_expires_at ? user.mute_expires_at.split('T')[0] : '',
-      admin_note: user.admin_note || '' // 🌟 載入備註
+      admin_note: user.admin_note || '' 
     });
     setIsModalOpen(true);
   };
@@ -78,7 +77,6 @@ export function UsersTab() {
     }
   };
 
-  // 🌟 輔助函式：翻譯與預設值計算
   const getRoleDisplay = (role: string) => {
     switch(role) {
       case 'client': return '委託人';
@@ -134,7 +132,7 @@ export function UsersTab() {
                     {item.display_name} <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: 'normal' }}>({getRoleDisplay(item.role)})</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#9CA3AF' }}>ID: {item.public_id}</div>
-                  {/* 🌟 顯示管理員備註 */}
+                  
                   {item.admin_note && (
                     <div style={{ fontSize: '11px', color: '#4B5563', backgroundColor: '#FEF3C7', padding: '4px 8px', borderRadius: '4px', marginTop: '8px', display: 'inline-block' }}>
                       📝 備註: {item.admin_note}
@@ -151,7 +149,7 @@ export function UsersTab() {
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontSize: '13px' }}>累積: {item.total_commissions} 單</div>
-                  {/* 🌟 動態顯示真實配額 */}
+                  
                   <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
                     上限: {item.custom_quota || getDefaultQuota(item.plan_type)} {item.custom_quota ? '(自訂)' : '(預設)'}
                   </div>
@@ -221,7 +219,7 @@ export function UsersTab() {
               </div>
             </div>
 
-            {/* 🌟 備註輸入區 */}
+            
             <div style={formGroupStyle}>
               <label style={labelStyle}>內部管理員備註 (不會對外顯示)</label>
               <textarea 

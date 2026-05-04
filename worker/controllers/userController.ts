@@ -3,9 +3,7 @@ import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
 
 export const userController = {
-  /**
-   * 取得使用者資料 (GET /api/users/:id)
-   */
+ 
   async getUser(userIdParam: string, currentUserId: string | null, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const isMe = userIdParam === "me" || userIdParam === currentUserId;
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
@@ -14,7 +12,6 @@ export const userController = {
       return new Response(JSON.stringify({ success: false, error: "未登入" }), { status: 401, headers: corsHeaders });
     }
 
-    // 🌟 1. 讀取時，加入 ap.question_template
     const { results } = await env.commission_db.prepare(`
       SELECT 
         u.*, 
@@ -47,7 +44,6 @@ export const userController = {
       parsedSettings.process = user.commission_process || parsedSettings.process;
       parsedSettings.payment = user.payment_info || parsedSettings.payment;
       parsedSettings.rules = user.usage_rules || parsedSettings.rules;
-      // 🌟 2. 將 question_template 塞回給前端
       parsedSettings.question_template = user.question_template || parsedSettings.question_template || '';
       try {
         if (user.portfolio_urls && user.portfolio_urls !== '[]') {
@@ -64,7 +60,6 @@ export const userController = {
 
     user.profile_settings = JSON.stringify(parsedSettings);
     
-    // 清理不要的欄位
     delete user.tos_content; delete user.about_me; delete user.portfolio_urls;
     delete user.commission_process; delete user.payment_info; delete user.usage_rules;
     delete user.custom_1_title; delete user.custom_1_content; delete user.custom_2_title;
@@ -172,7 +167,6 @@ export const userController = {
     const c2 = settings.custom_sections?.[1] || {};
     const c3 = settings.custom_sections?.[2] || {};
 
-    // 🌟 3. 在 UPDATE 語法中加入 question_template
     const updateProfile = env.commission_db.prepare(`
       INSERT INTO ArtistProfiles (
         user_id, about_me, tos_content, portfolio_urls, commission_process, 
@@ -205,7 +199,7 @@ export const userController = {
       c1.title || '', c1.content || '',
       c2.title || '', c2.content || '',
       c3.title || '', c3.content || '',
-      body.question_template || settings.question_template || '' // 🌟 綁定變數
+      body.question_template || settings.question_template || '' 
     );
 
     await env.commission_db.batch([updateUsers, updateProfile]);
@@ -232,9 +226,7 @@ export const userController = {
     });
   },
 
-  /**
-   * 完成新手引導 (POST /api/users/onboarding)
-   */
+
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
     const newRole = body.role === 'artist' ? 'artist' : 'client';
@@ -244,7 +236,6 @@ export const userController = {
       UPDATE Users SET display_name = ?, role = ? WHERE id = ?
     `).bind(newName, newRole, currentUserId);
 
-    // 如果一開始就選擇當創作者，順便初始化他的 ArtistProfiles 資料
     if (newRole === 'artist') {
       const initProfileQuery = env.commission_db.prepare(`
         INSERT INTO ArtistProfiles (user_id) VALUES (?)
@@ -258,12 +249,9 @@ export const userController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 升級為創作者身分 (POST /api/users/me/upgrade)
-   */
+  
   async upgradeToArtist(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
-      // 1. 取得當前使用者狀態
       const { results } = await env.commission_db.prepare(
         "SELECT role FROM Users WHERE id = ?"
       ).bind(currentUserId).all();
@@ -274,7 +262,6 @@ export const userController = {
 
       const user: any = results[0];
 
-      // 若已經是 artist 則直接回傳成功
       if (user.role === 'artist') {
         return new Response(JSON.stringify({ success: true, message: "您已經是創作者身分" }), { status: 200, headers: corsHeaders });
       }
@@ -283,18 +270,15 @@ export const userController = {
         return new Response(JSON.stringify({ success: false, error: "帳號已停用，無法升級" }), { status: 403, headers: corsHeaders });
       }
 
-      // 2. 準備更新身分的 SQL
       const upgradeUserQuery = env.commission_db.prepare(`
         UPDATE Users SET role = 'artist' WHERE id = ?
       `).bind(currentUserId);
 
-      // 3. 準備初始化 ArtistProfiles 的 SQL (確保資料表內有該使用者的紀錄)
       const initProfileQuery = env.commission_db.prepare(`
         INSERT INTO ArtistProfiles (user_id) VALUES (?) 
         ON CONFLICT(user_id) DO NOTHING
       `).bind(currentUserId);
 
-      // 4. 使用 batch 一併執行
       await env.commission_db.batch([upgradeUserQuery, initProfileQuery]);
 
       return new Response(JSON.stringify({ success: true, message: "身分升級成功" }), { status: 200, headers: corsHeaders });

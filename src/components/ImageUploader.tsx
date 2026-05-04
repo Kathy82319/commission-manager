@@ -18,7 +18,7 @@ interface ImageUploaderProps {
     version: number;
     date: string;
   };
-  maxSizeMB?: number; // 🌟 接收外部傳入的檔案大小限制
+  maxSizeMB?: number; 
 }
 
 export function ImageUploader({
@@ -32,7 +32,7 @@ export function ImageUploader({
   existingUrl,
   isFinal = false,
   metadata,
-  maxSizeMB = 3 // 🌟 預設改為 3MB
+  maxSizeMB = 3 
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -48,7 +48,6 @@ export function ImageUploader({
       const file = e.target.files[0];
       const isImage = file.type.startsWith('image/');
 
-      // 🌟 核心修復：使用動態傳入的 maxSizeMB 來計算字節數
       const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024; 
       if (file.size > MAX_FILE_SIZE) {
         alert(`檔案太大囉！最大限制為 ${maxSizeMB}MB。\n您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。`);

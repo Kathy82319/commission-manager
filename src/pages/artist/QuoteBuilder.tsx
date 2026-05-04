@@ -17,7 +17,6 @@ const customQuillModules = {
   ]
 };
 
-// 🌟 修改了 Props，加入 isModal 與 onSuccess 支援彈窗模式
 export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean, onSuccess?: (id: string) => void } = {}) {
   const navigate = useNavigate();
 
@@ -154,7 +153,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
           alert(`${workflowMode === 'free' ? '自由紀錄單建立成功！' : '委託單建置成功！'}`);
         }
         
-        // 🌟 彈窗模式處理
         if (isModal && onSuccess) {
           onSuccess(newOrderId);
         } else {
@@ -171,7 +169,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   return (
     <div className="quote-page" style={isModal ? { padding: 0 } : {}}>
       
-      {/* 🌟 非彈窗模式才顯示標題 */}
+      
       {!isModal && (
         <div className="quote-header">
           <div>
@@ -202,7 +200,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
         </div>
       )}
 
-      {/* 🌟 彈窗模式時，將按鈕移至這裡方便切換 */}
+      
       {isModal && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>

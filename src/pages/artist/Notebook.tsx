@@ -44,14 +44,12 @@ interface PaymentRecord { id: string; record_date: string; item_name: string; am
 interface ActionLog { id: string; created_at: string; actor_role: string; action_type: string; content: string; }
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; private_file_key?: string; }
 
-// 🌟 安全版：解除 HTML 實體編碼
 const unescapeHtml = (str: any) => {
   if (typeof str !== 'string') return str;
   if (!str) return '';
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 🌟 防護盾版 JSON 解析器
 const safeParse = (data: any) => {
   if (typeof data !== 'string') return data;
   try {
@@ -112,7 +110,6 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
   });
 }
 
-// 🌟 安全版：許願池來源解析
 const getBulletinSource = (currentOrder: Commission | null | undefined) => {
   if (!currentOrder || !currentOrder.origin_source) return null;
   try {
@@ -216,7 +213,6 @@ export function Notebook() {
 
   useEffect(() => { fetchCommissions(true); }, []);
 
-  // 🌟 新增：自動評估並同步付款狀態的邏輯
   const evaluatePaymentStatus = async (orderId: string, paymentList: PaymentRecord[], currentOrder: Commission | undefined) => {
     if (!currentOrder) return;
     
@@ -230,14 +226,12 @@ export function Notebook() {
       expectedStatus = 'paid';
     }
 
-    // 如果計算出的狀態與目前不同，則自動同步到後端
     if (expectedStatus !== currentOrder.payment_status) {
       try {
         await fetch(`${API_BASE}/api/commissions/${orderId}`, { 
           method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify({ payment_status: expectedStatus }) 
         });
-        // 更新本地端資料，避免畫面閃爍
         setCommissions(prev => prev.map(c => c.id === orderId ? { ...c, payment_status: expectedStatus } : c));
         setEditData(prev => ({ ...prev, payment_status: expectedStatus }));
       } catch (e) {
@@ -251,7 +245,6 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setPayments(data.data);
-      // 🌟 在這裡呼叫狀態評估，確保狀態是最新的
       const currentOrder = commissions.find(c => c.id === id);
       if(currentOrder) evaluatePaymentStatus(id, data.data, currentOrder);
     }
@@ -374,7 +367,6 @@ export function Notebook() {
     fetchCommissions();
   };
 
-  // 🌟 保留手動選擇，但建議使用者這會被自動連動覆蓋
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!selectedId) return;
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, { 
@@ -387,7 +379,6 @@ export function Notebook() {
   const handleAddPayment = async () => {
     const amountNum = Number(newPayment.amount);
     if (!selectedId || !newPayment.record_date || !newPayment.item_name || !newPayment.amount) return alert("請填寫完整的記帳資訊喔！");
-    // 修改：允許輸入負數（退款/折扣）
     if (isNaN(amountNum)) return alert("請輸入有效的金額數值！");
 
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/payments`, { 
@@ -397,7 +388,6 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setNewPayment({ record_date: '', item_name: '', amount: '' }); 
-      // 重新取得並自動評估狀態
       fetchPayments(selectedId);
     } else alert('記帳失敗：' + data.error);
   };
@@ -405,7 +395,6 @@ export function Notebook() {
   const handleDeletePayment = async (paymentId: string) => {
     if (!selectedId || !window.confirm('確定要刪除此筆財務紀錄嗎？')) return;
     await fetch(`${API_BASE}/api/commissions/${selectedId}/payments/${paymentId}`, { method: 'DELETE', credentials: 'include' });
-    // 重新取得並自動評估狀態
     fetchPayments(selectedId);
   };
 
@@ -591,7 +580,6 @@ export function Notebook() {
     );
   };
 
-  // 🌟 使用新的、安全的資料來源解析函式
   const bulletinData = getBulletinSource(selectedOrder);
 
   return (
@@ -737,7 +725,7 @@ export function Notebook() {
                         <h3 className="section-title">財務與收款狀態</h3>
                         <div className="payment-status-wrapper">
                           <span className="payment-status-label">帳務狀態：</span>
-                          {/* 🌟 狀態選單：顯示為唯讀或提示自動連動 */}
+                          
                           <select className="form-input select-status" value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)}>
                             <option value="unpaid">未收款</option><option value="partial">已收訂金</option><option value="paid">已收款</option>
                           </select>
@@ -789,7 +777,7 @@ export function Notebook() {
                     </div>
 
                     
-                    {/* 🌟 修復後的許願池媒合軌跡區塊 (直接使用 bulletinData 渲染) */}
+                    
                     {bulletinData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>

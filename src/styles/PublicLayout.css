@@ -6,7 +6,7 @@
 }
 
 .public-header {
-  /* 🌟 電腦版預設：維持妳要的絕對定位（懸浮），不佔空間，不擠壓背景 */
+  
   position: absolute;
   top: 0;
   right: 0;
@@ -102,9 +102,9 @@
    ========================================================= */
 @media (max-width: 768px) {
   .public-header {
-    position: relative; /* 取消懸浮 */
+    position: relative; 
     padding: 12px 16px;
-    justify-content: center; /* 按鈕置中 */
+    justify-content: center; 
   }
   
   .logged-in-group {

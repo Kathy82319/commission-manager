@@ -4,7 +4,7 @@ import React from 'react';
 interface AdminLayoutProps {
   activeTab: string;
   onTabChange: (tab: 'overview' | 'users' | 'commissions' | 'wishboard') => void;
-  pendingReportCount?: number; // 🌟 新增：接收未處理的檢舉數量
+  pendingReportCount?: number; 
   children: React.ReactNode;
 }
 
@@ -45,7 +45,6 @@ export function AdminLayout({ activeTab, onTabChange, pendingReportCount = 0, ch
             >
               <span>{item.label}</span>
               
-              {/* 🌟 方案 A 的紅點 UI */}
               {item.id === 'wishboard' && pendingReportCount > 0 && (
                 <span style={{ 
                   backgroundColor: '#EF4444', 

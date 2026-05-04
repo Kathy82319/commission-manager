@@ -54,7 +54,7 @@ export function CommissionsTab() {
                 </td>
                 <td style={tdStyle}>
                   <div style={{ fontWeight: '600' }}>{item.artist_name}</div>
-                  {/* 🌟 顯示 public_id */}
+                  
                   <div style={{ fontSize: '11px', color: '#9CA3AF' }}>UID: {item.artist_public_id || item.artist_id?.slice(0, 8)}</div>
                 </td>
                 <td style={tdStyle}>
@@ -65,7 +65,7 @@ export function CommissionsTab() {
                   {item.client_name ? (
                     <div>
                       <div style={{ fontWeight: '600', color: '#059669' }}>👤 {item.client_name}</div>
-                      {/* 🌟 顯示 public_id 與精確的 bind_date */}
+                      
                       <div style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px' }}>UID: {item.client_public_id || '未知'}</div>
                       <div style={{ fontSize: '11px', color: '#6B7280' }}>綁定日: {formatDate(item.bind_date)}</div>
                     </div>

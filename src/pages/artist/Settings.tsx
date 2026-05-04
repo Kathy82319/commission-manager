@@ -64,13 +64,11 @@ interface MenuCategory {
 export function Settings() {
   const location = useLocation();
   
-  // 🌟 修正：合併並只保留這一個 activeTab 宣告，去抓網址的參數
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
     return params.get('tab') || 'profile_basic';
   });
 
-  // 🌟 新增：監聽網址變化，確保在同一個頁面內點擊也能順利切換分頁
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
