@@ -58,6 +58,12 @@
 .sidebar-header {
   padding: 30px 20px;
   border-bottom: 1px solid #F0ECE7;
+  
+  /* 強制修正：確保它是區塊或垂直 Flex，並靠左 */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
 }
 
 .app-sidebar .sidebar-nav {
