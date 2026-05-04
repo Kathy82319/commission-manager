@@ -1,6 +1,5 @@
 // src/pages/Workspace
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
 const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
@@ -10,7 +9,6 @@ interface Message {
   sender_role: string;
   content: string;
   created_at: string;
-  // 🌟 新增：用來區分這筆訊息是來自過去的洽談，還是現在的委託
   is_history?: boolean; 
 }
 
@@ -50,7 +48,6 @@ export function Workspace() {
   
   const [order, setOrder] = useState<OrderData | null>(null);
   
-  // 🌟 新增：存放舊洽談紀錄的狀態
   const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   
@@ -78,21 +75,21 @@ export function Workspace() {
         const isOffer = parsed.bulletin_category === 'offer';
         const bulletinContent = safeParse(parsed.bulletin_content);
         
-        // 🌟 修復許願池媒合軌跡：統一且強健的解析
-        let rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+        // 🌟🌟🌟 核心修復：不管接稿還是徵稿，投遞的資料永遠在 artist_snapshot，優先取用它
+        let rawSnapshot = parsed.artist_initial_snapshot || parsed.artist_snapshot;
+        if (!rawSnapshot || (typeof rawSnapshot === 'object' && Object.keys(rawSnapshot).length === 0)) {
+          rawSnapshot = parsed.client_initial_response || '{}';
+        }
         
-        // 有些時候它會被字串化兩次，所以我們試著安全解析兩次
         let parsedSnapshot = safeParse(rawSnapshot);
         if (typeof parsedSnapshot === 'string') {
           parsedSnapshot = safeParse(parsedSnapshot);
         }
         
-        // 確保結構正確
         if (typeof parsedSnapshot !== 'object' || parsedSnapshot === null) {
             parsedSnapshot = { message: parsedSnapshot };
         }
         
-        // 確保 answers 是陣列
         if (parsedSnapshot.answers && typeof parsedSnapshot.answers === 'string') {
             parsedSnapshot.answers = safeParse(parsedSnapshot.answers);
         }
@@ -126,7 +123,6 @@ export function Workspace() {
     } catch (error) {}
   };
 
-  // 🌟 核心修改：取得訂單資料後，若發現有舊的 inquiry_id，就去撈舊訊息
   const fetchOrderData = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}`, { credentials: 'include' });
@@ -134,7 +130,6 @@ export function Workspace() {
       if (data.success) {
         setOrder(data.data);
         
-        // 嘗試撈取舊洽談訊息
         const originSource = safeParse(data.data.origin_source);
         if (originSource && originSource.source_type === 'bulletin' && originSource.inquiry_id) {
             fetchHistoryMessages(originSource.inquiry_id);
@@ -143,29 +138,21 @@ export function Workspace() {
     } catch (error) { console.error("無法讀取訂單", error); }
   };
 
-  // 🌟 新增：去拿舊洽談室的訊息
   const fetchHistoryMessages = async (inquiryId: string) => {
     try {
         const res = await fetch(`${API_BASE}/api/inquiries/${inquiryId}/messages`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) {
-            // 標記這些訊息為歷史訊息，以便後續渲染時能區分（若需要）
             const historyMsgs = data.data.map((msg: any) => ({
                 ...msg,
-                // 洽談室的 sender_id 會是字串（使用者ID），我們需要把它轉成 role ('artist' | 'client') 才能跟新的委託訊息相容
-                // 這裡我們暫時用一個簡單的判斷，或者依賴外層的 currentUserId
                 is_history: true
             }));
             
-            // 處理發送者角色問題：因為舊資料可能存的是 sender_id，新資料存的是 sender_role
-            // 我們利用取得使用者自身身分的 API 或直接從 role 來推斷
             const userRes = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
             const userData = await userRes.json();
             const myUserId = userData.data.id;
             
             const processedHistory = historyMsgs.map((msg: any) => {
-                // 如果舊訊息的發送者 ID 等於現在登入的使用者 ID，那他的角色就跟現在登入的 role 一樣
-                // 反之則是對立角色
                 const senderRole = msg.sender_id === myUserId ? role : (role === 'artist' ? 'client' : 'artist');
                 return { ...msg, sender_role: senderRole };
             });
@@ -350,8 +337,6 @@ export function Workspace() {
   );
 
   const bulletinData = getBulletinSource(order);
-
-  // 🌟 將歷史訊息與新訊息接在一起
   const allMessages = [...historyMessages, ...messages];
 
   return (
@@ -429,11 +414,8 @@ export function Workspace() {
             </div>
           )}
 
-          {/* 🌟 渲染合併後的訊息 (歷史 + 新增) */}
           {allMessages.map((msg, index) => {
             const isMe = msg.sender_role === role;
-            
-            // 🌟 加入一個歷史訊息到正式訊息的視覺分隔線
             const isFirstNewMessage = !msg.is_history && index > 0 && allMessages[index - 1].is_history;
 
             return (
