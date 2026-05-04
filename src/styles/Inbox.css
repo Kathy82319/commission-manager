@@ -928,15 +928,16 @@
    ================================================== */
 @media (max-width: 768px) {
   /* 基礎容器與標題 */
-  .inbox-container, .inbox-page-wrapper {
+  .inbox-page-container {
     padding: 16px;
+    margin: 16px auto;
   }
   .inbox-page-title {
     font-size: 20px;
     margin-bottom: 16px;
   }
 
-/* Tab 標籤切換：改為橫向滑動 */
+  /* Tab 標籤切換：改為橫向滑動 */
   .inbox-tabs-wrapper {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -947,6 +948,7 @@
   }
   .inbox-tabs-wrapper::-webkit-scrollbar { display: none; }
   .inbox-tab-btn { padding: 10px 16px; font-size: 14px; }
+  .inbox-rules-btn { flex-shrink: 0; }
 
   /* 我的許願：單欄垂直 */
   .dashboard-slots-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -973,20 +975,63 @@
     padding: 10px 16px !important; 
   }
 
-  /* 我投遞的履歷 (Artist Inquiry Card) */
-  .artist-inquiry-card { padding: 16px; }
-  .aic-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .aic-header h3 { font-size: 16px; white-space: normal; }
-  .aic-snippet { flex-direction: column; gap: 12px; }
-  .aic-snippet-img, .aic-snippet-noimg { width: 100%; height: 140px; }
-  .aic-footer { flex-direction: column; gap: 10px; }
-  .aic-footer button { width: 100%; }
+  /* ====================================================================
+     🌟 海選模式 (Offer CardView) - 修正圖片縮圖未滿版問題
+     ==================================================================== */
+  /* 必須使用 !important 來覆寫 JSX 中的 style={{ width: '220px' }} */
+  .offer-card-container { flex-direction: column !important; }
+  .offer-card-gallery { 
+    width: 100% !important; 
+    min-width: 100% !important; 
+    height: 200px !important; 
+    max-height: 200px !important; 
+    border-right: none !important; 
+    border-bottom: 1px solid #EAE6E1 !important; 
+  }
+  .offer-carousel-wrapper, .offer-no-img { 
+    min-height: 200px !important; 
+    height: 200px !important; 
+  }
+  .offer-card-content { padding: 16px !important; }
 
-  /* 海選模式 (Offer CardView) */
-  .offer-card-container { flex-direction: column; }
-  .offer-card-gallery { width: 100%; height: 160px; border-right: none; border-bottom: 1px solid #EAE6E1; }
-  .offer-carousel-wrapper, .offer-no-img { min-height: 160px; height: 160px; }
-  .offer-card-content { padding: 16px; }
+  /* ====================================================================
+     🌟 我投遞的履歷 (OutboundTab) - 強制覆寫 Inline Styles 適配手機版
+     ==================================================================== */
+  /* 強制將卡片內距縮小 */
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] {
+    padding: 16px !important;
+  }
+  /* 標題與狀態列：允許折行並強制讓標題佔滿一行 */
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(2) {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(2) h3 {
+    font-size: 18px !important;
+    white-space: normal !important;
+    flex-basis: 100% !important;
+  }
+  /* 圖片與描述區塊：改為上下排列，讓圖片寬度滿版 */
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(3) {
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(3) img,
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:nth-child(3) > div:first-child {
+    width: 100% !important;
+    height: 180px !important;
+  }
+  /* 底部操作按鈕：改為上下滿版排列 */
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:last-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .inbox-tabs-wrapper ~ div > div > div[style*="border-radius"] > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
 
   /* 彈出視窗 (Modal) */
   .inbox-modal-overlay, .modal-overlay { padding: 12px; }
@@ -998,7 +1043,6 @@
   .btn-cancel, .btn-submit, .btn-submit-red, .btn-paper-cancel, .btn-paper-submit, .btn-paper-submit-red { width: 100%; padding: 12px; text-align: center; }
   .template-edit-box { padding: 12px; }
 }
-
 /* ==========================================================================
    🌟 倒數計時與狀態警示標籤 (Expiry Tags)
    ========================================================================== */
