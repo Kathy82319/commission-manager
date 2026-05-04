@@ -28,7 +28,7 @@ export default {
       return Response.redirect(redirectUrl.toString(), 303);
     }
     
-    // 🛡️ 資安防護：動態 CORS 白名單，防止惡意網域跨站存取
+    // 🛡️ 資安防護：動態 CORS 白名單
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
@@ -44,7 +44,7 @@ export default {
       "Access-Control-Allow-Credentials": "true",
     };
 
-    // 處理瀏覽器的預檢請求 (Preflight Request)
+    // 處理預檢請求
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -65,7 +65,7 @@ export default {
         }
       }
 
-      // --- 🌟 使用者關係 (收藏/黑名單) 相關路由 ---
+      // --- 🌟 使用者關係 相關路由 ---
       if (sanitizedPath.startsWith("/api/relations")) {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
@@ -120,7 +120,6 @@ export default {
         } else if (targetId && subAction === "close" && request.method === "PATCH") { 
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
-          // 🌟 修正：補上 request 參數，對齊 Controller 的規格
           return bulletinController.closeBulletin(request, targetId, currentUserId!, env, corsHeaders);
         } 
         else if (targetId && subAction === "report" && request.method === "POST") {
@@ -209,8 +208,9 @@ export default {
       // --- 認證路由 ---
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
-      if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
       
+      // ✅ 測試後門路由 (testing-bypass) 已移除
+
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
