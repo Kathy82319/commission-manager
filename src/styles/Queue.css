@@ -345,3 +345,16 @@
     opacity: 0.8;
   }
 }
+
+/* 正在被拖曳的那一行 (原位會變成半透明的佔位符) */
+tr.is-dragging {
+  opacity: 0.3;
+  background-color: #f9f9f9;
+}
+
+/* 滑鼠懸停的目標行 (顯示插入指示線) */
+tr.drag-over-target > td {
+  border-top: 3px solid #5D4A3E !important; 
+  background-color: rgba(93, 74, 62, 0.08) !important; 
+  transition: background-color 0.15s ease-in-out;
+}
