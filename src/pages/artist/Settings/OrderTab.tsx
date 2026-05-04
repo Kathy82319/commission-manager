@@ -63,7 +63,7 @@ export function OrderTab({ settings, setSettings }: Props) {
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
                 backgroundColor: draggedIdx === idx ? '#F4F0EB' : '#FFFFFF',
                 border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'grab',
-                opacity: isHidden ? 0.6 : 1, transition: 'background-color 0.2s'
+                opacity: isHidden ? 0.8 : 1, transition: 'background-color 0.2s'
               }}
             >
               <GripVertical size={18} color="#A0978D" />
