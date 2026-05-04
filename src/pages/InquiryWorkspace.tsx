@@ -29,7 +29,6 @@ export const InquiryWorkspace: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showMobileAside, setShowMobileAside] = useState(false);
 
-  // 🌟 圖片上傳狀態與 Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -51,7 +50,7 @@ export const InquiryWorkspace: React.FC = () => {
 
   const getPaymentTimingLabel = (val: string) => {
     const map: Record<string, string> = {
-      upfront: '全額付清後動筆',
+      prepaid: '全額付清後動筆',
       deposit: '需先付定金',
       after_draft: '草稿確認後付款',
       after_completion: '完稿後付款',
@@ -73,7 +72,6 @@ export const InquiryWorkspace: React.FC = () => {
         const myId = resUser.data.id;
         setCurrentUserId(myId);
 
-        // 🌟 核心角色判定：誰是這場委託的真正繪師？
         const isOfferCat = data.bulletin_category === 'offer';
         const targetArtistId = isOfferCat ? data.bulletin_client_id : data.artist_id;
         setActualArtistId(targetArtistId);
@@ -90,13 +88,11 @@ export const InquiryWorkspace: React.FC = () => {
              let defaultName = "許願池委託";
              try {
                 const parsedContent = JSON.parse(data.bulletin_content);
-                // 🌟 修正：優先抓取標題，沒有才去抓內容
-                if (parsedContent.title) {
+                // 🌟 修正：精準抓取「接案項目」或「標題」作為預設名稱，不再去抓說明內容
+                if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
+                  defaultName = parsedContent.commission_items[0].name;
+                } else if (parsedContent.title) {
                   defaultName = parsedContent.title;
-                } else if (parsedContent.description) {
-                  defaultName = parsedContent.description.substring(0, 30);
-                } else if (parsedContent.content) {
-                  defaultName = parsedContent.content.substring(0, 30);
                 }
              } catch(e) {
                 defaultName = data.bulletin_content.substring(0, 30);
@@ -182,17 +178,12 @@ export const InquiryWorkspace: React.FC = () => {
 
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          contentType: 'image/jpeg', bucketType: 'public', 
-          originalName: `chat_${Date.now()}.jpg`, folder: 'chat-images' 
-        })
+        body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: `chat_${Date.now()}.jpg`, folder: 'chat-images' })
       });
       const ticketData = await ticketRes.json();
       if (!ticketData.success) throw new Error(ticketData.error);
 
-      const putRes = await fetch(ticketData.uploadUrl, {
-        method: 'PUT', body: compressedBlob, headers: { 'Content-Type': 'image/jpeg' }
-      });
+      const putRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: compressedBlob, headers: { 'Content-Type': 'image/jpeg' } });
       if (!putRes.ok) throw new Error('上傳至雲端失敗');
 
       await apiClient.post(`/api/inquiries/${id}/messages`, { content: `![image](${ticketData.fileName})` });
@@ -213,25 +204,17 @@ export const InquiryWorkspace: React.FC = () => {
     let match;
     
     while ((match = imgRegex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(<span key={lastIndex}>{content.substring(lastIndex, match.index)}</span>);
-      }
+      if (match.index > lastIndex) parts.push(<span key={lastIndex}>{content.substring(lastIndex, match.index)}</span>);
       const imgUrl = match[1];
       const fullUrl = imgUrl.startsWith('http') ? imgUrl : `${R2_PUBLIC_URL}/${imgUrl}`;
       parts.push(
         <div key={match.index} style={{ margin: '8px 0' }}>
-          <img 
-            src={fullUrl} alt="chat-upload" 
-            style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', cursor: 'zoom-in', display: 'block', border: '1px solid rgba(0,0,0,0.1)' }} 
-            onClick={() => window.open(fullUrl, '_blank')}
-          />
+          <img src={fullUrl} alt="chat-upload" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', cursor: 'zoom-in', display: 'block', border: '1px solid rgba(0,0,0,0.1)' }} onClick={() => window.open(fullUrl, '_blank')} />
         </div>
       );
       lastIndex = imgRegex.lastIndex;
     }
-    if (lastIndex < content.length) {
-      parts.push(<span key={lastIndex}>{content.substring(lastIndex)}</span>);
-    }
+    if (lastIndex < content.length) parts.push(<span key={lastIndex}>{content.substring(lastIndex)}</span>);
     return parts.length > 0 ? parts : content;
   };
 
@@ -299,7 +282,6 @@ export const InquiryWorkspace: React.FC = () => {
   let parsedBulletin: any = {};
   try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
-      // 優先使用 content，若無則使用 description
       if (parsedBulletin.content) displayBulletinContent = parsedBulletin.content;
       else if (parsedBulletin.description) displayBulletinContent = parsedBulletin.description;
   } catch (e) {}
@@ -309,14 +291,10 @@ export const InquiryWorkspace: React.FC = () => {
     if (inquiry.artist_snapshot) {
       parsedSnapshot = typeof inquiry.artist_snapshot === 'string' ? JSON.parse(inquiry.artist_snapshot) : inquiry.artist_snapshot;
     }
-  } catch (e) {
-    console.error("無法解析 artist_snapshot", e);
-  }
+  } catch (e) {}
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
-
-  // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
-
+  
   // 🌟 修正 TOS 抓取優先級別：貼文專屬 > 繪師個人檔案預設
   let artistTos = "繪師未提供額外協議說明。";
   if (parsedBulletin && parsedBulletin.tos_content) {
@@ -336,7 +314,6 @@ export const InquiryWorkspace: React.FC = () => {
         <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold' }}>← 返回</button>
-            {/* 🌟 標題優化：優先顯示設定好的標題 */}
             <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               洽談：{parsedBulletin.title ? parsedBulletin.title.substring(0, 20) : displayBulletinContent.substring(0, 20)}...
             </h2>
@@ -525,6 +502,7 @@ export const InquiryWorkspace: React.FC = () => {
                       </div>
                     )}
 
+                    {/* 🌟 補上「詳細接案說明」 */}
                     {parsedBulletin.content && (
                       <div style={{ margin: 0 }}>
                         <strong style={{ display: 'block', marginBottom: '4px' }}>詳細接案說明：</strong>
