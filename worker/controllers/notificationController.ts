@@ -21,7 +21,7 @@ const safeParseTime = (dateStr: string | null | undefined) => {
   }
 };
 
-// 🌟 新增：確保輸出給前端的時間格式是標準 ISO UTC 格式，讓前端能正確轉換為台灣時間
+// 🌟 核心修復 1：遇到缺少時間的新通知，強制給予「當下時間」，確保它絕對排在最上面！
 const formatOutputTime = (dateStr: string | null | undefined) => {
   if (!dateStr) return new Date().toISOString();
   if (dateStr.includes('Z')) return dateStr;
@@ -36,9 +36,7 @@ export const notificationController = {
 
       // ==========================================
       // 1. 撈取「貼文發布者 (Post Owner)」的通知
-      // 對應資料庫的 b.client_id
       // ==========================================
-      
       const clientInboxQuery = await env.commission_db.prepare(`
         SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.last_read_at_client, i.status, i.decline_reason 
         FROM BulletinInquiries i
@@ -51,7 +49,6 @@ export const notificationController = {
         let text = '';
         let linkUrl = '';
 
-        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
         const isOffer = item.bulletin_category === 'offer';
 
         switch(item.status) {
@@ -78,7 +75,7 @@ export const notificationController = {
               text = `🌟 恭喜！案主已同意「${item.title || '未命名'}」的協議，正式成立委託單。`;
               linkUrl = '/artist/notebook';
             } else {
-              return; // 案主自己點擊同意的，不需通知自己
+              return; 
             }
             break;
           default:
@@ -92,7 +89,7 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: formatOutputTime(item.latest_update_at), // 🌟 確保時間轉換
+          time: formatOutputTime(item.latest_update_at), // 🌟 套用防呆時間
           isUnread
         });
       });
@@ -114,7 +111,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 繪師針對委託單「${order.project_name || order.id}」提出了合約異動申請。`,
             link: `/client/orders?open=${order.id}`,
-            time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
+            time: formatOutputTime(order.latest_message_at),
             isUnread
           });
         }
@@ -125,18 +122,19 @@ export const notificationController = {
         notifications.push({
           id: `client_msg_${order.id}`,
           type: 'commission_msg',
-          text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
+          // 🌟 核心修復 2：已讀的訊息就不要再顯示「有新訊息」了，避免產生困擾
+          text: hasNewMsg 
+            ? `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`
+            : `💬 委託單「${order.project_name || order.id}」的專屬工作區`,
           link: `/workspace/${order.id}`, 
-          time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
+          time: formatOutputTime(order.latest_message_at),
           isUnread: hasNewMsg
         });
       });
 
       // ==========================================
       // 2. 撈取「投遞應徵者 (Applicant)」的通知
-      // 對應資料庫的 i.artist_id
       // ==========================================
-
       const artistInboxQuery = await env.commission_db.prepare(`
         SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.status, i.last_read_at_artist, i.decline_reason
         FROM BulletinInquiries i
@@ -198,7 +196,7 @@ export const notificationController = {
           type: 'inquiry_msg',
           text,
           link: linkUrl,
-          time: formatOutputTime(item.latest_update_at), // 🌟 確保時間轉換
+          time: formatOutputTime(item.latest_update_at),
           isUnread
         });
       });
@@ -220,7 +218,7 @@ export const notificationController = {
             type: 'commission_change',
             text: `📝 委託單「${order.project_name || order.id}」的合約異動待處理。`,
             link: `/artist/notebook?id=${order.id}&tab=details`, 
-            time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
+            time: formatOutputTime(order.latest_message_at),
             isUnread
           });
         }
@@ -231,9 +229,13 @@ export const notificationController = {
         notifications.push({
           id: `artist_msg_${order.id}`,
           type: 'commission_msg',
-          text: `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`,
-          link: `/workspace/${order.id}`,
-          time: formatOutputTime(order.latest_message_at), // 🌟 確保時間轉換
+          // 🌟 核心修復 2：已讀訊息不再提示「有新訊息」
+          text: hasNewMsg 
+            ? `💬 委託單「${order.project_name || order.id}」有新的聊天訊息。`
+            : `💬 委託單「${order.project_name || order.id}」的專屬工作區`,
+          // 🌟 核心修復 3：確實補上 ?role=artist
+          link: `/workspace/${order.id}?role=artist`,
+          time: formatOutputTime(order.latest_message_at),
           isUnread: hasNewMsg
         });
       });
@@ -255,35 +257,11 @@ export const notificationController = {
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.batch([
-        // 1. 清除使用者為「發文者 (Post Owner)」的通知
-        env.commission_db.prepare(`
-          UPDATE BulletinInquiries 
-          SET last_read_at_client = CURRENT_TIMESTAMP 
-          WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
-        `).bind(currentUserId),
-        
-        // 2. 清除使用者為「投遞者 (Applicant)」的通知
-        env.commission_db.prepare(`
-          UPDATE BulletinInquiries 
-          SET last_read_at_artist = CURRENT_TIMESTAMP 
-          WHERE artist_id = ?
-        `).bind(currentUserId),
-
-        // 3. 清除使用者在正式委託中為「案主」的通知
-        env.commission_db.prepare(`
-          UPDATE Commissions 
-          SET last_read_at_client = CURRENT_TIMESTAMP 
-          WHERE client_id = ?
-        `).bind(currentUserId),
-
-        // 4. 清除使用者在正式委託中為「繪師」的通知
-        env.commission_db.prepare(`
-          UPDATE Commissions 
-          SET last_read_at_artist = CURRENT_TIMESTAMP 
-          WHERE artist_id = ?
-        `).bind(currentUserId)
+        env.commission_db.prepare(`UPDATE BulletinInquiries SET last_read_at_client = CURRENT_TIMESTAMP WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)`).bind(currentUserId),
+        env.commission_db.prepare(`UPDATE BulletinInquiries SET last_read_at_artist = CURRENT_TIMESTAMP WHERE artist_id = ?`).bind(currentUserId),
+        env.commission_db.prepare(`UPDATE Commissions SET last_read_at_client = CURRENT_TIMESTAMP WHERE client_id = ?`).bind(currentUserId),
+        env.commission_db.prepare(`UPDATE Commissions SET last_read_at_artist = CURRENT_TIMESTAMP WHERE artist_id = ?`).bind(currentUserId)
       ]);
-
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
