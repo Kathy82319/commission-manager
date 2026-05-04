@@ -19,6 +19,9 @@ export const InquiryWorkspace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
   
+  // 🌟 新增：儲存當前使用者的 ID，讓對話框左右判斷不再錯亂
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -53,8 +56,16 @@ export const InquiryWorkspace: React.FC = () => {
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
 
         const resUser = await apiClient.get('/api/users/me');
-        const currentUserIsArtist = resUser.data.id === resInquiry.data.artist_id;
+        setCurrentUserId(resUser.data.id);
+
+        // 🌟 核心修正：判斷誰才是真正的「繪師」
+        // 如果是接委託 (offer)，發文者 (bulletin_client_id) 才是繪師；否則投遞者 (artist_id) 才是繪師
+        const isOfferCat = resInquiry.data.bulletin_category === 'offer';
+        const actualArtistId = isOfferCat ? resInquiry.data.bulletin_client_id : resInquiry.data.artist_id;
+        
+        const currentUserIsArtist = resUser.data.id === actualArtistId;
         setIsArtist(currentUserIsArtist);
+        
         if (resInquiry.data.status === 'accepted') setIsAccepted(true);
 
         if (isFirstLoad.current || !currentUserIsArtist || resInquiry.data.status !== 'submitted') {
@@ -282,6 +293,10 @@ export const InquiryWorkspace: React.FC = () => {
   }
 
   const isOffer = inquiry.bulletin_category === 'offer'; 
+  
+  // 🌟 用於畫面渲染的真正繪師 ID
+  const actualArtistId = isOffer ? inquiry.bulletin_client_id : inquiry.artist_id;
+
   const artistTos = JSON.parse(inquiry.artist_settings || '{}').terms_of_service || "繪師未提供額外協議說明。";
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
@@ -301,11 +316,13 @@ export const InquiryWorkspace: React.FC = () => {
 
         <main className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           {messages.map((msg) => {
-            const isMe = msg.sender_id === (isArtist ? inquiry.artist_id : inquiry.bulletin_client_id);
+            // 🌟 精準判斷是否為自己發送的訊息
+            const isMe = msg.sender_id === currentUserId;
             return (
               <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                  <span>{msg.sender_id === inquiry.artist_id ? '繪師' : '委託人'}</span>
+                  {/* 🌟 根據真正的繪師 ID 判定標籤 */}
+                  <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
                   <span>{formatLocalTime(msg.created_at)}</span>
                 </div>
                 {/* 🌟 渲染圖片或文字 */}
@@ -350,6 +367,7 @@ export const InquiryWorkspace: React.FC = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+          
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 許願池媒合軌跡</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -361,6 +379,7 @@ export const InquiryWorkspace: React.FC = () => {
 
               <div>
                 <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                
                 {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
                   <div style={{ marginTop: '4px', marginBottom: '8px' }}>
                     {parsedSnapshot.answers.map((ans: any, idx: number) => (
@@ -386,6 +405,7 @@ export const InquiryWorkspace: React.FC = () => {
                   </div>
                 )}
               </div>
+
             </div>
             
             <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>

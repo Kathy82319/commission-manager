@@ -28,11 +28,12 @@ export const notificationController = {
       let unreadCount = 0;
 
       // ==========================================
-      // 1. 撈取「案主身分」的通知
+      // 1. 撈取「貼文發布者 (Post Owner)」的通知
+      // 對應資料庫的 b.client_id
       // ==========================================
       
       const clientInboxQuery = await env.commission_db.prepare(`
-        SELECT b.title, i.id, i.latest_update_at, i.last_read_at_client, i.status, i.decline_reason 
+        SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.last_read_at_client, i.status, i.decline_reason 
         FROM BulletinInquiries i
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE b.client_id = ? AND i.status != 'cancelled'
@@ -40,32 +41,48 @@ export const notificationController = {
 
       (clientInboxQuery.results || []).forEach((item: any) => {
         const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_client);
-        
         let text = '';
         let linkUrl = '';
 
-        // 🌟 防護升級：嚴謹的狀態判斷
+        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
+        // 若為 Offer，發文者其實是「繪師」；若為 Request，發文者才是「案主」
+        const isOffer = item.bulletin_category === 'offer';
+
         switch(item.status) {
           case 'pending':
-            text = `🌟 您的許願「${item.title || '未命名'}」收到了新提案！`;
-            linkUrl = '/client/inbox';
+            text = isOffer 
+              ? `🌟 您的接委託「${item.title || '未命名'}」收到了新委託人的投遞！`
+              : `🌟 您的徵委託「${item.title || '未命名'}」收到了新繪師的提案！`;
+            linkUrl = isOffer ? '/artist/inbox' : '/client/inbox';
             break;
           case 'declined':
-            text = `🌟 繪師已撤回針對「${item.title || '未命名'}」的提案。`;
-            linkUrl = '/client/inbox';
+            text = isOffer
+              ? `🌟 委託人已撤回對「${item.title || '未命名'}」的洽談申請。`
+              : `🌟 繪師已撤回針對「${item.title || '未命名'}」的提案。`;
+            linkUrl = isOffer ? '/artist/inbox' : '/client/inbox';
             break;
           case 'proposed':
-            text = `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`;
+            text = isOffer
+              ? `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`
+              : `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`;
             linkUrl = `/inquiry/workspace/${item.id}`;
             break;
+          case 'accepted':
+            if (isOffer) {
+              text = `🌟 恭喜！案主已同意「${item.title || '未命名'}」的協議，正式成立委託單。`;
+              linkUrl = '/artist/notebook';
+            } else {
+              return; // 案主自己點擊同意的，不需通知自己
+            }
+            break;
           default:
-            return; // 遇到 submitted, closed, accepted 都不主動跳通知給案主
+            return; 
         }
 
         if (isUnread) unreadCount++;
         
         notifications.push({
-          id: `client_inquiry_${item.id}`,
+          id: `owner_inquiry_${item.id}_${item.status}`,
           type: 'inquiry_msg',
           text,
           link: linkUrl,
@@ -74,6 +91,7 @@ export const notificationController = {
         });
       });
 
+      // 正式委託單的案主通知 (邏輯無誤，不需修改)
       const clientCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_client 
         FROM Commissions 
@@ -109,56 +127,70 @@ export const notificationController = {
       });
 
       // ==========================================
-      // 2. 撈取「繪師身分」的通知
+      // 2. 撈取「投遞應徵者 (Applicant)」的通知
+      // 對應資料庫的 i.artist_id
       // ==========================================
 
       const artistInboxQuery = await env.commission_db.prepare(`
-        SELECT b.title, i.id, i.latest_update_at, i.status, i.last_read_at_artist, i.decline_reason
+        SELECT b.title, b.category as bulletin_category, i.id, i.latest_update_at, i.status, i.last_read_at_artist, i.decline_reason
         FROM BulletinInquiries i
         JOIN Bulletins b ON i.bulletin_id = b.id
         WHERE i.artist_id = ? AND i.status != 'cancelled'
       `).bind(currentUserId).all();
 
       (artistInboxQuery.results || []).forEach((item: any) => {
-        const isWithdrawnByArtist = item.status === 'declined' && item.decline_reason && item.decline_reason.includes('撤回');
-        if (isWithdrawnByArtist || item.status === 'pending') {
+        const isWithdrawnByApplicant = item.status === 'declined' && item.decline_reason && item.decline_reason.includes('撤回');
+        if (isWithdrawnByApplicant || item.status === 'pending') {
           return;
         }
 
         const isUnread = safeParseTime(item.latest_update_at) > safeParseTime(item.last_read_at_artist);
         let text = '';
         let linkUrl = '';
+        
+        // 🌟 核心修正：判斷此貼文是否為接委託 (Offer)
+        // 若為 Offer，投遞者其實是「案主」；若為 Request，投遞者才是「繪師」
+        const isOffer = item.bulletin_category === 'offer';
 
-        // 🌟 防護升級：捨棄預設值，確保每個狀態都有絕對明確的對應
         switch(item.status) {
           case 'submitted':
-            text = `🌟 案主已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`;
+            text = isOffer
+              ? `🌟 繪師已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`
+              : `🌟 案主已邀請您針對「${item.title || '未命名'}」進行詳談，請前往確認。`;
             linkUrl = `/inquiry/workspace/${item.id}`;
             break;
           case 'declined':
-            text = `🌟 關於提案「${item.title || '未命名'}」，案主已婉拒洽談。`;
-            linkUrl = '/artist/inbox';
+            text = isOffer
+              ? `🌟 關於投遞「${item.title || '未命名'}」，繪師已婉拒洽談。`
+              : `🌟 關於提案「${item.title || '未命名'}」，案主已婉拒洽談。`;
+            linkUrl = isOffer ? '/client/inbox' : '/artist/inbox';
             break;
           case 'closed':
-            text = `🌟 關於提案「${item.title || '未命名'}」，案主已撤銷許願或結束徵件。`;
-            linkUrl = '/artist/inbox';
+            text = isOffer
+              ? `🌟 「${item.title || '未命名'}」已額滿或結束招收。`
+              : `🌟 關於提案「${item.title || '未命名'}」，案主已撤銷許願或結束徵件。`;
+            linkUrl = isOffer ? '/client/inbox' : '/artist/inbox';
             break;
           case 'proposed':
-            text = `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`;
+            text = isOffer
+              ? `🌟 繪師已送出「${item.title || '未命名'}」的合作協議，請前往確認。`
+              : `🌟 您已送出「${item.title || '未命名'}」的合作協議，請等待案主確認。`;
             linkUrl = `/inquiry/workspace/${item.id}`;
             break;
           case 'accepted':
-            text = `🌟 恭喜！「${item.title || '未命名'}」的提案已正式成立委託單。`;
-            linkUrl = `/artist/notebook`; 
+            text = isOffer
+              ? `🌟 恭喜！「${item.title || '未命名'}」的提案已正式成立委託單。`
+              : `🌟 恭喜！案主已同意「${item.title || '未命名'}」的協議，正式成立委託單。`;
+            linkUrl = isOffer ? '/client/orders' : '/artist/notebook';
             break;
           default:
-            return; // 遇到不認識的狀態，直接丟棄防呆
+            return; 
         }
 
         if (isUnread) unreadCount++;
         
         notifications.push({
-          id: `artist_inquiry_${item.id}`,
+          id: `applicant_inquiry_${item.id}_${item.status}`,
           type: 'inquiry_msg',
           text,
           link: linkUrl,
@@ -167,6 +199,7 @@ export const notificationController = {
         });
       });
 
+      // 正式委託單的繪師通知 (邏輯無誤，不需修改)
       const artistCommQuery = await env.commission_db.prepare(`
         SELECT id, project_name, pending_changes, latest_message_at, last_read_at_artist 
         FROM Commissions 
@@ -215,38 +248,38 @@ export const notificationController = {
     }
   },
 
+  // 🌟 強健升級：一次把該使用者的所有狀態清空，不怕前端角色判定錯誤
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const url = new URL(request.url);
-      const role = url.searchParams.get('role');
+      await env.commission_db.batch([
+        // 1. 清除使用者為「發文者 (Post Owner)」的通知
+        env.commission_db.prepare(`
+          UPDATE BulletinInquiries 
+          SET last_read_at_client = CURRENT_TIMESTAMP 
+          WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
+        `).bind(currentUserId),
+        
+        // 2. 清除使用者為「投遞者 (Applicant)」的通知
+        env.commission_db.prepare(`
+          UPDATE BulletinInquiries 
+          SET last_read_at_artist = CURRENT_TIMESTAMP 
+          WHERE artist_id = ?
+        `).bind(currentUserId),
 
-      if (role === 'client') {
-        await env.commission_db.batch([
-          env.commission_db.prepare(`
-            UPDATE BulletinInquiries 
-            SET last_read_at_client = CURRENT_TIMESTAMP 
-            WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?)
-          `).bind(currentUserId),
-          env.commission_db.prepare(`
-            UPDATE Commissions 
-            SET last_read_at_client = CURRENT_TIMESTAMP 
-            WHERE client_id = ?
-          `).bind(currentUserId)
-        ]);
-      } else if (role === 'artist') {
-        await env.commission_db.batch([
-          env.commission_db.prepare(`
-            UPDATE BulletinInquiries 
-            SET last_read_at_artist = CURRENT_TIMESTAMP 
-            WHERE artist_id = ?
-          `).bind(currentUserId),
-          env.commission_db.prepare(`
-            UPDATE Commissions 
-            SET last_read_at_artist = CURRENT_TIMESTAMP 
-            WHERE artist_id = ?
-          `).bind(currentUserId)
-        ]);
-      }
+        // 3. 清除使用者在正式委託中為「案主」的通知
+        env.commission_db.prepare(`
+          UPDATE Commissions 
+          SET last_read_at_client = CURRENT_TIMESTAMP 
+          WHERE client_id = ?
+        `).bind(currentUserId),
+
+        // 4. 清除使用者在正式委託中為「繪師」的通知
+        env.commission_db.prepare(`
+          UPDATE Commissions 
+          SET last_read_at_artist = CURRENT_TIMESTAMP 
+          WHERE artist_id = ?
+        `).bind(currentUserId)
+      ]);
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
