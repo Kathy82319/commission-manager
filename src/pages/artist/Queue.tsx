@@ -68,12 +68,11 @@ function StageDropdown({ value, onChange, stages, onAdd, onDelete, onToggle }: a
   }, [onToggle]);
 
   const toggleOpen = (e: React.MouseEvent) => {
-  // 🔴 修改：不論是否展開，點擊按鈕都要阻止冒泡，避免觸發 tr 的 onClick 導致行縮回
-  e.stopPropagation(); 
-  const nextState = !isOpen;
-  setIsOpen(nextState);
-  onToggle(nextState);
-};
+    e.stopPropagation(); 
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    onToggle(nextState);
+  };
 
   return (
     <div ref={dropdownRef} className="dropdown-container" style={{ minWidth: '120px' }}>
@@ -109,7 +108,9 @@ export function Queue() {
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  
+  // 🔴 修改點 1：將拖曳狀態改為記錄 ID
+  const [draggedId, setDraggedId] = useState<string | null>(null);
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -160,7 +161,6 @@ export function Queue() {
   const handleUpdateField = async (id: string, field: string, value: string) => {
     setIsSaving(true);
     try {
-      // 🛡️ [資安提醒]: 後端需驗證當前使用者是否為此單繪師
       await fetch(`${API_BASE}/api/commissions/${id}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value })
@@ -169,17 +169,30 @@ export function Queue() {
     } catch (error) {} finally { setIsSaving(false); }
   };
   
-  const handleDragStart = (idx: number) => setDraggedIdx(idx);
+  // 🔴 修改點 2：實作基於 ID 的拖曳邏輯
+  const handleDragStart = (id: string) => {
+    setDraggedId(id);
+  };
 
-  const handleDragOver = (e: React.DragEvent, idx: number) => {
+  const handleDragEnter = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    if (draggedIdx === null || draggedIdx === idx) return;
-    const newCommissions = [...commissions];
-    const draggedItem = newCommissions[draggedIdx];
-    newCommissions.splice(draggedIdx, 1);
-    newCommissions.splice(idx, 0, draggedItem);
-    setDraggedIdx(idx);
-    setCommissions(newCommissions);
+    if (!draggedId || draggedId === targetId) return;
+
+    setCommissions(prev => {
+      const oldIdx = prev.findIndex(c => c.id === draggedId);
+      const newIdx = prev.findIndex(c => c.id === targetId);
+
+      if (oldIdx === -1 || newIdx === -1) return prev;
+
+      const newCommissions = [...prev];
+      const [draggedItem] = newCommissions.splice(oldIdx, 1);
+      newCommissions.splice(newIdx, 0, draggedItem);
+      return newCommissions;
+    });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
   };
 
   const filteredCommissions = useMemo(() => {
@@ -223,20 +236,29 @@ export function Queue() {
             </tr>
           </thead>
           <tbody>
-            {filteredCommissions.map((order, idx) => {
+            {filteredCommissions.map((order) => {
               const isExpanded = expandedId === order.id;
               const isBulletin = getBulletinSource(order) !== null;
               
               return (
               <tr 
                 key={order.id}
-                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragOver={(e) => e.preventDefault()} // 🔴 修改點 3：改為 preventDefault 成為可放置區域
+                onDragEnter={(e) => handleDragEnter(e, order.id)} // 🔴 修改點 4：改用 onDragEnter 觸發位置交換
                 onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                className={`${draggedIdx === idx ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
+                className={`${draggedId === order.id ? 'dragging' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
               >
                 <td data-label="日期">
                   <div className="cell-content cell-date">
-                    <div draggable onDragStart={() => handleDragStart(idx)} onDragEnd={() => setDraggedIdx(null)} className="drag-handle queue-hide-mobile"><GripVertical size={16} /></div>
+                    {/* 🔴 修改點 5：更新拖曳把手的事件綁定 */}
+                    <div 
+                      draggable 
+                      onDragStart={() => handleDragStart(order.id)} 
+                      onDragEnd={handleDragEnd} 
+                      className="drag-handle queue-hide-mobile"
+                    >
+                      <GripVertical size={16} />
+                    </div>
                     <span>{order.order_date ? order.order_date.substring(5, 10).replace('-', '/') : '未定'}</span>
                   </div>
                 </td>
@@ -244,7 +266,6 @@ export function Queue() {
                   <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
                     <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
-                      {/* 🌟 標籤包裝器：由 CSS 控制在手機版未展開時隱藏 */}
                       <div className="workflow-badge-wrapper">
                         {isBulletin ? (
                           <span className="bulletin-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>許願池</span>
