@@ -284,7 +284,12 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     const bodyData = selectedOrder.workflow_mode === 'free' 
       ? { ...editData } 
-      : { project_name: editData.project_name, payment_method: editData.payment_method, detailed_settings: editData.detailed_settings };
+      : { 
+          project_name: editData.project_name, 
+          payment_method: editData.payment_method, 
+          detailed_settings: editData.detailed_settings,
+          contact_memo: editData.contact_memo // 新增這一行！
+        };
 
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
@@ -494,9 +499,12 @@ export function Notebook() {
   
   // 修改後的程式碼：
 const getClientNameDisplay = (order: Commission) => {
-  const baseName = order.client_name ? order.client_name : '(未綁定)';
-  // 如果有 contact_memo 且不是空白，就加上括號顯示
-  return order.contact_memo ? `${baseName} (${order.contact_memo})` : baseName;
+  // 情況 1：委託人有真實註冊綁定的名字
+  if (order.client_name) {
+    return order.contact_memo ? `${order.client_name} (${order.contact_memo})` : order.client_name;
+  }
+  // 情況 2：委託人尚未綁定，如果有自訂暱稱就顯示暱稱，否則顯示 (未綁定)
+  return order.contact_memo ? order.contact_memo : '(未綁定)';
 };
   
   const getStatusBadge = (status: string) => {
@@ -852,6 +860,15 @@ const getClientNameDisplay = (order: Commission) => {
                       </div>
                       
                       <div className="details-grid">
+<div className="request-field">
+    <span className="field-label">委託人暱稱 (繪師自訂)：</span>
+    <input 
+      className="form-input" 
+      placeholder="例如：FB的王小明"
+      value={editData.contact_memo || ''} 
+      onChange={e => setEditData({...editData, contact_memo: e.target.value})} 
+    />
+  </div>                        
                         <div className="request-field">
                           <span className="field-label">項目名稱 (繪師自訂)：</span>
                           <input className="form-input" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} />
