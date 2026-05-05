@@ -1,3 +1,4 @@
+// src/pages/public/Wishboard/InquireModals/index.tsx (如果路徑有誤請依你實際的為準)
 import React, { useState } from 'react';
 import type { ProfileSettings } from './types';
 import { ImageUploader } from '../../../components/ImageUploader';
@@ -7,8 +8,7 @@ export interface ExtendedSettings extends ProfileSettings {
   bulletin_card?: {
     specialties: string;
     no_gos: string;
-    payment_methods: string;
-    price_list: string;
+    message?: string; // 新增：預設提案留言
     images?: string[]; 
   };
   question_template?: string;
@@ -21,16 +21,52 @@ interface Props {
 
 export function BulletinSettingsTab({ settings, setSettings }: Props) {
   const [isUploading, setIsUploading] = useState(false);
+  // 新增：用來控制標籤輸入框的暫存狀態
+  const [tagInputs, setTagInputs] = useState({ specialties: '', no_gos: '' });
+  
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const updateBulletinCard = (field: string, value: any) => {
     setSettings((prev: ExtendedSettings) => ({
       ...prev,
       bulletin_card: {
-        ...prev.bulletin_card!,
+        ...(prev.bulletin_card || { specialties: '', no_gos: '' }), // 確保物件存在
         [field]: value
       }
     }));
+  };
+
+  // 新增：處理標籤加入的邏輯 (移植自 InquireModal)
+  const handleTagAdd = (field: 'specialties' | 'no_gos') => {
+    const rawValue = tagInputs[field];
+    if (!rawValue) return;
+
+    // 前端基礎防呆：移除危險字元與空白、逗號
+    const safeValue = rawValue.replace(/[<>"'&]/g, '');
+    const value = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
+
+    if (!value) {
+      setTagInputs(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    const currentString = settings.bulletin_card?.[field] || '';
+    const currentTags = currentString.split(' ').filter(t => t);
+    
+    if (currentTags.includes(value)) {
+      setTagInputs(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    updateBulletinCard(field, [...currentTags, value].join(' '));
+    setTagInputs(prev => ({ ...prev, [field]: '' }));
+  };
+
+  // 新增：處理標籤移除的邏輯
+  const handleTagRemove = (field: 'specialties' | 'no_gos', tagToRemove: string) => {
+    const currentString = settings.bulletin_card?.[field] || '';
+    const currentTags = currentString.split(' ').filter(t => t !== tagToRemove);
+    updateBulletinCard(field, currentTags.join(' '));
   };
 
   const handleDefaultImageUpload = async (resultBlobs: { preview: Blob }) => {
@@ -58,6 +94,7 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
       const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       
       if (uploadRes.ok) {
+        // 依照指示，暫時保留寫死的 URL
         const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
         updateBulletinCard('images', [...currentImages, finalUrl]);
       }
@@ -68,14 +105,16 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
     }
   };
 
+  const specialtiesTags = (settings.bulletin_card?.specialties || '').split(' ').filter(t => t);
+  const noGosTags = (settings.bulletin_card?.no_gos || '').split(' ').filter(t => t);
+
   return (
     <div className="settings-section">
       <h4 className="section-title">許願池「投遞意向」預設設定</h4>
       <p className="section-desc" style={{ color: '#888', marginBottom: '20px', fontSize: '0.9rem' }}>
-        設定後，當您在許願池按下「我有興趣」時，系統會自動帶入以下內容，省去重複輸入的時間。
+        設定後，當您在許願池按下「我有興趣」或提案時，系統會自動帶入以下內容，省去重複輸入的時間。
       </p>
 
-      
       <div className="form-group" style={{ marginBottom: '24px' }}>
         <label className="form-label">預算價目表 / 參考作品 (最多3張，圖片限制 3MB 以下)</label>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px' }}>
@@ -111,24 +150,74 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
           value={settings.question_template || ''} 
           onChange={(e) => setSettings({...settings, question_template: e.target.value})}
           placeholder="範例：1.用途 2.角色設定..."
-          style={{ minHeight: '120px' }}
+          style={{ minHeight: '120px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+        />
+      </div>
+
+      {/* 新增：預設留言區塊 */}
+      <div className="form-group" style={{ marginTop: '20px' }}>
+        <label className="form-label">預設提案留言</label>
+        <textarea 
+          className="form-input" 
+          value={settings.bulletin_card?.message || ''} 
+          onChange={(e) => updateBulletinCard('message', e.target.value)}
+          placeholder="簡單介紹一下自己，讓案主更想選擇你！此內容會自動帶入提案單中。"
+          style={{ minHeight: '100px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
         />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
         <div className="form-group">
-          <label className="form-label">擅長題材 (舒適圈)</label>
-          <input type="text" className="form-input" value={settings.bulletin_card?.specialties || ''} onChange={(e) => updateBulletinCard('specialties', e.target.value)} />
+          <label className="form-label" style={{ color: '#ff8c00', fontWeight: 'bold' }}>擅長題材 (舒適圈)</label>
+          <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            {specialtiesTags.map((tag: string, i: number) => (
+              <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff5eb', color: '#ff8c00', border: '1px solid #ffd2a6', padding: '4px 8px', borderRadius: '20px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
+              </span>
+            ))}
+            <input 
+              type="text" 
+              className="compact-tag-input" 
+              placeholder="+ 新增" 
+              value={tagInputs.specialties} 
+              onChange={(e) => setTagInputs({...tagInputs, specialties: e.target.value})} 
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') { 
+                  e.preventDefault(); 
+                  handleTagAdd('specialties'); 
+                } 
+              }} 
+              onBlur={() => handleTagAdd('specialties')}
+              style={{ border: 'none', outline: 'none', background: 'transparent', flex: 1, minWidth: '60px' }} 
+            />
+          </div>
         </div>
+        
         <div className="form-group">
-          <label className="form-label">不擅長 / 雷點</label>
-          <input type="text" className="form-input" value={settings.bulletin_card?.no_gos || ''} onChange={(e) => updateBulletinCard('no_gos', e.target.value)} />
+          <label className="form-label" style={{ color: '#e11d48', fontWeight: 'bold' }}>不擅長 / 雷點</label>
+          <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            {noGosTags.map((tag: string, i: number) => (
+              <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '4px 8px', borderRadius: '20px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
+              </span>
+            ))}
+            <input 
+              type="text" 
+              className="compact-tag-input" 
+              placeholder="+ 新增" 
+              value={tagInputs.no_gos} 
+              onChange={(e) => setTagInputs({...tagInputs, no_gos: e.target.value})} 
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === ' ') { 
+                  e.preventDefault(); 
+                  handleTagAdd('no_gos'); 
+                } 
+              }} 
+              onBlur={() => handleTagAdd('no_gos')}
+              style={{ border: 'none', outline: 'none', background: 'transparent', flex: 1, minWidth: '60px' }} 
+            />
+          </div>
         </div>
-      </div>
-
-      <div className="form-group" style={{ marginTop: '20px' }}>
-        <label className="form-label">接受的付款方式</label>
-        <input type="text" className="form-input" value={settings.bulletin_card?.payment_methods || ''} onChange={(e) => updateBulletinCard('payment_methods', e.target.value)} />
       </div>
     </div>
   );
