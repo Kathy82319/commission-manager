@@ -19,10 +19,11 @@ export const Wishboard: React.FC = () => {
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // 🌟 修改點 1：預設值改為 'offer'
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    return (tabParam === 'offer' || tabParam === 'other') ? tabParam : 'request';
+    return (tabParam === 'request' || tabParam === 'other') ? tabParam : 'offer';
   });
   
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -121,11 +122,14 @@ export const Wishboard: React.FC = () => {
     } catch (e) { console.error("作品集載入失敗"); }
   };
 
+  // 🌟 修改點 2：當網址變更但沒有 tab 參數時，跳回預設的 offer
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
     if (tabParam === 'offer' || tabParam === 'request' || tabParam === 'other') {
       setActiveTab(tabParam);
+    } else {
+      setActiveTab('offer');
     }
   }, [location.search]);
 
