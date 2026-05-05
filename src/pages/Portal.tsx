@@ -91,7 +91,7 @@ export function Portal() {
       <div className="portal-content">
         <div className="portal-cards-container">
           
-          {/* 委託人卡片：永遠可用 */}
+         
           <div 
             onClick={() => handleRoleSelection('/client/orders', 'client')}
             className="portal-card card-client"
@@ -101,7 +101,7 @@ export function Portal() {
             <p className="card-desc">查看委託進度、審閱稿件或下載原檔。</p>
           </div>
 
-          {/* 創作者卡片：加入身分判斷 */}
+         
           <div 
             onClick={handleArtistCardClick}
             className={`portal-card card-artist ${user.role === 'client' ? 'locked' : ''}`}
@@ -125,13 +125,13 @@ export function Portal() {
         )}
       </div>
 
-      {/* 🌟 新增：開通創作者身分彈窗 */}
+  
       {showUpgradeModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
             <h2 style={{ marginTop: 0, color: '#333' }}>開通創作者身分</h2>
             <p style={{ color: '#555', lineHeight: '1.5' }}>
-              您目前為委託人身分。是否要免費開通創作者功能？<br/>
+              您目前為委託人身分。是否要開通創作者功能？<br/>
               開通後您將解鎖排單表、作品集與接案等功能，且仍可無縫切換繼續使用原本的委託人介面。
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>

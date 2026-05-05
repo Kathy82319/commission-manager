@@ -76,7 +76,6 @@ export function PublicProfile() {
   const [showSplash, setShowSplash] = useState(false);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
 
-  // 🌟 處理收藏與黑名單的狀態
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
   const [isViewerLoading, setIsViewerLoading] = useState(true); 
@@ -407,7 +406,6 @@ export function PublicProfile() {
               ))}
             </nav>
 
-            {/* 🌟 關注與黑名單按鈕 (移到分頁下方，並加入 isViewerLoading 判斷防閃爍) */}
             {!isViewerLoading && viewerId !== artist?.id && (
               <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'center', flexDirection: 'column' }}>
                 <button 

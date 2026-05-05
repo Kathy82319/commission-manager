@@ -338,7 +338,7 @@ export const Wishboard: React.FC = () => {
           }}>
             <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🚧</span>
             <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px' }}>其他許願種類</h3>
-            <p style={{ color: '#A0978D', fontSize: '15px', margin: 0 }}>建置中，敬請期待！工程師正在努力趕工中 🛠️</p>
+            <p style={{ color: '#A0978D', fontSize: '15px', margin: 0 }}>建置中，敬請期待！小幫手正在努力趕工中 🛠️</p>
           </div>
         ) : loading ? (
           <div className="loading">載入中...</div>

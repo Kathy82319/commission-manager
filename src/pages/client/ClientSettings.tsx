@@ -220,7 +220,7 @@ export function ClientSettings() {
             {activeTab === 'detailed_intro' && (
               <>
                 <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '20px' }}>
-                  在這裡輸入的內容，將會展示在您的個人公開頁面上（若有開放的話）。您可以利用這裡寫下更詳細的自我介紹或委託偏好。
+                  在這裡輸入的內容，將會展示在您的個人公開頁面上。您可以利用這裡寫下更詳細的自我介紹或委託偏好。
                 </p>
                 <RichTextTab 
                   field="detailed_intro" 
