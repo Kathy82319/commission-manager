@@ -411,6 +411,56 @@
 
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
 
+
+/* ==========================================================================
+   燈箱左右切換按鈕 (補上的缺漏樣式)
+   ========================================================================== */
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #FFF; /* 確保 Lucide 圖示為白色 */
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100001; /* 必須大於 overlay 的 z-index */
+}
+
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-50%) scale(1.1); /* 懸浮時稍微放大 */
+}
+
+.lightbox-nav.prev {
+  left: 40px;
+}
+
+.lightbox-nav.next {
+  right: 40px;
+}
+
+/* 針對手機版的燈箱按鈕優化，避免擋住太多圖片 */
+@media (max-width: 768px) {
+  .lightbox-nav {
+    width: 44px;
+    height: 44px;
+  }
+  .lightbox-nav.prev {
+    left: 10px;
+  }
+  .lightbox-nav.next {
+    right: 10px;
+  }
+}
+
 /* ==========================================================================
    8. 標籤與響應式
    ========================================================================== */
