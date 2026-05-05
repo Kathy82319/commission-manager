@@ -94,8 +94,9 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
       const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
       
       if (uploadRes.ok) {
-        // 依照指示，暫時保留寫死的 URL
-        const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+        const R2_BASE_URL = import.meta.env.VITE_R2_PUBLIC_URL || 'https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev';
+
+        const finalUrl = `${R2_BASE_URL}/${ticketData.fileName}`;
         updateBulletinCard('images', [...currentImages, finalUrl]);
       }
     } catch (err) {
@@ -143,18 +144,6 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
         </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label">提問模板 (案主邀請時必填)</label>
-        <textarea 
-          className="form-input" 
-          value={settings.question_template || ''} 
-          onChange={(e) => setSettings({...settings, question_template: e.target.value})}
-          placeholder="範例：1.用途 2.角色設定..."
-          style={{ minHeight: '120px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-        />
-      </div>
-
-      {/* 新增：預設留言區塊 */}
       <div className="form-group" style={{ marginTop: '20px' }}>
         <label className="form-label">預設提案留言</label>
         <textarea 

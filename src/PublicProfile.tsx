@@ -1,11 +1,10 @@
 // src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
 import './styles/PublicProfile.css';
-
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -80,8 +79,50 @@ export function PublicProfile() {
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
   const [isViewerLoading, setIsViewerLoading] = useState(true); 
 
+  // ======== 登入狀態與按鈕邏輯 ========
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const role = localStorage.getItem('user_role'); 
+    if (role) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+    } catch (e) {
+      console.error("登出通訊失敗:", e);
+    } finally {
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('is_logged_in');
+      localStorage.removeItem('last_active_role');
+      window.location.href = '/'; 
+    }
+  };
+
+  const handleDashboardClick = () => {
+    const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
+    if (lastActiveRole === 'artist') {
+      navigate('/artist/queue');
+    } else if (lastActiveRole === 'client') {
+      navigate('/client/orders');
+    } else {
+      navigate('/portal');
+    }
+  };
+  // ======== 登入狀態邏輯結束 ========
+
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#041b35';     
+    const baseColor = settings?.background_color || '#041b35';    
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
@@ -105,8 +146,6 @@ export function PublicProfile() {
     }
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
-
-
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -352,7 +391,76 @@ export function PublicProfile() {
   const badgeBg = isDarkText ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)';
 
   return (
-    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh' }}>
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
+      
+      {/* ======== 新增：右上角懸浮操作按鈕 ======== */}
+      <div 
+        className="profile-top-right-actions" 
+        style={{ 
+          position: 'fixed', 
+          top: '20px', 
+          right: '24px', 
+          zIndex: 9000, 
+          display: 'flex', 
+          gap: '10px' 
+        }}
+      >
+        {isLoggedIn ? (
+          <>
+            <button 
+              onClick={handleDashboardClick} 
+              style={{ 
+                backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', 
+                color: isDarkText ? '#ffffff' : '#1a1a1a', 
+                padding: '8px 16px', 
+                borderRadius: '50px', 
+                border: 'none', 
+                cursor: 'pointer', 
+                fontWeight: 'bold', 
+                fontSize: '13px', 
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+              }}
+            >
+              回到管理後台
+            </button>
+            <button 
+              onClick={handleLogout} 
+              style={{ 
+                backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', 
+                color: textColor, 
+                padding: '8px 16px', 
+                borderRadius: '50px', 
+                border: `1px solid ${borderColor}`, 
+                cursor: 'pointer', 
+                fontSize: '13px', 
+                backdropFilter: 'blur(8px)',
+                fontWeight: 'bold'
+              }}
+            >
+              登出
+            </button>
+          </>
+        ) : (
+          <button 
+            onClick={() => navigate('/login')} 
+            style={{ 
+              backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', 
+              color: isDarkText ? '#ffffff' : '#1a1a1a', 
+              padding: '8px 18px', 
+              borderRadius: '50px', 
+              border: 'none', 
+              cursor: 'pointer', 
+              fontWeight: 'bold', 
+              fontSize: '14px',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+          >
+            登入 / 註冊
+          </button>
+        )}
+      </div>
+      {/* ======== 新增結束 ======== */}
+
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
           <div className="splash-box">

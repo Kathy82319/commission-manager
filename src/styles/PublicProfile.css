@@ -461,6 +461,18 @@
   }
 }
 
+@media (max-width: 768px) {
+  .profile-top-right-actions {
+    top: 10px !important;
+    right: 10px !important;
+    gap: 6px !important;
+  }
+  .profile-top-right-actions button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
 /* ==========================================================================
    8. 標籤與響應式
    ========================================================================== */
