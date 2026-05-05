@@ -174,12 +174,13 @@ export const commController = {
 
     const updates: string[] = [];
     const params: any[] = [];
+    // 🛡️ 漏洞修復：將 contact_memo 加回白名單，並限制長度為 100 字元
     const fieldLimits: Record<string, number> = {
       'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
       'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
       'draw_scope': 100, 'bg_type': 100, 'add_ons': 1000, 'current_stage': 50, 'end_date': 50, 
       'artist_note': 5000, 'workflow_mode': 50, 'queue_status': 100, 'client_custom_title': 100,
-      'agreed_tos_snapshot': 10000 
+      'agreed_tos_snapshot': 10000, 'contact_memo': 100 // 👉 補上這一行
     };
     
     for (const key in fieldLimits) {
@@ -292,7 +293,6 @@ export const commController = {
     
     await env.commission_db.batch(batchOps);
 
-    
     const text = body.action === 'reject' 
       ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
       : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
@@ -313,7 +313,6 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'change_request', '繪師提交了規格異動申請')").bind(crypto.randomUUID(), id)
     ]);
     
-    
     if (comm[0].client_id) {
        await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?open=${id}`);
     }
@@ -323,7 +322,7 @@ export const commController = {
 
   async respondToChange(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { action } = await request.json() as any;
-    const { results } = await env.commission_db.prepare("SELECT pending_changes, artist_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const { results } = await env.commission_db.prepare("SELECT pending_changes, artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
     const comm = results as any[];
     if (!comm[0]?.pending_changes) return createJsonResponse({ success: false, error: "無待處理申請" }, 400, corsHeaders);
 
@@ -349,7 +348,6 @@ export const commController = {
       ]);
     }
 
-    
     const text = action === 'approve' 
        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;

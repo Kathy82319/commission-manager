@@ -288,7 +288,7 @@ export function Notebook() {
           project_name: editData.project_name, 
           payment_method: editData.payment_method, 
           detailed_settings: editData.detailed_settings,
-          contact_memo: editData.contact_memo // 新增這一行！
+          contact_memo: editData.contact_memo 
         };
 
     await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
