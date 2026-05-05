@@ -492,7 +492,12 @@ export function Notebook() {
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
   
-  const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
+  // 修改後的程式碼：
+const getClientNameDisplay = (order: Commission) => {
+  const baseName = order.client_name ? order.client_name : '(未綁定)';
+  // 如果有 contact_memo 且不是空白，就加上括號顯示
+  return order.contact_memo ? `${baseName} (${order.contact_memo})` : baseName;
+};
   
   const getStatusBadge = (status: string) => {
     if (status === 'completed') return { text: '已結案', className: 'badge-completed' };
