@@ -299,7 +299,13 @@ export function Queue() {
     });
   }, [commissions, selectedMonth, searchTerm, myId]);
 
-  const getClientNameDisplay = (order: Commission) => order.client_name ? order.client_name : '(未綁定)';
+  // 修改此處：整合了與 Notebook 相同的名稱顯示邏輯
+  const getClientNameDisplay = (order: Commission) => {
+    if (order.client_name) {
+      return order.contact_memo ? `${order.client_name} (${order.contact_memo})` : order.client_name;
+    }
+    return order.contact_memo ? order.contact_memo : '(未綁定)';
+  };
 
   return (
     <div className="queue-container">
