@@ -350,7 +350,14 @@ CREATE TABLE DirectInquiryMessages (
 );
 
 
+-- 1. ShowcaseItems 表：新增訪客與限量控管欄位
+ALTER TABLE ShowcaseItems ADD COLUMN allow_guest INTEGER DEFAULT 0;
+ALTER TABLE ShowcaseItems ADD COLUMN max_orders INTEGER DEFAULT 0; 
+ALTER TABLE ShowcaseItems ADD COLUMN show_quota INTEGER DEFAULT 0; 
 
+-- 2. 由於 SQLite 不支援直接修改欄位為 Nullable，針對訪客的 DirectInquiries，
+-- 我們直接新增一個欄位來存放訪客的聯絡方式 (當 client_id 是特殊值或字串時使用)
+ALTER TABLE DirectInquiries ADD COLUMN guest_contact_info TEXT;
 
 
 

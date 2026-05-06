@@ -174,17 +174,23 @@ export default {
         }        
       }
 
-      // =========================================================================
+// =========================================================================
       // 🌟 個人頁客製表單直接委託 (Direct Inquiries) 路由
       // =========================================================================
       if (sanitizedPath.startsWith("/api/direct-inquiries")) {
-        const authErr = requireAuth(currentUserId, corsHeaders);
-        if (authErr) return authErr;
-
         const targetId = pathParts[3];
         const subAction = pathParts[4];
 
-        if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
+        // 🌟 1. 訪客或會員送單：這個操作「不需要」強制登入 (不跑 requireAuth)
+        // 注意：這裡的 currentUserId 不要加驚嘆號 (!)，因為訪客身分時它會是 null
+        if (!targetId && request.method === "POST") {
+          return directInquiryController.submitOrder(request, currentUserId, env, corsHeaders);
+        }
+
+        // 🌟 2. 其他操作 (收件匣、聊天室、轉單) 必須登入，這裡才套用 requireAuth
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+
         if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
         
         // 🌟 新增：委託人撈取自己送出的委託
@@ -192,6 +198,7 @@ export default {
 
         if (targetId && targetId !== "outbound") {
           if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
@@ -257,6 +264,7 @@ export default {
         const artistId = pathParts[4];
         return commController.getPublicQueue(artistId, env, corsHeaders);
       }
+
 
       // --- 管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {

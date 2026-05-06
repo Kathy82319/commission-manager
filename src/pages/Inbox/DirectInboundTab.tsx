@@ -1,5 +1,6 @@
 // src/pages/Inbox/DirectInboundTab.tsx
-import React from 'react';
+import React, { useState } from 'react';
+import { apiClient } from '../../api/client';
 
 interface DirectInboundTabProps {
   inquiries: any[];
@@ -20,17 +21,19 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   handleViewCommission,
   blacklistedIds
 }) => {
-  
-  // 格式化時間
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
   const formatTime = (dateStr: string) => {
     if (!dateStr) return '';
     const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
-    return d.toLocaleString('zh-TW', {
-      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
-    });
+    return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 渲染狀態標籤
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending': 
@@ -40,9 +43,27 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
       case 'accepted': 
         return <span className="status-badge" style={{ backgroundColor: '#E8F3EB', color: '#4E7A5A', border: '1px solid #C2E0CC', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已成單</span>;
       case 'declined': 
-        return <span className="status-badge" style={{ backgroundColor: '#F4F0EB', color: '#A0978D', border: '1px solid #DED9D3', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已婉拒</span>;
+        return <span className="status-badge" style={{ backgroundColor: '#F4F0EB', color: '#A0978D', border: '1px solid #DED9D3', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已婉拒 / 取消</span>;
       default: 
         return <span className="status-badge">{status}</span>;
+    }
+  };
+
+  const handleConvertToFreeMode = async (inqId: string) => {
+    if (!window.confirm("系統將直接建立一張「自由模式」委託單到您的筆記本，方便您使用專屬連結讓訪客綁定。\n\n確認要轉單嗎？")) return;
+    setIsProcessing(true);
+    try {
+      const res = await apiClient.post(`/api/direct-inquiries/${inqId}/convert-free`, {});
+      if (res.success) {
+        alert("轉換成功！已將該表單建立為自由模式委託單。");
+        window.location.href = '/artist/notebook';
+      } else {
+        alert(res.error || "轉換失敗，請稍後再試");
+      }
+    } catch (e) {
+      alert("網路異常，轉換失敗");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -59,87 +80,108 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   return (
     <div className="inquiry-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
       {inquiries.map((inq) => {
-        const isBlacklisted = blacklistedIds.includes(inq.client_id);
+        const isGuest = !inq.client_id; // 🌟 判斷是否為訪客
+        const isBlacklisted = !isGuest && blacklistedIds.includes(inq.client_id);
         const isClosed = inq.status === 'accepted' || inq.status === 'declined';
+        const isExpanded = expandedIds.includes(inq.id);
+
+        let parsedAnswers: any[] = [];
+        try { parsedAnswers = JSON.parse(inq.form_answers || '[]'); } catch (e) {}
 
         return (
-          <div 
-            key={inq.id} 
-            className={`inquiry-card ${isClosed ? 'closed' : ''}`}
-            style={{ 
-              backgroundColor: '#FFFFFF', 
-              border: `1px solid ${isBlacklisted ? '#EF4444' : '#EAE6E1'}`, 
-              borderRadius: '12px', 
-              padding: '20px',
-              opacity: isClosed ? 0.7 : 1,
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* 黑名單側邊裝飾線 */}
+          <div key={inq.id} className={`inquiry-card ${isClosed ? 'closed' : ''}`} style={{ backgroundColor: '#FFFFFF', border: `1px solid ${isBlacklisted ? '#EF4444' : '#EAE6E1'}`, borderRadius: '12px', padding: '20px', opacity: isClosed ? 0.7 : 1, position: 'relative', overflow: 'hidden' }}>
+            
             {isBlacklisted && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: '#EF4444' }} />}
 
             <div className="inquiry-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #F4F0EB', paddingBottom: '12px' }}>
               <div className="inquiry-client-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span className="client-name" style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>
-                  {inq.client_name || '案主'}
+                  {isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}
                 </span>
-                {isBlacklisted && (
-                  <span className="badge-blacklist" style={{ backgroundColor: '#FEE2E2', color: '#EF4444', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
-                    黑名單
-                  </span>
+                {isGuest && (
+                  <span style={{ backgroundColor: '#EBF2F7', color: '#4A7294', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>免登入表單</span>
                 )}
-                <span className="inquiry-time" style={{ color: '#A0978D', fontSize: '12px' }}>
-                  {formatTime(inq.created_at)}
-                </span>
+                {isBlacklisted && (
+                  <span className="badge-blacklist" style={{ backgroundColor: '#FEE2E2', color: '#EF4444', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>黑名單</span>
+                )}
+                <span className="inquiry-time" style={{ color: '#A0978D', fontSize: '12px' }}>{formatTime(inq.created_at)}</span>
               </div>
-              <div className="inquiry-status">
-                {getStatusBadge(inq.status)}
-              </div>
+              <div className="inquiry-status">{getStatusBadge(inq.status)}</div>
             </div>
 
-            <div className="inquiry-body" style={{ marginBottom: '20px' }}>
+            <div className="inquiry-body" style={{ marginBottom: '16px' }}>
               <div className="inquiry-title" style={{ fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 🛒 申請項目：{inq.showcase_title || '未知名稱項目'}
               </div>
-              <div className="inquiry-desc" style={{ color: '#7A7269', fontSize: '13px', marginTop: '8px', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
-                委託人已填寫專屬客製化表單並同意協議，請進入洽談室查看詳細需求。
+              
+              <div className="inquiry-desc" style={{ color: '#7A7269', fontSize: '13px', marginTop: '12px', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                {isGuest ? (
+                  <div>
+                    <strong>此為訪客送出的表單，無法使用站內聊天室。</strong><br/>
+                    請點擊下方展開查看表單，若雙方於場外確認完畢，可點擊「轉為自由模式單」收錄至筆記本中。
+                  </div>
+                ) : (
+                  "委託人已填寫專屬客製化表單並同意協議，請進入洽談室查看詳細需求與報價。"
+                )}
               </div>
             </div>
+
+            <button 
+              onClick={() => toggleExpand(inq.id)}
+              style={{ width: '100%', background: isExpanded ? '#FDFDFB' : '#FFFFFF', border: '1px dashed #DED9D3', padding: '8px', borderRadius: '8px', cursor: 'pointer', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', marginBottom: '16px', transition: 'all 0.2s' }}
+            >
+              {isExpanded ? '▲ 收起表單內容' : '▼ 展開表單內容'}
+            </button>
+
+            {isExpanded && (
+              <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '16px', marginBottom: '16px', fontSize: '13px', color: '#5D4A3E', maxHeight: '250px', overflowY: 'auto' }} className="custom-scrollbar">
+                {parsedAnswers.length > 0 ? parsedAnswers.map((qa: any, i: number) => (
+                  <div key={i} style={{ marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px dashed #EAE6E1' }}>
+                    <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                    <span style={{ whiteSpace: 'pre-wrap', marginTop: '4px', display: 'block' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                  </div>
+                )) : (
+                  <div style={{ color: '#A0978D', fontStyle: 'italic' }}>未填寫客製化問答。</div>
+                )}
+              </div>
+            )}
 
             <div className="inquiry-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               {inq.status === 'pending' || inq.status === 'proposed' ? (
                 <>
                   <button 
-                    className="action-btn"
                     style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                    onClick={() => {
-                      setSelectedInquiry(inq);
-                      setShowDeclineModal(true);
-                    }}
+                    onClick={() => { setSelectedInquiry(inq); setShowDeclineModal(true); }}
                   >
                     婉拒申請
                   </button>
-                  <button 
-                    className="action-btn"
-                    style={{ padding: '8px 16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                    onClick={() => handleEnterInquiryWorkspace(inq.id)}
-                  >
-                    進入洽談室查看
-                  </button>
+                  
+                  {isGuest ? (
+                    <button 
+                      disabled={isProcessing}
+                      style={{ padding: '8px 16px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                      onClick={() => handleConvertToFreeMode(inq.id)}
+                    >
+                      {isProcessing ? '轉單中...' : '轉為自由模式單 ➔'}
+                    </button>
+                  ) : (
+                    <button 
+                      style={{ padding: '8px 16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                      onClick={() => handleEnterInquiryWorkspace(inq.id)}
+                    >
+                      進入洽談室查看
+                    </button>
+                  )}
                 </>
               ) : inq.status === 'accepted' ? (
                 <button 
-                  className="action-btn"
                   style={{ padding: '8px 16px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   onClick={() => handleViewCommission(inq.commission_id)}
                 >
                   前往查看委託單 ➔
                 </button>
               ) : (
-                <span className="closed-text" style={{ color: '#A0978D', fontSize: '13px', fontWeight: 'bold' }}>
-                  此對話已結束
-                </span>
+                <span className="closed-text" style={{ color: '#A0978D', fontSize: '13px', fontWeight: 'bold' }}>此對話已結束</span>
               )}
             </div>
           </div>

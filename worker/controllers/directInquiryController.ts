@@ -3,11 +3,11 @@ import type { Env } from '../shared/types';
 import { notificationController } from './notificationController';
 
 export const directInquiryController = {
-  // 1. 委託人從個人頁送出客製化表單
-  async submitOrder(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
+  // 1. 委託人從個人頁送出客製化表單 (🌟 修正：支援訪客 currentUserId 為 null)
+  async submitOrder(request: Request, currentUserId: string | null, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
-      const { showcase_id, artist_id, form_answers, tos_snapshot } = body;
+      const { showcase_id, artist_id, form_answers, tos_snapshot, guest_contact_info } = body;
 
       if (!showcase_id || !artist_id || !form_answers) {
         return new Response(JSON.stringify({ success: false, error: '缺少必要欄位' }), { status: 400, headers: corsHeaders });
@@ -17,13 +17,17 @@ export const directInquiryController = {
       
       await env.commission_db.prepare(`
         INSERT INTO DirectInquiries (
-          id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
-      `).bind(id, showcase_id, currentUserId, artist_id, form_answers, tos_snapshot || '').run();
+          id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+      `).bind(id, showcase_id, currentUserId, artist_id, form_answers, tos_snapshot || '', guest_contact_info || null).run();
 
-      // 通知繪師
-      const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(currentUserId).first() as any;
-      const clientName = clientInfo?.display_name || '某位委託人';
+      // 如果有登入，才去撈名字；否則就是訪客
+      let clientName = '一位訪客';
+      if (currentUserId) {
+        const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+        if (clientInfo?.display_name) clientName = clientInfo.display_name;
+      }
+      
       await notificationController.createNotification(env, artist_id, 'inquiry_msg', `🛒 ${clientName} 透過您的個人頁面送出了新的委託申請！`, `/inbox`);
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
@@ -38,7 +42,7 @@ export const directInquiryController = {
       const { results } = await env.commission_db.prepare(`
         SELECT di.*, u.display_name as client_name, s.title as showcase_title
         FROM DirectInquiries di
-        JOIN Users u ON di.client_id = u.id
+        LEFT JOIN Users u ON di.client_id = u.id
         LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
         WHERE di.artist_id = ?
         ORDER BY di.created_at DESC
@@ -85,7 +89,6 @@ export const directInquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // 更新已讀時間
       const updateField = currentUserId === inquiry.artist_id ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE DirectInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
@@ -114,7 +117,10 @@ export const directInquiryController = {
       if (!inquiry) throw new Error('找不到訂單或權限不足');
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
-      await notificationController.createNotification(env, inquiry.client_id, 'inquiry_msg', `🌟 繪師已送出正式的合作協議，請前往確認。`, `/inquiry/workspace/${inquiryId}`);
+      
+      if (inquiry.client_id) {
+        await notificationController.createNotification(env, inquiry.client_id, 'inquiry_msg', `🌟 繪師已送出正式的合作協議，請前往確認。`, `/inquiry/workspace/${inquiryId}`);
+      }
       
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
@@ -122,7 +128,7 @@ export const directInquiryController = {
     }
   },
 
-  // 6. 委託人確認並正式建立訂單 (轉入 Commissions)
+  // 6. 會員確認並正式建立訂單
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -145,13 +151,11 @@ export const directInquiryController = {
         final_negotiation_draft: draft
       });
 
-      // 🌟 新增防護網：確保 CommissionTypes 裡面有 'type-01'，避免 Foreign Key 報錯
       await env.commission_db.prepare(`
         INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days, is_active) 
         VALUES ('type-01', ?, '預設委託類型', 0, 7, 1)
       `).bind(inquiryData.artist_id).run();
 
-      // 正式建立訂單
       await env.commission_db.prepare(`
         INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, contact_memo, total_price, status, origin_source, 
@@ -172,7 +176,50 @@ export const directInquiryController = {
     }
   },
 
-  // 7. 婉拒申請
+  // 🌟 7. 訪客單一鍵轉為自由模式 (新增)
+  async convertToFreeMode(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT di.*, s.title as showcase_title 
+        FROM DirectInquiries di LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id 
+        WHERE di.id = ? AND di.artist_id = ?
+      `).bind(inquiryId, currentUserId).first() as any;
+
+      if (!inquiryData) throw new Error('找不到該訂單或權限不足');
+
+      const commissionId = `CM-${Date.now().toString().slice(-6)}`;
+      
+      const origin_source = JSON.stringify({
+        source_type: 'showcase_form',
+        is_guest: true, // 標記為訪客
+        inquiry_id: inquiryId,
+        showcase_title: inquiryData.showcase_title,
+        form_answers: JSON.parse(inquiryData.form_answers || '[]')
+      });
+
+      await env.commission_db.prepare(`
+        INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days, is_active) 
+        VALUES ('type-01', ?, '預設委託類型', 0, 7, 1)
+      `).bind(currentUserId).run();
+
+      await env.commission_db.prepare(`
+        INSERT INTO Commissions (
+          id, artist_id, type_id, project_name, contact_memo, total_price, status, origin_source, 
+          workflow_mode
+        ) VALUES (?, ?, 'type-01', ?, '訪客委託', 0, 'unpaid', ?, 'free')
+      `).bind(
+        commissionId, currentUserId, inquiryData.showcase_title || '訪客委託單', origin_source
+      ).run();
+
+      await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
+
+      return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 8. 婉拒申請
   async decline(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'declined' WHERE id = ?`).bind(inquiryId).run();
@@ -182,7 +229,7 @@ export const directInquiryController = {
     }
   },
 
-  // 8. 獲取與發送聊天訊息
+  // 9. 訊息
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`SELECT * FROM DirectInquiryMessages WHERE inquiry_id = ? ORDER BY created_at ASC`).bind(inquiryId).all();
@@ -196,10 +243,8 @@ export const directInquiryController = {
     try {
       const body = await request.json() as any;
       const id = crypto.randomUUID();
-      
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
       await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
-      
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });

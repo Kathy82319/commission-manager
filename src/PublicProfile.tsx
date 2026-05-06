@@ -1,10 +1,10 @@
-// src/PublicProfile.tsx
+// src/pages/public/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
-import './styles/PublicProfile.css';
+import '../../styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -13,7 +13,6 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
-// 🌟 新增：定義動態表單欄位 Schema
 export interface FormFieldSchema {
   id: string;
   type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
@@ -43,7 +42,7 @@ interface ProfileSettings {
     show_project_name: boolean;
   };
   tab_order?: string[]; 
-  terms_of_service?: string; // 🌟 確保介面支援 TOS
+  terms_of_service?: string; 
   rules?: string;
 }
 
@@ -54,7 +53,13 @@ interface ShowcaseItem {
   price_info: string;
   tags: string[];
   description: string;
-  form_schema?: string; // 🌟 新增：接收客製化表單設定
+  form_schema?: string; 
+  // 🌟 新增欄位支援
+  allow_guest?: number;
+  max_orders?: number;
+  show_quota?: number;
+  tos_content?: string;
+  current_orders_count?: number;
 }
 
 const getSocialIcon = (platform: string) => {
@@ -91,26 +96,19 @@ export function PublicProfile() {
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
   const [isViewerLoading, setIsViewerLoading] = useState(true); 
 
-  // ======== 登入狀態與按鈕邏輯 ========
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
-    if (role) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
+    if (role) setIsLoggedIn(true);
+    else setIsLoggedIn(false);
   }, []);
 
   const handleLogout = async () => {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { 
-        method: 'POST', 
-        credentials: 'include' 
-      });
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch (e) {
       console.error("登出通訊失敗:", e);
     } finally {
@@ -123,17 +121,11 @@ export function PublicProfile() {
 
   const handleDashboardClick = () => {
     const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
-    if (lastActiveRole === 'artist') {
-      navigate('/artist/queue');
-    } else if (lastActiveRole === 'client') {
-      navigate('/client/orders');
-    } else {
-      navigate('/portal');
-    }
+    if (lastActiveRole === 'artist') navigate('/artist/queue');
+    else if (lastActiveRole === 'client') navigate('/client/orders');
+    else navigate('/portal');
   };
-  // ======== 登入狀態邏輯結束 ========
 
-  // ======== 🌟 動態表單與委託狀態 ========
   const [modalMode, setModalMode] = useState<'view' | 'form1' | 'form2'>('view');
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -144,12 +136,27 @@ export function PublicProfile() {
     try { return JSON.parse(selectedShowcase.form_schema); } catch (e) { return []; }
   }, [selectedShowcase]);
 
+  // 🌟 一卡兩用：檢查是否有建立表單
+  const hasForm = parsedSchema.length > 0;
+  // 🌟 飢餓行銷：判斷是否滿單
+  const isFull = (selectedShowcase?.max_orders || 0) > 0 && (selectedShowcase?.current_orders_count || 0) >= (selectedShowcase?.max_orders || 0);
+
   const tosContent = useMemo(() => {
+    if (selectedShowcase?.tos_content) return selectedShowcase.tos_content;
     if (!settings) return "繪師尚未提供專屬協議說明。";
     return settings.terms_of_service || settings.rules || "繪師尚未提供專屬協議說明。";
-  }, [settings]);
+  }, [settings, selectedShowcase]);
 
   const handleOpenCommission = () => {
+    if (!isLoggedIn && selectedShowcase?.allow_guest !== 1) {
+      alert("此項目僅開放給平台會員委託，請先登入或註冊！");
+      navigate('/login');
+      return;
+    }
+    if (isFull) {
+      alert("此項目目前已滿單暫停收件囉！");
+      return;
+    }
     setModalMode('form1');
     setFormData({});
     setAgreedToTerms(false);
@@ -173,7 +180,6 @@ export function PublicProfile() {
   };
 
   const handleNextStep = () => {
-    // 檢查必填欄位
     for (const field of parsedSchema) {
       if (field.required) {
         const val = formData[field.id];
@@ -214,12 +220,16 @@ export function PublicProfile() {
 
       const data = await res.json();
       if (data.success) {
-        alert("委託申請已成功送出！請至「我的委託」查看進度，等待繪師確認。");
+        if (isLoggedIn) {
+          alert("委託申請已成功送出！請至「我的委託」查看進度，等待繪師確認。");
+          navigate('/client/orders');
+        } else {
+          alert("訪客委託申請已成功送出！\n繪師將會透過您留下的聯絡方式與您聯繫，感謝您的委託。");
+        }
         handleCloseLightbox();
-        navigate('/client/orders');
       } else {
         if (data.error === "UNAUTHORIZED" || res.status === 401) {
-          alert("請先登入或註冊委託人帳號，才能送出委託喔！");
+          alert("登入逾時或權限不足，請重新登入！");
           navigate('/login');
         } else {
           alert(data.error || "送出失敗，請稍後再試");
@@ -273,7 +283,6 @@ export function PublicProfile() {
       </div>
     );
   };
-  // ======== 動態表單邏輯結束 ========
 
   const backgroundStyle = useMemo(() => {
     const baseColor = settings?.background_color || '#041b35';    
@@ -324,7 +333,6 @@ export function PublicProfile() {
 
               setSettings(parsedSettings);
             } catch (e) {
-              console.error("JSON 解析失敗:", e);
               setShowSplash(false);
             }
           } else {
@@ -354,12 +362,19 @@ export function PublicProfile() {
                 safeTags = Array.isArray(parsed) ? parsed : [];
               }
             } catch (e) { safeTags = []; }
-            return { ...item, tags: safeTags };
+            return { 
+              ...item, 
+              tags: safeTags,
+              allow_guest: item.allow_guest || 0,
+              max_orders: item.max_orders || 0,
+              show_quota: item.show_quota ?? 1,
+              tos_content: item.tos_content || '',
+              current_orders_count: item.current_orders_count || 0
+            };
           });
           setShowcaseItems(formattedItems);
         }
       } catch (error) {
-        console.error("載入 API 發生錯誤:", error);
         setShowSplash(false);
       } finally {
         setLoading(false);
@@ -387,7 +402,6 @@ export function PublicProfile() {
           }
         }
       } catch (e) {
-        console.error("未登入或無法讀取狀態", e);
       } finally {
         setIsViewerLoading(false);  
       }
@@ -440,7 +454,7 @@ export function PublicProfile() {
     }
 
     if (!isFreePlan) {
-      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '販售項目' });
+      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '商品與委託區' });
       
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {
@@ -509,17 +523,12 @@ export function PublicProfile() {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     try {
       if (relationStatus === type) {
-        const res = await fetch(`${API_BASE}/api/relations/${artist.id}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+        const res = await fetch(`${API_BASE}/api/relations/${artist.id}`, { method: 'DELETE', credentials: 'include' });
         if (res.ok) setRelationStatus('none');
       } else {
         const res = await fetch(`${API_BASE}/api/relations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetId: artist.id, type, note: '' }),
-          credentials: 'include'
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetId: artist.id, type, note: '' }), credentials: 'include'
         });
         if (res.ok) setRelationStatus(type);
       }
@@ -754,6 +763,13 @@ export function PublicProfile() {
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
                   </div>
 
+                  {/* 🌟 飢餓行銷：顯示剩餘名額 */}
+                  {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
+                    <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
+                      🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
+                    </div>
+                  )}
+
                   {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.length > 0 && (
                     <div className="modal-tags">
                       {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
@@ -764,15 +780,23 @@ export function PublicProfile() {
                     <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
                   </div>
 
-                  {/* 我要委託按鈕 */}
-                  <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
-                    <button 
-                      onClick={handleOpenCommission}
-                      style={{ width: '100%', padding: '14px', backgroundColor: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      我要委託
-                    </button>
-                  </div>
+                  {/* 🌟 一卡兩用邏輯：有設定表單才顯示「我要委託」按鈕 */}
+                  {hasForm && (
+                    <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
+                      <button 
+                        onClick={handleOpenCommission}
+                        disabled={isFull}
+                        style={{ 
+                          width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', 
+                          backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', 
+                          color: '#FFF', 
+                          cursor: isFull ? 'not-allowed' : 'pointer' 
+                        }}
+                      >
+                        {isFull ? '🛑 已滿單 / 暫停收件' : '我要委託'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -783,7 +807,25 @@ export function PublicProfile() {
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
                   📝 填寫委託需求 - {selectedShowcase.title}
                 </h2>
+                
                 <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
+                  
+                  {/* 🌟 訪客友善提示 Banner */}
+                  {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
+                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
+                        💡 <strong>您目前為訪客身分</strong><br/>
+                        提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>
+                        若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
+                      </div>
+                      <div>
+                        <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                          前往登入 / 註冊帳號
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {parsedSchema.length > 0 ? (
                     parsedSchema.map(renderDynamicField)
                   ) : (
