@@ -20,6 +20,10 @@ export const InquiryWorkspace: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [actualArtistId, setActualArtistId] = useState<string | null>(null);
 
+  // 🌟 新增：用來判斷這張單是否來自個人頁直接委託
+  const [isDirectInquiry, setIsDirectInquiry] = useState(false);
+  const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
+
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
   
@@ -61,8 +65,17 @@ export const InquiryWorkspace: React.FC = () => {
   const fetchData = async () => {
     if (isAccepted) return;
     try {
-      const resInquiry = await apiClient.get(`/api/inquiries/${id}`);
+      // 🌟 自動回退機制：先找許願池單，找不到再找個人頁直接委託單
+      let resInquiry = await apiClient.get(`/api/inquiries/${id}`);
+      let isDirect = false;
+
+      if (!resInquiry.success) {
+        resInquiry = await apiClient.get(`/api/direct-inquiries/${id}`);
+        isDirect = true;
+      }
+
       if (resInquiry.success) {
+        setIsDirectInquiry(isDirect);
         const data = resInquiry.data;
         setInquiry(data);
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
@@ -71,8 +84,9 @@ export const InquiryWorkspace: React.FC = () => {
         const myId = resUser.data.id;
         setCurrentUserId(myId);
 
+        // 🌟 處理繪師身分判斷
         const isOfferCat = data.bulletin_category === 'offer';
-        const targetArtistId = isOfferCat ? data.bulletin_client_id : data.artist_id;
+        const targetArtistId = (isDirect || !isOfferCat) ? data.artist_id : data.bulletin_client_id;
         setActualArtistId(targetArtistId);
         
         const currentUserIsArtist = (myId === targetArtistId);
@@ -84,33 +98,34 @@ export const InquiryWorkspace: React.FC = () => {
           if (data.negotiation_draft) {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
-             let defaultName = data.bulletin_title; // 優先使用後端回傳的 title
+             let defaultName = data.bulletin_title;
              
              if (!defaultName) {
-               try {
-                 const parsedContent = JSON.parse(data.bulletin_content);
-                 if (parsedContent.title) {
-                   defaultName = parsedContent.title;
-                 } else if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
-                   defaultName = parsedContent.commission_items[0].name;
-                 } else if (parsedContent.content) {
-                   defaultName = parsedContent.content.substring(0, 30);
-                 } else if (parsedContent.description) {
-                   defaultName = parsedContent.description.substring(0, 30);
-                 } else {
+               if (isDirect) {
+                 defaultName = "客製化委託單"; // 來自個人頁的預設名稱
+               } else {
+                 try {
+                   const parsedContent = JSON.parse(data.bulletin_content);
+                   if (parsedContent.title) defaultName = parsedContent.title;
+                   else if (parsedContent.commission_items?.length > 0) defaultName = parsedContent.commission_items[0].name;
+                   else if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
+                   else defaultName = "許願池委託";
+                 } catch(e) {
                    defaultName = "許願池委託";
                  }
-               } catch(e) {
-                 defaultName = "許願池委託";
                }
              }
-            setDraft((prev: any) => ({ ...prev, project_name: defaultName || "許願池委託" }));
+            setDraft((prev: any) => ({ ...prev, project_name: defaultName || "委託單" }));
           }
         }
         isFirstLoad.current = false;
       }
-      const resMsgs = await apiClient.get(`/api/inquiries/${id}/messages`);
+
+      // 抓取訊息時也使用動態 Prefix
+      const prefix = isDirect ? 'direct-inquiries' : 'inquiries';
+      const resMsgs = await apiClient.get(`/api/${prefix}/${id}/messages`);
       if (resMsgs.success) setMessages(resMsgs.data);
+
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
@@ -125,7 +140,7 @@ export const InquiryWorkspace: React.FC = () => {
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!newMessage.trim()) return;
-    await apiClient.post(`/api/inquiries/${id}/messages`, { content: newMessage });
+    await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: newMessage });
     setNewMessage('');
     fetchData();
   };
@@ -177,12 +192,10 @@ export const InquiryWorkspace: React.FC = () => {
     setIsUploadingImage(true);
     try {
       const compressedBlob = await silentCompressImage(file);
-      
       if (compressedBlob.size > 1.5 * 1024 * 1024) {
         alert('您的圖片尺寸過於龐大或比例極端，為保護空間資源請縮小後再傳！');
         return;
       }
-
       const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: 'image/jpeg', bucketType: 'public', originalName: `chat_${Date.now()}.jpg`, folder: 'chat-images' })
@@ -193,9 +206,8 @@ export const InquiryWorkspace: React.FC = () => {
       const putRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: compressedBlob, headers: { 'Content-Type': 'image/jpeg' } });
       if (!putRes.ok) throw new Error('上傳至雲端失敗');
 
-      await apiClient.post(`/api/inquiries/${id}/messages`, { content: `![image](${ticketData.fileName})` });
+      await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: `![image](${ticketData.fileName})` });
       fetchData(); 
-
     } catch (err: any) {
       alert('圖片上傳失敗：' + err.message);
     } finally {
@@ -226,7 +238,7 @@ export const InquiryWorkspace: React.FC = () => {
   };
 
   const handleSaveDraft = async () => {
-    await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
+    await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
     alert('協議草稿已儲存！');
   };
 
@@ -236,8 +248,8 @@ export const InquiryWorkspace: React.FC = () => {
     }
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
-      await apiClient.patch(`/api/inquiries/${id}/draft`, { draft_json: JSON.stringify(draft) });
-      const res = await apiClient.post(`/api/inquiries/${id}/propose`, {});
+      await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
+      const res = await apiClient.post(`/api/${apiPrefix}/${id}/propose`, {});
       if (res.success) {
         alert('已送出正式提案給案主！');
         setShowMobileAside(false); 
@@ -249,7 +261,7 @@ export const InquiryWorkspace: React.FC = () => {
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
-      const res = await apiClient.post(`/api/inquiries/${id}/finalize`, {});
+      const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
         setShowFinalModal(false);
         fetchData();
@@ -284,23 +296,22 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
+  // 🌟 解析許願池資料 或 客製表單資料
   let parsedBulletin: any = {};
   let displayTitle = inquiry.bulletin_title || "未命名委託";
-  let displayContent = inquiry.bulletin_content;
+  let displayContent = inquiry.bulletin_content || "";
+  let parsedFormAnswers: any[] = [];
 
-  try {
+  if (isDirectInquiry) {
+    try { parsedFormAnswers = JSON.parse(inquiry.form_answers || '[]'); } catch(e) {}
+  } else {
+    try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
-      // 若後端沒有回傳 title，則嘗試從 JSON 內提取
-      if (!inquiry.bulletin_title && parsedBulletin.title) {
-        displayTitle = parsedBulletin.title;
-      }
-      // 提取軌跡用的詳細說明
-      if (parsedBulletin.content) {
-        displayContent = parsedBulletin.content;
-      } else if (parsedBulletin.description) {
-        displayContent = parsedBulletin.description;
-      }
-  } catch (e) {}
+      if (!inquiry.bulletin_title && parsedBulletin.title) displayTitle = parsedBulletin.title;
+      if (parsedBulletin.content) displayContent = parsedBulletin.content;
+      else if (parsedBulletin.description) displayContent = parsedBulletin.description;
+    } catch (e) {}
+  }
 
   let parsedSnapshot: any = {};
   try {
@@ -312,7 +323,9 @@ export const InquiryWorkspace: React.FC = () => {
   const isOffer = inquiry.bulletin_category === 'offer'; 
 
   let artistTos = "繪師未提供額外協議說明。";
-  if (parsedBulletin && parsedBulletin.tos_content && parsedBulletin.tos_content.trim() !== '') {
+  if (isDirectInquiry && inquiry.tos_snapshot) {
+    artistTos = inquiry.tos_snapshot;
+  } else if (parsedBulletin && parsedBulletin.tos_content && parsedBulletin.tos_content.trim() !== '') {
     artistTos = parsedBulletin.tos_content;
   } else {
     try {
@@ -375,10 +388,10 @@ export const InquiryWorkspace: React.FC = () => {
         </footer>
       </div>
 
-      <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '420px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
+      <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>📝 正式協議編輯區</span>
+            <span>📝 最終規格與合約確認</span>
             <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>{inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單'}</span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
@@ -389,67 +402,115 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           
-          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '12px', marginBottom: '12px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 許願池媒合軌跡</h4>
+          {/* ======== 🌟 區塊一：初始需求單 (不可篡改) ======== */}
+          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改的原始填寫)</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               
-              <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
-                <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
-              </div>
-
-              <div>
-                <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
-                
-                {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
-                  <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                    {parsedSnapshot.answers.map((ans: any, idx: number) => (
-                      <div key={idx} style={{ marginTop: '4px' }}>
-                        <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
-                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
+              {isDirectInquiry ? (
+                // 個人頁表單的 Q&A
+                <div style={{ paddingBottom: '8px' }}>
+                  {parsedFormAnswers.length > 0 ? parsedFormAnswers.map((qa, i) => (
+                    <div key={i} style={{ marginBottom: '10px' }}>
+                      <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                      <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                    </div>
+                  )) : (
+                    <div style={{ color: '#A0978D', fontStyle: 'italic' }}>委託人未填寫任何客製化問答。</div>
+                  )}
+                </div>
+              ) : (
+                // 原本許願池的軌跡
+                <>
+                  <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                    <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
+                  </div>
+                  <div>
+                    <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                    {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
+                      <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                        {parsedSnapshot.answers.map((ans: any, idx: number) => (
+                          <div key={idx} style={{ marginTop: '4px' }}>
+                            <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
+                            <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    {parsedSnapshot.message && (
+                      <div style={{ marginTop: '4px' }}>
+                        <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
+                      </div>
+                    )}
+                    {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
+                      <div style={{ marginTop: '6px' }}>
+                        {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{parsedSnapshot.specialties}</div>}
+                        {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{parsedSnapshot.no_gos}</div>}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {parsedSnapshot.message && (
-                  <div style={{ marginTop: '4px' }}>
-                    <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
-                  </div>
-                )}
-
-                {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
-                  <div style={{ marginTop: '6px' }}>
-                    {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{parsedSnapshot.specialties}</div>}
-                    {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{parsedSnapshot.no_gos}</div>}
-                  </div>
-                )}
-              </div>
-
+                </>
+              )}
             </div>
             
             <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>
-              {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
+              {isTrajectoryExpanded ? "▲ 收起完整內容" : "▼ 展開完整內容"}
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
-              <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
+          {/* ======== 🌟 區塊二：系統核心參數 ======== */}
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數 (影響計價與排單)</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
+              
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label>
+                  <select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
+                    <option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option>
+                  </select>
+                  {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
+                </div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label>
+                  <select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
+                    <option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option>
+                  </select>
+                  {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
+                </div>
+              </div>
             </div>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label><select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}><option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option></select>
-            {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}</div>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label><select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}><option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option></select>
-            {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}</div>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
-            <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>附加項目</label><textarea disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" rows={3} style={{ resize: 'none' }} value={draft.add_ons} onChange={(e) => setDraft({...draft, add_ons: e.target.value})} /></div>
           </div>
+
+          {/* ======== 🌟 區塊三：最終規格白板 ======== */}
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</h4>
+            <p style={{ fontSize: '11px', color: '#A0978D', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+              {isArtist ? "請將左側聊天室討論出的修改（如：原定無背景，經討論加價 $500 繪製花紋背景）統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
+            </p>
+            <textarea 
+              disabled={!isArtist || inquiry.status !== 'submitted'} 
+              className="draft-input" 
+              style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
+              value={draft.add_ons} 
+              onChange={(e) => setDraft({...draft, add_ons: e.target.value})} 
+              placeholder="輸入最終確認的備註細節..." 
+            />
+          </div>
+
         </div>
 
         <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -476,12 +537,11 @@ export const InquiryWorkspace: React.FC = () => {
             <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
               
-              
               <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                <h4 style={{ color: '#A67B3E', borderBottom: '1px solid #FDE0B5', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>本次委託規格摘要</h4>
+                <h4 style={{ color: '#A67B3E', borderBottom: '1px solid #FDE0B5', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>本次委託核心參數摘要</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
                   <p style={{ margin: 0 }}><strong>項目名稱：</strong> {draft.project_name}</p>
-                  <p style={{ margin: 0 }}><strong>最終金額：</strong> NT$ {draft.total_price}</p>
+                  <p style={{ margin: 0 }}><strong>最終金額：</strong> <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>NT$ {draft.total_price}</span></p>
                   <p style={{ margin: 0 }}><strong>繪製範圍：</strong> {draft.draw_scope}</p>
                   <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                   <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
@@ -490,48 +550,31 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              
-              {isOffer && (
+              {draft.add_ons && (
+                <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+                  <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>📝 最終確認規格 / 備忘錄</h4>
+                  <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{draft.add_ons}</div>
+                </div>
+              )}
+
+              {/* 若為許願池的「接案 (offer)」，才顯示這段基本規範 */}
+              {!isDirectInquiry && isOffer && (
                 <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                   <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E' }}>
-                    
                     {parsedBulletin.payment_timing && (
                       <p style={{ margin: 0 }}>
                         <strong>支付時機與說明：</strong> {getPaymentTimingLabel(parsedBulletin.payment_timing)} 
                         {parsedBulletin.payment_timing_detail ? ` (${parsedBulletin.payment_timing_detail})` : ''}
                       </p>
                     )}
-                    
                     {parsedBulletin.payment_methods && parsedBulletin.payment_methods.length > 0 && (
                       <p style={{ margin: 0 }}><strong>可接受收款方式：</strong> {parsedBulletin.payment_methods.join('、')}</p>
-                    )}
-
-                    {parsedBulletin.commission_items && parsedBulletin.commission_items.length > 0 && (
-                      <div style={{ margin: 0 }}>
-                        <strong style={{ display: 'block', marginBottom: '4px' }}>接案項目與底價參考：</strong>
-                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#7A7269', lineHeight: '1.6' }}>
-                          {parsedBulletin.commission_items.map((item: any, idx: number) => (
-                            <li key={idx}>{item.name}：NT$ {item.price} 起</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    
-                    {parsedBulletin.description && (
-                      <div style={{ margin: 0 }}>
-                        <strong style={{ display: 'block', marginBottom: '4px' }}>詳細接案說明：</strong>
-                        <div style={{ padding: '12px', backgroundColor: '#FBFBF9', borderRadius: '8px', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'pre-wrap', fontSize: '13px', lineHeight: '1.6' }}>
-                          {parsedBulletin.description}
-                        </div>
-                      </div>
                     )}
                   </div>
                 </div>
               )}
 
-              
               <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                 <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
                 <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(artistTos) }} />

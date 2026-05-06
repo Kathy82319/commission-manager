@@ -6,16 +6,20 @@ import '../../styles/Inbox.css';
 
 import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
+import { DirectInboundTab } from './DirectInboundTab'; // 🌟 引入新的個人頁委託列表元件
 
 export const Inbox: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'client' | 'artist'>('client');
+  // 🌟 activeTab 新增 'direct' 類型
+  const [activeTab, setActiveTab] = useState<'client' | 'artist' | 'direct'>('direct');
   const [loading, setLoading] = useState(true);
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
+  // 🌟 新增：存放個人頁直接委託的資料
+  const [directInquiries, setDirectInquiries] = useState<any[]>([]);
 
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
@@ -64,16 +68,23 @@ export const Inbox: React.FC = () => {
         setBlacklistedIds(bIds);
       }
 
+      // 🌟 根據 activeTab 抓取不同來源的資料
       if (activeTab === 'client') {
         const data = await apiClient.get('/api/bulletins/client/inbox');
         if (data.success) {
           setClientBulletins(data.data.bulletins || []);
           setClientInquiries(data.data.inquiries || []);
         }
-      } else {
+      } else if (activeTab === 'artist') {
         const data = await apiClient.get('/api/bulletins/artist/inbox');
         if (data.success) {
           setArtistInquiries(data.data || []);
+        }
+      } else if (activeTab === 'direct') {
+        // 🌟 呼叫新建的 DirectInquiries API
+        const data = await apiClient.get('/api/direct-inquiries');
+        if (data.success) {
+          setDirectInquiries(data.data || []);
         }
       }
     } catch (error) { 
@@ -112,6 +123,7 @@ export const Inbox: React.FC = () => {
         alert('許願貼文已成功撤銷，並已發送婉拒通知給相關繪師。');
         
       } else if (isBatchMode) {
+        // 🌟 如果後續 DirectInquiries 也支援批次婉拒，可以在此處擴充判斷
         const targetIds = Array.from(batchDeclineIds);
         const res = await apiClient.post('/api/inquiries/batch-decline', { 
           inquiry_ids: targetIds,
@@ -121,7 +133,14 @@ export const Inbox: React.FC = () => {
         alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
         
       } else if (selectedInquiry) {
-        await apiClient.post(`/api/inquiries/${selectedInquiry.inquiry_id}/decline`, { decline_reason: finalReason });
+        // 🌟 根據來源呼叫不同的婉拒 API
+        const inquiryId = selectedInquiry.inquiry_id || selectedInquiry.id;
+        
+        if (activeTab === 'direct') {
+          await apiClient.post(`/api/direct-inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
+        } else {
+          await apiClient.post(`/api/inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
+        }
         alert('已傳送婉拒/撤回通知，對話已關閉。');
       }
 
@@ -186,22 +205,30 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-page-container">
       <div className="inbox-page-header">
-        <h1 className="inbox-page-title">許願收件匣</h1>
+        {/* 🌟 標題拿掉「許願」，讓它成為整體的收件匣 */}
+        <h1 className="inbox-page-title">收件匣</h1>
       </div>
 
       <div className="inbox-tabs-wrapper">
         <div className="inbox-tabs-group">
+          {/* 🌟 新增個人頁委託 Tab */}
+          <button 
+            className={`inbox-tab-btn ${activeTab === 'direct' ? 'active' : ''}`}
+            onClick={() => setActiveTab('direct')}
+          >
+            個人頁委託
+          </button>
           <button 
             className={`inbox-tab-btn ${activeTab === 'client' ? 'active' : ''}`}
             onClick={() => setActiveTab('client')}
           >
-            我的許願池
+            許願池 (我發布的)
           </button>
           <button 
             className={`inbox-tab-btn ${activeTab === 'artist' ? 'active' : ''}`}
             onClick={() => setActiveTab('artist')}
           >
-            我投遞的履歷
+            許願池 (我投遞的)
           </button>
         </div>
         
@@ -212,6 +239,18 @@ export const Inbox: React.FC = () => {
 
       {loading ? (
         <p className="inbox-loading-text">載入中...</p>
+      ) : activeTab === 'direct' ? (
+        /* 🌟 渲染新建的 DirectInboundTab */
+        <DirectInboundTab 
+          inquiries={directInquiries}
+          navigate={navigate}
+          setSelectedInquiry={setSelectedInquiry}
+          setShowDeclineModal={setShowDeclineModal}
+          handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
+          handleViewCommission={handleViewCommission}
+          blacklistedIds={blacklistedIds}
+          setSelectedIdsForBatch={setBatchDeclineIds}
+        />
       ) : activeTab === 'client' ? (
         <InboundTab 
           clientBulletins={clientBulletins}
@@ -241,18 +280,18 @@ export const Inbox: React.FC = () => {
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
             <div className="rules-modal-header">
-              <h2><span>📋</span> 許願與投遞規則</h2>
+              <h2><span>📋</span> 收件匣規則</h2>
               <button className="rules-close-btn" onClick={() => setShowRulesModal(false)}>✕</button>
             </div>
             
             <ul className="rules-list">
               <li className="rules-list-item">
                 <span className="rules-bullet">•</span>
-                <div><span className="rules-highlight">刊登限額</span>：每種類型（徵稿 / 接稿 / 其他）限刊登一則。</div>
+                <div><span className="rules-highlight">許願池刊登限額</span>：每種類型（徵稿 / 接稿 / 其他）限刊登一則。</div>
               </li>
               <li className="rules-list-item">
                 <span className="rules-bullet">•</span>
-                <div><span className="rules-highlight">時效限制</span>：刊登文章限時 <span className="rules-danger">3 天</span>，過期將自動下架，確保提案都是最新需求。</div>
+                <div><span className="rules-highlight">許願池時效限制</span>：刊登文章限時 <span className="rules-danger">3 天</span>，過期將自動下架，確保提案都是最新需求。</div>
               </li>
               <li className="rules-list-item">
                 <span className="rules-bullet">•</span>
