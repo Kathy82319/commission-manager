@@ -53,7 +53,6 @@ export const showcaseController = {
     const body: any = await request.json();
     const id = `sc-${Date.now()}`;
     
-    // 🌟 確保 form_schema 被正確轉換為 JSON 字串存入
     const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
 
     await env.commission_db
@@ -66,7 +65,6 @@ export const showcaseController = {
   async update(request: Request, itemId: string, userId: string, env: Env, headers: any) {
     const body: any = await request.json();
     
-    // 🌟 確保 form_schema 被正確處理
     const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
 
     await env.commission_db
@@ -76,7 +74,6 @@ export const showcaseController = {
     return new Response(JSON.stringify({ success: true }), { headers });
   },
 
-  // ... (delete 保持原樣不變) ...
   async delete(itemId: string, userId: string, env: Env, headers: any) {
     await env.commission_db
       .prepare("DELETE FROM ShowcaseItems WHERE id = ? AND artist_id = ?")

@@ -324,10 +324,10 @@ CREATE TABLE DirectInquiries (
     showcase_id TEXT NOT NULL,
     client_id TEXT NOT NULL,
     artist_id TEXT NOT NULL,
-    form_answers TEXT NOT NULL,      -- 🔒 委託人填寫的表單結果 (JSON)
-    tos_snapshot TEXT,               -- 🔒 委託人送出時同意的 TOS 快照
-    negotiation_draft TEXT,          -- 繪師右側白板的最終規格草稿 (JSON)
-    status TEXT DEFAULT 'pending',   -- 狀態：pending, proposed, accepted, declined
+    form_answers TEXT NOT NULL,     
+    tos_snapshot TEXT,              
+    negotiation_draft TEXT,         
+    status TEXT DEFAULT 'pending',   
     last_read_at_artist DATETIME DEFAULT NULL,
     last_read_at_client DATETIME DEFAULT NULL,
     latest_update_at DATETIME DEFAULT CURRENT_TIMESTAMP,
