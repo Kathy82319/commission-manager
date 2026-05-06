@@ -358,7 +358,7 @@ ALTER TABLE ShowcaseItems ADD COLUMN show_quota INTEGER DEFAULT 0;
 -- 2. 由於 SQLite 不支援直接修改欄位為 Nullable，針對訪客的 DirectInquiries，
 -- 我們直接新增一個欄位來存放訪客的聯絡方式 (當 client_id 是特殊值或字串時使用)
 ALTER TABLE DirectInquiries ADD COLUMN guest_contact_info TEXT;
-
+ALTER TABLE ShowcaseItems ADD COLUMN tos_content TEXT;
 
 
 
@@ -380,7 +380,6 @@ VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=Ue29d02da79b805e9df46bdf6442aa24c
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=U0342c94360fe25872c7caa43ab588c87
 
---https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=Uc48e198d2f403534b59b7c97c9c30068
 
 
 --刪除許願池收件匣用
@@ -389,10 +388,28 @@ DELETE FROM InquiryMessages;
 DELETE FROM BulletinInquiries;
 DELETE FROM Bulletins;
 
--- 1. 先清空所有依賴於貼文的「檢舉紀錄」
-DELETE FROM Reports;
--- 2. 再清空所有依賴於貼文的「投遞/應徵紀錄」
-DELETE FROM BulletinInquiries;
--- 3. 最後，既然子資料都清空了，現在可以安全地刪除主表的「貼文」了！
-DELETE FROM Bulletins;
 
+
+
+
+DELETE FROM ActionLogs WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+DELETE FROM Submissions WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+DELETE FROM Messages WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+DELETE FROM PaymentRecords WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+DELETE FROM InquiryMessages WHERE inquiry_id IN (SELECT id FROM BulletinInquiries WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068'));
+
+DELETE FROM Reports WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+
+DELETE FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM BulletinInquiries WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
+DELETE FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+
+DELETE FROM ArtistProfiles WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM CommissionTypes WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM PaymentOrders WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM ShowcaseItems WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM CustomerRecords WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM Notifications WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+DELETE FROM UserRelations WHERE source_user_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR target_user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
+
+DELETE FROM Users WHERE id = 'Uc48e198d2f403534b59b7c97c9c30068';

@@ -1,84 +1,74 @@
 // worker/controllers/showcaseController.ts
-import { Env } from "../shared/types";
+import type { Env } from '../shared/types';
 
 export const showcaseController = {
-  async getPublicList(identifier: string, env: Env, headers: any) {
-    const user = await env.commission_db
-      .prepare("SELECT id, plan_type FROM Users WHERE id = ? OR public_id = ?")
-      .bind(identifier, identifier)
-      .first<{ id: string, plan_type: string }>();
-    
-    if (!user) {
-      return new Response(JSON.stringify({ success: true, data: [] }), { headers });
+  async getMyItems(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT s.*, 
+          (SELECT COUNT(*) FROM Commissions c WHERE c.artist_id = s.artist_id AND json_extract(c.origin_source, '$.showcase_id') = s.id AND c.status NOT IN ('cancelled', 'declined')) as current_orders_count
+        FROM ShowcaseItems s WHERE artist_id = ? ORDER BY created_at DESC
+      `).bind(currentUserId).all();
+      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
+  },
 
-    let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
-    if (user.plan_type === 'free') {
-      query += " LIMIT 6";
+  async getPublicList(artistId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT s.*,
+          (SELECT COUNT(*) FROM Commissions c WHERE c.artist_id = s.artist_id AND json_extract(c.origin_source, '$.showcase_id') = s.id AND c.status NOT IN ('cancelled', 'declined')) as current_orders_count
+        FROM ShowcaseItems s WHERE artist_id = ? AND is_active = 1 ORDER BY created_at DESC
+      `).bind(artistId).all();
+      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
-
-    const { results } = await env.commission_db
-      .prepare(query)
-      .bind(user.id)
-      .all();
-
-    return new Response(JSON.stringify({ success: true, data: results }), { headers });
   },
 
-  async getMyItems(userId: string, env: Env, headers: any) {
-    const { results } = await env.commission_db
-      .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC, created_at DESC")
-      .bind(userId)
-      .all();
-    return new Response(JSON.stringify({ success: true, data: results }), { headers });
-  },
-
-  async create(request: Request, userId: string, env: Env, headers: any) {
-    const user = await env.commission_db
-      .prepare("SELECT plan_type FROM Users WHERE id = ?")
-      .bind(userId)
-      .first<{ plan_type: string }>();
-
-    const { results: countRes } = await env.commission_db
-      .prepare("SELECT COUNT(*) as total FROM ShowcaseItems WHERE artist_id = ?")
-      .bind(userId)
-      .all();
-
-    const totalCount = (countRes[0]?.total as number) || 0;
-
-    if (user?.plan_type === 'free' && totalCount >= 6) {
-      return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers });
+  async create(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json() as any;
+      const id = `showcase-${Date.now()}`;
+      await env.commission_db.prepare(`
+        INSERT INTO ShowcaseItems (id, artist_id, title, cover_url, price_info, tags, description, form_schema, is_active, allow_guest, max_orders, show_quota, tos_content)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        id, currentUserId, body.title, body.cover_url, body.price_info, body.tags || '[]', body.description || '', body.form_schema || '[]', 
+        body.is_active ?? 1, body.allow_guest ?? 0, body.max_orders ?? 0, body.show_quota ?? 1, body.tos_content || ''
+      ).run();
+      return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
-
-    const body: any = await request.json();
-    const id = `sc-${Date.now()}`;
-    
-    const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
-
-    await env.commission_db
-      .prepare("INSERT INTO ShowcaseItems (id, artist_id, title, cover_url, price_info, tags, description, form_schema) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .bind(id, userId, body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description, formSchemaStr)
-      .run();
-    return new Response(JSON.stringify({ success: true, id }), { headers });
   },
 
-  async update(request: Request, itemId: string, userId: string, env: Env, headers: any) {
-    const body: any = await request.json();
-    
-    const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
-
-    await env.commission_db
-      .prepare("UPDATE ShowcaseItems SET title = ?, cover_url = ?, price_info = ?, tags = ?, description = ?, is_active = ?, form_schema = ? WHERE id = ? AND artist_id = ?")
-      .bind(body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description, body.is_active, formSchemaStr, itemId, userId)
-      .run();
-    return new Response(JSON.stringify({ success: true }), { headers });
+  async update(request: Request, targetId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json() as any;
+      await env.commission_db.prepare(`
+        UPDATE ShowcaseItems 
+        SET title=?, cover_url=?, price_info=?, tags=?, description=?, form_schema=?, is_active=?, allow_guest=?, max_orders=?, show_quota=?, tos_content=?
+        WHERE id=? AND artist_id=?
+      `).bind(
+        body.title, body.cover_url, body.price_info, body.tags || '[]', body.description || '', body.form_schema || '[]', 
+        body.is_active ?? 1, body.allow_guest ?? 0, body.max_orders ?? 0, body.show_quota ?? 1, body.tos_content || '', 
+        targetId, currentUserId
+      ).run();
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   },
 
-  async delete(itemId: string, userId: string, env: Env, headers: any) {
-    await env.commission_db
-      .prepare("DELETE FROM ShowcaseItems WHERE id = ? AND artist_id = ?")
-      .bind(itemId, userId)
-      .run();
-    return new Response(JSON.stringify({ success: true }), { headers });
+  async delete(targetId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      await env.commission_db.prepare(`DELETE FROM ShowcaseItems WHERE id=? AND artist_id=?`).bind(targetId, currentUserId).run();
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };
