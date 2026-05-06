@@ -54,11 +54,42 @@ const parseTime = (dateStr?: string) => {
   return new Date(ensureUTC(dateStr)).getTime();
 };
 
-const getBulletinSource = (order?: CommissionDetail) => {
-  if (!order || !order.origin_source) return null;
+// 🌟 更新：支援解析許願池與個人頁客製表單雙重來源
+const getOriginData = (currentOrder?: CommissionDetail | null) => {
+  if (!currentOrder || !currentOrder.origin_source) return null;
   try {
-    const parsed = JSON.parse(unescapeHtml(order.origin_source));
-    if (parsed.source_type === 'bulletin') return parsed;
+    const parsed = JSON.parse(unescapeHtml(currentOrder.origin_source));
+    if (!parsed) return null;
+
+    if (parsed.source_type === 'showcase_form') {
+      return {
+        type: 'showcase_form',
+        title: parsed.showcase_title || '客製化委託單',
+        answers: Array.isArray(parsed.form_answers) ? parsed.form_answers : [],
+        ...parsed
+      };
+    }
+
+    if (parsed.source_type === 'bulletin') {
+      const isOffer = parsed.bulletin_category === 'offer';
+      const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
+      const parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+      
+      let description = parsed.description || parsed.bulletin_content || '';
+      try {
+        const parsedContent = JSON.parse(unescapeHtml(parsed.bulletin_content));
+        if (parsedContent.description) description = parsedContent.description;
+        else if (parsedContent.content) description = parsedContent.content;
+      } catch (e) {}
+
+      return {
+        type: 'bulletin',
+        description,
+        isOffer,
+        parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot },
+        ...parsed
+      };
+    }
   } catch (e) {
     return null;
   }
@@ -395,32 +426,7 @@ export function ClientOrders() {
     }
   }
 
-  const bulletinSource = getBulletinSource(selectedOrder);
-  let displayBulletinContent = '';
-  let parsedSnapshot: any = {};
-  let isOffer = false;
-
-  if (bulletinSource) {
-    isOffer = bulletinSource.bulletin_category === 'offer';
-    
-    let parsedBulletinContent: any = bulletinSource.bulletin_content || {};
-    if (typeof parsedBulletinContent === 'string') {
-      try {
-        parsedBulletinContent = JSON.parse(unescapeHtml(parsedBulletinContent));
-      } catch (e) {}
-    }
-    
-    displayBulletinContent = parsedBulletinContent.description || parsedBulletinContent.content || (typeof parsedBulletinContent === 'string' ? parsedBulletinContent : '(無詳細內容)');
-
-    try {
-      const snapshotObj = bulletinSource.artist_initial_snapshot || bulletinSource.client_initial_response || bulletinSource.artist_snapshot || '{}'; 
-      const rawSnapshot = unescapeHtml(typeof snapshotObj === 'string' ? snapshotObj : JSON.stringify(snapshotObj));
-      parsedSnapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
-      if (typeof parsedSnapshot === 'string') parsedSnapshot = JSON.parse(parsedSnapshot);
-    } catch (e) {
-      console.error("無法解析 snapshot", e);
-    }
-  }
+  const originData = getOriginData(selectedOrder);
 
   return (
     <div className="notebook-page">
@@ -469,7 +475,7 @@ export function ClientOrders() {
             {isListLoading ? <div className="sidebar-empty">載入中...</div> : filteredOrders.length === 0 ? <div className="sidebar-empty">沒有符合條件的委託單</div> : (
               filteredOrders.map(order => {
                 const isSelected = selectedId === order.id;
-                const isBulletin = getBulletinSource(order) !== null;
+                const orderOrigin = getOriginData(order);
                 const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); 
 
                 return (
@@ -477,7 +483,10 @@ export function ClientOrders() {
                     <div className="card-meta-row">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span>{formatLocalDate(order.order_date)}</span>
-                        {isBulletin && (
+                        {orderOrigin?.type === 'showcase_form' && (
+                          <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff' }}>販售區表單</span>
+                        )}
+                        {orderOrigin?.type === 'bulletin' && (
                           <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff' }}>許願池</span>
                         )}
                       </div>
@@ -532,9 +541,9 @@ export function ClientOrders() {
                     <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       繪師項目名：{selectedOrder.project_name || '無'}
                     </span>
-                    {getBulletinSource(selectedOrder) && (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', flexShrink: 0 }}>
-                        來源：許願池
+                    {originData && (
+                      <span className="card-mode-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', flexShrink: 0 }}>
+                        來源：{originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
                       </span>
                     )}
                   </div>
@@ -574,57 +583,73 @@ export function ClientOrders() {
 
               <div className="tab-content-area">
                 
-                
                 {activeTab === 'main' && (
                   <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {bulletinSource && (
+                    {/* 🌟 擴充：渲染不同的來源資料 */}
+                    {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
                           <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            🔍 許願池媒合軌跡
+                            🔍 初始需求單 / 媒合軌跡
                           </h3>
                         </div>
 
                         <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                           
-                          <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
-                            <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                            <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
-                          </div>
+                          {originData.type === 'showcase_form' ? (
+                            <div style={{ paddingBottom: '12px', marginBottom: '12px' }}>
+                              <strong style={{ color: '#4A7294' }}>【我填寫的客製化表單】</strong><br/>
+                              {originData.answers && originData.answers.length > 0 ? originData.answers.map((qa: any, i: number) => (
+                                <div key={i} style={{ marginTop: '8px' }}>
+                                  <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                                  <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                                </div>
+                              )) : (
+                                <div style={{ color: '#A0978D', fontStyle: 'italic', marginTop: '8px' }}>未填寫任何客製化問答。</div>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
+                                <strong style={{ color: '#A67B3E' }}>【{originData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{originData.description}</span>
+                              </div>
 
-                          <div>
-                            <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
-                            
-                            {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
-                              <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                                {parsedSnapshot.answers.map((ans: any, idx: number) => (
-                                  <div key={idx} style={{ marginTop: '8px' }}>
-                                    <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
-                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                              <div>
+                                <strong style={{ color: '#4A7294' }}>【{originData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                                
+                                {originData.parsedSnapshot?.answers && originData.parsedSnapshot.answers.length > 0 && (
+                                  <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                    {originData.parsedSnapshot.answers.map((ans: any, idx: number) => (
+                                      <div key={idx} style={{ marginTop: '8px' }}>
+                                        <strong style={{ color: '#A0978D' }}>Q: {unescapeHtml(ans.question)}</strong><br/>
+                                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {unescapeHtml(ans.answer) || '(未填寫)'}</span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            )}
+                                )}
 
-                            {parsedSnapshot.message && (
-                              <div style={{ marginTop: '8px' }}>
-                                <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                                <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(parsedSnapshot.message)}</span>
-                              </div>
-                            )}
+                                {originData.parsedSnapshot?.message && (
+                                  <div style={{ marginTop: '8px' }}>
+                                    <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                                    <span style={{ whiteSpace: 'pre-wrap' }}>{unescapeHtml(originData.parsedSnapshot.message)}</span>
+                                  </div>
+                                )}
 
-                            {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
-                              <div style={{ marginTop: '10px' }}>
-                                {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(parsedSnapshot.specialties)}</div>}
-                                {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(parsedSnapshot.no_gos)}</div>}
+                                {!originData.isOffer && (originData.parsedSnapshot?.specialties || originData.parsedSnapshot?.no_gos) && (
+                                  <div style={{ marginTop: '10px' }}>
+                                    {originData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{unescapeHtml(originData.parsedSnapshot.specialties)}</div>}
+                                    {originData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{unescapeHtml(originData.parsedSnapshot.no_gos)}</div>}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
+                            </>
+                          )}
                         </div>
 
                         <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px', padding: '12px 0 0 0', width: '100%', textAlign: 'center', borderTop: '1px dashed #EAE6E1' }}>
-                          {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
+                          {isTrajectoryExpanded ? "▲ 收合內容" : "▼ 展開完整內容"}
                         </button>
                       </div>
                     )}
@@ -652,7 +677,7 @@ export function ClientOrders() {
                         <div className="request-field"><span className="field-label">繪製範圍：</span><span className="field-value">{selectedOrder.draw_scope || '未提供'}</span></div>
                         <div className="request-field"><span className="field-label">人數：</span><span className="field-value">{selectedOrder.char_count || 1} 人</span></div>
                         <div className="request-field"><span className="field-label">背景：</span><span className="field-value">{selectedOrder.bg_type || '未提供'}</span></div>
-                        <div className="request-field" style={{ gridColumn: '1 / -1' }}><span className="field-label">備註/附加選項：</span><span className="field-value">{selectedOrder.add_ons || '無'}</span></div>
+                        <div className="request-field" style={{ gridColumn: '1 / -1' }}><span className="field-label">備註/附加選項：</span><span className="field-value" style={{ whiteSpace: 'pre-wrap' }}>{selectedOrder.add_ons || '無'}</span></div>
                         <div className="request-field" style={{ gridColumn: '1 / -1', marginTop: '8px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px' }}>
                           <span className="field-label">總金額：</span><span className="field-value" style={{ fontSize: '18px', color: '#4E7A5A', fontWeight: 'bold' }}>NT$ {selectedOrder.total_price.toLocaleString()}</span>
                         </div>

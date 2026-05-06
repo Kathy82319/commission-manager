@@ -153,7 +153,7 @@ export const directInquiryController = {
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons, delivery_method, workflow_mode, agreed_tos_snapshot
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', ?)
       `).bind(
-        commissionId, currentUserId, inquiryData.artist_id, 'type-direct', draft.project_name || inquiryData.showcase_title, clientName,
+        commissionId, currentUserId, inquiryData.artist_id, 'type-01', draft.project_name || inquiryData.showcase_title, clientName,
         draft.total_price || 0, origin_source, draft.usage_type || '', draft.is_rush || '否', draft.draw_scope || '', draft.char_count || 1,
         draft.bg_type || '', draft.add_ons || '', inquiryData.tos_snapshot || ''
       ).run();
