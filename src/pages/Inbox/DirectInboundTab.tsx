@@ -20,7 +20,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   handleEnterInquiryWorkspace,
   handleViewCommission,
   blacklistedIds
-}) => {
+}) => { 
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
