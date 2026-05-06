@@ -20,8 +20,6 @@ export const InquiryWorkspace: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [actualArtistId, setActualArtistId] = useState<string | null>(null);
 
-  const [isDirectInquiry, setIsDirectInquiry] = useState(false);
-  const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
 
   const [loading, setLoading] = useState(true);
   const [focusedField, setFocusedField] = useState(false);
@@ -121,10 +119,9 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    // 初始化判斷來源
-    setIsDirectInquiry(id?.startsWith('di-') || false);
-  }, [id]);
+// ✅ 換成這段：不要用語法非同步等待，網址有 di- 就直接鎖定是個人頁委託！
+  const isDirectInquiry = id?.startsWith('di-') || false;
+  const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
 
   useEffect(() => {
     fetchData();

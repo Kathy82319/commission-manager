@@ -135,9 +135,8 @@ export const directInquiryController = {
 
       const draft = JSON.parse(inquiryData.negotiation_draft);
       const commissionId = `CM-${Date.now().toString().slice(-6)}`;
-      const clientName = "案主"; // 實務上可再 JOIN Users 表抓取名字
+      const clientName = "案主"; 
 
-      // 將個人頁客製表單打包成 Notebook 支援的格式
       const origin_source = JSON.stringify({
         source_type: 'showcase_form',
         inquiry_id: inquiryId,
@@ -145,6 +144,12 @@ export const directInquiryController = {
         form_answers: JSON.parse(inquiryData.form_answers || '[]'),
         final_negotiation_draft: draft
       });
+
+      // 🌟 新增防護網：確保 CommissionTypes 裡面有 'type-01'，避免 Foreign Key 報錯
+      await env.commission_db.prepare(`
+        INSERT OR IGNORE INTO CommissionTypes (id, artist_id, name, base_price, estimated_days, is_active) 
+        VALUES ('type-01', ?, '預設委託類型', 0, 7, 1)
+      `).bind(inquiryData.artist_id).run();
 
       // 正式建立訂單
       await env.commission_db.prepare(`
