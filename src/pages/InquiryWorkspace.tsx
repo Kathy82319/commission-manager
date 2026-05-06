@@ -20,8 +20,7 @@ export const InquiryWorkspace: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [actualArtistId, setActualArtistId] = useState<string | null>(null);
 
-  // 🌟 修正：直接用 ID 字首判斷來源，避免發生 404 撞牆！
-  const isDirectInquiry = id?.startsWith('di-') || false;
+  const [isDirectInquiry, setIsDirectInquiry] = useState(false);
   const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
 
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,6 @@ export const InquiryWorkspace: React.FC = () => {
   const fetchData = async () => {
     if (isAccepted) return;
     try {
-      // 🌟 修正：直接依照正確的 API 路徑抓取資料，不再使用 Try-Catch 備用邏輯
       const resInquiry = await apiClient.get(`/api/${apiPrefix}/${id}`);
 
       if (resInquiry.success) {
@@ -77,7 +75,6 @@ export const InquiryWorkspace: React.FC = () => {
         const myId = resUser.data.id;
         setCurrentUserId(myId);
 
-        // 處理繪師身分判斷
         const isOfferCat = data.bulletin_category === 'offer';
         const targetArtistId = (isDirectInquiry || !isOfferCat) ? data.artist_id : data.bulletin_client_id;
         setActualArtistId(targetArtistId);
@@ -87,7 +84,7 @@ export const InquiryWorkspace: React.FC = () => {
         
         if (data.status === 'accepted') setIsAccepted(true);
 
-        if (isFirstLoad.current || !currentUserIsArtist || data.status !== 'submitted') {
+        if (isFirstLoad.current || !currentUserIsArtist || (data.status !== 'submitted' && data.status !== 'pending')) {
           if (data.negotiation_draft) {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
@@ -95,7 +92,7 @@ export const InquiryWorkspace: React.FC = () => {
              
              if (!defaultName) {
                if (isDirectInquiry) {
-                 defaultName = "客製化委託單"; // 來自個人頁的預設名稱
+                 defaultName = "客製化委託單"; 
                } else {
                  try {
                    const parsedContent = JSON.parse(data.bulletin_content);
@@ -114,7 +111,6 @@ export const InquiryWorkspace: React.FC = () => {
         isFirstLoad.current = false;
       }
 
-      // 抓取訊息
       const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
       if (resMsgs.success) setMessages(resMsgs.data);
 
@@ -126,10 +122,15 @@ export const InquiryWorkspace: React.FC = () => {
   };
 
   useEffect(() => {
+    // 初始化判斷來源
+    setIsDirectInquiry(id?.startsWith('di-') || false);
+  }, [id]);
+
+  useEffect(() => {
     fetchData();
     const timer = setInterval(fetchData, 5000);
     return () => clearInterval(timer);
-  }, [id, isAccepted]);
+  }, [id, isAccepted, apiPrefix]); // 確保 apiPrefix 更新時重新抓取
 
   useEffect(() => { if (!isAccepted) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isAccepted]);
 
@@ -292,7 +293,6 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  // 🌟 解析許願池資料 或 客製表單資料
   let parsedBulletin: any = {};
   let displayTitle = inquiry.bulletin_title || "未命名委託";
   let displayContent = inquiry.bulletin_content || "";
@@ -334,6 +334,12 @@ export const InquiryWorkspace: React.FC = () => {
   }
 
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
+
+  // 🌟 嚴密的權限防護：依據來源決定可編輯的狀態
+  const isEditableByArtist = isArtist && (
+    (isDirectInquiry && inquiry.status === 'pending') || // 來源一：個人頁直接委託（案主主動找上門，一開始 pending 就能直接編輯）
+    (!isDirectInquiry && inquiry.status === 'submitted') // 來源二：許願池投遞（必須等案主同意後變成 submitted，繪師才能編輯）
+  );
 
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
@@ -389,7 +395,12 @@ export const InquiryWorkspace: React.FC = () => {
         <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>📝 最終規格與合約確認</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>{inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單'}</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
+    {isDirectInquiry 
+      ? (inquiry.status === 'pending' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
+      : (inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
+    }
+  </span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
             <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
@@ -461,30 +472,31 @@ export const InquiryWorkspace: React.FC = () => {
           <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數 (影響計價與排單)</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
+              {/* 🌟 套用 isEditableByArtist 判斷 disabled */}
+              <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
               
               <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
+                <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isEditableByArtist} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
               </div>
               
               <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isEditableByArtist} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
+                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label>
-                  <select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
+                  <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
                     <option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option>
                   </select>
-                  {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
+                  {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
                 </div>
                 <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label>
-                  <select disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
+                  <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
                     <option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option>
                   </select>
-                  {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isArtist || inquiry.status !== 'submitted'} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
+                  {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
                 </div>
               </div>
             </div>
@@ -497,7 +509,7 @@ export const InquiryWorkspace: React.FC = () => {
               {isArtist ? "請將左側聊天室討論出的修改統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
             </p>
             <textarea 
-              disabled={!isArtist || inquiry.status !== 'submitted'} 
+              disabled={!isEditableByArtist} 
               className="draft-input" 
               style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
               value={draft.add_ons} 
@@ -509,7 +521,8 @@ export const InquiryWorkspace: React.FC = () => {
         </div>
 
         <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {isArtist && inquiry.status === 'submitted' && (
+          {/* 🌟 套用 isEditableByArtist 判斷是否顯示儲存與送出按鈕 */}
+          {isEditableByArtist && (
             <>
               <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
               <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿，無法提案' : '🚀 送出正式提案'}</button>
