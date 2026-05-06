@@ -1,4 +1,3 @@
-// src/pages/public/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
@@ -54,7 +53,6 @@ interface ShowcaseItem {
   tags: string[];
   description: string;
   form_schema?: string; 
-  // 🌟 新增欄位支援
   allow_guest?: number;
   max_orders?: number;
   show_quota?: number;
@@ -130,6 +128,7 @@ export function PublicProfile() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dismissGuestBanner, setDismissGuestBanner] = useState(false);
 
   const parsedSchema: FormFieldSchema[] = useMemo(() => {
     if (!selectedShowcase || !selectedShowcase.form_schema) return [];
@@ -160,6 +159,7 @@ export function PublicProfile() {
     setModalMode('form1');
     setFormData({});
     setAgreedToTerms(false);
+    setDismissGuestBanner(false);
   };
 
   const handleCloseLightbox = () => {
@@ -204,11 +204,21 @@ export function PublicProfile() {
         answer: formData[field.id] || (field.type === 'checkbox' ? [] : '')
       }));
 
+      // 🌟 Phase 3 修正：萃取訪客的聯絡資訊傳給後端
+      let guestContactInfo = null;
+      if (!isLoggedIn) {
+        const contactFields = parsedSchema.filter(f => /聯絡|信箱|email|ig|line|社群|twitter|x/i.test(f.label));
+        if (contactFields.length > 0) {
+          guestContactInfo = contactFields.map(f => `${f.label}: ${formData[f.id] || ''}`).join(' | ');
+        }
+      }
+
       const payload = {
         showcase_id: selectedShowcase.id,
         artist_id: artist.id,
         form_answers: JSON.stringify(formattedAnswers),
-        tos_snapshot: tosContent
+        tos_snapshot: tosContent,
+        guest_contact_info: guestContactInfo
       };
 
       const res = await fetch(`${API_BASE}/api/direct-inquiries`, {
@@ -577,8 +587,9 @@ export function PublicProfile() {
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
         <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
-          <div className="sidebar-top">
-            <div className="avatar-section">
+          
+          <div className="sidebar-top" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="avatar-section" style={{ flexShrink: 0 }}>
               {artist.avatar_url ? (
                 <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
               ) : (
@@ -588,7 +599,7 @@ export function PublicProfile() {
               )}
             </div>
             
-            <div className="name-social-section">
+            <div className="name-social-section" style={{ flex: 1, minWidth: '150px' }}>
               <h1 className="profile-name">{artist.display_name}</h1>
               <div className="social-links">
                 {settings?.social_links?.map((link, idx) => (
@@ -763,13 +774,6 @@ export function PublicProfile() {
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
                   </div>
 
-                  {/* 🌟 飢餓行銷：顯示剩餘名額 */}
-                  {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
-                    <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
-                      🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
-                    </div>
-                  )}
-
                   {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.length > 0 && (
                     <div className="modal-tags">
                       {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
@@ -780,9 +784,16 @@ export function PublicProfile() {
                     <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
                   </div>
 
-                  {/* 🌟 一卡兩用邏輯：有設定表單才顯示「我要委託」按鈕 */}
+                  {/* 🌟 一卡兩用邏輯：有設定表單才顯示「我要委託」按鈕與名額標籤 */}
                   {hasForm && (
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
+                      {/* 🌟 限量標籤顯示：按鈕上方動態顯示剩餘名額 */}
+                      {selectedShowcase.show_quota === 1 && (selectedShowcase.max_orders || 0) > 0 && (
+                        <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '14px', color: '#EF4444', fontWeight: 'bold' }}>
+                          🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
+                        </div>
+                      )}
+                      
                       <button 
                         onClick={handleOpenCommission}
                         disabled={isFull}
@@ -811,16 +822,19 @@ export function PublicProfile() {
                 <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
                   
                   {/* 🌟 訪客友善提示 Banner */}
-                  {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
+                  {!isLoggedIn && selectedShowcase.allow_guest === 1 && !dismissGuestBanner && (
                     <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
                         💡 <strong>您目前為訪客身分</strong><br/>
-                        提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>
-                        若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
+                        建議登入或註冊以解鎖完整洽談室與進度追蹤功能。<br/>
+                        提交表單後，繪師將透過您留下的聯絡方式與您聯繫。
                       </div>
-                      <div>
-                        <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                          前往登入 / 註冊帳號
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={() => navigate('/login')} style={{ flex: 1, background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                          前往登入 / 註冊
+                        </button>
+                        <button onClick={() => setDismissGuestBanner(true)} style={{ flex: 1, background: '#FFF', color: '#4A7294', border: '1px solid #4A7294', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                          繼續以訪客填寫
                         </button>
                       </div>
                     </div>
