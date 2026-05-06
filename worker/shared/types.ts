@@ -50,4 +50,9 @@ export interface ShowcaseItem {
   is_active: number;
   sort_order: number;
   created_at: string;
+  allow_guest: number;
+  max_orders: number;
+  show_quota: number;
+  tos_content: string;
+  current_orders_count: number;
 }
