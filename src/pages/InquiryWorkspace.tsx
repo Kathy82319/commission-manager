@@ -20,8 +20,8 @@ export const InquiryWorkspace: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [actualArtistId, setActualArtistId] = useState<string | null>(null);
 
-  // 🌟 新增：用來判斷這張單是否來自個人頁直接委託
-  const [isDirectInquiry, setIsDirectInquiry] = useState(false);
+  // 🌟 修正：直接用 ID 字首判斷來源，避免發生 404 撞牆！
+  const isDirectInquiry = id?.startsWith('di-') || false;
   const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
 
   const [loading, setLoading] = useState(true);
@@ -65,17 +65,10 @@ export const InquiryWorkspace: React.FC = () => {
   const fetchData = async () => {
     if (isAccepted) return;
     try {
-      // 🌟 自動回退機制：先找許願池單，找不到再找個人頁直接委託單
-      let resInquiry = await apiClient.get(`/api/inquiries/${id}`);
-      let isDirect = false;
-
-      if (!resInquiry.success) {
-        resInquiry = await apiClient.get(`/api/direct-inquiries/${id}`);
-        isDirect = true;
-      }
+      // 🌟 修正：直接依照正確的 API 路徑抓取資料，不再使用 Try-Catch 備用邏輯
+      const resInquiry = await apiClient.get(`/api/${apiPrefix}/${id}`);
 
       if (resInquiry.success) {
-        setIsDirectInquiry(isDirect);
         const data = resInquiry.data;
         setInquiry(data);
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
@@ -84,9 +77,9 @@ export const InquiryWorkspace: React.FC = () => {
         const myId = resUser.data.id;
         setCurrentUserId(myId);
 
-        // 🌟 處理繪師身分判斷
+        // 處理繪師身分判斷
         const isOfferCat = data.bulletin_category === 'offer';
-        const targetArtistId = (isDirect || !isOfferCat) ? data.artist_id : data.bulletin_client_id;
+        const targetArtistId = (isDirectInquiry || !isOfferCat) ? data.artist_id : data.bulletin_client_id;
         setActualArtistId(targetArtistId);
         
         const currentUserIsArtist = (myId === targetArtistId);
@@ -101,7 +94,7 @@ export const InquiryWorkspace: React.FC = () => {
              let defaultName = data.bulletin_title;
              
              if (!defaultName) {
-               if (isDirect) {
+               if (isDirectInquiry) {
                  defaultName = "客製化委託單"; // 來自個人頁的預設名稱
                } else {
                  try {
@@ -121,12 +114,15 @@ export const InquiryWorkspace: React.FC = () => {
         isFirstLoad.current = false;
       }
 
-      // 抓取訊息時也使用動態 Prefix
-      const prefix = isDirect ? 'direct-inquiries' : 'inquiries';
-      const resMsgs = await apiClient.get(`/api/${prefix}/${id}/messages`);
+      // 抓取訊息
+      const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
       if (resMsgs.success) setMessages(resMsgs.data);
 
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) { 
+      console.error("讀取洽談室失敗:", e); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => {
@@ -303,6 +299,7 @@ export const InquiryWorkspace: React.FC = () => {
   let parsedFormAnswers: any[] = [];
 
   if (isDirectInquiry) {
+    displayTitle = inquiry.showcase_title || "客製化委託單";
     try { parsedFormAnswers = JSON.parse(inquiry.form_answers || '[]'); } catch(e) {}
   } else {
     try {
@@ -404,13 +401,12 @@ export const InquiryWorkspace: React.FC = () => {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           
-          {/* ======== 🌟 區塊一：初始需求單 (不可篡改) ======== */}
+          {/* ======== 🌟 區塊一：初始需求單 ======== */}
           <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改的原始填寫)</h4>
             <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               
               {isDirectInquiry ? (
-                // 個人頁表單的 Q&A
                 <div style={{ paddingBottom: '8px' }}>
                   {parsedFormAnswers.length > 0 ? parsedFormAnswers.map((qa, i) => (
                     <div key={i} style={{ marginBottom: '10px' }}>
@@ -422,7 +418,6 @@ export const InquiryWorkspace: React.FC = () => {
                   )}
                 </div>
               ) : (
-                // 原本許願池的軌跡
                 <>
                   <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
                     <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
@@ -499,7 +494,7 @@ export const InquiryWorkspace: React.FC = () => {
           <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</h4>
             <p style={{ fontSize: '11px', color: '#A0978D', margin: '0 0 12px 0', lineHeight: '1.5' }}>
-              {isArtist ? "請將左側聊天室討論出的修改（如：原定無背景，經討論加價 $500 繪製花紋背景）統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
+              {isArtist ? "請將左側聊天室討論出的修改統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
             </p>
             <textarea 
               disabled={!isArtist || inquiry.status !== 'submitted'} 
@@ -557,7 +552,6 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               )}
 
-              {/* 若為許願池的「接案 (offer)」，才顯示這段基本規範 */}
               {!isDirectInquiry && isOffer && (
                 <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                   <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
