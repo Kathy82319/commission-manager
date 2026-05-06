@@ -13,8 +13,8 @@ export const directInquiryController = {
 
       const id = `di-${Date.now()}`;
       
-      // 🌟 修正：為繞過 SQLite 不支援直接 DROP NOT NULL 的限制，訪客以空字串 '' 寫入
-      const dbClientId = currentUserId || '';
+      // 🌟 修正：依據指示，若為訪客 (currentUserId 為 null) 則直接寫入 'guest'
+      const dbClientId = currentUserId || 'guest';
       
       await env.commission_db.prepare(`
         INSERT INTO DirectInquiries (
