@@ -84,20 +84,27 @@ export const InquiryWorkspace: React.FC = () => {
           if (data.negotiation_draft) {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
-             let defaultName = "許願池委託";
-             try {
-                const parsedContent = JSON.parse(data.bulletin_content);
-                if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
-                  defaultName = parsedContent.commission_items[0].name;
-                } else if (parsedContent.description) {
-                  defaultName = parsedContent.description.substring(0, 30);
-                } else {
-                  defaultName = data.bulletin_content.substring(0, 30);
-                }
-             } catch(e) {
-                defaultName = data.bulletin_content.substring(0, 30);
+             let defaultName = data.bulletin_title; // 優先使用後端回傳的 title
+             
+             if (!defaultName) {
+               try {
+                 const parsedContent = JSON.parse(data.bulletin_content);
+                 if (parsedContent.title) {
+                   defaultName = parsedContent.title;
+                 } else if (parsedContent.commission_items && parsedContent.commission_items.length > 0) {
+                   defaultName = parsedContent.commission_items[0].name;
+                 } else if (parsedContent.content) {
+                   defaultName = parsedContent.content.substring(0, 30);
+                 } else if (parsedContent.description) {
+                   defaultName = parsedContent.description.substring(0, 30);
+                 } else {
+                   defaultName = "許願池委託";
+                 }
+               } catch(e) {
+                 defaultName = "許願池委託";
+               }
              }
-            setDraft((prev: any) => ({ ...prev, project_name: defaultName }));
+            setDraft((prev: any) => ({ ...prev, project_name: defaultName || "許願池委託" }));
           }
         }
         isFirstLoad.current = false;
@@ -277,12 +284,21 @@ export const InquiryWorkspace: React.FC = () => {
     );
   }
 
-  let displayBulletinContent = inquiry.bulletin_content;
   let parsedBulletin: any = {};
+  let displayTitle = inquiry.bulletin_title || "未命名委託";
+  let displayContent = inquiry.bulletin_content;
+
   try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
-      if (parsedBulletin.description) {
-        displayBulletinContent = parsedBulletin.description;
+      // 若後端沒有回傳 title，則嘗試從 JSON 內提取
+      if (!inquiry.bulletin_title && parsedBulletin.title) {
+        displayTitle = parsedBulletin.title;
+      }
+      // 提取軌跡用的詳細說明
+      if (parsedBulletin.content) {
+        displayContent = parsedBulletin.content;
+      } else if (parsedBulletin.description) {
+        displayContent = parsedBulletin.description;
       }
   } catch (e) {}
 
@@ -316,7 +332,7 @@ export const InquiryWorkspace: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold' }}>← 返回</button>
             <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '16px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              洽談：{displayBulletinContent.substring(0, 20)}...
+              洽談：{displayTitle.substring(0, 20)}{displayTitle.length > 20 ? '...' : ''}
             </h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -381,7 +397,7 @@ export const InquiryWorkspace: React.FC = () => {
               
               <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
                 <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                <span style={{ whiteSpace: 'pre-wrap' }}>{displayBulletinContent}</span>
+                <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
               </div>
 
               <div>
