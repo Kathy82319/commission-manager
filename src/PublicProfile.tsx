@@ -54,7 +54,6 @@ interface ShowcaseItem {
   tags: string[];
   description: string;
   form_schema?: string; 
-  // 🌟 新增欄位支援
   allow_guest?: number;
   max_orders?: number;
   show_quota?: number;
@@ -136,9 +135,7 @@ export function PublicProfile() {
     try { return JSON.parse(selectedShowcase.form_schema); } catch (e) { return []; }
   }, [selectedShowcase]);
 
-  // 🌟 一卡兩用：檢查是否有建立表單
   const hasForm = parsedSchema.length > 0;
-  // 🌟 飢餓行銷：判斷是否滿單
   const isFull = (selectedShowcase?.max_orders || 0) > 0 && (selectedShowcase?.current_orders_count || 0) >= (selectedShowcase?.max_orders || 0);
 
   const tosContent = useMemo(() => {
@@ -385,6 +382,13 @@ export function PublicProfile() {
 
   useEffect(() => {
     const fetchViewerAndRelations = async () => {
+      // 🌟 阻擋：如果本地端沒有登入紀錄，就不去打 /api/users/me，避免噴 401 錯誤
+      const role = localStorage.getItem('user_role');
+      if (!role) {
+        setIsViewerLoading(false);
+        return;
+      }
+
       setIsViewerLoading(true); 
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       try {
@@ -421,25 +425,24 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
-  const handleTagClick = (tag: string) => {
-    setSelectedTags(prev => {
-      if (tag === '全部') return ['全部'];
-      const filters = prev.filter(t => t !== '全部');
-      if (filters.includes(tag)) {
-        const next = filters.filter(t => t !== tag);
-        return next.length === 0 ? ['全部'] : next;
-      }
-      return [...filters, tag];
-    });
-  };
-
+  // 🌟 修正：降級保護機制的過濾
   const filteredShowcaseItems = useMemo(() => {
-    if (selectedTags.includes('全部')) return showcaseItems;
-    return showcaseItems.filter(item => 
-      Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
-    );
-  }, [showcaseItems, selectedTags]);
+    let items = showcaseItems;
+    
+    if (!selectedTags.includes('全部')) {
+      items = items.filter(item => 
+        Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
+      );
+    }
+    
+    const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
+    if (isFreePlan) {
+      return items.slice(0, 6);
+    }
+    return items;
+  }, [showcaseItems, selectedTags, artist]);
 
+  // 🌟 修正：控制所有頁籤的顯示權限
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs: any[] = [];
@@ -453,9 +456,13 @@ export function PublicProfile() {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
+    // 將 Showcase 移出 !isFreePlan 的限制，讓免費版也能顯示前 6 筆
+    if (!isHidden('showcase') && showcaseItems.length > 0) {
+      tabs.push({ id: 'showcase', label: '商品與委託區' });
+    }
+
+    // 自訂分頁依然維持「僅限付費版」的尊榮限制
     if (!isFreePlan) {
-      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '商品與委託區' });
-      
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {
           if (!isHidden(sec.id) && sec.content) {
@@ -465,6 +472,7 @@ export function PublicProfile() {
       }
     }
 
+    // 排列順序也維持「僅限付費版」
     if (!isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
       tabs.sort((a, b) => {
         let idxA = settings.tab_order!.indexOf(a.id);
