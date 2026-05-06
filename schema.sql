@@ -309,6 +309,56 @@ CREATE TABLE IF NOT EXISTS Notifications (
 -- 建立索引以加快查詢速度
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON Notifications(user_id);
 
+
+-- ==========================================
+-- 5/6後新增的資料庫(正式機還沒有)
+-- ==========================================
+
+
+-- 1. 擴充現有的 ShowcaseItems，加入表單結構欄位
+ALTER TABLE ShowcaseItems ADD COLUMN form_schema TEXT DEFAULT '[]';
+
+-- 2. 新增：個人頁直接委託的洽談主表 (DirectInquiries)
+CREATE TABLE DirectInquiries (
+    id TEXT PRIMARY KEY,
+    showcase_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    form_answers TEXT NOT NULL,      -- 🔒 委託人填寫的表單結果 (JSON)
+    tos_snapshot TEXT,               -- 🔒 委託人送出時同意的 TOS 快照
+    negotiation_draft TEXT,          -- 繪師右側白板的最終規格草稿 (JSON)
+    status TEXT DEFAULT 'pending',   -- 狀態：pending, proposed, accepted, declined
+    last_read_at_artist DATETIME DEFAULT NULL,
+    last_read_at_client DATETIME DEFAULT NULL,
+    latest_update_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (showcase_id) REFERENCES ShowcaseItems(id),
+    FOREIGN KEY (client_id) REFERENCES Users(id),
+    FOREIGN KEY (artist_id) REFERENCES Users(id)
+);
+
+-- 3. 新增：直接委託專用的聊天訊息表 (DirectInquiryMessages)
+CREATE TABLE DirectInquiryMessages (
+    id TEXT PRIMARY KEY,
+    inquiry_id TEXT NOT NULL,
+    sender_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    message_type TEXT DEFAULT 'text',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (inquiry_id) REFERENCES DirectInquiries(id),
+    FOREIGN KEY (sender_id) REFERENCES Users(id)
+);
+
+
+
+
+
+
+
+
+
+
+
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

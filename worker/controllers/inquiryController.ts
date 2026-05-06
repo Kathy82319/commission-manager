@@ -23,7 +23,7 @@ export const inquiryController = {
     try {
 const inquiry = await env.commission_db.prepare(
   `SELECT i.*, 
-          b.title as bulletin_title, /* 👈 加上這行，把標題抓出來 */
+          b.title as bulletin_title, 
           b.content as bulletin_content, 
           b.category as bulletin_category, 
           b.client_id as bulletin_client_id,

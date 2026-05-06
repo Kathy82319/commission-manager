@@ -52,22 +52,31 @@ export const showcaseController = {
 
     const body: any = await request.json();
     const id = `sc-${Date.now()}`;
+    
+    // 🌟 確保 form_schema 被正確轉換為 JSON 字串存入
+    const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
+
     await env.commission_db
-      .prepare("INSERT INTO ShowcaseItems (id, artist_id, title, cover_url, price_info, tags, description) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .bind(id, userId, body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description)
+      .prepare("INSERT INTO ShowcaseItems (id, artist_id, title, cover_url, price_info, tags, description, form_schema) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, userId, body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description, formSchemaStr)
       .run();
     return new Response(JSON.stringify({ success: true, id }), { headers });
   },
 
   async update(request: Request, itemId: string, userId: string, env: Env, headers: any) {
     const body: any = await request.json();
+    
+    // 🌟 確保 form_schema 被正確處理
+    const formSchemaStr = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
+
     await env.commission_db
-      .prepare("UPDATE ShowcaseItems SET title = ?, cover_url = ?, price_info = ?, tags = ?, description = ?, is_active = ? WHERE id = ? AND artist_id = ?")
-      .bind(body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description, body.is_active, itemId, userId)
+      .prepare("UPDATE ShowcaseItems SET title = ?, cover_url = ?, price_info = ?, tags = ?, description = ?, is_active = ?, form_schema = ? WHERE id = ? AND artist_id = ?")
+      .bind(body.title, body.cover_url, body.price_info, JSON.stringify(body.tags || []), body.description, body.is_active, formSchemaStr, itemId, userId)
       .run();
     return new Response(JSON.stringify({ success: true }), { headers });
   },
 
+  // ... (delete 保持原樣不變) ...
   async delete(itemId: string, userId: string, env: Env, headers: any) {
     await env.commission_db
       .prepare("DELETE FROM ShowcaseItems WHERE id = ? AND artist_id = ?")

@@ -1,3 +1,4 @@
+// src/pages/artist/Settings/ShowcaseTab.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -15,6 +16,15 @@ const customQuillModules = {
   ]
 };
 
+// 🌟 新增：表單欄位的型別定義
+export interface FormFieldSchema {
+  id: string;
+  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
+  label: string;
+  required: boolean;
+  options?: string[]; // 供單選、下拉、多選使用的選項
+}
+
 interface ShowcaseItem {
   id?: string;
   title: string;
@@ -23,6 +33,7 @@ interface ShowcaseItem {
   tags: string[]; 
   description: string;
   is_active: number;
+  form_schema?: string; // 🌟 新增此欄位
 }
 
 interface ShowcaseTabProps {
@@ -39,8 +50,11 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
   const [isUploading, setIsUploading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   
+  // 🌟 新增：用於管理正在編輯的表單結構
+  const [formFields, setFormFields] = useState<FormFieldSchema[]>([]);
+
   const [editingItem, setEditingItem] = useState<ShowcaseItem>({
-    title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1
+    title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1, form_schema: '[]'
   });
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -60,9 +74,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         const safeItems = (data.data || []).map((item: any) => {
           let parsedTags: string[] = [];
           try {
-            if (Array.isArray(item.tags)) {
-              parsedTags = item.tags;
-            } else if (typeof item.tags === 'string') {
+            if (Array.isArray(item.tags)) parsedTags = item.tags;
+            else if (typeof item.tags === 'string') {
               const p = JSON.parse(item.tags);
               parsedTags = Array.isArray(p) ? p : [];
             }
@@ -128,12 +141,17 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
       onToast("已達此版本上限", "err");
       return;
     }
-    setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1 });
+    setEditingItem({ title: '', cover_url: '', price_info: '', tags: [], description: '', is_active: 1, form_schema: '[]' });
+    setFormFields([]); // 重置表單欄位
     setIsFormOpen(true);
   };
 
   const openEditForm = (item: ShowcaseItem) => {
     setEditingItem(item);
+    // 🌟 解析已儲存的表單結構
+    try {
+      setFormFields(item.form_schema ? JSON.parse(item.form_schema) : []);
+    } catch (e) { setFormFields([]); }
     setIsFormOpen(true);
   };
 
@@ -142,9 +160,14 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
       onToast("已達此版本上限", "err");
       return;
     }
-
     if (!editingItem.title || !editingItem.cover_url) {
       onToast("請填寫品名並上傳封面圖", "err");
+      return;
+    }
+
+    // 🌟 檢查表單欄位是否有空標題
+    if (formFields.some(f => !f.label.trim())) {
+      onToast("客製化表單有未命名的問題，請檢查", "err");
       return;
     }
 
@@ -153,7 +176,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
     const payload = {
       ...editingItem,
-      tags: JSON.stringify(editingItem.tags)
+      tags: JSON.stringify(editingItem.tags),
+      form_schema: JSON.stringify(formFields) // 🌟 將編輯好的表單結構打包
     };
 
     try {
@@ -188,6 +212,24 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     }
   };
 
+  // 🌟 表單建置器輔助函式
+  const addFormField = (type: FormFieldSchema['type']) => {
+    if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
+    const newField: FormFieldSchema = {
+      id: `field_${Date.now()}`, type, label: '', required: false,
+      options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined
+    };
+    setFormFields([...formFields, newField]);
+  };
+
+  const updateFormField = (id: string, updates: Partial<FormFieldSchema>) => {
+    setFormFields(formFields.map(f => f.id === id ? { ...f, ...updates } : f));
+  };
+
+  const removeFormField = (id: string) => {
+    setFormFields(formFields.filter(f => f.id !== id));
+  };
+
   if (isFormOpen) {
     return (
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -197,6 +239,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         </div>
 
         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          {/* 左側：基本設定與封面 */}
           <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label className="form-label">項目封面圖 (必填)</label>
@@ -219,6 +262,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             </div>
           </div>
 
+          {/* 右側：標題、標籤、介紹與表單建置器 */}
           <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 2 }}>
@@ -249,10 +293,72 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
             <div>
               <label className="form-label">詳細內容介紹</label>
-              <div className="custom-quill-wrapper" style={{ minHeight: '300px' }}>
+              <div className="custom-quill-wrapper" style={{ minHeight: '200px' }}>
                 <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
               </div>
             </div>
+
+            {/* 🌟 客製化表單建置器區塊 */}
+            <div style={{ marginTop: '16px', borderTop: '1px dashed #DED9D3', paddingTop: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📋 專屬客製化表單 
+                  <span style={{ fontSize: '12px', color: '#7A7269', fontWeight: 'normal' }}>(委託人點擊「我要委託」時需填寫的問題)</span>
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                {formFields.map((field, index) => (
+                  <div key={field.id} style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '16px', position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <input className="form-input" value={field.label} onChange={e => updateFormField(field.id, { label: e.target.value })} placeholder={`問題 ${index + 1} (例如: 角色外觀設定)`} style={{ fontWeight: 'bold' }} />
+                      </div>
+                      <select className="form-input" value={field.type} onChange={e => updateFormField(field.id, { type: e.target.value as any })} style={{ width: '130px' }}>
+                        <option value="text">簡答 (單行)</option>
+                        <option value="textarea">詳答 (多行)</option>
+                        <option value="radio">單選</option>
+                        <option value="checkbox">多選</option>
+                        <option value="select">下拉選單</option>
+                        <option value="date">日期</option>
+                      </select>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#5D4A3E', marginTop: '10px' }}>
+                        <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} /> 必填
+                      </label>
+                      <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: '8px', marginTop: '2px' }} title="刪除問題">🗑️</button>
+                    </div>
+
+                    {/* 選擇題的選項設定 */}
+                    {['radio', 'checkbox', 'select'].includes(field.type) && (
+                      <div style={{ marginTop: '12px', paddingLeft: '12px', borderLeft: '2px solid #DED9D3' }}>
+                        <div style={{ fontSize: '12px', color: '#7A7269', marginBottom: '8px' }}>設定選項 (用半形逗號 , 分隔)：</div>
+                        <input 
+                          className="form-input" 
+                          value={field.options?.join(', ') || ''} 
+                          onChange={e => updateFormField(field.id, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} 
+                          placeholder="例如：選項A, 選項B, 選項C" 
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {formFields.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '24px', background: '#FAFAFA', borderRadius: '8px', color: '#A0978D', fontSize: '14px', border: '1px dashed #DED9D3' }}>
+                    尚未設定專屬表單，委託人將只需填寫基本需求。<br/>點擊下方按鈕開始加入自訂問題。
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => addFormField('text')} style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', color: '#5D4A3E' }}>+ 簡答題</button>
+                <button onClick={() => addFormField('textarea')} style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', color: '#5D4A3E' }}>+ 詳答題</button>
+                <button onClick={() => addFormField('radio')} style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', color: '#5D4A3E' }}>+ 單選題</button>
+                <button onClick={() => addFormField('checkbox')} style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', color: '#5D4A3E' }}>+ 多選題</button>
+                <button onClick={() => addFormField('date')} style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', color: '#5D4A3E' }}>+ 日期</button>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -267,6 +373,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* ... (展示列表區塊保持原樣不變) ... */}
       {!isFormOpen && (
         <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
           {quotaInfo?.plan_type === 'free' 
