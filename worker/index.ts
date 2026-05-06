@@ -127,25 +127,10 @@ export default {
       }
 
       // --- 意向/洽談 (Inquiries) 相關路由 ---
-      if (sanitizedPath.startsWith("/api/inquiries/")) {
+      // 確保這裡只處理 /api/inquiries 開頭的路由
+      if (sanitizedPath.startsWith("/api/inquiries") && !sanitizedPath.startsWith("/api/direct-inquiries")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
-        
-        if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
-        if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
-
-        if (targetId) {
-          if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
-          if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
-          if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
-          if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
-          if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
-          
-          if (subAction === "messages") {
-            if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);
-            if (request.method === "POST") return directInquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
-          }
-        }
 
         if (targetId && subAction === "decline" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
@@ -187,6 +172,34 @@ export default {
           if (authErr) return authErr;
           return inquiryController.getInquiryDetail(targetId, currentUserId!, env, corsHeaders);
         }        
+      }
+
+      // =========================================================================
+      // 🌟 新增：個人頁客製表單直接委託 (Direct Inquiries) 路由
+      // =========================================================================
+      if (sanitizedPath.startsWith("/api/direct-inquiries")) {
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+
+        const targetId = pathParts[3];
+        const subAction = pathParts[4];
+
+        // 新增委託單與讀取收件匣
+        if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
+        if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
+
+        if (targetId) {
+          if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
+          
+          if (subAction === "messages") {
+            if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);
+            if (request.method === "POST") return directInquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
+          }
+        }
       }
 
       if (sanitizedPath.startsWith("/api/customers")) {
