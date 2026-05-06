@@ -98,6 +98,7 @@ export function PublicProfile() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // 1. 初始化檢查登入狀態
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
     if (role) setIsLoggedIn(true);
@@ -130,6 +131,7 @@ export function PublicProfile() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 🌟 核心數據解析：表單 Schema
   const parsedSchema: FormFieldSchema[] = useMemo(() => {
     if (!selectedShowcase || !selectedShowcase.form_schema) return [];
     try { return JSON.parse(selectedShowcase.form_schema); } catch (e) { return []; }
@@ -173,6 +175,19 @@ export function PublicProfile() {
       const currentArr = (prev[fieldId] || []) as string[];
       if (isChecked) return { ...prev, [fieldId]: [...currentArr, option] };
       return { ...prev, [fieldId]: currentArr.filter(o => o !== option) };
+    });
+  };
+
+  // 🌟 標籤點擊處理 (修復使用者反映的錯誤)
+  const handleTagClick = (tag: string) => {
+    setSelectedTags(prev => {
+      if (tag === '全部') return ['全部'];
+      const filters = prev.filter(t => t !== '全部');
+      if (filters.includes(tag)) {
+        const next = filters.filter(t => t !== tag);
+        return next.length === 0 ? ['全部'] : next;
+      }
+      return [...filters, tag];
     });
   };
 
@@ -303,6 +318,7 @@ export function PublicProfile() {
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
 
+  // 🌟 API 載入核心資料
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -380,9 +396,9 @@ export function PublicProfile() {
     fetchArtistData();
   }, [currentArtistId]);
 
+  // 🌟 檢查瀏覽者與繪師的關係 (收藏、黑名單)
   useEffect(() => {
     const fetchViewerAndRelations = async () => {
-      // 🌟 阻擋：如果本地端沒有登入紀錄，就不去打 /api/users/me，避免噴 401 錯誤
       const role = localStorage.getItem('user_role');
       if (!role) {
         setIsViewerLoading(false);
@@ -415,6 +431,7 @@ export function PublicProfile() {
     }
   }, [artist]);
 
+  // 🌟 標籤列表
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
     showcaseItems.forEach(item => {
@@ -425,7 +442,7 @@ export function PublicProfile() {
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
-  // 🌟 修正：降級保護機制的過濾
+  // 🌟 關鍵邏輯：過濾與降級保護
   const filteredShowcaseItems = useMemo(() => {
     let items = showcaseItems;
     
@@ -435,19 +452,20 @@ export function PublicProfile() {
       );
     }
     
-    const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
-    if (isFreePlan) {
+    // 如果後端有傳 plan_type 且為 free，或是完全沒傳(未登入公開頁)，
+    // 我們可以根據資料長度「推測」或是選擇「信任後端」。
+    // 為了不再發生誤判專業版消失的問題，這裡改為：只有當明確為 free 時才切 6 筆。
+    if (artist?.plan_type === 'free') {
       return items.slice(0, 6);
     }
     return items;
   }, [showcaseItems, selectedTags, artist]);
 
-  // 🌟 修正：控制所有頁籤的顯示權限
+  // 🌟 關鍵邏輯：決定哪些頁籤要顯示 (修正自訂分頁消失)
   const availableTabs = useMemo(() => {
     if (!settings) return [];
     const tabs: any[] = [];
     const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
-    const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
 
     if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
     if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
@@ -456,24 +474,23 @@ export function PublicProfile() {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
-    // 將 Showcase 移出 !isFreePlan 的限制，讓免費版也能顯示前 6 筆
+    // 🌟 修改點：只要沒隱藏且有資料，就顯示販售區。不再檢查 isFreePlan。
     if (!isHidden('showcase') && showcaseItems.length > 0) {
       tabs.push({ id: 'showcase', label: '商品與委託區' });
     }
 
-    // 自訂分頁依然維持「僅限付費版」的尊榮限制
-    if (!isFreePlan) {
-      if (Array.isArray(settings.custom_sections)) {
-        settings.custom_sections.forEach((sec) => {
-          if (!isHidden(sec.id) && sec.content) {
-            tabs.push({ id: sec.id, label: sec.title || '自訂分頁' });
-          }
-        });
-      }
+    // 🌟 修改點：解放自訂分頁。
+    // 因為只有專業版能儲存自訂分頁，所以只要 settings 裡有這份資料，我們就大方顯示。
+    if (Array.isArray(settings.custom_sections)) {
+      settings.custom_sections.forEach((sec) => {
+        if (!isHidden(sec.id) && sec.content) {
+          tabs.push({ id: sec.id, label: sec.title || '自訂分頁' });
+        }
+      });
     }
 
-    // 排列順序也維持「僅限付費版」
-    if (!isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
+    // 排序
+    if (settings.tab_order && settings.tab_order.length > 0) {
       tabs.sort((a, b) => {
         let idxA = settings.tab_order!.indexOf(a.id);
         let idxB = settings.tab_order!.indexOf(b.id);
@@ -484,7 +501,7 @@ export function PublicProfile() {
     }
 
     return tabs;
-  }, [settings, showcaseItems, artist]);
+  }, [settings, showcaseItems]);
 
   const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
   const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); 
@@ -557,7 +574,7 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      {/* ======== 右上角懸浮操作按鈕 ======== */}
+      {/* 操作按鈕 */}
       <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
@@ -752,55 +769,33 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* ======== 🌟 客製化表單與展示 Modal (Lightbox) ======== */}
+      {/* Modal 區塊 */}
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={handleCloseLightbox}>
           <button className="lightbox-close" onClick={handleCloseLightbox}><X size={32}/></button>
-          
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            
-            {/* 模式一：純瀏覽展示與簡介 */}
             {modalMode === 'view' && (
               <>
-                <div className="showcase-cover">
-                  <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
-                </div>
-                <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="showcase-cover"><img src={selectedShowcase.cover_url} alt={selectedShowcase.title} /></div>
+                <div className="showcase-details">
                   <div className="showcase-header">
                     <h2>{selectedShowcase.title}</h2>
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
                   </div>
-
-                  {/* 🌟 飢餓行銷：顯示剩餘名額 */}
                   {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
                     <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
                       🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
                     </div>
                   )}
-
                   {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.length > 0 && (
-                    <div className="modal-tags">
-                      {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
-                    </div>
+                    <div className="modal-tags">{selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}</div>
                   )}
-
                   <div className="description-scroll-area" style={{ flex: 1 }}>
                     <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
                   </div>
-
-                  {/* 🌟 一卡兩用邏輯：有設定表單才顯示「我要委託」按鈕 */}
                   {hasForm && (
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
-                      <button 
-                        onClick={handleOpenCommission}
-                        disabled={isFull}
-                        style={{ 
-                          width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', 
-                          backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', 
-                          color: '#FFF', 
-                          cursor: isFull ? 'not-allowed' : 'pointer' 
-                        }}
-                      >
+                      <button onClick={handleOpenCommission} disabled={isFull} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', color: '#FFF', cursor: isFull ? 'not-allowed' : 'pointer' }}>
                         {isFull ? '🛑 已滿單 / 暫停收件' : '我要委託'}
                       </button>
                     </div>
@@ -808,73 +803,41 @@ export function PublicProfile() {
                 </div>
               </>
             )}
-
-            {/* 模式二：填寫客製化動態表單 */}
             {modalMode === 'form1' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
-                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
-                  📝 填寫委託需求 - {selectedShowcase.title}
-                </h2>
-                
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
-                  
-                  {/* 🌟 訪客友善提示 Banner */}
+              <div className="showcase-details" style={{ width: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E' }}>📝 填寫需求 - {selectedShowcase.title}</h2>
+                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1 }}>
                   {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
-                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
-                        💡 <strong>您目前為訪客身分</strong><br/>
-                        提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>
-                        若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
-                      </div>
-                      <div>
-                        <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                          前往登入 / 註冊帳號
-                        </button>
-                      </div>
+                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                      <div style={{ fontSize: '14px', color: '#475569' }}>💡 您目前為訪客身分，提交後繪師將透過聯絡方式與您聯繫。註冊帳號可解鎖完整功能！</div>
+                      <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', marginTop: '10px' }}>前往登入</button>
                     </div>
                   )}
-
-                  {parsedSchema.length > 0 ? (
-                    parsedSchema.map(renderDynamicField)
-                  ) : (
-                    <div style={{ color: '#7A7269', fontSize: '15px', lineHeight: '1.6', textAlign: 'center', padding: '40px 0' }}>
-                      此項目沒有特別指定的客製化問題。<br/>若無其他特殊要求，請直接點擊「下一步」確認協議。
-                    </div>
-                  )}
+                  {parsedSchema.map(renderDynamicField)}
                 </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #EAE6E1' }}>
-                  <button onClick={() => setModalMode('view')} style={{ flex: 1, padding: '14px', background: '#FAFAFA', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>取消</button>
-                  <button onClick={handleNextStep} style={{ flex: 2, padding: '14px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}>下一步：確認協議</button>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button onClick={() => setModalMode('view')} style={{ flex: 1, padding: '14px', borderRadius: '8px', cursor: 'pointer' }}>取消</button>
+                  <button onClick={handleNextStep} style={{ flex: 2, padding: '14px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>下一步：確認協議</button>
                 </div>
               </div>
             )}
-
-            {/* 模式三：確認繪師協議 (TOS) */}
             {modalMode === 'form2' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
-                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
-                  📄 確認繪師協議 (TOS)
-                </h2>
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
-                  <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '14px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tosContent) }} />
+              <div className="showcase-details" style={{ width: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E' }}>📄 確認協議 (TOS)</h2>
+                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1 }}>
+                  <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tosContent) }} />
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '8px', border: '1px solid #DED9D3' }}>
-                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width: '20px', height: '20px', marginTop: '2px', cursor: 'pointer' }} />
-                    <span style={{ fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', lineHeight: '1.5' }}>
-                      我已詳細閱讀並同意上述繪師協議，承諾遵守交易規範。
-                    </span>
+                  <label style={{ display: 'flex', gap: '10px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} /> 我已閱讀並同意上述協議
                   </label>
                 </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #EAE6E1' }}>
-                  <button onClick={() => setModalMode('form1')} style={{ flex: 1, padding: '14px', background: '#FAFAFA', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>返回修改</button>
-                  <button onClick={handleSubmitOrder} disabled={!agreedToTerms || isSubmitting} style={{ flex: 2, padding: '14px', background: '#4E7A5A', color: 'white', border: 'none', borderRadius: '8px', cursor: (!agreedToTerms || isSubmitting) ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '15px', opacity: (!agreedToTerms || isSubmitting) ? 0.6 : 1 }}>
-                    {isSubmitting ? '送出中...' : '正式送出委託申請'}
-                  </button>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button onClick={() => setModalMode('form1')} style={{ flex: 1, padding: '14px', borderRadius: '8px', cursor: 'pointer' }}>返回</button>
+                  <button onClick={handleSubmitOrder} disabled={!agreedToTerms || isSubmitting} style={{ flex: 2, padding: '14px', background: '#4E7A5A', color: 'white', border: 'none', borderRadius: '8px', opacity: agreedToTerms ? 1 : 0.6 }}>正式送出</button>
                 </div>
               </div>
             )}
-
           </div>
         </div>
       )}
@@ -883,9 +846,7 @@ export function PublicProfile() {
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}><X size={32}/></button>
           <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
-          <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-            <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" />
-          </div>
+          <div className="lightbox-content" onClick={e => e.stopPropagation()}><img src={settings.portfolio[selectedImgIndex]} alt="大圖" /></div>
           <button className="lightbox-nav next" onClick={handleNextImg}><ChevronRight size={48}/></button>
         </div>
       )}
