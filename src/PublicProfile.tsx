@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
-import '../../styles/PublicProfile.css';
+import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
