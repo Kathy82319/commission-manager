@@ -110,12 +110,25 @@ async function compressPreviewBlob(originalBlob: Blob, maxWidth = 800, quality =
   });
 }
 
-const getBulletinSource = (currentOrder: Commission | null | undefined) => {
+// 🌟 修正與擴充：解析兩種不同的訂單來源 (bulletin 與 showcase_form)
+const getOriginData = (currentOrder: Commission | null | undefined) => {
   if (!currentOrder || !currentOrder.origin_source) return null;
   try {
     const parsed = safeParse(currentOrder.origin_source);
+    if (!parsed) return null;
+
+    // 來源：個人頁販售區客製表單
+    if (parsed.source_type === 'showcase_form') {
+      return {
+        type: 'showcase_form',
+        title: parsed.showcase_title || '客製化委託單',
+        answers: Array.isArray(parsed.form_answers) ? parsed.form_answers : [],
+        ...parsed
+      };
+    }
     
-    if (parsed && parsed.source_type === 'bulletin') {
+    // 來源：許願池
+    if (parsed.source_type === 'bulletin') {
       const isOffer = parsed.bulletin_category === 'offer';
       const bulletinContent = safeParse(parsed.bulletin_content);
       const rawSnapshot = parsed.client_initial_response || parsed.artist_initial_snapshot || parsed.artist_snapshot || '{}';
@@ -126,15 +139,16 @@ const getBulletinSource = (currentOrder: Commission | null | undefined) => {
       else if (parsed.questions) questions = safeParse(parsed.questions);
 
       return {
-        ...parsed,
+        type: 'bulletin',
         description: bulletinContent?.description || parsed.description || parsed.bulletin_content || '',
         questions: Array.isArray(questions) ? questions : [],
         isOffer,
-        parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot }
+        parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot },
+        ...parsed
       };
     }
   } catch (e) {
-    console.error("許願池來源解析失敗", e);
+    console.error("來源解析失敗", e);
   }
   return null;
 };
@@ -497,15 +511,12 @@ export function Notebook() {
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
   
-  // 修改後的程式碼：
-const getClientNameDisplay = (order: Commission) => {
-  // 情況 1：委託人有真實註冊綁定的名字
-  if (order.client_name) {
-    return order.contact_memo ? `${order.client_name} (${order.contact_memo})` : order.client_name;
-  }
-  // 情況 2：委託人尚未綁定，如果有自訂暱稱就顯示暱稱，否則顯示 (未綁定)
-  return order.contact_memo ? order.contact_memo : '(未綁定)';
-};
+  const getClientNameDisplay = (order: Commission) => {
+    if (order.client_name) {
+      return order.contact_memo ? `${order.client_name} (${order.contact_memo})` : order.client_name;
+    }
+    return order.contact_memo ? order.contact_memo : '(未綁定)';
+  };
   
   const getStatusBadge = (status: string) => {
     if (status === 'completed') return { text: '已結案', className: 'badge-completed' };
@@ -593,7 +604,7 @@ const getClientNameDisplay = (order: Commission) => {
     );
   };
 
-  const bulletinData = getBulletinSource(selectedOrder);
+  const originData = getOriginData(selectedOrder);
 
   return (
     <div className="notebook-page">
@@ -617,12 +628,19 @@ const getClientNameDisplay = (order: Commission) => {
               const dateStr = formatLocalDate(order.order_date); 
               const isSelected = selectedId === order.id;
               const hasNewMsg = parseTime(order.latest_message_at) > parseTime(order.last_read_at_artist);
-              const isBulletin = getBulletinSource(order) !== null;
+              
+              // 🌟 判斷來源以顯示側邊欄標籤
+              const orderOrigin = getOriginData(order);
+              const isShowcaseForm = orderOrigin?.type === 'showcase_form';
+              const isBulletin = orderOrigin?.type === 'bulletin';
               
               return (
                 <div key={order.id} onClick={() => handleSelect(order)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                   <div className="card-meta-row">
                     <span>{dateStr}</span>
+                    {isShowcaseForm && (
+                      <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', marginLeft: '6px' }}>販售區表單</span>
+                    )}
                     {isBulletin && (
                       <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', marginLeft: '6px' }}>許願池</span>
                     )}
@@ -687,9 +705,10 @@ const getClientNameDisplay = (order: Commission) => {
                     <span>單號：{selectedOrder.id}</span>
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                     
-                    {getBulletinSource(selectedOrder) ? (
-                      <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff' }}>
-                        來源：許願池
+                    {/* 🌟 根據來源顯示對應的標籤 */}
+                    {originData ? (
+                      <span className="card-mode-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff' }}>
+                        來源：{originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
                       </span>
                     ) : (
                       <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>
@@ -731,14 +750,11 @@ const getClientNameDisplay = (order: Commission) => {
                 {activeTab === 'details' && (
                   <div className="tab-details-container">
                     
-
-
                     <div className="section-card">
                       <div className="section-header">
                         <h3 className="section-title">財務與收款狀態</h3>
                         <div className="payment-status-wrapper">
                           <span className="payment-status-label">帳務狀態：</span>
-                          
                           <select className="form-input select-status" value={selectedOrder.payment_status || 'unpaid'} onChange={(e) => handlePaymentStatusChange(e.target.value)}>
                             <option value="unpaid">未收款</option><option value="partial">已收訂金</option><option value="paid">已收款</option>
                           </select>
@@ -789,63 +805,78 @@ const getClientNameDisplay = (order: Commission) => {
                       </div>
                     </div>
 
-                    
-                    
-                    {bulletinData && (
+                    {/* 🌟 擴充：處理兩種不同來源的初始需求紀錄 */}
+                    {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
                           <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            🔍 許願池媒合軌跡
+                            🔍 初始需求單 / 媒合軌跡
                           </h3>
                         </div>
 
                         <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                           
-                          <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
-                            <strong style={{ color: '#A67B3E' }}>【{bulletinData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                            <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.description}</span>
-                            {bulletinData.questions && bulletinData.questions.length > 0 && (
-                              <div style={{ marginTop: '6px' }}>
-                                <strong style={{ color: '#A0978D' }}>提問設定：</strong>
-                                <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                                  {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
-                                </ol>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <strong style={{ color: '#4A7294' }}>【{bulletinData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
-                            
-                            {bulletinData.parsedSnapshot?.answers && bulletinData.parsedSnapshot.answers.length > 0 && (
-                              <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                                {bulletinData.parsedSnapshot.answers.map((ans: any, idx: number) => (
-                                  <div key={idx} style={{ marginTop: '8px' }}>
-                                    <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
-                                    <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
+                          {originData.type === 'showcase_form' ? (
+                            <div style={{ paddingBottom: '12px', marginBottom: '12px' }}>
+                              <strong style={{ color: '#4A7294' }}>【委託人填寫的客製化表單】</strong><br/>
+                              {originData.answers && originData.answers.length > 0 ? originData.answers.map((qa: any, i: number) => (
+                                <div key={i} style={{ marginTop: '8px' }}>
+                                  <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                                  <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                                </div>
+                              )) : (
+                                <div style={{ color: '#A0978D', fontStyle: 'italic', marginTop: '8px' }}>委託人未填寫任何客製化問答。</div>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #DED9D3', marginBottom: '12px' }}>
+                                <strong style={{ color: '#A67B3E' }}>【{originData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                                <span style={{ whiteSpace: 'pre-wrap' }}>{originData.description}</span>
+                                {originData.questions && originData.questions.length > 0 && (
+                                  <div style={{ marginTop: '6px' }}>
+                                    <strong style={{ color: '#A0978D' }}>提問設定：</strong>
+                                    <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
+                                      {originData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
+                                    </ol>
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            )}
 
-                            {bulletinData.parsedSnapshot?.message && (
-                              <div style={{ marginTop: '8px' }}>
-                                <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                                <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.parsedSnapshot.message}</span>
-                              </div>
-                            )}
+                              <div>
+                                <strong style={{ color: '#4A7294' }}>【{originData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                                
+                                {originData.parsedSnapshot?.answers && originData.parsedSnapshot.answers.length > 0 && (
+                                  <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                                    {originData.parsedSnapshot.answers.map((ans: any, idx: number) => (
+                                      <div key={idx} style={{ marginTop: '8px' }}>
+                                        <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
+                                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
 
-                            {!bulletinData.isOffer && (bulletinData.parsedSnapshot?.specialties || bulletinData.parsedSnapshot?.no_gos) && (
-                              <div style={{ marginTop: '10px' }}>
-                                {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{bulletinData.parsedSnapshot.specialties}</div>}
-                                {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{bulletinData.parsedSnapshot.no_gos}</div>}
+                                {originData.parsedSnapshot?.message && (
+                                  <div style={{ marginTop: '8px' }}>
+                                    <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                                    <span style={{ whiteSpace: 'pre-wrap' }}>{originData.parsedSnapshot.message}</span>
+                                  </div>
+                                )}
+
+                                {!originData.isOffer && (originData.parsedSnapshot?.specialties || originData.parsedSnapshot?.no_gos) && (
+                                  <div style={{ marginTop: '10px' }}>
+                                    {originData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{originData.parsedSnapshot.specialties}</div>}
+                                    {originData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{originData.parsedSnapshot.no_gos}</div>}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
+                            </>
+                          )}
                         </div>
 
                         <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px', padding: '12px 0 0 0', width: '100%', textAlign: 'center', borderTop: '1px dashed #EAE6E1' }}>
-                          {isTrajectoryExpanded ? "▲ 收合軌跡" : "▼ 展開完整軌跡"}
+                          {isTrajectoryExpanded ? "▲ 收起完整內容" : "▼ 展開完整內容"}
                         </button>
                       </div>
                     )}
@@ -860,15 +891,15 @@ const getClientNameDisplay = (order: Commission) => {
                       </div>
                       
                       <div className="details-grid">
-<div className="request-field">
-    <span className="field-label">委託人暱稱 (繪師自訂)：</span>
-    <input 
-      className="form-input" 
-      placeholder="例如：FB的王小明"
-      value={editData.contact_memo || ''} 
-      onChange={e => setEditData({...editData, contact_memo: e.target.value})} 
-    />
-  </div>                        
+                        <div className="request-field">
+                          <span className="field-label">委託人暱稱 (繪師自訂)：</span>
+                          <input 
+                            className="form-input" 
+                            placeholder="例如：FB的王小明"
+                            value={editData.contact_memo || ''} 
+                            onChange={e => setEditData({...editData, contact_memo: e.target.value})} 
+                          />
+                        </div>                        
                         <div className="request-field">
                           <span className="field-label">項目名稱 (繪師自訂)：</span>
                           <input className="form-input" value={editData.project_name || ''} onChange={e => setEditData({...editData, project_name: e.target.value})} />
