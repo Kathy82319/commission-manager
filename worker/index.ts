@@ -12,6 +12,7 @@ import { showcaseController } from "./controllers/showcaseController";
 import { customerController } from "./controllers/customerController";
 import { bulletinController } from "./controllers/bulletinController"; 
 import { inquiryController } from './controllers/inquiryController';
+import { directInquiryController } from './controllers/directInquiryController';
 import { notificationController } from "./controllers/notificationController";
 import { userRelationController } from "./controllers/userRelationController";
 
@@ -130,6 +131,22 @@ export default {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
         
+        if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
+        if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
+
+        if (targetId) {
+          if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
+          
+          if (subAction === "messages") {
+            if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);
+            if (request.method === "POST") return directInquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
+          }
+        }
+
         if (targetId && subAction === "decline" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
