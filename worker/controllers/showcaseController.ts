@@ -6,7 +6,12 @@ export const showcaseController = {
     try {
       const { results } = await env.commission_db.prepare(`
         SELECT s.*, 
-          (SELECT COUNT(*) FROM Commissions c WHERE c.artist_id = s.artist_id AND json_extract(c.origin_source, '$.showcase_id') = s.id AND c.status NOT IN ('cancelled', 'declined')) as current_orders_count
+          (SELECT COUNT(*) FROM Commissions c 
+           WHERE c.artist_id = s.artist_id 
+             AND json_valid(c.origin_source) = 1 
+             AND json_extract(c.origin_source, '$.showcase_id') = s.id 
+             AND c.status NOT IN ('cancelled', 'declined')
+          ) as current_orders_count
         FROM ShowcaseItems s WHERE artist_id = ? ORDER BY created_at DESC
       `).bind(currentUserId).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
@@ -19,7 +24,12 @@ export const showcaseController = {
     try {
       const { results } = await env.commission_db.prepare(`
         SELECT s.*,
-          (SELECT COUNT(*) FROM Commissions c WHERE c.artist_id = s.artist_id AND json_extract(c.origin_source, '$.showcase_id') = s.id AND c.status NOT IN ('cancelled', 'declined')) as current_orders_count
+          (SELECT COUNT(*) FROM Commissions c 
+           WHERE c.artist_id = s.artist_id 
+             AND json_valid(c.origin_source) = 1 
+             AND json_extract(c.origin_source, '$.showcase_id') = s.id 
+             AND c.status NOT IN ('cancelled', 'declined')
+          ) as current_orders_count
         FROM ShowcaseItems s WHERE artist_id = ? AND is_active = 1 ORDER BY created_at DESC
       `).bind(artistId).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
