@@ -197,6 +197,7 @@ export default {
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "restore" && request.method === "POST") return directInquiryController.restore(request, targetId, currentUserId!, env, corsHeaders);
           
           if (subAction === "messages") {
             if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);

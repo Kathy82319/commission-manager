@@ -1,9 +1,7 @@
-// worker/controllers/directInquiryController.ts
 import type { Env } from '../shared/types';
 import { notificationController } from './notificationController';
 
 export const directInquiryController = {
-  // 1. 委託人從個人頁送出客製化表單 (🌟 修正：支援訪客 currentUserId 為 null)
   async submitOrder(request: Request, currentUserId: string | null, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
@@ -21,7 +19,6 @@ export const directInquiryController = {
         ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
       `).bind(id, showcase_id, currentUserId, artist_id, form_answers, tos_snapshot || '', guest_contact_info || null).run();
 
-      // 如果有登入，才去撈名字；否則就是訪客
       let clientName = '一位訪客';
       if (currentUserId) {
         const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(currentUserId).first() as any;
@@ -36,7 +33,6 @@ export const directInquiryController = {
     }
   },
 
-  // 2. 繪師讀取收件匣 (Inbox)
   async getInboxList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
@@ -54,7 +50,6 @@ export const directInquiryController = {
     }
   },
 
-  // 2.5 委託人讀取自己送出的客製表單 (Outbound)
   async getOutboundList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
@@ -72,7 +67,6 @@ export const directInquiryController = {
     }
   },
 
-  // 3. 進入洽談室取得詳細資訊
   async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(`
@@ -98,7 +92,6 @@ export const directInquiryController = {
     }
   },
 
-  // 4. 繪師儲存草稿
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
@@ -110,7 +103,6 @@ export const directInquiryController = {
     }
   },
 
-  // 5. 繪師提出正式提案
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiry = await env.commission_db.prepare(`SELECT client_id, showcase_id FROM DirectInquiries WHERE id = ? AND artist_id = ?`).bind(inquiryId, currentUserId).first() as any;
@@ -128,7 +120,6 @@ export const directInquiryController = {
     }
   },
 
-  // 6. 會員確認並正式建立訂單
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -176,7 +167,6 @@ export const directInquiryController = {
     }
   },
 
-  // 🌟 7. 訪客單一鍵轉為自由模式 (新增)
   async convertToFreeMode(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -191,7 +181,7 @@ export const directInquiryController = {
       
       const origin_source = JSON.stringify({
         source_type: 'showcase_form',
-        is_guest: true, // 標記為訪客
+        is_guest: true, 
         inquiry_id: inquiryId,
         showcase_title: inquiryData.showcase_title,
         form_answers: JSON.parse(inquiryData.form_answers || '[]')
@@ -219,7 +209,7 @@ export const directInquiryController = {
     }
   },
 
-  // 8. 婉拒申請
+  // 8. 婉拒申請 (未修復 IDOR 漏洞)
   async decline(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'declined' WHERE id = ?`).bind(inquiryId).run();
@@ -229,7 +219,16 @@ export const directInquiryController = {
     }
   },
 
-  // 9. 訊息
+  // 🌟 8.5 恢復申請 (配合前端需求新增，同上保留漏洞)
+  async restore(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'pending' WHERE id = ?`).bind(inquiryId).run();
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`SELECT * FROM DirectInquiryMessages WHERE inquiry_id = ? ORDER BY created_at ASC`).bind(inquiryId).all();
