@@ -6,20 +6,22 @@ import '../../styles/Inbox.css';
 
 import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
-import { DirectInboundTab } from './DirectInboundTab'; // 🌟 引入新的個人頁委託列表元件
+import { DirectInboundTab } from './DirectInboundTab'; 
 
 export const Inbox: React.FC = () => {
   const navigate = useNavigate();
-  // 🌟 activeTab 新增 'direct' 類型
   const [activeTab, setActiveTab] = useState<'client' | 'artist' | 'direct'>('direct');
   const [loading, setLoading] = useState(true);
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
+  
   const [artistInquiries, setArtistInquiries] = useState<any[]>([]);
-  // 🌟 新增：存放個人頁直接委託的資料
   const [directInquiries, setDirectInquiries] = useState<any[]>([]);
+  
+  // 🌟 新增：存放委託人自己送出的個人頁表單
+  const [directOutboundInquiries, setDirectOutboundInquiries] = useState<any[]>([]);
 
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
@@ -68,7 +70,6 @@ export const Inbox: React.FC = () => {
         setBlacklistedIds(bIds);
       }
 
-      // 🌟 根據 activeTab 抓取不同來源的資料
       if (activeTab === 'client') {
         const data = await apiClient.get('/api/bulletins/client/inbox');
         if (data.success) {
@@ -76,12 +77,15 @@ export const Inbox: React.FC = () => {
           setClientInquiries(data.data.inquiries || []);
         }
       } else if (activeTab === 'artist') {
-        const data = await apiClient.get('/api/bulletins/artist/inbox');
-        if (data.success) {
-          setArtistInquiries(data.data || []);
-        }
+        // 🌟 委託人/繪師 送出的所有申請（包含許願池履歷 + 客製化表單）
+        const [artistData, directOutboundData] = await Promise.all([
+          apiClient.get('/api/bulletins/artist/inbox'),
+          apiClient.get('/api/direct-inquiries/outbound')
+        ]);
+        if (artistData.success) setArtistInquiries(artistData.data || []);
+        if (directOutboundData.success) setDirectOutboundInquiries(directOutboundData.data || []);
+
       } else if (activeTab === 'direct') {
-        // 🌟 呼叫新建的 DirectInquiries API
         const data = await apiClient.get('/api/direct-inquiries');
         if (data.success) {
           setDirectInquiries(data.data || []);
@@ -111,7 +115,7 @@ export const Inbox: React.FC = () => {
     const defaultReason = isCancelMode 
       ? '案主已撤銷許願 / 結束徵件' 
       : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist')
-        ? '繪師已撤回投遞' 
+        ? '已撤回申請' 
         : '已找到合適人選 / 終止洽談';
         
     const finalReason = declineReason || defaultReason;
@@ -121,9 +125,7 @@ export const Inbox: React.FC = () => {
         const res = await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, { decline_reason: finalReason });
         if (!res.success) throw new Error(res.message);
         alert('許願貼文已成功撤銷，並已發送婉拒通知給相關繪師。');
-        
       } else if (isBatchMode) {
-        // 🌟 如果後續 DirectInquiries 也支援批次婉拒，可以在此處擴充判斷
         const targetIds = Array.from(batchDeclineIds);
         const res = await apiClient.post('/api/inquiries/batch-decline', { 
           inquiry_ids: targetIds,
@@ -131,12 +133,11 @@ export const Inbox: React.FC = () => {
         });
         if (!res.success) throw new Error(res.message);
         alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
-        
       } else if (selectedInquiry) {
-        // 🌟 根據來源呼叫不同的婉拒 API
         const inquiryId = selectedInquiry.inquiry_id || selectedInquiry.id;
         
-        if (activeTab === 'direct') {
+        // 🌟 根據單子類型判斷要打哪支 API
+        if (selectedInquiry.showcase_id) {
           await apiClient.post(`/api/direct-inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
         } else {
           await apiClient.post(`/api/inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
@@ -189,7 +190,6 @@ export const Inbox: React.FC = () => {
       navigate(activeTab === 'client' ? '/client/orders' : '/artist/notebook');
       return;
     }
-    
     if (activeTab === 'client') {
       navigate(`/client/orders?id=${commissionId}`); 
     } else {
@@ -205,13 +205,11 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-page-container">
       <div className="inbox-page-header">
-        {/* 🌟 標題拿掉「許願」，讓它成為整體的收件匣 */}
         <h1 className="inbox-page-title">收件匣</h1>
       </div>
 
       <div className="inbox-tabs-wrapper">
         <div className="inbox-tabs-group">
-          {/* 🌟 新增個人頁委託 Tab */}
           <button 
             className={`inbox-tab-btn ${activeTab === 'direct' ? 'active' : ''}`}
             onClick={() => setActiveTab('direct')}
@@ -228,7 +226,7 @@ export const Inbox: React.FC = () => {
             className={`inbox-tab-btn ${activeTab === 'artist' ? 'active' : ''}`}
             onClick={() => setActiveTab('artist')}
           >
-            許願池 (我投遞的)
+            我送出的申請
           </button>
         </div>
         
@@ -240,7 +238,6 @@ export const Inbox: React.FC = () => {
       {loading ? (
         <p className="inbox-loading-text">載入中...</p>
       ) : activeTab === 'direct' ? (
-        /* 🌟 渲染新建的 DirectInboundTab */
         <DirectInboundTab 
           inquiries={directInquiries}
           navigate={navigate}
@@ -266,8 +263,10 @@ export const Inbox: React.FC = () => {
           handleCancelBulletin={handleCancelBulletinTrigger} 
         />
       ) : (
+        /* 🌟 把 directOutboundInquiries 傳進 OutboundTab */
         <OutboundTab 
           artistInquiries={artistInquiries}
+          directOutboundInquiries={directOutboundInquiries}
           setSelectedInquiry={setSelectedInquiry}
           setShowDeclineModal={setShowDeclineModal}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
@@ -278,7 +277,8 @@ export const Inbox: React.FC = () => {
 
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
-          <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
+           {/* ... 規則說明 Modal (保持原樣) ... */}
+           <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
             <div className="rules-modal-header">
               <h2><span>📋</span> 收件匣規則</h2>
               <button className="rules-close-btn" onClick={() => setShowRulesModal(false)}>✕</button>
@@ -312,26 +312,23 @@ export const Inbox: React.FC = () => {
         </div>
       )}
 
-      
       {showDeclineModal && (
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">
             <h2 className="modal-title red">
-              
               {isCancelMode 
                 ? '⚠️ 撤銷許願與婉拒提案' 
                 : isBatchMode 
                   ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
-                  : (selectedInquiry?.inquiry_status === 'pending' && activeTab === 'artist' ? '撤回投遞' : '禮貌婉拒提案')
+                  : (selectedInquiry?.status === 'pending' || selectedInquiry?.inquiry_status === 'pending') && activeTab === 'artist' ? '撤回申請' : '禮貌婉拒'
               }
             </h2>
             
             <p className="modal-desc red-border">
-              
               {isCancelMode
                 ? '您即將撤銷這篇許願貼文。這將會關閉該貼文，並將所有尚未處理的提案一併婉拒。請填寫統一的婉拒理由以示尊重。'
                 : isBatchMode
-                  ? '您即將同時婉拒多筆委託提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
+                  ? '您即將同時婉拒多筆提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
                   : '這將會終止與此對象的洽談，建議附上簡單理由以示尊重。'
               }
             </p>
@@ -406,19 +403,8 @@ export const Inbox: React.FC = () => {
             ></textarea>
             
             <div className="modal-actions">
-              <button 
-                className="btn-cancel" 
-                onClick={handleCloseModal} 
-              >
-                再想想
-              </button>
-              <button 
-                className="btn-submit-red" 
-                onClick={handleConfirmDecline} 
-                disabled={isEditingTemplates}
-              >
-                確認送出
-              </button>
+              <button className="btn-cancel" onClick={handleCloseModal}>再想想</button>
+              <button className="btn-submit-red" onClick={handleConfirmDecline} disabled={isEditingTemplates}>確認送出</button>
             </div>
           </div>
         </div>

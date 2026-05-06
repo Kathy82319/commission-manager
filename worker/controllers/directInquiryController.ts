@@ -50,6 +50,24 @@ export const directInquiryController = {
     }
   },
 
+  // 2.5 委託人讀取自己送出的客製表單 (Outbound)
+  async getOutboundList(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT di.*, u.display_name as artist_name, s.title as showcase_title
+        FROM DirectInquiries di
+        JOIN Users u ON di.artist_id = u.id
+        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
+        WHERE di.client_id = ?
+        ORDER BY di.created_at DESC
+      `).bind(currentUserId).all();
+
+      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
   // 3. 進入洽談室取得詳細資訊
   async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {

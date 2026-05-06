@@ -175,7 +175,7 @@ export default {
       }
 
       // =========================================================================
-      // 🌟 新增：個人頁客製表單直接委託 (Direct Inquiries) 路由
+      // 🌟 個人頁客製表單直接委託 (Direct Inquiries) 路由
       // =========================================================================
       if (sanitizedPath.startsWith("/api/direct-inquiries")) {
         const authErr = requireAuth(currentUserId, corsHeaders);
@@ -184,11 +184,13 @@ export default {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
 
-        // 新增委託單與讀取收件匣
         if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
         if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
+        
+        // 🌟 新增：委託人撈取自己送出的委託
+        if (targetId === "outbound" && request.method === "GET") return directInquiryController.getOutboundList(currentUserId!, env, corsHeaders);
 
-        if (targetId) {
+        if (targetId && targetId !== "outbound") {
           if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
