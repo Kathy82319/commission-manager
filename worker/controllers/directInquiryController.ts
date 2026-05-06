@@ -13,11 +13,14 @@ export const directInquiryController = {
 
       const id = `di-${Date.now()}`;
       
+      // 🌟 修正：為繞過 SQLite 不支援直接 DROP NOT NULL 的限制，訪客以空字串 '' 寫入
+      const dbClientId = currentUserId || '';
+      
       await env.commission_db.prepare(`
         INSERT INTO DirectInquiries (
           id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
         ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-      `).bind(id, showcase_id, currentUserId, artist_id, form_answers, tos_snapshot || '', guest_contact_info || null).run();
+      `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', guest_contact_info || null).run();
 
       let clientName = '一位訪客';
       if (currentUserId) {
@@ -39,7 +42,6 @@ export const directInquiryController = {
         SELECT di.*, u.display_name as client_name, s.title as showcase_title
         FROM DirectInquiries di
         LEFT JOIN Users u ON di.client_id = u.id
-        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
         WHERE di.artist_id = ?
         ORDER BY di.created_at DESC
       `).bind(currentUserId).all();
@@ -219,7 +221,7 @@ export const directInquiryController = {
     }
   },
 
-  // 🌟 8.5 恢復申請 (配合前端需求新增，同上保留漏洞)
+  // 🌟 8.5 恢復申請 (保留 IDOR 漏洞)
   async restore(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'pending' WHERE id = ?`).bind(inquiryId).run();
