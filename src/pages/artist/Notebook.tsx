@@ -446,7 +446,11 @@ export function Notebook() {
                   {!selectedOrder.is_external && (
                     <button className="action-btn btn-outline-default" onClick={() => copyLink(selectedOrder.id)}>複製連結</button>
                   )}
-                  <button className="action-btn btn-primary" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}>進入聊天室</button>
+                  
+                  {/* 🌟 判斷：必須有實體的 client_id 且不是訪客，才顯示進入聊天室按鈕 */}
+                  {selectedOrder.client_id && selectedOrder.client_id !== 'guest' && (
+                    <button className="action-btn btn-primary" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}>進入聊天室</button>
+                  )}
                 </div>
               </div>
 
