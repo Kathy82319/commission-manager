@@ -586,6 +586,19 @@ export function ClientOrders() {
                 {activeTab === 'main' && (
                   <div className="tab-details-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
+                    <div className="section-card">
+                      <div className="section-header-no-border">
+                        <h3 className="section-title">自訂委託名稱</h3>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />
+                        <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} className="action-btn btn-primary" style={{ flex: 'none', width: 'auto' }}>
+                          {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
+                        </button>
+                      </div>
+                    </div>
+
+
                     {/* 🌟 擴充：渲染不同的來源資料 */}
                     {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
@@ -654,20 +667,7 @@ export function ClientOrders() {
                       </div>
                     )}
 
-                    
-                    <div className="section-card">
-                      <div className="section-header-no-border">
-                        <h3 className="section-title">自訂委託名稱</h3>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <input type="text" className="form-input" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="給這張單取個好記的名字..." style={{ flex: 1, minWidth: '200px' }} />
-                        <button onClick={handleSaveTitle} disabled={saveStatus !== 'idle'} className="action-btn btn-primary" style={{ flex: 'none', width: 'auto' }}>
-                          {saveStatus === 'saving' ? '⏳ 儲存中...' : saveStatus === 'success' ? '✅ 成功' : '儲存'}
-                        </button>
-                      </div>
-                    </div>
-
-                    
+                                        
                     <div className="section-card">
                       <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
                       <div className="details-grid">
