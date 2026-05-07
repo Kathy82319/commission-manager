@@ -52,12 +52,14 @@ export const commController = {
         c.*, 
         u.display_name AS client_name, 
         u.public_id AS client_public_id, 
+        a.public_id AS artist_public_id, -- 🌟 關鍵新增：撈出繪師的 public_id
         t.name AS type_name,
         cr.custom_label AS client_custom_label,
         cr.id AS crm_record_id,
         (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
       FROM Commissions c
       LEFT JOIN Users u ON c.client_id = u.id
+      LEFT JOIN Users a ON c.artist_id = a.id -- 🌟 關鍵新增：關聯出繪師的資料
       LEFT JOIN CommissionTypes t ON c.type_id = t.id
       LEFT JOIN CustomerRecords cr ON (c.artist_id = cr.artist_id AND c.client_id = cr.client_user_id)
       WHERE c.artist_id = ? OR c.client_id = ?
@@ -73,6 +75,7 @@ export const commController = {
         c.*, 
         u.display_name AS client_name, 
         u.public_id AS client_public_id, 
+        a.public_id AS artist_public_id, -- 🌟 關鍵新增：撈出繪師的 public_id
         t.name AS type_name, 
         a.profile_settings AS artist_settings,
         cr.custom_label AS client_custom_label,
