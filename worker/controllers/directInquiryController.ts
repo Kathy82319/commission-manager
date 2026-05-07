@@ -180,8 +180,8 @@ export const directInquiryController = {
       await env.commission_db.prepare(`
         INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, contact_memo, total_price, status, origin_source, 
-          usage_type, is_rush, draw_scope, char_count, bg_type, add_ons, delivery_method, workflow_mode, agreed_tos_snapshot
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', ?)
+          usage_type, is_rush, draw_scope, char_count, bg_type, add_ons, agreed_memo, delivery_method, workflow_mode, agreed_tos_snapshot
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', ?)
       `).bind(
         commissionId, currentUserId, inquiryData.artist_id, 'type-01', draft.project_name || inquiryData.showcase_title, clientName,
         draft.total_price || 0, origin_source, draft.usage_type || '', draft.is_rush || '否', draft.draw_scope || '', draft.char_count || 1,

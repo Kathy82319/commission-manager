@@ -33,6 +33,7 @@ export interface Commission {
   client_custom_label?: string;
   crm_record_id?: string;
   origin_source?: string; 
+  agreed_memo?: string;
 }
 
 export interface PaymentRecord { id: string; record_date: string; item_name: string; amount: number; }

@@ -255,6 +255,16 @@ export function TabDetails({
           {renderRequestField('附加項目：', 'add_ons')}
         </div>
 
+{/* 新增這塊來顯示同意後的備忘錄 */}
+        {(selectedOrder.agreed_memo || editData.agreed_memo) && (
+          <div className="detailed-settings-wrapper" style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', marginTop: '16px' }}>
+            <span className="field-label" style={{ color: '#4A7294' }}>📝 最終確認規格 / 備忘錄 (雙方共識)：</span>
+            <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', whiteSpace: 'pre-wrap', padding: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #F4F0EB' }}>
+              {editData.agreed_memo || selectedOrder.agreed_memo}
+            </div>
+          </div>
+        )}
+
         <div className="detailed-settings-wrapper">
           <span className="field-label">詳細設定：(委託方不可見)</span>
           <textarea className="form-input textarea-large" value={editData.detailed_settings || ''} onChange={e => setEditData(prev => ({...prev, detailed_settings: e.target.value}))} />

@@ -360,7 +360,7 @@ ALTER TABLE ShowcaseItems ADD COLUMN show_quota INTEGER DEFAULT 0;
 ALTER TABLE DirectInquiries ADD COLUMN guest_contact_info TEXT;
 ALTER TABLE ShowcaseItems ADD COLUMN tos_content TEXT;
 
-
+ALTER TABLE Commissions ADD COLUMN agreed_memo TEXT;
 
 
 
