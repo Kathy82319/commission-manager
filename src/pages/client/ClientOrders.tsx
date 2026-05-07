@@ -7,6 +7,7 @@ import '../../styles/Notebook.css';
 interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
   total_price: number; draw_scope: string; char_count: number; bg_type: string; add_ons: string;
+  agreed_memo?: string; // 🌟 補上雙方共識備忘錄的型別
   detailed_settings: string; agreed_tos_snapshot: string; delivery_method: string; 
   usage_type?: string; is_rush?: string | number;
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
@@ -598,7 +599,6 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-
                     {/* 🌟 擴充：渲染不同的來源資料 */}
                     {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
@@ -667,7 +667,9 @@ export function ClientOrders() {
                       </div>
                     )}
 
-                                        
+                  
+
+                    
                     <div className="section-card">
                       <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
                       <div className="details-grid">
@@ -682,6 +684,16 @@ export function ClientOrders() {
                           <span className="field-label">總金額：</span><span className="field-value" style={{ fontSize: '18px', color: '#4E7A5A', fontWeight: 'bold' }}>NT$ {selectedOrder.total_price.toLocaleString()}</span>
                         </div>
                       </div>
+
+                      {/* 🌟 最終確認規格 / 備忘錄 (雙方共識) */}
+                      {selectedOrder.agreed_memo && (
+                        <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', marginTop: '16px', borderRadius: '12px', padding: '16px' }}>
+                          <div style={{ color: '#4A7294', fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</div>
+                          <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', whiteSpace: 'pre-wrap', padding: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #F4F0EB' }}>
+                            {selectedOrder.agreed_memo}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     
@@ -734,4 +746,4 @@ export function ClientOrders() {
       </div>
     </div>
   );
-} 
+}
