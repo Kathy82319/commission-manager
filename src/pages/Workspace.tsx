@@ -135,8 +135,13 @@ export function Workspace() {
         setOrder(data.data);
         
         const originData = getOriginData(data.data);
+        console.log("🔍 [除錯] 解析訂單來源資料：", originData);
+
         if (originData && originData.inquiry_id) {
+            console.log("🟢 [除錯] 成功抓到 inquiry_id:", originData.inquiry_id, "，準備抓歷史訊息！");
             fetchHistoryMessages(originData.inquiry_id);
+        } else {
+            console.log("🔴 [除錯] 失敗！這張單的來源資料裡沒有 inquiry_id，無法抓取歷史訊息！(可能是舊單)");
         }
       }
     } catch (error) { console.error("無法讀取訂單", error); }
@@ -144,30 +149,30 @@ export function Workspace() {
 
   const fetchHistoryMessages = async (inquiryId: string) => {
     try {
-        // 🌟 修正：判斷 inquiryId 來決定 API 的前綴
         const apiPrefix = inquiryId.startsWith('di-') ? 'direct-inquiries' : 'inquiries';
-        const res = await fetch(`${API_BASE}/api/${apiPrefix}/${inquiryId}/messages`, { credentials: 'include' });
+        console.log(`📡 [除錯] 正在呼叫 API: /api/${apiPrefix}/${inquiryId}/messages`);
         
+        const res = await fetch(`${API_BASE}/api/${apiPrefix}/${inquiryId}/messages`, { credentials: 'include' });
         const data = await res.json();
+        
+        console.log("📦 [除錯] 歷史訊息 API 回傳結果：", data);
+
         if (data.success) {
-            const historyMsgs = data.data.map((msg: any) => ({
-                ...msg,
-                is_history: true
-            }));
-            
             const userRes = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
             const userData = await userRes.json();
             const myUserId = userData.data.id;
             
-            const processedHistory = historyMsgs.map((msg: any) => {
-                const senderRole = msg.sender_id === myUserId ? role : (role === 'artist' ? 'client' : 'artist');
-                return { ...msg, sender_role: senderRole };
-            });
+            const processedHistory = data.data.map((msg: any) => ({
+                ...msg,
+                is_history: true,
+                sender_role: msg.sender_id === myUserId ? role : (role === 'artist' ? 'client' : 'artist')
+            }));
 
+            console.log("✅ [除錯] 處理完畢準備渲染的歷史訊息：", processedHistory);
             setHistoryMessages(processedHistory);
         }
     } catch (e) {
-        console.error("無法讀取歷史訊息", e);
+        console.error("🔴 [除錯] 歷史訊息 API 發生異常", e);
     }
   }
 
