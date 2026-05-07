@@ -356,8 +356,8 @@ export function ShowcaseFormBuilder({
 
           {/* 下方：單欄佈局 (詳細介紹) */}
           <div>
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹 (支援圖片與排版)</label>
-            <div className="custom-quill-wrapper" style={{ minHeight: '250px' }}>
+            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹</label>
+            <div className="custom-quill-wrapper">
               <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
             </div>
           </div>
