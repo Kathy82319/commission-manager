@@ -67,8 +67,11 @@ export const InquiryWorkspace: React.FC = () => {
     return map[val] || val;
   };
 
+  const isDirectInquiry = id?.startsWith('di-') || false;
+  const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
+
   const fetchData = async () => {
-    if (isAccepted) return;
+    // 🌟 移除成單後的阻擋，允許繼續抓取訊息
     try {
       const resInquiry = await apiClient.get(`/api/${apiPrefix}/${id}`);
 
@@ -127,17 +130,14 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-// ✅ 換成這段：不要用語法非同步等待，網址有 di- 就直接鎖定是個人頁委託！
-  const isDirectInquiry = id?.startsWith('di-') || false;
-  const apiPrefix = isDirectInquiry ? 'direct-inquiries' : 'inquiries';
-
   useEffect(() => {
     fetchData();
     const timer = setInterval(fetchData, 5000);
     return () => clearInterval(timer);
-  }, [id, isAccepted, apiPrefix]); // 確保 apiPrefix 更新時重新抓取
+  }, [id, apiPrefix]);
 
-  useEffect(() => { if (!isAccepted) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isAccepted]);
+  // 🌟 確保不論是否成單，訊息更新時都會滾動到底部
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -277,27 +277,6 @@ export const InquiryWorkspace: React.FC = () => {
     </div>
   );
 
-  if (isAccepted) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9' }}>
-        <div className="accepted-modal" style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(93, 74, 62, 0.1)', textAlign: 'center', maxWidth: '500px', border: '1px solid #EAE6E1', width: '90%' }}>
-          <div style={{ fontSize: '60px', marginBottom: '20px' }}>🎉</div>
-          <h2 style={{ color: '#4E7A5A', fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-            {isArtist ? '合作達成！委託單已建立' : '恭喜！您已成功與繪師達成協議'}
-          </h2>
-          <p style={{ color: '#7A7269', fontSize: '15px', marginBottom: '32px', lineHeight: '1.6' }}>
-            {isArtist 
-              ? '系統已將協議轉換為正式委託單並放入您的筆記本。現在可以開始工作囉！' 
-              : '系統已為您建立正式的委託進度追蹤單。您可以隨時查看繪師的最新進度。'}
-          </p>
-          <button onClick={() => navigate(isArtist ? '/artist/notebook' : '/client/orders')} style={{ width: '100%', padding: '16px', borderRadius: '99px', background: '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-            {isArtist ? '前往委託管理 (筆記本) ➔' : '前往我的委託管理 ➔'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   let parsedBulletin: any = {};
   let displayTitle = inquiry.bulletin_title || "未命名委託";
   let displayContent = inquiry.bulletin_content || "";
@@ -340,10 +319,9 @@ export const InquiryWorkspace: React.FC = () => {
 
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
-  // 🌟 嚴密的權限防護：依據來源決定可編輯的狀態
   const isEditableByArtist = isArtist && (
-    (isDirectInquiry && inquiry.status === 'pending') || // 來源一：個人頁直接委託（案主主動找上門，一開始 pending 就能直接編輯）
-    (!isDirectInquiry && inquiry.status === 'submitted') // 來源二：許願池投遞（必須等案主同意後變成 submitted，繪師才能編輯）
+    (isDirectInquiry && inquiry.status === 'pending') ||
+    (!isDirectInquiry && inquiry.status === 'submitted') 
   );
 
   return (
@@ -357,12 +335,23 @@ export const InquiryWorkspace: React.FC = () => {
             </h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <button className="iw-mobile-toggle-btn" onClick={() => setShowMobileAside(!showMobileAside)} style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}>{showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}</button>
+            {/* 🌟 只有成單前才顯示面板切換按鈕 */}
+            {!isAccepted && (
+              <button className="iw-mobile-toggle-btn" onClick={() => setShowMobileAside(!showMobileAside)} style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}>{showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}</button>
+            )}
             <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>{isArtist ? '🎨 您目前身分：繪師' : '👤 您目前身分：委託人'}</div>
           </div>
         </header>
 
         <main className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
+          
+          {/* 🌟 成單後的頂部提示，取代原本的覆蓋 Modal */}
+          {isAccepted && (
+            <div style={{ backgroundColor: '#EBF5EB', color: '#4E7A5A', padding: '12px', borderRadius: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', border: '1px solid #C8E6C9', marginBottom: '8px' }}>
+              🎉 委託單已正式成立！右側合約面板已隱藏，您可以繼續在此與對方討論後續進度與草稿。
+            </div>
+          )}
+
           {messages.map((msg) => {
             const isMe = msg.sender_id === currentUserId;
             return (
@@ -396,151 +385,145 @@ export const InquiryWorkspace: React.FC = () => {
         </footer>
       </div>
 
-      <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>📝 最終規格與合約確認</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
-    {isDirectInquiry 
-      ? (inquiry.status === 'pending' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
-      : (inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
-    }
-  </span>
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-            <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
-            {isArtist && artistQuota && (
-               <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8' }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
-            )}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-          
-          {/* ======== 🌟 區塊一：初始需求單 ======== */}
-          <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改的原始填寫)</h4>
-            <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-              
-              {isDirectInquiry ? (
-                <div style={{ paddingBottom: '8px' }}>
-                  {parsedFormAnswers.length > 0 ? parsedFormAnswers.map((qa, i) => (
-                    <div key={i} style={{ marginBottom: '10px' }}>
-                      <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
-                      <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
-                    </div>
-                  )) : (
-                    <div style={{ color: '#A0978D', fontStyle: 'italic' }}>委託人未填寫任何客製化問答。</div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
-                    <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
-                  </div>
-                  <div>
-                    <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
-                    {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
-                      <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                        {parsedSnapshot.answers.map((ans: any, idx: number) => (
-                          <div key={idx} style={{ marginTop: '4px' }}>
-                            <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
-                            <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {parsedSnapshot.message && (
-                      <div style={{ marginTop: '4px' }}>
-                        <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                        <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
-                      </div>
-                    )}
-                    {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
-                      <div style={{ marginTop: '6px' }}>
-                        {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{parsedSnapshot.specialties}</div>}
-                        {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{parsedSnapshot.no_gos}</div>}
-                      </div>
-                    )}
-                  </div>
-                </>
+      {/* 🌟 只有尚未成單時，才顯示右側合約面板 */}
+      {!isAccepted && (
+        <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>📝 最終規格與合約確認</span>
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
+      {isDirectInquiry 
+        ? (inquiry.status === 'pending' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
+        : (inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
+      }
+    </span>
+            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+              <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
+              {isArtist && artistQuota && (
+                 <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8' }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
               )}
             </div>
-            
-            <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>
-              {isTrajectoryExpanded ? "▲ 收起完整內容" : "▼ 展開完整內容"}
-            </button>
           </div>
 
-          {/* ======== 🌟 區塊二：系統核心參數 ======== */}
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數 (影響計價與排單)</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* 🌟 套用 isEditableByArtist 判斷 disabled */}
-              <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isEditableByArtist} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改的原始填寫)</h4>
+              <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                {isDirectInquiry ? (
+                  <div style={{ paddingBottom: '8px' }}>
+                    {parsedFormAnswers.length > 0 ? parsedFormAnswers.map((qa, i) => (
+                      <div key={i} style={{ marginBottom: '10px' }}>
+                        <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                      </div>
+                    )) : (
+                      <div style={{ color: '#A0978D', fontStyle: 'italic' }}>委託人未填寫任何客製化問答。</div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ paddingBottom: '8px', borderBottom: '1px dashed #DED9D3', marginBottom: '8px' }}>
+                      <strong style={{ color: '#A67B3E' }}>【{isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</span>
+                    </div>
+                    <div>
+                      <strong style={{ color: '#4A7294' }}>【{isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                      {parsedSnapshot.answers && parsedSnapshot.answers.length > 0 && (
+                        <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+                          {parsedSnapshot.answers.map((ans: any, idx: number) => (
+                            <div key={idx} style={{ marginTop: '4px' }}>
+                              <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
+                              <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {parsedSnapshot.message && (
+                        <div style={{ marginTop: '4px' }}>
+                          <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
+                          <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
+                        </div>
+                      )}
+                      {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
+                        <div style={{ marginTop: '6px' }}>
+                          {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{parsedSnapshot.specialties}</div>}
+                          {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{parsedSnapshot.no_gos}</div>}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isEditableByArtist} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
-              </div>
+              <button onClick={() => setIsTrajectoryExpanded(!isTrajectoryExpanded)} style={{ background: 'none', border: 'none', color: '#A67B3E', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', padding: 0, width: '100%', textAlign: 'center' }}>
+                {isTrajectoryExpanded ? "▲ 收起完整內容" : "▼ 展開完整內容"}
+              </button>
+            </div>
 
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label>
-                  <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
-                    <option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option>
-                  </select>
-                  {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數 (影響計價與排單)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isEditableByArtist} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
+                  <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
                 </div>
-                <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label>
-                  <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
-                    <option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option>
-                  </select>
-                  {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
+                
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isEditableByArtist} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
+                  <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label>
+                    <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
+                      <option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option>
+                    </select>
+                    {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
+                  </div>
+                  <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label>
+                    <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
+                      <option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option>
+                    </select>
+                    {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</h4>
+              <p style={{ fontSize: '11px', color: '#A0978D', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+                {isArtist ? "請將左側聊天室討論出的修改統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
+              </p>
+              <textarea 
+                disabled={!isEditableByArtist} 
+                className="draft-input" 
+                style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
+                value={draft.agreed_memo || ''} 
+                onChange={(e) => setDraft({...draft, agreed_memo: e.target.value})} 
+                placeholder="輸入最終確認的備註細節..." 
+              />
+            </div>
           </div>
 
-          {/* ======== 🌟 區塊三：最終規格白板 ======== */}
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</h4>
-            <p style={{ fontSize: '11px', color: '#A0978D', margin: '0 0 12px 0', lineHeight: '1.5' }}>
-              {isArtist ? "請將左側聊天室討論出的修改統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
-            </p>
-            <textarea 
-              disabled={!isEditableByArtist} 
-              className="draft-input" 
-              style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
-              value={draft.agreed_memo || ''} 
-              onChange={(e) => setDraft({...draft, agreed_memo: e.target.value})} 
-              placeholder="輸入最終確認的備註細節..." 
-            />
+          <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {isEditableByArtist && (
+              <>
+                <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
+                <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿，無法提案' : '🚀 送出正式提案'}</button>
+              </>
+            )}
+            {!isArtist && inquiry.status === 'proposed' && (
+              <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ width: '100%', padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並正式建立委託單</button>
+            )}
+            {inquiry.status === 'proposed' && isArtist && (
+              <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待案主確認中...</div>
+            )}
           </div>
-
-        </div>
-
-        <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {/* 🌟 套用 isEditableByArtist 判斷是否顯示儲存與送出按鈕 */}
-          {isEditableByArtist && (
-            <>
-              <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
-              <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿，無法提案' : '🚀 送出正式提案'}</button>
-            </>
-          )}
-          {!isArtist && inquiry.status === 'proposed' && (
-            <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ width: '100%', padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並正式建立委託單</button>
-          )}
-          {inquiry.status === 'proposed' && isArtist && (
-            <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待案主確認中...</div>
-          )}
-        </div>
-      </aside>
+        </aside>
+      )}
 
       {showFinalModal && (
         <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>

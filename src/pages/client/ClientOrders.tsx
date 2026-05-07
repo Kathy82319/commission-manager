@@ -67,6 +67,7 @@ const getOriginData = (currentOrder?: CommissionDetail | null) => {
         type: 'showcase_form',
         title: parsed.showcase_title || '客製化委託單',
         answers: Array.isArray(parsed.form_answers) ? parsed.form_answers : [],
+        inquiry_id: parsed.inquiry_id, // 🌟 確保取出 inquiry_id
         ...parsed
       };
     }
@@ -87,6 +88,7 @@ const getOriginData = (currentOrder?: CommissionDetail | null) => {
         type: 'bulletin',
         description,
         isOffer,
+        inquiry_id: parsed.inquiry_id, // 🌟 確保取出 inquiry_id
         parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot },
         ...parsed
       };
@@ -538,7 +540,6 @@ export function ClientOrders() {
                     </div>
                   )}
 
-                  {/* 🌟 修正了這裡的排版問題，拿掉了強制撐開的 flex，讓標籤自然靠在旁邊 */}
                   <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                       繪師項目名：{selectedOrder.project_name || '無'}
@@ -550,7 +551,6 @@ export function ClientOrders() {
                     )}
                   </div>
                   
-                  {/* 🌟 這裡新增了繪師的 artist_public_id 與個人專頁連結 */}
                   <div className="main-meta-row" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span>單號：{selectedOrder.id}</span>
                     {selectedOrder.artist_id && (
@@ -577,7 +577,12 @@ export function ClientOrders() {
                         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                         body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
                       });
-                      navigate(`/workspace/${selectedOrder.id}`);
+                      
+                      // 🌟 將原本的 /workspace/:id 改為指向 InquiryWorkspace，並加入防呆 fallback
+                      const targetUrl = originData?.inquiry_id 
+                        ? `/inquiry/workspace/${originData.inquiry_id}` 
+                        : `/workspace/${selectedOrder.id}`;
+                      navigate(targetUrl);
                     }} 
                     className="action-btn btn-primary"
                   >
@@ -615,7 +620,6 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-                    {/* 🌟 擴充：渲染不同的來源資料 */}
                     {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>

@@ -79,9 +79,22 @@ const inquiry = await env.commission_db.prepare(
 
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
-      const { results } = await env.commission_db.prepare(
-        `SELECT * FROM InquiryMessages WHERE inquiry_id = ? ORDER BY created_at ASC`
-      ).bind(inquiryId).all();
+      const { results } = await env.commission_db.prepare(`
+        SELECT id, sender_id, content, created_at, 'inquiry' as source
+        FROM InquiryMessages 
+        WHERE inquiry_id = ?
+
+        UNION ALL
+
+        SELECT m.id, 
+               CASE WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
+               m.content, m.created_at, 'commission' as source
+        FROM Messages m
+        JOIN Commissions c ON m.commission_id = c.id
+        WHERE json_extract(c.origin_source, '$.inquiry_id') = ?
+
+        ORDER BY created_at ASC
+      `).bind(inquiryId, inquiryId).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });

@@ -403,7 +403,7 @@ export function Notebook() {
           ) : (
             <div className="main-content-wrapper">
               
-              {/* 頂部標題與按鈕區 (這段保留在大腦中，因為它牽涉到跳轉跟核心資訊) */}
+              {/* 頂部標題與按鈕區 */}
               <div className="main-header">
                 <div className="main-header-info">
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>返回列表</button>
@@ -449,7 +449,13 @@ export function Notebook() {
                   
                   {/* 🌟 判斷：必須有實體的 client_id 且不是訪客，才顯示進入聊天室按鈕 */}
                   {selectedOrder.client_id && selectedOrder.client_id !== 'guest' && (
-                    <button className="action-btn btn-primary" onClick={() => navigate(`/workspace/${selectedOrder.id}?role=artist`)}>進入聊天室</button>
+                    <button className="action-btn btn-primary" onClick={() => {
+                      // 🌟 導向 InquiryWorkspace，若無 originData 則向後相容舊路由
+                      const targetUrl = originData?.inquiry_id 
+                        ? `/inquiry/workspace/${originData.inquiry_id}` 
+                        : `/workspace/${selectedOrder.id}?role=artist`;
+                      navigate(targetUrl);
+                    }}>進入聊天室</button>
                   )}
                 </div>
               </div>

@@ -1,3 +1,4 @@
+// worker/controllers/directInquiryController.ts
 import type { Env } from '../shared/types';
 import { notificationController } from './notificationController';
 
@@ -24,7 +25,7 @@ export const directInquiryController = {
         `).run();
       }
       
-      // 🌟 修正：利用 SQLite 的批次執行 (Batch)，在寫入訂單的同時，把該商品的接單數量 +1
+      // 🌟 利用 SQLite 的批次執行 (Batch)，在寫入訂單的同時，把該商品的接單數量 +1
       await env.commission_db.batch([
         env.commission_db.prepare(`
           INSERT INTO DirectInquiries (
@@ -59,7 +60,7 @@ export const directInquiryController = {
         SELECT di.*, u.display_name as client_name, s.title as showcase_title
         FROM DirectInquiries di
         LEFT JOIN Users u ON di.client_id = u.id
-        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id -- 🌟 修正：補上漏掉的 ShowcaseItems JOIN
+        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
         WHERE di.artist_id = ?
         ORDER BY di.created_at DESC
       `).bind(currentUserId).all();
@@ -185,7 +186,6 @@ export const directInquiryController = {
       `).bind(
         commissionId, currentUserId, inquiryData.artist_id, 'type-01', draft.project_name || inquiryData.showcase_title, clientName,
         draft.total_price || 0, origin_source, draft.usage_type || '', draft.is_rush || '否', draft.draw_scope || '', draft.char_count || 1,
-        // 🌟 修正：補上漏掉的 draft.agreed_memo || ''
         draft.bg_type || '', draft.add_ons || '', draft.agreed_memo || '', inquiryData.tos_snapshot || ''
       ).run();
 
@@ -260,7 +260,22 @@ export const directInquiryController = {
 
   async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
     try {
-      const { results } = await env.commission_db.prepare(`SELECT * FROM DirectInquiryMessages WHERE inquiry_id = ? ORDER BY created_at ASC`).bind(inquiryId).all();
+      const { results } = await env.commission_db.prepare(`
+        SELECT id, sender_id, content, created_at, 'direct_inquiry' as source
+        FROM DirectInquiryMessages 
+        WHERE inquiry_id = ?
+
+        UNION ALL
+
+        SELECT m.id, 
+               CASE WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
+               m.content, m.created_at, 'commission' as source
+        FROM Messages m
+        JOIN Commissions c ON m.commission_id = c.id
+        WHERE json_extract(c.origin_source, '$.inquiry_id') = ?
+
+        ORDER BY created_at ASC
+      `).bind(inquiryId, inquiryId).all();
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
@@ -276,7 +291,7 @@ export const directInquiryController = {
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
       await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      // 🌟 2. 補上缺少的通知邏輯：找出這張單的對方是誰，並叫醒他的小鈴鐺
+      // 2. 通知邏輯：找出這張單的對方是誰，並叫醒他的小鈴鐺
       const inquiry = await env.commission_db.prepare(`
         SELECT di.artist_id, di.client_id, s.title
         FROM DirectInquiries di
