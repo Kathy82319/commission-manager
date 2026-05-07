@@ -14,7 +14,7 @@ interface CommissionDetail {
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
   artist_id?: string;
-  artist_public_id?: string; // 🌟 補上繪師的公開 ID
+  public_id?: string; // 🌟 補上繪師的公開 ID
   origin_source?: string;
 }
 
@@ -557,13 +557,13 @@ export function ClientOrders() {
                       <span>
                         繪師：
                         <a 
-                          href={`/${selectedOrder.artist_public_id || selectedOrder.artist_id}`} 
+                          href={`/${selectedOrder.public_id || selectedOrder.artist_id}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           style={{ color: '#4A7294', textDecoration: 'none', fontWeight: 'bold', borderBottom: '1px solid #4A7294' }}
                           title="前往繪師個人專頁"
                         >
-                          @{selectedOrder.artist_public_id || selectedOrder.artist_id}
+                          @{selectedOrder.public_id || selectedOrder.artist_id}
                         </a>
                       </span>
                     )}
