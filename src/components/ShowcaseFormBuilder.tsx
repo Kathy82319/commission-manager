@@ -51,7 +51,6 @@ interface ShowcaseFormBuilderProps {
 
 export function ShowcaseFormBuilder({
   initialItem,
-  onClose,
   onSaveSuccess,
   onRefreshList,
   onToast,
@@ -287,8 +286,11 @@ export function ShowcaseFormBuilder({
         {/* 內容區塊 (移除頂部 Header，直接顯示表單) */}
         <div style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 300px' }}>
+          {/* 上方：左右兩欄佈局 */}
+          <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+            
+            {/* 左側：封面圖 */}
+            <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>項目封面圖 (必填)</label>
               <div style={{ backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
                 {editingItem.cover_url && (
@@ -297,55 +299,62 @@ export function ShowcaseFormBuilder({
                 <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
               </div>
             </div>
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
-            <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              {editingItem.tags.map(tag => (
-                <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  #{tag} <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0 }}>✕</button>
-                </span>
-              ))}
-            </div>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
-                <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
-               
             
-            <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 右側：基本設定 (品名、標籤、金額、狀態、表單按鈕) */}
+            <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* 1. 品名 */}
               <div>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
-                <select className="form-input" style={{ padding: '12px' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
-                  <option value={1}>🟢 公開顯示</option>
-                  <option value={0}>🔴 隱藏下架</option>
-                </select>
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
+                <input className="form-input" style={{ fontSize: '16px', padding: '14px', width: '100%' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
               </div>
+
+              {/* 2. 標籤 */}
               <div>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
-                <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
-                
-                {/* 🌟 漸進式揭露按鈕：精準移到金額顯示下方 */}
-                <div style={{ marginTop: '16px' }}>
-                  <button 
-                    onClick={() => setViewMode('form')}
-                    style={{ padding: '8px 16px', background: '#FFFFFF', color: '#4A7294', border: '1px solid #C1D6E8', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
-                  >
-                    ⚙️ 制訂委託表單 ➔
-                  </button>
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>作品標籤 (最多 5 個)</label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  {editingItem.tags.map(tag => (
+                    <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      #{tag} <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0 }}>✕</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤後按 Enter..." disabled={editingItem.tags.length >= 5} style={{ flex: 1 }} />
+                  <button onClick={handleAddTag} disabled={editingItem.tags.length >= 5} style={{ padding: '0 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>新增</button>
                 </div>
               </div>
+
+              {/* 3. 金額與狀態 (並排或直排皆可，這裡用並排節省空間) */}
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
+                  <input className="form-input" style={{ padding: '12px', width: '100%' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
+                  <select className="form-input" style={{ padding: '12px', width: '100%' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
+                    <option value={1}>🟢 公開顯示</option>
+                    <option value={0}>🔴 隱藏下架</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 4. 漸進式揭露按鈕 */}
+              <div style={{ marginTop: '8px', padding: '16px', background: '#FAFAFA', border: '1px dashed #C4BDB5', borderRadius: '8px', textAlign: 'center' }}>
+                <span style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>此項目開放接單嗎？</span>
+                <button 
+                  onClick={() => setViewMode('form')}
+                  style={{ padding: '8px 16px', background: '#FFFFFF', color: '#4A7294', border: '1px solid #C1D6E8', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
+                >
+                  ⚙️ 制訂委託表單與規則 ➔
+                </button>
+              </div>
+
             </div>
           </div>
 
-          <div>
-            
-            
-            
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤後按 Enter..." disabled={editingItem.tags.length >= 5} />
-              <button onClick={handleAddTag} disabled={editingItem.tags.length >= 5} style={{ padding: '0 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>新增</button>
-            </div>
-          </div>
-
+          {/* 下方：單欄佈局 (詳細介紹) */}
           <div>
             <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹 (支援圖片與排版)</label>
             <div className="custom-quill-wrapper" style={{ minHeight: '250px' }}>
