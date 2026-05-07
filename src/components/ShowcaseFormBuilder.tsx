@@ -58,14 +58,17 @@ export function ShowcaseFormBuilder({
   apiBase,
   isReadOnly
 }: ShowcaseFormBuilderProps) {
-  // 🌟 核心狀態：視圖切換 ('basic' 基本資料 / 'form' 表單建置)
   const [viewMode, setViewMode] = useState<'basic' | 'form'>('basic');
-  const [activeFieldId, setActiveFieldId] = useState<string | null>(null); // Google Forms 體驗：追蹤當前焦點問題
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
 
   const [editingItem, setEditingItem] = useState<ShowcaseItem>(initialItem);
   const [formFields, setFormFields] = useState<FormFieldSchema[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // 🌟 拖曳排序的狀態
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -153,7 +156,7 @@ export function ShowcaseFormBuilder({
     }
     if (formFields.some(f => !f.label.trim())) {
       onToast("客製化表單有未命名的問題，請檢查", "err"); 
-      setViewMode('form'); // 若表單有錯，自動切回表單視角
+      setViewMode('form'); 
       return;
     }
 
@@ -191,7 +194,7 @@ export function ShowcaseFormBuilder({
       options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined
     };
     setFormFields([...formFields, newField]);
-    setActiveFieldId(newField.id); // 自動聚焦新問題
+    setActiveFieldId(newField.id); 
   };
 
   const updateFormField = (id: string, updates: Partial<FormFieldSchema>) => {
@@ -203,7 +206,6 @@ export function ShowcaseFormBuilder({
     if (activeFieldId === id) setActiveFieldId(null);
   };
 
-  // 選項管理 (Google Forms 體驗)
   const addOption = (fieldId: string) => {
     setFormFields(formFields.map(f => {
       if (f.id === fieldId) {
@@ -229,10 +231,49 @@ export function ShowcaseFormBuilder({
     setFormFields(formFields.map(f => {
       if (f.id === fieldId && f.options) {
         const newOpts = f.options.filter((_, i) => i !== index);
-        return { ...f, options: newOpts.length ? newOpts : ['選項 1'] }; // 至少保留一個
+        return { ...f, options: newOpts.length ? newOpts : ['選項 1'] }; 
       }
       return f;
     }));
+  };
+
+  // ================= 拖曳事件處理函數 =================
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+    // 讓拖曳效果看起來稍微透明
+    if (e.dataTransfer.setDragImage) {
+      e.dataTransfer.setDragImage(e.currentTarget as Element, 20, 20);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (index !== dragOverIdx) {
+      setDragOverIdx(index);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // 必須呼叫 preventDefault 才能觸發 Drop
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIdx: number) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === dropIdx) return;
+    
+    const newFields = [...formFields];
+    const [draggedItem] = newFields.splice(draggedIdx, 1);
+    newFields.splice(dropIdx, 0, draggedItem);
+    
+    setFormFields(newFields);
+    setDraggedIdx(null);
+    setDragOverIdx(null);
   };
 
   const hasContactField = formFields.some(f => /聯絡|信箱|email|ig|line|社群|twitter|x/i.test(f.label));
@@ -241,7 +282,7 @@ export function ShowcaseFormBuilder({
   // ================= 視圖 1：基本資料 (清爽版) =================
   if (viewMode === 'basic') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#FDFDFB' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#FDFDFB', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', height: 'calc(100vh - 120px)', minHeight: '700px' }}>
         <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}>✕ 取消並返回</button>
@@ -326,7 +367,7 @@ export function ShowcaseFormBuilder({
 
   // ================= 視圖 2：表單建置器 (Google Forms 雙欄體驗) =================
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', height: 'calc(100vh - 120px)', minHeight: '700px' }}>
       
       {/* Header */}
       <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
@@ -405,14 +446,22 @@ export function ShowcaseFormBuilder({
               </div>
             )}
 
-            {/* 🌟 問題卡片列表 (Google Forms Style) */}
+            {/* 🌟 問題卡片列表 (Google Forms Style + 拖曳功能) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {formFields.map((field, index) => {
                 const isActive = activeFieldId === field.id;
+                const isDragging = draggedIdx === index;
+                const isDragOver = dragOverIdx === index && draggedIdx !== index;
                 
                 return (
                   <div 
                     key={field.id} 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnter={(e) => handleDragEnter(e, index)}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    onDrop={(e) => handleDrop(e, index)}
                     onClick={() => setActiveFieldId(field.id)}
                     style={{ 
                       background: '#FFF', 
@@ -422,12 +471,22 @@ export function ShowcaseFormBuilder({
                       border: '1px solid',
                       borderColor: isActive ? '#FFFFFF' : '#EAE6E1',
                       borderLeft: isActive ? '6px solid #4E7A5A' : '1px solid #EAE6E1',
-                      transition: 'all 0.2s',
+                      borderTop: isDragOver ? '4px solid #4E7A5A' : '1px solid transparent', // 拖曳的落點提示
+                      opacity: isDragging ? 0.5 : 1,
+                      transition: 'box-shadow 0.2s, border 0.2s',
                       cursor: isActive ? 'default' : 'pointer'
                     }}
                   >
+                    {/* 拖曳把手 (Grab Handle) */}
+                    <div 
+                      style={{ height: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'grab', color: '#DED9D3' }}
+                      title="按住拖曳可排序"
+                    >
+                      <span style={{ transform: 'rotate(90deg)', letterSpacing: '3px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
+                    </div>
+
                     {/* 卡片內容區 */}
-                    <div style={{ padding: '24px' }}>
+                    <div style={{ padding: '0 24px 24px 24px' }}>
                       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                         
                         <div style={{ flex: 1 }}>
@@ -438,7 +497,6 @@ export function ShowcaseFormBuilder({
                               onChange={e => updateFormField(field.id, { label: e.target.value })} 
                               placeholder="請輸入問題" 
                               style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} 
-                              autoFocus
                             />
                           ) : (
                             <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: '8px' }}>
@@ -547,9 +605,10 @@ export function ShowcaseFormBuilder({
           </div>
         </div>
 
-        {/* 右側：即時預覽 (Live Preview) */}
-        <div className="custom-scrollbar" style={{ flex: '1', background: '#E6E1DA', padding: '40px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', borderLeft: '1px solid #DED9D3' }}>
-          <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1' }}>
+        {/* 🌟 右側：即時預覽 (修復無法往下捲動的 Bug) */}
+        <div className="custom-scrollbar" style={{ flex: '1', background: '#E6E1DA', padding: '40px', overflowY: 'auto', borderLeft: '1px solid #DED9D3', display: 'block' }}>
+          {/* 將 alignItems: 'center' 移除，改由內層使用 margin: '0 auto'，解決 Flexbox 裁切捲動空間的問題 */}
+          <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
             
             <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
               👁️ 委託人視角預覽
