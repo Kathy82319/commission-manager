@@ -45,7 +45,7 @@ export const directInquiryController = {
         if (clientInfo?.display_name) clientName = clientInfo.display_name;
       }
       
-      await notificationController.createNotification(env, artist_id, 'inquiry_msg', `🛒 ${clientName} 透過您的個人頁面送出了新的委託申請！`, `/inbox`);
+      await notificationController.createNotification(env, artist_id, 'inquiry_msg', `🛒 ${clientName} 透過您的個人頁面送出了新的委託申請！`, `/artist/inbox`);
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
     } catch (error: any) {
