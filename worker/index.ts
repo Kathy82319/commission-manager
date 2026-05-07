@@ -1,4 +1,3 @@
-// worker/index.ts
 import type { Env } from "./shared/types";
 import { getUserIdFromRequest, requireAuth } from "./middleware/auth";
 import { authController } from "./controllers/authController";
@@ -127,7 +126,6 @@ export default {
       }
 
       // --- 意向/洽談 (Inquiries) 相關路由 ---
-      // 確保這裡只處理 /api/inquiries 開頭的路由
       if (sanitizedPath.startsWith("/api/inquiries") && !sanitizedPath.startsWith("/api/direct-inquiries")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
@@ -178,20 +176,23 @@ export default {
       // 🌟 個人頁客製表單直接委託 (Direct Inquiries) 路由
       // =========================================================================
       if (sanitizedPath.startsWith("/api/direct-inquiries")) {
-        const authErr = requireAuth(currentUserId, corsHeaders);
-        if (authErr) return authErr;
-
         const targetId = pathParts[3];
         const subAction = pathParts[4];
 
-        if (!targetId && request.method === "POST") return directInquiryController.submitOrder(request, currentUserId!, env, corsHeaders);
+        if (!targetId && request.method === "POST") {
+          return directInquiryController.submitOrder(request, currentUserId, env, corsHeaders);
+        }
+
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+
         if (!targetId && request.method === "GET") return directInquiryController.getInboxList(currentUserId!, env, corsHeaders);
         
-        // 🌟 新增：委託人撈取自己送出的委託
         if (targetId === "outbound" && request.method === "GET") return directInquiryController.getOutboundList(currentUserId!, env, corsHeaders);
 
         if (targetId && targetId !== "outbound") {
           if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
@@ -244,10 +245,14 @@ export default {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
         const targetId = pathParts[3];
+        const subAction = pathParts[4];
+        
         if (request.method === "GET" && !targetId) return showcaseController.getMyItems(currentUserId!, env, corsHeaders);
-        if (request.method === "POST") return showcaseController.create(request, currentUserId!, env, corsHeaders);
-        if (request.method === "PATCH" && targetId) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
-        if (request.method === "DELETE" && targetId) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
+        if (request.method === "POST" && !targetId) return showcaseController.create(request, currentUserId!, env, corsHeaders);
+        if (request.method === "PATCH" && targetId && !subAction) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
+        if (request.method === "DELETE" && targetId && !subAction) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
+        // 🌟 新增的 reset-orders 路由處理
+        if (request.method === "POST" && targetId && subAction === "reset-orders") return showcaseController.resetOrdersCount(targetId, currentUserId!, env, corsHeaders);
       }
       if (sanitizedPath.startsWith("/api/public/showcase/")) {
         const artistId = pathParts[4];
@@ -257,6 +262,7 @@ export default {
         const artistId = pathParts[4];
         return commController.getPublicQueue(artistId, env, corsHeaders);
       }
+
 
       // --- 管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {

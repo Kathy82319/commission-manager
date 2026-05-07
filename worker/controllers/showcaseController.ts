@@ -1,126 +1,152 @@
-// worker/controllers/showcaseController.ts
-import type { Env } from '../shared/types';
+import { Env } from "../shared/types";
+// 🌟 引入安全過濾器以防禦 Payload 攻擊
+import { sanitizeAndLimit, limitRichText } from "../utils/security";
 
 export const showcaseController = {
-  // 1. 取得後台列表 (包含計算單量)
-  async getMyItems(currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      // 🌟 改變策略：只撈取 is_active >= 0 的項目 (-1 代表已軟刪除)
-      const { results: items } = await env.commission_db.prepare(`
-        SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active >= 0 ORDER BY created_at DESC
-      `).bind(currentUserId).all();
+  async getPublicList(identifier: string, env: Env, headers: any) {
+    const user = await env.commission_db
+      .prepare("SELECT id, plan_type FROM Users WHERE id = ? OR public_id = ?")
+      .bind(identifier, identifier)
+      .first<{ id: string, plan_type: string }>();
+    
+    if (!user) {
+      return new Response(JSON.stringify({ success: true, data: [] }), { headers });
+    }
 
-      // 🌟 改變策略：單純撈取這個繪師的所有進行中訂單
-      const { results: comms } = await env.commission_db.prepare(`
-        SELECT origin_source FROM Commissions WHERE artist_id = ? AND status NOT IN ('cancelled', 'declined')
-      `).bind(currentUserId).all();
+    let query = "SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY sort_order ASC, created_at DESC";
+    if (user.plan_type === 'free') {
+      query += " LIMIT 6";
+    }
 
-      // 🌟 改變策略：用後端程式 (TypeScript) 來計算單量，絕對不會因為資料庫格式問題崩潰！
-      const orderCounts: Record<string, number> = {};
-      for (const c of comms) {
-        if (!c.origin_source) continue;
-        try {
-          const os = typeof c.origin_source === 'string' ? JSON.parse(c.origin_source) : c.origin_source;
-          if (os && os.showcase_id) {
-            orderCounts[os.showcase_id] = (orderCounts[os.showcase_id] || 0) + 1;
-          }
-        } catch(e) {
-          // 就算遇到舊的壞資料，也會被這裡安靜地忽略，不會報錯崩潰
-        }
+    const { results } = await env.commission_db
+      .prepare(query)
+      .bind(user.id)
+      .all();
+
+    return new Response(JSON.stringify({ success: true, data: results }), { headers });
+  },
+
+  async getMyItems(userId: string, env: Env, headers: any) {
+    const { results } = await env.commission_db
+      .prepare("SELECT * FROM ShowcaseItems WHERE artist_id = ? ORDER BY sort_order ASC, created_at DESC")
+      .bind(userId)
+      .all();
+    return new Response(JSON.stringify({ success: true, data: results }), { headers });
+  },
+
+  async create(request: Request, userId: string, env: Env, headers: any) {
+    const user = await env.commission_db
+      .prepare("SELECT plan_type FROM Users WHERE id = ?")
+      .bind(userId)
+      .first<{ plan_type: string }>();
+
+    const body: any = await request.json();
+    const id = `sc-${Date.now()}`;
+    
+    // 🌟 防護實作：限制 Payload 長度與基本清理，防止資料庫被惡意撐爆
+    const title = sanitizeAndLimit(body.title, 100);
+    const coverUrl = sanitizeAndLimit(body.cover_url, 500);
+    const priceInfo = sanitizeAndLimit(body.price_info, 100);
+    const tagsStr = sanitizeAndLimit(JSON.stringify(body.tags || []), 500);
+    const description = limitRichText(body.description, 20000);
+    const tosContent = limitRichText(body.tos_content || '', 20000);
+    
+    const rawFormSchema = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
+    const formSchemaStr = sanitizeAndLimit(rawFormSchema, 20000);
+
+    const allowGuest = body.allow_guest ? 1 : 0;
+    const maxOrders = body.max_orders ? Number(body.max_orders) : 0;
+    const showQuota = body.show_quota !== undefined ? Number(body.show_quota) : 1;
+    const currentOrdersCount = 0; 
+
+    // 🌟 防護實作：修正 Race Condition (條件寫入)
+    // 將檢查與寫入合併為單一原子操作 (Atomic Operation)
+    if (user?.plan_type === 'free') {
+      const insertResult = await env.commission_db
+        .prepare(`
+          INSERT INTO ShowcaseItems 
+          (id, artist_id, title, cover_url, price_info, tags, description, form_schema, allow_guest, max_orders, show_quota, tos_content, current_orders_count) 
+          SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          WHERE (SELECT COUNT(*) FROM ShowcaseItems WHERE artist_id = ?) < 6
+        `)
+        .bind(
+          id, userId, title, coverUrl, priceInfo, tagsStr, 
+          description, formSchemaStr, allowGuest, maxOrders, showQuota, tosContent, currentOrdersCount,
+          userId // WHERE 條件的參數
+        )
+        .run();
+        
+      // 如果 changes 為 0，代表 WHERE 條件沒過 (已達 6 筆上限)
+      if (insertResult.meta.changes === 0) {
+        return new Response(JSON.stringify({ success: false, error: "免費版本已達 6 筆上限" }), { status: 403, headers });
       }
-
-      // 將算好的數字塞回卡片中
-      const finalItems = items.map((item: any) => ({
-        ...item,
-        current_orders_count: orderCounts[item.id] || 0
-      }));
-
-      return new Response(JSON.stringify({ success: true, data: finalItems }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    } else {
+      // 付費用戶無限制或另有配額規則
+      await env.commission_db
+        .prepare(`
+          INSERT INTO ShowcaseItems 
+          (id, artist_id, title, cover_url, price_info, tags, description, form_schema, allow_guest, max_orders, show_quota, tos_content, current_orders_count) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          id, userId, title, coverUrl, priceInfo, tagsStr, 
+          description, formSchemaStr, allowGuest, maxOrders, showQuota, tosContent, currentOrdersCount
+        )
+        .run();
     }
+
+    return new Response(JSON.stringify({ success: true, id }), { headers });
   },
 
-  // 2. 取得前台列表
-  async getPublicList(artistId: string, env: Env, corsHeaders: any) {
-    try {
-      // 🌟 前台只撈取 is_active = 1 (公開) 的項目
-      const { results: items } = await env.commission_db.prepare(`
-        SELECT * FROM ShowcaseItems WHERE artist_id = ? AND is_active = 1 ORDER BY created_at DESC
-      `).bind(artistId).all();
+  async update(request: Request, itemId: string, userId: string, env: Env, headers: any) {
+    const body: any = await request.json();
+    
+    // 🌟 防護實作：限制 Payload 長度與清理
+    const title = sanitizeAndLimit(body.title, 100);
+    const coverUrl = sanitizeAndLimit(body.cover_url, 500);
+    const priceInfo = sanitizeAndLimit(body.price_info, 100);
+    const tagsStr = sanitizeAndLimit(JSON.stringify(body.tags || []), 500);
+    const description = limitRichText(body.description, 20000);
+    const tosContent = limitRichText(body.tos_content || '', 20000);
+    
+    const rawFormSchema = body.form_schema ? (typeof body.form_schema === 'string' ? body.form_schema : JSON.stringify(body.form_schema)) : '[]';
+    const formSchemaStr = sanitizeAndLimit(rawFormSchema, 20000);
 
-      const { results: comms } = await env.commission_db.prepare(`
-        SELECT origin_source FROM Commissions WHERE artist_id = ? AND status NOT IN ('cancelled', 'declined')
-      `).bind(artistId).all();
+    const allowGuest = body.allow_guest ? 1 : 0;
+    const maxOrders = body.max_orders ? Number(body.max_orders) : 0;
+    const showQuota = body.show_quota !== undefined ? Number(body.show_quota) : 1;
+    const isActive = body.is_active ? 1 : 0;
 
-      const orderCounts: Record<string, number> = {};
-      for (const c of comms) {
-        if (!c.origin_source) continue;
-        try {
-          const os = typeof c.origin_source === 'string' ? JSON.parse(c.origin_source) : c.origin_source;
-          if (os && os.showcase_id) {
-            orderCounts[os.showcase_id] = (orderCounts[os.showcase_id] || 0) + 1;
-          }
-        } catch(e) {}
-      }
-
-      const finalItems = items.map((item: any) => ({
-        ...item,
-        current_orders_count: orderCounts[item.id] || 0
-      }));
-
-      return new Response(JSON.stringify({ success: true, data: finalItems }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
-    }
+    await env.commission_db
+      .prepare(`
+        UPDATE ShowcaseItems SET 
+          title = ?, cover_url = ?, price_info = ?, tags = ?, description = ?, is_active = ?, form_schema = ?,
+          allow_guest = ?, max_orders = ?, show_quota = ?, tos_content = ?
+        WHERE id = ? AND artist_id = ?
+      `)
+      .bind(
+        title, coverUrl, priceInfo, tagsStr, description, isActive, formSchemaStr,
+        allowGuest, maxOrders, showQuota, tosContent,
+        itemId, userId
+      )
+      .run();
+    return new Response(JSON.stringify({ success: true }), { headers });
   },
 
-  // 3. 新增
-  async create(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      const body = await request.json() as any;
-      const id = `showcase-${Date.now()}`;
-      await env.commission_db.prepare(`
-        INSERT INTO ShowcaseItems (id, artist_id, title, cover_url, price_info, tags, description, form_schema, is_active, allow_guest, max_orders, show_quota, tos_content)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(
-        id, currentUserId, body.title, body.cover_url, body.price_info, body.tags || '[]', body.description || '', body.form_schema || '[]', 
-        body.is_active ?? 1, body.allow_guest ?? 0, body.max_orders ?? 0, body.show_quota ?? 1, body.tos_content || ''
-      ).run();
-      return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
-    }
+  async delete(itemId: string, userId: string, env: Env, headers: any) {
+    await env.commission_db
+      .prepare("DELETE FROM ShowcaseItems WHERE id = ? AND artist_id = ?")
+      .bind(itemId, userId)
+      .run();
+    return new Response(JSON.stringify({ success: true }), { headers });
   },
 
-  // 4. 更新
-  async update(request: Request, targetId: string, currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      const body = await request.json() as any;
-      await env.commission_db.prepare(`
-        UPDATE ShowcaseItems 
-        SET title=?, cover_url=?, price_info=?, tags=?, description=?, form_schema=?, is_active=?, allow_guest=?, max_orders=?, show_quota=?, tos_content=?
-        WHERE id=? AND artist_id=?
-      `).bind(
-        body.title, body.cover_url, body.price_info, body.tags || '[]', body.description || '', body.form_schema || '[]', 
-        body.is_active ?? 1, body.allow_guest ?? 0, body.max_orders ?? 0, body.show_quota ?? 1, body.tos_content || '', 
-        targetId, currentUserId
-      ).run();
-      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
-    }
-  },
-
-  // 5. 刪除 (🌟 終極解法：軟刪除)
-  async delete(targetId: string, currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      // 我們不執行 DELETE，而是把 is_active 設為 -1 讓它在畫面上消失
-      // 這樣既不會違反資料庫規則，歷史訂單也不會因為找不到關聯而報錯！
-      await env.commission_db.prepare(`UPDATE ShowcaseItems SET is_active = -1 WHERE id=? AND artist_id=?`).bind(targetId, currentUserId).run();
-      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
-    }
+  // Phase 2 擴充：一鍵重置歷史訂單數 API 邏輯
+  async resetOrdersCount(itemId: string, userId: string, env: Env, headers: any) {
+    await env.commission_db
+      .prepare("UPDATE ShowcaseItems SET current_orders_count = 0 WHERE id = ? AND artist_id = ?")
+      .bind(itemId, userId)
+      .run();
+    return new Response(JSON.stringify({ success: true }), { headers });
   }
 };
