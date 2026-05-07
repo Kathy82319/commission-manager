@@ -300,6 +300,10 @@ export function ShowcaseFormBuilder({
             
             <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
+            <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
+            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
+            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
                 <select className="form-input" style={{ padding: '12px' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
                   <option value={1}>🟢 公開顯示</option>
@@ -307,7 +311,7 @@ export function ShowcaseFormBuilder({
                 </select>
               </div>
               <div>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
+                
                 <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
                 
                 {/* 🌟 漸進式揭露按鈕：精準移到金額顯示下方 */}
@@ -325,10 +329,7 @@ export function ShowcaseFormBuilder({
           </div>
 
           <div>
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
-            <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
             
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
               {editingItem.tags.map(tag => (
                 <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -344,7 +345,7 @@ export function ShowcaseFormBuilder({
 
           <div>
             <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹 (支援圖片與排版)</label>
-            <div className="custom-quill-wrapper" style={{ minHeight: '250px' }}>
+            <div className="custom-quill-wrapper" >
               <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
             </div>
           </div>
@@ -478,15 +479,15 @@ export function ShowcaseFormBuilder({
                   >
                     {/* 拖曳把手 (Grab Handle) - 移至右上角 */}
                     <div 
-                      style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
                       title="按住拖曳可排序"
                     >
                       <span style={{ transform: 'rotate(90deg)', letterSpacing: '2px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
                     </div>
 
                     {/* 卡片內容區 */}
-                    <div style={{ padding: '0 24px 24px 24px' }}>
-                      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                    <div style={{ padding: '32px 24px 24px 24px' }}>
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', paddingRight: isActive ? '32px' : '0' }}>
                         
                         <div style={{ flex: 1 }}>
                           {isActive ? (
