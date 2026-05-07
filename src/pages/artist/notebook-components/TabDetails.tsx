@@ -255,7 +255,7 @@ export function TabDetails({
           {renderRequestField('附加項目：', 'add_ons')}
         </div>
 
-{/* 新增這塊來顯示同意後的備忘錄 */}
+        {/* 新增這塊來顯示同意後的備忘錄 */}
         {(selectedOrder.agreed_memo || editData.agreed_memo) && (
           <div className="detailed-settings-wrapper" style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', marginTop: '16px' }}>
             <span className="field-label" style={{ color: '#4A7294' }}>📝 最終確認規格 / 備忘錄 (雙方共識)：</span>

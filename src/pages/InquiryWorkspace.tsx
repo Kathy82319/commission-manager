@@ -39,7 +39,15 @@ export const InquiryWorkspace: React.FC = () => {
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
 
   const [draft, setDraft] = useState<any>({
-    project_name: '', total_price: 0, usage_type: '非商用', is_rush: '否', draw_scope: '大頭', bg_type: '無背景', char_count: 1, add_ons: '', agreed_memo: ''
+    project_name: '', 
+    total_price: 0, 
+    usage_type: '非商用', 
+    is_rush: '否', 
+    draw_scope: '大頭', 
+    bg_type: '無背景', 
+    char_count: 1, 
+    add_ons: '',
+    agreed_memo: ''
   });
 
   const formatLocalTime = (dateStr: string) => {
@@ -509,7 +517,7 @@ export const InquiryWorkspace: React.FC = () => {
               disabled={!isEditableByArtist} 
               className="draft-input" 
               style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
-              value={draft.agreed_memo} 
+              value={draft.agreed_memo || ''} 
               onChange={(e) => setDraft({...draft, agreed_memo: e.target.value})} 
               placeholder="輸入最終確認的備註細節..." 
             />
