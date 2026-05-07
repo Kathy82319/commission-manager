@@ -185,7 +185,8 @@ export const directInquiryController = {
       `).bind(
         commissionId, currentUserId, inquiryData.artist_id, 'type-01', draft.project_name || inquiryData.showcase_title, clientName,
         draft.total_price || 0, origin_source, draft.usage_type || '', draft.is_rush || '否', draft.draw_scope || '', draft.char_count || 1,
-        draft.bg_type || '', draft.add_ons || '', inquiryData.tos_snapshot || ''
+        // 🌟 修正：補上漏掉的 draft.agreed_memo || ''
+        draft.bg_type || '', draft.add_ons || '', draft.agreed_memo || '', inquiryData.tos_snapshot || ''
       ).run();
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
