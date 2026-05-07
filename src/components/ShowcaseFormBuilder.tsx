@@ -367,7 +367,7 @@ export function ShowcaseFormBuilder({
 
   // ================= 視圖 2：表單建置器 (Google Forms 雙欄體驗) =================
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7', borderRadius: '12px', border: '1px solid #EAE6E1', overflow: 'hidden', height: 'calc(100vh - 120px)', minHeight: '700px' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
       
       {/* Header */}
       <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
