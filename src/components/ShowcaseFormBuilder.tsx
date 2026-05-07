@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { ImageUploader } from './ImageUploader';
@@ -58,6 +58,10 @@ export function ShowcaseFormBuilder({
   apiBase,
   isReadOnly
 }: ShowcaseFormBuilderProps) {
+  // 🌟 核心狀態：視圖切換 ('basic' 基本資料 / 'form' 表單建置)
+  const [viewMode, setViewMode] = useState<'basic' | 'form'>('basic');
+  const [activeFieldId, setActiveFieldId] = useState<string | null>(null); // Google Forms 體驗：追蹤當前焦點問題
+
   const [editingItem, setEditingItem] = useState<ShowcaseItem>(initialItem);
   const [formFields, setFormFields] = useState<FormFieldSchema[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -65,7 +69,9 @@ export function ShowcaseFormBuilder({
 
   useEffect(() => {
     try {
-      setFormFields(initialItem.form_schema ? JSON.parse(initialItem.form_schema) : []);
+      const parsed = initialItem.form_schema ? JSON.parse(initialItem.form_schema) : [];
+      setFormFields(parsed);
+      if (parsed.length > 0) setActiveFieldId(parsed[0].id);
     } catch (e) { 
       setFormFields([]); 
     }
@@ -146,7 +152,9 @@ export function ShowcaseFormBuilder({
       onToast("請填寫品名並上傳封面圖", "err"); return;
     }
     if (formFields.some(f => !f.label.trim())) {
-      onToast("客製化表單有未命名的問題，請檢查", "err"); return;
+      onToast("客製化表單有未命名的問題，請檢查", "err"); 
+      setViewMode('form'); // 若表單有錯，自動切回表單視角
+      return;
     }
 
     const url = editingItem.id ? `${apiBase}/api/showcase/${editingItem.id}` : `${apiBase}/api/showcase`;
@@ -175,6 +183,7 @@ export function ShowcaseFormBuilder({
     }
   };
 
+  // ================= 表單建置器輔助函數 =================
   const addFormField = (type: FormFieldSchema['type']) => {
     if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
     const newField: FormFieldSchema = {
@@ -182,6 +191,7 @@ export function ShowcaseFormBuilder({
       options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined
     };
     setFormFields([...formFields, newField]);
+    setActiveFieldId(newField.id); // 自動聚焦新問題
   };
 
   const updateFormField = (id: string, updates: Partial<FormFieldSchema>) => {
@@ -190,65 +200,91 @@ export function ShowcaseFormBuilder({
 
   const removeFormField = (id: string) => {
     setFormFields(formFields.filter(f => f.id !== id));
+    if (activeFieldId === id) setActiveFieldId(null);
   };
 
-  // 🌟 智能防呆：檢查是否有詢問聯絡方式
+  // 選項管理 (Google Forms 體驗)
+  const addOption = (fieldId: string) => {
+    setFormFields(formFields.map(f => {
+      if (f.id === fieldId) {
+        const currentOptions = f.options || [];
+        return { ...f, options: [...currentOptions, `選項 ${currentOptions.length + 1}`] };
+      }
+      return f;
+    }));
+  };
+
+  const updateOption = (fieldId: string, index: number, newValue: string) => {
+    setFormFields(formFields.map(f => {
+      if (f.id === fieldId && f.options) {
+        const newOpts = [...f.options];
+        newOpts[index] = newValue;
+        return { ...f, options: newOpts };
+      }
+      return f;
+    }));
+  };
+
+  const removeOption = (fieldId: string, index: number) => {
+    setFormFields(formFields.map(f => {
+      if (f.id === fieldId && f.options) {
+        const newOpts = f.options.filter((_, i) => i !== index);
+        return { ...f, options: newOpts.length ? newOpts : ['選項 1'] }; // 至少保留一個
+      }
+      return f;
+    }));
+  };
+
   const hasContactField = formFields.some(f => /聯絡|信箱|email|ig|line|社群|twitter|x/i.test(f.label));
   const showGuestWarning = editingItem.allow_guest === 1 && !hasContactField && formFields.length > 0;
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#FDFDFB' }}>
-      
-      {/* Header */}
-      <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}>✕ 取消並返回</button>
-          <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>{editingItem.id ? '✏️ 編輯販售項目' : '✨ 新增販售項目'}</h2>
+  // ================= 視圖 1：基本資料 (清爽版) =================
+  if (viewMode === 'basic') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#FDFDFB' }}>
+        <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}>✕ 取消並返回</button>
+            <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>{editingItem.id ? '✏️ 編輯展示項目' : '✨ 新增展示項目'}</h2>
+          </div>
+          <button onClick={handleSaveItem} style={{ padding: '10px 24px', background: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', boxShadow: '0 2px 8px rgba(78, 122, 90, 0.2)' }}>
+            儲存項目
+          </button>
         </div>
-        <button onClick={handleSaveItem} style={{ padding: '10px 24px', background: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', boxShadow: '0 2px 8px rgba(78, 122, 90, 0.2)' }}>
-          儲存發布
-        </button>
-      </div>
 
-      {/* Body (雙欄設計) */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        
-        {/* 左側：編輯器 */}
-        <div className="custom-scrollbar" style={{ flex: '1', overflowY: 'auto', padding: '30px 40px', background: '#FFFFFF', borderRight: '1px solid #EAE6E1' }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             
-            {/* Block 1: 基本狀態 */}
             <div style={{ display: 'flex', gap: '20px' }}>
               <div style={{ flex: 1 }}>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>項目封面圖 (必填)</label>
                 <div style={{ backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
                   {editingItem.cover_url && (
-                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px', border: '1px solid #EAE6E1' }} />
+                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px', border: '1px solid #EAE6E1' }} />
                   )}
                   <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
                 </div>
               </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
                   <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
-                  <select className="form-input" value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
+                  <select className="form-input" style={{ padding: '12px' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
                     <option value={1}>🟢 公開顯示</option>
                     <option value={0}>🔴 隱藏下架</option>
                   </select>
                 </div>
                 <div>
                   <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
-                  <input className="form-input" value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
+                  <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
                 </div>
               </div>
             </div>
 
-            {/* Block 2: 標題與標籤 */}
             <div>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
-              <input className="form-input" style={{ fontSize: '16px', padding: '12px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
+              <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
               
-              <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '16px' }}>作品標籤 (最多 5 個)</label>
+              <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 {editingItem.tags.map(tag => (
                   <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -262,174 +298,300 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* Block 3: 接單額度控管 (飢餓行銷) */}
-            <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
-              <h4 style={{ margin: '0 0 16px 0', color: '#5D4A3E', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>🔥 接單額度控管 (飢餓行銷)</h4>
-              <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">設定接單上限</label>
-                  <input type="number" min="0" className="form-input" value={editingItem.max_orders} onChange={e => setEditingItem({...editingItem, max_orders: Number(e.target.value)})} placeholder="填寫 0 代表無上限" />
-                  <span style={{ fontSize: '11px', color: '#A0978D', marginTop: '4px', display: 'block' }}>達標後系統將自動隱藏委託按鈕。填 0 為無限。</span>
-                </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '28px', fontSize: '13px', color: '#5D4A3E', fontWeight: 'bold' }}>
-                    <input type="checkbox" checked={editingItem.show_quota === 1} onChange={e => setEditingItem({...editingItem, show_quota: e.target.checked ? 1 : 0})} disabled={editingItem.max_orders === 0} />
-                    公開顯示剩餘名額進度
-                  </label>
-                </div>
-              </div>
-              {editingItem.max_orders > 0 && (
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #DED9D3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>目前有效單量：{editingItem.current_orders_count || 0} / {editingItem.max_orders}</span>
-                  <button onClick={handleResetOrdersCount} style={{ background: '#F4F4F1', color: '#A05C5C', border: '1px solid #DED9D3', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
-                    ↺ 重新計算收件數
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Block 4: 詳細介紹 */}
             <div>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹 (支援圖片與排版)</label>
-              <div className="custom-quill-wrapper" style={{ minHeight: '200px' }}>
+              <div className="custom-quill-wrapper" style={{ minHeight: '250px' }}>
                 <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
               </div>
             </div>
 
-            {/* Block 5: 專屬協議書 */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', margin: 0 }}>📜 專屬委託協議書 (TOS)</label>
-                <button onClick={handleImportGlobalTOS} style={{ background: '#EBF2F7', color: '#4A7294', border: '1px solid #C1D6E8', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}>
-                  ⬇️ 一鍵帶入預設範本
-                </button>
-              </div>
-              <span style={{ fontSize: '12px', color: '#A0978D', display: 'block', marginBottom: '12px' }}>若此品項有特殊的授權或退款規範，請填寫於此。委託人必須勾選同意才能送出。</span>
-              <div className="custom-quill-wrapper" style={{ minHeight: '150px' }}>
-                <ReactQuill theme="snow" value={editingItem.tos_content} onChange={v => setEditingItem({...editingItem, tos_content: v})} modules={customQuillModules} />
+            {/* 🌟 漸進式揭露按鈕：進入表單設定 */}
+            <div style={{ marginTop: '20px', padding: '30px', background: '#FAFAFA', border: '1px dashed #C4BDB5', borderRadius: '12px', textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', marginBottom: '8px' }}>📝</div>
+              <h4 style={{ margin: '0 0 8px 0', color: '#5D4A3E', fontSize: '16px' }}>此項目開放接單嗎？</h4>
+              <p style={{ margin: '0 0 20px 0', color: '#7A7269', fontSize: '14px' }}>若這不只是純作品展示，您可以為它制訂專屬的委託表單與接單數量。</p>
+              <button 
+                onClick={() => setViewMode('form')}
+                style={{ padding: '12px 24px', background: '#FFFFFF', color: '#4A7294', border: '1px solid #4A7294', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
+              >
+                ⚙️ 制訂委託表單與規則 ➔
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ================= 視圖 2：表單建置器 (Google Forms 雙欄體驗) =================
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
+      
+      {/* Header */}
+      <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button onClick={() => setViewMode('basic')} style={{ background: '#F4F0EB', border: 'none', color: '#5D4A3E', fontSize: '14px', fontWeight: 'bold', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>
+            🔙 返回基本設定
+          </button>
+          <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E', fontWeight: 'bold' }}>📋 制訂專屬委託表單 - {editingItem.title || '未命名'}</h2>
+        </div>
+        <button onClick={handleSaveItem} style={{ padding: '10px 24px', background: '#4E7A5A', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', boxShadow: '0 2px 8px rgba(78, 122, 90, 0.2)' }}>
+          完成並儲存
+        </button>
+      </div>
+
+      {/* Body (雙欄設計) */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        
+        {/* 左側：表單與規則建置器 (Google Forms 風格) */}
+        <div className="custom-scrollbar" style={{ flex: '1.2', overflowY: 'auto', padding: '40px', background: '#F4F0EB' }}>
+          <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Block 1: 規則與額度設定 */}
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #EAE6E1', borderTop: '6px solid #5D4A3E' }}>
+              <div style={{ padding: '24px' }}>
+                <h3 style={{ margin: '0 0 20px 0', color: '#333', fontSize: '20px' }}>接單規則設定</h3>
+                
+                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                  <div style={{ flex: '1 1 200px' }}>
+                    <label className="form-label" style={{ fontWeight: 'bold' }}>接單上限 (0 為無限)</label>
+                    <input type="number" min="0" className="form-input" value={editingItem.max_orders} onChange={e => setEditingItem({...editingItem, max_orders: Number(e.target.value)})} />
+                  </div>
+                  <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold', marginTop: '16px' }}>
+                      <input type="checkbox" checked={editingItem.show_quota === 1} onChange={e => setEditingItem({...editingItem, show_quota: e.target.checked ? 1 : 0})} disabled={editingItem.max_orders === 0} style={{ width: '18px', height: '18px' }} />
+                      公開顯示剩餘名額
+                    </label>
+                  </div>
+                </div>
+
+                {editingItem.max_orders > 0 && (
+                  <div style={{ background: '#FDFDFB', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>目前有效單量：{editingItem.current_orders_count || 0} / {editingItem.max_orders}</span>
+                    <button onClick={handleResetOrdersCount} style={{ background: '#FFFFFF', color: '#A05C5C', border: '1px solid #DED9D3', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      ↺ 重新計算收件數
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ borderTop: '1px dashed #EAE6E1', paddingTop: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                    <label className="form-label" style={{ fontWeight: 'bold', margin: 0, fontSize: '16px' }}>📜 專屬委託協議書 (TOS)</label>
+                    <button onClick={handleImportGlobalTOS} style={{ background: '#EBF2F7', color: '#4A7294', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
+                      ⬇️ 帶入全域協議書
+                    </button>
+                  </div>
+                  <div className="custom-quill-wrapper" style={{ minHeight: '150px' }}>
+                    <ReactQuill theme="snow" value={editingItem.tos_content} onChange={v => setEditingItem({...editingItem, tos_content: v})} modules={customQuillModules} />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Block 6: 表單建置器 & 訪客設定 */}
-            <div style={{ background: '#FAFAFA', border: '1px solid #DED9D3', borderRadius: '12px', padding: '24px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h4 style={{ margin: 0, color: '#5D4A3E', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📋 客製化表單建置器
-                </h4>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', background: '#FFF', padding: '6px 12px', border: '1px solid #EAE6E1', borderRadius: '20px', fontWeight: 'bold', color: '#4A7294' }}>
-                  <input type="checkbox" checked={editingItem.allow_guest === 1} onChange={e => setEditingItem({...editingItem, allow_guest: e.target.checked ? 1 : 0})} />
-                  開放訪客(免登入)填寫
-                </label>
+            {/* Block 2: 表單建置區 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+              <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px' }}>問題建置</h3>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', background: '#FFFFFF', padding: '8px 16px', border: '1px solid #EAE6E1', borderRadius: '24px', fontWeight: 'bold', color: '#4A7294', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+                <input type="checkbox" checked={editingItem.allow_guest === 1} onChange={e => setEditingItem({...editingItem, allow_guest: e.target.checked ? 1 : 0})} style={{ width: '16px', height: '16px' }} />
+                開放訪客 (免登入) 填寫
+              </label>
+            </div>
+
+            {showGuestWarning && (
+              <div style={{ background: '#FEF9C3', color: '#B45309', padding: '16px', borderRadius: '8px', border: '1px solid #FEF08A', fontSize: '14px', display: 'flex', gap: '8px', fontWeight: 'bold' }}>
+                <span>⚠️</span>
+                <span>溫馨提示：您開啟了訪客委託，但表單中似乎沒有詢問「聯絡方式」，這可能會導致您收到單後無法聯繫上對方喔！</span>
               </div>
+            )}
 
-              {showGuestWarning && (
-                <div style={{ background: '#FEF9C3', color: '#B45309', padding: '12px', borderRadius: '8px', border: '1px solid #FEF08A', fontSize: '13px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
-                  <span>⚠️</span>
-                  <span>您開啟了訪客委託，但表單中似乎沒有詢問「聯絡方式」，這可能會導致您收到單後無法聯繫上對方喔！</span>
-                </div>
-              )}
+            {/* 🌟 問題卡片列表 (Google Forms Style) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {formFields.map((field, index) => {
+                const isActive = activeFieldId === field.id;
+                
+                return (
+                  <div 
+                    key={field.id} 
+                    onClick={() => setActiveFieldId(field.id)}
+                    style={{ 
+                      background: '#FFF', 
+                      borderRadius: '12px', 
+                      position: 'relative', 
+                      boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.08)' : '0 2px 6px rgba(0,0,0,0.03)',
+                      border: '1px solid',
+                      borderColor: isActive ? '#FFFFFF' : '#EAE6E1',
+                      borderLeft: isActive ? '6px solid #4E7A5A' : '1px solid #EAE6E1',
+                      transition: 'all 0.2s',
+                      cursor: isActive ? 'default' : 'pointer'
+                    }}
+                  >
+                    {/* 卡片內容區 */}
+                    <div style={{ padding: '24px' }}>
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                        
+                        <div style={{ flex: 1 }}>
+                          {isActive ? (
+                            <input 
+                              className="form-input" 
+                              value={field.label} 
+                              onChange={e => updateFormField(field.id, { label: e.target.value })} 
+                              placeholder="請輸入問題" 
+                              style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} 
+                              autoFocus
+                            />
+                          ) : (
+                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: '8px' }}>
+                              {field.label || `未命名問題 ${index + 1}`} {field.required && <span style={{ color: '#EF4444' }}>*</span>}
+                            </div>
+                          )}
+                        </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-                {formFields.map((field, index) => (
-                  <div key={field.id} style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '16px', position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                      <div style={{ background: '#F4F0EB', color: '#A0978D', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginTop: '6px' }}>Q{index+1}</div>
-                      <div style={{ flex: 1 }}>
-                        <input className="form-input" value={field.label} onChange={e => updateFormField(field.id, { label: e.target.value })} placeholder="輸入您的提問 (例如: 角色設定)" style={{ fontWeight: 'bold' }} />
+                        {isActive && (
+                          <select 
+                            className="form-input" 
+                            value={field.type} 
+                            onChange={e => updateFormField(field.id, { type: e.target.value as any })} 
+                            style={{ width: '160px', fontWeight: 'bold', color: '#5D4A3E' }}
+                          >
+                            <option value="text">簡答題</option>
+                            <option value="textarea">詳答題</option>
+                            <option value="radio">單選題</option>
+                            <option value="checkbox">核取方塊</option>
+                            <option value="select">下拉式選單</option>
+                            <option value="date">日期</option>
+                          </select>
+                        )}
                       </div>
-                      <select className="form-input" value={field.type} onChange={e => updateFormField(field.id, { type: e.target.value as any })} style={{ width: '130px' }}>
-                        <option value="text">簡答 (單行)</option>
-                        <option value="textarea">詳答 (多行)</option>
-                        <option value="radio">單選</option>
-                        <option value="checkbox">多選</option>
-                        <option value="select">下拉選單</option>
-                        <option value="date">日期</option>
-                      </select>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#5D4A3E', marginTop: '10px' }}>
-                        <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} /> 必填
-                      </label>
-                      <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: '8px', marginTop: '2px' }} title="刪除問題">🗑️</button>
+
+                      {/* 選項/預覽區 */}
+                      <div style={{ marginTop: '20px', paddingLeft: isActive ? '0' : '0' }}>
+                        {['text', 'textarea', 'date'].includes(field.type) && (
+                          <div style={{ borderBottom: '1px dotted #C4BDB5', width: '50%', paddingBottom: '8px', color: '#A0978D', fontSize: '14px' }}>
+                            {field.type === 'text' ? '簡答文字' : field.type === 'textarea' ? '詳答文字' : '年 / 月 / 日'}
+                          </div>
+                        )}
+
+                        {['radio', 'checkbox', 'select'].includes(field.type) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {field.options?.map((opt, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ color: '#A0978D', fontSize: '18px' }}>
+                                  {field.type === 'radio' ? '○' : field.type === 'checkbox' ? '□' : `${i+1}.`}
+                                </span>
+                                {isActive ? (
+                                  <>
+                                    <input 
+                                      className="form-input" 
+                                      value={opt} 
+                                      onChange={e => updateOption(field.id, i, e.target.value)}
+                                      style={{ border: 'none', borderBottom: '1px solid #EAE6E1', borderRadius: 0, padding: '4px 8px', flex: 1, maxWidth: '400px' }}
+                                    />
+                                    {field.options!.length > 1 && (
+                                      <button onClick={() => removeOption(field.id, i)} style={{ background: 'none', border: 'none', color: '#A0978D', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span style={{ color: '#5D4A3E', fontSize: '14px' }}>{opt || `選項 ${i+1}`}</span>
+                                )}
+                              </div>
+                            ))}
+                            {isActive && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                                <span style={{ color: '#A0978D', fontSize: '18px' }}>
+                                  {field.type === 'radio' ? '○' : field.type === 'checkbox' ? '□' : '*'}
+                                </span>
+                                <button onClick={() => addOption(field.id)} style={{ background: 'none', border: 'none', color: '#4A7294', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}>
+                                  新增選項
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {['radio', 'checkbox', 'select'].includes(field.type) && (
-                      <div style={{ marginTop: '12px', paddingLeft: '44px' }}>
-                        <input 
-                          className="form-input" 
-                          style={{ background: '#FAFAFA' }}
-                          value={field.options?.join(', ') || ''} 
-                          onChange={e => updateFormField(field.id, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} 
-                          placeholder="設定選項 (用半形逗號 , 分隔) 例如：選項A, 選項B" 
-                        />
+                    {/* 卡片底部操作列 (僅 Active 時顯示) */}
+                    {isActive && (
+                      <div style={{ borderTop: '1px solid #EAE6E1', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
+                        <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">
+                          🗑️
+                        </button>
+                        <div style={{ width: '1px', height: '24px', background: '#DED9D3' }}></div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
+                          必填
+                          <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} style={{ width: '16px', height: '16px' }} />
+                        </label>
                       </div>
                     )}
                   </div>
-                ))}
+                );
+              })}
 
-                {formFields.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px', background: '#FFF', borderRadius: '8px', color: '#A0978D', fontSize: '14px', border: '1px dashed #DED9D3' }}>
-                    尚未設定專屬表單，委託人將只需填寫基本聯絡資訊。<br/>點擊下方按鈕開始加入客製化問題。
-                  </div>
-                )}
-              </div>
+              {formFields.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px', background: '#FFF', borderRadius: '12px', color: '#A0978D', fontSize: '15px', border: '2px dashed #DED9D3' }}>
+                  目前尚未加入任何問題。點擊下方按鈕開始建置專屬表單！
+                </div>
+              )}
+            </div>
 
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button onClick={() => addFormField('text')} style={{ padding: '8px 16px', background: '#FFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 簡答題</button>
-                <button onClick={() => addFormField('textarea')} style={{ padding: '8px 16px', background: '#FFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 詳答題</button>
-                <button onClick={() => addFormField('radio')} style={{ padding: '8px 16px', background: '#FFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 單選題</button>
-                <button onClick={() => addFormField('checkbox')} style={{ padding: '8px 16px', background: '#FFF', border: '1px solid #DED9D3', borderRadius: '20px', fontSize: '13px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 多選題</button>
-              </div>
+            {/* 🌟 底部新增按鈕列 */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', background: '#FFFFFF', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+              <button onClick={() => addFormField('text')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 簡答題</button>
+              <button onClick={() => addFormField('textarea')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 詳答題</button>
+              <button onClick={() => addFormField('radio')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 單選題</button>
+              <button onClick={() => addFormField('checkbox')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 多選題</button>
+              <button onClick={() => addFormField('select')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 下拉選單</button>
             </div>
             
           </div>
         </div>
 
         {/* 右側：即時預覽 (Live Preview) */}
-        <div className="custom-scrollbar" style={{ flex: '1', background: '#F4F0EB', padding: '40px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', border: '1px solid #EAE6E1' }}>
+        <div className="custom-scrollbar" style={{ flex: '1', background: '#E6E1DA', padding: '40px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', borderLeft: '1px solid #DED9D3' }}>
+          <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1' }}>
             
-            {/* Preview Header */}
-            <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold' }}>
+            <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
               👁️ 委託人視角預覽
             </div>
 
-            {/* Preview Content */}
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '30px' }}>
               {editingItem.cover_url ? (
-                <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '16px' }} />
+                <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '20px' }} />
               ) : (
-                <div style={{ width: '100%', height: '180px', background: '#F4F4F1', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>尚未上傳封面</div>
+                <div style={{ width: '100%', height: '180px', background: '#F4F4F1', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>尚未上傳封面</div>
               )}
               
-              <h2 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '22px', fontWeight: 'bold' }}>{editingItem.title || '未命名項目'}</h2>
-              <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '16px', marginBottom: '16px' }}>{editingItem.price_info || '價格未定'}</div>
+              <h2 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '24px', fontWeight: 'bold', lineHeight: '1.4' }}>{editingItem.title || '未命名項目'}</h2>
+              <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '18px', marginBottom: '20px' }}>{editingItem.price_info || '價格未定'}</div>
               
               {editingItem.max_orders > 0 && editingItem.show_quota === 1 && (
-                <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block', marginBottom: '16px' }}>
+                <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '20px' }}>
                   🔥 限量接單：目前剩餘 {editingItem.max_orders - (editingItem.current_orders_count || 0)} 個名額
                 </div>
               )}
 
               {editingItem.allow_guest === 1 && formFields.length > 0 && (
-                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '12px', color: '#64748B' }}>
-                  💡 <strong>您目前為訪客身分</strong><br/>填寫表單後，繪師將透過您留下的聯絡方式與您聯繫。若註冊帳號可解鎖完整進度追蹤功能。
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '24px', fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
+                  💡 <strong>您目前為訪客身分</strong><br/>填寫表單後，繪師將透過您留下的聯絡方式與您聯繫。
                 </div>
               )}
 
-              <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {formFields.map((field, idx) => (
-                  <div key={idx}>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>
-                      {field.label || `未命名問題 ${idx+1}`} {field.required && <span style={{ color: '#E11D48' }}>*</span>}
+                  <div key={idx} style={{ background: activeFieldId === field.id ? '#FAFAFA' : 'transparent', padding: activeFieldId === field.id ? '12px' : '0', borderRadius: '8px', transition: 'all 0.2s' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '10px' }}>
+                      {field.label || `未命名問題 ${idx+1}`} {field.required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
                     </div>
-                    {field.type === 'text' && <input className="form-input" disabled placeholder="單行文字輸入..." />}
-                    {field.type === 'textarea' && <textarea className="form-input" disabled placeholder="多行文字輸入..." rows={3} />}
-                    {field.type === 'select' && <select className="form-input" disabled><option>選擇選項...</option></select>}
+                    {field.type === 'text' && <input className="form-input" disabled placeholder="您的回答" style={{ background: '#FFF' }} />}
+                    {field.type === 'textarea' && <textarea className="form-input" disabled placeholder="您的回答" rows={3} style={{ background: '#FFF' }} />}
+                    {field.type === 'select' && <select className="form-input" disabled style={{ background: '#FFF' }}><option>請選擇</option></select>}
+                    {field.type === 'date' && <input type="date" className="form-input" disabled style={{ background: '#FFF' }} />}
                     {['radio', 'checkbox'].includes(field.type) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {(field.options?.length ? field.options : ['選項預覽']).map((opt, i) => (
-                          <label key={i} style={{ fontSize: '13px', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <input type={field.type} disabled /> {opt}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {(field.options?.length ? field.options : ['選項']).map((opt, i) => (
+                          <label key={i} style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type={field.type} disabled style={{ width: '16px', height: '16px' }} /> {opt}
                           </label>
                         ))}
                       </div>
@@ -438,26 +600,26 @@ export function ShowcaseFormBuilder({
                 ))}
 
                 {formFields.length === 0 && (
-                  <div style={{ color: '#A0978D', fontSize: '13px', textAlign: 'center', fontStyle: 'italic', padding: '20px 0' }}>無自訂表單，純作品展示</div>
+                  <div style={{ color: '#A0978D', fontSize: '14px', textAlign: 'center', fontStyle: 'italic', padding: '30px 0' }}>純展示模式，無客製化表單</div>
                 )}
               </div>
 
               {editingItem.tos_content && (
-                <div style={{ marginTop: '24px', borderTop: '1px solid #EAE6E1', paddingTop: '20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px' }}>📜 委託協議書</div>
-                  <div style={{ height: '80px', overflow: 'hidden', background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '6px', padding: '8px', fontSize: '12px', color: '#A0978D', position: 'relative' }}>
+                <div style={{ marginTop: '30px', borderTop: '1px solid #EAE6E1', paddingTop: '24px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '12px' }}>📜 委託協議書</div>
+                  <div style={{ height: '100px', overflow: 'hidden', background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#7A7269', position: 'relative' }}>
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(editingItem.tos_content) }} />
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, #FAFAFA)' }} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(transparent, #FAFAFA)' }} />
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#5D4A3E', marginTop: '8px', fontWeight: 'bold' }}>
-                    <input type="checkbox" disabled /> 我已閱讀並同意上述協議
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5D4A3E', marginTop: '12px', fontWeight: 'bold' }}>
+                    <input type="checkbox" disabled style={{ width: '16px', height: '16px' }} /> 我已閱讀並同意上述協議
                   </label>
                 </div>
               )}
 
               {formFields.length > 0 && (
-                <button disabled style={{ width: '100%', padding: '12px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', marginTop: '24px', opacity: 0.7 }}>
-                  正式送出委託申請
+                <button disabled style={{ width: '100%', padding: '14px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', marginTop: '30px', fontSize: '15px', opacity: 0.6 }}>
+                  送出委託申請
                 </button>
               )}
             </div>
