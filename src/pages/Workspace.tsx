@@ -1,4 +1,4 @@
-// src/pages/Workspace
+// src/pages/Workspace.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -67,11 +67,22 @@ export function Workspace() {
     return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  const getBulletinSource = (currentOrder: OrderData | null) => {
+  // 🌟 支援兩種來源解析
+  const getOriginData = (currentOrder: OrderData | null) => {
     if (!currentOrder || !currentOrder.origin_source) return null;
     try {
       const parsed = safeParse(currentOrder.origin_source);
-      if (parsed && parsed.source_type === 'bulletin') {
+      if (!parsed) return null;
+
+      if (parsed.source_type === 'showcase_form') {
+        return {
+          type: 'showcase_form',
+          inquiry_id: parsed.inquiry_id,
+          ...parsed
+        };
+      }
+
+      if (parsed.source_type === 'bulletin') {
         const isOffer = parsed.bulletin_category === 'offer';
         const bulletinContent = safeParse(parsed.bulletin_content);
         
@@ -81,32 +92,26 @@ export function Workspace() {
         }
         
         let parsedSnapshot = safeParse(rawSnapshot);
-        if (typeof parsedSnapshot === 'string') {
-          parsedSnapshot = safeParse(parsedSnapshot);
-        }
-        
-        if (typeof parsedSnapshot !== 'object' || parsedSnapshot === null) {
-            parsedSnapshot = { message: parsedSnapshot };
-        }
-        
-        if (parsedSnapshot.answers && typeof parsedSnapshot.answers === 'string') {
-            parsedSnapshot.answers = safeParse(parsedSnapshot.answers);
-        }
+        if (typeof parsedSnapshot === 'string') parsedSnapshot = safeParse(parsedSnapshot);
+        if (typeof parsedSnapshot !== 'object' || parsedSnapshot === null) parsedSnapshot = { message: parsedSnapshot };
+        if (parsedSnapshot.answers && typeof parsedSnapshot.answers === 'string') parsedSnapshot.answers = safeParse(parsedSnapshot.answers);
 
         let questions = [];
         if (bulletinContent && bulletinContent.questions) questions = bulletinContent.questions;
         else if (parsed.questions) questions = safeParse(parsed.questions);
 
         return {
-          ...parsed,
+          type: 'bulletin',
+          inquiry_id: parsed.inquiry_id,
           description: bulletinContent?.description || parsed.description || parsed.bulletin_content || '',
           questions: Array.isArray(questions) ? questions : [],
           isOffer,
-          parsedSnapshot
+          parsedSnapshot,
+          ...parsed
         };
       }
     } catch (e) {
-      console.error("許願池來源解析失敗", e);
+      console.error("來源解析失敗", e);
     }
     return null;
   };
@@ -129,9 +134,9 @@ export function Workspace() {
       if (data.success) {
         setOrder(data.data);
         
-        const originSource = safeParse(data.data.origin_source);
-        if (originSource && originSource.source_type === 'bulletin' && originSource.inquiry_id) {
-            fetchHistoryMessages(originSource.inquiry_id);
+        const originData = getOriginData(data.data);
+        if (originData && originData.inquiry_id) {
+            fetchHistoryMessages(originData.inquiry_id);
         }
       }
     } catch (error) { console.error("無法讀取訂單", error); }
@@ -139,7 +144,10 @@ export function Workspace() {
 
   const fetchHistoryMessages = async (inquiryId: string) => {
     try {
-        const res = await fetch(`${API_BASE}/api/inquiries/${inquiryId}/messages`, { credentials: 'include' });
+        // 🌟 修正：判斷 inquiryId 來決定 API 的前綴
+        const apiPrefix = inquiryId.startsWith('di-') ? 'direct-inquiries' : 'inquiries';
+        const res = await fetch(`${API_BASE}/api/${apiPrefix}/${inquiryId}/messages`, { credentials: 'include' });
+        
         const data = await res.json();
         if (data.success) {
             const historyMsgs = data.data.map((msg: any) => ({
@@ -335,7 +343,7 @@ export function Workspace() {
     </div>
   );
 
-  const bulletinData = getBulletinSource(order);
+  const originData = getOriginData(order);
   const allMessages = [...historyMessages, ...messages];
 
   return (
@@ -363,31 +371,33 @@ export function Workspace() {
         </header>
 
         <main className="chat-main-area" style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
-          {bulletinData && (
+          
+          {/* 🌟 修正：同時支援兩種來源的畫面渲染 */}
+          {originData && originData.type === 'bulletin' && (
             <div style={{ backgroundColor: '#FDFBFE', border: '1px solid #E9D5FF', borderRadius: '12px', padding: '16px', marginBottom: '10px', fontSize: '13px', color: '#4B5563', lineHeight: '1.6', boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               <div style={{ color: '#9333EA', fontWeight: 'bold', borderBottom: '1px solid #F3E8FF', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>
                 🔍 許願池媒合軌跡
               </div>
               
               <div style={{ paddingBottom: '12px', borderBottom: '1px dashed #E9D5FF', marginBottom: '12px' }}>
-                <strong style={{ color: '#A67B3E' }}>【{bulletinData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
-                <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.description}</span>
-                {bulletinData.questions && bulletinData.questions.length > 0 && (
+                <strong style={{ color: '#A67B3E' }}>【{originData.isOffer ? '繪師' : '委託方'}的原始貼文設定】</strong><br/>
+                <span style={{ whiteSpace: 'pre-wrap' }}>{originData.description}</span>
+                {originData.questions && originData.questions.length > 0 && (
                   <div style={{ marginTop: '6px' }}>
                     <strong style={{ color: '#A0978D' }}>提問設定：</strong>
                     <ol style={{ margin: '4px 0 0 0', paddingLeft: '16px', color: '#7A7269' }}>
-                      {bulletinData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
+                      {originData.questions.map((q: string, idx: number) => <li key={idx}>{q}</li>)}
                     </ol>
                   </div>
                 )}
               </div>
 
               <div>
-                <strong style={{ color: '#4A7294' }}>【{bulletinData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
+                <strong style={{ color: '#4A7294' }}>【{originData.isOffer ? '委託方' : '繪師'}的投遞回覆】</strong><br/>
                 
-                {bulletinData.parsedSnapshot?.answers && bulletinData.parsedSnapshot.answers.length > 0 && (
+                {originData.parsedSnapshot?.answers && originData.parsedSnapshot.answers.length > 0 && (
                   <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-                    {bulletinData.parsedSnapshot.answers.map((ans: any, idx: number) => (
+                    {originData.parsedSnapshot.answers.map((ans: any, idx: number) => (
                       <div key={idx} style={{ marginTop: '8px' }}>
                         <strong style={{ color: '#A0978D' }}>Q: {ans.question}</strong><br/>
                         <span style={{ whiteSpace: 'pre-wrap' }}>A: {ans.answer || '(未填寫)'}</span>
@@ -396,20 +406,36 @@ export function Workspace() {
                   </div>
                 )}
 
-                {bulletinData.parsedSnapshot?.message && (
+                {originData.parsedSnapshot?.message && (
                   <div style={{ marginTop: '8px' }}>
                     <strong style={{ color: '#A0978D' }}>備註留言：</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{bulletinData.parsedSnapshot.message}</span>
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{originData.parsedSnapshot.message}</span>
                   </div>
                 )}
 
-                {!bulletinData.isOffer && (bulletinData.parsedSnapshot?.specialties || bulletinData.parsedSnapshot?.no_gos) && (
+                {!originData.isOffer && (originData.parsedSnapshot?.specialties || originData.parsedSnapshot?.no_gos) && (
                   <div style={{ marginTop: '10px' }}>
-                    {bulletinData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{bulletinData.parsedSnapshot.specialties}</div>}
-                    {bulletinData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{bulletinData.parsedSnapshot.no_gos}</div>}
+                    {originData.parsedSnapshot?.specialties && <div style={{ color: '#ff8c00', marginBottom: '4px' }}>舒適圈：{originData.parsedSnapshot.specialties}</div>}
+                    {originData.parsedSnapshot?.no_gos && <div style={{ color: '#e11d48' }}>雷點：{originData.parsedSnapshot.no_gos}</div>}
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {originData && originData.type === 'showcase_form' && (
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '16px', marginBottom: '10px', fontSize: '13px', color: '#4B5563', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+              <div style={{ color: '#4A7294', fontWeight: 'bold', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>
+                🔍 客製化表單需求
+              </div>
+              {originData.answers && originData.answers.length > 0 ? originData.answers.map((qa: any, i: number) => (
+                <div key={i} style={{ marginTop: '8px' }}>
+                  <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
+                  <span style={{ whiteSpace: 'pre-wrap' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
+                </div>
+              )) : (
+                <div style={{ color: '#9CA3AF', fontStyle: 'italic' }}>未填寫客製化問答。</div>
+              )}
             </div>
           )}
 
