@@ -14,12 +14,10 @@ export const directInquiryController = {
       const id = `di-${Date.now()}`;
       const isGuest = currentUserId === null;
       
-      // 🌟 依照你的設計：訪客直接塞入 'guest'
       const dbClientId = isGuest ? 'guest' : currentUserId;
       const finalGuestContact = isGuest ? (guest_contact_info || '未提供聯絡方式') : null;
 
       if (isGuest) {
-        // 🌟 神之一手：若為訪客，自動確保 Users 表中有 'guest' 帳號，完美滿足 Foreign Key 限制
         await env.commission_db.prepare(`
           INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role) 
           VALUES ('guest', 'guest_public_id', 'guest_line_id', '訪客', 'guest')
@@ -52,11 +50,11 @@ export const directInquiryController = {
         SELECT di.*, u.display_name as client_name, s.title as showcase_title
         FROM DirectInquiries di
         LEFT JOIN Users u ON di.client_id = u.id
+        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id -- 🌟 修正：補上漏掉的 ShowcaseItems JOIN
         WHERE di.artist_id = ?
         ORDER BY di.created_at DESC
       `).bind(currentUserId).all();
 
-      // 🌟 轉譯：將 'guest' 轉回 null，確保前端 !inq.client_id 判斷正常運作
       const formattedData = results.map((r: any) => ({
         ...r,
         client_id: r.client_id === 'guest' ? null : r.client_id
@@ -232,7 +230,6 @@ export const directInquiryController = {
     }
   },
 
-  // 8. 婉拒申請 (未修復 IDOR 漏洞)
   async decline(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'declined' WHERE id = ?`).bind(inquiryId).run();
@@ -242,7 +239,6 @@ export const directInquiryController = {
     }
   },
 
-  // 🌟 8.5 恢復申請 (保留 IDOR 漏洞)
   async restore(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'pending' WHERE id = ?`).bind(inquiryId).run();
