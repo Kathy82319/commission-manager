@@ -24,11 +24,20 @@ export const directInquiryController = {
         `).run();
       }
       
-      await env.commission_db.prepare(`
-        INSERT INTO DirectInquiries (
-          id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-      `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', finalGuestContact).run();
+      // 🌟 修正：利用 SQLite 的批次執行 (Batch)，在寫入訂單的同時，把該商品的接單數量 +1
+      await env.commission_db.batch([
+        env.commission_db.prepare(`
+          INSERT INTO DirectInquiries (
+            id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
+          ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+        `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', finalGuestContact),
+        
+        env.commission_db.prepare(`
+          UPDATE ShowcaseItems 
+          SET current_orders_count = current_orders_count + 1 
+          WHERE id = ?
+        `).bind(showcase_id)
+      ]);
 
       let clientName = '一位訪客';
       if (currentUserId) {
