@@ -297,13 +297,22 @@ export function ShowcaseFormBuilder({
                 <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
               </div>
             </div>
+            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
+            <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
+            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              {editingItem.tags.map(tag => (
+                <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  #{tag} <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0 }}>✕</button>
+                </span>
+              ))}
+            </div>
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
+                <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
+               
             
             <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
-            <input className="form-input" style={{ fontSize: '16px', padding: '14px' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
-            <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E', marginTop: '20px' }}>作品標籤 (最多 5 個)</label>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
                 <select className="form-input" style={{ padding: '12px' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
                   <option value={1}>🟢 公開顯示</option>
@@ -311,7 +320,7 @@ export function ShowcaseFormBuilder({
                 </select>
               </div>
               <div>
-                
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
                 <input className="form-input" style={{ padding: '12px' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
                 
                 {/* 🌟 漸進式揭露按鈕：精準移到金額顯示下方 */}
@@ -320,9 +329,8 @@ export function ShowcaseFormBuilder({
                     onClick={() => setViewMode('form')}
                     style={{ padding: '8px 16px', background: '#FFFFFF', color: '#4A7294', border: '1px solid #C1D6E8', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
                   >
-                    ⚙️ 制訂委託表單與規則 ➔
+                    ⚙️ 制訂委託表單 ➔
                   </button>
-                  <span style={{ fontSize: '12px', color: '#A0978D', marginLeft: '12px' }}>若為接單項目，可設定專屬表單</span>
                 </div>
               </div>
             </div>
@@ -330,13 +338,8 @@ export function ShowcaseFormBuilder({
 
           <div>
             
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              {editingItem.tags.map(tag => (
-                <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  #{tag} <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0 }}>✕</button>
-                </span>
-              ))}
-            </div>
+            
+            
             <div style={{ display: 'flex', gap: '8px' }}>
               <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤後按 Enter..." disabled={editingItem.tags.length >= 5} />
               <button onClick={handleAddTag} disabled={editingItem.tags.length >= 5} style={{ padding: '0 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>新增</button>
@@ -345,7 +348,7 @@ export function ShowcaseFormBuilder({
 
           <div>
             <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹 (支援圖片與排版)</label>
-            <div className="custom-quill-wrapper" >
+            <div className="custom-quill-wrapper" style={{ minHeight: '250px' }}>
               <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
             </div>
           </div>
