@@ -7,13 +7,14 @@ import '../../styles/Notebook.css';
 interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
   total_price: number; draw_scope: string; char_count: number; bg_type: string; add_ons: string;
-  agreed_memo?: string; // 🌟 補上雙方共識備忘錄的型別
+  agreed_memo?: string;
   detailed_settings: string; agreed_tos_snapshot: string; delivery_method: string; 
   usage_type?: string; is_rush?: string | number;
   pending_changes?: string; latest_message_at?: string; last_read_at_client?: string;
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
   artist_id?: string;
+  artist_public_id?: string; // 🌟 補上繪師的公開 ID
   origin_source?: string;
 }
 
@@ -55,7 +56,6 @@ const parseTime = (dateStr?: string) => {
   return new Date(ensureUTC(dateStr)).getTime();
 };
 
-// 🌟 更新：支援解析許願池與個人頁客製表單雙重來源
 const getOriginData = (currentOrder?: CommissionDetail | null) => {
   if (!currentOrder || !currentOrder.origin_source) return null;
   try {
@@ -538,8 +538,9 @@ export function ClientOrders() {
                     </div>
                   )}
 
-                  <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'normal', overflow: 'visible' }}>
-                    <span style={{ flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {/* 🌟 修正了這裡的排版問題，拿掉了強制撐開的 flex，讓標籤自然靠在旁邊 */}
+                  <div className="main-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                       繪師項目名：{selectedOrder.project_name || '無'}
                     </span>
                     {originData && (
@@ -549,8 +550,23 @@ export function ClientOrders() {
                     )}
                   </div>
                   
-                  <div className="main-meta-row">
+                  {/* 🌟 這裡新增了繪師的 public_id 與個人專頁連結 */}
+                  <div className="main-meta-row" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span>單號：{selectedOrder.id}</span>
+                    {selectedOrder.artist_id && (
+                      <span>
+                        繪師：
+                        <a 
+                          href={`/${selectedOrder.artist_public_id || selectedOrder.artist_id}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: '#4A7294', textDecoration: 'none', fontWeight: 'bold', borderBottom: '1px solid #4A7294' }}
+                          title="前往繪師個人專頁"
+                        >
+                          @{selectedOrder.artist_public_id || selectedOrder.artist_id}
+                        </a>
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -685,7 +701,6 @@ export function ClientOrders() {
                         </div>
                       </div>
 
-                      {/* 🌟 最終確認規格 / 備忘錄 (雙方共識) */}
                       {selectedOrder.agreed_memo && (
                         <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', marginTop: '16px', borderRadius: '12px', padding: '16px' }}>
                           <div style={{ color: '#4A7294', fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</div>
