@@ -144,35 +144,62 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {items.map((item, index) => (
-            <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {(quotaInfo?.plan_type === 'free' ? index < 6 : index < limit) && (
-                <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
-                  公開展示中
-                </div>
-              )}
+          {items.map((item, index) => {
+            // 🌟 判斷是否滿單
+            const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
 
-              <div style={{ height: '180px', background: '#F4F0EB', position: 'relative' }}>
-                <img src={item.cover_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {!item.is_active && (
-                  <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>已手動隱藏</div>
+            return (
+              <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                
+                {/* 左上角公開狀態 */}
+                {(quotaInfo?.plan_type === 'free' ? index < 6 : index < limit) && (
+                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
+                    公開展示中
+                  </div>
                 )}
-              </div>
-              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>{item.title}</div>
-                <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '14px' }}>{item.price_info || '未定價'}</div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {Array.isArray(item.tags) && item.tags.slice(0, 3).map((tag, idx) => (
-                    <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
-                  ))}
+
+                {/* 🌟 右上角滿單狀態 */}
+                {isFull && (
+                  <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#EF4444', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    🛑 已滿單
+                  </div>
+                )}
+
+                <div style={{ height: '180px', background: '#F4F0EB', position: 'relative' }}>
+                  <img src={item.cover_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isFull ? 0.7 : 1 }} />
+                  {!item.is_active && (
+                    <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', zIndex: 1 }}>已手動隱藏</div>
+                  )}
+                </div>
+                
+                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>{item.title}</div>
+                  <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '14px' }}>{item.price_info || '未定價'}</div>
+                  
+                  {/* 🌟 進度條 UI 加回來了！ */}
+                  {item.max_orders > 0 && (
+                    <div style={{ fontSize: '12px', color: '#7A7269', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ flex: 1, height: '6px', background: '#EAE6E1', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', background: isFull ? '#EF4444' : '#4E7A5A', width: `${Math.min(100, ((item.current_orders_count||0) / item.max_orders) * 100)}%` }} />
+                      </div>
+                      <span>{item.current_orders_count || 0} / {item.max_orders}</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                    {Array.isArray(item.tags) && item.tags.slice(0, 3).map((tag, idx) => (
+                      <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
+                  <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: '#FAFAFA', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E' }}>編輯 / 設定表單</button>
+                  <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ flex: 1, padding: '12px', background: '#FAFAFA', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C' }}>刪除</button>
                 </div>
               </div>
-              <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
-                <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E' }}>編輯</button>
-                <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ flex: 1, padding: '12px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C' }}>刪除</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

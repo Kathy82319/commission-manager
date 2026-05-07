@@ -51,6 +51,7 @@ interface ShowcaseFormBuilderProps {
 
 export function ShowcaseFormBuilder({
   initialItem,
+  onClose,
   onSaveSuccess,
   onRefreshList,
   onToast,
@@ -362,8 +363,14 @@ export function ShowcaseFormBuilder({
             </div>
           </div>
 
-          {/* 🌟 儲存按鈕移至右下角 */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #EAE6E1', paddingTop: '24px', marginTop: '8px' }}>
+          {/* 🌟 儲存按鈕移至右下角，並加入返回按鈕 */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '24px', marginTop: '8px' }}>
+            <button 
+              onClick={onClose} 
+              style={{ padding: '12px 24px', background: '#FAFAFA', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}
+            >
+              返回販售區
+            </button>
             <button 
               onClick={handleSaveItem} 
               style={{ padding: '12px 32px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 12px rgba(93, 74, 62, 0.2)' }}
