@@ -12,15 +12,25 @@ export const directInquiryController = {
       }
 
       const id = `di-${Date.now()}`;
+      const isGuest = currentUserId === null;
       
-      // 🌟 修正：依據指示，若為訪客 (currentUserId 為 null) 則直接寫入 'guest'
-      const dbClientId = currentUserId || 'guest';
+      // 🌟 依照你的設計：訪客直接塞入 'guest'
+      const dbClientId = isGuest ? 'guest' : currentUserId;
+      const finalGuestContact = isGuest ? (guest_contact_info || '未提供聯絡方式') : null;
+
+      if (isGuest) {
+        // 🌟 神之一手：若為訪客，自動確保 Users 表中有 'guest' 帳號，完美滿足 Foreign Key 限制
+        await env.commission_db.prepare(`
+          INSERT OR IGNORE INTO Users (id, public_id, line_id, display_name, role) 
+          VALUES ('guest', 'guest_public_id', 'guest_line_id', '訪客', 'guest')
+        `).run();
+      }
       
       await env.commission_db.prepare(`
         INSERT INTO DirectInquiries (
           id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
         ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-      `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', guest_contact_info || null).run();
+      `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', finalGuestContact).run();
 
       let clientName = '一位訪客';
       if (currentUserId) {
@@ -46,7 +56,13 @@ export const directInquiryController = {
         ORDER BY di.created_at DESC
       `).bind(currentUserId).all();
 
-      return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
+      // 🌟 轉譯：將 'guest' 轉回 null，確保前端 !inq.client_id 判斷正常運作
+      const formattedData = results.map((r: any) => ({
+        ...r,
+        client_id: r.client_id === 'guest' ? null : r.client_id
+      }));
+
+      return new Response(JSON.stringify({ success: true, data: formattedData }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
@@ -59,7 +75,7 @@ export const directInquiryController = {
         FROM DirectInquiries di
         JOIN Users u ON di.artist_id = u.id
         LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
-        WHERE di.client_id = ?
+        WHERE di.client_id = ? AND di.client_id != 'guest'
         ORDER BY di.created_at DESC
       `).bind(currentUserId).all();
 
@@ -88,7 +104,12 @@ export const directInquiryController = {
       const updateField = currentUserId === inquiry.artist_id ? 'last_read_at_artist' : 'last_read_at_client';
       await env.commission_db.prepare(`UPDATE DirectInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      return new Response(JSON.stringify({ success: true, data: inquiry }), { headers: corsHeaders });
+      const formattedInquiry = {
+        ...inquiry,
+        client_id: inquiry.client_id === 'guest' ? null : inquiry.client_id
+      };
+
+      return new Response(JSON.stringify({ success: true, data: formattedInquiry }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
@@ -112,7 +133,7 @@ export const directInquiryController = {
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
       
-      if (inquiry.client_id) {
+      if (inquiry.client_id && inquiry.client_id !== 'guest') {
         await notificationController.createNotification(env, inquiry.client_id, 'inquiry_msg', `🌟 繪師已送出正式的合作協議，請前往確認。`, `/inquiry/workspace/${inquiryId}`);
       }
       
@@ -183,7 +204,7 @@ export const directInquiryController = {
       
       const origin_source = JSON.stringify({
         source_type: 'showcase_form',
-        is_guest: true, 
+        is_guest: inquiryData.client_id === 'guest', 
         inquiry_id: inquiryId,
         showcase_title: inquiryData.showcase_title,
         form_answers: JSON.parse(inquiryData.form_answers || '[]')
