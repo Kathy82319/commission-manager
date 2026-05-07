@@ -70,7 +70,7 @@ export function App() {
           <Route path="favorites" element={<ArtistManager />} />
         </Route>
 
-        {/* 洽談與工作區路由 */}
+        {/* 洽談與聊天室路由 */}
         <Route path="/quote/:id" element={<ClientForm />} />
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />

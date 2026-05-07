@@ -244,7 +244,7 @@ export function ClientForm() {
                 您已成功同意此委託！狀態已更新。
               </div>
               <button onClick={handleBindAndEnter} disabled={isSubmitting} style={{ width: '100%', padding: '18px', backgroundColor: isSubmitting ? '#A0978D' : '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', boxShadow: '0 4px 16px rgba(74,114,148,0.2)' }}>
-                {isSubmitting ? '處理中...' : '進入委託單管理與工作區'}
+                {isSubmitting ? '處理中...' : '進入委託單管理與聊天室'}
               </button>
             </div>
           )}

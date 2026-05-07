@@ -393,7 +393,7 @@ export const commController = {
        const roleQuery = body.sender_role === 'artist' ? '' : '?role=artist';
        
        if (targetUserId) {
-         await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 工作區「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
+         await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
        }
     }
 

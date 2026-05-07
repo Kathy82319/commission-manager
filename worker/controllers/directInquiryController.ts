@@ -271,8 +271,37 @@ export const directInquiryController = {
     try {
       const body = await request.json() as any;
       const id = crypto.randomUUID();
+      
+      // 1. 將訊息存入資料庫，並更新訂單最後活動時間
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
       await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+
+      // 🌟 2. 補上缺少的通知邏輯：找出這張單的對方是誰，並叫醒他的小鈴鐺
+      const inquiry = await env.commission_db.prepare(`
+        SELECT di.artist_id, di.client_id, s.title
+        FROM DirectInquiries di
+        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
+        WHERE di.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (inquiry) {
+        // 判斷當前發送者是誰，接收者就是另一方
+        const isArtist = currentUserId === inquiry.artist_id;
+        const targetUserId = isArtist ? inquiry.client_id : inquiry.artist_id;
+
+        // 只有當接收者存在，且不是訪客 (guest) 時，才發送小鈴鐺通知
+        if (targetUserId && targetUserId !== 'guest') {
+          const projectTitle = inquiry.title || '客製化委託';
+          await notificationController.createNotification(
+            env, 
+            targetUserId, 
+            'inquiry_msg', 
+            `💬 洽談室「${projectTitle}」有新的聊天訊息。`, 
+            `/inquiry/workspace/${inquiryId}`
+          );
+        }
+      }
+
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
