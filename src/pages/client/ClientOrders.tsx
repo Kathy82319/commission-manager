@@ -126,7 +126,6 @@ export function ClientOrders() {
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
-  // 🌟 監聽網址參數變動，解決小鈴鐺跳轉卡在同一個畫面的問題
   useEffect(() => {
     const currentId = queryParams.get('id') || queryParams.get('open');
     if (currentId && currentId !== selectedId) {
@@ -411,7 +410,6 @@ export function ClientOrders() {
     );
   };
 
-  // 解析待處理的異動申請
   let parsedChanges: Record<string, any> | null = null;
   if (selectedOrder?.pending_changes) {
     try {
@@ -420,7 +418,6 @@ export function ClientOrders() {
     } catch (e) {}
   }
 
-  // 🌟 新增小工具：用來渲染帶有 Diff（刪除線）效果的欄位值
   const renderDiffValue = (key: string, originalValue: any, formatter?: (val: any) => string) => {
     const displayOriginal = formatter ? formatter(originalValue) : originalValue;
 
@@ -430,7 +427,7 @@ export function ClientOrders() {
         <span className="field-value" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <del style={{ color: '#A0978D', textDecorationThickness: '1.5px' }}>{displayOriginal}</del>
           <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>{displayNew}</span>
-          <span style={{ fontSize: '11px', color: '#A05C5C', border: '1px solid #A05C5C', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#FFF5F5' }}>異動</span>
+          <span style={{ fontSize: '11px', color: '#A05C5C', border: '1px solid #A05C5C', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#FFF5F5', whiteSpace: 'nowrap' }}>異動</span>
         </span>
       );
     }
@@ -467,7 +464,6 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
-      {/* 🌟 移除了原本整頁覆蓋的 lightbox-overlay */}
       <div className="notebook-container">
         
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
@@ -500,7 +496,6 @@ export function ClientOrders() {
                 const orderOrigin = getOriginData(order);
                 const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); 
 
-                // 檢查列表中的訂單是否有異動，給予視覺提示
                 let hasPendingChange = false;
                 try {
                   const pChanges = typeof order.pending_changes === 'string' ? JSON.parse(order.pending_changes) : order.pending_changes;
@@ -509,18 +504,26 @@ export function ClientOrders() {
 
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
-                    <div className="card-meta-row">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {/* 🌟 修正：讓排版標籤保持在同一行，不被擠壓換行 */}
+                    <div className="card-meta-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1 }}>
                         <span>{formatLocalDate(order.order_date)}</span>
                         {orderOrigin?.type === 'showcase_form' && (
-                          <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff' }}>販售區表單</span>
+                          <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', whiteSpace: 'nowrap' }}>販售區表單</span>
                         )}
                         {orderOrigin?.type === 'bulletin' && (
-                          <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff' }}>許願池</span>
+                          <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', whiteSpace: 'nowrap' }}>許願池</span>
                         )}
                       </div>
-                      {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span className="card-tag badge-new-msg">🔥 急件</span>)}
-                      {hasPendingChange && (<span className="card-tag" style={{ backgroundColor: '#FFF5F5', color: '#A05C5C', border: '1px solid #FECACA' }}>⚠️ 異動確認</span>)}
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                        {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (
+                          <span className="card-tag badge-new-msg" style={{ whiteSpace: 'nowrap' }}>🔥 急件</span>
+                        )}
+                        {hasPendingChange && (
+                          <span className="card-tag" style={{ backgroundColor: '#FFF5F5', color: '#A05C5C', border: '1px solid #FECACA', whiteSpace: 'nowrap' }}>⚠️ 異動確認</span>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="card-title-row">
@@ -538,7 +541,7 @@ export function ClientOrders() {
                       {getStatusDisplay(order.status, order.current_stage)}
                       
                       {isBlacklisted && (
-                        <span className="card-tag" style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}>
+                        <span className="card-tag" style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>
                           🚫 黑名單繪師
                         </span>
                       )}
@@ -719,7 +722,6 @@ export function ClientOrders() {
                         {parsedChanges && <span style={{ color: '#A05C5C', fontSize: '13px', fontWeight: 'bold' }}>⚠️ 含有待確認異動</span>}
                       </h3>
                       
-                      {/* 🌟 替換為 renderDiffValue 工具渲染 */}
                       <div className="details-grid">
                         <div className="request-field"><span className="field-label">委託用途：</span>{renderDiffValue('usage_type', selectedOrder.usage_type || '未提供')}</div>
                         <div className="request-field"><span className="field-label">是否急件：</span>{renderDiffValue('is_rush', selectedOrder.is_rush, (v) => v === '是' || v === '1' || v === 1 ? '是' : '否')}</div>
@@ -734,7 +736,6 @@ export function ClientOrders() {
                         </div>
                       </div>
 
-                      {/* 🌟 異動的同意/拒絕按鈕區塊 */}
                       {parsedChanges && (
                         <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#FFF5F5', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '14px' }}>⚠️ 繪師提出了合約規格異動</div>
