@@ -350,31 +350,32 @@ export const InquiryWorkspace: React.FC = () => {
     (!isDirectInquiry && inquiry.status === 'submitted') 
   );
 
-  // 🌟 動態產出標題與對象資訊 (需後端 API 配合 JOIN 選出 commission_id 與 public_id)
-  const projectNameStr = draft.project_name || displayTitle || '';
-  const commissionIdStr = inquiry.commission_id ? `(${inquiry.commission_id})` : '';
-  const headerProjectName = `${projectNameStr} ${commissionIdStr}`.trim();
+  // 🌟 動態產出標題與對象資訊 (參考 Notebook 顯示邏輯)
+  const projectNameStr = draft?.project_name || inquiry?.project_name || displayTitle || '';
+  const commissionIdStr = inquiry?.commission_id ? `(${inquiry.commission_id})` : '';
+  const headerProjectName = projectNameStr ? `${projectNameStr} ${commissionIdStr}`.trim() : commissionIdStr;
   
   let otherPartyName = "未知對象";
   let otherPartyId = "";
 
   if (isArtist) {
-    if (isDirectInquiry) {
-      if (inquiry.client_id === 'guest' || !inquiry.client_id) {
-        // 🌟 處理訪客委託，優先抓取表單填寫的聯絡資訊，若無則顯示訪客
-        otherPartyName = inquiry.guest_contact_info || inquiry.contact_memo || "訪客";
-        otherPartyId = "Guest";
-      } else {
-        otherPartyName = inquiry.client_name || "委託人";
-        otherPartyId = inquiry.client_public_id || inquiry.client_id;
-      }
+    const cName = inquiry?.client_name;
+    const cMemo = inquiry?.contact_memo || inquiry?.guest_contact_info;
+    
+    if (inquiry?.client_id === 'guest' || !inquiry?.client_id) {
+      otherPartyName = cMemo || "訪客";
+      otherPartyId = "Guest";
     } else {
-      otherPartyName = inquiry.client_name || "委託人";
-      otherPartyId = inquiry.client_public_id || inquiry.bulletin_client_id;
+      if (cName && cMemo) {
+         otherPartyName = `${cName} (${cMemo})`;
+      } else {
+         otherPartyName = cName || cMemo || "委託人";
+      }
+      otherPartyId = inquiry?.client_public_id || inquiry?.client_id || "未知 ID";
     }
   } else {
-    otherPartyName = "繪師";
-    otherPartyId = inquiry.artist_public_id || actualArtistId || inquiry.artist_id;
+    otherPartyName = inquiry?.artist_name || "繪師";
+    otherPartyId = inquiry?.artist_public_id || actualArtistId || inquiry?.artist_id || "未知 ID";
   }
 
   return (
@@ -387,7 +388,7 @@ export const InquiryWorkspace: React.FC = () => {
               <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>← 返回</button>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  洽談：{headerProjectName || '未命名'}
+                  洽談：{headerProjectName}
                 </h2>
                 <span style={{ fontSize: '11px', color: '#A0978D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   洽談對象：{otherPartyName} (ID: {otherPartyId})
