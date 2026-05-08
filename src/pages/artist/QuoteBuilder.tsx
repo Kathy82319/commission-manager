@@ -23,6 +23,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   const [workflowMode, setWorkflowMode] = useState<'standard' | 'free'>('standard');
 
   const [formData, setFormData] = useState({
+    client_name: '', // 🌟 加回委託人名稱 (對應後端的 client_name / contact_memo)
     project_name: '',
     usage_type: '非商用',
     is_rush: '否',
@@ -42,6 +43,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     bg_type: '',
   });
 
+  // 🌟 將狀態名稱維持，但畫面上顯示為快速標籤
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]); 
   const [customAddOns, setCustomAddOns] = useState<string[]>([]);
   const [newCustomAddOn, setNewCustomAddOn] = useState('');
@@ -130,6 +132,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
       agreed_tos_snapshot: tosContent 
     };
 
+    // 🚨 這裡直接將 total_price 轉 Number，若為負數後端應當阻擋
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
       const res = await fetch(`${API_BASE}/api/commissions`, {
@@ -169,7 +172,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   return (
     <div className="quote-page" style={isModal ? { padding: 0 } : {}}>
       
-      
       {!isModal && (
         <div className="quote-header">
           <div>
@@ -202,7 +204,8 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
 
       
       {isModal && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        // 🌟 修正：加上 paddingRight: '40px' 給右側叉叉留出空間，避免重疊
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingRight: '40px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>建立新委託單</h2>
             {quotaInfo?.plan_type === 'free' && <span style={{ fontSize: '12px', color: '#7A7269' }}>本月額度：{quotaInfo.used_quota} / {quotaInfo.max_quota} 筆</span>}
@@ -225,6 +228,12 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
           <h3 className="quote-card-title">基本資訊設定</h3>
           <div className="form-grid">
             
+            {/* 🌟 修正：加回委託人名稱 (對應聯絡備註) */}
+            <div className="form-grid-full">
+              <label className="form-label">委託人名稱 (選填)</label>
+              <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} className="form-input" placeholder="可在此紀錄委託方的暱稱或聯絡方式" />
+            </div>
+
             <div className="form-grid-full">
               <label className="form-label">項目名稱</label>
               <input type="text" name="project_name" value={formData.project_name} onChange={handleChange} className="form-input" placeholder="例如：自創角半身委託" />
@@ -338,7 +347,8 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
             </div>
 
             <div className="form-grid-full" style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px dashed #EAE6E1' }}>
-              <label className="form-label">快速標籤{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
+              {/* 🌟 修正：顯示為「快速標籤」 */}
+              <label className="form-label">附加項目{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
               <div className="addon-tags-container" style={{ alignItems: 'center' }}>
                 {baseAddOnsList.map(item => {
                   const isSelected = selectedAddOns.includes(item);
