@@ -14,7 +14,7 @@ interface CommissionDetail {
   artist_settings?: string; current_stage: string; workflow_mode: string; order_date: string;
   client_id?: string; 
   artist_id?: string;
-  artist_public_id?: string; // 🌟 補上繪師的公開 ID
+  artist_public_id?: string; 
   origin_source?: string;
 }
 
@@ -67,7 +67,7 @@ const getOriginData = (currentOrder?: CommissionDetail | null) => {
         type: 'showcase_form',
         title: parsed.showcase_title || '客製化委託單',
         answers: Array.isArray(parsed.form_answers) ? parsed.form_answers : [],
-        inquiry_id: parsed.inquiry_id, // 🌟 確保取出 inquiry_id
+        inquiry_id: parsed.inquiry_id,
         ...parsed
       };
     }
@@ -88,7 +88,7 @@ const getOriginData = (currentOrder?: CommissionDetail | null) => {
         type: 'bulletin',
         description,
         isOffer,
-        inquiry_id: parsed.inquiry_id, // 🌟 確保取出 inquiry_id
+        inquiry_id: parsed.inquiry_id,
         parsedSnapshot: typeof parsedSnapshot === 'object' ? parsedSnapshot : { message: parsedSnapshot },
         ...parsed
       };
@@ -126,11 +126,24 @@ export function ClientOrders() {
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
+  // 🌟 監聽網址參數變動，解決小鈴鐺跳轉卡在同一個畫面的問題
+  useEffect(() => {
+    const currentId = queryParams.get('id') || queryParams.get('open');
+    if (currentId && currentId !== selectedId) {
+      handleSelect(currentId);
+      const tab = queryParams.get('tab');
+      if (tab === 'review' || tab === 'history') {
+        setActiveTab(tab);
+      }
+    }
+  }, [location.search]);
+
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedId) params.set('open', selectedId);
+    if (selectedId) params.set('id', selectedId);
+    if (activeTab !== 'main') params.set('tab', activeTab);
     navigate(`?${params.toString()}`, { replace: true });
-  }, [selectedId, navigate]);
+  }, [selectedId, activeTab, navigate]);
 
   const fetchOrders = async () => {
     try {
@@ -249,16 +262,21 @@ export function ClientOrders() {
 
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!selectedId) return;
+    setIsProcessing(true);
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${selectedId}/change-response`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
       });
       if ((await res.json()).success) {
-        alert(action === 'approve' ? '已同意內容異動' : '已拒絕內容異動');
+        alert(action === 'approve' ? '已同意內容異動並更新合約！' : '已拒絕內容異動！');
         fetchOrders(); fetchDetailData(selectedId);
       }
-    } catch (error) {}
+    } catch (error) {
+      alert("操作發生錯誤，請稍後再試。");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSaveTitle = async () => {
@@ -393,7 +411,8 @@ export function ClientOrders() {
     );
   };
 
-  let parsedChanges: Record<string, string> | null = null;
+  // 解析待處理的異動申請
+  let parsedChanges: Record<string, any> | null = null;
   if (selectedOrder?.pending_changes) {
     try {
       const parsed = typeof selectedOrder.pending_changes === 'string' ? JSON.parse(selectedOrder.pending_changes) : selectedOrder.pending_changes;
@@ -401,7 +420,22 @@ export function ClientOrders() {
     } catch (e) {}
   }
 
-  const fieldMap: Record<string, string> = { usage_type: '委託用途', is_rush: '急件', delivery_method: '交稿方式', total_price: '總金額', draw_scope: '繪畫範圍', char_count: '人物數量', bg_type: '背景設定', add_ons: '附加選項' };
+  // 🌟 新增小工具：用來渲染帶有 Diff（刪除線）效果的欄位值
+  const renderDiffValue = (key: string, originalValue: any, formatter?: (val: any) => string) => {
+    const displayOriginal = formatter ? formatter(originalValue) : originalValue;
+
+    if (parsedChanges && parsedChanges[key] !== undefined) {
+      const displayNew = formatter ? formatter(parsedChanges[key]) : parsedChanges[key];
+      return (
+        <span className="field-value" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <del style={{ color: '#A0978D', textDecorationThickness: '1.5px' }}>{displayOriginal}</del>
+          <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>{displayNew}</span>
+          <span style={{ fontSize: '11px', color: '#A05C5C', border: '1px solid #A05C5C', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#FFF5F5' }}>異動</span>
+        </span>
+      );
+    }
+    return <span className="field-value">{displayOriginal}</span>;
+  };
 
   let finalTosHtml = '';
   if (selectedOrder?.agreed_tos_snapshot) {
@@ -433,22 +467,7 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
-      {parsedChanges && (
-        <div className="lightbox-overlay" style={{ alignItems: 'center' }}>
-          <div className="section-card" style={{ maxWidth: '500px', width: '90%', zIndex: 100000, position: 'relative' }}>
-            <h3 style={{ color: '#A05C5C', marginTop: 0, fontSize: '18px', fontWeight: 'bold' }}>⚠️ 繪師提出了規格異動申請</h3>
-            <p style={{ color: '#7A7269', fontSize: '14px', marginBottom: '12px' }}>繪師希望調整委託單內容，請確認以下項目：</p>
-            <div style={{ backgroundColor: '#FAFAFA', padding: '16px', borderRadius: '12px', fontSize: '14px', color: '#5D4A3E', marginBottom: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #EAE6E1' }}>
-              {Object.keys(parsedChanges).map(key => (<div key={key} style={{ marginBottom: '6px' }}><span style={{ fontWeight: 'bold' }}>• {fieldMap[key] || key}：</span><span>{parsedChanges![key]}</span></div>))}
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => handleReviewChange('reject')} className="action-btn btn-outline-danger">拒絕修改</button>
-              <button onClick={() => handleReviewChange('approve')} className="action-btn btn-success">同意並更新合約</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* 🌟 移除了原本整頁覆蓋的 lightbox-overlay */}
       <div className="notebook-container">
         
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
@@ -481,6 +500,13 @@ export function ClientOrders() {
                 const orderOrigin = getOriginData(order);
                 const isBlacklisted = order.artist_id && blacklistedIds.includes(order.artist_id); 
 
+                // 檢查列表中的訂單是否有異動，給予視覺提示
+                let hasPendingChange = false;
+                try {
+                  const pChanges = typeof order.pending_changes === 'string' ? JSON.parse(order.pending_changes) : order.pending_changes;
+                  hasPendingChange = !!(pChanges && Object.keys(pChanges).length > 0);
+                } catch(e) {}
+
                 return (
                   <div key={order.id} onClick={() => handleSelect(order.id)} className={`sidebar-card ${isSelected ? 'selected' : ''} ${order.status === 'cancelled' ? 'cancelled' : ''}`}>
                     <div className="card-meta-row">
@@ -494,6 +520,7 @@ export function ClientOrders() {
                         )}
                       </div>
                       {(order.is_rush === '是' || order.is_rush === 1 || order.is_rush === '1') && (<span className="card-tag badge-new-msg">🔥 急件</span>)}
+                      {hasPendingChange && (<span className="card-tag" style={{ backgroundColor: '#FFF5F5', color: '#A05C5C', border: '1px solid #FECACA' }}>⚠️ 異動確認</span>)}
                     </div>
                     
                     <div className="card-title-row">
@@ -532,7 +559,6 @@ export function ClientOrders() {
                 <div className="main-header-info">
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
                   <h2 className="main-title">{selectedOrder.client_custom_title || selectedOrder.project_name || '未命名項目'}</h2>
-                  
                   
                   {selectedOrder.artist_id && blacklistedIds.includes(selectedOrder.artist_id) && (
                     <div style={{ display: 'inline-block', padding: '4px 10px', background: '#fef2f2', color: '#ef4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #fecaca', marginTop: '6px', marginBottom: '6px' }}>
@@ -578,7 +604,6 @@ export function ClientOrders() {
                         body: JSON.stringify({ last_read_at_client: new Date().toISOString() })
                       });
                       
-                      // 🌟 將原本的 /workspace/:id 改為指向 InquiryWorkspace，並加入防呆 fallback
                       const targetUrl = originData?.inquiry_id 
                         ? `/inquiry/workspace/${originData.inquiry_id}` 
                         : `/workspace/${selectedOrder.id}`;
@@ -594,6 +619,7 @@ export function ClientOrders() {
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
                   詳細內容
+                  {parsedChanges && <span style={{ marginLeft: '6px', fontSize: '10px', backgroundColor: '#A05C5C', color: 'white', padding: '2px 6px', borderRadius: '10px' }}>有異動</span>}
                 </button>
                 <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>
                   稿件審閱
@@ -687,23 +713,38 @@ export function ClientOrders() {
                       </div>
                     )}
 
-                  
-
-                    
-                    <div className="section-card">
-                      <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託規格</h3>
+                    <div className="section-card" style={parsedChanges ? { border: '1px solid #FECACA', boxShadow: '0 4px 12px rgba(254, 202, 202, 0.4)' } : {}}>
+                      <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>委託規格</span>
+                        {parsedChanges && <span style={{ color: '#A05C5C', fontSize: '13px', fontWeight: 'bold' }}>⚠️ 含有待確認異動</span>}
+                      </h3>
+                      
+                      {/* 🌟 替換為 renderDiffValue 工具渲染 */}
                       <div className="details-grid">
-                        <div className="request-field"><span className="field-label">委託用途：</span><span className="field-value">{selectedOrder.usage_type || '未提供'}</span></div>
-                        <div className="request-field"><span className="field-label">是否急件：</span><span className="field-value">{selectedOrder.is_rush === '是' || selectedOrder.is_rush === '1' || selectedOrder.is_rush === 1 ? '是' : '否'}</span></div>
-                        <div className="request-field"><span className="field-label">交稿方式：</span><span className="field-value">{selectedOrder.delivery_method || '未提供'}</span></div>
-                        <div className="request-field"><span className="field-label">繪製範圍：</span><span className="field-value">{selectedOrder.draw_scope || '未提供'}</span></div>
-                        <div className="request-field"><span className="field-label">人數：</span><span className="field-value">{selectedOrder.char_count || 1} 人</span></div>
-                        <div className="request-field"><span className="field-label">背景：</span><span className="field-value">{selectedOrder.bg_type || '未提供'}</span></div>
-                        <div className="request-field" style={{ gridColumn: '1 / -1' }}><span className="field-label">備註/附加選項：</span><span className="field-value" style={{ whiteSpace: 'pre-wrap' }}>{selectedOrder.add_ons || '無'}</span></div>
+                        <div className="request-field"><span className="field-label">委託用途：</span>{renderDiffValue('usage_type', selectedOrder.usage_type || '未提供')}</div>
+                        <div className="request-field"><span className="field-label">是否急件：</span>{renderDiffValue('is_rush', selectedOrder.is_rush, (v) => v === '是' || v === '1' || v === 1 ? '是' : '否')}</div>
+                        <div className="request-field"><span className="field-label">交稿方式：</span>{renderDiffValue('delivery_method', selectedOrder.delivery_method || '未提供')}</div>
+                        <div className="request-field"><span className="field-label">繪製範圍：</span>{renderDiffValue('draw_scope', selectedOrder.draw_scope || '未提供')}</div>
+                        <div className="request-field"><span className="field-label">人數：</span>{renderDiffValue('char_count', selectedOrder.char_count || 1, (v) => `${v} 人`)}</div>
+                        <div className="request-field"><span className="field-label">背景：</span>{renderDiffValue('bg_type', selectedOrder.bg_type || '未提供')}</div>
+                        <div className="request-field" style={{ gridColumn: '1 / -1' }}><span className="field-label">備註/附加選項：</span>{renderDiffValue('add_ons', selectedOrder.add_ons || '無')}</div>
                         <div className="request-field" style={{ gridColumn: '1 / -1', marginTop: '8px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px' }}>
-                          <span className="field-label">總金額：</span><span className="field-value" style={{ fontSize: '18px', color: '#4E7A5A', fontWeight: 'bold' }}>NT$ {selectedOrder.total_price.toLocaleString()}</span>
+                          <span className="field-label">總金額：</span>
+                          {renderDiffValue('total_price', selectedOrder.total_price, (v) => `NT$ ${Number(v).toLocaleString()}`)}
                         </div>
                       </div>
+
+                      {/* 🌟 異動的同意/拒絕按鈕區塊 */}
+                      {parsedChanges && (
+                        <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#FFF5F5', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '14px' }}>⚠️ 繪師提出了合約規格異動</div>
+                          <div style={{ fontSize: '13px', color: '#7A7269' }}>請確認上方的修改內容（灰色刪除線為原內容，紅色粗體為新內容）。確認無誤後請按下同意以更新合約。</div>
+                          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                            <button onClick={() => handleReviewChange('reject')} disabled={isProcessing} className="action-btn btn-outline-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>拒絕修改</button>
+                            <button onClick={() => handleReviewChange('approve')} disabled={isProcessing} className="action-btn btn-success" style={{ padding: '8px 16px', fontSize: '13px' }}>{isProcessing ? '處理中...' : '同意並更新合約'}</button>
+                          </div>
+                        </div>
+                      )}
 
                       {selectedOrder.agreed_memo && (
                         <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', marginTop: '16px', borderRadius: '12px', padding: '16px' }}>
