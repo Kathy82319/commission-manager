@@ -13,6 +13,15 @@ const createJsonResponse = (body: any, status: number, corsHeaders: HeadersInit)
   });
 };
 
+// 🌟 新增：匿名遮蔽函式 (保留頭尾，中間用星號取代)
+const getMaskedName = (name: string) => {
+  if (!name) return '匿名委託';
+  const len = name.length;
+  if (len <= 1) return name;
+  if (len === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(len - 2) + name[len - 1];
+};
+
 async function syncToCRM(env: Env, artistId: string, clientId: string, clientDisplayName: string) {
   try {
     const clientInfo = await env.commission_db.prepare("SELECT public_id FROM Users WHERE id = ?").bind(clientId).first<{ public_id: string }>();
@@ -181,7 +190,7 @@ export const commController = {
     const fieldLimits: Record<string, number> = {
       'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
       'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
-      'draw_scope': 100, 'bg_type': 100, 'add_ons': 1000, 'current_stage': 50, 'end_date': 50, 
+      'draw_scope': 100, 'bg_type': 100, 'add_ons': 1000, 'current_stage': 50, 'start_date': 50, 'end_date': 50, 
       'artist_note': 5000, 'workflow_mode': 50, 'queue_status': 100, 'client_custom_title': 100,
       'agreed_tos_snapshot': 10000, 'contact_memo': 100 
     };
@@ -499,19 +508,34 @@ export const commController = {
 
   async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
-      const artist = await env.commission_db.prepare("SELECT id FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string}>();
+      const artist = await env.commission_db.prepare("SELECT id, profile_settings FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string, profile_settings: string}>();
       
       if (!artist) {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
+      // 🌟 解析繪師的排單設定
+      let queueSettings = { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true };
+      try {
+        if (artist.profile_settings) {
+          const settings = typeof artist.profile_settings === 'string' ? JSON.parse(artist.profile_settings) : artist.profile_settings;
+          if (settings.queue_settings) queueSettings = settings.queue_settings;
+        }
+      } catch (e) {}
+
+      // 若未啟用公開排單表，則不回傳資料
+      if (!queueSettings.enabled) {
+        return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
+      }
+
+      // 🌟 確保 SQL *不* 包含 total_price 等金額欄位 (防止資料外洩)
       const query = `
         SELECT 
           c.id, 
           c.contact_memo, 
           c.project_name, 
           c.queue_status, 
-          c.end_date, 
+          c.start_date,
           c.order_date,
           u.public_id AS client_public_id
         FROM Commissions c
@@ -520,7 +544,22 @@ export const commController = {
         ORDER BY c.order_date ASC
       `;
       const { results } = await env.commission_db.prepare(query).bind(artist.id).all();
-      return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
+
+      // 🌟 在後端套用隱私遮蔽邏輯
+      const maskedResults = results.map((order: any) => {
+        return {
+          id: order.id,
+          queue_status: order.queue_status,
+          start_date: order.start_date,
+          order_date: order.order_date,
+          // 根據設定決定是否傳送明碼，否則傳送遮蔽後的字串
+          contact_memo: queueSettings.show_client_name ? order.contact_memo : getMaskedName(order.contact_memo),
+          client_public_id: queueSettings.show_client_id ? order.client_public_id : null,
+          project_name: queueSettings.show_project_name ? order.project_name : null,
+        };
+      });
+
+      return createJsonResponse({ success: true, data: maskedResults }, 200, corsHeaders);
     } catch (e) {
       console.error("無法讀取公開排單表:", e);
       return createJsonResponse({ success: false, error: "無法讀取排單表" }, 500, corsHeaders);

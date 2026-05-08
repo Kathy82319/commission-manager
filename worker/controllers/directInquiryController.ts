@@ -6,10 +6,24 @@ export const directInquiryController = {
   async submitOrder(request: Request, currentUserId: string | null, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
-      const { showcase_id, artist_id, form_answers, tos_snapshot, guest_contact_info } = body;
+      const { showcase_id, artist_id, form_answers, guest_contact_info } = body;
 
       if (!showcase_id || !artist_id || !form_answers) {
         return new Response(JSON.stringify({ success: false, error: '缺少必要欄位' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 🌟 1. 後端自己去抓 TOS，不信任前端傳來的 tos_snapshot
+      // 優先權：ShowcaseItems.tos_content -> ArtistProfiles.tos_content -> 預設字串
+      let finalTosSnapshot = "（無特定協議內容）";
+      
+      const showcaseRow = await env.commission_db.prepare(`SELECT tos_content FROM ShowcaseItems WHERE id = ?`).bind(showcase_id).first<{ tos_content: string }>();
+      if (showcaseRow && showcaseRow.tos_content) {
+         finalTosSnapshot = showcaseRow.tos_content;
+      } else {
+         const profileRow = await env.commission_db.prepare(`SELECT tos_content FROM ArtistProfiles WHERE user_id = ?`).bind(artist_id).first<{ tos_content: string }>();
+         if (profileRow && profileRow.tos_content) {
+            finalTosSnapshot = profileRow.tos_content;
+         }
       }
 
       const id = `di-${Date.now()}`;
@@ -30,7 +44,7 @@ export const directInquiryController = {
           INSERT INTO DirectInquiries (
             id, showcase_id, client_id, artist_id, form_answers, tos_snapshot, status, guest_contact_info
           ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
-        `).bind(id, showcase_id, dbClientId, artist_id, form_answers, tos_snapshot || '', finalGuestContact),
+        `).bind(id, showcase_id, dbClientId, artist_id, form_answers, finalTosSnapshot, finalGuestContact),
         
         env.commission_db.prepare(`
           UPDATE ShowcaseItems 
