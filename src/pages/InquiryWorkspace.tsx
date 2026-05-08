@@ -284,18 +284,17 @@ export const InquiryWorkspace: React.FC = () => {
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
-  // 🌟 1. 新增：退回修改功能
+  // 🌟 1. 修改：退回修改功能 (移除輸入理由，純確認)
   const handleRejectProposal = async () => {
-    const reason = window.prompt("請輸入退回修正的原因或建議 (這會讓繪師可以重新編輯協議)：");
-    if (reason === null) return; // 取消
+    if (!window.confirm("確定要退回提案，讓繪師重新修改合約與規格嗎？")) return;
     try {
-      const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, { reason });
+      const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, {});
       if (res.success) {
-        alert('已將提案退回給繪師修正。');
+        alert('已將提案退回，繪師現在可以重新編輯並送出了。');
         fetchData();
-      } else alert('操作失敗：' + res.message);
+      } else alert('操作失敗：' + (res.message || res.error));
     } catch (e) {
-      alert('系統異常');
+      alert('系統異常，無法退回。請確認後端是否已新增對應的 API 路由。');
     }
   };
 

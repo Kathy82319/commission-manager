@@ -323,5 +323,55 @@ export const inquiryController = {
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
+  },
+  async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      // 1. 撈出這張單與貼文資訊
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT i.*, b.title, b.category as bulletin_category, b.client_id as bulletin_client_id 
+        FROM BulletinInquiries i 
+        JOIN Bulletins b ON i.bulletin_id = b.id 
+        WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (!inquiryData) {
+        return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
+      }
+
+      // 2. 判斷誰是案主 (如果是接稿文 offer，案主是主動應徵的 artist_id；否則是發文的 bulletin_client_id)
+      const isOffer = inquiryData.bulletin_category === 'offer';
+      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
+      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+
+      // 3. 權限檢查：只有案主可以退回
+      if (currentUserId !== actualClientId) {
+        return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
+      }
+
+      // 4. 狀態檢查
+      if (inquiryData.status !== 'proposed') {
+        return new Response(JSON.stringify({ success: false, message: '當前狀態無法退回' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 5. 更新狀態為 submitted (草稿編修中)
+      await env.commission_db.prepare(
+        `UPDATE BulletinInquiries SET status = 'submitted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
+      ).bind(inquiryId).run();
+
+      // 6. 在聊天室自動塞入一則系統提示，讓雙方知道發生了什麼事
+      const msgId = crypto.randomUUID();
+      const systemMsg = '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。';
+      await env.commission_db.prepare(
+        `INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, 'text')`
+      ).bind(msgId, inquiryId, currentUserId, systemMsg).run();
+
+      // 7. 發送通知給繪師
+      const text = `⚠️ 委託人已將「${inquiryData.title || '未命名'}」的提案退回，請前往洽談室修改合約。`;
+      await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
+
+      return new Response(JSON.stringify({ success: true, message: '已成功退回提案' }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };
