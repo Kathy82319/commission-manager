@@ -1,5 +1,8 @@
+// src/pages/Inbox/DirectInboundTab.tsx
 import React, { useState } from 'react';
 import { apiClient } from '../../api/client';
+import { Ban } from 'lucide-react';
+import '../../styles/Notebook.css'; // 🌟 直接複用筆記本的強大分欄樣式
 
 interface DirectInboundTabProps {
   inquiries: any[];
@@ -20,12 +23,9 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   handleViewCommission,
   blacklistedIds
 }) => { 
-  const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  // 🌟 核心：改成左右分欄的狀態管理
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
 
   const formatTime = (dateStr: string) => {
     if (!dateStr) return '';
@@ -36,19 +36,18 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending': 
-        return <span className="status-badge" style={{ backgroundColor: '#FDF4E6', color: '#A67B3E', border: '1px solid #FDE0B5', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>待處理</span>;
+        return <span className="card-tag" style={{ backgroundColor: '#FDF4E6', color: '#A67B3E', border: '1px solid #FDE0B5' }}>待處理</span>;
       case 'proposed': 
-        return <span className="status-badge" style={{ backgroundColor: '#EBF2F7', color: '#4A7294', border: '1px solid #C1D6E8', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已提案 (待案主確認)</span>;
+        return <span className="card-tag" style={{ backgroundColor: '#EBF2F7', color: '#4A7294', border: '1px solid #C1D6E8' }}>已提案</span>;
       case 'accepted': 
-        return <span className="status-badge" style={{ backgroundColor: '#E8F3EB', color: '#4E7A5A', border: '1px solid #C2E0CC', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已成單</span>;
+        return <span className="card-tag badge-completed">已成單</span>;
       case 'declined': 
-        return <span className="status-badge" style={{ backgroundColor: '#F4F0EB', color: '#A0978D', border: '1px solid #DED9D3', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>已婉拒 / 取消</span>;
+        return <span className="card-tag badge-cancelled">已婉拒/取消</span>;
       default: 
-        return <span className="status-badge">{status}</span>;
+        return <span className="card-tag">{status}</span>;
     }
   };
 
-  // 🌟 Phase 4: 一鍵轉自由模式
   const handleConvertToFreeMode = async (inqId: string) => {
     if (!window.confirm("系統將直接建立一張「自由模式」委託單到您的筆記本，方便您使用專屬連結讓訪客綁定。\n\n確認要轉單嗎？")) return;
     setIsProcessing(true);
@@ -67,7 +66,6 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
     }
   };
 
-  // 🌟 Phase 4: 訪客單直接婉拒
   const handleDeclineGuest = async (inqId: string) => {
     if (!window.confirm("確定要婉拒/取消此訪客委託嗎？(可隨時恢復)")) return;
     setIsProcessing(true);
@@ -85,7 +83,6 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
     }
   };
 
-  // 🌟 Phase 4: 從婉拒狀態恢復
   const handleRestore = async (inqId: string) => {
     setIsProcessing(true);
     try {
@@ -104,156 +101,219 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
 
   if (!inquiries || inquiries.length === 0) {
     return (
-      <div className="inbox-empty-state" style={{ textAlign: 'center', padding: '60px 20px', color: '#A0978D', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px dashed #DED9D3', marginTop: '20px' }}>
-        <div style={{ fontSize: '40px', marginBottom: '16px' }}>📭</div>
-        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#7A7269', marginBottom: '8px' }}>目前沒有來自個人頁的委託申請</div>
+      <div style={{ textAlign: 'center', padding: '80px 20px', color: '#A0978D' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>📭</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7A7269', marginBottom: '8px' }}>目前沒有收到客製化委託申請</div>
         <div style={{ fontSize: '14px' }}>當委託人透過您的個人頁面送出表單時，申請會顯示在這裡。</div>
       </div>
     );
   }
 
+  const selectedInq = inquiries.find(i => i.id === selectedId);
+  const isGuestSelected = selectedInq && !selectedInq.client_id;
+  const isBlacklistSelected = selectedInq && !isGuestSelected && blacklistedIds.includes(selectedInq.client_id);
+  
+  let parsedAnswers: any[] = [];
+  if (selectedInq) {
+    try { parsedAnswers = JSON.parse(selectedInq.form_answers || '[]'); } catch (e) {}
+  }
+
   return (
-    <div className="inquiry-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px' }}>
-      {inquiries.map((inq) => {
-        const isGuest = !inq.client_id;
-        const isBlacklisted = !isGuest && blacklistedIds.includes(inq.client_id);
-        const isClosed = inq.status === 'accepted';
-        // 🌟 Phase 4: 婉拒狀態整張卡片反灰，透明度降低
-        const isDeclined = inq.status === 'declined';
-        const isExpanded = expandedIds.includes(inq.id);
+    <div className="notebook-container" style={{ height: '100%', margin: 0, padding: 0 }}>
+      
+      {/* ================= 左側清單區 ================= */}
+      <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`} style={{ height: 'calc(100vh - 140px)' }}>
+        <div className="sidebar-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+          <span className="sidebar-title">申請列表 ({inquiries.length})</span>
+        </div>
 
-        let parsedAnswers: any[] = [];
-        try { parsedAnswers = JSON.parse(inq.form_answers || '[]'); } catch (e) {}
+        <div className="sidebar-list-container">
+          {inquiries.map((inq) => {
+            const isGuest = !inq.client_id;
+            const isBlacklisted = !isGuest && blacklistedIds.includes(inq.client_id);
+            const isClosed = inq.status === 'accepted' || inq.status === 'declined';
+            const isSelected = selectedId === inq.id;
 
-        return (
-          <div key={inq.id} className={`inquiry-card ${isClosed || isDeclined ? 'closed' : ''}`} style={{ backgroundColor: isDeclined ? '#F9F9F9' : '#FFFFFF', border: `1px solid ${isBlacklisted ? '#EF4444' : '#EAE6E1'}`, borderRadius: '12px', padding: '20px', opacity: (isClosed || isDeclined) ? 0.6 : 1, position: 'relative', overflow: 'hidden', filter: isDeclined ? 'grayscale(50%)' : 'none', transition: 'all 0.3s' }}>
-            
-            {isBlacklisted && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: '#EF4444' }} />}
-
-            <div className="inquiry-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #F4F0EB', paddingBottom: '12px' }}>
-              <div className="inquiry-client-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span className="client-name" style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px' }}>
-                  {isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}
-                </span>
-                {isGuest && (
-                  <span style={{ backgroundColor: '#EBF2F7', color: '#4A7294', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>免登入表單</span>
-                )}
-                {isBlacklisted && (
-                  <span className="badge-blacklist" style={{ backgroundColor: '#FEE2E2', color: '#EF4444', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>黑名單</span>
-                )}
-                <span className="inquiry-time" style={{ color: '#A0978D', fontSize: '12px' }}>{formatTime(inq.created_at)}</span>
-              </div>
-              <div className="inquiry-status">{getStatusBadge(inq.status)}</div>
-            </div>
-
-            <div className="inquiry-body" style={{ marginBottom: '16px' }}>
-              <div className="inquiry-title" style={{ fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                🛒 申請項目：{inq.showcase_title || '未知名稱項目'}
-              </div>
-              
-              <div className="inquiry-desc" style={{ color: '#7A7269', fontSize: '13px', marginTop: '12px', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
-                {isGuest ? (
-                  <div>
-                    <strong>此為訪客送出的表單，無法使用站內聊天室。</strong><br/>
-                    請點擊下方展開查看表單，若雙方於站外確認完畢，可點擊「建立自由模式委託單」收錄至筆記本中。
-                  </div>
-                ) : (
-                  "委託人已填寫專屬客製化表單並同意協議，請進入洽談室查看詳細需求與報價。"
-                )}
-              </div>
-
-              {/* 🌟 Phase 4: 聯絡資訊醒目展示 */}
-              {isGuest && inq.guest_contact_info && (
-                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', color: '#92400E', fontSize: '14px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <span>📞</span>
-                  <div>
-                    <strong style={{ display: 'block', marginBottom: '4px' }}>訪客留下的聯絡方式：</strong>
-                    <div style={{ wordBreak: 'break-word', lineHeight: '1.5' }}>{inq.guest_contact_info}</div>
-                  </div>
+            return (
+              <div 
+                key={inq.id} 
+                onClick={() => { setSelectedId(inq.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                className={`sidebar-card ${isSelected ? 'selected' : ''} ${isClosed ? 'cancelled' : ''}`}
+                style={{ opacity: isClosed ? 0.7 : 1 }}
+              >
+                <div className="card-meta-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ color: '#A0978D', fontSize: '12px' }}>{formatTime(inq.created_at)}</span>
+                  {isGuest && (
+                    <span className="card-mode-badge" style={{ backgroundColor: '#EBF2F7', color: '#4A7294' }}>訪客單</span>
+                  )}
                 </div>
-              )}
+                
+                <div className="card-title-row" style={{ marginTop: '4px' }}>
+                  <span className="card-client-name" style={{ fontSize: '15px' }}>
+                    {isGuest ? '👤 訪客委託' : (inq.client_name || '未知案主')}
+                  </span>
+                </div>
+                
+                <div className="card-info-row" style={{ marginTop: '2px', color: '#7A7269', fontSize: '13px' }}>
+                  項目：{inq.showcase_title || '未命名'}
+                </div>
+
+                <div className="card-tags-row" style={{ marginTop: '8px' }}>
+                  {getStatusBadge(inq.status)}
+                  {isBlacklisted && (
+                    <span className="card-tag" style={{ backgroundColor: '#FEE2E2', color: '#EF4444', border: '1px solid #FECACA' }}>
+                      🚫 黑名單
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ================= 右側詳細內容區 ================= */}
+      <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`} style={{ height: 'calc(100vh - 140px)', overflowY: 'auto', backgroundColor: '#FBFBF9' }}>
+        {!selectedInq ? (
+          <div className="main-empty">
+            <span style={{ fontSize: '40px', marginBottom: '16px', display: 'block', opacity: 0.5 }}>📄</span>
+            請從左側選擇一筆申請以查看詳細表單內容
+          </div>
+        ) : (
+          <div className="main-content-wrapper" style={{ maxWidth: '800px', margin: '0 auto' }}>
+            
+            {/* 標題與基礎資訊 */}
+            <div className="main-header" style={{ marginBottom: '24px', backgroundColor: 'transparent' }}>
+              <div className="main-header-info">
+                <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>⬅ 返回列表</button>
+                <h2 className="main-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {isGuestSelected ? '👤 訪客委託' : (selectedInq.client_name || '案主')}
+                </h2>
+                
+                <div className="main-subtitle" style={{ fontSize: '15px', color: '#4A7294', fontWeight: 'bold' }}>
+                  申請項目：{selectedInq.showcase_title || '未知項目'}
+                </div>
+                
+                {isBlacklistSelected && (
+                  <div style={{ display: 'inline-block', padding: '6px 12px', background: '#FEF2F2', color: '#EF4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FECACA', marginTop: '12px' }}>
+                    <Ban size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> 
+                    警告：此案主已被您列入黑名單，請謹慎接單。
+                  </div>
+                )}
+              </div>
             </div>
 
-            <button 
-              onClick={() => toggleExpand(inq.id)}
-              style={{ width: '100%', background: isExpanded ? '#FDFDFB' : '#FFFFFF', border: '1px dashed #DED9D3', padding: '8px', borderRadius: '8px', cursor: 'pointer', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', marginBottom: '16px', transition: 'all 0.2s' }}
-            >
-              {isExpanded ? '▲ 收起表單內容' : '▼ 展開表單內容'}
-            </button>
-
-            {isExpanded && (
-              <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '16px', marginBottom: '16px', fontSize: '13px', color: '#5D4A3E', maxHeight: '250px', overflowY: 'auto' }} className="custom-scrollbar">
-                {parsedAnswers.length > 0 ? parsedAnswers.map((qa: any, i: number) => (
-                  <div key={i} style={{ marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px dashed #EAE6E1' }}>
-                    <strong style={{ color: '#A67B3E' }}>Q: {qa.question}</strong><br/>
-                    <span style={{ whiteSpace: 'pre-wrap', marginTop: '4px', display: 'block' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</span>
-                  </div>
-                )) : (
-                  <div style={{ color: '#A0978D', fontStyle: 'italic' }}>未填寫客製化問答。</div>
-                )}
+            {/* 婉拒狀態提示 */}
+            {selectedInq.status === 'declined' && (
+              <div style={{ padding: '16px', backgroundColor: '#FCE8E6', border: '1px solid #F5C6C6', borderRadius: '12px', color: '#A05C5C', marginBottom: '24px' }}>
+                <strong style={{ display: 'block', marginBottom: '4px' }}>此申請已被婉拒或取消</strong>
+                您可以點擊下方按鈕將其恢復至待處理狀態。
               </div>
             )}
 
-            <div className="inquiry-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              {isDeclined ? (
-                // 🌟 Phase 4: 提供「恢復」按鈕
+            {/* 訪客專屬聯絡資訊 (醒目展示) */}
+            {isGuestSelected && selectedInq.guest_contact_info && (
+              <div className="section-card" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', marginBottom: '24px' }}>
+                <h3 className="section-title" style={{ color: '#92400E', borderBottomColor: '#FDE68A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📞 訪客留下的聯絡方式
+                </h3>
+                <div style={{ fontSize: '15px', color: '#92400E', lineHeight: '1.6', whiteSpace: 'pre-wrap', fontWeight: 'bold' }}>
+                  {selectedInq.guest_contact_info}
+                </div>
+                <div style={{ fontSize: '13px', color: '#B45309', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #FDE68A' }}>
+                  💡 提示：此為免登入訪客，無法使用站內聊天室。若雙方於站外確認完畢，可點擊下方「建立自由模式委託單」收錄至系統中管理。
+                </div>
+              </div>
+            )}
+
+            {/* 表單問答內容區 */}
+            <div className="section-card">
+              <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <span>📝 委託需求表單內容</span>
+                <span style={{ fontSize: '13px', color: '#A0978D', fontWeight: 'normal' }}>
+                  送出時間：{formatTime(selectedInq.created_at)}
+                </span>
+              </h3>
+              
+              <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.8' }}>
+                {parsedAnswers.length > 0 ? parsedAnswers.map((qa: any, i: number) => (
+                  <div key={i} style={{ marginBottom: '20px', backgroundColor: '#FBFBF9', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
+                    <strong style={{ color: '#A67B3E', display: 'block', marginBottom: '8px', fontSize: '15px' }}>Q: {qa.question}</strong>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#333' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</div>
+                  </div>
+                )) : (
+                  <div style={{ color: '#A0978D', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>此案主未填寫客製化問答。</div>
+                )}
+              </div>
+            </div>
+
+            {/* 底部操作列 (Action Bar) */}
+            <div className="section-card" style={{ marginTop: '24px', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              
+              {selectedInq.status === 'declined' ? (
                 <button 
                   disabled={isProcessing}
-                  style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', fontSize: '13px' }}
-                  onClick={() => handleRestore(inq.id)}
+                  className="action-btn"
+                  style={{ backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3', padding: '14px 24px', fontSize: '15px' }}
+                  onClick={() => handleRestore(selectedInq.id)}
                 >
-                  ↺ 恢復此委託
+                  {isProcessing ? '處理中...' : '↺ 恢復此委託'}
                 </button>
-              ) : inq.status === 'pending' || inq.status === 'proposed' ? (
+              ) : selectedInq.status === 'pending' || selectedInq.status === 'proposed' ? (
                 <>
-                  {isGuest ? (
-                    // 🌟 Phase 4: 訪客專屬動線 (無聊天室)
+                  {isGuestSelected ? (
                     <>
                       <button 
                         disabled={isProcessing}
-                        style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', fontSize: '13px' }}
-                        onClick={() => handleDeclineGuest(inq.id)}
+                        className="action-btn"
+                        style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px' }}
+                        onClick={() => handleDeclineGuest(selectedInq.id)}
                       >
                         婉拒 / 取消
                       </button>
                       <button 
                         disabled={isProcessing}
-                        style={{ padding: '8px 16px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isProcessing ? 'not-allowed' : 'pointer', fontSize: '13px' }}
-                        onClick={() => handleConvertToFreeMode(inq.id)}
+                        className="action-btn btn-success"
+                        style={{ padding: '14px 24px', fontSize: '15px' }}
+                        onClick={() => handleConvertToFreeMode(selectedInq.id)}
                       >
                         建立自由模式委託單 ➔
                       </button>
                     </>
                   ) : (
-                    // 🌟 一般會員動線
                     <>
                       <button 
-                        style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                        onClick={() => { setSelectedInquiry(inq); setShowDeclineModal(true); }}
+                        className="action-btn"
+                        style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px' }}
+                        onClick={() => { setSelectedInquiry(selectedInq); setShowDeclineModal(true); }}
                       >
                         婉拒申請
                       </button>
                       <button 
-                        style={{ padding: '8px 16px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                        onClick={() => handleEnterInquiryWorkspace(inq.id)}
+                        className="action-btn btn-primary"
+                        style={{ padding: '14px 24px', fontSize: '15px' }}
+                        onClick={() => handleEnterInquiryWorkspace(selectedInq.id)}
                       >
-                        進入洽談室查看
+                        💬 進入洽談室查看
                       </button>
                     </>
                   )}
                 </>
-              ) : inq.status === 'accepted' ? (
+              ) : selectedInq.status === 'accepted' ? (
                 <button 
-                  style={{ padding: '8px 16px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-                  onClick={() => handleViewCommission(inq.commission_id)}
+                  className="action-btn btn-success"
+                  style={{ padding: '14px 24px', fontSize: '15px' }}
+                  onClick={() => handleViewCommission(selectedInq.commission_id)}
                 >
-                  前往查看委託單 ➔
+                  前往查看正式委託單 ➔
                 </button>
               ) : null}
+
             </div>
+
           </div>
-        );
-      })}
+        )}
+      </div>
     </div>
   );
 };
