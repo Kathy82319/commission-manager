@@ -132,77 +132,115 @@ export const userController = {
     const userPlan = userBase[0]?.plan_type || 'free';
 
     const body: any = await request.json();
-    let settings: any = {};
-    try {
-      settings = typeof body.profile_settings === 'string' 
-        ? JSON.parse(body.profile_settings) 
-        : (body.profile_settings || {});
-    } catch (e) {
-      settings = {};
+    
+    // 🌟 1. 判斷是否有送來 profile_settings 欄位 (可能是部分更新，沒送就不要動)
+    let settings: any = null;
+    let hasSettingsUpdate = false;
+    
+    if (body.profile_settings !== undefined) {
+      hasSettingsUpdate = true;
+      try {
+        settings = typeof body.profile_settings === 'string' 
+          ? JSON.parse(body.profile_settings) 
+          : body.profile_settings;
+      } catch (e) {
+        settings = {};
+      }
+
+      const limits: Record<string, number> = { free: 6, trial: 20, pro: 30 };
+      const currentLimit = limits[userPlan as string] || 6;
+
+      if (Array.isArray(settings.portfolio)) {
+        if (settings.portfolio.length > 40) {
+          return new Response(JSON.stringify({ success: false, error: "系統容量極限為 40 張" }), { status: 403, headers: corsHeaders });
+        }
+        if (settings.portfolio.length > currentLimit) {
+          return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
+        }
+      }
     }
 
-    const limits: Record<string, number> = { free: 6, trial: 20, pro: 30 };
-    const currentLimit = limits[userPlan as string] || 6;
+    // 🌟 2. 動態組合 Users 表的更新語法 (真正的 Partial Update)
+    const userUpdates: string[] = [];
+    const userParams: any[] = [];
 
-    if (Array.isArray(settings.portfolio)) {
-      if (settings.portfolio.length > 40) {
-        return new Response(JSON.stringify({ success: false, error: "系統容量極限為 40 張" }), { status: 403, headers: corsHeaders });
-      }
-      if (settings.portfolio.length > currentLimit) {
-        return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
-      }
+    if (body.display_name !== undefined) {
+      userUpdates.push("display_name = ?");
+      userParams.push(sanitizeAndLimit(body.display_name, 100));
+    }
+    if (body.avatar_url !== undefined) {
+      userUpdates.push("avatar_url = ?");
+      userParams.push(body.avatar_url);
+    }
+    if (body.bio !== undefined) {
+      userUpdates.push("bio = ?");
+      userParams.push(sanitizeAndLimit(body.bio, 500));
+    }
+    if (hasSettingsUpdate) {
+      userUpdates.push("profile_settings = ?");
+      userParams.push(JSON.stringify(settings));
     }
 
-    const updateUsers = env.commission_db.prepare(`
-      UPDATE Users SET display_name = ?, avatar_url = ?, bio = ?, profile_settings = ? WHERE id = ?
-    `).bind(
-      sanitizeAndLimit(body.display_name, 100), 
-      body.avatar_url || '', 
-      sanitizeAndLimit(body.bio, 500), 
-      JSON.stringify(settings), 
-      targetId
-    );
+    const batchQueue: any[] = [];
 
-    const c1 = settings.custom_sections?.[0] || {};
-    const c2 = settings.custom_sections?.[1] || {};
-    const c3 = settings.custom_sections?.[2] || {};
+    // 若有更新 Users 表的內容才執行
+    if (userUpdates.length > 0) {
+      userParams.push(targetId);
+      const updateUsersQuery = env.commission_db.prepare(`
+        UPDATE Users SET ${userUpdates.join(', ')} WHERE id = ?
+      `).bind(...userParams);
+      batchQueue.push(updateUsersQuery);
+    }
 
-    const updateProfile = env.commission_db.prepare(`
-      INSERT INTO ArtistProfiles (
-        user_id, about_me, tos_content, portfolio_urls, commission_process, 
-        payment_info, usage_rules, custom_1_title, custom_1_content,
-        custom_2_title, custom_2_content, custom_3_title, custom_3_content,
-        question_template
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        about_me = excluded.about_me,
-        tos_content = excluded.tos_content,
-        portfolio_urls = excluded.portfolio_urls,
-        commission_process = excluded.commission_process,
-        payment_info = excluded.payment_info,
-        usage_rules = excluded.usage_rules,
-        custom_1_title = excluded.custom_1_title,
-        custom_1_content = excluded.custom_1_content,
-        custom_2_title = excluded.custom_2_title,
-        custom_2_content = excluded.custom_2_content,
-        custom_3_title = excluded.custom_3_title,
-        custom_3_content = excluded.custom_3_content,
-        question_template = excluded.question_template
-    `).bind(
-      targetId,
-      settings.detailed_intro || '',
-      settings.rules || '',
-      JSON.stringify(settings.portfolio || []),
-      settings.process || '',
-      settings.payment || '',
-      settings.rules || '',
-      c1.title || '', c1.content || '',
-      c2.title || '', c2.content || '',
-      c3.title || '', c3.content || '',
-      body.question_template || settings.question_template || '' 
-    );
+    // 🌟 3. 動態組合 ArtistProfiles 的更新邏輯 (若有 profile_settings 的更新，才去更新關聯表)
+    if (hasSettingsUpdate) {
+      // 由於 ArtistProfiles 有些舊有欄位與 profile_settings 掛鉤，這裡我們也必須小心處理
+      // 但為了與之前的行為相容，若前端丟了整包 setting 過來，我們一樣去更新
+      const c1 = settings.custom_sections?.[0] || {};
+      const c2 = settings.custom_sections?.[1] || {};
+      const c3 = settings.custom_sections?.[2] || {};
 
-    await env.commission_db.batch([updateUsers, updateProfile]);
+      const updateProfileQuery = env.commission_db.prepare(`
+        INSERT INTO ArtistProfiles (
+          user_id, about_me, tos_content, portfolio_urls, commission_process, 
+          payment_info, usage_rules, custom_1_title, custom_1_content,
+          custom_2_title, custom_2_content, custom_3_title, custom_3_content,
+          question_template
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+          about_me = excluded.about_me,
+          tos_content = excluded.tos_content,
+          portfolio_urls = excluded.portfolio_urls,
+          commission_process = excluded.commission_process,
+          payment_info = excluded.payment_info,
+          usage_rules = excluded.usage_rules,
+          custom_1_title = excluded.custom_1_title,
+          custom_1_content = excluded.custom_1_content,
+          custom_2_title = excluded.custom_2_title,
+          custom_2_content = excluded.custom_2_content,
+          custom_3_title = excluded.custom_3_title,
+          custom_3_content = excluded.custom_3_content,
+          question_template = excluded.question_template
+      `).bind(
+        targetId,
+        settings.detailed_intro || '',
+        settings.rules || '',
+        JSON.stringify(settings.portfolio || []),
+        settings.process || '',
+        settings.payment || '',
+        settings.rules || '',
+        c1.title || '', c1.content || '',
+        c2.title || '', c2.content || '',
+        c3.title || '', c3.content || '',
+        body.question_template !== undefined ? body.question_template : (settings.question_template || '')
+      );
+      batchQueue.push(updateProfileQuery);
+    }
+
+    if (batchQueue.length > 0) {
+      await env.commission_db.batch(batchQueue);
+    }
+    
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
@@ -225,7 +263,6 @@ export const userController = {
       }
     });
   },
-
 
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
