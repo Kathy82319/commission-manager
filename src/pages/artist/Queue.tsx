@@ -1,4 +1,3 @@
-// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical, X, Edit2 } from 'lucide-react';
@@ -373,12 +372,14 @@ export function Queue() {
 
   return (
     <div className="queue-container">
-      {/* 🌟 安全注入 CSS，分開桌機版輸入框與手機版文字 */}
+      {/* 🌟 移除 min-width 行內樣式，改由 CSS 控制以避免手機版破版擠壓 */}
       <style>{`
         .queue-mobile-col-name { display: none; }
+        .dynamic-date-th { min-width: 110px; }
         @media (max-width: 768px) {
           .queue-desktop-col-edit { display: none !important; }
-          .queue-mobile-col-name { display: inline !important; }
+          .queue-mobile-col-name { display: inline-block !important; }
+          .dynamic-date-th { min-width: auto !important; width: auto !important; }
         }
       `}</style>
 
@@ -408,8 +409,8 @@ export function Queue() {
               <th>日期</th>
               <th>委託人</th>
               <th>進度</th>
-              <th style={{ minWidth: '110px' }}>
-                {/* 🌟 桌機版：保留可編輯輸入框 */}
+              {/* 🌟 修正：套用動態寬度的 class */}
+              <th className="dynamic-date-th">
                 <div className="queue-desktop-col-edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input 
                     type="text" 
@@ -439,7 +440,6 @@ export function Queue() {
                   />
                   <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
                 </div>
-                {/* 🌟 手機版：單純顯示文字，避免標題重疊 */}
                 <span className="queue-mobile-col-name">日期</span>
               </th>
               <th>付款</th>
@@ -515,7 +515,6 @@ export function Queue() {
                     />
                   </div>
                 </td>
-                {/* 🌟 退回使用 end_date 以防止舊資料遺失，且 data-label 改回動態變數 */}
                 <td data-label={dateColumnLabel}>
                   <div className="cell-content cell-date-input">
                     <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
