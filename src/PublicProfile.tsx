@@ -540,7 +540,7 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
-  const isDarkText = settings?.theme_mode === 'light';
+  const isDarkText = (settings?.theme_mode || 'light') === 'light'; 
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
   const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
   const sectionBg = isDarkText ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)';
