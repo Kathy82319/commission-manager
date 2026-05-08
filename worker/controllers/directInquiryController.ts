@@ -57,13 +57,14 @@ export const directInquiryController = {
     try {
       const { results } = await env.commission_db.prepare(`
         SELECT d.*, 
-               u.display_name as client_name, 
-               u.public_id as client_public_id,
-               c.id as commission_id  /* 🌟 新增這一行來抓取成單 ID */
+               COALESCE(c.client_id, d.client_id) as client_id,
+               COALESCE(bu.display_name, u.display_name) as client_name, 
+               COALESCE(bu.public_id, u.public_id) as client_public_id,
+               c.id as commission_id
         FROM DirectInquiries d
-        LEFT JOIN Users u ON d.client_id = u.id
-        /* 🌟 新增底下這個 JOIN 來關聯 Commissions 表 */
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
+        LEFT JOIN Users u ON d.client_id = u.id
+        LEFT JOIN Users bu ON c.client_id = bu.id
         WHERE d.artist_id = ?
         ORDER BY d.created_at DESC
       `).bind(currentUserId).all();
@@ -85,14 +86,15 @@ export const directInquiryController = {
         SELECT d.*, 
                a.display_name as artist_name, 
                a.public_id as artist_public_id,
-               c.id as commission_id  /* 🌟 新增這一行來抓取成單 ID */
+               COALESCE(c.client_id, d.client_id) as client_id,
+               c.id as commission_id
         FROM DirectInquiries d
-        LEFT JOIN Users a ON d.artist_id = a.id
-        /* 🌟 新增底下這個 JOIN 來關聯 Commissions 表 */
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
-        WHERE d.client_id = ?
+        LEFT JOIN Users a ON d.artist_id = a.id
+        /* 🌟 條件改為判斷：原始發起人，或是後來被綁定的人，都能看到這張單 */
+        WHERE d.client_id = ? OR c.client_id = ?
         ORDER BY d.created_at DESC
-      `).bind(currentUserId).all();
+      `).bind(currentUserId, currentUserId).all();
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
     } catch (error: any) {
@@ -102,7 +104,7 @@ export const directInquiryController = {
 
   async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：補上 JOIN Users 抓取雙方真實暱稱與 public_id，並 LEFT JOIN Commissions 抓取成單後的 commission_id 與 contact_memo
+      // 🌟 修正：補上 COALESCE 以處理綁定測試帳號的情境
       const inquiry = await env.commission_db.prepare(`
         SELECT di.*, 
                s.title as bulletin_title, 
@@ -110,20 +112,24 @@ export const directInquiryController = {
                a.profile_settings as artist_settings,
                a.display_name as artist_name,
                a.public_id as artist_public_id,
-               u.display_name as client_name,
-               u.public_id as client_public_id,
+               /* 🌟 核心魔法：如果 Commission 有綁定人，就覆寫原有的 client_id */
+               COALESCE(c.client_id, di.client_id) as client_id,
+               COALESCE(bu.display_name, u.display_name) as client_name,
+               COALESCE(bu.public_id, u.public_id) as client_public_id,
                c.id as commission_id,
                c.contact_memo
         FROM DirectInquiries di
         JOIN ShowcaseItems s ON di.showcase_id = s.id
         JOIN Users a ON di.artist_id = a.id
-        LEFT JOIN Users u ON di.client_id = u.id
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
+        LEFT JOIN Users u ON di.client_id = u.id
+        LEFT JOIN Users bu ON c.client_id = bu.id
         WHERE di.id = ?
       `).bind(inquiryId).first() as any;
 
       if (!inquiry) return new Response(JSON.stringify({ success: false, message: '找不到此訂單' }), { status: 404, headers: corsHeaders });
 
+      // 如果當前使用者不是繪師，也不是這張單子的最終擁有者 (client_id)，就報錯 403
       if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
@@ -155,7 +161,14 @@ export const directInquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiry = await env.commission_db.prepare(`SELECT client_id, showcase_id FROM DirectInquiries WHERE id = ? AND artist_id = ?`).bind(inquiryId, currentUserId).first() as any;
+      // 🌟 在提案時，也需要去抓看有沒有被覆寫的 client_id (如果已經手動建單綁定了)
+      const inquiry = await env.commission_db.prepare(`
+        SELECT COALESCE(c.client_id, di.client_id) as client_id, di.showcase_id 
+        FROM DirectInquiries di
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
+        WHERE di.id = ? AND di.artist_id = ?
+      `).bind(inquiryId, currentUserId).first() as any;
+
       if (!inquiry) throw new Error('找不到訂單或權限不足');
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
@@ -310,11 +323,14 @@ export const directInquiryController = {
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
       await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      // 2. 通知邏輯：找出這張單的對方是誰，並叫醒他的小鈴鐺
+      // 2. 🌟 修正：抓取這張單真正的對方是誰 (包含已經綁定成單的情況)
       const inquiry = await env.commission_db.prepare(`
-        SELECT di.artist_id, di.client_id, s.title
+        SELECT di.artist_id, 
+               COALESCE(c.client_id, di.client_id) as client_id, 
+               s.title
         FROM DirectInquiries di
         LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
         WHERE di.id = ?
       `).bind(inquiryId).first() as any;
 
@@ -341,18 +357,23 @@ export const directInquiryController = {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
+
   // 🌟 新增：針對個人頁面 (DirectInquiries) 的退回邏輯
   async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
-        SELECT * FROM DirectInquiries WHERE id = ?
+        SELECT di.*, COALESCE(c.client_id, di.client_id) as actual_client_id 
+        FROM DirectInquiries di
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
+        WHERE di.id = ?
       `).bind(inquiryId).first() as any;
 
       if (!inquiryData) {
         return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
       }
 
-      if (inquiryData.client_id !== currentUserId) {
+      // 檢查是否是真正的案主 (以防已經綁定)
+      if (inquiryData.actual_client_id !== currentUserId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
       }
 
