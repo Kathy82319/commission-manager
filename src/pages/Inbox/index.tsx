@@ -8,7 +8,7 @@ import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
 import { DirectInboundTab } from './DirectInboundTab'; 
 
-// 狀態標籤小工具
+// 🌟 修正：狀態標籤小工具 (這裡叫 getMiniBadge)
 const getMiniBadge = (status: string) => {
   if (status === 'pending') return <span className="mini-badge pending">待處理</span>;
   if (status === 'accepted') return <span className="mini-badge accepted">已成單</span>;
@@ -32,7 +32,7 @@ export const Inbox: React.FC = () => {
   // 🌟 手風琴展開狀態管理 (預設全部展開)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
   
-  // 🌟 核心選中狀態：{ type: 'bulletin' | 'direct' | 'outbound', id: string }
+  // 🌟 核心選中狀態
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
 
   // 資料狀態
@@ -61,7 +61,6 @@ export const Inbox: React.FC = () => {
   const [isEditingTemplates, setIsEditingTemplates] = useState(false);
   const [tempTemplates, setTempTemplates] = useState<string[]>(['', '', '']);
 
-  // 一次性撈取所有資料
   const fetchInbox = async () => {
     setLoading(true);
     try {
@@ -109,7 +108,6 @@ export const Inbox: React.FC = () => {
 
   useEffect(() => { fetchInbox(); }, []);
 
-  // 手風琴開關
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
@@ -118,13 +116,11 @@ export const Inbox: React.FC = () => {
     });
   };
 
-  // 左側卡片點擊事件
   const handleSelectItem = (type: string, id: string) => {
     setSelectedItem({ type, id });
     setShowMobileSidebar(false);
   };
 
-  // 計算未讀與整合資料
   const openBulletins = clientBulletins.filter(b => b.status === 'open');
   const pendingDirectCount = directInquiries.filter(i => i.status === 'pending').length;
   
@@ -141,7 +137,6 @@ export const Inbox: React.FC = () => {
     return '收件匣';
   };
 
-  // ================= 互動邏輯 (Modal/婉拒/跳轉) =================
   const handleCloseModal = () => {
     setShowDeclineModal(false);
     setIsEditingTemplates(false);
@@ -207,14 +202,12 @@ export const Inbox: React.FC = () => {
       
       <div className={`sidebar-overlay ${showMobileSidebar ? 'open' : ''}`} onClick={() => setShowMobileSidebar(false)}></div>
 
-      {/* ================= 左側複合式清單 ================= */}
       <div className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}>
         <div className="inbox-sidebar-header">
           <h1 className="inbox-sidebar-title">收件匣</h1>
           <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
         </div>
 
-        {/* 群組 1：🌠 許願中 */}
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('wishes')}>
             <span className="accordion-title">
@@ -241,7 +234,6 @@ export const Inbox: React.FC = () => {
           })}
         </div>
 
-        {/* 群組 2：📥 收到申請 */}
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('inbound')}>
             <span className="accordion-title">
@@ -257,7 +249,8 @@ export const Inbox: React.FC = () => {
               <div key={inq.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('direct', inq.id)}>
                 <div className="mini-card-meta">
                   <span>{formatShortTime(inq.created_at)}</span>
-                  {getStatusBadge(inq.status)}
+                  {/* 🌟 修正：這裡改為 getMiniBadge */}
+                  {getMiniBadge(inq.status)}
                 </div>
                 <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
                 <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
@@ -266,7 +259,6 @@ export const Inbox: React.FC = () => {
           })}
         </div>
 
-        {/* 群組 3：🚀 追蹤狀態 */}
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('outbound')}>
             <span className="accordion-title">
@@ -282,7 +274,8 @@ export const Inbox: React.FC = () => {
               <div key={inq.inquiry_id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('outbound', inq.inquiry_id)}>
                 <div className="mini-card-meta">
                   <span>{formatShortTime(inq.created_at)}</span>
-                  {getStatusBadge(status)}
+                  {/* 🌟 修正：這裡改為 getMiniBadge */}
+                  {getMiniBadge(status)}
                 </div>
                 <div className="mini-card-title">投給：{targetName || '未知'}</div>
                 <div className="mini-card-subtitle">{inq.is_direct ? '專屬委託單' : (inq.bulletin_title || '許願池提案')}</div>
@@ -292,7 +285,6 @@ export const Inbox: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= 右側主畫面區 ================= */}
       <div className="inbox-main-content custom-scrollbar">
         <div className="mobile-inbox-header">
           <button className="mobile-menu-btn" onClick={() => setShowMobileSidebar(true)}>☰ 選單</button>
@@ -319,6 +311,7 @@ export const Inbox: React.FC = () => {
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => navigate(`/artist/notebook?id=${id}`)}
                   blacklistedIds={blacklistedIds}
+                  setSelectedIdsForBatch={setBatchDeclineIds}
                 />
               )}
               {selectedItem.type === 'bulletin' && (
