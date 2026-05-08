@@ -7,7 +7,7 @@ import '../../styles/Queue.css';
 
 interface Commission {
   id: string; order_date: string; client_name: string; contact_memo: string; project_name: string;
-  type_name: string; payment_status: string; start_date?: string; end_date: string; artist_note: string; is_rush: string;
+  type_name: string; payment_status: string; end_date: string; artist_note: string; is_rush: string;
   status: string; workflow_mode: string; 
   queue_status: string;
   artist_id?: string;
@@ -373,12 +373,12 @@ export function Queue() {
 
   return (
     <div className="queue-container">
-      {/* 🌟 注入隱藏桌機/手機版元素的 CSS */}
+      {/* 🌟 安全注入 CSS，分開桌機版輸入框與手機版文字 */}
       <style>{`
-        .queue-mobile-only-text { display: none; }
+        .queue-mobile-col-name { display: none; }
         @media (max-width: 768px) {
-          .queue-desktop-edit-wrapper { display: none !important; }
-          .queue-mobile-only-text { display: block !important; }
+          .queue-desktop-col-edit { display: none !important; }
+          .queue-mobile-col-name { display: inline !important; }
         }
       `}</style>
 
@@ -409,8 +409,8 @@ export function Queue() {
               <th>委託人</th>
               <th>進度</th>
               <th style={{ minWidth: '110px' }}>
-                {/* 🌟 桌機版：顯示可編輯的輸入框 */}
-                <div className="queue-desktop-edit-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {/* 🌟 桌機版：保留可編輯輸入框 */}
+                <div className="queue-desktop-col-edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input 
                     type="text" 
                     value={dateColumnLabel} 
@@ -439,8 +439,8 @@ export function Queue() {
                   />
                   <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
                 </div>
-                {/* 🌟 手機版：單純顯示文字 */}
-                <span className="queue-mobile-only-text">日期</span>
+                {/* 🌟 手機版：單純顯示文字，避免標題重疊 */}
+                <span className="queue-mobile-col-name">日期</span>
               </th>
               <th>付款</th>
               <th className="queue-hide-mobile">備註欄位</th>
@@ -515,11 +515,11 @@ export function Queue() {
                     />
                   </div>
                 </td>
-                {/* 🌟 修改此處的 data-label 為固定的字串，確保手機卡片模式下不會因字數太長而破版 */}
-                <td data-label="日期">
+                {/* 🌟 退回使用 end_date 以防止舊資料遺失，且 data-label 改回動態變數 */}
+                <td data-label={dateColumnLabel}>
                   <div className="cell-content cell-date-input">
-                    <span className="date-text-display">{order.start_date ? order.start_date.substring(5).replace('-', '/') : '未定'}</span>
-                    <input type="date" defaultValue={order.start_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'start_date', e.target.value)} className="date-input" />
+                    <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
+                    <input type="date" defaultValue={order.end_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
                   </div>
                 </td>
                 <td data-label="付款進度">
