@@ -8,17 +8,34 @@ import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
 import { DirectInboundTab } from './DirectInboundTab'; 
 
+// 狀態標籤小工具
+const getMiniBadge = (status: string) => {
+  if (status === 'pending') return <span className="mini-badge pending">待處理</span>;
+  if (status === 'accepted') return <span className="mini-badge accepted">已成單</span>;
+  if (status === 'declined' || status === 'cancelled') return <span className="mini-badge declined">已婉拒</span>;
+  if (status === 'proposed') return <span className="mini-badge pending" style={{ background: '#EBF2F7', color: '#4A7294', borderColor: '#C1D6E8' }}>已提案</span>;
+  return null;
+};
+
+// 格式化時間小工具
+const formatShortTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
+  return d.toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) + ' ' + d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
 export const Inbox: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  
-  // 🌟 核心變更：不再使用 activeTab，改為 selectedFolder
-  // 'direct' = 個人頁專屬委託
-  // 'outbound' = 我投遞的申請
-  // 'bulletin-XXX' = 許願池收件
-  const [selectedFolder, setSelectedFolder] = useState<string>('direct');
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
+  // 🌟 手風琴展開狀態管理 (預設全部展開)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
+  
+  // 🌟 核心選中狀態：{ type: 'bulletin' | 'direct' | 'outbound', id: string }
+  const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
+
+  // 資料狀態
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
@@ -31,7 +48,7 @@ export const Inbox: React.FC = () => {
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
-  const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
+  const [selectedInquiryToDecline, setSelectedInquiryToDecline] = useState<any>(null);
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
   
   const isBatchMode = batchDeclineIds.size > 0;
@@ -39,14 +56,12 @@ export const Inbox: React.FC = () => {
 
   const [declineReason, setDeclineReason] = useState('');
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
-    '目前檔期較滿，暫不接單', 
-    '經過評估，可能有預算或價格考量', 
-    '較不擅長此題材，怕無法達到您的期望'
+    '目前檔期較滿，暫不接單', '經過評估，可能有預算考量', '較不擅長此題材，怕無法達到期望'
   ]);
   const [isEditingTemplates, setIsEditingTemplates] = useState(false);
   const [tempTemplates, setTempTemplates] = useState<string[]>(['', '', '']);
 
-  // 🌟 一次性撈取所有收件匣資料，供左側選單計算紅點數字
+  // 一次性撈取所有資料
   const fetchInbox = async () => {
     setLoading(true);
     try {
@@ -74,8 +89,7 @@ export const Inbox: React.FC = () => {
       }
 
       if (relRes.success && relRes.data) {
-        const bIds = relRes.data.filter((r: any) => r.relation_type === 'blacklist').map((r: any) => r.target_user_id);
-        setBlacklistedIds(bIds);
+        setBlacklistedIds(relRes.data.filter((r: any) => r.relation_type === 'blacklist').map((r: any) => r.target_user_id));
       }
 
       if (clientBulletinRes.success) {
@@ -87,76 +101,88 @@ export const Inbox: React.FC = () => {
       if (directOutRes.success) setDirectOutboundInquiries(directOutRes.data || []);
 
     } catch (error) { 
-      console.error("無法載入收件匣", error); 
+      console.error("載入失敗", error); 
     } finally { 
       setLoading(false); 
     }
   };
 
-  // 僅在初次載入或觸發更新時撈取，不需要依賴 selectedFolder 變動
   useEffect(() => { fetchInbox(); }, []);
 
+  // 手風琴開關
+  const toggleGroup = (group: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      newSet.has(group) ? newSet.delete(group) : newSet.add(group);
+      return newSet;
+    });
+  };
+
+  // 左側卡片點擊事件
+  const handleSelectItem = (type: string, id: string) => {
+    setSelectedItem({ type, id });
+    setShowMobileSidebar(false);
+  };
+
+  // 計算未讀與整合資料
+  const openBulletins = clientBulletins.filter(b => b.status === 'open');
+  const pendingDirectCount = directInquiries.filter(i => i.status === 'pending').length;
+  
+  const combinedOutbound = [
+    ...artistInquiries.map(item => ({ ...item, is_direct: false })),
+    ...directOutboundInquiries.map(item => ({ ...item, is_direct: true, inquiry_id: item.id }))
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const getMobileHeaderTitle = () => {
+    if (!selectedItem) return '收件匣';
+    if (selectedItem.type === 'bulletin') return '許願池提案管理';
+    if (selectedItem.type === 'direct') return '專屬客製化委託';
+    if (selectedItem.type === 'outbound') return '我投遞的申請';
+    return '收件匣';
+  };
+
+  // ================= 互動邏輯 (Modal/婉拒/跳轉) =================
   const handleCloseModal = () => {
     setShowDeclineModal(false);
     setIsEditingTemplates(false);
     setBatchDeclineIds(new Set());
-    setSelectedInquiry(null);
+    setSelectedInquiryToDecline(null);
     setCancelTargetId(null);
     setDeclineReason('');
   };
 
   const handleConfirmDecline = async () => {
-    if (!isBatchMode && !selectedInquiry && !isCancelMode) return;
-    
-    const defaultReason = isCancelMode 
-      ? '案主已撤銷許願 / 結束徵件' 
-      // 這裡簡單判斷如果是由自己主動投出去被婉拒的
-      : (selectedInquiry?.inquiry_status === 'pending' && selectedFolder === 'outbound')
-        ? '已撤回申請' 
-        : '已找到合適人選 / 終止洽談';
-        
-    const finalReason = declineReason || defaultReason;
-
+    if (!isBatchMode && !selectedInquiryToDecline && !isCancelMode) return;
+    const finalReason = declineReason || '已終止洽談 / 撤銷申請';
     try {
       if (isCancelMode && cancelTargetId) {
-        const res = await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, { decline_reason: finalReason });
-        if (!res.success) throw new Error(res.message);
-        alert('許願貼文已成功撤銷，並已發送婉拒通知給相關繪師。');
+        await apiClient.patch(`/api/bulletins/${cancelTargetId}/close`, { decline_reason: finalReason });
+        alert('許願貼文已撤銷。');
       } else if (isBatchMode) {
-        const targetIds = Array.from(batchDeclineIds);
-        const res = await apiClient.post('/api/inquiries/batch-decline', { 
-          inquiry_ids: targetIds,
-          decline_reason: finalReason 
-        });
-        if (!res.success) throw new Error(res.message);
-        alert(`批次處理完成！共成功婉拒了 ${res.processed_count} 筆提案。`);
-      } else if (selectedInquiry) {
-        const inquiryId = selectedInquiry.inquiry_id || selectedInquiry.id;
-        
-        if (selectedInquiry.showcase_id) {
-          await apiClient.post(`/api/direct-inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
+        await apiClient.post('/api/inquiries/batch-decline', { inquiry_ids: Array.from(batchDeclineIds), decline_reason: finalReason });
+        alert(`批次處理完成！`);
+      } else if (selectedInquiryToDecline) {
+        const id = selectedInquiryToDecline.inquiry_id || selectedInquiryToDecline.id;
+        if (selectedInquiryToDecline.showcase_id) {
+          await apiClient.post(`/api/direct-inquiries/${id}/decline`, { decline_reason: finalReason });
         } else {
-          await apiClient.post(`/api/inquiries/${inquiryId}/decline`, { decline_reason: finalReason });
+          await apiClient.post(`/api/inquiries/${id}/decline`, { decline_reason: finalReason });
         }
-        alert('已傳送婉拒/撤回通知，對話已關閉。');
+        alert('已傳送婉拒/撤回通知。');
       }
-
       handleCloseModal(); 
       fetchInbox(); 
     } catch (error: any) { 
-      alert(error.message || '操作發生錯誤，請稍後再試。'); 
+      alert(error.message || '發生錯誤'); 
     }
   };
 
-  const handleDirectInvite = async (inquiryToInvite: any) => {
-    if (!inquiryToInvite) return;
+  const handleDirectInvite = async (inq: any) => {
     try {
-      await apiClient.patch(`/api/inquiries/${inquiryToInvite.inquiry_id}/submit-response`, { 
-        client_response: "案主已確認提案，開啟聊天室與您詳談細節。" 
-      });
+      await apiClient.patch(`/api/inquiries/${inq.inquiry_id}/submit-response`, { client_response: "案主已確認提案，開啟聊天室與您詳談。" });
       fetchInbox(); 
     } catch (error: any) { 
-      alert(error.message || '開啟聊天室失敗'); 
+      alert('開啟失敗'); 
     }
   };
 
@@ -176,136 +202,153 @@ export const Inbox: React.FC = () => {
     }
   };
 
-  const handleEnterInquiryWorkspace = (inquiryId: string) => navigate(`/inquiry/workspace/${inquiryId}`);
-  
-  const handleViewCommission = (commissionId?: string) => {
-    if (!commissionId) {
-      alert('無法取得委託單資訊，請直接前往工作區查看。');
-      navigate('/artist/notebook');
-      return;
-    }
-    navigate(selectedFolder.startsWith('bulletin-') ? `/client/orders?id=${commissionId}` : `/artist/notebook?id=${commissionId}`); 
-  };
-
-  const handleCancelBulletinTrigger = (bulletinId: string) => {
-    setCancelTargetId(bulletinId);
-    setShowDeclineModal(true);
-  };
-
-  const handleFolderSelect = (folder: string) => {
-    setSelectedFolder(folder);
-    setShowMobileSidebar(false);
-  };
-
-  // =====================================
-  // 計算未讀數量與渲染邏輯
-  // =====================================
-  const pendingDirectCount = directInquiries.filter(i => i.status === 'pending').length;
-  const openBulletins = clientBulletins.filter(b => b.status === 'open');
-
-  // 動態獲取當前選擇的標題名稱 (供手機版 Header 使用)
-  const getMobileHeaderTitle = () => {
-    if (selectedFolder === 'direct') return '專屬客製化委託';
-    if (selectedFolder === 'outbound') return '我投遞的申請';
-    if (selectedFolder.startsWith('bulletin-')) {
-      const b = clientBulletins.find(b => b.id === selectedFolder.split('-')[1]);
-      return b ? b.title || '許願池提案' : '許願池提案';
-    }
-    return '收件匣';
-  };
-
   return (
     <div className="inbox-layout">
       
-      {/* 🌟 遮罩層 (手機版選單用) */}
       <div className={`sidebar-overlay ${showMobileSidebar ? 'open' : ''}`} onClick={() => setShowMobileSidebar(false)}></div>
 
-      {/* 🌟 左側導覽列 (資料夾) */}
-      <div className={`inbox-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}>
+      {/* ================= 左側複合式清單 ================= */}
+      <div className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}>
         <div className="inbox-sidebar-header">
           <h1 className="inbox-sidebar-title">收件匣</h1>
-          <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">
-            <span style={{ fontWeight: 'bold' }}>?</span> 規則
-          </button>
+          <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
         </div>
 
-        <div className="sidebar-group">
-          <div className="sidebar-group-title">📥 收到申請</div>
-          
-          <div className={`sidebar-item ${selectedFolder === 'direct' ? 'active' : ''}`} onClick={() => handleFolderSelect('direct')}>
-            <span className="sidebar-item-text">📁 專屬客製化委託</span>
-            {pendingDirectCount > 0 && <span className="sidebar-badge">{pendingDirectCount}</span>}
+        {/* 群組 1：🌠 許願中 */}
+        <div className="accordion-group">
+          <div className="accordion-header" onClick={() => toggleGroup('wishes')}>
+            <span className="accordion-title">
+              <span className={`accordion-icon ${expandedGroups.has('wishes') ? 'open' : ''}`}>▶</span>
+              🌠 許願中
+            </span>
           </div>
-
-          {openBulletins.map(b => {
-            const pendingCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
-            const folderId = `bulletin-${b.id}`;
+          {expandedGroups.has('wishes') && openBulletins.map(b => {
+            const isSelected = selectedItem?.type === 'bulletin' && selectedItem?.id === b.id;
+            const inqCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
             return (
-              <div key={folderId} className={`sidebar-item ${selectedFolder === folderId ? 'active' : ''}`} onClick={() => handleFolderSelect(folderId)}>
-                <span className="sidebar-item-text">📌 {b.title || '未命名許願'}</span>
-                {pendingCount > 0 && <span className="sidebar-badge">{pendingCount}</span>}
+              <div key={b.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('bulletin', b.id)}>
+                <div className="mini-card-meta">
+                  <span>{formatShortTime(b.created_at)}</span>
+                  <span className="mini-badge bulletin">發布中</span>
+                </div>
+                <div className="mini-card-title">📌 {b.title || '未命名貼文'}</div>
+                <div className="mini-card-subtitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>已收到 {b.inquiry_count || 0} 份提案</span>
+                  {inqCount > 0 && <span style={{ color: '#EF4444', fontWeight: 'bold' }}>{inqCount} 待看</span>}
+                </div>
               </div>
             );
           })}
         </div>
 
-        <div className="sidebar-group">
-          <div className="sidebar-group-title">🚀 追蹤狀態</div>
-          <div className={`sidebar-item ${selectedFolder === 'outbound' ? 'active' : ''}`} onClick={() => handleFolderSelect('outbound')}>
-            <span className="sidebar-item-text">📁 我投遞的申請</span>
+        {/* 群組 2：📥 收到申請 */}
+        <div className="accordion-group">
+          <div className="accordion-header" onClick={() => toggleGroup('inbound')}>
+            <span className="accordion-title">
+              <span className={`accordion-icon ${expandedGroups.has('inbound') ? 'open' : ''}`}>▶</span>
+              📥 收到申請
+            </span>
+            {pendingDirectCount > 0 && <span className="accordion-badge">{pendingDirectCount}</span>}
           </div>
+          {expandedGroups.has('inbound') && directInquiries.map(inq => {
+            const isSelected = selectedItem?.type === 'direct' && selectedItem?.id === inq.id;
+            const isGuest = !inq.client_id;
+            return (
+              <div key={inq.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('direct', inq.id)}>
+                <div className="mini-card-meta">
+                  <span>{formatShortTime(inq.created_at)}</span>
+                  {getStatusBadge(inq.status)}
+                </div>
+                <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
+                <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 群組 3：🚀 追蹤狀態 */}
+        <div className="accordion-group">
+          <div className="accordion-header" onClick={() => toggleGroup('outbound')}>
+            <span className="accordion-title">
+              <span className={`accordion-icon ${expandedGroups.has('outbound') ? 'open' : ''}`}>▶</span>
+              🚀 追蹤狀態
+            </span>
+          </div>
+          {expandedGroups.has('outbound') && combinedOutbound.map(inq => {
+            const isSelected = selectedItem?.type === 'outbound' && selectedItem?.id === inq.inquiry_id;
+            const targetName = inq.is_direct ? inq.artist_name : inq.client_name;
+            const status = inq.is_direct ? inq.status : inq.inquiry_status;
+            return (
+              <div key={inq.inquiry_id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('outbound', inq.inquiry_id)}>
+                <div className="mini-card-meta">
+                  <span>{formatShortTime(inq.created_at)}</span>
+                  {getStatusBadge(status)}
+                </div>
+                <div className="mini-card-title">投給：{targetName || '未知'}</div>
+                <div className="mini-card-subtitle">{inq.is_direct ? '專屬委託單' : (inq.bulletin_title || '許願池提案')}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 🌟 右側主內容區 */}
-      <div className="inbox-main custom-scrollbar">
-        
-        {/* 手機版頂部 Header */}
+      {/* ================= 右側主畫面區 ================= */}
+      <div className="inbox-main-content custom-scrollbar">
         <div className="mobile-inbox-header">
-          <button className="mobile-menu-btn" onClick={() => setShowMobileSidebar(true)}>☰</button>
+          <button className="mobile-menu-btn" onClick={() => setShowMobileSidebar(true)}>☰ 選單</button>
           <span className="mobile-header-title">{getMobileHeaderTitle()}</span>
         </div>
 
-        <div className="inbox-content-wrapper">
+        <div className="inbox-content-wrapper" style={{ height: '100%', padding: selectedItem?.type === 'direct' ? '0' : '24px' }}>
           {loading ? (
             <div style={{ padding: '60px', textAlign: 'center', color: '#A0978D' }}>資料載入中...</div>
-          ) : selectedFolder === 'direct' ? (
-            <DirectInboundTab 
-              inquiries={directInquiries}
-              navigate={navigate}
-              setSelectedInquiry={setSelectedInquiry}
-              setShowDeclineModal={setShowDeclineModal}
-              handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-              handleViewCommission={handleViewCommission}
-              blacklistedIds={blacklistedIds}
-              setSelectedIdsForBatch={setBatchDeclineIds}
-            />
-          ) : selectedFolder === 'outbound' ? (
-            <OutboundTab 
-              artistInquiries={artistInquiries}
-              directOutboundInquiries={directOutboundInquiries}
-              setSelectedInquiry={setSelectedInquiry}
-              setShowDeclineModal={setShowDeclineModal}
-              handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-              handleViewCommission={handleViewCommission}
-              blacklistedIds={blacklistedIds} 
-            />
-          ) : selectedFolder.startsWith('bulletin-') ? (
-            // 🌟 將選定的 bulletin ID 傳遞給 InboundTab (下一階段會優化這裡)
-            <InboundTab 
-              clientBulletins={clientBulletins.filter(b => b.id === selectedFolder.split('-')[1])}
-              clientInquiries={clientInquiries}
-              navigate={navigate}
-              setSelectedInquiry={setSelectedInquiry}
-              setShowDeclineModal={setShowDeclineModal}
-              handleDirectInvite={handleDirectInvite}
-              handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
-              handleViewCommission={handleViewCommission}
-              setSelectedIdsForBatch={setBatchDeclineIds}
-              blacklistedIds={blacklistedIds}
-              handleCancelBulletin={handleCancelBulletinTrigger} 
-            />
-          ) : null}
+          ) : !selectedItem ? (
+            <div style={{ textAlign: 'center', marginTop: '100px', color: '#A0978D' }}>
+              <div style={{ fontSize: '48px', opacity: 0.5, marginBottom: '16px' }}>📭</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7A7269' }}>請從左側清單選擇一筆項目</div>
+            </div>
+          ) : (
+            <>
+              {selectedItem.type === 'direct' && (
+                <DirectInboundTab 
+                  inquiries={directInquiries}
+                  selectedInquiryId={selectedItem.id} 
+                  navigate={navigate}
+                  setSelectedInquiry={setSelectedInquiryToDecline}
+                  setShowDeclineModal={setShowDeclineModal}
+                  handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
+                  handleViewCommission={(id) => navigate(`/artist/notebook?id=${id}`)}
+                  blacklistedIds={blacklistedIds}
+                />
+              )}
+              {selectedItem.type === 'bulletin' && (
+                <InboundTab 
+                  clientBulletins={clientBulletins.filter(b => b.id === selectedItem.id)}
+                  clientInquiries={clientInquiries}
+                  navigate={navigate}
+                  setSelectedInquiry={setSelectedInquiryToDecline}
+                  setShowDeclineModal={setShowDeclineModal}
+                  handleDirectInvite={handleDirectInvite}
+                  handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
+                  handleViewCommission={() => navigate(`/client/orders`)}
+                  setSelectedIdsForBatch={setBatchDeclineIds}
+                  blacklistedIds={blacklistedIds}
+                  handleCancelBulletin={(id) => { setCancelTargetId(id); setShowDeclineModal(true); }}
+                />
+              )}
+              {selectedItem.type === 'outbound' && (
+                <OutboundTab 
+                  artistInquiries={artistInquiries.filter(i => i.inquiry_id === selectedItem.id)}
+                  directOutboundInquiries={directOutboundInquiries.filter(i => i.id === selectedItem.id)}
+                  setSelectedInquiry={setSelectedInquiryToDecline}
+                  setShowDeclineModal={setShowDeclineModal}
+                  handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
+                  handleViewCommission={(id) => navigate(`/client/orders?id=${id}`)}
+                  blacklistedIds={blacklistedIds} 
+                />
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -347,7 +390,7 @@ export const Inbox: React.FC = () => {
                 ? '⚠️ 撤銷許願與婉拒提案' 
                 : isBatchMode 
                   ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
-                  : (selectedInquiry?.status === 'pending' || selectedInquiry?.inquiry_status === 'pending') && selectedFolder === 'outbound' ? '撤回申請' : '禮貌婉拒'
+                  : (selectedInquiryToDecline?.status === 'pending' || selectedInquiryToDecline?.inquiry_status === 'pending') && selectedItem?.type === 'outbound' ? '撤回申請' : '禮貌婉拒'
               }
             </h2>
             

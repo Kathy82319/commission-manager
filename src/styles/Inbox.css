@@ -3,17 +3,17 @@
 /* 佈局主容器 */
 .inbox-layout {
   display: flex;
-  height: calc(100vh - 64px); /* 假設頂部有導覽列 */
-  max-width: 1440px;
+  height: calc(100vh - 64px); /* 扣除頂部導覽列高度 */
+  max-width: 1600px;
   margin: 0 auto;
   background-color: #FBFBF9;
   position: relative;
   overflow: hidden;
 }
 
-/* ================== 左側邊欄 ================== */
-.inbox-sidebar {
-  width: 280px;
+/* ================== 左側複合式清單欄 ================== */
+.inbox-master-sidebar {
+  width: 340px; /* 為了容納微型卡片，稍微加寬 */
   background-color: #FFFFFF;
   border-right: 1px solid #EAE6E1;
   display: flex;
@@ -25,7 +25,7 @@
 }
 
 .inbox-sidebar-header {
-  padding: 20px 24px;
+  padding: 20px;
   border-bottom: 1px solid #EAE6E1;
   display: flex;
   justify-content: space-between;
@@ -45,15 +45,13 @@
 
 .inbox-rules-btn {
   background: none;
-  border: none;
-  color: #A0978D;
+  border: 1px solid #DED9D3;
+  color: #7A7269;
   font-size: 12px;
+  font-weight: bold;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
   transition: 0.2s;
 }
 
@@ -62,61 +60,112 @@
   color: #5D4A3E;
 }
 
-.sidebar-group {
-  padding: 12px 0;
+/* 手風琴群組標題 */
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background-color: #FDFDFB;
+  border-bottom: 1px solid #F0ECE7;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
 }
 
-.sidebar-group-title {
-  font-size: 12px;
-  color: #A0978D;
+.accordion-header:hover {
+  background-color: #F4F4F1;
+}
+
+.accordion-title {
+  font-size: 14px;
   font-weight: bold;
-  padding: 8px 24px;
-  letter-spacing: 0.5px;
-}
-
-.sidebar-item {
+  color: #5D4A3E;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 24px;
-  cursor: pointer;
-  color: #5D4A3E;
-  font-size: 14px;
-  transition: background-color 0.2s;
-  border-left: 3px solid transparent;
+  gap: 8px;
 }
 
-.sidebar-item:hover {
+.accordion-icon {
+  font-size: 12px;
+  color: #A0978D;
+  transition: transform 0.3s ease;
+}
+
+.accordion-icon.open {
+  transform: rotate(90deg);
+}
+
+.accordion-badge {
+  background-color: #EF4444;
+  color: #FFF;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  font-weight: bold;
+}
+
+/* 微型卡片 (左側清單項目) */
+.mini-card {
+  padding: 12px 20px;
+  border-bottom: 1px solid #F4F0EB;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+  background-color: #FFFFFF;
+}
+
+.mini-card:hover {
   background-color: #FDFDFB;
 }
 
-.sidebar-item.active {
+.mini-card.active {
   background-color: #EBF2F7;
-  color: #4A7294;
-  font-weight: bold;
   border-left: 3px solid #4A7294;
 }
 
-.sidebar-item-text {
+.mini-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #A0978D;
+  margin-bottom: 4px;
+}
+
+.mini-card-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #5D4A3E;
+  margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  padding-right: 8px;
 }
 
-.sidebar-badge {
-  background-color: #EF4444;
-  color: #FFFFFF;
-  border-radius: 99px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+.mini-card-subtitle {
+  font-size: 12px;
+  color: #7A7269;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* 小標籤 */
+.mini-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.mini-badge.pending { background: #FDF4E6; color: #A67B3E; border: 1px solid #FDE0B5; }
+.mini-badge.accepted { background: #E8F3EB; color: #4E7A5A; border: 1px solid #C2E0CC; }
+.mini-badge.declined { background: #F4F0EB; color: #A0978D; border: 1px solid #DED9D3; }
+.mini-badge.bulletin { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
 
 /* ================== 右側主畫面 ================== */
-.inbox-main {
+.inbox-main-content {
   flex: 1;
   overflow-y: auto;
   position: relative;
@@ -125,7 +174,6 @@
   flex-direction: column;
 }
 
-/* 手機版頂部導覽列 (只在手機顯示) */
 .mobile-inbox-header {
   display: none;
   align-items: center;
@@ -148,22 +196,12 @@
   cursor: pointer;
 }
 
-.mobile-header-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #5D4A3E;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 內容區塊共用 Padding */
 .inbox-content-wrapper {
   padding: 24px;
   flex: 1;
 }
 
-/* 遮罩層 (手機版側邊欄展開時用) */
+/* 手機版遮罩 */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -174,15 +212,10 @@
 
 /* ================== 手機版響應式 ================== */
 @media (max-width: 768px) {
-  .mobile-inbox-header {
-    display: flex;
-  }
-  
-  .inbox-content-wrapper {
-    padding: 16px;
-  }
+  .mobile-inbox-header { display: flex; }
+  .inbox-content-wrapper { padding: 16px; }
 
-  .inbox-sidebar {
+  .inbox-master-sidebar {
     position: fixed;
     top: 0;
     left: 0;
@@ -192,13 +225,8 @@
     transform: translateX(-100%);
   }
 
-  .inbox-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-overlay.open {
-    display: block;
-  }
+  .inbox-master-sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.open { display: block; }
 }
 
 /* 原有 Modal 樣式保留 */
@@ -212,7 +240,6 @@
   justify-content: center;
   padding: 20px;
 }
-
 .inbox-modal-content {
   background: #FFFFFF;
   border-radius: 16px;
