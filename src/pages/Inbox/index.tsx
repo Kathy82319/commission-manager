@@ -8,7 +8,6 @@ import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
 import { DirectInboundTab } from './DirectInboundTab'; 
 
-// 🌟 修正：狀態標籤小工具 (這裡叫 getMiniBadge)
 const getMiniBadge = (status: string) => {
   if (status === 'pending') return <span className="mini-badge pending">待處理</span>;
   if (status === 'accepted') return <span className="mini-badge accepted">已成單</span>;
@@ -17,7 +16,6 @@ const getMiniBadge = (status: string) => {
   return null;
 };
 
-// 格式化時間小工具
 const formatShortTime = (dateStr: string) => {
   if (!dateStr) return '';
   const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
@@ -32,7 +30,10 @@ export const Inbox: React.FC = () => {
   // 🌟 手風琴展開狀態管理 (預設全部展開)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
   
-  // 🌟 核心選中狀態
+  // 🌟 過濾開關：是否顯示已結案
+  const [showArchived, setShowArchived] = useState(false);
+
+  // 核心選中狀態
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
 
   // 資料狀態
@@ -121,13 +122,29 @@ export const Inbox: React.FC = () => {
     setShowMobileSidebar(false);
   };
 
-  const openBulletins = clientBulletins.filter(b => b.status === 'open');
+  // 🌟 資料過濾邏輯：根據 showArchived 開關動態過濾
+  const archivedStatuses = ['accepted', 'declined', 'cancelled', 'closed'];
+
+  const displayBulletins = showArchived 
+    ? clientBulletins.filter(b => b.status !== 'open') 
+    : clientBulletins.filter(b => b.status === 'open');
+
+  const displayDirectInquiries = showArchived
+    ? directInquiries.filter(i => archivedStatuses.includes(i.status))
+    : directInquiries.filter(i => !archivedStatuses.includes(i.status));
+
+  // 紅點依然只計算「待處理」
   const pendingDirectCount = directInquiries.filter(i => i.status === 'pending').length;
   
   const combinedOutbound = [
     ...artistInquiries.map(item => ({ ...item, is_direct: false })),
     ...directOutboundInquiries.map(item => ({ ...item, is_direct: true, inquiry_id: item.id }))
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const displayOutbound = showArchived
+    ? combinedOutbound.filter(i => archivedStatuses.includes(i.is_direct ? i.status : i.inquiry_status))
+    : combinedOutbound.filter(i => !archivedStatuses.includes(i.is_direct ? i.status : i.inquiry_status));
+
 
   const getMobileHeaderTitle = () => {
     if (!selectedItem) return '收件匣';
@@ -208,78 +225,96 @@ export const Inbox: React.FC = () => {
           <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
         </div>
 
+        {/* 🌟 切換開關區塊 */}
+        <div className="inbox-filter-container">
+          <div className="filter-toggle-box">
+            <button className={`filter-tab-btn ${!showArchived ? 'active' : ''}`} onClick={() => setShowArchived(false)}>
+              處理中
+            </button>
+            <button className={`filter-tab-btn ${showArchived ? 'active' : ''}`} onClick={() => setShowArchived(true)}>
+              已結案 / 歸檔
+            </button>
+          </div>
+        </div>
+
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('wishes')}>
             <span className="accordion-title">
               <span className={`accordion-icon ${expandedGroups.has('wishes') ? 'open' : ''}`}>▶</span>
-              🌠 許願中
+              🌠 {showArchived ? '歷史許願池' : '許願池收件匣'}
             </span>
           </div>
-          {expandedGroups.has('wishes') && openBulletins.map(b => {
-            const isSelected = selectedItem?.type === 'bulletin' && selectedItem?.id === b.id;
-            const inqCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
-            return (
-              <div key={b.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('bulletin', b.id)}>
-                <div className="mini-card-meta">
-                  <span>{formatShortTime(b.created_at)}</span>
-                  <span className="mini-badge bulletin">發布中</span>
+          {expandedGroups.has('wishes') && (
+            displayBulletins.length > 0 ? displayBulletins.map(b => {
+              const isSelected = selectedItem?.type === 'bulletin' && selectedItem?.id === b.id;
+              const inqCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
+              return (
+                <div key={b.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('bulletin', b.id)}>
+                  <div className="mini-card-meta">
+                    <span>{formatShortTime(b.created_at)}</span>
+                    <span className="mini-badge bulletin">{b.status === 'open' ? '發布中' : '已關閉'}</span>
+                  </div>
+                  <div className="mini-card-title">📌 {b.title || '未命名貼文'}</div>
+                  <div className="mini-card-subtitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>共 {b.inquiry_count || 0} 份提案</span>
+                    {!showArchived && inqCount > 0 && <span style={{ color: '#EF4444', fontWeight: 'bold' }}>{inqCount} 待看</span>}
+                  </div>
                 </div>
-                <div className="mini-card-title">📌 {b.title || '未命名貼文'}</div>
-                <div className="mini-card-subtitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>已收到 {b.inquiry_count || 0} 份提案</span>
-                  {inqCount > 0 && <span style={{ color: '#EF4444', fontWeight: 'bold' }}>{inqCount} 待看</span>}
-                </div>
-              </div>
-            );
-          })}
+              );
+            }) : <div className="mini-card-empty">目前沒有相關紀錄</div>
+          )}
         </div>
 
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('inbound')}>
             <span className="accordion-title">
               <span className={`accordion-icon ${expandedGroups.has('inbound') ? 'open' : ''}`}>▶</span>
-              📥 收到申請
+              📥 表單收件匣
             </span>
-            {pendingDirectCount > 0 && <span className="accordion-badge">{pendingDirectCount}</span>}
+            {!showArchived && pendingDirectCount > 0 && <span className="accordion-badge">{pendingDirectCount}</span>}
           </div>
-          {expandedGroups.has('inbound') && directInquiries.map(inq => {
-            const isSelected = selectedItem?.type === 'direct' && selectedItem?.id === inq.id;
-            const isGuest = !inq.client_id;
-            return (
-              <div key={inq.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('direct', inq.id)}>
-                <div className="mini-card-meta">
-                  <span>{formatShortTime(inq.created_at)}</span>
-                  {getMiniBadge(inq.status)}
+          {expandedGroups.has('inbound') && (
+            displayDirectInquiries.length > 0 ? displayDirectInquiries.map(inq => {
+              const isSelected = selectedItem?.type === 'direct' && selectedItem?.id === inq.id;
+              const isGuest = !inq.client_id;
+              return (
+                <div key={inq.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('direct', inq.id)}>
+                  <div className="mini-card-meta">
+                    <span>{formatShortTime(inq.created_at)}</span>
+                    {getMiniBadge(inq.status)}
+                  </div>
+                  <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
+                  <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
                 </div>
-                <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
-                <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
-              </div>
-            );
-          })}
+              );
+            }) : <div className="mini-card-empty">目前沒有相關紀錄</div>
+          )}
         </div>
 
         <div className="accordion-group">
           <div className="accordion-header" onClick={() => toggleGroup('outbound')}>
             <span className="accordion-title">
               <span className={`accordion-icon ${expandedGroups.has('outbound') ? 'open' : ''}`}>▶</span>
-              🚀 追蹤狀態
+              🚀 寄件匣
             </span>
           </div>
-          {expandedGroups.has('outbound') && combinedOutbound.map(inq => {
-            const isSelected = selectedItem?.type === 'outbound' && selectedItem?.id === inq.inquiry_id;
-            const targetName = inq.is_direct ? inq.artist_name : inq.client_name;
-            const status = inq.is_direct ? inq.status : inq.inquiry_status;
-            return (
-              <div key={inq.inquiry_id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('outbound', inq.inquiry_id)}>
-                <div className="mini-card-meta">
-                  <span>{formatShortTime(inq.created_at)}</span>
-                  {getMiniBadge(status)}
+          {expandedGroups.has('outbound') && (
+            displayOutbound.length > 0 ? displayOutbound.map(inq => {
+              const isSelected = selectedItem?.type === 'outbound' && selectedItem?.id === inq.inquiry_id;
+              const targetName = inq.is_direct ? inq.artist_name : inq.client_name;
+              const status = inq.is_direct ? inq.status : inq.inquiry_status;
+              return (
+                <div key={inq.inquiry_id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('outbound', inq.inquiry_id)}>
+                  <div className="mini-card-meta">
+                    <span>{formatShortTime(inq.created_at)}</span>
+                    {getMiniBadge(status)}
+                  </div>
+                  <div className="mini-card-title">投給：{targetName || '未知'}</div>
+                  <div className="mini-card-subtitle">{inq.is_direct ? '專屬委託單' : (inq.bulletin_title || '許願池提案')}</div>
                 </div>
-                <div className="mini-card-title">投給：{targetName || '未知'}</div>
-                <div className="mini-card-subtitle">{inq.is_direct ? '專屬委託單' : (inq.bulletin_title || '許願池提案')}</div>
-              </div>
-            );
-          })}
+              );
+            }) : <div className="mini-card-empty">目前沒有相關紀錄</div>
+          )}
         </div>
       </div>
 
@@ -299,7 +334,7 @@ export const Inbox: React.FC = () => {
             </div>
           ) : (
             <>
-{selectedItem.type === 'direct' && (
+              {selectedItem.type === 'direct' && (
                 <DirectInboundTab 
                   inquiries={directInquiries}
                   selectedInquiryId={selectedItem.id} 
@@ -308,7 +343,6 @@ export const Inbox: React.FC = () => {
                   setShowDeclineModal={setShowDeclineModal}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：加上容錯跳轉，就算沒 ID 也去筆記本總覽
                     if (id) navigate(`/artist/notebook?id=${id}`);
                     else navigate(`/artist/notebook`);
                   }}
@@ -326,7 +360,6 @@ export const Inbox: React.FC = () => {
                   handleDirectInvite={handleDirectInvite}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：加上容錯跳轉
                     if (id) navigate(`/client/orders?id=${id}`);
                     else navigate(`/client/orders`);
                   }}
@@ -344,7 +377,6 @@ export const Inbox: React.FC = () => {
                   setShowDeclineModal={setShowDeclineModal}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：動態判斷身分並加上容錯跳轉
                     const selectedInq = combinedOutbound.find(i => i.inquiry_id === selectedItem?.id);
                     if (selectedInq?.is_direct) {
                       if (id) navigate(`/client/orders?id=${id}`);

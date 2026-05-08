@@ -60,22 +60,56 @@
   color: #5D4A3E;
 }
 
-/* 🌟 修正：手風琴群組標題 (增強對比度與層級感) */
+/* 🌟 新增：過濾開關區塊 */
+.inbox-filter-container {
+  padding: 16px 20px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #EAE6E1;
+}
+
+.filter-toggle-box {
+  display: flex;
+  background-color: #F4F0EB;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.filter-tab-btn {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: bold;
+  color: #A0978D;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tab-btn.active {
+  background-color: #FFFFFF;
+  color: #5D4A3E;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 手風琴群組標題 */
 .accordion-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: #F4F0EB; /* 加深背景色 */
+  background-color: #FDFDFB; 
   border-bottom: 1px solid #EAE6E1;
-  border-left: 4px solid #A67B3E; /* 左側加入重點色色條 */
+  border-left: 4px solid #A67B3E; 
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s;
 }
 
 .accordion-header:hover {
-  background-color: #EAE6E1;
+  background-color: #F4F0EB;
 }
 
 .accordion-title {
@@ -123,6 +157,15 @@
 .mini-card.active {
   background-color: #EBF2F7;
   border-left: 4px solid #4A7294;
+}
+
+.mini-card-empty {
+  padding: 20px;
+  text-align: center;
+  color: #A0978D;
+  font-size: 13px;
+  background-color: #FDFDFB;
+  border-bottom: 1px solid #F4F0EB;
 }
 
 .mini-card-meta {
