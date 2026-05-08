@@ -1,7 +1,7 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, X } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
 
 
@@ -220,15 +220,6 @@ export function ArtistLayout() {
 
       <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-
-{/* 🌟 新增：手機版專用的關閉按鈕 */}
-            <button 
-              className="mobile-close-btn" 
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <X size={24} />
-            </button>
-
 
           <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
           <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
