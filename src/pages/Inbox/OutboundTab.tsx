@@ -1,6 +1,6 @@
 // src/pages/Inbox/OutboundTab.tsx
 import React from 'react';
-import { getStatusLabel, filterOldItems } from './utils/formatters';
+import { getStatusLabel } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 import { Ban } from 'lucide-react'; 
 import '../../styles/Notebook.css'; 
@@ -64,27 +64,31 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 統合所有投遞紀錄
-  const combinedInquiries = [
-    ...artistInquiries.map(item => ({ ...item, is_direct: false })),
-    ...directOutboundInquiries.map(item => ({
-      ...item,
-      is_direct: true,
-      inquiry_id: item.id, 
-      inquiry_status: item.status, 
-      bulletin_title: item.showcase_title || '客製化委託申請',
-    }))
-  ];
-
-  // 根據 ID 找到當前要顯示的資料
-  const selectedInq = combinedInquiries.find(i => i.inquiry_id === selectedInquiryId);
+  // 🌟 尋找當前選中的資料 (優化效能，不需處理整個陣列)
+  let selectedInq: any = null;
+  const directMatch = directOutboundInquiries.find(i => i.id === selectedInquiryId);
+  
+  if (directMatch) {
+    selectedInq = { 
+      ...directMatch, 
+      is_direct: true, 
+      inquiry_id: directMatch.id, 
+      inquiry_status: directMatch.status, 
+      bulletin_title: directMatch.showcase_title || '客製化委託申請' 
+    };
+  } else {
+    const artistMatch = artistInquiries.find(i => i.inquiry_id === selectedInquiryId);
+    if (artistMatch) {
+      selectedInq = { ...artistMatch, is_direct: false };
+    }
+  }
 
   // 如果找不到選中的項目，顯示空白提示
   if (!selectedInq) {
     return (
       <div style={{ padding: '100px 20px', textAlign: 'center', color: '#A0978D' }}>
-        <div style={{ fontSize: '40px', marginBottom: '16px', opacity: 0.5 }}>📄</div>
-        <p>請從左側清單選擇一筆申請紀錄以查看詳情</p>
+        <div style={{ fontSize: '40px', marginBottom: '16px', opacity: 0.5 }}>🚀</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7A7269', marginBottom: '8px' }}>請從左側清單選擇一筆申請紀錄以查看詳情</div>
       </div>
     );
   }
@@ -124,12 +128,22 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
             投遞對象：{targetName || '未知使用者'}
             {targetPublicId && <span style={{ fontSize: '16px', color: '#A0978D', fontFamily: 'monospace' }}>@{targetPublicId}</span>}
           </h2>
-          <div className="main-subtitle" style={{ fontSize: '15px', color: '#4A7294', fontWeight: 'bold', marginTop: '8px' }}>
-            申請項目：{selectedInq.bulletin_title}
+          <div className="main-subtitle" style={{ fontSize: '15px', color: '#4A7294', fontWeight: 'bold', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ 
+              background: selectedInq.is_direct ? '#EBF2F7' : (isOffer ? '#EFF6FF' : '#FDF2F8'), 
+              color: selectedInq.is_direct ? '#4A7294' : (isOffer ? '#2563EB' : '#DB2777'), 
+              padding: '2px 10px', 
+              borderRadius: '999px', 
+              fontSize: '12px', 
+            }}>
+              {selectedInq.is_direct ? '專屬委託表單' : (isOffer ? '許願池接委託' : '許願池徵委託')}
+            </span>
+            <span>申請項目：{selectedInq.bulletin_title}</span>
           </div>
           {isBlacklisted && (
             <div style={{ display: 'inline-block', padding: '6px 12px', background: '#FEF2F2', color: '#EF4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FECACA', marginTop: '12px' }}>
-              ⚠️ 注意：您已將此用戶列入黑名單。
+              <Ban size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> 
+              警告：您已將此用戶列入黑名單。
             </div>
           )}
         </div>
@@ -142,6 +156,21 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         </span>
         <span style={{ fontSize: '13px', color: '#7A7269' }}>投遞時間：{formatTime(selectedInq.created_at)}</span>
       </div>
+
+      {/* 對方回覆 / 婉拒理由區塊 (移至上方醒目處) */}
+      {selectedInq.client_response && (
+        <div style={{ background: '#F8FAFC', borderLeft: '4px solid #4A7294', padding: '20px', borderRadius: '0 12px 12px 0', marginBottom: '24px' }}>
+          <strong style={{ color: '#4A7294', fontSize: '15px', marginBottom: '8px', display: 'block' }}>對方回覆：</strong>
+          <p style={{ margin: 0, fontSize: '14px', color: '#5D4A3E', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{selectedInq.client_response}</p>
+        </div>
+      )}
+
+      {(selectedInq.inquiry_status === 'declined' || selectedInq.inquiry_status === 'closed') && selectedInq.decline_reason && (
+        <div style={{ background: '#FEF2F2', borderLeft: '4px solid #EF4444', padding: '20px', borderRadius: '0 12px 12px 0', marginBottom: '24px' }}>
+          <strong style={{ color: '#EF4444', fontSize: '15px', marginBottom: '8px', display: 'block' }}>終止/撤回原因：</strong>
+          <p style={{ margin: 0, fontSize: '14px', color: '#A05C5C', lineHeight: '1.6' }}>{selectedInq.decline_reason}</p>
+        </div>
+      )}
 
       {/* 許願池原文摘要 */}
       {!selectedInq.is_direct && (
@@ -188,7 +217,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
               {snapshot.images?.length > 0 && (
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {snapshot.images.map((img: string, i: number) => (
-                    <img key={i} src={getFullUrl(img)} alt="附圖" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px' }} referrerPolicy="no-referrer" />
+                    <img key={i} src={getFullUrl(img)} alt="附圖" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DED9D3' }} referrerPolicy="no-referrer" />
                   ))}
                 </div>
               )}

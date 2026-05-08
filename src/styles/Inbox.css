@@ -3,7 +3,7 @@
 /* 佈局主容器 */
 .inbox-layout {
   display: flex;
-  height: calc(100vh - 64px); /* 扣除頂部導覽列高度 */
+  height: calc(100vh - 64px); 
   max-width: 1600px;
   margin: 0 auto;
   background-color: #FBFBF9;
@@ -13,7 +13,7 @@
 
 /* ================== 左側複合式清單欄 ================== */
 .inbox-master-sidebar {
-  width: 340px; /* 為了容納微型卡片，稍微加寬 */
+  width: 340px; 
   background-color: #FFFFFF;
   border-right: 1px solid #EAE6E1;
   display: flex;
@@ -60,25 +60,26 @@
   color: #5D4A3E;
 }
 
-/* 手風琴群組標題 */
+/* 🌟 修正：手風琴群組標題 (增強對比度與層級感) */
 .accordion-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
-  background-color: #FDFDFB;
-  border-bottom: 1px solid #F0ECE7;
+  padding: 16px 20px;
+  background-color: #F4F0EB; /* 加深背景色 */
+  border-bottom: 1px solid #EAE6E1;
+  border-left: 4px solid #A67B3E; /* 左側加入重點色色條 */
   cursor: pointer;
   user-select: none;
   transition: background-color 0.2s;
 }
 
 .accordion-header:hover {
-  background-color: #F4F4F1;
+  background-color: #EAE6E1;
 }
 
 .accordion-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: bold;
   color: #5D4A3E;
   display: flex;
@@ -107,11 +108,11 @@
 
 /* 微型卡片 (左側清單項目) */
 .mini-card {
-  padding: 12px 20px;
+  padding: 14px 20px;
   border-bottom: 1px solid #F4F0EB;
   cursor: pointer;
   transition: all 0.2s;
-  border-left: 3px solid transparent;
+  border-left: 4px solid transparent;
   background-color: #FFFFFF;
 }
 
@@ -121,7 +122,7 @@
 
 .mini-card.active {
   background-color: #EBF2F7;
-  border-left: 3px solid #4A7294;
+  border-left: 4px solid #4A7294;
 }
 
 .mini-card-meta {
@@ -130,7 +131,7 @@
   align-items: center;
   font-size: 11px;
   color: #A0978D;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .mini-card-title {
@@ -201,7 +202,6 @@
   flex: 1;
 }
 
-/* 手機版遮罩 */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -210,7 +210,6 @@
   display: none;
 }
 
-/* ================== 手機版響應式 ================== */
 @media (max-width: 768px) {
   .mobile-inbox-header { display: flex; }
   .inbox-content-wrapper { padding: 16px; }
@@ -229,7 +228,6 @@
   .sidebar-overlay.open { display: block; }
 }
 
-/* 原有 Modal 樣式保留 */
 .inbox-modal-overlay {
   position: fixed;
   inset: 0;
@@ -245,6 +243,8 @@
   border-radius: 16px;
   padding: 24px;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  max-height: 90vh;
+  overflow-y: auto;
 }

@@ -1,4 +1,4 @@
-// src/pages/public/Wishboard/InquireModals/index.tsx (如果路徑有誤請依你實際的為準)
+// src/pages/artist/Settings/BulletinSettingsTab.tsx
 import React, { useState } from 'react';
 import type { ProfileSettings } from './types';
 import { ImageUploader } from '../../../components/ImageUploader';
