@@ -150,7 +150,8 @@ export const commController = {
     ]);
     
     if (!body.is_external && clientId) {
-       await notificationController.createNotification(env, String(clientId), 'commission_msg', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?open=${newOrderId}`);
+       // 🌟 修正：精準的通知跳轉
+       await notificationController.createNotification(env, String(clientId), 'commission_msg', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?id=${newOrderId}`);
     }
     
     return createJsonResponse({ success: true, id: newOrderId }, 200, corsHeaders);
@@ -186,7 +187,7 @@ export const commController = {
       'agreed_tos_snapshot': 10000, 'contact_memo': 100 
     };
 
-    // 🛡️ 資安修復：嚴格區分角色可以修改的欄位 (防止 Mass Assignment 繞過金流與合約)
+    // 🛡️ 資安修復：嚴格限制只有對應身分可以修改對應欄位，防範 Mass Assignment 導致金流竄改
     const isArtist = currentUserId === comm.artist_id;
     const isClient = currentUserId === comm.client_id;
     
@@ -195,23 +196,19 @@ export const commController = {
 
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
-        // 綁定過程允許寫入 client_id
         if (isBinding && key === 'client_id') {
           updates.push(`${key} = ?`);
           params.push(sanitizeAndLimit(body[key], fieldLimits[key]));
         } else if (isArtist && !clientAllowedFields.includes(key)) {
-          // 繪師可以修改大部分欄位，但不能改委託人的自訂標題
           updates.push(`${key} = ?`);
           params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : (typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]));
         } else if (isClient && clientAllowedFields.includes(key)) {
-          // 委託人只能修改專屬的自訂欄位
           updates.push(`${key} = ?`);
           params.push(typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]);
         }
       }
     }
     
-    // 處理特殊欄位 (數值型或日期)
     for (const key of specialFields) {
       if (body[key] !== undefined) { 
         if (key === 'last_read_at_artist' && isArtist) {
@@ -219,7 +216,6 @@ export const commController = {
         } else if (key === 'last_read_at_client' && (isClient || isBinding)) {
           updates.push(`${key} = ?`); params.push(body[key]);
         } else if ((key === 'total_price' || key === 'char_count') && isArtist) {
-          // 🛡️ 確保只有繪師可以修改金額和人數
           updates.push(`${key} = ?`); params.push(body[key]);
         }
       }
@@ -239,7 +235,8 @@ export const commController = {
         const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
         
-        await notificationController.createNotification(env, String(comm.artist_id), 'commission_msg', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}`);
+        // 🌟 修正：精準的通知跳轉
+        await notificationController.createNotification(env, String(comm.artist_id), 'commission_msg', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}&tab=details`);
       }
       
       await env.commission_db.batch(batch);
@@ -287,7 +284,8 @@ export const commController = {
     ]);
 
     if (comm[0].client_id) {
-       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?open=${id}`);
+       // 🌟 修正：精準跳轉至 review 頁籤
+       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?id=${id}&tab=review`);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -330,6 +328,7 @@ export const commController = {
     const text = body.action === 'reject' 
       ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
       : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
+    // 🌟 修正：精準的通知跳轉
     await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_msg', text, `/artist/notebook?id=${id}&tab=delivery`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -353,7 +352,8 @@ export const commController = {
     ]);
     
     if (comm[0].client_id) {
-       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?open=${id}`);
+       // 🌟 修正：精準的通知跳轉
+       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?id=${id}`);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -395,6 +395,7 @@ export const commController = {
     const text = action === 'approve' 
        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
+    // 🌟 修正：精準的通知跳轉
     await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_change', text, `/artist/notebook?id=${id}&tab=details`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -415,7 +416,7 @@ export const commController = {
     const body: { sender_role: string; content: string } = await request.json();
     
     // 🛡️ 資安修復：驗證發言者身分，防止偽造 (防 IDOR)
-    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name, origin_source FROM Commissions WHERE id = ?").bind(id).all();
     const comm = commResults as any[];
     if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到訂單" }, 404, corsHeaders);
 
@@ -447,8 +448,17 @@ export const commController = {
     const targetUserId = isArtist ? comm[0].client_id : comm[0].artist_id;
     const roleQuery = isArtist ? '' : '?role=artist';
     
+    // 🌟 修正：解析 origin_source，正確跳轉至新的聊天室架構
+    let inquiryId = null;
+    try {
+      const originData = JSON.parse(comm[0].origin_source);
+      if (originData && originData.inquiry_id) inquiryId = originData.inquiry_id;
+    } catch(e) {}
+
+    const targetUrl = inquiryId ? `/inquiry/workspace/${inquiryId}` : `/workspace/${id}${roleQuery}`;
+
     if (targetUserId) {
-      await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
+      await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, targetUrl);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);

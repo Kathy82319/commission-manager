@@ -38,7 +38,7 @@ export const notificationController = {
       `).bind(currentUserId).first();
       const unreadCount = (countRes?.count as number) || 0;
 
-      // 2. 撈取最新的 15 筆通知 (🌟 修正：撈取 content 和 link_to)
+      // 2. 撈取最新的 15 筆通知
       const { results } = await env.commission_db.prepare(`
         SELECT id, type, title, content, link_to, created_at, is_read 
         FROM Notifications 
@@ -51,7 +51,6 @@ export const notificationController = {
       const notifications = results.map((n: any) => ({
         id: n.id,
         type: n.type,
-        // 🌟 這裡負責把後端的 content 轉成前端畫面預期的 text
         text: n.content, 
         link: n.link_to, 
         time: formatOutputTime(n.created_at),
