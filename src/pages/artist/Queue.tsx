@@ -119,6 +119,8 @@ export function Queue() {
   
   const [myId, setMyId] = useState<string>('');
   
+  // 🌟 記錄完整的使用者資料，防止更新時後端將未包含的欄位 (如頭像、簡介) 清空
+  const [userData, setUserData] = useState<any>({});
   const [fullProfileSettings, setFullProfileSettings] = useState<any>({});
   const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
   
@@ -150,6 +152,8 @@ export function Queue() {
       .then(data => { 
         if (data.success) {
           setMyId(data.data.id); 
+          setUserData(data.data); // 🌟 保留使用者的所有原始資料 (包含 avatar_url, bio 等)
+          
           try {
             const settings = typeof data.data.profile_settings === 'string' 
               ? JSON.parse(data.data.profile_settings) 
@@ -188,7 +192,11 @@ export function Queue() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_settings: JSON.stringify(updatedProfileSettings) })
+        // 🌟 展開 userData 確保 bio 與 avatar_url 一同送出
+        body: JSON.stringify({ 
+          ...userData,
+          profile_settings: JSON.stringify(updatedProfileSettings) 
+        })
       });
       
       setFullProfileSettings(updatedProfileSettings);
@@ -200,7 +208,6 @@ export function Queue() {
     }
   };
 
-  // 🌟 新增：將排序同步寫入資料庫，以供前端個人頁讀取
   const handleSyncOrderToDB = async (orderIds: string[]) => {
     setIsSaving(true);
     try {
@@ -216,7 +223,11 @@ export function Queue() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_settings: JSON.stringify(updatedProfileSettings) })
+        // 🌟 展開 userData 確保 bio 與 avatar_url 一同送出
+        body: JSON.stringify({ 
+          ...userData,
+          profile_settings: JSON.stringify(updatedProfileSettings) 
+        })
       });
       setFullProfileSettings(updatedProfileSettings);
       showToast('✅ 排序已同步至公開頁面');
@@ -248,7 +259,7 @@ export function Queue() {
       const data = await res.json();
       if (data.success) {
         let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-        // 🌟 改為優先嘗試從使用者的全域設定抓取 custom_order，若無才抓 localstorage
+        
         const dbCustomOrder = fullProfileSettings?.queue_settings?.custom_order;
         const savedOrder = dbCustomOrder && dbCustomOrder.length > 0 
                            ? dbCustomOrder 
@@ -272,7 +283,6 @@ export function Queue() {
     } catch (e) {}
   };
   
-  // 🌟 當 fullProfileSettings 載入完成後再拉取佇列，確保能套用到資料庫儲存的排序
   useEffect(() => { 
     if (myId) {
       fetchQueue(); 
@@ -380,7 +390,6 @@ export function Queue() {
       const [draggedItem] = newCommissions.splice(oldIdx, 1);
       newCommissions.splice(newIdx, 0, draggedItem);
       
-      // 🌟 當拖曳完成時，將新排序寫回資料庫
       const newOrderIds = newCommissions.map(c => c.id);
       handleSyncOrderToDB(newOrderIds);
 
