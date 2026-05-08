@@ -13,6 +13,15 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
+// 🌟 新增：匿名遮蔽函式 (保留頭尾，中間用星號取代)
+const getMaskedName = (name: string) => {
+  if (!name) return '匿名委託';
+  const len = name.length;
+  if (len <= 1) return name;
+  if (len === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(len - 2) + name[len - 1];
+};
+
 export interface FormFieldSchema {
   id: string;
   type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
@@ -40,6 +49,7 @@ interface ProfileSettings {
     show_client_name: boolean;
     show_client_id: boolean;
     show_project_name: boolean;
+    date_column_label?: string; // 🌟 確保介面定義包含此欄位
   };
   tab_order?: string[]; 
   terms_of_service?: string; 
@@ -632,6 +642,7 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
+              {/* 🌟 修改過的 Queue 區塊 */}
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
@@ -645,7 +656,8 @@ export function PublicProfile() {
                             <th style={{ padding: '12px 8px' }}>委託人</th>
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
-                            <th style={{ padding: '12px 8px' }}>預計完工</th>
+                            {/* 🌟 帶入自訂的欄位名稱 */}
+                            <th style={{ padding: '12px 8px' }}>{settings.queue_settings.date_column_label || '預計開始日'}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -653,7 +665,11 @@ export function PublicProfile() {
                             <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
                               <td style={{ padding: '12px 8px' }}>
                                 <div style={{ fontWeight: 'bold' }}>
-                                  {settings.queue_settings!.show_client_name && order.contact_memo ? order.contact_memo : '匿名委託'}
+                                  {/* 🌟 判斷並套用匿名化邏輯 */}
+                                  {settings.queue_settings!.show_client_name 
+                                    ? (order.contact_memo || '匿名委託') 
+                                    : getMaskedName(order.contact_memo)
+                                  }
                                 </div>
                                 {settings.queue_settings!.show_client_id && order.client_public_id && (
                                   <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>
@@ -666,7 +682,8 @@ export function PublicProfile() {
                                 <span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
                               </td>
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
-                                {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
+                                {/* 🌟 統一改抓 start_date 呈現 */}
+                                {order.start_date ? order.start_date.substring(5).replace('-', '/') : '未定'}
                               </td>
                             </tr>
                           ))}

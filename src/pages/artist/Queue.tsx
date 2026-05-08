@@ -1,4 +1,3 @@
-// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical, X } from 'lucide-react';
@@ -7,7 +6,7 @@ import '../../styles/Queue.css';
 
 interface Commission {
   id: string; order_date: string; client_name: string; contact_memo: string; project_name: string;
-  type_name: string; payment_status: string; end_date: string; artist_note: string; is_rush: string;
+  type_name: string; payment_status: string; start_date?: string; end_date: string; artist_note: string; is_rush: string;
   status: string; workflow_mode: string; 
   queue_status: string;
   artist_id?: string;
@@ -118,6 +117,7 @@ export function Queue() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
   const [myId, setMyId] = useState<string>('');
+  const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -143,7 +143,19 @@ export function Queue() {
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => { if (data.success) setMyId(data.data.id); })
+      .then(data => { 
+        if (data.success) {
+          setMyId(data.data.id); 
+          try {
+            const settings = typeof data.data.profile_settings === 'string' 
+              ? JSON.parse(data.data.profile_settings) 
+              : (data.data.profile_settings || {});
+            if (settings.queue_settings?.date_column_label) {
+              setDateColumnLabel(settings.queue_settings.date_column_label);
+            }
+          } catch (e) {}
+        }
+      })
       .catch(err => console.error("取得使用者身分失敗", err));
   }, [API_BASE]);
 
@@ -346,7 +358,13 @@ export function Queue() {
         <table className="queue-table">
           <thead>
             <tr>
-              <th>日期</th><th>委託人</th><th>進度</th><th>完工</th><th>付款</th><th className="queue-hide-mobile">備註欄位</th><th className="queue-hide-mobile">操作</th>
+              <th>日期</th>
+              <th>委託人</th>
+              <th>進度</th>
+              <th>{dateColumnLabel}</th>
+              <th>付款</th>
+              <th className="queue-hide-mobile">備註欄位</th>
+              <th className="queue-hide-mobile">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -417,10 +435,10 @@ export function Queue() {
                     />
                   </div>
                 </td>
-                <td data-label="預計完工">
+                <td data-label={dateColumnLabel}>
                   <div className="cell-content cell-date-input">
-                    <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
-                    <input type="date" defaultValue={order.end_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
+                    <span className="date-text-display">{order.start_date ? order.start_date.substring(5).replace('-', '/') : '未定'}</span>
+                    <input type="date" defaultValue={order.start_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'start_date', e.target.value)} className="date-input" />
                   </div>
                 </td>
                 <td data-label="付款進度">

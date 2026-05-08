@@ -362,10 +362,8 @@ ALTER TABLE ShowcaseItems ADD COLUMN tos_content TEXT;
 
 ALTER TABLE Commissions ADD COLUMN agreed_memo TEXT;
 
-
-
-
- 
+ALTER TABLE ShowcaseItems ADD COLUMN current_orders_count INTEGER DEFAULT 0;
+ ALTER TABLE Commissions ADD COLUMN latest_message_at DATETIME DEFAULT NULL;
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
