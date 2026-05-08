@@ -332,5 +332,46 @@ export const directInquiryController = {
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
+  },
+  // 🌟 新增：針對個人頁面 (DirectInquiries) 的退回邏輯
+  async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT * FROM DirectInquiries WHERE id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (!inquiryData) {
+        return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
+      }
+
+      if (inquiryData.client_id !== currentUserId) {
+        return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
+      }
+
+      if (inquiryData.status !== 'proposed') {
+        return new Response(JSON.stringify({ success: false, message: '當前狀態無法退回' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 退回草稿狀態 (個人頁的草稿狀態是 pending)
+      await env.commission_db.prepare(
+        `UPDATE DirectInquiries SET status = 'pending', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
+      ).bind(inquiryId).run();
+
+      const msgId = crypto.randomUUID();
+      const systemMsg = '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。';
+      await env.commission_db.prepare(
+        `INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, 'text')`
+      ).bind(msgId, inquiryId, currentUserId, systemMsg).run();
+
+      const text = `⚠️ 委託人已將「${inquiryData.showcase_title || '客製化委託'}」的提案退回，請前往洽談室修改合約。`;
+      try {
+        const { notificationController } = await import('./notificationController');
+        await notificationController.createNotification(env, inquiryData.artist_id, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
+      } catch (e) {}
+
+      return new Response(JSON.stringify({ success: true, message: '已成功退回提案' }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   }
 };
