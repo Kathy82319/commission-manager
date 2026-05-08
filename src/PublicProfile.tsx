@@ -13,13 +13,21 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
-// 🌟 新增：匿名遮蔽函式 (保留頭尾，中間用星號取代)
 const getMaskedName = (name: string) => {
   if (!name) return '匿名委託';
   const len = name.length;
   if (len <= 1) return name;
   if (len === 2) return name[0] + '*';
   return name[0] + '*'.repeat(len - 2) + name[len - 1];
+};
+
+// 🌟 新增：用於重新排序的輔助函式
+const getTime = (dateStr?: string) => {
+  if (!dateStr) return 0;
+  let str = dateStr.trim();
+  if (!str.includes('T')) str = str.replace(' ', 'T');
+  if (!str.endsWith('Z') && !str.includes('+')) str += 'Z';
+  return new Date(str).getTime();
 };
 
 export interface FormFieldSchema {
@@ -49,7 +57,8 @@ interface ProfileSettings {
     show_client_name: boolean;
     show_client_id: boolean;
     show_project_name: boolean;
-    date_column_label?: string; // 🌟 確保介面定義包含此欄位
+    date_column_label?: string; 
+    custom_order?: string[]; // 🌟 新增：接收資料庫存的排序陣列
   };
   tab_order?: string[]; 
   terms_of_service?: string; 
@@ -351,7 +360,24 @@ export function PublicProfile() {
               const queueRes = await fetch(`${API_BASE}/api/public/queue/${currentArtistId}`);
               const queueData = await queueRes.json();
               if (queueData.success) {
-                setPublicQueue(queueData.data);
+                // 🌟 核心修改點：依據資料庫存的排序陣列來排序 publicQueue
+                let list = queueData.data;
+                const customOrder = parsedSettings.queue_settings.custom_order || [];
+                
+                if (customOrder.length > 0) {
+                  list.sort((a: any, b: any) => {
+                    const idxA = customOrder.indexOf(a.id);
+                    const idxB = customOrder.indexOf(b.id);
+                    if (idxA === -1 && idxB === -1) return getTime(a.order_date) - getTime(b.order_date);
+                    if (idxA === -1) return 1;
+                    if (idxB === -1) return -1;
+                    return idxA - idxB;
+                  });
+                } else {
+                  list.sort((a: any, b: any) => getTime(a.order_date) - getTime(b.order_date));
+                }
+                
+                setPublicQueue(list);
               }
             } catch (e) {
               console.error('無法讀取排單表資料');
@@ -642,7 +668,7 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 修改過的 Queue 區塊 */}
+              {/* 🌟 Queue 區塊 */}
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
@@ -656,7 +682,6 @@ export function PublicProfile() {
                             <th style={{ padding: '12px 8px' }}>委託人</th>
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
-                            {/* 🌟 帶入自訂的欄位名稱 */}
                             <th style={{ padding: '12px 8px' }}>{settings.queue_settings.date_column_label || '預計開始日'}</th>
                           </tr>
                         </thead>
@@ -665,7 +690,6 @@ export function PublicProfile() {
                             <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
                               <td style={{ padding: '12px 8px' }}>
                                 <div style={{ fontWeight: 'bold' }}>
-                                  {/* 🌟 判斷並套用匿名化邏輯 */}
                                   {settings.queue_settings!.show_client_name 
                                     ? (order.contact_memo || '匿名委託') 
                                     : getMaskedName(order.contact_memo)
@@ -682,7 +706,6 @@ export function PublicProfile() {
                                 <span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
                               </td>
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
-                                {/* 🌟 統一改回 end_date 以符合資料庫存放位置，修正空白問題 */}
                                 {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
                               </td>
                             </tr>

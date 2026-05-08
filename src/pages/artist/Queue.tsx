@@ -1,3 +1,4 @@
+// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical, X, Edit2 } from 'lucide-react';
@@ -199,6 +200,33 @@ export function Queue() {
     }
   };
 
+  // 🌟 新增：將排序同步寫入資料庫，以供前端個人頁讀取
+  const handleSyncOrderToDB = async (orderIds: string[]) => {
+    setIsSaving(true);
+    try {
+      const updatedQueueSettings = {
+        ...(fullProfileSettings.queue_settings || {}),
+        custom_order: orderIds
+      };
+      const updatedProfileSettings = {
+        ...fullProfileSettings,
+        queue_settings: updatedQueueSettings
+      };
+      await fetch(`${API_BASE}/api/users/me`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_settings: JSON.stringify(updatedProfileSettings) })
+      });
+      setFullProfileSettings(updatedProfileSettings);
+      showToast('✅ 排序已同步至公開頁面');
+    } catch (e) {
+      console.error("同步排序失敗", e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const fetchPaymentForOrder = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
@@ -220,7 +248,12 @@ export function Queue() {
       const data = await res.json();
       if (data.success) {
         let list = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-        const savedOrder = JSON.parse(localStorage.getItem('queue_order_list') || '[]');
+        // 🌟 改為優先嘗試從使用者的全域設定抓取 custom_order，若無才抓 localstorage
+        const dbCustomOrder = fullProfileSettings?.queue_settings?.custom_order;
+        const savedOrder = dbCustomOrder && dbCustomOrder.length > 0 
+                           ? dbCustomOrder 
+                           : JSON.parse(localStorage.getItem('queue_order_list') || '[]');
+
         if (savedOrder.length > 0) {
           list.sort((a: any, b: any) => {
             const idxA = savedOrder.indexOf(a.id);
@@ -239,7 +272,13 @@ export function Queue() {
     } catch (e) {}
   };
   
-  useEffect(() => { fetchQueue(); }, []);
+  // 🌟 當 fullProfileSettings 載入完成後再拉取佇列，確保能套用到資料庫儲存的排序
+  useEffect(() => { 
+    if (myId) {
+      fetchQueue(); 
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myId]); 
 
   useEffect(() => {
     if (commissions.length > 0) {
@@ -340,6 +379,11 @@ export function Queue() {
       const newCommissions = [...prev];
       const [draggedItem] = newCommissions.splice(oldIdx, 1);
       newCommissions.splice(newIdx, 0, draggedItem);
+      
+      // 🌟 當拖曳完成時，將新排序寫回資料庫
+      const newOrderIds = newCommissions.map(c => c.id);
+      handleSyncOrderToDB(newOrderIds);
+
       return newCommissions;
     });
     setDraggedId(null); setDragOverId(null);
@@ -372,7 +416,6 @@ export function Queue() {
 
   return (
     <div className="queue-container">
-      {/* 🌟 移除 min-width 行內樣式，改由 CSS 控制以避免手機版破版擠壓 */}
       <style>{`
         .queue-mobile-col-name { display: none; }
         .dynamic-date-th { min-width: 110px; }
@@ -409,7 +452,6 @@ export function Queue() {
               <th>日期</th>
               <th>委託人</th>
               <th>進度</th>
-              {/* 🌟 修正：套用動態寬度的 class */}
               <th className="dynamic-date-th">
                 <div className="queue-desktop-col-edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input 
