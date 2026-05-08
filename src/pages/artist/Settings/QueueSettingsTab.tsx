@@ -5,6 +5,8 @@ export interface QueueSettings {
   show_client_name: boolean;
   show_client_id: boolean;
   show_project_name: boolean;
+  date_column_label?: string; // 🌟 補回設定欄位
+  custom_order?: string[];    // 🌟 確保能承接客製化排序陣列
 }
 
 export function QueueSettingsTab({ settings, setSettings }: any) {
@@ -13,9 +15,11 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     show_client_name: true,
     show_client_id: false,
     show_project_name: true,
+    date_column_label: '預計開始日'
   };
 
-  const update = (field: keyof QueueSettings, val: boolean) => {
+  // 🌟 將 val 型別改為 any，以相容 boolean 與 string 類型的更新
+  const update = (field: keyof QueueSettings, val: any) => {
     setSettings({ ...settings, queue_settings: { ...qs, [field]: val } });
   };
 
@@ -37,7 +41,20 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       
       {qs.enabled && (
         <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
-          <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px' }}>顯示範圍控制 (隱私設定)</h4>
+          <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px', marginBottom: '16px' }}>顯示範圍控制 (隱私設定)</h4>
+
+          {/* 🌟 補回從 Queue.tsx 提到的自訂欄位輸入框 */}
+          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>日期欄位顯示名稱：</label>
+            <input 
+              type="text" 
+              value={qs.date_column_label ?? '預計開始日'}
+              onChange={e => update('date_column_label', e.target.value)}
+              placeholder="例如：預計完工日、開始日"
+              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #DED9D3', fontSize: '14px', flex: 1, maxWidth: '250px' }}
+            />
+          </div>
+
           <p style={{ fontSize: '13px', color: '#7A7269', marginBottom: '20px' }}>
             請勾選您希望在前端公開顯示的欄位，未勾選的欄位將自動匿名或隱藏處理。
           </p>

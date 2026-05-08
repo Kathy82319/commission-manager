@@ -133,7 +133,7 @@ export const userController = {
 
     const body: any = await request.json();
     
-    // 🌟 1. 判斷是否有送來 profile_settings 欄位 (可能是部分更新，沒送就不要動)
+    // 🌟 1. 動態解析 Profile Settings
     let settings: any = null;
     let hasSettingsUpdate = false;
     
@@ -183,7 +183,6 @@ export const userController = {
 
     const batchQueue: any[] = [];
 
-    // 若有更新 Users 表的內容才執行
     if (userUpdates.length > 0) {
       userParams.push(targetId);
       const updateUsersQuery = env.commission_db.prepare(`
@@ -192,10 +191,8 @@ export const userController = {
       batchQueue.push(updateUsersQuery);
     }
 
-    // 🌟 3. 動態組合 ArtistProfiles 的更新邏輯 (若有 profile_settings 的更新，才去更新關聯表)
+    // 🌟 3. 動態處理 ArtistProfiles 關聯表
     if (hasSettingsUpdate) {
-      // 由於 ArtistProfiles 有些舊有欄位與 profile_settings 掛鉤，這裡我們也必須小心處理
-      // 但為了與之前的行為相容，若前端丟了整包 setting 過來，我們一樣去更新
       const c1 = settings.custom_sections?.[0] || {};
       const c2 = settings.custom_sections?.[1] || {};
       const c3 = settings.custom_sections?.[2] || {};
@@ -263,6 +260,7 @@ export const userController = {
       }
     });
   },
+
 
   async completeOnboarding(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { display_name: string; role: string } = await request.json();
