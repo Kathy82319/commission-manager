@@ -329,7 +329,6 @@ export const Inbox: React.FC = () => {
                   handleCancelBulletin={(id) => { setCancelTargetId(id); setShowDeclineModal(true); }}
                 />
               )}
-              /* --- 在 index.tsx 約 325 行處 --- */
 {selectedItem.type === 'outbound' && (
   <OutboundTab 
     artistInquiries={artistInquiries} // 傳入完整陣列
