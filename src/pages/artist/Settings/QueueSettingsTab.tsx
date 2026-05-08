@@ -49,7 +49,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 checked={qs.show_client_name} 
                 onChange={e => update('show_client_name', e.target.checked)} 
               />
-              顯示委託人名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將顯示為 "匿名委託")</span>
+              顯示委託人名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將會把委託人名字中段以*字呈現，例如龍*天)</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#5D4A3E' }}>
               <input 
@@ -57,7 +57,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 checked={qs.show_client_id} 
                 onChange={e => update('show_client_id', e.target.checked)} 
               />
-              顯示委託人 ID <span style={{ color: '#A0978D', fontSize: '12px' }}>(綁定之社群 ID)</span>
+              顯示委託人 ID <span style={{ color: '#A0978D', fontSize: '12px' }}>(綁定之User_ID)</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#5D4A3E' }}>
               <input 
@@ -65,7 +65,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 checked={qs.show_project_name} 
                 onChange={e => update('show_project_name', e.target.checked)} 
               />
-              顯示項目名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將顯示為 "私人委託項目")</span>
+              顯示項目名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將一律顯示為 "私人委託項目")</span>
             </label>
           </div>
         </div>
