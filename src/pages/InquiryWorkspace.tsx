@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import DOMPurify from 'dompurify';
-import '../styles/Workspace.css';
+import '../../styles/Workspace.css';
 
 const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
 
@@ -130,7 +130,6 @@ export const InquiryWorkspace: React.FC = () => {
       console.error("讀取洽談室失敗:", e); 
     } finally { 
       setLoading(false);
-      // 🌟 初次載入強制捲動到底部
       if (isFirstLoad.current) {
         setTimeout(() => {
           chatEndRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -146,18 +145,15 @@ export const InquiryWorkspace: React.FC = () => {
     return () => clearInterval(timer);
   }, [id, apiPrefix]);
 
-  // 🌟 聰明的捲動機制：只有當使用者沒有往上捲動時，才自動滾動到底部
   useEffect(() => { 
     if (!isScrolledUp && !isFirstLoad.current) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
     }
   }, [messages]);
 
-  // 🌟 監聽聊天室滾動事件
   const handleScroll = () => {
     if (!chatMainRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatMainRef.current;
-    // 距離底部超過 50px 判定為往上捲動 (進入回顧模式)
     const isUp = scrollHeight - scrollTop - clientHeight > 50;
     setIsScrolledUp(isUp);
   };
@@ -172,7 +168,7 @@ export const InquiryWorkspace: React.FC = () => {
     if (!newMessage.trim()) return;
     await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: newMessage });
     setNewMessage('');
-    setIsScrolledUp(false); // 發送訊息後強制解除往上捲動狀態
+    setIsScrolledUp(false); 
     fetchData();
   };
 
@@ -302,20 +298,23 @@ export const InquiryWorkspace: React.FC = () => {
   };
 
   if (loading || !inquiry) return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FBFBF9', color: '#5D4A3E', fontSize: '15px' }}>
+    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#EAE6E1', color: '#5D4A3E', fontSize: '15px' }}>
       載入洽談室中...
     </div>
   );
 
   let parsedBulletin: any = {};
+  let displayTitle = inquiry.bulletin_title || "未命名委託";
   let displayContent = inquiry.bulletin_content || "";
   let parsedFormAnswers: any[] = [];
 
   if (isDirectInquiry) {
+    displayTitle = inquiry.showcase_title || "客製化委託單";
     try { parsedFormAnswers = JSON.parse(inquiry.form_answers || '[]'); } catch(e) {}
   } else {
     try {
       parsedBulletin = JSON.parse(inquiry.bulletin_content);
+      if (!inquiry.bulletin_title && parsedBulletin.title) displayTitle = parsedBulletin.title;
       if (parsedBulletin.content) displayContent = parsedBulletin.content;
       else if (parsedBulletin.description) displayContent = parsedBulletin.description;
     } catch (e) {}
@@ -351,8 +350,10 @@ export const InquiryWorkspace: React.FC = () => {
     (!isDirectInquiry && inquiry.status === 'submitted') 
   );
 
-  // 🌟 動態產出標題與對象資訊
-  const headerProjectName = draft.project_name ? `${draft.project_name} (${id})` : id;
+  // 🌟 動態產出標題與對象資訊 (需後端 API 配合 JOIN 選出 commission_id 與 public_id)
+  const projectNameStr = draft.project_name || displayTitle || '';
+  const commissionIdStr = inquiry.commission_id ? `(${inquiry.commission_id})` : '';
+  const headerProjectName = `${projectNameStr} ${commissionIdStr}`.trim();
   
   let otherPartyName = "未知對象";
   let otherPartyId = "";
@@ -360,23 +361,23 @@ export const InquiryWorkspace: React.FC = () => {
   if (isArtist) {
     if (isDirectInquiry) {
       if (inquiry.client_id === 'guest' || !inquiry.client_id) {
-        otherPartyName = inquiry.guest_contact_info || "訪客";
+        // 🌟 處理訪客委託，優先抓取表單填寫的聯絡資訊，若無則顯示訪客
+        otherPartyName = inquiry.guest_contact_info || inquiry.contact_memo || "訪客";
         otherPartyId = "Guest";
       } else {
         otherPartyName = inquiry.client_name || "委託人";
-        otherPartyId = inquiry.client_id;
+        otherPartyId = inquiry.client_public_id || inquiry.client_id;
       }
     } else {
       otherPartyName = inquiry.client_name || "委託人";
-      otherPartyId = inquiry.bulletin_client_id;
+      otherPartyId = inquiry.client_public_id || inquiry.bulletin_client_id;
     }
   } else {
     otherPartyName = "繪師";
-    otherPartyId = actualArtistId || inquiry.artist_id;
+    otherPartyId = inquiry.artist_public_id || actualArtistId || inquiry.artist_id;
   }
 
   return (
-    // 🌟 外層背景改為微灰 (#EAE6E1)，內層加上寬度限制與陰影
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
       <div style={{ display: 'flex', width: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative' }}>
         
@@ -385,9 +386,8 @@ export const InquiryWorkspace: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
               <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>← 返回</button>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* 🌟 更新後的標題顯示 */}
                 <h2 className="iw-chat-title" style={{ margin: 0, fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  洽談：{headerProjectName}
+                  洽談：{headerProjectName || '未命名'}
                 </h2>
                 <span style={{ fontSize: '11px', color: '#A0978D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   洽談對象：{otherPartyName} (ID: {otherPartyId})
@@ -427,28 +427,10 @@ export const InquiryWorkspace: React.FC = () => {
             <div ref={chatEndRef} />
           </main>
 
-          {/* 🌟 懸浮的「至底」按鈕 */}
           {isScrolledUp && (
             <button 
               onClick={scrollToBottom}
-              style={{
-                position: 'absolute',
-                bottom: '90px',
-                right: '20px',
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: '#FFFFFF',
-                color: '#5D4A3E',
-                border: '1px solid #EAE6E1',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 100,
-                fontSize: '18px'
-              }}
+              style={{ position: 'absolute', bottom: '90px', right: '20px', width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #EAE6E1', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 100, fontSize: '18px' }}
               title="回到最新訊息"
             >
               ⬇️
