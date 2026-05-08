@@ -379,6 +379,8 @@ VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-01
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=Ue29d02da79b805e9df46bdf6442aa24c
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-02
+--https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-03
+
 
 
 

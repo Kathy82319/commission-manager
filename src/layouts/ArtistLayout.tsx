@@ -1,8 +1,9 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react'; 
+import { Bell, X } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
+
 
 export function ArtistLayout() {
   const location = useLocation();
@@ -219,6 +220,16 @@ export function ArtistLayout() {
 
       <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
+
+{/* 🌟 新增：手機版專用的關閉按鈕 */}
+            <button 
+              className="mobile-close-btn" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
+
+
           <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
           <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
           {artist && (
@@ -231,7 +242,13 @@ export function ArtistLayout() {
           
           <nav className="sidebar-nav">
             {navItems.map(item => (
-              <Link key={item.path} to={item.path} className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}>
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                // 🌟 新增：點擊連結後自動關閉側邊欄
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 {item.label}
               </Link>
             ))}
