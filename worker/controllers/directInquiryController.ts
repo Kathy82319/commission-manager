@@ -25,7 +25,6 @@ export const directInquiryController = {
         `).run();
       }
       
-      // 🌟 利用 SQLite 的批次執行 (Batch)，在寫入訂單的同時，把該商品的接單數量 +1
       await env.commission_db.batch([
         env.commission_db.prepare(`
           INSERT INTO DirectInquiries (
@@ -95,11 +94,23 @@ export const directInquiryController = {
 
   async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：補上 JOIN Users 抓取雙方真實暱稱與 public_id，並 LEFT JOIN Commissions 抓取成單後的 commission_id 與 contact_memo
       const inquiry = await env.commission_db.prepare(`
-        SELECT di.*, s.title as bulletin_title, a.profile_settings as artist_settings
+        SELECT di.*, 
+               s.title as bulletin_title, 
+               s.title as showcase_title,
+               a.profile_settings as artist_settings,
+               a.display_name as artist_name,
+               a.public_id as artist_public_id,
+               u.display_name as client_name,
+               u.public_id as client_public_id,
+               c.id as commission_id,
+               c.contact_memo
         FROM DirectInquiries di
         JOIN ShowcaseItems s ON di.showcase_id = s.id
         JOIN Users a ON di.artist_id = a.id
+        LEFT JOIN Users u ON di.client_id = u.id
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
         WHERE di.id = ?
       `).bind(inquiryId).first() as any;
 

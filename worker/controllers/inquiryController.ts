@@ -21,23 +21,30 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-const inquiry = await env.commission_db.prepare(
-  `SELECT i.*, 
-          b.title as bulletin_title, 
-          b.content as bulletin_content, 
-          b.category as bulletin_category, 
-          b.client_id as bulletin_client_id,
-          a.profile_settings as artist_settings, 
-          a.plan_type as artist_plan, 
-          a.pro_expires_at, 
-          a.trial_end_at, 
-          u.display_name as client_name
-   FROM BulletinInquiries i
-   JOIN Bulletins b ON i.bulletin_id = b.id
-   LEFT JOIN Users a ON i.artist_id = a.id
-   LEFT JOIN Users u ON b.client_id = u.id
-   WHERE i.id = ?`
-).bind(inquiryId).all();
+      // 🌟 修正：補上 JOIN Users 抓取雙方暱稱與 public_id，並 LEFT JOIN Commissions 抓取成單後的 commission_id 與 contact_memo
+      const inquiry = await env.commission_db.prepare(
+        `SELECT i.*, 
+                b.title as bulletin_title, 
+                b.content as bulletin_content, 
+                b.category as bulletin_category, 
+                b.client_id as bulletin_client_id,
+                a.profile_settings as artist_settings, 
+                a.plan_type as artist_plan, 
+                a.pro_expires_at, 
+                a.trial_end_at, 
+                a.display_name as artist_name,
+                a.public_id as artist_public_id,
+                u.display_name as client_name,
+                u.public_id as client_public_id,
+                c.id as commission_id,
+                c.contact_memo
+         FROM BulletinInquiries i
+         JOIN Bulletins b ON i.bulletin_id = b.id
+         LEFT JOIN Users a ON i.artist_id = a.id
+         LEFT JOIN Users u ON b.client_id = u.id
+         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
+         WHERE i.id = ?`
+      ).bind(inquiryId).all();
 
       const data = inquiry.results[0] as any;
       if (!data) {
