@@ -451,7 +451,7 @@ export function PublicProfile() {
     }
 
     if (!isFreePlan) {
-      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '商品與委託區' });
+      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
       
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {
