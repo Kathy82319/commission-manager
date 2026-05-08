@@ -245,7 +245,7 @@ export default {
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
-
+ 
       if (sanitizedPath.startsWith("/api/showcase")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
