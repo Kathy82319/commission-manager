@@ -3,9 +3,21 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import DOMPurify from 'dompurify';
+import ReactQuill from 'react-quill-new'; 
+import 'react-quill-new/dist/quill.snow.css'; 
 import '../styles/Workspace.css';
 
 const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
+
+const customQuillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }], 
+    ['bold', 'italic', 'underline', 'strike'], 
+    [{ 'color': [] }, { 'background': [] }], 
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+    ['clean'] 
+  ]
+};
 
 export const InquiryWorkspace: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +61,8 @@ export const InquiryWorkspace: React.FC = () => {
     bg_type: '無背景', 
     char_count: 1, 
     add_ons: '',
-    agreed_memo: ''
+    agreed_memo: '',
+    custom_tos: undefined 
   });
 
   const formatLocalTime = (dateStr: string) => {
@@ -284,7 +297,6 @@ export const InquiryWorkspace: React.FC = () => {
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
-  // 🌟 1. 修改：退回修改功能 (移除輸入理由，純確認)
   const handleRejectProposal = async () => {
     if (!window.confirm("確定要退回提案，讓繪師重新修改合約與規格嗎？")) return;
     try {
@@ -298,17 +310,14 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  // 🌟 2. 修改：成單後自動跳轉
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
-        const commId = res.commissionId || res.id; // 假設後端回傳 commissionId
+        const commId = res.commission_id || res.id;
         alert('🎉 委託單已成功建立！系統將為您跳轉至管理頁面。');
         setShowFinalModal(false);
-        
-        // 根據身分跳轉至不同頁面
         if (isArtist) {
           navigate(`/artist/notebook?id=${commId}`);
         } else {
@@ -358,11 +367,15 @@ export const InquiryWorkspace: React.FC = () => {
   } else {
     try {
       const settings = JSON.parse(inquiry.artist_settings || '{}');
-      if (settings.terms_of_service && settings.terms_of_service.trim() !== '') {
+      if (settings.rules && settings.rules.trim() !== '') {
+        artistTos = settings.rules;
+      } else if (settings.terms_of_service && settings.terms_of_service.trim() !== '') {
         artistTos = settings.terms_of_service;
       }
     } catch(e) {}
   }
+
+  const finalDisplayTos = draft.custom_tos !== undefined ? draft.custom_tos : artistTos;
 
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
@@ -556,17 +569,46 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
+              {/* 雙方備忘錄 */}
+              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                 <textarea 
                   disabled={!isEditableByArtist} 
                   className="draft-input" 
-                  style={{ minHeight: '150px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
+                  style={{ minHeight: '120px', resize: 'vertical', fontSize: '13px', lineHeight: '1.6' }} 
                   value={draft.agreed_memo || ''} 
                   onChange={(e) => setDraft({...draft, agreed_memo: e.target.value})} 
                   placeholder="輸入最終確認的備註細節..." 
                 />
               </div>
+
+              {/* 🌟 繪師專屬協議條款編輯器 (TOS) */}
+              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
+                  {isEditableByArtist && (
+                    <button 
+                      onClick={() => setDraft({...draft, custom_tos: artistTos})}
+                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      📥 帶入個人範本
+                    </button>
+                  )}
+                </div>
+                {isEditableByArtist ? (
+                  <div className="quote-quill-wrapper" style={{ margin: 0 }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      value={draft.custom_tos !== undefined ? draft.custom_tos : artistTos} 
+                      onChange={(val) => setDraft({...draft, custom_tos: val})} 
+                      modules={customQuillModules} 
+                    />
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
+                )}
+              </div>
+
             </div>
 
             <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -577,7 +619,6 @@ export const InquiryWorkspace: React.FC = () => {
                 </>
               )}
 
-              {/* 🌟 1. 修改委託人按鈕區：加入「退回修改」 */}
               {!isArtist && inquiry.status === 'proposed' && (
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>退回修正</button>
@@ -620,9 +661,27 @@ export const InquiryWorkspace: React.FC = () => {
                   </div>
                 )}
 
+                {/* 🌟 修正：補回原本消失的「繪師接案基本規範」區塊 (針對許願池) */}
+                {!isDirectInquiry && isOffer && (
+                  <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+                    <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E' }}>
+                      {parsedBulletin.payment_timing && (
+                        <p style={{ margin: 0 }}>
+                          <strong>支付時機與說明：</strong> {getPaymentTimingLabel(parsedBulletin.payment_timing)} 
+                          {parsedBulletin.payment_timing_detail ? ` (${parsedBulletin.payment_timing_detail})` : ''}
+                        </p>
+                      )}
+                      {parsedBulletin.payment_methods && parsedBulletin.payment_methods.length > 0 && (
+                        <p style={{ margin: 0 }}><strong>可接受收款方式：</strong> {parsedBulletin.payment_methods.join('、')}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                   <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
-                  <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(artistTos) }} />
+                  <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
                 </div>
               </div>
 
