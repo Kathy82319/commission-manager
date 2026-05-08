@@ -53,9 +53,15 @@ export const r2Controller = {
     }
   },
 
-
   async getDownloadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { commissionId, fileName, bucketType } = await request.json() as any;
+    
+    // 🛡️ 資安修復：嚴格防禦 Path Traversal (任意檔案讀取漏洞)
+    // 阻擋包含 '../' 或絕對路徑的檔名，防止攻擊者跨目錄讀取機密檔案
+    if (!fileName || typeof fileName !== 'string' || fileName.includes('..') || fileName.startsWith('/')) {
+      return new Response(JSON.stringify({ success: false, error: "不合法的檔案路徑格式" }), { status: 400, headers: corsHeaders });
+    }
+
     const bucketToUse = bucketType === 'public' ? "commission-public" : "commission-private";
 
     const { results } = await env.commission_db.prepare(
@@ -66,6 +72,7 @@ export const r2Controller = {
     const comm = results[0] as any;
 
     let actorRole = '';
+    // ✅ 這裡本來就有做當事者身分防護
     if (currentUserId === comm.client_id) {
       actorRole = 'client';
     } else if (currentUserId === comm.artist_id) {

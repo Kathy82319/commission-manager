@@ -52,14 +52,14 @@ export const commController = {
         c.*, 
         u.display_name AS client_name, 
         u.public_id AS client_public_id, 
-        a.public_id AS artist_public_id, -- 🌟 關鍵新增：撈出繪師的 public_id
+        a.public_id AS artist_public_id,
         t.name AS type_name,
         cr.custom_label AS client_custom_label,
         cr.id AS crm_record_id,
         (SELECT MAX(created_at) FROM Messages WHERE commission_id = c.id) as latest_message_at
       FROM Commissions c
       LEFT JOIN Users u ON c.client_id = u.id
-      LEFT JOIN Users a ON c.artist_id = a.id -- 🌟 關鍵新增：關聯出繪師的資料
+      LEFT JOIN Users a ON c.artist_id = a.id
       LEFT JOIN CommissionTypes t ON c.type_id = t.id
       LEFT JOIN CustomerRecords cr ON (c.artist_id = cr.artist_id AND c.client_id = cr.client_user_id)
       WHERE c.artist_id = ? OR c.client_id = ?
@@ -75,7 +75,7 @@ export const commController = {
         c.*, 
         u.display_name AS client_name, 
         u.public_id AS client_public_id, 
-        a.public_id AS artist_public_id, -- 🌟 關鍵新增：撈出繪師的 public_id
+        a.public_id AS artist_public_id,
         t.name AS type_name, 
         a.profile_settings AS artist_settings,
         cr.custom_label AS client_custom_label,
@@ -177,25 +177,52 @@ export const commController = {
 
     const updates: string[] = [];
     const params: any[] = [];
-    // 🛡️ 漏洞修復：將 contact_memo 加回白名單，並限制長度為 100 字元
+    
     const fieldLimits: Record<string, number> = {
       'status': 50, 'payment_status': 50, 'client_id': 100, 'project_name': 255, 'detailed_settings': 10000, 
       'usage_type': 100, 'is_rush': 50, 'delivery_method': 100, 'payment_method': 100, 
       'draw_scope': 100, 'bg_type': 100, 'add_ons': 1000, 'current_stage': 50, 'end_date': 50, 
       'artist_note': 5000, 'workflow_mode': 50, 'queue_status': 100, 'client_custom_title': 100,
-      'agreed_tos_snapshot': 10000, 'contact_memo': 100 // 👉 補上這一行
+      'agreed_tos_snapshot': 10000, 'contact_memo': 100 
     };
+
+    // 🛡️ 資安修復：嚴格區分角色可以修改的欄位 (防止 Mass Assignment 繞過金流與合約)
+    const isArtist = currentUserId === comm.artist_id;
+    const isClient = currentUserId === comm.client_id;
     
+    const clientAllowedFields = ['client_custom_title', 'contact_memo'];
+    const specialFields = ['total_price', 'char_count', 'last_read_at_artist', 'last_read_at_client'];
+
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
-        updates.push(`${key} = ?`);
-        params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : (typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]));
+        // 綁定過程允許寫入 client_id
+        if (isBinding && key === 'client_id') {
+          updates.push(`${key} = ?`);
+          params.push(sanitizeAndLimit(body[key], fieldLimits[key]));
+        } else if (isArtist && !clientAllowedFields.includes(key)) {
+          // 繪師可以修改大部分欄位，但不能改委託人的自訂標題
+          updates.push(`${key} = ?`);
+          params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : (typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]));
+        } else if (isClient && clientAllowedFields.includes(key)) {
+          // 委託人只能修改專屬的自訂欄位
+          updates.push(`${key} = ?`);
+          params.push(typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]);
+        }
       }
     }
     
-    const specialFields = ['total_price', 'char_count', 'last_read_at_artist', 'last_read_at_client'];
+    // 處理特殊欄位 (數值型或日期)
     for (const key of specialFields) {
-        if (body[key] !== undefined) { updates.push(`${key} = ?`); params.push(body[key]); }
+      if (body[key] !== undefined) { 
+        if (key === 'last_read_at_artist' && isArtist) {
+          updates.push(`${key} = ?`); params.push(body[key]);
+        } else if (key === 'last_read_at_client' && (isClient || isBinding)) {
+          updates.push(`${key} = ?`); params.push(body[key]);
+        } else if ((key === 'total_price' || key === 'char_count') && isArtist) {
+          // 🛡️ 確保只有繪師可以修改金額和人數
+          updates.push(`${key} = ?`); params.push(body[key]);
+        }
+      }
     }
 
     if (updates.length > 0 || isBinding) {
@@ -259,7 +286,6 @@ export const commController = {
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 繪師已提交 ${stageNameCH} 供您審閱。`)
     ]);
 
-    
     if (comm[0].client_id) {
        await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?open=${id}`);
     }
@@ -273,6 +299,11 @@ export const commController = {
     const comm = commResults as any[];
     if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到單據" }, 404, corsHeaders);
     
+    // 🛡️ 資安修復：嚴格限制只有委託人可以審核/退回稿件 (防 IDOR)
+    if (currentUserId !== comm[0].client_id) {
+      return createJsonResponse({ success: false, error: "無權限審核稿件" }, 403, corsHeaders);
+    }
+
     const stageNameCH = body.stage === 'sketch' ? '草稿' : body.stage === 'lineart' ? '線稿' : '完稿';
     let nextStageStatus = '';
     let logMsg = '';
@@ -311,6 +342,11 @@ export const commController = {
     const comm = commResults as any[];
     if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到單據" }, 404, corsHeaders);
 
+    // 🛡️ 資安修復：嚴格限制只有繪師可以提出合約異動 (防 IDOR)
+    if (currentUserId !== comm[0].artist_id) {
+      return createJsonResponse({ success: false, error: "僅繪師可提出異動申請" }, 403, corsHeaders);
+    }
+
     await env.commission_db.batch([
       env.commission_db.prepare("UPDATE Commissions SET pending_changes = ? WHERE id = ?").bind(JSON.stringify(changes), id),
       env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'change_request', '繪師提交了規格異動申請')").bind(crypto.randomUUID(), id)
@@ -328,6 +364,11 @@ export const commController = {
     const { results } = await env.commission_db.prepare("SELECT pending_changes, artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
     const comm = results as any[];
     if (!comm[0]?.pending_changes) return createJsonResponse({ success: false, error: "無待處理申請" }, 400, corsHeaders);
+
+    // 🛡️ 資安修復：嚴格限制只有委託人可以同意或拒絕異動 (防 IDOR)
+    if (currentUserId !== comm[0].client_id) {
+      return createJsonResponse({ success: false, error: "僅委託人可同意或拒絕異動" }, 403, corsHeaders);
+    }
 
     const changes = JSON.parse(comm[0].pending_changes as string);
     const logMsg = action === 'approve' ? '委託人已同意規格異動' : '委託人已拒絕規格異動';
@@ -360,6 +401,12 @@ export const commController = {
   },
 
   async getMessages(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🛡️ 資安修復：驗證是否有權限讀取訊息 (防 IDOR)
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
+    if (commResults.length === 0 || (currentUserId !== commResults[0].artist_id && currentUserId !== commResults[0].client_id)) {
+      return createJsonResponse({ success: false, error: "無權限讀取對話紀錄" }, 403, corsHeaders);
+    }
+
     const { results } = await env.commission_db.prepare("SELECT * FROM Messages WHERE commission_id = ? ORDER BY created_at ASC").bind(id).all();
     return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
   },
@@ -367,11 +414,23 @@ export const commController = {
   async postMessage(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const body: { sender_role: string; content: string } = await request.json();
     
+    // 🛡️ 資安修復：驗證發言者身分，防止偽造 (防 IDOR)
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
+    const comm = commResults as any[];
+    if (comm.length === 0) return createJsonResponse({ success: false, error: "找不到訂單" }, 404, corsHeaders);
+
+    const isArtist = currentUserId === comm[0].artist_id;
+    const isClient = currentUserId === comm[0].client_id;
+    if (!isArtist && !isClient) return createJsonResponse({ success: false, error: "無權限發送訊息" }, 403, corsHeaders);
+    
+    // 強制覆寫 sender_role，不信任前端傳來的值，防止偽造系統通知
+    const actualRole = isArtist ? 'artist' : 'client';
+
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentMsgs } = await env.commission_db.prepare(`
       SELECT COUNT(*) as count FROM Messages 
       WHERE commission_id = ? AND sender_role = ? AND datetime(created_at) >= datetime(?)
-    `).bind(id, body.sender_role, oneMinuteAgo).all();
+    `).bind(id, actualRole, oneMinuteAgo).all();
 
     if (((recentMsgs[0]?.count as number) || 0) >= 30) {
       return createJsonResponse({ success: false, error: "發送訊息過於頻繁，請稍後再試。" }, 429, corsHeaders);
@@ -381,31 +440,38 @@ export const commController = {
     const cleanContent = sanitizeAndLimit(body.content, 10000);
     
     await env.commission_db.batch([
-      env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(msgId, id, body.sender_role, cleanContent),
+      env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(msgId, id, actualRole, cleanContent),
       env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
     ]);
     
+    const targetUserId = isArtist ? comm[0].client_id : comm[0].artist_id;
+    const roleQuery = isArtist ? '' : '?role=artist';
     
-    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name FROM Commissions WHERE id = ?").bind(id).all();
-    const comm = commResults as any[];
-    if (comm.length > 0) {
-       const targetUserId = body.sender_role === 'artist' ? comm[0].client_id : comm[0].artist_id;
-       const roleQuery = body.sender_role === 'artist' ? '' : '?role=artist';
-       
-       if (targetUserId) {
-         await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
-       }
+    if (targetUserId) {
+      await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, `/workspace/${id}${roleQuery}`);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
   async getPayments(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🛡️ 資安修復：驗證是否有權限讀取記帳紀錄 (防 IDOR)
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
+    if (commResults.length === 0 || currentUserId !== commResults[0].artist_id) {
+      return createJsonResponse({ success: false, error: "無權限查看財務紀錄" }, 403, corsHeaders);
+    }
+
     const { results } = await env.commission_db.prepare("SELECT * FROM PaymentRecords WHERE commission_id = ? ORDER BY record_date ASC, created_at ASC").bind(id).all();
     return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
   },
 
   async postPayment(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🛡️ 資安修復：驗證只有該訂單繪師可以新增帳目 (防 IDOR)
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
+    if (commResults.length === 0 || currentUserId !== commResults[0].artist_id) {
+      return createJsonResponse({ success: false, error: "僅繪師可新增財務紀錄" }, 403, corsHeaders);
+    }
+
     const body: { record_date: string; item_name: string; amount: number } = await request.json();
     
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
@@ -423,6 +489,17 @@ export const commController = {
   },
 
   async deletePayment(paymentId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    // 🛡️ 資安修復：驗證該筆款項是否屬於當前繪師的訂單 (防 IDOR)
+    const { results } = await env.commission_db.prepare(`
+      SELECT c.artist_id FROM PaymentRecords p
+      JOIN Commissions c ON p.commission_id = c.id
+      WHERE p.id = ?
+    `).bind(paymentId).all();
+
+    if (results.length === 0 || currentUserId !== results[0].artist_id) {
+      return createJsonResponse({ success: false, error: "無權限刪除此紀錄" }, 403, corsHeaders);
+    }
+
     await env.commission_db.prepare("DELETE FROM PaymentRecords WHERE id = ?").bind(paymentId).run();
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
