@@ -1,14 +1,12 @@
 // src/pages/Inbox/OfferList/CardView.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import { getStatusLabel, getExpiryInfo } from '../utils/formatters';
+import React, { useState } from 'react';
+import { getStatusLabel, renderChips } from '../utils/formatters';
 import { R2_PUBLIC_URL } from '../../public/Wishboard/constants';
 import { Ban } from 'lucide-react'; 
 
 interface CardViewProps {
   inquiry: any;
   snapshot: any;
-  isExpanded: boolean;
-  onToggle: () => void;
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleDirectInvite: (inquiry: any) => void;
@@ -27,9 +25,6 @@ const unescapeHtml = (str: string) => {
 export const CardView: React.FC<CardViewProps> = ({
   inquiry,
   snapshot,
-  isExpanded,
-  onToggle,
-  setSelectedInquiry,
   setShowDeclineModal,
   handleDirectInvite,
   isSelected,
@@ -41,9 +36,8 @@ export const CardView: React.FC<CardViewProps> = ({
   const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
   const isDeclined = inquiry.inquiry_status === 'declined';
 
-  const clientName = inquiry.artist_name || snapshot.client_name || '匿名委託人';
+  const clientName = inquiry.artist_name || snapshot.client_name || '匿名繪師';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || 'unknown';
-
   const isBlacklisted = blacklistedIds.includes(inquiry.artist_id);
 
   let images: string[] = [];
@@ -64,222 +58,134 @@ export const CardView: React.FC<CardViewProps> = ({
     return url.startsWith('http') ? url : `${R2_PUBLIC_URL}/${url}`;
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5);
-
-  const answers = snapshot.answers || []; 
   const note = unescapeHtml(snapshot.note || snapshot.message || ''); 
 
   const [imgIdx, setImgIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [needsExpansion, setNeedsExpansion] = useState(false);
-
-  useEffect(() => {
-    if (contentRef.current) {
-      if (contentRef.current.scrollHeight > 130) {
-        setNeedsExpansion(true);
-      } else {
-        setNeedsExpansion(false);
-      }
-    }
-  }, [answers, note, inquiry.decline_reason]);
-
-  const nextImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImgIdx((prev) => (prev + 1) % validImages.length);
-  };
-  const prevImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImgIdx((prev) => (prev - 1 + validImages.length) % validImages.length);
-  };
-  const openLightbox = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (validImages.length > 0) setLightboxOpen(true);
-  };
-
-  const expiryInfo = getExpiryInfo(inquiry.expires_at);
+  const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev + 1) % validImages.length); };
+  const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev - 1 + validImages.length) % validImages.length); };
+  const openLightbox = (e: React.MouseEvent) => { e.stopPropagation(); if (validImages.length > 0) setLightboxOpen(true); };
 
   return (
     <>
       <div 
-        className={`offer-card-container ${isExpanded ? 'is-expanded' : ''}`} 
-        onClick={onToggle}
-        style={{ cursor: 'pointer', display: 'flex', position: 'relative' }} 
+        style={{ 
+          display: 'flex', flexDirection: 'column', height: '100%', 
+          background: isDeclined ? '#F9F9F9' : '#FFFFFF', 
+          border: `1px solid ${isBlacklisted ? '#EF4444' : (isSelected ? '#4A7294' : '#EAE6E1')}`, 
+          borderRadius: '12px', overflow: 'hidden', 
+          boxShadow: isSelected ? '0 0 0 2px #4A7294' : '0 4px 12px rgba(0,0,0,0.03)',
+          filter: isDeclined ? 'grayscale(50%)' : 'none',
+          opacity: isDeclined ? 0.7 : 1,
+          transition: 'all 0.2s', position: 'relative'
+        }} 
       >
-        
-        
-        <div 
-          className="offer-card-gallery" 
-          style={{ 
-            width: '220px',      
-            minWidth: '220px',   
-            flexShrink: 0, 
-            maxHeight: (!isExpanded && needsExpansion) ? '180px' : '350px',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          <div className="card-checkbox-wrapper" onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10 }}>
-            <input 
-              type="checkbox" 
-              className="card-checkbox" 
-              checked={isSelected} 
-              onChange={onSelect} 
-            />
-          </div>
+        {/* 勾選框 */}
+        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10 }}>
+          <input type="checkbox" checked={isSelected} onChange={onSelect} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+        </div>
+
+        {/* 狀態標籤 */}
+        <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}>
+          <span className={`status-${inquiry.inquiry_status}`} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', border: '1px solid rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
+            {getStatusLabel(inquiry.inquiry_status)}
+          </span>
+        </div>
+
+        {/* 頂部圖片區 */}
+        <div style={{ height: '180px', width: '100%', backgroundColor: '#F4F4F1', position: 'relative' }} onClick={openLightbox}>
           {validImages.length > 0 ? (
-            <div className="offer-carousel-wrapper" onClick={openLightbox} style={{ height: '100%', width: '100%' }}>
-              <img 
-                src={validImages[imgIdx]} 
-                alt={`委託人參考圖 ${imgIdx + 1}`} 
-                className="offer-ref-img" 
-                referrerPolicy="no-referrer"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-              />
-              {validImages.length > 1 && (
-                <div className="offer-img-counter" style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '11px', padding: '2px 6px', borderRadius: '4px' }}>
-                  {imgIdx + 1} / {validImages.length}
-                </div>
-              )}
+            <>
+              <img src={validImages[imgIdx]} alt="預覽圖" style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               {validImages.length > 1 && (
                 <>
-                  <button className="offer-img-nav offer-img-prev" onClick={prevImg} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>❮</button>
-                  <button className="offer-img-nav offer-img-next" onClick={nextImg} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>❯</button>
+                  <button onClick={prevImg} style={{ position: 'absolute', left: '4px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}>❮</button>
+                  <button onClick={nextImg} style={{ position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}>❯</button>
+                  <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                    {imgIdx + 1} / {validImages.length}
+                  </div>
                 </>
               )}
-            </div>
+            </>
           ) : (
-            <div className="offer-no-img" style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F4F4F1', color: '#A0978D', fontSize: '12px' }}>
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D', fontSize: '13px' }}>
               無附上參考圖
             </div>
           )}
         </div>
 
-        
-        <div className="offer-card-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <div className="offer-card-header">
-            <div className="offer-client-info flex flex-wrap items-center gap-2">
-              <span className="client-name">{clientName}</span>
-              <span className="client-id">@{clientId}</span>
-              {inquiry.inquiry_status === 'pending' && inquiry.expires_at && (
-                <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${expiryInfo.className}`}>
-                  ⏳ {expiryInfo.text}
-                </span>
-              )}
-              
-              {isBlacklisted && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#FEF2F2', color: '#EF4444', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #FECACA' }}>
-                  <Ban size={12} /> 黑名單繪師
-                </span>
-              )}
+        {/* 下半部資訊區 */}
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={clientName}>{clientName}</div>
+              <div style={{ color: '#A0978D', fontSize: '12px', fontFamily: 'monospace' }}>@{clientId}</div>
             </div>
-            <span className={`inbox-badge status-${inquiry.inquiry_status}`}>
-              {getStatusLabel(inquiry.inquiry_status)}
-            </span>
+            {/* 🌟 修正：把 title 移到外層的 span 上 */}
+            {isBlacklisted && (
+              <span title="黑名單繪師" style={{ display: 'flex', alignItems: 'center' }}>
+                <Ban size={16} color="#EF4444" />
+              </span>
+            )}
           </div>
 
-          <div 
-            className="offer-text-area" 
-            ref={contentRef}
-            style={{
-              maxHeight: (!isExpanded && needsExpansion) ? '120px' : 'none',
-              overflow: 'hidden',
-              wordBreak: 'break-word',
-              overflowWrap: 'anywhere',
-              position: 'relative'
-            }}
-          >
-            {answers.length > 0 ? (
-              <>
-                {answers.map((ans: any, idx: number) => (
-                  <div key={idx} className="qa-block">
-                    <div className="q-text">Q: {unescapeHtml(ans.question)}</div>
-                    <div className="a-text">A: {unescapeHtml(ans.answer) || '無填寫'}</div>
-                  </div>
-                ))}
-                {snapshot.message && (
-                  <div className="qa-block note-block mt-4">
-                    <div className="q-text">備註：</div>
-                    <div className="a-text">{unescapeHtml(snapshot.message)}</div>
-                  </div>
-                )}
-              </>
-            ) : note ? (
-              <div className="qa-block">
-                <div className="q-text">委託需求內容：</div>
-                <div className="a-text">{note}</div>
-              </div>
-            ) : (
-              <div className="text-[#A0978D] text-sm italic mt-2">此委託人尚未填寫詳細需求說明。</div>
+          <div style={{ fontSize: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {snapshot.specialties && (
+              <div><strong style={{ color: '#4A7294' }}>擅長：</strong> {renderChips(snapshot.specialties, 'good')}</div>
             )}
-
-            {isDeclined && inquiry.decline_reason && (
-              <div className="qa-block mt-4" style={{ background: '#FEF2F2', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #EF4444' }}>
-                <div className="q-text" style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '14px', lineHeight: 1 }}>⚠</span> 終止/撤回原因：
-                </div>
-                <div className="a-text" style={{ color: '#A05C5C', marginTop: '4px' }}>
-                  {inquiry.decline_reason}
-                </div>
+            {note && (
+              <div style={{ color: '#7A7269', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', backgroundColor: '#FBFBF9', padding: '8px', borderRadius: '6px', border: '1px solid #EAE6E1' }}>
+                {note}
               </div>
             )}
           </div>
 
-          {!isExpanded && needsExpansion && (
-            <div style={{
-              height: '40px',
-              background: 'linear-gradient(transparent, #FFFFFF 80%)',
-              marginTop: '-40px',
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              paddingBottom: '4px',
-              color: '#A67B3E',
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              ▼ 點擊展開完整內容與操作
-            </div>
-          )}
-
-          {(isExpanded || !needsExpansion) && (
-            <div className="offer-actions" onClick={(e) => e.stopPropagation()} style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
-                <button className="btn-primary" onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}>
-                  💬 進入聊天室
-                </button>
-              )}
-              {inquiry.inquiry_status === 'accepted' && (
-                <button className="btn-success" onClick={() => handleViewCommission(inquiry.commission_id)}>
-                  前往正式委託單
-                </button>
-              )}
-              {inquiry.inquiry_status === 'pending' && (
-                <button className="btn-primary" onClick={() => handleDirectInvite(inquiry)}>
-                  ✉️ 邀請詳談
-                </button>
-              )}
-              {canDecline && (
-                <button className="btn-secondary-red" onClick={() => { setSelectedInquiry(inquiry); setShowDeclineModal(true); }}>
-                  {inquiry.inquiry_status === 'pending' ? '禮貌婉拒' : '終止洽談'}
-                </button>
-              )}
-            </div>
-          )}
+          {/* 底部操作按鈕 */}
+          <div style={{ marginTop: 'auto', display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
+            {canDecline && (
+              <button 
+                onClick={() => setShowDeclineModal(true)}
+                style={{ flex: 1, padding: '8px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {inquiry.inquiry_status === 'pending' ? '婉拒' : '終止'}
+              </button>
+            )}
+            {inquiry.inquiry_status === 'pending' && (
+              <button 
+                onClick={() => handleDirectInvite(inquiry)}
+                style={{ flex: 2, padding: '8px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                邀請詳談
+              </button>
+            )}
+            {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
+              <button 
+                onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
+                style={{ flex: 1, padding: '8px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                進入聊天室
+              </button>
+            )}
+            {inquiry.inquiry_status === 'accepted' && (
+              <button 
+                onClick={() => handleViewCommission(inquiry.commission_id)}
+                style={{ flex: 1, padding: '8px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                前往委託單
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {lightboxOpen && (
-        <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)}>
+        <div className="lightbox-overlay" onClick={() => setLightboxOpen(false)} style={{ zIndex: 99999 }}>
           <div className="lightbox-content relative" onClick={(e) => e.stopPropagation()}>
             <button className="lightbox-close" onClick={() => setLightboxOpen(false)}>✕</button>
             {validImages.length > 1 && <button className="lightbox-nav lightbox-prev" onClick={prevImg}>❮</button>}
             <img src={validImages[imgIdx]} alt="放大檢視" className="lightbox-img" referrerPolicy="no-referrer" />
             {validImages.length > 1 && <button className="lightbox-nav lightbox-next" onClick={nextImg}>❯</button>}
-            {validImages.length > 1 && <div className="lightbox-counter">{imgIdx + 1} / {validImages.length}</div>}
           </div>
         </div>
       )}
