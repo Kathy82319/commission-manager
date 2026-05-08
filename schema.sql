@@ -365,7 +365,7 @@ ALTER TABLE Commissions ADD COLUMN agreed_memo TEXT;
 
 
 
-
+ 
 -- ==========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
