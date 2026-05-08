@@ -31,7 +31,6 @@ export const InquiryWorkspace: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // 🌟 捲動狀態相關 Refs 與 State
   const chatMainRef = useRef<HTMLElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
@@ -100,7 +99,6 @@ export const InquiryWorkspace: React.FC = () => {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
              let defaultName = data.bulletin_title;
-             
              if (!defaultName) {
                if (isDirectInquiry) {
                  defaultName = "客製化委託單"; 
@@ -286,13 +284,37 @@ export const InquiryWorkspace: React.FC = () => {
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
+  // 🌟 1. 新增：退回修改功能
+  const handleRejectProposal = async () => {
+    const reason = window.prompt("請輸入退回修正的原因或建議 (這會讓繪師可以重新編輯協議)：");
+    if (reason === null) return; // 取消
+    try {
+      const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, { reason });
+      if (res.success) {
+        alert('已將提案退回給繪師修正。');
+        fetchData();
+      } else alert('操作失敗：' + res.message);
+    } catch (e) {
+      alert('系統異常');
+    }
+  };
+
+  // 🌟 2. 修改：成單後自動跳轉
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
+        const commId = res.commissionId || res.id; // 假設後端回傳 commissionId
+        alert('🎉 委託單已成功建立！系統將為您跳轉至管理頁面。');
         setShowFinalModal(false);
-        fetchData();
+        
+        // 根據身分跳轉至不同頁面
+        if (isArtist) {
+          navigate(`/artist/notebook?id=${commId}`);
+        } else {
+          navigate(`/client/orders?id=${commId}`);
+        }
       } else alert('成單失敗：' + (res.message || res.error));
     } catch (error: any) { alert('系統異常，成單失敗'); }
   };
@@ -350,7 +372,6 @@ export const InquiryWorkspace: React.FC = () => {
     (!isDirectInquiry && inquiry.status === 'submitted') 
   );
 
-  // 🌟 動態產出標題與對象資訊 (參考 Notebook 顯示邏輯)
   const projectNameStr = draft?.project_name || inquiry?.project_name || displayTitle || '';
   const commissionIdStr = inquiry?.commission_id ? `(${inquiry.commission_id})` : '';
   const headerProjectName = projectNameStr ? `${projectNameStr} ${commissionIdStr}`.trim() : commissionIdStr;
@@ -407,7 +428,8 @@ export const InquiryWorkspace: React.FC = () => {
             
             {isAccepted && (
               <div style={{ backgroundColor: '#EBF5EB', color: '#4E7A5A', padding: '12px', borderRadius: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', border: '1px solid #C8E6C9', marginBottom: '8px' }}>
-                🎉 委託單已正式成立！右側合約面板已隱藏，您可以繼續在此與對方討論後續進度與草稿。
+                🎉 委託單已正式成立！您可以繼續在此與對方討論。
+                <button onClick={() => isArtist ? navigate(`/artist/notebook?id=${inquiry.commission_id}`) : navigate(`/client/orders?id=${inquiry.commission_id}`)} style={{ marginLeft: '10px', background: '#4E7A5A', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>前往管理單據</button>
               </div>
             )}
 
@@ -460,10 +482,7 @@ export const InquiryWorkspace: React.FC = () => {
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
                 <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
-                  {isDirectInquiry 
-                    ? (inquiry.status === 'pending' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
-                    : (inquiry.status === 'submitted' ? '草稿編修中' : inquiry.status === 'proposed' ? '待案主同意' : '已成單')
-                  }
+                  {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
                 </span>
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
@@ -476,7 +495,7 @@ export const InquiryWorkspace: React.FC = () => {
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
               <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改的原始填寫)</h4>
+                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改)</h4>
                 <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {isDirectInquiry ? (
                     <div style={{ paddingBottom: '8px' }}>
@@ -513,12 +532,6 @@ export const InquiryWorkspace: React.FC = () => {
                             <span style={{ whiteSpace: 'pre-wrap' }}>{parsedSnapshot.message}</span>
                           </div>
                         )}
-                        {!isOffer && (parsedSnapshot.specialties || parsedSnapshot.no_gos) && (
-                          <div style={{ marginTop: '6px' }}>
-                            {parsedSnapshot.specialties && <div style={{ color: '#ff8c00', marginBottom: '2px' }}>舒適圈：{parsedSnapshot.specialties}</div>}
-                            {parsedSnapshot.no_gos && <div style={{ color: '#e11d48' }}>雷點：{parsedSnapshot.no_gos}</div>}
-                          </div>
-                        )}
                       </div>
                     </>
                   )}
@@ -528,43 +541,24 @@ export const InquiryWorkspace: React.FC = () => {
                 </button>
               </div>
 
+              {/* 核心參數編輯區 */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數 (影響計價與排單)</h4>
+                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
-                  
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isEditableByArtist} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
-                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>是否急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
+                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
                   </div>
-                  
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isEditableByArtist} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
-                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" placeholder="如: 商用/非商用" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪畫範圍</label>
-                      <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['大頭', '半身', '全身'].includes(draft.draw_scope) ? draft.draw_scope : 'other'} onChange={(e) => setDraft({...draft, draw_scope: e.target.value === 'other' ? '' : e.target.value})}>
-                        <option value="大頭">大頭</option><option value="半身">半身</option><option value="全身">全身</option><option value="other">自行輸入...</option>
-                      </select>
-                      {!['大頭', '半身', '全身'].includes(draft.draw_scope) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入範圍" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} />}
-                    </div>
-                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景類型</label>
-                      <select disabled={!isEditableByArtist} className="draft-input" style={{ marginBottom: '8px' }} value={['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) ? draft.bg_type : 'other'} onChange={(e) => setDraft({...draft, bg_type: e.target.value === 'other' ? '' : e.target.value})}>
-                        <option value="無背景">無背景</option><option value="簡單/色塊">簡單/色塊</option><option value="複雜背景">複雜背景</option><option value="other">自行輸入...</option>
-                      </select>
-                      {!['無背景', '簡單/色塊', '複雜背景'].includes(draft.bg_type) && <input disabled={!isEditableByArtist} className="draft-input" placeholder="請輸入背景需求" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} />}
-                    </div>
+                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
                   </div>
                 </div>
               </div>
 
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄 (雙方共識)</h4>
-                <p style={{ fontSize: '11px', color: '#A0978D', margin: '0 0 12px 0', lineHeight: '1.5' }}>
-                  {isArtist ? "請將左側聊天室討論出的修改統整於此，送出提案後將作為正式合約依據。" : "繪師會將討論好的最終修改與細節註記在這裡。"}
-                </p>
+                <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                 <textarea 
                   disabled={!isEditableByArtist} 
                   className="draft-input" 
@@ -580,12 +574,18 @@ export const InquiryWorkspace: React.FC = () => {
               {isEditableByArtist && (
                 <>
                   <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
-                  <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿，無法提案' : '🚀 送出正式提案'}</button>
+                  <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿' : '🚀 送出正式提案'}</button>
                 </>
               )}
+
+              {/* 🌟 1. 修改委託人按鈕區：加入「退回修改」 */}
               {!isArtist && inquiry.status === 'proposed' && (
-                <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ width: '100%', padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並正式建立委託單</button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>退回修正</button>
+                  <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ flex: 2, padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並建立委託</button>
+                </div>
               )}
+
               {inquiry.status === 'proposed' && isArtist && (
                 <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待案主確認中...</div>
               )}
@@ -618,23 +618,6 @@ export const InquiryWorkspace: React.FC = () => {
                   <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                     <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                     <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{draft.agreed_memo}</div>
-                  </div>
-                )}
-
-                {!isDirectInquiry && isOffer && (
-                  <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                    <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E' }}>
-                      {parsedBulletin.payment_timing && (
-                        <p style={{ margin: 0 }}>
-                          <strong>支付時機與說明：</strong> {getPaymentTimingLabel(parsedBulletin.payment_timing)} 
-                          {parsedBulletin.payment_timing_detail ? ` (${parsedBulletin.payment_timing_detail})` : ''}
-                        </p>
-                      )}
-                      {parsedBulletin.payment_methods && parsedBulletin.payment_methods.length > 0 && (
-                        <p style={{ margin: 0 }}><strong>可接受收款方式：</strong> {parsedBulletin.payment_methods.join('、')}</p>
-                      )}
-                    </div>
                   </div>
                 )}
 
