@@ -33,11 +33,26 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-const getBulletinSource = (order?: Commission) => {
+// 🌟 修正：升級為與 Notebook.tsx 同級的 getOriginData 解析邏輯
+const getOriginData = (order?: Commission) => {
   if (!order || !order.origin_source) return null;
   try {
     const parsed = JSON.parse(unescapeHtml(order.origin_source));
-    if (parsed.source_type === 'bulletin') return parsed;
+    if (!parsed) return null;
+
+    if (parsed.source_type === 'showcase_form') {
+      return {
+        type: 'showcase_form',
+        ...parsed
+      };
+    }
+
+    if (parsed.source_type === 'bulletin') {
+      return {
+        type: 'bulletin',
+        ...parsed
+      };
+    }
   } catch (e) {
     return null;
   }
@@ -299,7 +314,6 @@ export function Queue() {
     });
   }, [commissions, selectedMonth, searchTerm, myId]);
 
-  // 修改此處：整合了與 Notebook 相同的名稱顯示邏輯
   const getClientNameDisplay = (order: Commission) => {
     if (order.client_name) {
       return order.contact_memo ? `${order.client_name} (${order.contact_memo})` : order.client_name;
@@ -339,7 +353,9 @@ export function Queue() {
           <tbody>
             {filteredCommissions.map((order) => {
               const isExpanded = expandedId === order.id;
-              const isBulletin = getBulletinSource(order) !== null;
+              
+              // 🌟 使用新的 getOriginData 解析來源資料
+              const originData = getOriginData(order);
               
               const total = order.total_price || 0;
               const paid = paidAmounts[order.id] || 0;
@@ -371,8 +387,11 @@ export function Queue() {
                     <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
                       <div className="workflow-badge-wrapper">
-                        {isBulletin ? (
-                          <span className="bulletin-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>許願池</span>
+                        {/* 🌟 根據不同來源正確顯示對應標籤 */}
+                        {originData ? (
+                          <span className="bulletin-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                            {originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
+                          </span>
                         ) : (
                           <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                             {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
