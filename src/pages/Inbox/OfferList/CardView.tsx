@@ -60,8 +60,8 @@ export const CardView: React.FC<CardViewProps> = ({
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5);
   
-  // 取得備註或部分回答來當作預覽文字
-  const note = unescapeHtml(snapshot.note || snapshot.message || ''); 
+  // 取得備註或第一個回答來當作預覽文字
+  const note = unescapeHtml(snapshot.message || snapshot.note || (snapshot.answers?.[0]?.answer) || ''); 
 
   const [imgIdx, setImgIdx] = useState(0);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -69,12 +69,13 @@ export const CardView: React.FC<CardViewProps> = ({
   const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev + 1) % validImages.length); };
   const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev - 1 + validImages.length) % validImages.length); };
 
-  // 避免點擊圖片的左右切換時觸發卡片選取
+  // 防止點擊按鈕時觸發開啓 Modal
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
     <>
       <div 
+        onClick={() => setShowDetailsModal(true)} // 🌟 全卡片可點擊開啟彈窗
         style={{ 
           display: 'flex', flexDirection: 'column', height: '100%', 
           background: isDeclined ? '#F9F9F9' : '#FFFFFF', 
@@ -83,8 +84,11 @@ export const CardView: React.FC<CardViewProps> = ({
           boxShadow: isSelected ? '0 0 0 2px #4A7294' : '0 4px 12px rgba(0,0,0,0.04)',
           filter: isDeclined ? 'grayscale(50%)' : 'none',
           opacity: isDeclined ? 0.7 : 1,
+          cursor: 'pointer', // 🌟 滑鼠游標變成手指
           transition: 'all 0.2s', position: 'relative'
         }} 
+        onMouseOver={(e) => { if(!isSelected) e.currentTarget.style.borderColor = '#C1D6E8'; }}
+        onMouseOut={(e) => { if(!isSelected) e.currentTarget.style.borderColor = '#EAE6E1'; }}
       >
         {/* 左上角勾選框 */}
         <div onClick={stopPropagation} style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10 }}>
@@ -98,7 +102,7 @@ export const CardView: React.FC<CardViewProps> = ({
           </span>
         </div>
 
-        {/* 🌟 頂部大圖區 (重點優化) */}
+        {/* 頂部大圖區 */}
         <div style={{ height: '240px', width: '100%', backgroundColor: '#F4F4F1', position: 'relative' }}>
           {validImages.length > 0 ? (
             <>
@@ -120,7 +124,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-          {/* 🌟 圓形大頭貼 (重疊於圖片右下角) */}
+          {/* 圓形大頭貼 (重疊於圖片右下角) */}
           <div style={{ position: 'absolute', bottom: '-24px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', border: '3px solid #FFFFFF', backgroundColor: '#EAE6E1', overflow: 'hidden', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
@@ -132,44 +136,29 @@ export const CardView: React.FC<CardViewProps> = ({
           </div>
         </div>
 
-        {/* 🌟 下半部資訊區 */}
+        {/* 🌟 下半部資訊區 (極簡化) */}
         <div style={{ padding: '28px 16px 16px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <h3 style={{ margin: 0, fontWeight: 'bold', color: '#5D4A3E', fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={clientName}>{clientName}</h3>
-              {isBlacklisted && <span title="黑名單"><Ban size={14} color="#EF4444" /></span>}
+              {isBlacklisted && <span title="黑名單繪師" style={{ display: 'flex', alignItems: 'center' }}><Ban size={16} color="#EF4444" /></span>}
             </div>
             <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace', marginTop: '2px' }}>@{clientId}</div>
           </div>
 
-          <div style={{ fontSize: '13px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {snapshot.specialties ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                <strong style={{ color: '#4A7294' }}>擅長：</strong> 
-                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#5D4A3E', flex: 1 }}>{snapshot.specialties}</span>
-              </div>
-            ) : (
-              <div style={{ color: '#A0978D', fontStyle: 'italic' }}>未設定擅長領域</div>
-            )}
-          </div>
-
-          {/* 🌟 預覽文字框 */}
-          <div 
-            onClick={() => setShowDetailsModal(true)}
-            style={{ color: '#7A7269', fontSize: '13px', backgroundColor: '#FDFDFB', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '16px', position: 'relative' }}
-            onMouseOver={(e) => e.currentTarget.style.borderColor = '#C1D6E8'}
-            onMouseOut={(e) => e.currentTarget.style.borderColor = '#EAE6E1'}
-          >
-            <div style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6' }}>
-              {note || (snapshot.answers && snapshot.answers.length > 0 ? snapshot.answers[0].answer : '點擊查看詳細申請內容...')}
+          {/* 摘要文字 (最多3行) */}
+          {note ? (
+            <div style={{ color: '#7A7269', fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', marginBottom: '16px' }}>
+              {note}
             </div>
-            <div style={{ color: '#4A7294', fontSize: '12px', fontWeight: 'bold', marginTop: '8px', textAlign: 'center' }}>
-              ▼ 點擊展開完整內容
+          ) : (
+            <div style={{ color: '#A0978D', fontSize: '13px', fontStyle: 'italic', marginBottom: '16px' }}>
+              此提案未填寫文字描述。
             </div>
-          </div>
+          )}
 
-          {/* 底部操作按鈕 */}
-          <div style={{ marginTop: 'auto', display: 'flex', gap: '10px' }}>
+          {/* 底部操作按鈕 (阻止冒泡，避免點擊按鈕時觸發卡片的彈窗) */}
+          <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '10px', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
             {canDecline && (
               <button 
                 onClick={() => setShowDeclineModal(true)}
@@ -203,65 +192,113 @@ export const CardView: React.FC<CardViewProps> = ({
                 onClick={() => handleViewCommission(inquiry.commission_id)}
                 style={{ flex: 1, padding: '10px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
               >
-                前往正式委託單
+                前往委託單
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* 🌟 獨立的詳細內容 Modal (點擊卡片中間文字觸發) */}
+      {/* 🌟 全新左右分欄的詳細內容 Modal */}
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
-          <div className="inbox-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto', padding: '0' }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src={avatarUrl || ''} alt="" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none' }} />
-                {clientName} 的申請內容
-              </h2>
-              <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D' }}><X size={24} /></button>
+          <div 
+            className="inbox-modal-content" 
+            onClick={stopPropagation} 
+            style={{ 
+              maxWidth: '900px', width: '95%', padding: '0', 
+              display: 'flex', flexWrap: 'wrap', 
+              maxHeight: '85vh', overflow: 'hidden', borderRadius: '16px' 
+            }}
+          >
+            {/* 左側：圖片燈箱區 */}
+            <div style={{ flex: '1 1 350px', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+              {validImages.length > 0 ? (
+                <>
+                  <img src={validImages[imgIdx]} alt="放大檢視" style={{ width: '100%', height: '100%', objectFit: 'contain' }} referrerPolicy="no-referrer" />
+                  {validImages.length > 1 && (
+                    <>
+                      <button onClick={prevImg} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>❮</button>
+                      <button onClick={nextImg} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>❯</button>
+                      <div style={{ position: 'absolute', bottom: '16px', right: '16px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '12px', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold' }}>
+                        {imgIdx + 1} / {validImages.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div style={{ color: '#7A7269', fontSize: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '32px' }}>🖼️</span>無附上圖片
+                </div>
+              )}
             </div>
-            
-            <div style={{ padding: '20px' }}>
-              {/* 問與答 */}
-              {snapshot.answers && snapshot.answers.length > 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>需求問卷回覆</h3>
-                  {snapshot.answers.map((ans: any, idx: number) => (
-                    <div key={idx} style={{ marginBottom: '16px', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>
-                      <strong style={{ color: '#A67B3E', display: 'block', marginBottom: '6px' }}>Q: {ans.question}</strong>
-                      <div style={{ whiteSpace: 'pre-wrap', color: '#5D4A3E', lineHeight: '1.6' }}>A: {ans.answer || '(未填寫)'}</div>
+
+            {/* 右側：詳細內容區 */}
+            <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', maxHeight: '85vh' }}>
+              
+              {/* Header: 人名與關閉按鈕 */}
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <img src={avatarUrl || ''} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none', border: '1px solid #EAE6E1' }} />
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {clientName}
+                      {isBlacklisted && <span title="黑名單繪師" style={{ display: 'flex' }}><Ban size={16} color="#EF4444" /></span>}
+                    </h2>
+                    <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace', marginTop: '2px' }}>@{clientId}</div>
+                  </div>
+                </div>
+                <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: '4px' }}><X size={24} /></button>
+              </div>
+              
+              {/* 滾動內容區 */}
+              <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
+                
+                {/* 標籤 */}
+                {(snapshot.specialties || snapshot.no_gos) && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>個人設定 / 偏好</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {snapshot.specialties && <div><strong style={{ color: '#4A7294', display: 'block', marginBottom: '8px' }}>舒適圈 / 擅長：</strong>{renderChips(snapshot.specialties, 'good')}</div>}
+                      {snapshot.no_gos && <div><strong style={{ color: '#EF4444', display: 'block', marginBottom: '8px' }}>雷點 / 不擅長：</strong>{renderChips(snapshot.no_gos, 'bad')}</div>}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 留言備註 */}
-              {note && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>留言備註</h3>
-                  <div style={{ whiteSpace: 'pre-wrap', color: '#5D4A3E', lineHeight: '1.6', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>
-                    {note}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 標籤 */}
-              {(snapshot.specialties || snapshot.no_gos) && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>個人設定 / 偏好</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {snapshot.specialties && <div><strong style={{ color: '#4A7294' }}>舒適圈/擅長：</strong> <br/><span style={{ color: '#5D4A3E' }}>{snapshot.specialties}</span></div>}
-                    {snapshot.no_gos && <div><strong style={{ color: '#EF4444' }}>雷點/不擅長：</strong> <br/><span style={{ color: '#5D4A3E' }}>{snapshot.no_gos}</span></div>}
+                {/* 問與答 */}
+                {snapshot.answers && snapshot.answers.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>需求問卷回覆</h3>
+                    {snapshot.answers.map((ans: any, idx: number) => (
+                      <div key={idx} style={{ marginBottom: '16px', backgroundColor: '#FBFBF9', padding: '16px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>
+                        <strong style={{ color: '#A67B3E', display: 'block', marginBottom: '6px' }}>Q: {ans.question}</strong>
+                        <div style={{ whiteSpace: 'pre-wrap', color: '#5D4A3E', lineHeight: '1.6' }}>A: {ans.answer || '(未填寫)'}</div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-            </div>
-            
-            <div style={{ padding: '16px 20px', borderTop: '1px solid #EAE6E1', position: 'sticky', bottom: 0, backgroundColor: '#FFFFFF', display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowDetailsModal(false)} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                關閉
-              </button>
+                )}
+
+                {/* 留言備註 */}
+                {snapshot.message && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>留言備註</h3>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#5D4A3E', lineHeight: '1.6', backgroundColor: '#FBFBF9', padding: '16px', borderRadius: '8px', border: '1px solid #F0ECE7' }}>
+                      {snapshot.message}
+                    </div>
+                  </div>
+                )}
+
+                {/* 婉拒理由 */}
+                {isDeclined && inquiry.decline_reason && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '15px', color: '#EF4444', borderBottom: '2px solid #FECACA', paddingBottom: '8px', marginBottom: '16px' }}>終止 / 撤回原因</h3>
+                    <div style={{ whiteSpace: 'pre-wrap', color: '#A05C5C', lineHeight: '1.6', backgroundColor: '#FEF2F2', padding: '16px', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                      {inquiry.decline_reason}
+                    </div>
+                  </div>
+                )}
+
+              </div>
             </div>
           </div>
         </div>
