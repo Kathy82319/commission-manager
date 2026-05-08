@@ -91,7 +91,7 @@ export const directInquiryController = {
         FROM DirectInquiries d
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
         LEFT JOIN Users a ON d.artist_id = a.id
-        /* 🌟 條件改為判斷：原始發起人，或是後來被綁定的人，都能看到這張單 */
+       
         WHERE d.client_id = ? OR c.client_id = ?
         ORDER BY d.created_at DESC
       `).bind(currentUserId, currentUserId).all();
@@ -104,7 +104,6 @@ export const directInquiryController = {
 
   async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：補上 COALESCE 以處理綁定測試帳號的情境
       const inquiry = await env.commission_db.prepare(`
         SELECT di.*, 
                s.title as bulletin_title, 
@@ -112,7 +111,7 @@ export const directInquiryController = {
                a.profile_settings as artist_settings,
                a.display_name as artist_name,
                a.public_id as artist_public_id,
-               /* 🌟 核心魔法：如果 Commission 有綁定人，就覆寫原有的 client_id */
+              
                COALESCE(c.client_id, di.client_id) as client_id,
                COALESCE(bu.display_name, u.display_name) as client_name,
                COALESCE(bu.public_id, u.public_id) as client_public_id,
@@ -129,7 +128,6 @@ export const directInquiryController = {
 
       if (!inquiry) return new Response(JSON.stringify({ success: false, message: '找不到此訂單' }), { status: 404, headers: corsHeaders });
 
-      // 如果當前使用者不是繪師，也不是這張單子的最終擁有者 (client_id)，就報錯 403
       if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
@@ -161,7 +159,6 @@ export const directInquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 在提案時，也需要去抓看有沒有被覆寫的 client_id (如果已經手動建單綁定了)
       const inquiry = await env.commission_db.prepare(`
         SELECT COALESCE(c.client_id, di.client_id) as client_id, di.showcase_id 
         FROM DirectInquiries di
@@ -319,11 +316,9 @@ export const directInquiryController = {
       const body = await request.json() as any;
       const id = crypto.randomUUID();
       
-      // 1. 將訊息存入資料庫，並更新訂單最後活動時間
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
       await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      // 2. 🌟 修正：抓取這張單真正的對方是誰 (包含已經綁定成單的情況)
       const inquiry = await env.commission_db.prepare(`
         SELECT di.artist_id, 
                COALESCE(c.client_id, di.client_id) as client_id, 
@@ -335,11 +330,9 @@ export const directInquiryController = {
       `).bind(inquiryId).first() as any;
 
       if (inquiry) {
-        // 判斷當前發送者是誰，接收者就是另一方
         const isArtist = currentUserId === inquiry.artist_id;
         const targetUserId = isArtist ? inquiry.client_id : inquiry.artist_id;
 
-        // 只有當接收者存在，且不是訪客 (guest) 時，才發送小鈴鐺通知
         if (targetUserId && targetUserId !== 'guest') {
           const projectTitle = inquiry.title || '客製化委託';
           await notificationController.createNotification(
@@ -358,7 +351,6 @@ export const directInquiryController = {
     }
   },
 
-  // 🌟 新增：針對個人頁面 (DirectInquiries) 的退回邏輯
   async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -372,7 +364,6 @@ export const directInquiryController = {
         return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
       }
 
-      // 檢查是否是真正的案主 (以防已經綁定)
       if (inquiryData.actual_client_id !== currentUserId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
       }
@@ -381,7 +372,6 @@ export const directInquiryController = {
         return new Response(JSON.stringify({ success: false, message: '當前狀態無法退回' }), { status: 400, headers: corsHeaders });
       }
 
-      // 退回草稿狀態 (個人頁的草稿狀態是 pending)
       await env.commission_db.prepare(
         `UPDATE DirectInquiries SET status = 'pending', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();

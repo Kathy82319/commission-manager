@@ -88,7 +88,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     }
   };
 
-  // 🌟 如果正在開啟表單，直接渲染獨立抽離的建置器元件
   if (isFormOpen && editingItem) {
     return (
       <ShowcaseFormBuilder
@@ -145,20 +144,19 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
           {items.map((item, index) => {
-            // 🌟 判斷是否滿單
             const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
 
             return (
               <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 
-                {/* 左上角公開狀態 */}
+                
                 {(quotaInfo?.plan_type === 'free' ? index < 6 : index < limit) && (
                   <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
                     公開展示中
                   </div>
                 )}
 
-                {/* 🌟 右上角滿單狀態 */}
+                
                 {isFull && (
                   <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#EF4444', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, display: 'flex', alignItems: 'center', gap: '4px' }}>
                     🛑 已滿單
@@ -176,7 +174,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                   <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>{item.title}</div>
                   <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '14px' }}>{item.price_info || '未定價'}</div>
                   
-                  {/* 🌟 進度條 UI 加回來了！ */}
+                  
                   {item.max_orders > 0 && (
                     <div style={{ fontSize: '12px', color: '#7A7269', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <div style={{ flex: 1, height: '6px', background: '#EAE6E1', borderRadius: '3px', overflow: 'hidden' }}>

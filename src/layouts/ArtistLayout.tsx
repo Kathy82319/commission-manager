@@ -237,7 +237,6 @@ export function ArtistLayout() {
                 key={item.path} 
                 to={item.path} 
                 className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
-                // 🌟 新增：點擊連結後自動關閉側邊欄
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.label}

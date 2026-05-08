@@ -236,20 +236,16 @@ export function ClientOrders() {
         fetchedLogs = (await logRes2.json()).data || [];
       }
 
-      // 🌟 修正：歷程紀錄時間校正
       const syntheticLogs: ActionLog[] = [];
       if (orderData.order_date) {
         syntheticLogs.push({ id: 'sys-init', actor_role: 'artist', content: '建立委託單', created_at: orderData.order_date });
         
         if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
-          // 尋找真實的綁定(同意)紀錄
           const bindLogIndex = fetchedLogs.findIndex(l => l.content.includes('綁定訂單'));
           
           if (bindLogIndex !== -1) {
-            // 如果有找到真實紀錄，就把它改名為正式的合約術語，並且不再塞入假時間的紀錄
             fetchedLogs[bindLogIndex].content = '同意委託協議並簽署合約';
           } else {
-            // 如果沒有綁定紀錄，代表是透過洽談室成單的(建立=同意)，這時沿用建立時間+1秒是正確的
             const agreeTime = new Date(parseTime(orderData.order_date) + 1000).toISOString();
             syntheticLogs.push({ id: 'sys-agree', actor_role: 'client', content: '同意委託協議並簽署合約', created_at: agreeTime });
           }

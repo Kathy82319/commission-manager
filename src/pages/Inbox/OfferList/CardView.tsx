@@ -60,7 +60,6 @@ export const CardView: React.FC<CardViewProps> = ({
   };
   const validImages = images.filter(Boolean).map(getFullUrl).slice(0, 5);
   
-  // 取得備註或第一個回答來當作預覽文字
   const note = unescapeHtml(snapshot.message || snapshot.note || (snapshot.answers?.[0]?.answer) || ''); 
 
   const [imgIdx, setImgIdx] = useState(0);
@@ -69,13 +68,12 @@ export const CardView: React.FC<CardViewProps> = ({
   const nextImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev + 1) % validImages.length); };
   const prevImg = (e: React.MouseEvent) => { e.stopPropagation(); setImgIdx((prev) => (prev - 1 + validImages.length) % validImages.length); };
 
-  // 防止點擊按鈕時觸發開啓 Modal
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
     <>
       <div 
-        onClick={() => setShowDetailsModal(true)} // 🌟 全卡片可點擊開啟彈窗
+        onClick={() => setShowDetailsModal(true)} 
         style={{ 
           display: 'flex', flexDirection: 'column', height: '100%', 
           background: isDeclined ? '#F9F9F9' : '#FFFFFF', 
@@ -84,25 +82,25 @@ export const CardView: React.FC<CardViewProps> = ({
           boxShadow: isSelected ? '0 0 0 2px #4A7294' : '0 4px 12px rgba(0,0,0,0.04)',
           filter: isDeclined ? 'grayscale(50%)' : 'none',
           opacity: isDeclined ? 0.7 : 1,
-          cursor: 'pointer', // 🌟 滑鼠游標變成手指
+          cursor: 'pointer', 
           transition: 'all 0.2s', position: 'relative'
         }} 
         onMouseOver={(e) => { if(!isSelected) e.currentTarget.style.borderColor = '#C1D6E8'; }}
         onMouseOut={(e) => { if(!isSelected) e.currentTarget.style.borderColor = '#EAE6E1'; }}
       >
-        {/* 左上角勾選框 */}
+        
         <div onClick={stopPropagation} style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 10 }}>
           <input type="checkbox" checked={isSelected} onChange={onSelect} style={{ width: '20px', height: '20px', cursor: 'pointer', borderRadius: '4px' }} />
         </div>
 
-        {/* 右上角狀態標籤 */}
+        
         <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}>
           <span className={`status-${inquiry.inquiry_status}`} style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(4px)', border: '1px solid rgba(0,0,0,0.1)', color: '#5D4A3E', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
             {getStatusLabel(inquiry.inquiry_status)}
           </span>
         </div>
 
-        {/* 頂部大圖區 */}
+        
         <div style={{ height: '240px', width: '100%', backgroundColor: '#F4F4F1', position: 'relative' }}>
           {validImages.length > 0 ? (
             <>
@@ -124,7 +122,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-          {/* 圓形大頭貼 (重疊於圖片右下角) */}
+          
           <div style={{ position: 'absolute', bottom: '-24px', right: '16px', width: '56px', height: '56px', borderRadius: '50%', border: '3px solid #FFFFFF', backgroundColor: '#EAE6E1', overflow: 'hidden', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
@@ -136,7 +134,7 @@ export const CardView: React.FC<CardViewProps> = ({
           </div>
         </div>
 
-        {/* 🌟 下半部資訊區 (極簡化) */}
+        
         <div style={{ padding: '28px 16px 16px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -146,7 +144,7 @@ export const CardView: React.FC<CardViewProps> = ({
             <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace', marginTop: '2px' }}>@{clientId}</div>
           </div>
 
-          {/* 摘要文字 (最多3行) */}
+          
           {note ? (
             <div style={{ color: '#7A7269', fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', marginBottom: '16px' }}>
               {note}
@@ -157,7 +155,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-          {/* 底部操作按鈕 (阻止冒泡，避免點擊按鈕時觸發卡片的彈窗) */}
+          
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '10px', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
             {canDecline && (
               <button 
@@ -199,7 +197,7 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 全新左右分欄的詳細內容 Modal */}
+      
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
           <div 
@@ -211,7 +209,7 @@ export const CardView: React.FC<CardViewProps> = ({
               maxHeight: '85vh', overflow: 'hidden', borderRadius: '16px' 
             }}
           >
-            {/* 左側：圖片燈箱區 */}
+            
             <div style={{ flex: '1 1 350px', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
               {validImages.length > 0 ? (
                 <>
@@ -233,10 +231,10 @@ export const CardView: React.FC<CardViewProps> = ({
               )}
             </div>
 
-            {/* 右側：詳細內容區 */}
+            
             <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', maxHeight: '85vh' }}>
               
-              {/* Header: 人名與關閉按鈕 */}
+              
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <img src={avatarUrl || ''} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none', border: '1px solid #EAE6E1' }} />
@@ -251,10 +249,10 @@ export const CardView: React.FC<CardViewProps> = ({
                 <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: '4px' }}><X size={24} /></button>
               </div>
               
-              {/* 滾動內容區 */}
+              
               <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
                 
-                {/* 標籤 */}
+                
                 {(snapshot.specialties || snapshot.no_gos) && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>個人設定 / 偏好</h3>
@@ -265,7 +263,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   </div>
                 )}
 
-                {/* 問與答 */}
+                
                 {snapshot.answers && snapshot.answers.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>需求問卷回覆</h3>
@@ -278,7 +276,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   </div>
                 )}
 
-                {/* 留言備註 */}
+                
                 {snapshot.message && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>留言備註</h3>
@@ -288,7 +286,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   </div>
                 )}
 
-                {/* 婉拒理由 */}
+                
                 {isDeclined && inquiry.decline_reason && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#EF4444', borderBottom: '2px solid #FECACA', paddingBottom: '8px', marginBottom: '16px' }}>終止 / 撤回原因</h3>

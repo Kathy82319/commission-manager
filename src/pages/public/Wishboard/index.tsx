@@ -19,7 +19,6 @@ export const Wishboard: React.FC = () => {
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 🌟 修改點 1：預設值改為 'offer'
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -122,7 +121,6 @@ export const Wishboard: React.FC = () => {
     } catch (e) { console.error("作品集載入失敗"); }
   };
 
-  // 🌟 修改點 2：當網址變更但沒有 tab 參數時，跳回預設的 offer
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');

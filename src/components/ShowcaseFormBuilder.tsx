@@ -66,7 +66,6 @@ export function ShowcaseFormBuilder({
   const [tagInput, setTagInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  // 🌟 拖曳排序的狀態
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -237,11 +236,9 @@ export function ShowcaseFormBuilder({
     }));
   };
 
-  // ================= 拖曳事件處理函數 =================
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIdx(index);
     e.dataTransfer.effectAllowed = 'move';
-    // 讓拖曳效果看起來稍微透明
     if (e.dataTransfer.setDragImage) {
       e.dataTransfer.setDragImage(e.currentTarget as Element, 20, 20);
     }
@@ -284,13 +281,13 @@ export function ShowcaseFormBuilder({
     return (
       <div className="fade-in" style={{ display: 'flex', flexDirection: 'column' }}>
         
-        {/* 內容區塊 (移除頂部 Header，直接顯示表單) */}
+        
         <div style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
-          {/* 上方：左右兩欄佈局 */}
+          
           <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
             
-            {/* 左側：封面圖 */}
+            
             <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>項目封面圖 (必填)</label>
               <div style={{ backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
@@ -301,16 +298,16 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
             
-            {/* 右側：基本設定 (品名、標籤、金額、狀態、表單按鈕) */}
+            
             <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* 1. 品名 */}
+              
               <div>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
                 <input className="form-input" style={{ fontSize: '16px', padding: '14px', width: '100%' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
               </div>
 
-              {/* 2. 標籤 */}
+              
               <div>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>作品標籤 (最多 5 個)</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
@@ -326,7 +323,7 @@ export function ShowcaseFormBuilder({
                 </div>
               </div>
 
-              {/* 3. 金額與狀態 (並排或直排皆可，這裡用並排節省空間) */}
+              
               <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1 }}>
                   <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
@@ -341,7 +338,7 @@ export function ShowcaseFormBuilder({
                 </div>
               </div>
 
-              {/* 4. 漸進式揭露按鈕 */}
+              
               <div style={{ marginTop: '8px', padding: '16px', background: '#FAFAFA', border: '1px dashed #C4BDB5', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>此項目開放接單嗎？</span>
                 <button 
@@ -355,7 +352,7 @@ export function ShowcaseFormBuilder({
             </div>
           </div>
 
-          {/* 下方：單欄佈局 (詳細介紹) */}
+          
           <div>
             <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹</label>
             <div className="custom-quill-wrapper">
@@ -363,7 +360,7 @@ export function ShowcaseFormBuilder({
             </div>
           </div>
 
-          {/* 🌟 儲存按鈕移至右下角，並加入返回按鈕 */}
+          
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #EAE6E1', paddingTop: '24px', marginTop: '8px' }}>
             <button 
               onClick={onClose} 
@@ -388,7 +385,7 @@ export function ShowcaseFormBuilder({
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
       
-      {/* Header */}
+      
       <div style={{ padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button onClick={() => setViewMode('basic')} style={{ background: '#F4F0EB', border: 'none', color: '#5D4A3E', fontSize: '14px', fontWeight: 'bold', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>
@@ -401,14 +398,14 @@ export function ShowcaseFormBuilder({
         </button>
       </div>
 
-      {/* Body (雙欄設計) */}
+      
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         
-        {/* 左側：表單與規則建置器 (Google Forms 風格) */}
+        
         <div className="custom-scrollbar" style={{ flex: '1.2', overflowY: 'auto', padding: '40px', background: '#F4F0EB' }}>
           <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Block 1: 規則與額度設定 */}
+            
             <div style={{ background: '#FFFFFF', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #EAE6E1', borderTop: '6px solid #5D4A3E' }}>
               <div style={{ padding: '24px' }}>
                 <h3 style={{ margin: '0 0 20px 0', color: '#333', fontSize: '20px' }}>接單規則設定</h3>
@@ -449,7 +446,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* Block 2: 表單建置區 */}
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
               <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px' }}>問題建置</h3>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', background: '#FFFFFF', padding: '8px 16px', border: '1px solid #EAE6E1', borderRadius: '24px', fontWeight: 'bold', color: '#4A7294', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
@@ -465,7 +462,7 @@ export function ShowcaseFormBuilder({
               </div>
             )}
 
-            {/* 🌟 問題卡片列表 (Google Forms Style + 拖曳功能) */}
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {formFields.map((field, index) => {
                 const isActive = activeFieldId === field.id;
@@ -490,13 +487,13 @@ export function ShowcaseFormBuilder({
                       border: '1px solid',
                       borderColor: isActive ? '#FFFFFF' : '#EAE6E1',
                       borderLeft: isActive ? '6px solid #4E7A5A' : '1px solid #EAE6E1',
-                      borderTop: isDragOver ? '4px solid #4E7A5A' : '1px solid transparent', // 拖曳的落點提示
+                      borderTop: isDragOver ? '4px solid #4E7A5A' : '1px solid transparent', 
                       opacity: isDragging ? 0.5 : 1,
                       transition: 'box-shadow 0.2s, border 0.2s',
                       cursor: isActive ? 'default' : 'pointer'
                     }}
                   >
-                    {/* 拖曳把手 (Grab Handle) - 移至右上角 */}
+                    
                     <div 
                       style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
                       title="按住拖曳可排序"
@@ -504,7 +501,7 @@ export function ShowcaseFormBuilder({
                       <span style={{ transform: 'rotate(90deg)', letterSpacing: '2px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
                     </div>
 
-                    {/* 卡片內容區 */}
+                    
                     <div style={{ padding: '32px 24px 24px 24px' }}>
                       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', paddingRight: isActive ? '32px' : '0' }}>
                         
@@ -541,7 +538,7 @@ export function ShowcaseFormBuilder({
                         )}
                       </div>
 
-                      {/* 選項/預覽區 */}
+                      
                       <div style={{ marginTop: '20px', paddingLeft: isActive ? '0' : '0' }}>
                         {['text', 'textarea', 'date'].includes(field.type) && (
                           <div style={{ borderBottom: '1px dotted #C4BDB5', width: '50%', paddingBottom: '8px', color: '#A0978D', fontSize: '14px' }}>
@@ -588,7 +585,7 @@ export function ShowcaseFormBuilder({
                       </div>
                     </div>
 
-                    {/* 卡片底部操作列 (僅 Active 時顯示) */}
+                    
                     {isActive && (
                       <div style={{ borderTop: '1px solid #EAE6E1', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
                         <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">
@@ -612,7 +609,7 @@ export function ShowcaseFormBuilder({
               )}
             </div>
 
-            {/* 🌟 底部新增按鈕列 */}
+            
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', background: '#FFFFFF', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
               <button onClick={() => addFormField('text')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 簡答題</button>
               <button onClick={() => addFormField('textarea')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 詳答題</button>
@@ -624,9 +621,9 @@ export function ShowcaseFormBuilder({
           </div>
         </div>
 
-        {/* 🌟 右側：即時預覽 (修復無法往下捲動的 Bug) */}
+        
         <div className="custom-scrollbar" style={{ flex: '1', background: '#E6E1DA', padding: '40px', overflowY: 'auto', borderLeft: '1px solid #DED9D3', display: 'block' }}>
-          {/* 將 alignItems: 'center' 移除，改由內層使用 margin: '0 auto'，解決 Flexbox 裁切捲動空間的問題 */}
+          
           <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
             
             <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>

@@ -6,7 +6,7 @@ import '../../styles/Notebook.css';
 
 interface DirectInboundTabProps {
   inquiries: any[];
-  selectedInquiryId?: string; // 🌟 接收來自父層左側清單點擊的 ID
+  selectedInquiryId?: string; 
   navigate: any;
   setSelectedInquiry: (inq: any) => void;
   setShowDeclineModal: (show: boolean) => void;

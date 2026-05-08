@@ -54,7 +54,6 @@ interface ShowcaseItem {
   tags: string[];
   description: string;
   form_schema?: string; 
-  // 🌟 新增欄位支援
   allow_guest?: number;
   max_orders?: number;
   show_quota?: number;
@@ -136,9 +135,7 @@ export function PublicProfile() {
     try { return JSON.parse(selectedShowcase.form_schema); } catch (e) { return []; }
   }, [selectedShowcase]);
 
-  // 🌟 一卡兩用：檢查是否有建立表單
   const hasForm = parsedSchema.length > 0;
-  // 🌟 飢餓行銷：判斷是否滿單
   const isFull = (selectedShowcase?.max_orders || 0) > 0 && (selectedShowcase?.current_orders_count || 0) >= (selectedShowcase?.max_orders || 0);
 
   const tosContent = useMemo(() => {
@@ -549,7 +546,7 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      {/* ======== 右上角懸浮操作按鈕 ======== */}
+      
       <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
@@ -744,14 +741,14 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* ======== 🌟 客製化表單與展示 Modal (Lightbox) ======== */}
+      
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={handleCloseLightbox}>
           <button className="lightbox-close" onClick={handleCloseLightbox}><X size={32}/></button>
           
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
             
-            {/* 模式一：純瀏覽展示與簡介 */}
+            
             {modalMode === 'view' && (
               <>
                 <div className="showcase-cover">
@@ -763,7 +760,7 @@ export function PublicProfile() {
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
                   </div>
 
-                  {/* 🌟 飢餓行銷：顯示剩餘名額 */}
+                  
                   {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
                     <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
                       🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
@@ -780,7 +777,7 @@ export function PublicProfile() {
                     <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
                   </div>
 
-                  {/* 🌟 一卡兩用邏輯：有設定表單才顯示「我要委託」按鈕 */}
+                  
                   {hasForm && (
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
                       <button 
@@ -801,7 +798,7 @@ export function PublicProfile() {
               </>
             )}
 
-            {/* 模式二：填寫客製化動態表單 */}
+            
             {modalMode === 'form1' && (
               <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
@@ -810,7 +807,7 @@ export function PublicProfile() {
                 
                 <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
                   
-                  {/* 🌟 訪客友善提示 Banner */}
+                  
                   {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
                     <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
@@ -841,7 +838,7 @@ export function PublicProfile() {
               </div>
             )}
 
-            {/* 模式三：確認繪師協議 (TOS) */}
+            
             {modalMode === 'form2' && (
               <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>

@@ -328,7 +328,6 @@ export const inquiryController = {
     }
   },
 
-  // 🌟 針對許願池 (BulletinInquiries) 的正確退回邏輯
   async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -354,7 +353,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '當前狀態無法退回' }), { status: 400, headers: corsHeaders });
       }
 
-      // 退回草稿狀態
       await env.commission_db.prepare(
         `UPDATE BulletinInquiries SET status = 'submitted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();

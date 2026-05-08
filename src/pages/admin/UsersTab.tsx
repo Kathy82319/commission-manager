@@ -8,7 +8,6 @@ export function UsersTab() {
   const [total, setTotal] = useState(0);
   const [myId, setMyId] = useState('');
   
-  // Modal 狀態
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -263,7 +262,7 @@ export function UsersTab() {
   );
 }
 
-// Styles
+
 const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold' };
 const tdStyle = { padding: '16px', fontSize: '14px', verticalAlign: 'top' as const };
 const actionLinkStyle = { background: 'none', border: 'none', color: '#2563EB', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', padding: 0, fontWeight: 'bold' };

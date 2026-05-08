@@ -19,12 +19,10 @@ export function TabDelivery({
   handleR2FileUpload
 }: TabDeliveryProps) {
 
-  // 判斷委託人是否已經看過該階段
   const isStageActuallyReviewed = (stageNameCH: string) => {
     return logs.some(log => log.actor_role === 'client' && (log.content.includes(`已閱覽 ${stageNameCH}`) || log.content.includes(`檢視 ${stageNameCH}`) || log.content.includes(`同意 ${stageNameCH}`)));
   };
 
-  // 渲染單個階段的方塊 UI
   const renderStageBox = (title: string, stageKey: string, isReviewing: boolean, isPassed: boolean) => {
     const sub = submissions.find(s => s.stage === stageKey);
     const isFinal = stageKey === 'final';

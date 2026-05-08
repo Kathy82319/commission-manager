@@ -67,7 +67,6 @@ export function Workspace() {
     return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 🌟 支援兩種來源解析
   const getOriginData = (currentOrder: OrderData | null) => {
     if (!currentOrder || !currentOrder.origin_source) return null;
     try {
@@ -144,7 +143,6 @@ export function Workspace() {
 
   const fetchHistoryMessages = async (inquiryId: string) => {
     try {
-        // 🌟 修正：判斷 inquiryId 來決定 API 的前綴
         const apiPrefix = inquiryId.startsWith('di-') ? 'direct-inquiries' : 'inquiries';
         const res = await fetch(`${API_BASE}/api/${apiPrefix}/${inquiryId}/messages`, { credentials: 'include' });
         
@@ -372,7 +370,7 @@ export function Workspace() {
 
         <main className="chat-main-area" style={{ flex: 1, overflowY: 'auto', padding: '20px 15px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9' }}>
           
-          {/* 🌟 修正：同時支援兩種來源的畫面渲染 */}
+          
           {originData && originData.type === 'bulletin' && (
             <div style={{ backgroundColor: '#FDFBFE', border: '1px solid #E9D5FF', borderRadius: '12px', padding: '16px', marginBottom: '10px', fontSize: '13px', color: '#4B5563', lineHeight: '1.6', boxShadow: '0 2px 4px rgba(147, 51, 234, 0.05)', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               <div style={{ color: '#9333EA', fontWeight: 'bold', borderBottom: '1px solid #F3E8FF', paddingBottom: '8px', marginBottom: '10px', fontSize: '14px' }}>

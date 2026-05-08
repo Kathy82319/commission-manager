@@ -8,7 +8,7 @@ export interface ExtendedSettings extends ProfileSettings {
   bulletin_card?: {
     specialties: string;
     no_gos: string;
-    message?: string; // 新增：預設提案留言
+    message?: string; 
     images?: string[]; 
   };
   question_template?: string;
@@ -21,7 +21,6 @@ interface Props {
 
 export function BulletinSettingsTab({ settings, setSettings }: Props) {
   const [isUploading, setIsUploading] = useState(false);
-  // 新增：用來控制標籤輸入框的暫存狀態
   const [tagInputs, setTagInputs] = useState({ specialties: '', no_gos: '' });
   
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -30,18 +29,16 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
     setSettings((prev: ExtendedSettings) => ({
       ...prev,
       bulletin_card: {
-        ...(prev.bulletin_card || { specialties: '', no_gos: '' }), // 確保物件存在
+        ...(prev.bulletin_card || { specialties: '', no_gos: '' }),
         [field]: value
       }
     }));
   };
 
-  // 新增：處理標籤加入的邏輯 (移植自 InquireModal)
   const handleTagAdd = (field: 'specialties' | 'no_gos') => {
     const rawValue = tagInputs[field];
     if (!rawValue) return;
 
-    // 前端基礎防呆：移除危險字元與空白、逗號
     const safeValue = rawValue.replace(/[<>"'&]/g, '');
     const value = safeValue.trim().replace(/,/g, '').replace(/，/g, '').replace(/\s+/g, '');
 
@@ -62,7 +59,6 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
     setTagInputs(prev => ({ ...prev, [field]: '' }));
   };
 
-  // 新增：處理標籤移除的邏輯
   const handleTagRemove = (field: 'specialties' | 'no_gos', tagToRemove: string) => {
     const currentString = settings.bulletin_card?.[field] || '';
     const currentTags = currentString.split(' ').filter(t => t !== tagToRemove);

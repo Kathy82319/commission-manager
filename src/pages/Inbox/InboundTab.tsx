@@ -29,7 +29,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   blacklistedIds = [],
   handleCancelBulletin 
 }) => {
-  // 透過 index.tsx 傳進來的 clientBulletins 已經被 filter 過，只會有一筆
   const bulletin = clientBulletins[0];
 
   if (!bulletin) {
@@ -43,7 +42,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease' }}>
       
-      {/* 🌟 頂部控制列 (Header) */}
+      
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '20px' }}>
         <div>
           <h2 style={{ fontSize: '24px', color: '#5D4A3E', margin: '0 0 8px 0', fontWeight: 'bold' }}>
@@ -69,7 +68,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
         </div>
       </div>
 
-      {/* 🌟 內容區 */}
+      
       {currentInquiries.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#A0978D' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🍃</div>

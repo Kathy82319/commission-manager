@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Notebook.css';
 
-// 🌟 匯入我們剛拆分出去的所有模組與子元件
 import { compressPreviewBlob, getOriginData } from './notebook-components/notebookUtils';
 import type { Commission, PaymentRecord, ActionLog, Submission } from './notebook-components/notebookUtils';
 import { NotebookSidebar } from './notebook-components/NotebookSidebar';
@@ -19,7 +18,6 @@ export function Notebook() {
   const initialSelectedId = queryParams.get('id');
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
-  // ================= 狀態管理 (State) =================
   const [myId, setMyId] = useState<string>(''); 
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
@@ -381,7 +379,7 @@ export function Notebook() {
     <div className="notebook-page">
       <div className="notebook-container">
         
-        {/* 左側列表模組 */}
+        
         <NotebookSidebar 
           filteredOrders={filteredOrders}
           selectedId={selectedId}
@@ -396,14 +394,14 @@ export function Notebook() {
           getClientNameDisplay={getClientNameDisplay}
         />
 
-        {/* 右側主內容區 */}
+        
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
             <div className="main-empty">請由列表選擇委託單以檢視詳情</div> 
           ) : (
             <div className="main-content-wrapper">
               
-              {/* 頂部標題與按鈕區 */}
+              
               <div className="main-header">
                 <div className="main-header-info">
                   <button className="mobile-back-btn" onClick={() => setSelectedId(null)}>返回列表</button>
@@ -447,10 +445,9 @@ export function Notebook() {
                     <button className="action-btn btn-outline-default" onClick={() => copyLink(selectedOrder.id)}>複製連結</button>
                   )}
                   
-                  {/* 🌟 判斷：必須有實體的 client_id 且不是訪客，才顯示進入聊天室按鈕 */}
+                  
                   {selectedOrder.client_id && selectedOrder.client_id !== 'guest' && (
                     <button className="action-btn btn-primary" onClick={() => {
-                      // 🌟 導向 InquiryWorkspace，若無 originData 則向後相容舊路由
                       const targetUrl = originData?.inquiry_id 
                         ? `/inquiry/workspace/${originData.inquiry_id}` 
                         : `/workspace/${selectedOrder.id}?role=artist`;
@@ -460,14 +457,14 @@ export function Notebook() {
                 </div>
               </div>
 
-              {/* 頁籤按鈕 */}
+              
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>委託單細項</button>
                 <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
                 <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
               </div>
 
-              {/* 頁籤內容區域 (呼叫子元件) */}
+              
               <div className="tab-content-area">
                 {activeTab === 'details' && (
                   <TabDetails 

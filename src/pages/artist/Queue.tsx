@@ -33,7 +33,6 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-// 🌟 修正：升級為與 Notebook.tsx 同級的 getOriginData 解析邏輯
 const getOriginData = (order?: Commission) => {
   if (!order || !order.origin_source) return null;
   try {
@@ -354,7 +353,6 @@ export function Queue() {
             {filteredCommissions.map((order) => {
               const isExpanded = expandedId === order.id;
               
-              // 🌟 使用新的 getOriginData 解析來源資料
               const originData = getOriginData(order);
               
               const total = order.total_price || 0;
@@ -387,7 +385,7 @@ export function Queue() {
                     <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
                       <div className="workflow-badge-wrapper">
-                        {/* 🌟 根據不同來源正確顯示對應標籤 */}
+                        
                         {originData ? (
                           <span className="bulletin-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                             {originData.type === 'showcase_form' ? '接委託表單' : '許願池'}

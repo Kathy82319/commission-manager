@@ -160,7 +160,6 @@ export default {
           if (authErr) return authErr;
           return inquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
         }
-        // 🌟 新增：處理委託方退回修改的路由 (許願池)
         if (targetId && subAction === "reject-proposal" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -202,7 +201,6 @@ export default {
           if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
-          // 🌟 新增：處理委託方退回修改的路由 (個人表單)
           if (subAction === "reject-proposal" && request.method === "POST") return directInquiryController.rejectProposal(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);

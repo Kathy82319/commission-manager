@@ -8,7 +8,7 @@ import '../../styles/Notebook.css';
 interface OutboundTabProps {
   artistInquiries: any[];
   directOutboundInquiries?: any[]; 
-  selectedInquiryId?: string; // 接收選中的 ID
+  selectedInquiryId?: string; 
   setSelectedInquiry: (inquiry: any) => void;
   setShowDeclineModal: (show: boolean) => void;
   handleEnterInquiryWorkspace: (id: string) => void;
@@ -64,7 +64,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     return d.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 🌟 尋找當前選中的資料 (優化效能，不需處理整個陣列)
   let selectedInq: any = null;
   const directMatch = directOutboundInquiries.find(i => i.id === selectedInquiryId);
   
@@ -83,7 +82,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     }
   }
 
-  // 如果找不到選中的項目，顯示空白提示
   if (!selectedInq) {
     return (
       <div style={{ padding: '100px 20px', textAlign: 'center', color: '#A0978D' }}>
@@ -93,14 +91,12 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     );
   }
 
-  // 提取顯示資料
   const targetName = selectedInq.is_direct ? selectedInq.artist_name : selectedInq.client_name;
   const targetPublicId = selectedInq.is_direct ? selectedInq.artist_public_id : selectedInq.client_public_id;
   const targetIdForBlacklist = selectedInq.is_direct ? selectedInq.artist_id : selectedInq.client_id;
   const isBlacklisted = blacklistedIds.includes(targetIdForBlacklist);
   const canWithdraw = !['accepted', 'declined', 'closed'].includes(selectedInq.inquiry_status);
 
-  // 許願池相關
   const bulletinImg = !selectedInq.is_direct ? getBulletinImage(selectedInq.ref_image_key) : null;
   const isOffer = !selectedInq.is_direct && selectedInq.bulletin_category === 'offer'; 
   const snapshot = !selectedInq.is_direct ? parseSnapshot(selectedInq.artist_snapshot) : {};
@@ -112,7 +108,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
     } catch (e) {}
   }
 
-  // 個人表單相關
   let parsedFormAnswers: any[] = [];
   if (selectedInq.is_direct) {
     try { parsedFormAnswers = JSON.parse(selectedInq.form_answers || '[]'); } catch (e) {}
@@ -121,7 +116,6 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.2s ease' }}>
       
-      {/* 標題區 */}
       <div className="main-header" style={{ marginBottom: '24px', backgroundColor: 'transparent', padding: 0 }}>
         <div className="main-header-info">
           <h2 className="main-title" style={{ fontSize: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -149,7 +143,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         </div>
       </div>
 
-      {/* 狀態卡片 */}
+      
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', padding: '16px', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <span className={`status-${selectedInq.inquiry_status}`} style={{ padding: '6px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold' }}>
           {getStatusLabel(selectedInq.inquiry_status)}
@@ -157,7 +151,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         <span style={{ fontSize: '13px', color: '#7A7269' }}>投遞時間：{formatTime(selectedInq.created_at)}</span>
       </div>
 
-      {/* 對方回覆 / 婉拒理由區塊 (移至上方醒目處) */}
+      
       {selectedInq.client_response && (
         <div style={{ background: '#F8FAFC', borderLeft: '4px solid #4A7294', padding: '20px', borderRadius: '0 12px 12px 0', marginBottom: '24px' }}>
           <strong style={{ color: '#4A7294', fontSize: '15px', marginBottom: '8px', display: 'block' }}>對方回覆：</strong>
@@ -172,7 +166,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         </div>
       )}
 
-      {/* 許願池原文摘要 */}
+      
       {!selectedInq.is_direct && (
         <div className="section-card" style={{ marginBottom: '24px', backgroundColor: '#FDFDFB' }}>
           <h3 className="section-title" style={{ fontSize: '15px' }}>🔍 對方許願池原文摘要</h3>
@@ -189,7 +183,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         </div>
       )}
 
-      {/* 我寫的內容 */}
+      
       <div className="section-card" style={{ marginBottom: '24px' }}>
         <h3 className="section-title">{selectedInq.is_direct ? '📄 我填寫的表單內容' : '📄 我的投遞內容'}</h3>
         <div style={{ fontSize: '14px', color: '#5D4A3E', lineHeight: '1.8', marginTop: '16px' }}>
@@ -226,7 +220,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
         </div>
       </div>
 
-      {/* 底部按鈕 */}
+      
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
         {canWithdraw && (
           <button className="action-btn" style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '12px 24px' }} onClick={() => handleWithdrawClick(selectedInq)}>

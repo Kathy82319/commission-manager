@@ -47,7 +47,6 @@ export function TabDetails({
   handleSubmitRequestFields
 }: TabDetailsProps) {
 
-  // 渲染表單欄位的封裝邏輯
   const renderRequestField = (label: string, fieldKey: keyof Commission, type: 'text' | 'number' | 'select' = 'text', suffix: string = '', options: string[] = []) => {
     if (!selectedOrder) return null;
     const isFreeMode = selectedOrder.workflow_mode === 'free';

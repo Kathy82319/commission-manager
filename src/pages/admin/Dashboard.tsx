@@ -27,7 +27,7 @@ export function Dashboard() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview': return <OverviewTab stats={stats} />; // 傳遞 props
+      case 'overview': return <OverviewTab stats={stats} />; 
       case 'users': return <UsersTab />;
       case 'commissions': return <CommissionsTab />;
       case 'wishboard': return <WishboardTab />;

@@ -27,16 +27,12 @@ export const Inbox: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
-  // 🌟 手風琴展開狀態管理 (預設全部展開)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
   
-  // 🌟 過濾開關：是否顯示已結案
   const [showArchived, setShowArchived] = useState(false);
 
-  // 核心選中狀態
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
 
-  // 資料狀態
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [clientBulletins, setClientBulletins] = useState<any[]>([]);
   const [clientInquiries, setClientInquiries] = useState<any[]>([]);
@@ -45,7 +41,6 @@ export const Inbox: React.FC = () => {
   const [directOutboundInquiries, setDirectOutboundInquiries] = useState<any[]>([]);
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
-  // Modal 狀態
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false); 
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
@@ -122,7 +117,6 @@ export const Inbox: React.FC = () => {
     setShowMobileSidebar(false);
   };
 
-  // 🌟 資料過濾邏輯：根據 showArchived 開關動態過濾
   const archivedStatuses = ['accepted', 'declined', 'cancelled', 'closed'];
 
   const displayBulletins = showArchived 
@@ -133,7 +127,6 @@ export const Inbox: React.FC = () => {
     ? directInquiries.filter(i => archivedStatuses.includes(i.status))
     : directInquiries.filter(i => !archivedStatuses.includes(i.status));
 
-  // 紅點依然只計算「待處理」
   const pendingDirectCount = directInquiries.filter(i => i.status === 'pending').length;
   
   const combinedOutbound = [
