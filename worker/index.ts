@@ -1,3 +1,4 @@
+// worker/index.ts
 import type { Env } from "./shared/types";
 import { getUserIdFromRequest, requireAuth } from "./middleware/auth";
 import { authController } from "./controllers/authController";
@@ -159,6 +160,12 @@ export default {
           if (authErr) return authErr;
           return inquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
         }
+        // 🌟 新增：處理委託方退回修改的路由 (許願池)
+        if (targetId && subAction === "reject-proposal" && request.method === "POST") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return inquiryController.rejectProposal(targetId, currentUserId!, env, corsHeaders);
+        }
         if (targetId && subAction === "finalize" && request.method === "POST") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
@@ -195,6 +202,8 @@ export default {
           if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
+          // 🌟 新增：處理委託方退回修改的路由 (個人表單)
+          if (subAction === "reject-proposal" && request.method === "POST") return directInquiryController.rejectProposal(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "finalize" && request.method === "POST") return directInquiryController.finalizeOrder(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
           
@@ -236,7 +245,6 @@ export default {
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
 
-
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
@@ -251,7 +259,6 @@ export default {
         if (request.method === "POST" && !targetId) return showcaseController.create(request, currentUserId!, env, corsHeaders);
         if (request.method === "PATCH" && targetId && !subAction) return showcaseController.update(request, targetId, currentUserId!, env, corsHeaders);
         if (request.method === "DELETE" && targetId && !subAction) return showcaseController.delete(targetId, currentUserId!, env, corsHeaders);
-        // 🌟 新增的 reset-orders 路由處理
         if (request.method === "POST" && targetId && subAction === "reset-orders") return showcaseController.resetOrdersCount(targetId, currentUserId!, env, corsHeaders);
       }
       if (sanitizedPath.startsWith("/api/public/showcase/")) {
@@ -262,7 +269,6 @@ export default {
         const artistId = pathParts[4];
         return commController.getPublicQueue(artistId, env, corsHeaders);
       }
-
 
       // --- 管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {
