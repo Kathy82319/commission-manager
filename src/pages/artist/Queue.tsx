@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, X, Edit2 } from 'lucide-react';
 import { QuoteBuilder } from './QuoteBuilder';
 import '../../styles/Queue.css';
 
@@ -117,7 +117,11 @@ export function Queue() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
   const [myId, setMyId] = useState<string>('');
+  
+  // 🌟 記錄完整的 profile_settings 避免更新時遺失其他設定
+  const [fullProfileSettings, setFullProfileSettings] = useState<any>({});
   const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
+  
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('all');
@@ -150,6 +154,9 @@ export function Queue() {
             const settings = typeof data.data.profile_settings === 'string' 
               ? JSON.parse(data.data.profile_settings) 
               : (data.data.profile_settings || {});
+            
+            setFullProfileSettings(settings); // 保留完整設定檔
+
             if (settings.queue_settings?.date_column_label) {
               setDateColumnLabel(settings.queue_settings.date_column_label);
             }
@@ -161,6 +168,40 @@ export function Queue() {
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
+  // 🌟 處理儲存自訂欄位名稱的邏輯
+  const handleSaveDateLabel = async (newLabel: string) => {
+    const safeLabel = newLabel.trim() || '預計開始日';
+    setDateColumnLabel(safeLabel);
+    
+    setIsSaving(true);
+    try {
+      // 確保不覆蓋原有的 queue_settings 與其他設定
+      const updatedQueueSettings = {
+        ...(fullProfileSettings.queue_settings || {}),
+        date_column_label: safeLabel
+      };
+      
+      const updatedProfileSettings = {
+        ...fullProfileSettings,
+        queue_settings: updatedQueueSettings
+      };
+
+      await fetch(`${API_BASE}/api/users/me`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_settings: JSON.stringify(updatedProfileSettings) })
+      });
+      
+      setFullProfileSettings(updatedProfileSettings);
+      showToast('✅ 欄位名稱已儲存');
+    } catch (e) {
+      console.error("儲存欄位名稱失敗", e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const fetchPaymentForOrder = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/commissions/${id}/payments`, { credentials: 'include' });
@@ -361,7 +402,38 @@ export function Queue() {
               <th>日期</th>
               <th>委託人</th>
               <th>進度</th>
-              <th>{dateColumnLabel}</th>
+              {/* 🌟 讓表頭變成可編輯的輸入框 */}
+              <th style={{ minWidth: '110px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input 
+                    type="text" 
+                    value={dateColumnLabel} 
+                    onChange={e => setDateColumnLabel(e.target.value)}
+                    onBlur={(e) => handleSaveDateLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    style={{ 
+                      background: 'transparent', 
+                      border: '1px dashed transparent', 
+                      color: 'inherit', 
+                      fontWeight: 'bold', 
+                      fontSize: 'inherit', 
+                      width: '80px',
+                      padding: '2px 4px',
+                      borderRadius: '4px',
+                      cursor: 'text',
+                      transition: 'border-color 0.2s, background-color 0.2s'
+                    }}
+                    onFocus={e => e.target.style.border = '1px dashed #A0978D'}
+                    onMouseOver={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)' }}
+                    onMouseOut={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'transparent' }}
+                  />
+                  <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
+                </div>
+              </th>
               <th>付款</th>
               <th className="queue-hide-mobile">備註欄位</th>
               <th className="queue-hide-mobile">操作</th>
