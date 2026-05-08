@@ -1,5 +1,4 @@
 // src/pages/Inbox/OutboundTab.tsx
-import React, { useState } from 'react';
 import { getStatusLabel, filterOldItems } from './utils/formatters';
 import { R2_PUBLIC_URL } from '../public/Wishboard/constants';
 import { Ban } from 'lucide-react'; 

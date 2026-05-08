@@ -329,17 +329,19 @@ export const Inbox: React.FC = () => {
                   handleCancelBulletin={(id) => { setCancelTargetId(id); setShowDeclineModal(true); }}
                 />
               )}
-              {selectedItem.type === 'outbound' && (
-                <OutboundTab 
-                  artistInquiries={artistInquiries.filter(i => i.inquiry_id === selectedItem.id)}
-                  directOutboundInquiries={directOutboundInquiries.filter(i => i.id === selectedItem.id)}
-                  setSelectedInquiry={setSelectedInquiryToDecline}
-                  setShowDeclineModal={setShowDeclineModal}
-                  handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
-                  handleViewCommission={(id) => navigate(`/client/orders?id=${id}`)}
-                  blacklistedIds={blacklistedIds} 
-                />
-              )}
+              /* --- 在 index.tsx 約 325 行處 --- */
+{selectedItem.type === 'outbound' && (
+  <OutboundTab 
+    artistInquiries={artistInquiries} // 傳入完整陣列
+    directOutboundInquiries={directOutboundInquiries} // 傳入完整陣列
+    selectedInquiryId={selectedItem.id} // 🌟 這是關鍵：必須告訴子元件選中了誰
+    setSelectedInquiry={setSelectedInquiryToDecline}
+    setShowDeclineModal={setShowDeclineModal}
+    handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
+    handleViewCommission={(id) => navigate(`/client/orders?id=${id}`)}
+    blacklistedIds={blacklistedIds} 
+  />
+)}
             </>
           )}
         </div>
