@@ -249,7 +249,6 @@ export const Inbox: React.FC = () => {
               <div key={inq.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('direct', inq.id)}>
                 <div className="mini-card-meta">
                   <span>{formatShortTime(inq.created_at)}</span>
-                  {/* 🌟 修正：這裡改為 getMiniBadge */}
                   {getMiniBadge(inq.status)}
                 </div>
                 <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
@@ -274,7 +273,6 @@ export const Inbox: React.FC = () => {
               <div key={inq.inquiry_id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('outbound', inq.inquiry_id)}>
                 <div className="mini-card-meta">
                   <span>{formatShortTime(inq.created_at)}</span>
-                  {/* 🌟 修正：這裡改為 getMiniBadge */}
                   {getMiniBadge(status)}
                 </div>
                 <div className="mini-card-title">投給：{targetName || '未知'}</div>
@@ -309,7 +307,11 @@ export const Inbox: React.FC = () => {
                   setSelectedInquiry={setSelectedInquiryToDecline}
                   setShowDeclineModal={setShowDeclineModal}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
-                  handleViewCommission={(id) => navigate(`/artist/notebook?id=${id}`)}
+                  handleViewCommission={(id) => {
+                    // 🌟 修正：專屬委託 -> 繪師視角 -> 導向筆記本
+                    if (id) navigate(`/artist/notebook?id=${id}`);
+                    else alert("找不到對應的委託單 ID");
+                  }}
                   blacklistedIds={blacklistedIds}
                   setSelectedIdsForBatch={setBatchDeclineIds}
                 />
@@ -323,24 +325,42 @@ export const Inbox: React.FC = () => {
                   setShowDeclineModal={setShowDeclineModal}
                   handleDirectInvite={handleDirectInvite}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
-                  handleViewCommission={() => navigate(`/client/orders`)}
+                  handleViewCommission={(id) => {
+                    // 🌟 修正：許願池管理 -> 案主視角 -> 導向委託管理，並帶入 id
+                    if (id) navigate(`/client/orders?id=${id}`);
+                    else alert("找不到對應的委託單 ID");
+                  }}
                   setSelectedIdsForBatch={setBatchDeclineIds}
                   blacklistedIds={blacklistedIds}
                   handleCancelBulletin={(id) => { setCancelTargetId(id); setShowDeclineModal(true); }}
                 />
               )}
-{selectedItem.type === 'outbound' && (
-  <OutboundTab 
-    artistInquiries={artistInquiries} // 傳入完整陣列
-    directOutboundInquiries={directOutboundInquiries} // 傳入完整陣列
-    selectedInquiryId={selectedItem.id} // 🌟 這是關鍵：必須告訴子元件選中了誰
-    setSelectedInquiry={setSelectedInquiryToDecline}
-    setShowDeclineModal={setShowDeclineModal}
-    handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
-    handleViewCommission={(id) => navigate(`/client/orders?id=${id}`)}
-    blacklistedIds={blacklistedIds} 
-  />
-)}
+              {selectedItem.type === 'outbound' && (
+                <OutboundTab 
+                  artistInquiries={artistInquiries} 
+                  directOutboundInquiries={directOutboundInquiries} 
+                  selectedInquiryId={selectedItem.id} 
+                  setSelectedInquiry={setSelectedInquiryToDecline}
+                  setShowDeclineModal={setShowDeclineModal}
+                  handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
+                  handleViewCommission={(id) => {
+                    // 🌟 修正：投遞申請 -> 動態判斷身分
+                    if (!id) {
+                      alert("找不到對應的委託單 ID");
+                      return;
+                    }
+                    const selectedInq = combinedOutbound.find(i => i.inquiry_id === selectedItem?.id);
+                    if (selectedInq?.is_direct) {
+                      // 填寫別人表單 -> 案主視角 -> 導向委託管理
+                      navigate(`/client/orders?id=${id}`);
+                    } else {
+                      // 投遞別人許願池 -> 繪師視角 -> 導向筆記本
+                      navigate(`/artist/notebook?id=${id}`);
+                    }
+                  }}
+                  blacklistedIds={blacklistedIds} 
+                />
+              )}
             </>
           )}
         </div>

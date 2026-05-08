@@ -11,7 +11,7 @@ interface InboundTabProps {
   setShowDeclineModal: (show: boolean) => void;
   handleDirectInvite: (inquiry: any) => void; 
   handleEnterInquiryWorkspace: (id: string) => void;
-  handleViewCommission: () => void;
+  handleViewCommission: (id: string) => void;
   setSelectedIdsForBatch?: (ids: Set<string>) => void; 
   blacklistedIds?: string[];
   handleCancelBulletin?: (id: string) => void; 

@@ -1,5 +1,6 @@
-/* src/styles/ArtistLayout.css */
-
+/* ==========================================================================
+   基礎佈局
+   ========================================================================== */
 .artist-layout-wrapper {
   min-height: 100vh;
   background-color: #FBFBF9;
@@ -7,6 +8,9 @@
   font-family: sans-serif;
 }
 
+/* ==========================================================================
+   手機版上方標籤列 (App Bar)
+   ========================================================================== */
 .mobile-app-bar {
   display: flex;
   gap: 16px;
@@ -34,8 +38,12 @@
 .mobile-app-title {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
+/* ==========================================================================
+   側邊導覽欄 (Sidebar) 核心樣式
+   ========================================================================== */
 .app-sidebar {
   position: fixed;
   top: 0;
@@ -44,25 +52,20 @@
   width: 260px;
   background-color: #FFFFFF;
   border-right: 1px solid #EAE6E1;
-  z-index: 200; 
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%); 
   transition: transform 0.3s ease-in-out;
-}
-
-.app-sidebar.open {
-  transform: translateX(0);
+  z-index: 1000; /* 提升層級 */
 }
 
 .sidebar-header {
   padding: 30px 20px;
   border-bottom: 1px solid #F0ECE7;
-  
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
   text-align: left !important;
+  position: relative; /* 為了讓關閉按鈕定位 */
 }
 
 .app-sidebar .sidebar-nav {
@@ -84,10 +87,7 @@
   display: block;  
 }
 
-.app-sidebar .nav-link:hover {
-  background-color: #FBFBF9;
-}
-
+.app-sidebar .nav-link:hover { background-color: #FBFBF9; }
 .app-sidebar .nav-link.active {
   background-color: #F4F0EB;
   color: #5D4A3E;
@@ -102,34 +102,17 @@
   gap: 10px;
 }
 
-.sidebar-action-btn {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: bold;
-  border: 1px solid #DED9D3;
-  transition: opacity 0.2s;
-}
-.sidebar-action-btn:hover { opacity: 0.8; }
+/* 關閉按鈕預設隱藏 */
+.mobile-close-btn { display: none; }
 
-.btn-switch-client {
-  background-color: #F4F0EB;
-  color: #5D4A3E;
-  border-style: dashed;
-}
-
-.btn-preview-profile {
-  background-color: #FFFFFF;
-  color: #7A7269;
-}
-
+/* ==========================================================================
+   遮罩 (Overlay)
+   ========================================================================== */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 150;
+  z-index: 999;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
@@ -140,10 +123,12 @@
   visibility: visible;
 }
 
+/* ==========================================================================
+   內容區塊
+   ========================================================================== */
 .app-main-content {
   width: 100%;
   min-height: calc(100vh - 64px);
-  transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
   box-sizing: border-box;
   overflow-x: hidden; 
 }
@@ -154,9 +139,69 @@
   margin: 0 auto;
 }
 
+/* ==========================================================================
+   響應式設計：手機/平板版 (< 1024px)
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .app-sidebar {
+    transform: translateX(-100%); 
+  }
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .mobile-close-btn {
+    display: flex;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #A0978D;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 10;
+  }
+}
+
+/* ==========================================================================
+   響應式設計：桌機版 (>= 1024px)
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .mobile-app-bar { display: none; }
+  .sidebar-overlay { display: none !important; }
+
+  .app-sidebar {
+    transform: translateX(0); 
+    z-index: 200;
+  }
+
+  .app-main-content {
+    margin-left: 260px; 
+    width: calc(100% - 260px);
+    min-height: 100vh;
+  }
+
+  .content-wrapper { padding: 40px; }
+
+  .mobile-close-btn { display: none !important; }
+}
+
+/* 其他共用元件 */
+.sidebar-action-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  border: 1px solid #DED9D3;
+}
+.btn-switch-client { background-color: #F4F0EB; color: #5D4A3E; border-style: dashed; }
+.btn-preview-profile { background-color: #FFFFFF; color: #7A7269; }
+
 .plan-warning-banner {
   background-color: #FFF3CD;
-  border: 1px solid #FFEEBA;
   color: #856404;
   padding: 16px;
   border-radius: 12px;
@@ -166,82 +211,19 @@
   gap: 12px;
 }
 
+@media (min-width: 768px) {
+  .plan-warning-banner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
 .renew-plan-btn {
   background-color: #856404;
   color: #FFFFFF;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
   font-weight: bold;
-}
-
-@media (min-width: 1024px) {
-  .mobile-app-bar {
-    display: none;
-  }
-  
-  .sidebar-overlay {
-    display: none !important; 
-  }
-
-  .app-sidebar {
-    transform: translateX(0); 
-  }
-
-  .app-main-content {
-    margin-left: 260px; 
-    width: calc(100% - 260px);
-    min-height: 100vh;
-  }
-
-  .content-wrapper {
-    padding: 40px;
-  }
-
-  .plan-warning-banner {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-/* 🌟 新增：手機版側邊欄關閉按鈕樣式 */
-.mobile-close-btn {
-  display: none; /* 預設隱藏 */
-}
-
-
-  .sidebar-header {
-    position: relative; /* 讓按鈕可以絕對定位 */
-  }
-
-  .mobile-close-btn {
-    display: flex;
-    position: absolute;
-    top: 20px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #A0978D;
-    cursor: pointer;
-    padding: 8px;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s;
-  }
-
-  .mobile-close-btn:hover {
-    color: #5D4A3E;
-  }
-
-
-/* 確保側邊欄展開時的層級足夠高，不會被其他東西擋住 */
-.app-sidebar {
-  z-index: 1000; 
-}
-.sidebar-overlay {
-  z-index: 999;
-}
-
-
 }
