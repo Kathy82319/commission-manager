@@ -133,7 +133,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>💎 試用期間可建立 <strong>20 筆</strong> 委託單</li>
             <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制</li>
             <li>💎 <strong>解鎖</strong> 最高 20 張作品展示</li>
-            <li>💎 <strong>解鎖</strong>「販售區」開放展示 10 個項目</li>
+            <li>💎 <strong>解鎖</strong>「接委託區」開放展示 10 個項目</li>
             <li>💎 <strong>解鎖</strong> 所有進階編輯區塊權限</li>
           </ul>
           
@@ -166,7 +166,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>👑 建立委託單數量 <strong>99張</strong></li>
             <li>👑 許願池投遞與發布次數<strong>無限制*</strong></li>
             <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
-            <li>👑 <strong>解鎖</strong>「販售區」開放展示 30 個項目</li>
+            <li>👑 <strong>解鎖</strong>「接委託區」開放展示 30 個項目</li>
             <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>
           </ul>
           

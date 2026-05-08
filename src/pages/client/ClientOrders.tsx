@@ -519,7 +519,7 @@ export function ClientOrders() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1 }}>
                         <span>{formatLocalDate(order.order_date)}</span>
                         {orderOrigin?.type === 'showcase_form' && (
-                          <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', whiteSpace: 'nowrap' }}>販售區表單</span>
+                          <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', whiteSpace: 'nowrap' }}>接委託表單</span>
                         )}
                         {orderOrigin?.type === 'bulletin' && (
                           <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', whiteSpace: 'nowrap' }}>許願池</span>
@@ -585,7 +585,7 @@ export function ClientOrders() {
                     </span>
                     {originData && (
                       <span className="card-mode-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', flexShrink: 0 }}>
-                        來源：{originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
+                        來源：{originData.type === 'showcase_form' ? '接委託表單' : '許願池'}
                       </span>
                     )}
                   </div>

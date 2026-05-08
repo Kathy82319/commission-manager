@@ -382,13 +382,20 @@ VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 --https://cath-commission-manager.pages.dev/api/auth/testing-bypass?userId=u-artist-03
 
 
+-- 1. 先清空與「洽談單/訂單」相關的對話紀錄
+DELETE FROM InquiryMessages;
+DELETE FROM Messages;
 
+-- 3. 現在沒有人綁著它們了，可以安心刪除主單據
+DELETE FROM Commissions;
+DELETE FROM DirectInquiries;
 
 --刪除許願池收件匣用
 DELETE FROM Notifications;
 DELETE FROM InquiryMessages;
 DELETE FROM BulletinInquiries;
 DELETE FROM Bulletins;
+DELETE FROM DirectInquiries;
 
 
 

@@ -90,7 +90,7 @@ export function Terms() {
             <ul style={nestedListStyle}>
               <li><span style={{ color: '#000018', fontWeight: 'bold' }}>費用：NT$ 150 / 月</span> (無自動訂閱，每月視需求購買)。</li>
               <li>無接單數量限制。</li>
-              <li>作品區、販售區上傳限制提高至 30 張。</li>
+              <li>作品區、接委託區上傳限制提高至 30 張。</li>
               <li>個人展示頁面：可編輯背景色、開場動畫、數個文字說明介面</li>
             </ul>
           </li>

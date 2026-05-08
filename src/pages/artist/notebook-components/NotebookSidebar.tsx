@@ -68,7 +68,7 @@ export function NotebookSidebar({
               <div className="card-meta-row">
                 <span>{dateStr}</span>
                 {isShowcaseForm && (
-                  <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', marginLeft: '6px' }}>販售區表單</span>
+                  <span className="card-mode-badge" style={{ backgroundColor: '#4A7294', color: '#fff', marginLeft: '6px' }}>接委託表單</span>
                 )}
                 {isBulletin && (
                   <span className="card-mode-badge" style={{ backgroundColor: '#8E7E8E', color: '#fff', marginLeft: '6px' }}>許願池</span>

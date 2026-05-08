@@ -390,7 +390,7 @@ export function Queue() {
                         {/* 🌟 根據不同來源正確顯示對應標籤 */}
                         {originData ? (
                           <span className="bulletin-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                            {originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
+                            {originData.type === 'showcase_form' ? '接委託表單' : '許願池'}
                           </span>
                         ) : (
                           <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>

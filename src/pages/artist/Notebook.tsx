@@ -421,7 +421,7 @@ export function Notebook() {
                     <span>委託人編號：{selectedOrder.client_public_id || '尚未綁定'}</span>
                     {originData ? (
                       <span className="card-mode-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff' }}>
-                        來源：{originData.type === 'showcase_form' ? '販售區表單' : '許願池'}
+                        來源：{originData.type === 'showcase_form' ? '接委託表單' : '許願池'}
                       </span>
                     ) : (
                       <span className={`card-mode-badge ${selectedOrder.workflow_mode === 'free' ? 'mode-free' : 'mode-standard'}`}>

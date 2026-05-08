@@ -122,8 +122,8 @@ export function Settings() {
         { id: 'queue_settings', label: '排單表顯示設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
-        { id: 'showcase', label: '販售區' },
-        { id: 'rules', label: '協議書範本' },
+        { id: 'showcase', label: '接委託區' },
+        { id: 'rules', label: '委託協議書範本' },
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];

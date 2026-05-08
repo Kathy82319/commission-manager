@@ -369,7 +369,7 @@ export function ShowcaseFormBuilder({
               onClick={onClose} 
               style={{ padding: '12px 24px', background: '#FAFAFA', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' }}
             >
-              返回販售區
+              返回接委託區
             </button>
             <button 
               onClick={handleSaveItem} 
