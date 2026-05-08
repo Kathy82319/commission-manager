@@ -299,7 +299,7 @@ export const Inbox: React.FC = () => {
             </div>
           ) : (
             <>
-              {selectedItem.type === 'direct' && (
+{selectedItem.type === 'direct' && (
                 <DirectInboundTab 
                   inquiries={directInquiries}
                   selectedInquiryId={selectedItem.id} 
@@ -308,9 +308,9 @@ export const Inbox: React.FC = () => {
                   setShowDeclineModal={setShowDeclineModal}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：專屬委託 -> 繪師視角 -> 導向筆記本
+                    // 🌟 修正：加上容錯跳轉，就算沒 ID 也去筆記本總覽
                     if (id) navigate(`/artist/notebook?id=${id}`);
-                    else alert("找不到對應的委託單 ID");
+                    else navigate(`/artist/notebook`);
                   }}
                   blacklistedIds={blacklistedIds}
                   setSelectedIdsForBatch={setBatchDeclineIds}
@@ -326,9 +326,9 @@ export const Inbox: React.FC = () => {
                   handleDirectInvite={handleDirectInvite}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：許願池管理 -> 案主視角 -> 導向委託管理，並帶入 id
+                    // 🌟 修正：加上容錯跳轉
                     if (id) navigate(`/client/orders?id=${id}`);
-                    else alert("找不到對應的委託單 ID");
+                    else navigate(`/client/orders`);
                   }}
                   setSelectedIdsForBatch={setBatchDeclineIds}
                   blacklistedIds={blacklistedIds}
@@ -344,18 +344,14 @@ export const Inbox: React.FC = () => {
                   setShowDeclineModal={setShowDeclineModal}
                   handleEnterInquiryWorkspace={(id) => navigate(`/inquiry/workspace/${id}`)}
                   handleViewCommission={(id) => {
-                    // 🌟 修正：投遞申請 -> 動態判斷身分
-                    if (!id) {
-                      alert("找不到對應的委託單 ID");
-                      return;
-                    }
+                    // 🌟 修正：動態判斷身分並加上容錯跳轉
                     const selectedInq = combinedOutbound.find(i => i.inquiry_id === selectedItem?.id);
                     if (selectedInq?.is_direct) {
-                      // 填寫別人表單 -> 案主視角 -> 導向委託管理
-                      navigate(`/client/orders?id=${id}`);
+                      if (id) navigate(`/client/orders?id=${id}`);
+                      else navigate(`/client/orders`);
                     } else {
-                      // 投遞別人許願池 -> 繪師視角 -> 導向筆記本
-                      navigate(`/artist/notebook?id=${id}`);
+                      if (id) navigate(`/artist/notebook?id=${id}`);
+                      else navigate(`/artist/notebook`);
                     }
                   }}
                   blacklistedIds={blacklistedIds} 

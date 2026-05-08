@@ -56,12 +56,16 @@ export const directInquiryController = {
   async getInboxList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
-        SELECT di.*, u.display_name as client_name, s.title as showcase_title
-        FROM DirectInquiries di
-        LEFT JOIN Users u ON di.client_id = u.id
-        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
-        WHERE di.artist_id = ?
-        ORDER BY di.created_at DESC
+        SELECT d.*, 
+               u.display_name as client_name, 
+               u.public_id as client_public_id,
+               c.id as commission_id  /* 🌟 新增這一行來抓取成單 ID */
+        FROM DirectInquiries d
+        LEFT JOIN Users u ON d.client_id = u.id
+        /* 🌟 新增底下這個 JOIN 來關聯 Commissions 表 */
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
+        WHERE d.artist_id = ?
+        ORDER BY d.created_at DESC
       `).bind(currentUserId).all();
 
       const formattedData = results.map((r: any) => ({
@@ -78,12 +82,16 @@ export const directInquiryController = {
   async getOutboundList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const { results } = await env.commission_db.prepare(`
-        SELECT di.*, u.display_name as artist_name, s.title as showcase_title
-        FROM DirectInquiries di
-        JOIN Users u ON di.artist_id = u.id
-        LEFT JOIN ShowcaseItems s ON di.showcase_id = s.id
-        WHERE di.client_id = ? AND di.client_id != 'guest'
-        ORDER BY di.created_at DESC
+        SELECT d.*, 
+               a.display_name as artist_name, 
+               a.public_id as artist_public_id,
+               c.id as commission_id  /* 🌟 新增這一行來抓取成單 ID */
+        FROM DirectInquiries d
+        LEFT JOIN Users a ON d.artist_id = a.id
+        /* 🌟 新增底下這個 JOIN 來關聯 Commissions 表 */
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
+        WHERE d.client_id = ?
+        ORDER BY d.created_at DESC
       `).bind(currentUserId).all();
 
       return new Response(JSON.stringify({ success: true, data: results }), { headers: corsHeaders });
