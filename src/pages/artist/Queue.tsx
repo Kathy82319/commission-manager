@@ -1,3 +1,4 @@
+// src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical, X, Edit2 } from 'lucide-react';
@@ -118,7 +119,6 @@ export function Queue() {
   
   const [myId, setMyId] = useState<string>('');
   
-  // 🌟 記錄完整的 profile_settings 避免更新時遺失其他設定
   const [fullProfileSettings, setFullProfileSettings] = useState<any>({});
   const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
   
@@ -155,7 +155,7 @@ export function Queue() {
               ? JSON.parse(data.data.profile_settings) 
               : (data.data.profile_settings || {});
             
-            setFullProfileSettings(settings); // 保留完整設定檔
+            setFullProfileSettings(settings); 
 
             if (settings.queue_settings?.date_column_label) {
               setDateColumnLabel(settings.queue_settings.date_column_label);
@@ -168,14 +168,12 @@ export function Queue() {
 
   useEffect(() => { localStorage.setItem('artist_all_stages', JSON.stringify(stages)); }, [stages]);
   
-  // 🌟 處理儲存自訂欄位名稱的邏輯
   const handleSaveDateLabel = async (newLabel: string) => {
     const safeLabel = newLabel.trim() || '預計開始日';
     setDateColumnLabel(safeLabel);
     
     setIsSaving(true);
     try {
-      // 確保不覆蓋原有的 queue_settings 與其他設定
       const updatedQueueSettings = {
         ...(fullProfileSettings.queue_settings || {}),
         date_column_label: safeLabel
@@ -375,7 +373,15 @@ export function Queue() {
 
   return (
     <div className="queue-container">
-      
+      {/* 🌟 注入隱藏桌機/手機版元素的 CSS */}
+      <style>{`
+        .queue-mobile-only-text { display: none; }
+        @media (max-width: 768px) {
+          .queue-desktop-edit-wrapper { display: none !important; }
+          .queue-mobile-only-text { display: block !important; }
+        }
+      `}</style>
+
       {toastMsg && (
         <div className="toast-notification">
           {toastMsg}
@@ -402,9 +408,9 @@ export function Queue() {
               <th>日期</th>
               <th>委託人</th>
               <th>進度</th>
-              {/* 🌟 讓表頭變成可編輯的輸入框 */}
               <th style={{ minWidth: '110px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {/* 🌟 桌機版：顯示可編輯的輸入框 */}
+                <div className="queue-desktop-edit-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <input 
                     type="text" 
                     value={dateColumnLabel} 
@@ -433,6 +439,8 @@ export function Queue() {
                   />
                   <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
                 </div>
+                {/* 🌟 手機版：單純顯示文字 */}
+                <span className="queue-mobile-only-text">日期</span>
               </th>
               <th>付款</th>
               <th className="queue-hide-mobile">備註欄位</th>
@@ -507,7 +515,8 @@ export function Queue() {
                     />
                   </div>
                 </td>
-                <td data-label={dateColumnLabel}>
+                {/* 🌟 修改此處的 data-label 為固定的字串，確保手機卡片模式下不會因字數太長而破版 */}
+                <td data-label="日期">
                   <div className="cell-content cell-date-input">
                     <span className="date-text-display">{order.start_date ? order.start_date.substring(5).replace('-', '/') : '未定'}</span>
                     <input type="date" defaultValue={order.start_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'start_date', e.target.value)} className="date-input" />
