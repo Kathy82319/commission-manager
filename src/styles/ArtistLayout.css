@@ -210,7 +210,7 @@
   display: none; /* 預設隱藏 */
 }
 
-@media (max-width: 1023px) {
+
   .sidebar-header {
     position: relative; /* 讓按鈕可以絕對定位 */
   }
@@ -233,7 +233,7 @@
   .mobile-close-btn:hover {
     color: #5D4A3E;
   }
-}
+
 
 /* 確保側邊欄展開時的層級足夠高，不會被其他東西擋住 */
 .app-sidebar {
