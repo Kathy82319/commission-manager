@@ -682,8 +682,8 @@ export function PublicProfile() {
                                 <span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
                               </td>
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
-                                {/* 🌟 統一改抓 start_date 呈現 */}
-                                {order.start_date ? order.start_date.substring(5).replace('-', '/') : '未定'}
+                                {/* 🌟 統一改回 end_date 以符合資料庫存放位置，修正空白問題 */}
+                                {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
                               </td>
                             </tr>
                           ))}
