@@ -528,14 +528,14 @@ export const commController = {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
-      // 🌟 確保 SQL *不* 包含 total_price 等金額欄位 (防止資料外洩)
+      // 🌟 修正：確保 SQL 撈取的是 `end_date` (存放日期的舊欄位)，並將其 Alias 為 `end_date`
       const query = `
         SELECT 
           c.id, 
           c.contact_memo, 
           c.project_name, 
           c.queue_status, 
-          c.start_date,
+          c.end_date,
           c.order_date,
           u.public_id AS client_public_id
         FROM Commissions c
@@ -550,7 +550,7 @@ export const commController = {
         return {
           id: order.id,
           queue_status: order.queue_status,
-          start_date: order.start_date,
+          end_date: order.end_date, // 將拿到的舊日期欄位原樣傳回給前端
           order_date: order.order_date,
           // 根據設定決定是否傳送明碼，否則傳送遮蔽後的字串
           contact_memo: queueSettings.show_client_name ? order.contact_memo : getMaskedName(order.contact_memo),
