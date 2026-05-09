@@ -749,7 +749,7 @@
   .portfolio-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-  }
+  } 
 
   .masonry-grid {
     column-count: 2;
