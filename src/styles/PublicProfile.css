@@ -792,3 +792,15 @@
   padding: 24px 16px; 
   border-radius: 20px; 
 }
+/* 🌟 手機版卡片滑動修復 (貼在最底端即可) */
+@media (max-width: 768px) {
+  .profile-layout-root {
+      display: block !important;
+          height: auto !important;
+            }
+              .profile-main-content {
+                  overflow: visible !important;
+                      height: auto !important;
+                        }
+                        }
+                        
