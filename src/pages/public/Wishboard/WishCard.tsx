@@ -201,6 +201,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         
         {/* 💡 左側：圖片與桌機版專屬作者區塊 */}
         <div className="wish-card-image-wrapper">
+          
+          {/* 💡 這是新增的：電腦版獨立的倒數計時區塊 (會把圖片稍微往下推) */}
+          <div className="wish-expiry-standalone">
+            <Clock size={14} style={{ marginRight: '6px' }} /> {getTimeRemaining(bulletin.expires_at)}
+          </div>
+
           {validImages.length > 0 ? (
             <div className="wish-card-img-inner">
               <img 
@@ -233,24 +239,31 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   />
                 </div>
               )}
+
+              {/* 💡 這是原本疊加在圖片上的標籤，現在改為手機版專用 (用 CSS 控制顯示) */}
+              <div className="wish-expiry-overlay">
+                <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
+              </div>
             </div>
           ) : (
-            <div className="empty-image-placeholder">
-              <User size={64} opacity={0.3} />
-              <span>無提供範例圖</span>
+            <div className="wish-card-img-inner">
+              <div className="empty-image-placeholder">
+                <User size={64} opacity={0.3} />
+                <span>無提供範例圖</span>
+              </div>
+              <div className="wish-expiry-overlay">
+                <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
+              </div>
             </div>
           )}
-          <div className="wish-expiry-badge">
-            <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
-          </div>
 
-          {/* 💡 這是新增的：電腦版專屬左下方作者資訊區塊 */}
+          {/* 💡 電腦版專屬：作者區塊 (改為左右排版：左頭像、右資訊) */}
           <div className="desktop-author-block">
             <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
               {posterAvatar ? (
                 <img src={getFullUrl(posterAvatar)} alt={posterName} referrerPolicy="no-referrer" />
               ) : (
-                <User size={32} color="#94a3b8" />
+                <User size={28} color="#94a3b8" />
               )}
             </div>
             
@@ -259,24 +272,24 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 {posterName}
               </div>
               <div className="desktop-author-id">@{posterId}</div>
-            </div>
+              
+              <div className="desktop-author-actions">
+                {bulletin.creator_role === 'admin' && (
+                  <span className="admin-badge-ui">管理員</span>
+                )}
 
-            <div className="desktop-author-actions">
-              {bulletin.creator_role === 'admin' && (
-                <span className="admin-badge-ui">管理員</span>
-              )}
+                {!isMyOwnPost && bulletin.client_id && (
+                  <button className="icon-action-btn" onClick={handleToggleFavorite} title={isFavorited ? "取消收藏" : "加入收藏"}>
+                    <Heart size={16} fill={isFavorited ? '#ef4444' : 'none'} color={isFavorited ? '#ef4444' : '#94a3b8'} />
+                  </button>
+                )}
 
-              {!isMyOwnPost && bulletin.client_id && (
-                <button className="icon-action-btn" onClick={handleToggleFavorite} title={isFavorited ? "取消收藏" : "加入收藏"}>
-                  <Heart size={18} fill={isFavorited ? '#ef4444' : 'none'} color={isFavorited ? '#ef4444' : '#94a3b8'} />
-                </button>
-              )}
-
-              {!isMyOwnPost && currentUser && (
-                <button className="icon-action-btn report-btn" onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }} title="檢舉此貼文">
-                  <Flag size={18} color="#94a3b8" />
-                </button>
-              )}
+                {!isMyOwnPost && currentUser && (
+                  <button className="icon-action-btn report-btn" onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }} title="檢舉此貼文">
+                    <Flag size={15} color="#94a3b8" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -287,7 +300,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
-              {/* 💡 這是原有的，改為手機版專屬 (mobile-author-block) */}
+              {/* 💡 手機版專屬作者區塊 (mobile-author-block) */}
               <div className="wish-card-author-wrapper mobile-author-block">
                 <User size={14} className="wish-card-author-icon" />
                 

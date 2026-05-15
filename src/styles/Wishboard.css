@@ -29,7 +29,6 @@ body {
   overflow-x: hidden;
 }
 
-
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -37,7 +36,6 @@ body {
   min-width: 0;
   display: block;
 }
-
 
 .toast-notification {
   position: fixed; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 30px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); z-index: 10000; animation: slideDown 0.3s ease-out;
@@ -74,13 +72,26 @@ body {
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
-/* 左側區塊：固定寬度 340px，高度彈性 */
+/* 💡 左側區塊：固定寬度 340px，背景淺灰，變成 Flex 排版 */
 .wish-card-image-wrapper { 
   width: 340px; max-width: 340px; position: relative; 
   flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; 
   display: flex; flex-direction: column;
   min-width: 0;
 }
+
+/* 💡 新增：獨立的倒數計時區塊 (會把圖片稍微往下推) */
+.wish-expiry-standalone {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 16px; background-color: #f1f5f9; color: #475569;
+  border-radius: 20px; font-size: 13px; font-weight: 800;
+  margin: 16px 20px 12px 20px; /* 這裡的 margin-bottom 就是圖片往下的間距 */
+  align-self: flex-start;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* 💡 手機版疊加在圖片上的計時器，電腦版隱藏 */
+.wish-expiry-overlay { display: none; }
 
 /* 圖片容器：強制 1:1 正方形 */
 .wish-card-img-inner { 
@@ -91,32 +102,32 @@ body {
 
 .empty-image-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #cbd5e1; gap: 12px; position: absolute; top: 0; left: 0; }
 .empty-image-placeholder span { font-size: 14px; color: #94a3b8; }
-.wish-expiry-badge { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 4px; z-index: 10; }
 .card-image-nav { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px); z-index: 5; }
 .card-image-nav .nav-btn { cursor: pointer; opacity: 0.8; transition: 0.2s; }
 .card-image-nav .nav-btn:hover { opacity: 1; transform: scale(1.2); }
 .zoom-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.4); color: white; padding: 10px; border-radius: 50%; opacity: 0; transition: 0.3s; pointer-events: none; }
 .wish-card-img-inner:hover .zoom-hint { opacity: 1; }
 
-/* 💡 新增：電腦版專屬左下角作者區塊 */
+/* 💡 修改：電腦版專屬作者區塊 (改為左右水平排版) */
 .desktop-author-block {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* 水平排列 */
   align-items: center;
-  justify-content: center;
-  padding: 24px;
-  gap: 12px;
-  margin-top: auto; /* 將其推到底部 */
-  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+  justify-content: flex-start;
+  padding: 16px 20px;
+  gap: 16px;
+  margin-top: auto; /* 確保內容多時保持在底部 */
+  border-top: 1px solid #e2e8f0;
 }
 
 .desktop-author-avatar {
-  width: 72px;
-  height: 72px;
+  width: 56px; /* 頭像稍微縮小一點配合橫向排版 */
+  height: 56px;
+  flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,14 +137,21 @@ body {
 .desktop-author-avatar:hover { transform: scale(1.05); }
 .desktop-author-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.desktop-author-info { text-align: center; }
-.desktop-author-name { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 2px; transition: color 0.2s; }
+.desktop-author-info { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-start; 
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+.desktop-author-name { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 2px; transition: color 0.2s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .desktop-author-name:hover { color: var(--wish-primary); }
 .desktop-author-id { font-size: 12px; color: #94a3b8; font-family: monospace; }
 
-.desktop-author-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.admin-badge-ui { background-color: #FFD700; color: #5D4A3E; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
-.icon-action-btn { background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; outline: none; }
+.desktop-author-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.admin-badge-ui { background-color: #FFD700; color: #5D4A3E; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+.icon-action-btn { background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; outline: none; }
 .icon-action-btn:hover { background: #f8fafc; border-color: #cbd5e1; transform: scale(1.1); }
 .icon-action-btn.report-btn:hover { border-color: #fecdd3; background: #fff1f2; }
 .icon-action-btn.report-btn:hover svg { color: #ef4444 !important; }
@@ -347,6 +365,16 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
     height: auto !important; 
     border-right: none !important; 
     border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* 💡 手機版隱藏獨立標籤，改顯示圖片右上角的疊加標籤 */
+  .wish-expiry-standalone { display: none !important; }
+  .wish-expiry-overlay { 
+    display: flex !important; 
+    position: absolute; top: 12px; right: 12px; 
+    background: rgba(0,0,0,0.6); color: white; 
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; 
+    align-items: center; gap: 4px; z-index: 10; 
   }
 
   .wish-card-img-inner {
