@@ -151,11 +151,13 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
+// 在 CardView 內部的 return 區塊，找到裝按鈕的地方：
+// 🌟 核心修正：替換此區塊，解除寫死的寬度，利用 Flex 讓按鈕自適應縮放
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
             {canDecline && (
               <button 
                 onClick={() => setShowDeclineModal(true)}
-                style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
+                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
               >
@@ -165,7 +167,7 @@ export const CardView: React.FC<CardViewProps> = ({
             {inquiry.inquiry_status === 'pending' && (
               <button 
                 onClick={() => handleDirectInvite(inquiry)}
-                style={{ flex: '2 1 auto', minWidth: '120px', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
+                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3B5D7A'}
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4A7294'}
               >

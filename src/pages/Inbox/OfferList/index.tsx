@@ -63,8 +63,10 @@ export const OfferList: React.FC<OfferListProps> = ({
       {/* 🌟 核心：改成 CSS Grid 網格佈局 */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-        gap: '20px',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', 
+        gap: '16px',
+        width: '100%',
+        boxSizing: 'border-box',
         alignItems: 'start'
       }}>
         {inquiries.map(inquiry => {

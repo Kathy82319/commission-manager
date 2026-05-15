@@ -210,14 +210,39 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-layout">
       
-      <div className={`sidebar-overlay ${showMobileSidebar ? 'open' : ''}`} onClick={() => setShowMobileSidebar(false)}></div>
+      {/* 🌟 核心修正 1：絕對生效的內聯樣式遮罩 */}
+      {showMobileSidebar && (
+        <div 
+          style={{ 
+            position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', 
+            zIndex: 990, cursor: 'pointer'
+          }} 
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
 
-      <div className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}>
+      {/* 🌟 核心修正 2：強制覆蓋側邊欄寬度，確保不會佔滿全螢幕 */}
+      <div 
+        className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}
+        style={showMobileSidebar ? { transform: 'translateX(0)', width: '85vw', maxWidth: '320px', zIndex: 999 } : {}}
+      >
         <div className="inbox-sidebar-header">
           <h1 className="inbox-sidebar-title">收件匣</h1>
-          <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
+            {/* 🌟 核心修正 3：加入實體的關閉按鈕 */}
+            {showMobileSidebar && (
+              <button 
+                onClick={() => setShowMobileSidebar(false)} 
+                style={{ background: 'none', border: 'none', fontSize: '20px', color: '#5D4A3E', cursor: 'pointer', padding: '0 4px' }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* ... (過濾器與清單內容皆不變) ... */}
         {/* 🌟 切換開關區塊 */}
         <div className="inbox-filter-container">
           <div className="filter-toggle-box">
@@ -317,7 +342,7 @@ export const Inbox: React.FC = () => {
           <span className="mobile-header-title">{getMobileHeaderTitle()}</span>
         </div>
 
-        <div className="inbox-content-wrapper" style={{ height: '100%', padding: selectedItem?.type === 'direct' ? '0' : '24px' }}>
+        <div className="inbox-content-wrapper" style={{ padding: selectedItem?.type === 'direct' ? '0' : '16px', boxSizing: 'border-box' }}>
           {loading ? (
             <div style={{ padding: '60px', textAlign: 'center', color: '#A0978D' }}>資料載入中...</div>
           ) : !selectedItem ? (

@@ -40,8 +40,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     .filter(filterOldItems);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease' }}>
-      
+    // 🌟 核心修正：加入 width 與 box-sizing
+    <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease', boxSizing: 'border-box' }}>
       
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '20px' }}>
         <div>
@@ -53,7 +53,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#D97706', backgroundColor: '#FFFBEB', padding: '8px 12px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
             ⏳ {calculateDaysLeft(bulletin.expires_at)}
           </span>
@@ -68,7 +68,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
         </div>
       </div>
 
-      
       {currentInquiries.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#A0978D' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🍃</div>

@@ -1,6 +1,5 @@
 /* src/styles/Inbox.css */
 
-/* 佈局主容器 */
 .inbox-layout {
   display: flex;
   height: calc(100vh - 64px); 
@@ -24,6 +23,7 @@
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
+  box-sizing: border-box;
 }
 
 .inbox-sidebar-header {
@@ -96,7 +96,6 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* 手風琴群組標題 */
 .accordion-header {
   display: flex;
   justify-content: space-between;
@@ -142,7 +141,6 @@
   font-weight: bold;
 }
 
-/* 微型卡片 (左側清單項目) */
 .mini-card {
   padding: 14px 20px;
   border-bottom: 1px solid #F4F0EB;
@@ -197,7 +195,6 @@
   text-overflow: ellipsis;
 }
 
-/* 小標籤 */
 .mini-badge {
   font-size: 10px;
   padding: 2px 6px;
@@ -219,6 +216,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .mobile-inbox-header {
@@ -247,22 +245,9 @@
   padding: 24px;
   flex: 1;
   box-sizing: border-box;
-  max-width: 100vw; /* 防止超出螢幕 */
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
-}
-
-/* ======== 手機版側邊欄遮罩 ======== */
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(26, 20, 18, 0.6);
-  z-index: 990; /* 確保在所有內容之上，但在側邊欄之下 */
-  display: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -275,18 +260,12 @@
     left: 0;
     bottom: 0;
     height: 100%;
-    width: 85vw !important; /* 縮小佔比，留出點擊遮罩的空間 */
-    max-width: 320px;
+    /* 這裡不再使用 100%，改交由 inline style 控制 */
     box-shadow: 4px 0 24px rgba(0,0,0,0.15);
     transform: translateX(-100%);
-    z-index: 999 !important; /* 最高層級 */
+    z-index: 999 !important;
   }
-
   .inbox-master-sidebar.open { transform: translateX(0); }
-  .sidebar-overlay.open { 
-    display: block; 
-    opacity: 1;
-  }
 }
 
 .inbox-modal-overlay {
@@ -297,7 +276,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px; /* 縮小 Padding 爭取手機顯示空間 */
+  padding: 16px;
   box-sizing: border-box;
 }
 .inbox-modal-content {
@@ -312,7 +291,5 @@
   box-sizing: border-box;
 }
 @media (max-width: 768px) {
-  .inbox-modal-content {
-    padding: 20px;
-  }
+  .inbox-modal-content { padding: 20px; }
 }
