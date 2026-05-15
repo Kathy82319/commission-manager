@@ -514,12 +514,14 @@ export const commController = {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
-      // 🌟 解析繪師的排單設定
-      let queueSettings = { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true };
+      // 🌟 解析繪師的排單設定 (預設將 show_artist_note 設為 false 以策安全)
+      let queueSettings = { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false };
       try {
         if (artist.profile_settings) {
           const settings = typeof artist.profile_settings === 'string' ? JSON.parse(artist.profile_settings) : artist.profile_settings;
-          if (settings.queue_settings) queueSettings = settings.queue_settings;
+          if (settings.queue_settings) {
+            queueSettings = { ...queueSettings, ...settings.queue_settings };
+          }
         }
       } catch (e) {}
 
@@ -528,7 +530,7 @@ export const commController = {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
-      // 🌟 修正：確保 SQL 撈取的是 `end_date` (存放日期的舊欄位)，並將其 Alias 為 `end_date`
+      // 🌟 修正：確保 SQL 撈取 artist_note 以供判斷回傳
       const query = `
         SELECT 
           c.id, 
@@ -537,6 +539,7 @@ export const commController = {
           c.queue_status, 
           c.end_date,
           c.order_date,
+          c.artist_note,
           u.public_id AS client_public_id
         FROM Commissions c
         LEFT JOIN Users u ON c.client_id = u.id
@@ -550,12 +553,14 @@ export const commController = {
         return {
           id: order.id,
           queue_status: order.queue_status,
-          end_date: order.end_date, // 將拿到的舊日期欄位原樣傳回給前端
+          end_date: order.end_date, 
           order_date: order.order_date,
           // 根據設定決定是否傳送明碼，否則傳送遮蔽後的字串
           contact_memo: queueSettings.show_client_name ? order.contact_memo : getMaskedName(order.contact_memo),
           client_public_id: queueSettings.show_client_id ? order.client_public_id : null,
           project_name: queueSettings.show_project_name ? order.project_name : null,
+          // 🌟 根據繪師設定，決定是否將備註傳至前端
+          artist_note: queueSettings.show_artist_note ? order.artist_note : null,
         };
       });
 
