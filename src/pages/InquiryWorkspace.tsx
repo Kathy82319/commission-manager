@@ -688,7 +688,7 @@ export const InquiryWorkspace: React.FC = () => {
               {/* 繪師專屬協議條款編輯器 (TOS) */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' /* 👈 建議補上 gap 讓它們不會黏在一起 */ }}>
-  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
+  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款</h4>
   {isEditableByArtist && (
     <button 
       onClick={() => setDraft({...draft, custom_tos: artistTos})}
