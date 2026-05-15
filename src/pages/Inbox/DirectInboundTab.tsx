@@ -42,10 +42,13 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         alert("轉換成功！已將該表單建立為自由模式委託單。");
         window.location.href = '/artist/notebook';
       } else {
-        alert(res.error || "轉換失敗，請稍後再試");
+        // 🌟 修正：優先抓取後端回傳的 message，如果沒有才抓 error
+        alert(res.message || res.error || "轉換失敗，請稍後再試");
       }
-    } catch (e) {
-      alert("網路異常，轉換失敗");
+    } catch (e: any) {
+      // 🌟 修正：攔截 apiClient 拋出的 Error，提取後端的 JSON 錯誤訊息
+      const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e?.message || "網路異常，轉換失敗";
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -59,10 +62,11 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
       if (res.success) {
         window.location.reload();
       } else {
-        alert(res.error || "婉拒失敗");
+        alert(res.message || res.error || "婉拒失敗");
       }
-    } catch (e) {
-      alert("網路異常");
+    } catch (e: any) {
+      const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e?.message || "網路異常";
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -75,10 +79,11 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
       if (res.success) {
         window.location.reload();
       } else {
-        alert(res.error || "恢復失敗");
+        alert(res.message || res.error || "恢復失敗");
       }
-    } catch (e) {
-      alert("網路異常");
+    } catch (e: any) {
+      const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e?.message || "網路異常";
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
