@@ -1,12 +1,38 @@
 /* src/styles/Workspace.css */
 
+/* ==========================================================================
+   🌟 聊天室基礎佈局防護 (防止高度坍塌、無限長大與頂部被擠出)
+   ========================================================================== */
+.inquiry-workspace-container > div {
+  height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh; /* 支援手機端動態高度 */
+}
+
+.iw-chat-section {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden; /* 絕對禁止超出外框 */
+}
+
+.iw-chat-header,
+.iw-chat-footer {
+  flex-shrink: 0 !important; /* 保護頭尾，絕對不准被擠壓或消失 */
+}
+
+.iw-chat-main {
+  flex: 1 1 0 !important; 
+  min-height: 0 !important; /* 破解 Flexbox 陷阱的靈魂設定 */
+  overflow-y: auto !important; /* 強制把滾輪限制在這個區塊內 */
+}
+
+
 .workspace-wrapper {
   display: flex;
   height: calc(100vh - 60px); 
   background-color: #f3f4f6;
   overflow: hidden;
 }
-
 
 .workspace-chat-section {
   flex: 1;
@@ -74,7 +100,6 @@
   outline: none;
 }
 
-
 .workspace-sidebar {
   width: 350px;
   background-color: #ffffff;
@@ -130,7 +155,6 @@
   gap: 10px;
 }
 
-
 .btn-primary {
   background-color: #2563eb;
   color: white;
@@ -157,11 +181,9 @@
    🌟 洽談室 (InquiryWorkspace) 專屬響應式設計 (Mobile UI)
    ========================================================================== */
 
-
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #DED9D3; border-radius: 10px; }
-
 
 .draft-input { 
   width: 100%; border: 1px solid #EAE6E1; padding: 8px 12px; 
@@ -172,13 +194,11 @@
 .draft-input:disabled { background: #FBFBF9; color: #A0978D; cursor: not-allowed; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-
 @media (max-width: 768px) {
   
   .iw-chat-section {
     width: 100vw !important;
   }
-
   
   .iw-chat-header {
     padding: 10px 12px !important;
@@ -187,14 +207,12 @@
   .iw-chat-title { max-width: 120px; font-size: 15px !important; }
   .iw-role-badge { display: none !important; } 
   
-  
   .iw-mobile-toggle-btn {
     display: block !important;
   }
   .iw-mobile-overlay {
     display: block !important;
   }
-
   
   .iw-chat-main {
     padding: 12px !important;
@@ -205,11 +223,10 @@
     padding: 8px 12px !important;
   }
 
-  /* ⚠️ 恢復原始：這就是保護聊天室底部的關鍵 */
+  /* 💡 徹底移除偏方，交給頂部的全域防護來自動排版 */
   .iw-chat-footer {
     padding: 10px !important;
-    position: sticky;
-    bottom: 0;
+    position: relative !important; /* 確保不會因為 sticky 產生靈異現象 */
   }
   .iw-chat-footer textarea {
     padding: 10px !important;
@@ -220,7 +237,6 @@
     padding: 10px 16px !important;
     font-size: 14px !important;
   }
-
   
   .iw-aside-section {
     position: absolute;
@@ -234,12 +250,11 @@
     border-left: none !important;
   }
   
-  
   .iw-aside-section.mobile-open {
     right: 0;
   }
 
-  /* 💡 只對「合約彈窗」施加破除 Flexbox 陷阱的魔法，不影響聊天室 */
+  /* 💡 保留對「合約彈窗」的防護，讓它能正常產生滾輪 */
   .iw-modal-content-paper {
     height: 90vh !important;
     max-height: 90vh !important;
@@ -267,7 +282,6 @@
   .iw-modal-actions button {
     width: 100%;
   }
-
   
   .accepted-modal {
     padding: 24px 16px !important;
