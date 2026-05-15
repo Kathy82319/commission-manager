@@ -2,7 +2,30 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { KeywordManager } from './components/KeywordManager';
-import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock } from 'lucide-react'; 
+import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock, Edit } from 'lucide-react'; 
+
+// 轉換 UTC 時間字串為本地顯示用
+const formatLocalTime = (dateStr: string) => {
+  if (!dateStr) return '未知時間';
+  // SQLite 的 YYYY-MM-DD HH:MM:SS 如果沒帶 Z，手動補上強制轉為 UTC 再讓瀏覽器換算為台灣時間
+  const utcStr = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  return new Date(utcStr).toLocaleString('zh-TW', { hour12: true });
+};
+
+// 轉換字串給 datetime-local input 使用
+const toDatetimeLocal = (dateStr: string) => {
+  if (!dateStr) return '';
+  const utcStr = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const d = new Date(utcStr);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
+// 從 datetime-local input 轉回 SQLite UTC 格式
+const fromDatetimeLocal = (localStr: string) => {
+  const d = new Date(localStr);
+  return d.toISOString().replace('T', ' ').slice(0, 19);
+};
 
 export function WishboardTab() {
   const [dataList, setDataList] = useState<any[]>([]);
@@ -12,10 +35,15 @@ export function WishboardTab() {
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // 檢舉紀錄彈窗
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [, setSelectedBulletinId] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState<any[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
+
+  // 編輯貼文彈窗
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   useEffect(() => { 
     fetchPosts(); 
@@ -53,6 +81,31 @@ export function WishboardTab() {
       alert('無法讀取檢舉名單');
     } finally {
       setIsLoadingReports(false);
+    }
+  };
+
+  const openEditModal = (item: any) => {
+    setEditingItem({
+      ...item,
+      local_expires_at: toDatetimeLocal(item.expires_at)
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setIsUpdating(true);
+    try {
+      const dbUtcTime = fromDatetimeLocal(editingItem.local_expires_at);
+      await apiClient.patch(`/api/admin/wishboard/${editingItem.id}/status`, { 
+        status: editingItem.status,
+        expires_at: dbUtcTime
+      });
+      setIsEditModalOpen(false);
+      fetchPosts();
+    } catch (e) {
+      alert('儲存失敗');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -121,7 +174,9 @@ export function WishboardTab() {
               const postDetails = parsePostData(item);
               const hitKeyword = checkKeywordTrigger(postDetails.description);
               const isHidden = item.status === 'hidden_under_review';
-              const isExpired = new Date(item.expires_at) < new Date();
+              // 檢查過期時間也需要轉為正確的時區判斷
+              const expiresDate = new Date(item.expires_at.includes('Z') ? item.expires_at : item.expires_at.replace(' ', 'T') + 'Z');
+              const isExpired = expiresDate < new Date();
               
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
@@ -133,7 +188,7 @@ export function WishboardTab() {
                     </div>
                     <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>ID: {item.author_public_id || '未知'}</div>
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>
-                      發佈: {new Date(item.created_at).toLocaleString()}
+                      發佈: {formatLocalTime(item.created_at)}
                     </div>
                   </td>
 
@@ -182,17 +237,21 @@ export function WishboardTab() {
                       color: isHidden ? '#DC2626' : (isExpired ? '#6B7280' : (item.status === 'open' ? '#059669' : '#6B7280')),
                       border: `1px solid ${isHidden ? '#FCA5A5' : (isExpired ? '#D1D5DB' : (item.status === 'open' ? '#6EE7B7' : '#D1D5DB'))}`
                     }}>
-                      {isHidden ? '🛑 隱藏審核中' : (isExpired ? '⌛ 已到期' : (item.status === 'open' ? '🟢 顯示中' : '⚪ 已關閉'))}
+                      {isHidden ? '🛑 隱藏審核中' : (isExpired ? '⌛ 已到期' : (item.status === 'open' ? '🟢 顯示中' : (item.status === 'closed' ? '⚪ 已關閉' : '⚪ 已刪除')))}
                     </div>
                     
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={12} /> {new Date(item.expires_at).toLocaleString()}
+                      <Clock size={12} /> {formatLocalTime(item.expires_at)}
                     </div>
                   </td>
 
                   
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <button onClick={() => openEditModal(item)} disabled={isUpdating} style={{...actionBtnStyle, color: '#2563EB', borderColor: '#2563EB', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
+                        <Edit size={14} /> 編輯狀態與時間
+                      </button>
+                      
                       {!isHidden ? (
                         <button onClick={() => handleUpdateStatus(item.id, 'hidden_under_review')} disabled={isUpdating} style={{...actionBtnStyle, color: '#DC2626', borderColor: '#DC2626', backgroundColor: '#FFF'}}>
                           強制隱藏貼文
@@ -247,7 +306,7 @@ export function WishboardTab() {
                           <div style={{ fontSize: '12px', color: '#6B7280' }}>ID: {report.reporter_public_id} | 角色: {report.reporter_role}</div>
                         </div>
                         <div style={{ fontSize: '12px', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Calendar size={12} /> {new Date(report.created_at).toLocaleString()}
+                          <Calendar size={12} /> {formatLocalTime(report.created_at)}
                         </div>
                       </div>
                       <div style={{ fontSize: '14px', color: '#374151', backgroundColor: '#FFF', padding: '12px', borderRadius: '6px', border: '1px solid #D1D5DB', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
@@ -264,6 +323,56 @@ export function WishboardTab() {
             
             <div style={{ marginTop: '24px', textAlign: 'right', borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
               <button onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' }}>關閉視窗</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 編輯貼文狀態與時間彈窗 */}
+      {isEditModalOpen && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsEditModalOpen(false)}>
+          <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: '#111827' }}>
+                <Edit size={20} color="#2563EB" /> 編輯貼文設定
+              </h2>
+              <button onClick={() => setIsEditModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>顯示狀態</label>
+                <select 
+                  value={editingItem.status}
+                  onChange={(e) => setEditingItem({...editingItem, status: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                >
+                  <option value="open">🟢 顯示中 (Open)</option>
+                  <option value="hidden_under_review">🛑 隱藏審核中 (Hidden)</option>
+                  <option value="closed">⚪ 已關閉 (Closed)</option>
+                  <option value="deleted">🗑️ 已刪除 (Deleted)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}>下架時間</label>
+                <input 
+                  type="datetime-local" 
+                  value={editingItem.local_expires_at}
+                  onChange={(e) => setEditingItem({...editingItem, local_expires_at: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px' }}
+                />
+                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '6px' }}>
+                  前台的倒數計時會直接以此時間為基準進行計算。
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
+              <button onClick={() => setIsEditModalOpen(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold', color: '#374151' }}>取消</button>
+              <button onClick={handleSaveEdit} disabled={isUpdating} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#2563EB', cursor: 'pointer', fontWeight: 'bold', color: '#FFF' }}>
+                {isUpdating ? '儲存中...' : '確認儲存'}
+              </button>
             </div>
           </div>
         </div>

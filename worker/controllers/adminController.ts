@@ -228,12 +228,31 @@ export const adminController = {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
 
-    const { status } = await request.json() as any;
-    if (!['active', 'open', 'hidden_under_review', 'closed', 'deleted'].includes(status)) {
-      return new Response(JSON.stringify({ error: "無效的狀態" }), { status: 400, headers: corsHeaders });
+    const { status, expires_at } = await request.json() as any;
+    
+    let updates = [];
+    let params = [];
+
+    if (status) {
+      if (!['active', 'open', 'hidden_under_review', 'closed', 'deleted'].includes(status)) {
+        return new Response(JSON.stringify({ error: "無效的狀態" }), { status: 400, headers: corsHeaders });
+      }
+      updates.push("status = ?");
+      params.push(status);
     }
 
-    await env.commission_db.prepare("UPDATE Bulletins SET status = ? WHERE id = ?").bind(status, bulletinId).run();
+    if (expires_at) {
+      updates.push("expires_at = ?");
+      params.push(expires_at);
+    }
+
+    if (updates.length === 0) {
+      return new Response(JSON.stringify({ error: "無更新資料" }), { status: 400, headers: corsHeaders });
+    }
+
+    params.push(bulletinId);
+
+    await env.commission_db.prepare(`UPDATE Bulletins SET ${updates.join(", ")} WHERE id = ?`).bind(...params).run();
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   }
 
