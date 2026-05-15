@@ -6,25 +6,26 @@
 .inquiry-workspace-container > div {
   height: 100%;
   max-height: 100vh;
-  max-height: 100dvh; 
+  max-height: 100dvh; /* 支援手機端動態高度 */
 }
 
 .iw-chat-section {
   height: 100%;
   max-height: 100%;
-  overflow: hidden; 
+  overflow: hidden; /* 絕對禁止超出外框 */
 }
 
 .iw-chat-header,
 .iw-chat-footer {
-  flex-shrink: 0 !important; 
+  flex-shrink: 0 !important; /* 保護頭尾，絕對不准被擠壓或消失 */
 }
 
 .iw-chat-main {
   flex: 1 1 0 !important; 
-  min-height: 0 !important; 
-  overflow-y: auto !important; 
+  min-height: 0 !important; /* 破解 Flexbox 陷阱的靈魂設定 */
+  overflow-y: auto !important; /* 強制把滾輪限制在這個區塊內 */
 }
+
 
 .workspace-wrapper {
   display: flex;
@@ -193,44 +194,6 @@
 .draft-input:disabled { background: #FBFBF9; color: #A0978D; cursor: not-allowed; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-.iw-mobile-overlay-bg,
-.iw-mobile-close-btn {
-  display: none !important;
-}
-
-/* 🌟 新增：自訂吐司通知樣式與動畫 */
-.iw-toast {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #4E7A5A;
-  color: #FFFFFF;
-  padding: 12px 24px;
-  border-radius: 50px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 100000;
-  animation: iwToastSlideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.iw-toast.error {
-  background: #A05C5C;
-}
-
-@keyframes iwToastSlideDown {
-  from { top: -50px; opacity: 0; }
-  to { top: 24px; opacity: 1; }
-}
-
-@media (max-width: 768px) {
-  .iw-toast {
-    width: 90%;
-    text-align: center;
-  }
-}
-
 @media (max-width: 768px) {
   
   .iw-chat-section {
@@ -247,11 +210,7 @@
   .iw-mobile-toggle-btn {
     display: block !important;
   }
-  
-  .iw-mobile-overlay-bg {
-    display: block !important;
-  }
-  .iw-mobile-close-btn {
+  .iw-mobile-overlay {
     display: block !important;
   }
   
@@ -264,9 +223,10 @@
     padding: 8px 12px !important;
   }
 
+  /* 💡 徹底移除偏方，交給頂部的全域防護來自動排版 */
   .iw-chat-footer {
     padding: 10px !important;
-    position: relative !important; 
+    position: relative !important; /* 確保不會因為 sticky 產生靈異現象 */
   }
   .iw-chat-footer textarea {
     padding: 10px !important;
@@ -294,6 +254,7 @@
     right: 0;
   }
 
+  /* 💡 保留對「合約彈窗」的防護，讓它能正常產生滾輪 */
   .iw-modal-content-paper {
     height: 90vh !important;
     max-height: 90vh !important;
