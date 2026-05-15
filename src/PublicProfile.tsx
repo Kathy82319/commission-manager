@@ -1,6 +1,6 @@
 // src/pages/public/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
@@ -56,7 +56,7 @@ interface ProfileSettings {
     show_client_name: boolean;
     show_client_id: boolean;
     show_project_name: boolean;
-    show_artist_note?: boolean; // 🌟 新增對應介面設定
+    show_artist_note?: boolean; 
     date_column_label?: string; 
     custom_order?: string[];
   };
@@ -96,13 +96,16 @@ export function PublicProfile() {
   const { artistId } = useParams();
   const currentArtistId = artistId || '';
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') || '';
+  const showcaseIdParam = searchParams.get('showcaseId') || '';
+
   const [artist, setArtist] = useState<any>(null);
   const [settings, setSettings] = useState<ProfileSettings | null>(null);
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([]);
   const [publicQueue, setPublicQueue] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   
-  const [activeTab, setActiveTab] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
   const [selectedShowcase, setSelectedShowcase] = useState<ShowcaseItem | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
@@ -179,7 +182,10 @@ export function PublicProfile() {
   };
 
   const handleCloseLightbox = () => {
-    setSelectedShowcase(null);
+    setSearchParams(prev => {
+      prev.delete('showcaseId');
+      return prev;
+    });
     setModalMode('view');
   };
 
@@ -326,7 +332,7 @@ export function PublicProfile() {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const API_BASE = import.meta.env.vite_api_base_url || import.meta.env.VITE_API_BASE_URL || '';
         const userRes = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
         const userData = await userRes.json();
         const showcaseRes = await fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`);
@@ -510,7 +516,35 @@ export function PublicProfile() {
     return tabs;
   }, [settings, showcaseItems, artist]);
 
-  const currentTab = activeTab || (availableTabs.length > 0 ? availableTabs[0].id : '');
+  // 🌟 網址驅動與狀態混合衍生邏輯
+  const currentTab = useMemo(() => {
+    if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) {
+      return 'showcase';
+    }
+    return tabParam || (availableTabs.length > 0 ? availableTabs[0].id : '');
+  }, [tabParam, showcaseIdParam, availableTabs]);
+
+  const handleTabChange = (tabId: string) => {
+    setSearchParams(prev => {
+      prev.set('tab', tabId);
+      return prev;
+    });
+  };
+
+  // 🌟 當網址上有卡片 ID 且商品清單載入完畢後，主動綁定 Lightbox 資料
+  useEffect(() => {
+    if (showcaseIdParam && showcaseItems.length > 0) {
+      const found = showcaseItems.find(item => item.id === showcaseIdParam);
+      if (found) {
+        setSelectedShowcase(found);
+      } else {
+        setSelectedShowcase(null);
+      }
+    } else {
+      setSelectedShowcase(null);
+    }
+  }, [showcaseIdParam, showcaseItems]);
+
   const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); 
 
   const handlePrevImg = (e: React.MouseEvent) => {
@@ -640,7 +674,7 @@ export function PublicProfile() {
 
             <nav className="sidebar-nav">
               {availableTabs.map((tab: any) => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
+                <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
                   {tab.label}
                 </button>
               ))}
@@ -670,7 +704,7 @@ export function PublicProfile() {
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
                   {publicQueue.length === 0 ? (
-                    <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
+                    <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目日前尚無公開的排單資訊。</p>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px', color: textColor }}>
@@ -680,7 +714,6 @@ export function PublicProfile() {
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
                             <th style={{ padding: '12px 8px' }}>{settings.queue_settings.date_column_label || '預計開始日'}</th>
-                            {/* 🌟 根據設定條件渲染備註表頭 */}
                             {settings.queue_settings.show_artist_note && (
                               <th style={{ padding: '12px 8px' }}>備註</th>
                             )}
@@ -709,7 +742,6 @@ export function PublicProfile() {
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
                                 {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
                               </td>
-                              {/* 🌟 根據設定條件渲染備註欄位資料 */}
                               {settings.queue_settings!.show_artist_note && (
                                 <td style={{ padding: '12px 8px', opacity: 0.8 }}>
                                   {order.artist_note || '-'}
@@ -740,7 +772,14 @@ export function PublicProfile() {
                   )}
                   <div className="masonry-grid">
                     {filteredShowcaseItems.map(item => (
-                      <div key={item.id} className="masonry-item" onClick={() => { setSelectedShowcase(item); setModalMode('view'); }}>
+                      <div key={item.id} className="masonry-item" onClick={() => { 
+                        setSearchParams(prev => {
+                          prev.set('tab', 'showcase');
+                          prev.set('showcaseId', item.id);
+                          return prev;
+                        });
+                        setModalMode('view'); 
+                      }}>
                         <img src={item.cover_url} alt={item.title} loading="lazy" />
                         <div className="floating-info-box">
                           <div className="item-title">{item.title}</div>
@@ -798,7 +837,6 @@ export function PublicProfile() {
                 <div className="showcase-cover">
                   <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
                 </div>
-                {/* 加入 minHeight: 0 以打破 Flexbox 陷阱 */}
                 <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   <div className="showcase-header">
                     <h2>{selectedShowcase.title}</h2>
