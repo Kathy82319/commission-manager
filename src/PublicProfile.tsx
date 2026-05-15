@@ -787,7 +787,8 @@ export function PublicProfile() {
                 <div className="showcase-cover">
                   <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
                 </div>
-                <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* 加入 minHeight: 0 以打破 Flexbox 陷阱 */}
+                <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   <div className="showcase-header">
                     <h2>{selectedShowcase.title}</h2>
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
@@ -830,12 +831,12 @@ export function PublicProfile() {
             )}
 
             {modalMode === 'form1' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
                   📝 填寫委託需求 - {selectedShowcase.title}
                 </h2>
                 
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
+                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px', minHeight: 0 }}>
                   {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
                     <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
@@ -867,11 +868,11 @@ export function PublicProfile() {
             )}
 
             {modalMode === 'form2' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
                   📄 確認繪師協議 (TOS)
                 </h2>
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
+                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px', minHeight: 0 }}>
                   <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                     <div style={{ fontSize: '14px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tosContent) }} />
                   </div>
