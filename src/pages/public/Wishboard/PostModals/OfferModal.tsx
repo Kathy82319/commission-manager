@@ -1,4 +1,3 @@
-// src/pages/public/Wishboard/PostModals/OfferModal.tsx
 import React, { useState } from 'react';
 import { X, Plus, Trash2, HelpCircle, Image as ImageIcon, Save, Download } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
@@ -169,7 +168,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
 
             {showPortfolioPicker && userShowcase && (
-              <div className="portfolio-picker-grid">
+              <div className="portfolio-picker-grid" style={{ marginBottom: '12px' }}>
                 {userShowcase.filter((item: any) => item && item.cover_url).map((item: any) => (
                   <div key={item.id} className={`portfolio-item ${(form.ref_images || []).includes(item.cover_url) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(item.cover_url)}>
                     <img src={getFullUrl(item.cover_url)} alt={item.title || "Portfolio"} />
@@ -179,70 +178,74 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
               {(form.ref_images || []).map((url: string, idx: number) => (
-                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
-                  <img src={getFullUrl(url)} alt="預覽" />
-                  <button type="button" className="remove-image-btn" onClick={() => removeImage(idx)}><X size={14}/></button>
+                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={getFullUrl(url)} alt="預覽" style={{ width: '100%', height: '100%', objectFit: 'contain', zIndex: 1 }} />
+                  <div style={{ position: 'absolute', width: '100%', aspectRatio: '1/1', border: '1px dashed #ff8c00', boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.65)', pointerEvents: 'none', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }} />
+                  <button type="button" className="remove-image-btn" onClick={() => removeImage(idx)} style={{ zIndex: 10 }}><X size={14}/></button>
                 </div>
               ))}
               {(form.ref_images || []).length < 5 && (
-                <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 上傳圖片"} maxSizeMB={3} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 上傳圖片"} maxSizeMB={3} />
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>建議尺寸：1:1 正方形</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>※ 電腦/手機版皆為 1:1 呈現<br/>橘框外暗色處將被裁切</span>
                 </div>
               )}
             </div>
           </div>
 
           <div className="form-section">
-  <label className="section-title">委託基本資訊</label>
-  <div className="dynamic-question-row" style={{ alignItems: 'flex-start', gap: '20px' }}>
-    
-    <div className="form-group" style={{ flex: 1, margin: 0 }}>
-      <label>標題</label>
-      <input 
-        type="text" 
-        placeholder="例如：接立繪、Q版頭貼..." 
-        value={form.title || ''} 
-        onChange={e => setForm({...form, title: e.target.value})} 
-        required 
-        style={{ width: '100%' }}
-      />
-    </div>
+            <label className="section-title">委託基本資訊</label>
+            <div className="dynamic-question-row" style={{ alignItems: 'flex-start', gap: '20px' }}>
+              
+              <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                <label>標題</label>
+                <input 
+                  type="text" 
+                  placeholder="例如：接立繪、Q版頭貼..." 
+                  value={form.title || ''} 
+                  onChange={e => setForm({...form, title: e.target.value})} 
+                  required 
+                  style={{ width: '100%' }}
+                />
+              </div>
 
-    
-    <div className="form-group" style={{ flex: 1, margin: 0 }}>
-      <label>目前排單狀況</label>
-      <div className="radio-group">
-        <label className="radio-label">
-          <input 
-            type="radio" 
-            checked={form.schedule_type === 'flexible'} 
-            onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} 
-          /> 目前空閒可排單
-        </label>
-        <label className="radio-label">
-          <input 
-            type="radio" 
-            checked={form.schedule_type === 'fixed'} 
-            onChange={() => setForm({...form, schedule_type: 'fixed'})} 
-          /> 排單至指定日期之後
-        </label>
-        {form.schedule_type === 'fixed' && (
-          <input 
-            type="date" 
-            className="date-input" 
-            value={form.specific_date || ''} 
-            onChange={e => setForm({...form, specific_date: e.target.value})} 
-            required 
-            style={{ width: '100%', marginTop: '8px' }}
-          />
-        )}
-      </div>
-    </div>
-  </div>
-</div>
-
+              
+              <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                <label>目前排單狀況</label>
+                <div className="radio-group">
+                  <label className="radio-label">
+                    <input 
+                      type="radio" 
+                      checked={form.schedule_type === 'flexible'} 
+                      onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})} 
+                    /> 目前空閒可排單
+                  </label>
+                  <label className="radio-label">
+                    <input 
+                      type="radio" 
+                      checked={form.schedule_type === 'fixed'} 
+                      onChange={() => setForm({...form, schedule_type: 'fixed'})} 
+                    /> 排單至指定日期之後
+                  </label>
+                  {form.schedule_type === 'fixed' && (
+                    <input 
+                      type="date" 
+                      className="date-input" 
+                      value={form.specific_date || ''} 
+                      onChange={e => setForm({...form, specific_date: e.target.value})} 
+                      required 
+                      style={{ width: '100%', marginTop: '8px' }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="form-section">
             <label className="section-title">接案項目與底價 (選填)</label>
