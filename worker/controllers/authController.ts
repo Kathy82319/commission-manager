@@ -1,3 +1,4 @@
+// worker/controllers/authController.ts
 import type { Env } from "../shared/types";
 import { getLineLoginUrl, getLineToken, getLineProfile } from "../services/line";
 import { generateToken, sanitizeAndLimit } from "../utils/security";
@@ -124,10 +125,7 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-      // 🌟 公測手段：登入即更新為專業版，截止日設為 2026-06-15
-      await env.commission_db.prepare(
-        "UPDATE Users SET plan_type = 'pro', pro_expires_at = '2026-06-15 23:59:59' WHERE id = ?"
-      ).bind(userId).run();
+      // 🌟 已經將自動升級 pro 的程式碼 (UPDATE Users SET plan_type = 'pro'...) 移除
 
       const baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
       

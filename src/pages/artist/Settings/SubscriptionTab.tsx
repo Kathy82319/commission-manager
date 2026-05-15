@@ -86,7 +86,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         
-        
         <div style={{ 
           border: quotaInfo?.plan_type === 'free' ? '2px solid #5D4A3E' : '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
@@ -105,6 +104,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>✨ 許願池：投遞徵委託區 <strong>5 次</strong> / 月</li>
             <li>✨ 許願池：接委託區發佈 <strong>1 則</strong> / 月</li>
             <li>🖼️ 作品集展示上限 <strong>6 張</strong></li>
+            <li>🖼️ 接稿區展示上限 <strong>3 張</strong></li>
             <li>📤 單檔上傳最高 3MB 限制</li>
           </ul>
           
@@ -113,12 +113,12 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           </div>
         </div>
 
-        
         <div style={{ 
-          border: '1px solid #EAE6E1', 
+          border: quotaInfo?.plan_type === 'trial' ? '2px solid #A0978D' : '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
-          backgroundColor: '#FBFBF9', opacity: 0.8
+          backgroundColor: '#FBFBF9', position: 'relative'
         }}>
+          {quotaInfo?.plan_type === 'trial' && <div style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: '#A0978D', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>目前方案</div>}
           <h4 style={{ margin: 0, fontSize: '18px', color: '#A0978D' }}>專業版 (15天試用)</h4>
           <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#A0978D' }}>免費體驗</div>
           
@@ -133,27 +133,31 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           </ul>
           
           <button 
-            disabled={true}
+            onClick={handleStartTrial}
+            disabled={isStartingTrial || quotaInfo?.plan_type === 'trial' || quotaInfo?.plan_type === 'pro'}
             style={{ 
-              padding: '14px', backgroundColor: '#D1D5DB', color: '#9CA3AF', border: 'none', 
-              borderRadius: '12px', cursor: 'not-allowed', 
+              padding: '14px', 
+              backgroundColor: (isStartingTrial || quotaInfo?.plan_type !== 'free') ? '#D1D5DB' : '#5D4A3E', 
+              color: (isStartingTrial || quotaInfo?.plan_type !== 'free') ? '#9CA3AF' : '#FFFFFF', 
+              border: 'none', 
+              borderRadius: '12px', 
+              cursor: (isStartingTrial || quotaInfo?.plan_type !== 'free') ? 'not-allowed' : 'pointer', 
               fontWeight: 'bold', fontSize: '15px'
             }}
           >
-            免費專業版開放
+            {isStartingTrial ? '處理中...' : (quotaInfo?.plan_type === 'trial' ? '試用方案使用中' : '開啟 15 天免費試用')}
           </button>
         </div>
 
-        
         <div style={{ 
-          border: '1px solid #EAE6E1', 
+          border: quotaInfo?.plan_type === 'pro' ? '2px solid #4A7294' : '1px solid #EAE6E1', 
           borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '16px', 
-          backgroundColor: '#FBFBF9',
-          position: 'relative',
-          opacity: 0.9
+          backgroundColor: quotaInfo?.plan_type === 'pro' ? '#F4F8FB' : '#FBFBF9',
+          position: 'relative'
         }}>
-          <h4 style={{ margin: 0, fontSize: '18px', color: '#9CA3AF' }}>專業版</h4>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+          {quotaInfo?.plan_type === 'pro' && <div style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: '#4A7294', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>目前方案</div>}
+          <h4 style={{ margin: 0, fontSize: '18px', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>專業版</h4>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
           
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
@@ -165,21 +169,20 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>
           </ul>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#A0978D', textAlign: 'center', lineHeight: '1.4' }}>
-              免費專業版開放中，暫不用付費訂閱。
-            </div>                        
-            <button 
-              disabled={true}
-              style={{ 
-                padding: '16px', backgroundColor: '#D1D5DB', color: '#9CA3AF', 
-                border: 'none', borderRadius: '12px', cursor: 'not-allowed', 
-                fontWeight: 'bold', fontSize: '16px', width: '100%'
-              }} 
-            >
-              立即升級專業版 (暫未開放)
-            </button>
-          </div>
+          <button 
+            onClick={handleUpgradeClick}
+            disabled={isUpgrading}
+            style={{ 
+              padding: '16px', 
+              backgroundColor: isUpgrading ? '#D1D5DB' : '#4A7294', 
+              color: isUpgrading ? '#9CA3AF' : '#FFFFFF', 
+              border: 'none', borderRadius: '12px', 
+              cursor: isUpgrading ? 'not-allowed' : 'pointer', 
+              fontWeight: 'bold', fontSize: '16px', width: '100%'
+            }} 
+          >
+            {isUpgrading ? '正在建立支付單...' : (quotaInfo?.plan_type === 'pro' ? '立即續約專業版' : '立即升級專業版')}
+          </button>
         </div>
 
       </div>

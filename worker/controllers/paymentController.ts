@@ -12,10 +12,31 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
+      // 🌟 新增：1. 清除該使用者超過 1 小時未付款的 pending 訂單 (避免卡死)
+      await env.commission_db.prepare(`
+        DELETE FROM PaymentOrders 
+        WHERE user_id = ? AND status = 'pending' AND datetime(created_at) <= datetime('now', '-1 hour')
+      `).bind(currentUserId).run();
+
+      // 🌟 新增：2. 檢查目前剩餘的 pending 數量 (此時剩下的都是 1 小時內建立的)
+      const { results: pendingRes } = await env.commission_db.prepare(`
+        SELECT COUNT(*) as count FROM PaymentOrders 
+        WHERE user_id = ? AND status = 'pending'
+      `).bind(currentUserId).all();
+
+      // 如果 1 小時內建立的未付款訂單 >= 5 筆，則進行混淆阻斷
+      if (((pendingRes[0]?.count as number) || 0) >= 5) {
+        // 依據指示：不跳特殊狀態碼 (維持 200)，回傳模糊的系統異常訊息給前端
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "系統異常，請回報管理員" 
+        }), { status: 200, headers: corsHeaders });
+      }
+
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 150; // 💡 收費金額，很便宜吧
+      const amount = 150; // 收費金額
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
       const backendUrl = env.BACKEND_URL;
@@ -110,7 +131,16 @@ export const paymentController = {
       }
 
       const userId = order.user_id;
+
+      const userRecord = await env.commission_db.prepare("SELECT plan_type, pro_expires_at FROM Users WHERE id = ?").bind(userId).first();
+      
       let newExpiry = new Date();
+      if (userRecord && userRecord.plan_type === 'pro' && userRecord.pro_expires_at) {
+        const currentExpiry = new Date(userRecord.pro_expires_at as string);
+        if (currentExpiry > new Date()) {
+          newExpiry = currentExpiry; 
+        }
+      }
       newExpiry.setDate(newExpiry.getDate() + 30); 
 
       const updateUserStmt = env.commission_db.prepare(`
@@ -145,4 +175,4 @@ export const paymentController = {
       return new Response("Internal Server Error", { status: 500 });
     }
   }
-}; 
+};
