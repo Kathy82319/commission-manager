@@ -74,18 +74,16 @@ export const RequestModal: React.FC<RequestModalProps> = ({
             <div className="form-group" style={{ flex: '0 0 240px' }}>
               <label>參考例圖 (最多 1 張，建議 3MB 內)</label>
               {form.ref_image ? (
-                <div className="image-preview-box" style={{ height: '240px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getFullUrl(form.ref_image)} alt="預覽" style={{ width: '100%', height: '100%', objectFit: 'contain', zIndex: 1 }} />
-                  <div style={{ position: 'absolute', width: '100%', aspectRatio: '1/1', border: '1px dashed #ff8c00', boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.65)', pointerEvents: 'none', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }} />
-                  <button type="button" className="remove-image-btn" onClick={() => setForm({...form, ref_image: ''})} style={{ zIndex: 10 }}><X size={14} /></button>
+                <div className="image-preview-box" style={{ height: '240px', width: '100%' }}>
+                  <img src={getFullUrl(form.ref_image)} alt="預覽" />
+                  <button type="button" className="remove-image-btn" onClick={() => setForm({...form, ref_image: ''})}><X size={14} /></button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                   <div style={{ height: '240px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 選擇圖片"} maxSizeMB={3} />
+                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 選擇圖片"} maxSizeMB={3} aspectRatio={3/4} />
                   </div>
-                  <span style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', fontWeight: 'bold' }}>建議尺寸：1:1 正方形</span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>※ 電腦/手機版皆為 1:1 呈現<br/>橘框外暗色處將被裁切</span>
+                  <span style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', fontWeight: 'bold' }}>建議尺寸：900x1200 (3:4 直向)</span>
                 </div>
               )}
             </div>

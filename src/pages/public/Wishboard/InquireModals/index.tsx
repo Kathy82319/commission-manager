@@ -148,10 +148,9 @@ export const InquireModal: React.FC<InquireModalProps> = ({
             </label>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
               {inquireDraft.images.map((imgUrl: string, idx: number) => (
-                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getFullUrl(imgUrl)} alt={`附件 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', zIndex: 1 }} />
-                  <div style={{ position: 'absolute', width: '100%', aspectRatio: '1/1', border: '1px dashed #ff8c00', boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.65)', pointerEvents: 'none', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }} />
-                  <button type="button" className="remove-image-btn" onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))} style={{ zIndex: 10 }}>
+                <div key={idx} className="image-preview-box" style={{ width: '120px', height: '120px' }}>
+                  <img src={getFullUrl(imgUrl)} alt={`附件 ${idx + 1}`} />
+                  <button type="button" className="remove-image-btn" onClick={() => setInquireDraft((prev: any) => ({...prev, images: prev.images.filter((_: any, i: number) => i !== idx)}))}>
                     <X size={14}/>
                   </button>
                 </div>
@@ -159,10 +158,9 @@ export const InquireModal: React.FC<InquireModalProps> = ({
               {inquireDraft.images.length < 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ width: '120px', height: '120px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} maxSizeMB={3} />
+                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={inquireUploading ? "上傳中..." : "+ 新增附圖"} maxSizeMB={3} aspectRatio={3/4} />
                   </div>
-                  <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>建議尺寸：1:1 正方形</span>
-                  <span style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>※ 電腦/手機版皆為 1:1 呈現<br/>橘框外暗色處將被裁切</span>
+                  <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>建議尺寸：900x1200 (3:4 直向)</span>
                 </div>
               )}
             </div>
