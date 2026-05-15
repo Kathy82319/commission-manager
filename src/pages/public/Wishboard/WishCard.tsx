@@ -171,6 +171,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   const posterName = bulletin.client_name || '匿名使用者';
   const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
+  const posterAvatar = bulletin.client_avatar || null;
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation(); 
@@ -197,6 +198,8 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   return (
     <>
       <div className="wish-card-wide">
+        
+        {/* 💡 左側：圖片與桌機版專屬作者區塊 */}
         <div className="wish-card-image-wrapper">
           {validImages.length > 0 ? (
             <div className="wish-card-img-inner">
@@ -240,18 +243,54 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           <div className="wish-expiry-badge">
             <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
           </div>
+
+          {/* 💡 這是新增的：電腦版專屬左下方作者資訊區塊 */}
+          <div className="desktop-author-block">
+            <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
+              {posterAvatar ? (
+                <img src={getFullUrl(posterAvatar)} alt={posterName} referrerPolicy="no-referrer" />
+              ) : (
+                <User size={32} color="#94a3b8" />
+              )}
+            </div>
+            
+            <div className="desktop-author-info">
+              <div className="desktop-author-name" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
+                {posterName}
+              </div>
+              <div className="desktop-author-id">@{posterId}</div>
+            </div>
+
+            <div className="desktop-author-actions">
+              {bulletin.creator_role === 'admin' && (
+                <span className="admin-badge-ui">管理員</span>
+              )}
+
+              {!isMyOwnPost && bulletin.client_id && (
+                <button className="icon-action-btn" onClick={handleToggleFavorite} title={isFavorited ? "取消收藏" : "加入收藏"}>
+                  <Heart size={18} fill={isFavorited ? '#ef4444' : 'none'} color={isFavorited ? '#ef4444' : '#94a3b8'} />
+                </button>
+              )}
+
+              {!isMyOwnPost && currentUser && (
+                <button className="icon-action-btn report-btn" onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }} title="檢舉此貼文">
+                  <Flag size={18} color="#94a3b8" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* 💡 右側：卡片資訊與手機版專屬作者區塊 */}
         <div className="wish-card-info">
           <div className="wish-card-header">
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
-              <div className="wish-card-author-wrapper">
+              {/* 💡 這是原有的，改為手機版專屬 (mobile-author-block) */}
+              <div className="wish-card-author-wrapper mobile-author-block">
                 <User size={14} className="wish-card-author-icon" />
                 
-                
-
                 {bulletin.category === 'offer' && posterId !== 'unknown' ? (
                   <div className="wish-card-author-link" onClick={handleProfileClick} title="前往繪師個人頁">
                     <span className="wish-card-author-name">{posterName}</span>
@@ -263,20 +302,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     <span className="wish-card-author-id">@{posterId}</span>
                   </div>
                 )}
-
                 
                 {bulletin.creator_role === 'admin' && (
                   <span style={{
-                    backgroundColor: '#FFD700',
-                    color: '#5D4A3E',
-                    fontSize: '11px',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    marginRight: '6px',
-                    fontWeight: 'bold',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    lineHeight: '1'
+                    backgroundColor: '#FFD700', color: '#5D4A3E', fontSize: '11px',
+                    padding: '2px 6px', borderRadius: '4px', marginRight: '6px',
+                    fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', lineHeight: '1'
                   }}>
                     管理員
                   </span>
@@ -285,15 +316,8 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 {!isMyOwnPost && bulletin.client_id && (
                   <button
                     onClick={handleToggleFavorite}
-                    style={{
-                      background: 'none', border: 'none', padding: '0 0 0 6px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', color: isFavorited ? '#ef4444' : '#cbd5e1',
-                      transition: 'transform 0.1s', outline: 'none'
-                    }}
+                    style={{ background: 'none', border: 'none', padding: '0 0 0 6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: isFavorited ? '#ef4444' : '#cbd5e1', outline: 'none' }}
                     title={isFavorited ? "取消收藏" : "加入收藏"}
-                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
-                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
                     <Heart size={16} fill={isFavorited ? '#ef4444' : 'none'} />
                   </button>
@@ -302,14 +326,8 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 {!isMyOwnPost && currentUser && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }}
-                    style={{
-                      background: 'none', border: 'none', padding: '0 0 0 8px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', color: '#cbd5e1',
-                      transition: 'color 0.2s', outline: 'none'
-                    }}
+                    style={{ background: 'none', border: 'none', padding: '0 0 0 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#cbd5e1', outline: 'none' }}
                     title="檢舉此貼文"
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
                   >
                     <Flag size={15} />
                   </button>

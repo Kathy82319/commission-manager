@@ -74,7 +74,7 @@ body {
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
-/* 💡 左側圖片區塊：寬度固定，高度隨卡片彈性，背景淺灰 */
+/* 左側區塊：固定寬度 340px，高度彈性 */
 .wish-card-image-wrapper { 
   width: 340px; max-width: 340px; position: relative; 
   flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; 
@@ -82,7 +82,7 @@ body {
   min-width: 0;
 }
 
-/* 💡 圖片實體容器：強制 1:1 正方形 */
+/* 圖片容器：強制 1:1 正方形 */
 .wish-card-img-inner { 
   width: 100%; aspect-ratio: 1 / 1; position: relative; overflow: hidden; 
 }
@@ -98,6 +98,50 @@ body {
 .zoom-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.4); color: white; padding: 10px; border-radius: 50%; opacity: 0; transition: 0.3s; pointer-events: none; }
 .wish-card-img-inner:hover .zoom-hint { opacity: 1; }
 
+/* 💡 新增：電腦版專屬左下角作者區塊 */
+.desktop-author-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 12px;
+  margin-top: auto; /* 將其推到底部 */
+  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+}
+
+.desktop-author-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  transition: transform 0.2s;
+}
+.desktop-author-avatar:hover { transform: scale(1.05); }
+.desktop-author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.desktop-author-info { text-align: center; }
+.desktop-author-name { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 2px; transition: color 0.2s; }
+.desktop-author-name:hover { color: var(--wish-primary); }
+.desktop-author-id { font-size: 12px; color: #94a3b8; font-family: monospace; }
+
+.desktop-author-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.admin-badge-ui { background-color: #FFD700; color: #5D4A3E; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: bold; }
+.icon-action-btn { background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; outline: none; }
+.icon-action-btn:hover { background: #f8fafc; border-color: #cbd5e1; transform: scale(1.1); }
+.icon-action-btn.report-btn:hover { border-color: #fecdd3; background: #fff1f2; }
+.icon-action-btn.report-btn:hover svg { color: #ef4444 !important; }
+
+/* 隱藏手機版專屬的作者列 (在電腦版時) */
+.mobile-author-block { display: none !important; }
+
+/* 右側資訊區塊 */
 .wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow: hidden; width: 100%; }
 .wish-card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-width: 0; flex-shrink: 0; }
 .wish-card-header h3 { font-size: 20px; color: var(--wish-text-main); margin: 0; font-weight: 800; min-width: 0; }
@@ -131,7 +175,7 @@ body {
 .items-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .item-pill { background: #fff5eb; color: #ea580c; padding: 4px 12px; border-radius: 12px; font-size: 13px; border: 1px solid #fed7aa; display: flex; align-items: center; gap: 6px; }
 
-/* 💡 描述區塊：恢復 max-height 限制，內容過多時捲動，確保卡片不會無限長高 */
+/* 描述區塊：限制高度捲動 */
 .wish-description-box { 
   background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; 
   margin-top: auto; max-height: 150px; overflow-y: auto; min-width: 0; 
@@ -296,7 +340,7 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
   
   .wish-card-wide { flex-direction: column !important; width: 100% !important; max-width: 100% !important; }
   
-  /* 💡 手機版圖片區塊：恢復滿寬並強制 1:1 正方形 */
+  /* 💡 手機版圖片區塊：恢復 100% 寬度，維持 1:1 正方形 */
   .wish-card-image-wrapper { 
     width: 100% !important; 
     max-width: 100% !important; 
@@ -304,7 +348,17 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
     border-right: none !important; 
     border-bottom: 1px solid #f0f0f0;
   }
-  .wish-card-img-inner { width: 100%; aspect-ratio: 1 / 1; }
+
+  .wish-card-img-inner {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+
+  /* 💡 隱藏電腦版專屬的作者列 (在手機版時) */
+  .desktop-author-block { display: none !important; }
+  
+  /* 💡 顯示原本手機版專屬的作者列 */
+  .mobile-author-block { display: flex !important; margin-top: 8px; }
   
   .wish-card-info { padding: 16px !important; gap: 12px; width: 100% !important; max-width: 100% !important; }
   .wish-description-box { max-height: 180px; overflow-y: auto; }
