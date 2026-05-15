@@ -52,6 +52,38 @@ export const InquiryWorkspace: React.FC = () => {
 
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
 
+  // 🌟 新增：管理繪師存在 LocalStorage 的常用付款階段
+  const [paymentPresets, setPaymentPresets] = useState<string[]>([]);
+
+  useEffect(() => {
+    const savedPresets = localStorage.getItem('payment_timing_presets');
+    if (savedPresets) {
+      try {
+        setPaymentPresets(JSON.parse(savedPresets));
+      } catch (e) {
+        setPaymentPresets(['全額付清後動筆', '需先付定金', '草稿確認後付款', '完稿後付款']);
+      }
+    } else {
+      // 預設給幾個常用的
+      setPaymentPresets(['全額付清後動筆', '需先付定金', '草稿確認後付款', '完稿後付款']);
+    }
+  }, []);
+
+  const handleSavePaymentPreset = () => {
+    const currentVal = draft.payment_timing?.trim();
+    if (!currentVal) return;
+    if (paymentPresets.includes(currentVal)) return; // 避免重複
+    const newPresets = [...paymentPresets, currentVal];
+    setPaymentPresets(newPresets);
+    localStorage.setItem('payment_timing_presets', JSON.stringify(newPresets));
+  };
+
+  const handleDeletePaymentPreset = (val: string) => {
+    const newPresets = paymentPresets.filter(p => p !== val);
+    setPaymentPresets(newPresets);
+    localStorage.setItem('payment_timing_presets', JSON.stringify(newPresets));
+  };
+
   const [draft, setDraft] = useState<any>({
     project_name: '', 
     total_price: 0, 
@@ -60,7 +92,7 @@ export const InquiryWorkspace: React.FC = () => {
     draw_scope: '大頭', 
     bg_type: '無背景', 
     char_count: 1, 
-    payment_timing: 'prepaid', // 🌟 新增：預設全額付清
+    payment_timing: '全額付清後動筆', 
     add_ons: '',
     agreed_memo: '',
     custom_tos: undefined 
@@ -72,6 +104,7 @@ export const InquiryWorkspace: React.FC = () => {
     return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
+  // 保留這個函式來翻譯原始貼文(Bulletin)的預設值
   const getPaymentTimingLabel = (val: string) => {
     const map: Record<string, string> = {
       prepaid: '全額付清後動筆',
@@ -113,7 +146,7 @@ export const InquiryWorkspace: React.FC = () => {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
              let defaultName = data.bulletin_title;
-             let defaultPaymentTiming = 'prepaid';
+             let defaultPaymentTiming = '全額付清後動筆';
              
              if (!defaultName) {
                if (isDirectInquiry) {
@@ -126,8 +159,8 @@ export const InquiryWorkspace: React.FC = () => {
                    else if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
                    else defaultName = "許願池委託";
                    
-                   // 🌟 若許願池有預設付款方式，帶入草稿
-                   if (parsedContent.payment_timing) defaultPaymentTiming = parsedContent.payment_timing;
+                   // 🌟 將貼文原始的代碼轉換成中文文字存入草稿
+                   if (parsedContent.payment_timing) defaultPaymentTiming = getPaymentTimingLabel(parsedContent.payment_timing);
                  } catch(e) {
                    defaultName = "許願池委託";
                  }
@@ -494,7 +527,6 @@ export const InquiryWorkspace: React.FC = () => {
           </footer>
         </div>
 
-        {/* 🌟 新增：手機版專用遮罩，點擊暗處即可收起側邊欄 */}
         {showMobileAside && (
           <div 
             className="iw-mobile-overlay-bg" 
@@ -512,7 +544,6 @@ export const InquiryWorkspace: React.FC = () => {
                   <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
                     {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
                   </span>
-                  {/* 🌟 新增：手機版專用的明確關閉按鈕 */}
                   <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
                 </div>
               </h3>
@@ -572,7 +603,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </button>
               </div>
 
-              {/* 🌟 核心參數編輯區 (已加入付款階段、繪製範圍、背景設定) */}
+              {/* 核心參數編輯區 */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -593,18 +624,50 @@ export const InquiryWorkspace: React.FC = () => {
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>付款階段</label>
-                      <select disabled={!isEditableByArtist} className="draft-input" value={draft.payment_timing || 'prepaid'} onChange={(e) => setDraft({...draft, payment_timing: e.target.value})}>
-                        <option value="prepaid">全額付清後動筆</option>
-                        <option value="deposit">需先付定金</option>
-                        <option value="after_draft">草稿確認後付款</option>
-                        <option value="after_completion">完稿後付款</option>
-                        <option value="other">其他 / 詳見備忘錄</option>
-                      </select>
+                  {/* 🌟 替換為自由輸入框與標籤系統 */}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>付款階段與說明</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        disabled={!isEditableByArtist} 
+                        className="draft-input" 
+                        value={draft.payment_timing || ''} 
+                        onChange={(e) => setDraft({...draft, payment_timing: e.target.value})} 
+                        placeholder="例如：訂金 30%、完稿 70%"
+                      />
+                      {isEditableByArtist && (
+                        <button 
+                          onClick={handleSavePaymentPreset}
+                          style={{ padding: '0 12px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#4A7294', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          title="儲存為常用付款方式"
+                        >
+                          💾 儲存
+                        </button>
+                      )}
                     </div>
+                    {/* 常用標籤區 */}
+                    {isEditableByArtist && paymentPresets.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                        {paymentPresets.map(preset => (
+                          <div 
+                            key={preset}
+                            onClick={() => setDraft({ ...draft, payment_timing: preset })}
+                            style={{ padding: '4px 10px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '50px', fontSize: '11px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                          >
+                            <span>{preset}</span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeletePaymentPreset(preset); }}
+                              style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0, fontSize: '13px', lineHeight: 1 }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
                 </div>
               </div>
 
@@ -685,7 +748,10 @@ export const InquiryWorkspace: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
                     <p style={{ margin: 0 }}><strong>項目名稱：</strong> {draft.project_name}</p>
                     <p style={{ margin: 0 }}><strong>最終金額：</strong> <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>NT$ {draft.total_price}</span></p>
-                    <p style={{ margin: 0 }}><strong>付款階段：</strong> {getPaymentTimingLabel(draft.payment_timing)}</p>
+                    
+                    {/* 🌟 最終彈窗直接顯示自訂輸入的文字 */}
+                    <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong>付款階段：</strong> {draft.payment_timing || '(未填寫)'}</p>
+                    
                     <p style={{ margin: 0 }}><strong>繪製範圍：</strong> {draft.draw_scope}</p>
                     <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                     <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
