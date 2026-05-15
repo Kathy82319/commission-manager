@@ -39,6 +39,9 @@ export const InquiryWorkspace: React.FC = () => {
   const [showFinalModal, setShowFinalModal] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showMobileAside, setShowMobileAside] = useState(false);
+  
+  // 🌟 新增：控制置頂成功橫幅的收合狀態
+  const [isBannerExpanded, setIsBannerExpanded] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -49,10 +52,10 @@ export const InquiryWorkspace: React.FC = () => {
   
   const isFirstLoad = useRef(true);
   const [isAccepted, setIsAccepted] = useState(false);
+  
+  const prevStatusRef = useRef<string | null>(null);
 
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
-
-  // 🌟 新增：管理繪師存在 LocalStorage 的常用付款階段
   const [paymentPresets, setPaymentPresets] = useState<string[]>([]);
 
   useEffect(() => {
@@ -64,7 +67,6 @@ export const InquiryWorkspace: React.FC = () => {
         setPaymentPresets(['全額付清後動筆', '需先付定金', '草稿確認後付款', '完稿後付款']);
       }
     } else {
-      // 預設給幾個常用的
       setPaymentPresets(['全額付清後動筆', '需先付定金', '草稿確認後付款', '完稿後付款']);
     }
   }, []);
@@ -72,10 +74,11 @@ export const InquiryWorkspace: React.FC = () => {
   const handleSavePaymentPreset = () => {
     const currentVal = draft.payment_timing?.trim();
     if (!currentVal) return;
-    if (paymentPresets.includes(currentVal)) return; // 避免重複
+    if (paymentPresets.includes(currentVal)) return; 
     const newPresets = [...paymentPresets, currentVal];
     setPaymentPresets(newPresets);
     localStorage.setItem('payment_timing_presets', JSON.stringify(newPresets));
+    alert('已將此付款方式加入常用標籤！');
   };
 
   const handleDeletePaymentPreset = (val: string) => {
@@ -104,7 +107,6 @@ export const InquiryWorkspace: React.FC = () => {
     return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
-  // 保留這個函式來翻譯原始貼文(Bulletin)的預設值
   const getPaymentTimingLabel = (val: string) => {
     const map: Record<string, string> = {
       prepaid: '全額付清後動筆',
@@ -139,6 +141,12 @@ export const InquiryWorkspace: React.FC = () => {
         const currentUserIsArtist = (myId === targetArtistId);
         setIsArtist(currentUserIsArtist);
         
+        // 偵測狀態變化
+        if (prevStatusRef.current && prevStatusRef.current !== 'accepted' && data.status === 'accepted') {
+          setIsAccepted(true);
+        }
+        prevStatusRef.current = data.status;
+
         if (data.status === 'accepted') setIsAccepted(true);
 
         if (isFirstLoad.current || !currentUserIsArtist || (data.status !== 'submitted' && data.status !== 'pending')) {
@@ -159,7 +167,6 @@ export const InquiryWorkspace: React.FC = () => {
                    else if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
                    else defaultName = "許願池委託";
                    
-                   // 🌟 將貼文原始的代碼轉換成中文文字存入草稿
                    if (parsedContent.payment_timing) defaultPaymentTiming = getPaymentTimingLabel(parsedContent.payment_timing);
                  } catch(e) {
                    defaultName = "許願池委託";
@@ -322,13 +329,16 @@ export const InquiryWorkspace: React.FC = () => {
 
   const handlePropose = async () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
-       return alert('抱歉，您本月的建單額度 (3張) 已滿。請升級為專業版以解鎖無限接案次數！');
+       return alert('抱歉，您本月的建單額度已滿。請升級為專業版以解鎖！');
     }
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
       await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/propose`, {});
       if (res.success) {
+        // 🌟 觸發系統提示訊息
+        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】繪師已送出正式提案，請委託人確認合約規格與報價。' });
+        
         alert('已送出正式提案給案主！');
         setShowMobileAside(false); 
         fetchData();
@@ -341,6 +351,9 @@ export const InquiryWorkspace: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, {});
       if (res.success) {
+        // 🌟 觸發系統提示訊息
+        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。' });
+        
         alert('已將提案退回，繪師現在可以重新編輯並送出了。');
         fetchData();
       } else alert('操作失敗：' + (res.message || res.error));
@@ -354,6 +367,9 @@ export const InquiryWorkspace: React.FC = () => {
     try {
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
+        // 🌟 觸發系統提示訊息
+        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已確認同意協議書，委託單正式成立！' });
+        
         const commId = res.commission_id || res.id;
         alert('🎉 委託單已成功建立！系統將為您跳轉至管理頁面。');
         setShowFinalModal(false);
@@ -471,21 +487,50 @@ export const InquiryWorkspace: React.FC = () => {
               {!isAccepted && (
                 <button className="iw-mobile-toggle-btn" onClick={() => setShowMobileAside(!showMobileAside)} style={{ display: 'none', padding: '6px 12px', borderRadius: '8px', background: '#5D4A3E', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '12px' }}>{showMobileAside ? '✕ 關閉' : '📝 合約/草稿'}</button>
               )}
-              <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5' }}>{isArtist ? '🎨 繪師' : '👤 委託人'}</div>
+              <div className="iw-role-badge" style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: isArtist ? '#EBF2F7' : '#FDF4E6', color: isArtist ? '#4A7294' : '#A67B3E', border: isArtist ? '1px solid #C1D6E8' : '1px solid #FDE0B5', whiteSpace: 'nowrap', flexShrink: 0 }}>{isArtist ? '🎨 繪師' : '👤 委託人'}</div>
             </div>
           </header>
 
+          {/* 🌟 永遠吸頂的折疊橫幅 (不再被聊天紀錄洗掉) */}
+          {isAccepted && (
+            <div style={{ backgroundColor: '#EBF5EB', borderBottom: '1px solid #C8E6C9', flexShrink: 0, zIndex: 9, transition: 'all 0.3s' }}>
+              <div 
+                onClick={() => setIsBannerExpanded(!isBannerExpanded)}
+                style={{ padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: '#4E7A5A', fontSize: '13px', fontWeight: 'bold' }}
+              >
+                <span>🎉 委託單已正式成立！</span>
+                <span style={{ fontSize: '10px' }}>{isBannerExpanded ? '▲ 收起' : '▼ 展開'}</span>
+              </div>
+              
+              {isBannerExpanded && (
+                <div style={{ padding: '0 20px 12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '12px', color: '#4E7A5A' }}>您可以繼續在此與對方討論，或前往單據頁面更新進度。</span>
+                  <button onClick={() => isArtist ? navigate(`/artist/notebook?id=${inquiry.commission_id}`) : navigate(`/client/orders?id=${inquiry.commission_id}`)} style={{ background: '#4E7A5A', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                    前往管理單據
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative' }}>
             
-            {isAccepted && (
-              <div style={{ backgroundColor: '#EBF5EB', color: '#4E7A5A', padding: '12px', borderRadius: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', border: '1px solid #C8E6C9', marginBottom: '8px' }}>
-                🎉 委託單已正式成立！您可以繼續在此與對方討論。
-                <button onClick={() => isArtist ? navigate(`/artist/notebook?id=${inquiry.commission_id}`) : navigate(`/client/orders?id=${inquiry.commission_id}`)} style={{ marginLeft: '10px', background: '#4E7A5A', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>前往管理單據</button>
-              </div>
-            )}
-
             {messages.map((msg) => {
+              // 🌟 判斷是否為系統提示訊息
+              const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
+
+              if (isSystemMsg) {
+                return (
+                  <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                    <div style={{ backgroundColor: 'rgba(93, 74, 62, 0.08)', color: '#7A7269', fontSize: '12px', padding: '6px 16px', borderRadius: '20px', textAlign: 'center', maxWidth: '85%', lineHeight: '1.5' }}>
+                      {msg.content}
+                      <span style={{ fontSize: '10px', marginLeft: '8px', opacity: 0.6 }}>{formatLocalTime(msg.created_at)}</span>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                   <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
@@ -523,7 +568,7 @@ export const InquiryWorkspace: React.FC = () => {
             </button>
 
             <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none' }} />
-            <button onClick={handleSendMessage} disabled={!newMessage.trim() && !isUploadingImage} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: (newMessage.trim() || isUploadingImage) ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>傳送</button>
+            <button onClick={handleSendMessage} disabled={!newMessage.trim() && !isUploadingImage} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: (newMessage.trim() || isUploadingImage) ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>傳送</button>
           </footer>
         </div>
 
@@ -541,7 +586,7 @@ export const InquiryWorkspace: React.FC = () => {
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'nowrap', flexShrink: 0 }}>
                     {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
                   </span>
                   <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
@@ -550,8 +595,7 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
                 {isArtist && artistQuota && (
-                   <span style={{ flexShrink: 0, whiteSpace: 'nowrap',fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8' }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
-                
+                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
               </div>
             </div>
@@ -625,7 +669,6 @@ export const InquiryWorkspace: React.FC = () => {
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
                   </div>
 
-                  {/* 🌟 替換為自由輸入框與標籤系統 */}
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>付款階段與說明</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -640,14 +683,13 @@ export const InquiryWorkspace: React.FC = () => {
                       {isEditableByArtist && (
                         <button 
                           onClick={handleSavePaymentPreset}
-                          style={{ padding: '0 12px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#4A7294', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          style={{ padding: '0 12px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#4A7294', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           title="儲存為常用付款方式"
                         >
                           💾 儲存
                         </button>
                       )}
                     </div>
-                    {/* 常用標籤區 */}
                     {isEditableByArtist && paymentPresets.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                         {paymentPresets.map(preset => (
@@ -687,32 +729,17 @@ export const InquiryWorkspace: React.FC = () => {
 
               {/* 繪師專屬協議條款編輯器 (TOS) */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' /* 👈 建議補上 gap 讓它們不會黏在一起 */ }}>
-  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款</h4>
-  {isEditableByArtist && (
-    <button 
-      onClick={() => setDraft({...draft, custom_tos: artistTos})}
-      style={{ 
-        fontSize: '11px', 
-        padding: '4px 8px', 
-        background: '#F1F5F9', 
-        border: '1px solid #E2E8F0', 
-        borderRadius: '4px', 
-        cursor: 'pointer', 
-        color: '#4A7294', 
-        fontWeight: 'bold', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '4px',
-        // 👇 加上這兩行
-        whiteSpace: 'nowrap',
-        flexShrink: 0
-      }}
-    >
-      📥 帶入個人範本
-    </button>
-  )}
-</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0, flexShrink: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
+                  {isEditableByArtist && (
+                    <button 
+                      onClick={() => setDraft({...draft, custom_tos: artistTos})}
+                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                      📥 帶入個人範本
+                    </button>
+                  )}
+                </div>
                 {isEditableByArtist ? (
                   <div className="quote-quill-wrapper" style={{ margin: 0 }}>
                     <ReactQuill 
@@ -729,18 +756,18 @@ export const InquiryWorkspace: React.FC = () => {
 
             </div>
 
-            <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
               {isEditableByArtist && (
                 <>
-                  <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
-                  <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer' }}>{isQuotaFull ? '❌ 額度已滿' : '🚀 送出正式提案'}</button>
+                  <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>💾 儲存協議草稿</button>
+                  <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{isQuotaFull ? '❌ 額度已滿' : '🚀 送出正式提案'}</button>
                 </>
               )}
 
               {!isArtist && inquiry.status === 'proposed' && (
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>退回修正</button>
-                  <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ flex: 2, padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>✅ 同意並建立委託</button>
+                  <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>退回修正</button>
+                  <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ flex: 2, padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>✅ 同意並建立委託</button>
                 </div>
               )}
 
@@ -764,10 +791,7 @@ export const InquiryWorkspace: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
                     <p style={{ margin: 0 }}><strong>項目名稱：</strong> {draft.project_name}</p>
                     <p style={{ margin: 0 }}><strong>最終金額：</strong> <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>NT$ {draft.total_price}</span></p>
-                    
-                    {/* 🌟 最終彈窗直接顯示自訂輸入的文字 */}
                     <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong>付款階段：</strong> {draft.payment_timing || '(未填寫)'}</p>
-                    
                     <p style={{ margin: 0 }}><strong>繪製範圍：</strong> {draft.draw_scope}</p>
                     <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                     <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
@@ -796,7 +820,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </label>
                 <div className="iw-modal-actions" style={{ display: 'flex', gap: '15px' }}>
                   <button style={{ flex: 1, color: '#A0978D', fontWeight: 'bold', border: '1px solid #EAE6E1', background: '#FFFFFF', cursor: 'pointer', padding: '12px', borderRadius: '8px' }} onClick={() => setShowFinalModal(false)}>再考慮一下</button>
-                  <button disabled={!agreedToTerms} onClick={handleFinalize} style={{ flex: 2, background: '#4E7A5A', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 'bold', border: 'none', opacity: agreedToTerms ? 1 : 0.5, cursor: agreedToTerms ? 'pointer' : 'not-allowed' }}>正式簽署並建立委託 ➔</button>
+                  <button disabled={!agreedToTerms} onClick={handleFinalize} style={{ flex: 2, background: '#4E7A5A', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 'bold', border: 'none', opacity: agreedToTerms ? 1 : 0.5, cursor: agreedToTerms ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>正式簽署並建立委託 ➔</button>
                 </div>
               </div>
             </div>
