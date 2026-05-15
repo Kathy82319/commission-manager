@@ -1,6 +1,5 @@
 /* src/styles/Wishboard.css */
 
-
 :root {
   --wish-primary: var(--artist-theme-color, #ff8c00);
   --wish-primary-hover: #e67e00;
@@ -75,12 +74,14 @@ body {
 }
 .wish-card-wide:hover { transform: translateY(-4px); }
 
+/* 💡 圖片區塊：鎖死 360px 寬高 (1:1)，不再隨右側內容無止盡拉長 */
 .wish-card-image-wrapper { 
-  width: 360px; max-width: 360px; min-height: 320px; position: relative; 
+  width: 360px; max-width: 360px; height: 360px; min-height: 360px; position: relative; 
   flex-shrink: 0; background-color: #fafafa; border-right: 1px solid #f0f0f0; 
   overflow: hidden; cursor: zoom-in; min-width: 0;
 }
 .wish-card-img-inner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+/* 確保圖片完美填滿 1:1 容器 */
 .wish-card-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
 .wish-card-image-wrapper:hover .wish-card-img { transform: scale(1.03); }
 
@@ -93,15 +94,19 @@ body {
 .zoom-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.4); color: white; padding: 10px; border-radius: 50%; opacity: 0; transition: 0.3s; pointer-events: none; }
 .wish-card-image-wrapper:hover .zoom-hint { opacity: 1; }
 
-.wish-card-info { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow: hidden; width: 100%; }
-.wish-card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-width: 0; }
+/* 💡 右側資訊區塊：最大高度與圖片同高 (360px)，多的內容變內部捲動 */
+.wish-card-info { 
+  flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; 
+  min-width: 0; overflow: hidden; width: 100%; height: 360px; max-height: 360px;
+}
+.wish-card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; min-width: 0; flex-shrink: 0; }
 .wish-card-header h3 { font-size: 20px; color: var(--wish-text-main); margin: 0; font-weight: 800; min-width: 0; }
 
 .category-badge { padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
 .category-badge.request { background: #f1f5f9; color: #475569; }
 .category-badge.offer { background: #fffbeb; color: #d97706; }
 
-.wish-card-meta-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.wish-card-meta-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; flex-shrink: 0; }
 .meta-tag-row { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
 .tag-container { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .tag-sub-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
@@ -127,11 +132,20 @@ body {
 .items-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .item-pill { background: #fff5eb; color: #ea580c; padding: 4px 12px; border-radius: 12px; font-size: 13px; border: 1px solid #fed7aa; display: flex; align-items: center; gap: 6px; }
 
-.wish-description-box { background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; margin-top: auto; max-height: 150px; overflow-y: auto; min-width: 0; }
-.description-label { color: #0f172a; }
-.description-text { margin: 6px 0 0 0; line-height: 1.6; color: #475569; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+/* 💡 描述區塊：利用 flex-grow 吸滿剩餘空間，若文字過多則內部出現卷軸 */
+.wish-description-box { 
+  background: #f8fafc; padding: 12px 16px; border-radius: 12px; border: 1px solid #f1f5f9; 
+  flex-grow: 1; overflow-y: auto; min-width: 0;
+  /* 客製化滾動條以保持美觀 */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.wish-description-box::-webkit-scrollbar { width: 6px; }
+.wish-description-box::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+.description-label { color: #0f172a; display: block; margin-bottom: 4px; }
+.description-text { margin: 0; line-height: 1.6; color: #475569; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
 
-.card-actions { margin-top: 16px; width: 100%; }
+.card-actions { margin-top: auto; width: 100%; flex-shrink: 0; }
 .btn-status-disabled { background: #f1f5f9; color: #94a3b8; padding: 12px 32px; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; width: 100%; cursor: not-allowed; }
 .full-width { width: 100%; display: flex; justify-content: center; }
 
@@ -285,17 +299,24 @@ input:focus, textarea:focus { outline: none; border-color: var(--wish-primary); 
   
   .wish-card-wide { flex-direction: column !important; width: 100% !important; max-width: 100% !important; }
   
+  /* 💡 手機版圖片區塊：同樣強制鎖死為正方形 (1:1) */
   .wish-card-image-wrapper { 
     width: 100% !important; 
     max-width: 100% !important; 
-    height: 65vw !important; 
-    min-height: 200px !important; 
+    height: auto !important; 
+    aspect-ratio: 1/1 !important; /* 強制正方形 */
+    min-height: unset !important; 
     flex: none !important; 
     border-right: none !important; 
     border-bottom: 1px solid #f0f0f0;
   }
   
-  .wish-card-info { padding: 16px !important; gap: 12px; width: 100% !important; max-width: 100% !important; }
+  /* 💡 手機版資訊區塊：解除高度鎖定，讓其自然延伸 (因為手機是用滑動的) */
+  .wish-card-info { 
+    padding: 16px !important; gap: 12px; width: 100% !important; max-width: 100% !important; 
+    height: auto !important; max-height: none !important; 
+  }
+  .wish-description-box { max-height: 180px; overflow-y: auto; }
 
   .lightbox-nav-btn { padding: 10px 5px; }
   .lightbox-nav-btn.prev { left: 5px; }

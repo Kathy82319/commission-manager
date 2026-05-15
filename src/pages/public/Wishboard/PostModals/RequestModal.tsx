@@ -81,9 +81,9 @@ export const RequestModal: React.FC<RequestModalProps> = ({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
                   <div style={{ height: '240px', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 選擇圖片"} maxSizeMB={3} aspectRatio={3/4} />
+                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "上傳中..." : "+ 選擇圖片"} maxSizeMB={3} aspectRatio={1} />
                   </div>
-                  <span style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', fontWeight: 'bold' }}>建議尺寸：900x1200 (3:4 直向)</span>
+                  <span style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', fontWeight: 'bold' }}>建議尺寸：1000x1000 (1:1 正方形)</span>
                 </div>
               )}
             </div>
