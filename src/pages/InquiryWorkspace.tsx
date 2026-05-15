@@ -60,6 +60,7 @@ export const InquiryWorkspace: React.FC = () => {
     draw_scope: '大頭', 
     bg_type: '無背景', 
     char_count: 1, 
+    payment_timing: 'prepaid', // 🌟 新增：預設全額付清
     add_ons: '',
     agreed_memo: '',
     custom_tos: undefined 
@@ -112,6 +113,8 @@ export const InquiryWorkspace: React.FC = () => {
             setDraft(JSON.parse(data.negotiation_draft));
           } else if (isFirstLoad.current) {
              let defaultName = data.bulletin_title;
+             let defaultPaymentTiming = 'prepaid';
+             
              if (!defaultName) {
                if (isDirectInquiry) {
                  defaultName = "客製化委託單"; 
@@ -122,12 +125,15 @@ export const InquiryWorkspace: React.FC = () => {
                    else if (parsedContent.commission_items?.length > 0) defaultName = parsedContent.commission_items[0].name;
                    else if (parsedContent.description) defaultName = parsedContent.description.substring(0, 30);
                    else defaultName = "許願池委託";
+                   
+                   // 🌟 若許願池有預設付款方式，帶入草稿
+                   if (parsedContent.payment_timing) defaultPaymentTiming = parsedContent.payment_timing;
                  } catch(e) {
                    defaultName = "許願池委託";
                  }
                }
              }
-            setDraft((prev: any) => ({ ...prev, project_name: defaultName || "" }));
+            setDraft((prev: any) => ({ ...prev, project_name: defaultName || "", payment_timing: defaultPaymentTiming }));
           }
         }
       }
@@ -488,14 +494,27 @@ export const InquiryWorkspace: React.FC = () => {
           </footer>
         </div>
 
+        {/* 🌟 新增：手機版專用遮罩，點擊暗處即可收起側邊欄 */}
+        {showMobileAside && (
+          <div 
+            className="iw-mobile-overlay-bg" 
+            onClick={() => setShowMobileAside(false)} 
+            style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 15 }}
+          />
+        )}
+
         {!isAccepted && (
           <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
-                <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
-                  {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
+                    {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
+                  </span>
+                  {/* 🌟 新增：手機版專用的明確關閉按鈕 */}
+                  <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
+                </div>
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
@@ -553,18 +572,38 @@ export const InquiryWorkspace: React.FC = () => {
                 </button>
               </div>
 
-              {/* 核心參數編輯區 */}
+              {/* 🌟 核心參數編輯區 (已加入付款階段、繪製範圍、背景設定) */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
+                  
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 2 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託總金額 (NT$)</label><input type="number" disabled={!isEditableByArtist} className="draft-input" style={{ borderColor: '#A67B3E', backgroundColor: '#FDF4E6' }} value={draft.total_price} onChange={(e) => setDraft({...draft, total_price: Number(e.target.value)})} /></div>
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>急件</label><select disabled={!isEditableByArtist} className="draft-input" value={draft.is_rush} onChange={(e) => setDraft({...draft, is_rush: e.target.value})}><option value="否">否</option><option value="是">是</option></select></div>
                   </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>繪製範圍</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.draw_scope} onChange={(e) => setDraft({...draft, draw_scope: e.target.value})} /></div>
+                    <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>背景設定</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.bg_type} onChange={(e) => setDraft({...draft, bg_type: e.target.value})} /></div>
+                  </div>
+
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>人物數量</label><input type="number" disabled={!isEditableByArtist} className="draft-input" value={draft.char_count} onChange={(e) => setDraft({...draft, char_count: Number(e.target.value)})} /></div>
                     <div style={{ flex: 1 }}><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>委託用途</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.usage_type} onChange={(e) => setDraft({...draft, usage_type: e.target.value})} /></div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>付款階段</label>
+                      <select disabled={!isEditableByArtist} className="draft-input" value={draft.payment_timing || 'prepaid'} onChange={(e) => setDraft({...draft, payment_timing: e.target.value})}>
+                        <option value="prepaid">全額付清後動筆</option>
+                        <option value="deposit">需先付定金</option>
+                        <option value="after_draft">草稿確認後付款</option>
+                        <option value="after_completion">完稿後付款</option>
+                        <option value="other">其他 / 詳見備忘錄</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -582,7 +621,7 @@ export const InquiryWorkspace: React.FC = () => {
                 />
               </div>
 
-              {/* 🌟 繪師專屬協議條款編輯器 (TOS) */}
+              {/* 繪師專屬協議條款編輯器 (TOS) */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
@@ -646,6 +685,7 @@ export const InquiryWorkspace: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '14px', color: '#5D4A3E' }}>
                     <p style={{ margin: 0 }}><strong>項目名稱：</strong> {draft.project_name}</p>
                     <p style={{ margin: 0 }}><strong>最終金額：</strong> <span style={{ color: '#A05C5C', fontWeight: 'bold' }}>NT$ {draft.total_price}</span></p>
+                    <p style={{ margin: 0 }}><strong>付款階段：</strong> {getPaymentTimingLabel(draft.payment_timing)}</p>
                     <p style={{ margin: 0 }}><strong>繪製範圍：</strong> {draft.draw_scope}</p>
                     <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                     <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
@@ -658,24 +698,6 @@ export const InquiryWorkspace: React.FC = () => {
                   <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                     <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                     <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{draft.agreed_memo}</div>
-                  </div>
-                )}
-
-                {/* 🌟 修正：補回原本消失的「繪師接案基本規範」區塊 (針對許願池) */}
-                {!isDirectInquiry && isOffer && (
-                  <div style={{ background: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                    <h4 style={{ color: '#4A7294', borderBottom: '1px solid #C1D6E8', paddingBottom: '8px', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師接案基本規範</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E' }}>
-                      {parsedBulletin.payment_timing && (
-                        <p style={{ margin: 0 }}>
-                          <strong>支付時機與說明：</strong> {getPaymentTimingLabel(parsedBulletin.payment_timing)} 
-                          {parsedBulletin.payment_timing_detail ? ` (${parsedBulletin.payment_timing_detail})` : ''}
-                        </p>
-                      )}
-                      {parsedBulletin.payment_methods && parsedBulletin.payment_methods.length > 0 && (
-                        <p style={{ margin: 0 }}><strong>可接受收款方式：</strong> {parsedBulletin.payment_methods.join('、')}</p>
-                      )}
-                    </div>
                   </div>
                 )}
 
