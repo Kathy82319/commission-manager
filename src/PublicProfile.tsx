@@ -56,6 +56,7 @@ interface ProfileSettings {
     show_client_name: boolean;
     show_client_id: boolean;
     show_project_name: boolean;
+    show_artist_note?: boolean; // 🌟 新增對應介面設定
     date_column_label?: string; 
     custom_order?: string[];
   };
@@ -679,6 +680,10 @@ export function PublicProfile() {
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
                             <th style={{ padding: '12px 8px' }}>{settings.queue_settings.date_column_label || '預計開始日'}</th>
+                            {/* 🌟 根據設定條件渲染備註表頭 */}
+                            {settings.queue_settings.show_artist_note && (
+                              <th style={{ padding: '12px 8px' }}>備註</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
@@ -704,6 +709,12 @@ export function PublicProfile() {
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>
                                 {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
                               </td>
+                              {/* 🌟 根據設定條件渲染備註欄位資料 */}
+                              {settings.queue_settings!.show_artist_note && (
+                                <td style={{ padding: '12px 8px', opacity: 0.8 }}>
+                                  {order.artist_note || '-'}
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>

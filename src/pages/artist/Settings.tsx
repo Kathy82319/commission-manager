@@ -100,7 +100,8 @@ export function Settings() {
     theme_mode: 'dark',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
-    queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true },
+    // 🌟 新增 show_artist_note 預設值
+    queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
     tab_order: [] 
   });
 

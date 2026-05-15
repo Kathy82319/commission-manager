@@ -5,8 +5,9 @@ export interface QueueSettings {
   show_client_name: boolean;
   show_client_id: boolean;
   show_project_name: boolean;
-  date_column_label?: string; // 🌟 補回設定欄位
-  custom_order?: string[];    // 🌟 確保能承接客製化排序陣列
+  show_artist_note?: boolean; // 🌟 新增：是否顯示備註欄位
+  date_column_label?: string; 
+  custom_order?: string[];    
 }
 
 export function QueueSettingsTab({ settings, setSettings }: any) {
@@ -15,10 +16,10 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     show_client_name: true,
     show_client_id: false,
     show_project_name: true,
+    show_artist_note: false, // 🌟 預設不顯示
     date_column_label: '預計開始日'
   };
 
-  // 🌟 將 val 型別改為 any，以相容 boolean 與 string 類型的更新
   const update = (field: keyof QueueSettings, val: any) => {
     setSettings({ ...settings, queue_settings: { ...qs, [field]: val } });
   };
@@ -43,7 +44,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
         <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
           <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px', marginBottom: '16px' }}>顯示範圍控制 (隱私設定)</h4>
 
-          {/* 🌟 補回從 Queue.tsx 提到的自訂欄位輸入框 */}
           <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <label style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>日期欄位顯示名稱：</label>
             <input 
@@ -83,6 +83,15 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 onChange={e => update('show_project_name', e.target.checked)} 
               />
               顯示項目名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將一律顯示為 "私人委託項目")</span>
+            </label>
+            {/* 🌟 新增：備註欄位顯示開關 */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#5D4A3E' }}>
+              <input 
+                type="checkbox" 
+                checked={qs.show_artist_note || false} 
+                onChange={e => update('show_artist_note', e.target.checked)} 
+              />
+              顯示備註欄位 <span style={{ color: '#A0978D', fontSize: '12px' }}>(預設隱藏，若勾選將公開顯示您在排單表填寫的備註)</span>
             </label>
           </div>
         </div>
