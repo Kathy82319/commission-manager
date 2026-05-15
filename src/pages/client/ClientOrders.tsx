@@ -238,7 +238,6 @@ export function ClientOrders() {
 
       const syntheticLogs: ActionLog[] = [];
       if (orderData.order_date) {
-        syntheticLogs.push({ id: 'sys-init', actor_role: 'artist', content: '建立委託單', created_at: orderData.order_date });
         
         if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
           const bindLogIndex = fetchedLogs.findIndex(l => l.content.includes('綁定訂單'));
