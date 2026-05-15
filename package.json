@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
+  "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && npm run build:worker",
     "build:worker": "npx esbuild worker/index.ts --bundle --format=esm --outfile=dist/_worker.js --external:node:*",
@@ -18,7 +18,9 @@
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@types/dompurify": "^3.0.5",
     "dompurify": "^3.3.3",
+    "install": "^0.13.0",
     "lucide-react": "^1.8.0",
+    "npm": "^11.14.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-easy-crop": "^5.5.7",
