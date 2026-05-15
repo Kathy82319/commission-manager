@@ -423,6 +423,12 @@ export function Queue() {
     return order.contact_memo ? order.contact_memo : '(未綁定)';
   };
 
+  // 🌟 額度限制判斷邏輯
+  const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
+  const currentLimit = planLimits[userData?.plan_type || 'free'] || 3;
+  // commissions 陣列在 fetchQueue 已經過濾掉 completed 和 cancelled，所以長度就是活躍訂單數
+  const isQuotaFull = commissions.length >= currentLimit;
+
   return (
     <div className="queue-container">
       <style>{`
@@ -449,7 +455,29 @@ export function Queue() {
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          <button onClick={() => setIsQuoteModalOpen(true)} className="create-quote-btn" style={{ padding: '8px 12px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>+ 建立新委託單</button>
+          {/* 🌟 根據額度狀態更新建立按鈕 UI 與行為 */}
+          <button 
+            onClick={() => {
+              if (isQuotaFull) {
+                alert(`您目前的活躍委託單已達上限 (${currentLimit} 筆)。\n請先將舊訂單結案/取消，或升級專業版以開啟更多活躍工作欄位！`);
+                return;
+              }
+              setIsQuoteModalOpen(true);
+            }} 
+            className="create-quote-btn" 
+            style={{ 
+              padding: '8px 12px', 
+              background: isQuotaFull ? '#C4BDB5' : '#5D4A3E', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '6px', 
+              cursor: isQuotaFull ? 'not-allowed' : 'pointer', 
+              fontWeight: 'bold' 
+            }}
+            title={isQuotaFull ? `活躍額度已滿 (${currentLimit}/${currentLimit})` : ''}
+          >
+            {isQuotaFull ? '🔒 活躍額度已滿' : '+ 建立新委託單'}
+          </button>
           {isSaving && <span className="updating-hint queue-hide-mobile">儲存中...</span>}
         </div>
       </div>

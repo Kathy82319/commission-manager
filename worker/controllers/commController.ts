@@ -114,14 +114,19 @@ export const commController = {
     if (!user) return createJsonResponse({ success: false, error: "找不到使用者資料" }, 404, corsHeaders);
     if (user.role === 'deleted') return createJsonResponse({ success: false, error: "帳號已停用" }, 403, corsHeaders);
 
-    const { results: totalRes } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Commissions WHERE artist_id = ?").bind(currentUserId).all();
+    // 🌟 核心改動：將原本 COUNT(*) 的條件，加上限制「只計算未結案且未取消的活躍訂單」
+    const activeCountQuery = `
+      SELECT COUNT(*) as total FROM Commissions 
+      WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
+    `;
+    const { results: totalRes } = await env.commission_db.prepare(activeCountQuery).bind(currentUserId).all();
     const totalCount = (totalRes[0]?.total as number) || 0;
 
     const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
     const currentLimit = planLimits[user.plan_type as string] || 3;
 
     if (user.plan_type !== 'pro' && totalCount >= currentLimit) {
-      return createJsonResponse({ success: false, error: "免費版本已達上限" }, 403, corsHeaders);
+      return createJsonResponse({ success: false, error: "活躍委託單已達免費版上限限制" }, 403, corsHeaders);
     }
 
     const body: CreateCommissionBody = await request.json();
@@ -203,7 +208,6 @@ export const commController = {
 
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
-        // 🌟 核心修正：若當前正處於 isBinding 狀態（初次簽署），特別放行讓委託人更新 status 與合約快照
         if (isBinding && (key === 'client_id' || key === 'status' || key === 'agreed_tos_snapshot')) {
           updates.push(`${key} = ?`);
           params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : sanitizeAndLimit(body[key], fieldLimits[key]));
@@ -263,7 +267,6 @@ export const commController = {
     let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     
-    // 🌟 進單歷程實時自我修復與精確時間差優化機制
     if (logs.length === 0 && comm.origin_source) {
       try {
         const origin = JSON.parse(comm.origin_source);
@@ -430,8 +433,8 @@ export const commController = {
     }
 
     const text = action === 'approve' 
-        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
-        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
+       ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
+       : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
     await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_change', text, `/artist/notebook?id=${id}&tab=details`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -497,7 +500,6 @@ export const commController = {
   },
 
   async getPayments(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    // 🌟 修正：型態解構綁定已由 ParcelResults 改回正軌的 results
     const { results: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
     if (commResults.length === 0 || currentUserId !== commResults[0].artist_id) {
       return createJsonResponse({ success: false, error: "無權限查看財務紀錄" }, 403, corsHeaders);

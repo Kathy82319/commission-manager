@@ -61,7 +61,7 @@ export const inquiryController = {
       if (currentUserId === actualArtistId) {
          const { results: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
-            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
+            WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
          `).bind(actualArtistId).all();
          const used = countRes[0]?.count || 0;
          
@@ -85,7 +85,6 @@ export const inquiryController = {
 
   async getMessages(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：讀取聊天訊息前先提取當事人雙方身分進行安全核對
       const inquiry = await env.commission_db.prepare(`
         SELECT i.artist_id, b.client_id as bulletin_client_id 
         FROM BulletinInquiries i 
@@ -125,7 +124,6 @@ export const inquiryController = {
 
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：發送訊息前先提取當事人雙方身分進行安全核對
       const inquiryData = await env.commission_db.prepare(`
         SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
@@ -160,8 +158,9 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：提取 i.status 用以防禦 TOCTOU 漏洞
       const inquiryData = await env.commission_db.prepare(`
-        SELECT b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+        SELECT i.status, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
       `).bind(inquiryId).first() as any;
 
@@ -172,6 +171,15 @@ export const inquiryController = {
 
       if (currentUserId !== actualArtistId) {
         return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
+      }
+
+      // 🌟 核心修正：防禦 TOCTOU / Race Condition 合約竄改漏洞
+      // 若合約已經處於 proposed(已送出) 或 accepted(已成立) 狀態，嚴禁再修改草稿內容
+      if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted') {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: '合約已送出或已成立，無法修改草稿。若需修改請請委託人退回提案。' 
+        }), { status: 403, headers: corsHeaders });
       }
 
       const body = await request.json() as any;
@@ -215,7 +223,7 @@ export const inquiryController = {
       if (!isPro && !isTrial) {
          const { results: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
-            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
+            WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
          `).bind(actualArtistId).all();
          
          const usedCount = (countRes[0]?.count as number) || 0;
@@ -223,7 +231,7 @@ export const inquiryController = {
             return new Response(JSON.stringify({ 
               success: false, 
               error: 'QUOTA_EXCEEDED', 
-              message: '您的本月建單額度已滿，請升級專業版以繼續提案。' 
+              message: '您的活躍委託單已達免費版上限，請先結案舊訂單或升級專業版以繼續提案。' 
             }), { status: 403, headers: corsHeaders });
          }
       }
@@ -260,27 +268,8 @@ export const inquiryController = {
         throw new Error('只有案主有權限正式確認委託單');
       }
 
-      const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at, profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
+      const artistInfo = await env.commission_db.prepare("SELECT profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
       const clientInfo = await env.commission_db.prepare("SELECT display_name FROM Users WHERE id = ?").bind(actualClientId).first() as any;
-
-      const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
-      const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
-      
-      if (!isPro && !isTrial) {
-         const { results: countRes } = await env.commission_db.prepare(`
-            SELECT COUNT(*) as count FROM Commissions 
-            WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
-         `).bind(actualArtistId).all();
-         
-         const usedCount = (countRes[0]?.count as number) || 0;
-         if (usedCount >= 3) {
-            return new Response(JSON.stringify({ 
-              success: false, 
-              error: 'QUOTA_EXCEEDED', 
-              message: '該繪師本月建單額度已滿，暫時無法建立新訂單。' 
-            }), { status: 403, headers: corsHeaders });
-         }
-      }
 
       const draft = JSON.parse(inquiryData.negotiation_draft);
       const timestampStr = Date.now().toString();

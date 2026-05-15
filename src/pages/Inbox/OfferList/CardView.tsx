@@ -151,8 +151,7 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-// 在 CardView 內部的 return 區塊，找到裝按鈕的地方：
-// 🌟 核心修正：替換此區塊，解除寫死的寬度，利用 Flex 讓按鈕自適應縮放
+
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
             {canDecline && (
               <button 

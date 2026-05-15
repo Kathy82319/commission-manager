@@ -182,6 +182,27 @@ export const directInquiryController = {
 
       if (!inquiry) throw new Error('找不到訂單或權限不足');
 
+      // 🌟 新增：提出合約前的活躍額度卡控
+      const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
+      const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
+      
+      if (!isPro && !isTrial) {
+         const { results: countRes } = await env.commission_db.prepare(`
+            SELECT COUNT(*) as count FROM Commissions 
+            WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
+         `).bind(currentUserId).all();
+         
+         const usedCount = (countRes[0]?.count as number) || 0;
+         if (usedCount >= 3) {
+            return new Response(JSON.stringify({ 
+              success: false, 
+              error: 'QUOTA_EXCEEDED', 
+              message: '您的活躍委託單已達免費版上限，請先結案舊訂單或升級專業版以繼續提案。' 
+            }), { status: 403, headers: corsHeaders });
+         }
+      }
+
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
       
       if (inquiry.client_id && inquiry.client_id !== 'guest') {
@@ -250,6 +271,27 @@ export const directInquiryController = {
       `).bind(inquiryId, currentUserId).first() as any;
 
       if (!inquiryData) throw new Error('找不到該訂單或權限不足');
+
+      // 🌟 新增：轉化為自由單前的活躍額度卡控
+      const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
+      const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
+      const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
+      
+      if (!isPro && !isTrial) {
+         const { results: countRes } = await env.commission_db.prepare(`
+            SELECT COUNT(*) as count FROM Commissions 
+            WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
+         `).bind(currentUserId).all();
+         
+         const usedCount = (countRes[0]?.count as number) || 0;
+         if (usedCount >= 3) {
+            return new Response(JSON.stringify({ 
+              success: false, 
+              error: 'QUOTA_EXCEEDED', 
+              message: '您的活躍委託單已達免費版上限，無法轉為自由單。請先結案舊訂單或升級專業版。' 
+            }), { status: 403, headers: corsHeaders });
+         }
+      }
 
       const commissionId = `CM-${Date.now().toString().slice(-6)}`;
       

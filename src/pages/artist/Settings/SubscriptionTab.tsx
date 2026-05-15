@@ -106,7 +106,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
-            <li>📋 每月可建立 <strong>3 筆</strong> 委託單 (含許願池訂單)</li>
+            <li>📋 活躍工作欄位：同時進行 <strong>3 筆</strong> (結案即釋放)</li>
             <li>✨ 許願池：投遞徵委託區 <strong>5 次</strong> / 月</li>
             <li>✨ 許願池：接委託區發佈 <strong>1 則</strong> / 月</li>
             <li>🖼️ 作品集展示上限 <strong>6 張</strong></li>
@@ -130,7 +130,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#A0978D', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
-            <li>💎 試用期間可建立 <strong>20 筆</strong> 委託單</li>
+            <li>💎 活躍工作欄位：同時進行 <strong>20 筆</strong> 委託單</li>
             <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制</li>
             <li>💎 <strong>解鎖</strong> 最高 20 張作品展示</li>
             <li>💎 <strong>解鎖</strong>「接委託區」開放展示 10 個項目</li>
@@ -163,7 +163,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#A0978D', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
-            <li>👑 建立委託單數量 <strong>99張</strong></li>
+            <li>👑 活躍工作欄位上限 <strong>無限制</strong></li>
             <li>👑 許願池投遞與發布次數<strong>無限制*</strong></li>
             <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
             <li>👑 <strong>解鎖</strong>「接委託區」開放展示 30 個項目</li>
