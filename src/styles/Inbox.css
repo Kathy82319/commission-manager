@@ -4,11 +4,13 @@
 .inbox-layout {
   display: flex;
   height: calc(100vh - 64px); 
+  width: 100%;
   max-width: 1600px;
   margin: 0 auto;
   background-color: #FBFBF9;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ================== 左側複合式清單欄 ================== */
@@ -20,7 +22,7 @@
   flex-direction: column;
   overflow-y: auto;
   flex-shrink: 0;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
 
@@ -216,6 +218,7 @@
   background-color: #FBFBF9;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .mobile-inbox-header {
@@ -243,14 +246,23 @@
 .inbox-content-wrapper {
   padding: 24px;
   flex: 1;
+  box-sizing: border-box;
+  max-width: 100vw; /* 防止超出螢幕 */
+  overflow-x: hidden;
 }
 
+/* ======== 手機版側邊欄遮罩 ======== */
 .sidebar-overlay {
   position: fixed;
-  inset: 0;
-  background-color: rgba(26, 20, 18, 0.5);
-  z-index: 45;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(26, 20, 18, 0.6);
+  z-index: 990; /* 確保在所有內容之上，但在側邊欄之下 */
   display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -258,17 +270,23 @@
   .inbox-content-wrapper { padding: 16px; }
 
   .inbox-master-sidebar {
-    position: fixed;
+    position: fixed !important;
     top: 0;
     left: 0;
     bottom: 0;
-    height: 100vh;
-    box-shadow: 4px 0 16px rgba(0,0,0,0.1);
+    height: 100%;
+    width: 85vw !important; /* 縮小佔比，留出點擊遮罩的空間 */
+    max-width: 320px;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
     transform: translateX(-100%);
+    z-index: 999 !important; /* 最高層級 */
   }
 
   .inbox-master-sidebar.open { transform: translateX(0); }
-  .sidebar-overlay.open { display: block; }
+  .sidebar-overlay.open { 
+    display: block; 
+    opacity: 1;
+  }
 }
 
 .inbox-modal-overlay {
@@ -279,7 +297,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px; /* 縮小 Padding 爭取手機顯示空間 */
+  box-sizing: border-box;
 }
 .inbox-modal-content {
   background: #FFFFFF;
@@ -290,4 +309,10 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   max-height: 90vh;
   overflow-y: auto;
+  box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  .inbox-modal-content {
+    padding: 20px;
+  }
 }
