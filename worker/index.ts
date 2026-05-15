@@ -142,8 +142,13 @@ export default {
           return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
 
+        // 🌟 修正：補上 GET messages 時遺漏的 currentUserId 參數
         if (targetId && subAction === "messages") {
-          if (request.method === "GET") return inquiryController.getMessages(targetId, env, corsHeaders);
+          if (request.method === "GET") {
+            const authErr = requireAuth(currentUserId, corsHeaders);
+            if (authErr) return authErr;
+            return inquiryController.getMessages(targetId, currentUserId!, env, corsHeaders);
+          }
           if (request.method === "POST") {
             const authErr = requireAuth(currentUserId, corsHeaders);
             if (authErr) return authErr;
