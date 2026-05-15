@@ -325,10 +325,10 @@ export const InquiryWorkspace: React.FC = () => {
     alert('協議草稿已儲存！');
   };
 
-  // 🌟 修正順序：先送出系統提示，確保成功寫入對話紀錄，再改變後端狀態
   const handlePropose = async () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
-       return alert('抱歉，您本月的建單額度已滿。請升級為專業版以解鎖！');
+       // 🌟 更新前端提示文案為活躍訂單概念
+       return alert('抱歉，您的活躍委託單已達免費版上限。請先結案舊訂單或升級專業版以解鎖！');
     }
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
@@ -347,7 +347,6 @@ export const InquiryWorkspace: React.FC = () => {
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
-  // 🌟 修正順序：先送出系統提示，再改變後端狀態
   const handleRejectProposal = async () => {
     if (!window.confirm("確定要退回提案，讓繪師重新修改合約與規格嗎？")) return;
     try {
@@ -365,7 +364,6 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  // 🌟 修正順序：最關鍵的 Finalize，先送系統提示才不會被後端擋住
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
@@ -601,7 +599,8 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
                 {isArtist && artistQuota && (
-                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
+                   // 🌟 核心更新：將「本月建單」變更為「活躍訂單」的對應用語
+                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `活躍訂單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
               </div>
             </div>

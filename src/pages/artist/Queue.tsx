@@ -118,8 +118,6 @@ export function Queue() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   
   const [myId, setMyId] = useState<string>('');
-  
-  // 🌟 記錄完整的使用者資料，防止更新時後端將未包含的欄位 (如頭像、簡介) 清空
   const [userData, setUserData] = useState<any>({});
   const [fullProfileSettings, setFullProfileSettings] = useState<any>({});
   const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
@@ -152,7 +150,7 @@ export function Queue() {
       .then(data => { 
         if (data.success) {
           setMyId(data.data.id); 
-          setUserData(data.data); // 🌟 保留使用者的所有原始資料 (包含 avatar_url, bio 等)
+          setUserData(data.data); 
           
           try {
             const settings = typeof data.data.profile_settings === 'string' 
@@ -192,7 +190,6 @@ export function Queue() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        // 🌟 展開 userData 確保 bio 與 avatar_url 一同送出
         body: JSON.stringify({ 
           ...userData,
           profile_settings: JSON.stringify(updatedProfileSettings) 
@@ -223,7 +220,6 @@ export function Queue() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        // 🌟 展開 userData 確保 bio 與 avatar_url 一同送出
         body: JSON.stringify({ 
           ...userData,
           profile_settings: JSON.stringify(updatedProfileSettings) 
@@ -287,7 +283,6 @@ export function Queue() {
     if (myId) {
       fetchQueue(); 
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId]); 
 
   useEffect(() => {
@@ -423,11 +418,11 @@ export function Queue() {
     return order.contact_memo ? order.contact_memo : '(未綁定)';
   };
 
-  // 🌟 額度限制判斷邏輯
+  // 🌟 額度限制判斷邏輯修正：只計算該使用者作為「繪師」且活躍的訂單
   const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
   const currentLimit = planLimits[userData?.plan_type || 'free'] || 3;
-  // commissions 陣列在 fetchQueue 已經過濾掉 completed 和 cancelled，所以長度就是活躍訂單數
-  const isQuotaFull = commissions.length >= currentLimit;
+  const activeArtistCommissions = commissions.filter(c => c.artist_id === myId);
+  const isQuotaFull = activeArtistCommissions.length >= currentLimit;
 
   return (
     <div className="queue-container">
@@ -455,7 +450,6 @@ export function Queue() {
             <option value="all">全部月份</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-          {/* 🌟 根據額度狀態更新建立按鈕 UI 與行為 */}
           <button 
             onClick={() => {
               if (isQuotaFull) {
