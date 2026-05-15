@@ -21,7 +21,6 @@ const getMaskedName = (name: string) => {
   return name[0] + '*'.repeat(len - 2) + name[len - 1];
 };
 
-// 🌟 新增：用於重新排序的輔助函式
 const getTime = (dateStr?: string) => {
   if (!dateStr) return 0;
   let str = dateStr.trim();
@@ -58,7 +57,7 @@ interface ProfileSettings {
     show_client_id: boolean;
     show_project_name: boolean;
     date_column_label?: string; 
-    custom_order?: string[]; // 🌟 新增：接收資料庫存的排序陣列
+    custom_order?: string[];
   };
   tab_order?: string[]; 
   terms_of_service?: string; 
@@ -360,7 +359,6 @@ export function PublicProfile() {
               const queueRes = await fetch(`${API_BASE}/api/public/queue/${currentArtistId}`);
               const queueData = await queueRes.json();
               if (queueData.success) {
-                // 🌟 核心修改點：依據資料庫存的排序陣列來排序 publicQueue
                 let list = queueData.data;
                 const customOrder = parsedSettings.queue_settings.custom_order || [];
                 
@@ -582,7 +580,6 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      
       <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
@@ -668,7 +665,6 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 Queue 區塊 */}
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
@@ -781,14 +777,11 @@ export function PublicProfile() {
         </main>
       </div>
 
-      
       {selectedShowcase && (
         <div className="lightbox-overlay showcase-modal-overlay" onClick={handleCloseLightbox}>
           <button className="lightbox-close" onClick={handleCloseLightbox}><X size={32}/></button>
           
           <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            
-            
             {modalMode === 'view' && (
               <>
                 <div className="showcase-cover">
@@ -800,7 +793,6 @@ export function PublicProfile() {
                     {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
                   </div>
 
-                  
                   {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
                     <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
                       🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
@@ -817,7 +809,6 @@ export function PublicProfile() {
                     <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
                   </div>
 
-                  
                   {hasForm && (
                     <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
                       <button 
@@ -838,7 +829,6 @@ export function PublicProfile() {
               </>
             )}
 
-            
             {modalMode === 'form1' && (
               <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
@@ -846,8 +836,6 @@ export function PublicProfile() {
                 </h2>
                 
                 <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
-                  
-                  
                   {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
                     <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
@@ -878,7 +866,6 @@ export function PublicProfile() {
               </div>
             )}
 
-            
             {modalMode === 'form2' && (
               <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column' }}>
                 <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
