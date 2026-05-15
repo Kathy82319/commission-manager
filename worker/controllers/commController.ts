@@ -114,7 +114,6 @@ export const commController = {
     if (!user) return createJsonResponse({ success: false, error: "找不到使用者資料" }, 404, corsHeaders);
     if (user.role === 'deleted') return createJsonResponse({ success: false, error: "帳號已停用" }, 403, corsHeaders);
 
-    // 🌟 核心改動：將原本 COUNT(*) 的條件，加上限制「只計算未結案且未取消的活躍訂單」
     const activeCountQuery = `
       SELECT COUNT(*) as total FROM Commissions 
       WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
@@ -175,6 +174,16 @@ export const commController = {
     const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, status FROM Commissions WHERE id = ?").bind(id).all();
     if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     const comm = check[0] as any;
+
+    // 🌟 核心改動：策略 B 實作（狀態單向流動唯讀卡控）
+    // 如果當前單據在資料庫中已經是已結案（completed）或已取消（cancelled），則封鎖一切修改行為
+    if (comm.status === 'completed' || comm.status === 'cancelled') {
+      return createJsonResponse({ 
+        success: false, 
+        error: "ORDER_LOCKED", 
+        message: "此委託單已結案或作廢，系統已將其轉為唯讀歷史紀錄，無法再進行任何更動。" 
+      }, 403, corsHeaders);
+    }
 
     let isBinding = false;
     if (!comm.client_id && currentUserId) {
@@ -256,7 +265,7 @@ export const commController = {
   },
 
   async getDeliverables(id: string, pathType: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, order_date, origin_source FROM Commissions WHERE id = ?").bind(id).all();
+    const { Antiquities: check } = await env.commission_db.prepare("SELECT artist_id, client_id, order_date, origin_source FROM Commissions WHERE id = ?").bind(id).all();
     if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     
     const comm = check[0] as any;

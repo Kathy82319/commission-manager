@@ -150,7 +150,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
             {selectedInq.guest_contact_info}
           </div>
           <div style={{ fontSize: '13px', color: '#B45309', marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #FDE68A' }}>
-            💡 提示：此為免登入訪客，無法使用站內聊天室。若雙方於站外確認完畢，可點擊下方「建立自由模式委託單」收錄至系統中管理。
+            💡 提示：此為訪客訂單，無法使用站內聊天室。若雙方於站外確認完畢，可點擊下方「建立自由模式委託單」收錄至系統中管理。
           </div>
         </div>
       )}
