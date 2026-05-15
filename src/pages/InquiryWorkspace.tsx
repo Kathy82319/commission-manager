@@ -413,14 +413,12 @@ export const InquiryWorkspace: React.FC = () => {
 
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
-      
-      {/* 💡 嚴格限制外層的高度，防止視窗無限擴張 */}
-      <div style={{ display: 'flex', width: '100%', height: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+      {/* ⚠️ 撤銷錯誤修改：完全退回原始結構 */}
+      <div style={{ display: 'flex', width: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative' }}>
         
-        {/* 💡 鎖死聊天區塊的高度，讓它能在內部產生捲軸 */}
-        <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative', height: '100%', minHeight: 0, overflow: 'hidden' }}>
-          
-          <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, flexShrink: 0 }}>
+        {/* ⚠️ 撤銷錯誤修改：完全退回原始結構 */}
+        <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
+          <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
               <button className="iw-back-btn" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#A0978D', fontSize: '15px', cursor: 'pointer', fontWeight: 'bold', flexShrink: 0 }}>← 返回</button>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -440,7 +438,8 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </header>
 
-          <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative', minHeight: 0 }}>
+          <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative' }}>
+            
             {isAccepted && (
               <div style={{ backgroundColor: '#EBF5EB', color: '#4E7A5A', padding: '12px', borderRadius: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', border: '1px solid #C8E6C9', marginBottom: '8px' }}>
                 🎉 委託單已正式成立！您可以繼續在此與對方討論。
@@ -475,8 +474,7 @@ export const InquiryWorkspace: React.FC = () => {
             </button>
           )}
 
-          {/* 💡 加上 flexShrink: 0 確保輸入框絕對不會被壓扁，永遠佔據底部 */}
-          <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
+          <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
             <button 
               onClick={() => fileInputRef.current?.click()} 
@@ -492,10 +490,9 @@ export const InquiryWorkspace: React.FC = () => {
           </footer>
         </div>
 
-        {/* 💡 側邊欄同樣鎖定高度 */}
         {!isAccepted && (
-          <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', height: '100%', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20, overflow: 'hidden', flexShrink: 0 }}>
-            <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', flexShrink: 0 }}>
+          <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
                 <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269' }}>
@@ -510,7 +507,7 @@ export const InquiryWorkspace: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', minHeight: 0 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
               <div style={{ backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0' }}>🔍 初始需求單 (不可篡改)</h4>
                 <div className={isTrajectoryExpanded ? "" : "line-clamp-3"} style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.6', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -616,7 +613,7 @@ export const InquiryWorkspace: React.FC = () => {
 
             </div>
 
-            <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+            <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {isEditableByArtist && (
                 <>
                   <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer' }}>💾 儲存協議草稿</button>
@@ -640,11 +637,10 @@ export const InquiryWorkspace: React.FC = () => {
 
         {showFinalModal && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
-            {/* 💡 確保彈窗不會無止盡長高 */}
-            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh', minHeight: 0 }}>
+            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
               
-              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px', minHeight: 0 }}>
+              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
                 
                 <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
@@ -690,7 +686,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', flexShrink: 0 }}>
+              <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB' }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '20px' }}>
                   <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px' }} />
                   <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold', lineHeight: '1.4' }}>我已詳細閱讀並同意以上委託規格與繪師協議。</span>
