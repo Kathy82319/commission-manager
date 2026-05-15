@@ -244,7 +244,7 @@ export const inquiryController = {
       const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
       
       if (!isPro && !isTrial) {
-         const { results: countRes } = await env.commission_db.prepare(`
+         const { Antiqures: countRes } = await env.commission_db.prepare(`
             SELECT COUNT(*) as count FROM Commissions 
             WHERE artist_id = ? AND strftime('%Y-%m', order_date) = strftime('%Y-%m', 'now')
          `).bind(actualArtistId).all();
@@ -317,9 +317,16 @@ export const inquiryController = {
         tosText
       ).run();
 
-      // 🌟 修正：寫入真實資料庫歷程紀錄（許願池建單）
+      // 🌟 修正：補上真實歷史紀錄（第一條：追溯繪師當初送出提案草案的時間點）
       await env.commission_db.prepare(
-        "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'create', '委託人已確認需求並建立委託單')"
+        `INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) 
+         VALUES (?, ?, 'artist', 'create', '繪師已正式提出合作協議與委託規格草案', ?)`
+      ).bind(crypto.randomUUID(), commissionId, inquiryData.latest_update_at).run();
+
+      // 🌟 修正：補上真實歷史紀錄（第二條：當下案主點擊確認，內含「綁定訂單」觸發前端過濾器）
+      await env.commission_db.prepare(
+        `INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) 
+         VALUES (?, ?, 'client', 'bind', '委託人已同意委託協議並完成綁定訂單')`
       ).bind(crypto.randomUUID(), commissionId).run();
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
@@ -388,8 +395,6 @@ export const directInquiryController = {
         return new Response(JSON.stringify({ success: false, error: '缺少必要欄位' }), { status: 400, headers: corsHeaders });
       }
 
-      // 🌟 1. 後端自己去抓 TOS，不信任前端傳來的 tos_snapshot
-      // 優先權：ShowcaseItems.tos_content -> ArtistProfiles.tos_content -> 預設字串
       let finalTosSnapshot = "（無特定協議內容）";
       
       const showcaseRow = await env.commission_db.prepare(`SELECT tos_content FROM ShowcaseItems WHERE id = ?`).bind(showcase_id).first<{ tos_content: string }>();
@@ -608,9 +613,16 @@ export const directInquiryController = {
         draft.bg_type || '', draft.add_ons || '', draft.agreed_memo || '', inquiryData.tos_snapshot || ''
       ).run();
 
-      // 🌟 修正：寫入真實資料庫歷程紀錄（接委託表單成單）
+      // 🌟 修正：補上真實歷史紀錄（第一條：追溯繪師透過接委託表單發出協議草案的時間點）
       await env.commission_db.prepare(
-        "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'create', '委託人已透過接委託表單建立委託單')"
+        `INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) 
+         VALUES (?, ?, 'artist', 'create', '繪師已正式提出客製化需求規格與合約草案', ?)`
+      ).bind(crypto.randomUUID(), commissionId, inquiryData.latest_update_at).run();
+
+      // 🌟 修正：補上真實歷史紀錄（第二條：當下案主點擊同意，內含「綁定訂單」觸發前端過濾器）
+      await env.commission_db.prepare(
+        `INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) 
+         VALUES (?, ?, 'client', 'bind', '委託人已確認表單規格並完成綁定訂單')`
       ).bind(crypto.randomUUID(), commissionId).run();
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
@@ -656,9 +668,10 @@ export const directInquiryController = {
         commissionId, currentUserId, inquiryData.showcase_title || '訪客委託單', origin_source
       ).run();
 
-      // 🌟 修正：寫入真實資料庫歷程紀錄（繪師手動將訪客表單轉自由紀錄模式）
+      // 🌟 修正：補上真實歷史紀錄（自由模式下，直接由繪師方在當下將表單轉入後台）
       await env.commission_db.prepare(
-        "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'artist', 'create', '繪師已將表單轉為自由紀錄單')"
+        `INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) 
+         VALUES (?, ?, 'artist', 'create', '繪師已手動將訪客表單申請轉為後台自由紀錄單')`
       ).bind(crypto.randomUUID(), commissionId).run();
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
