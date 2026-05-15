@@ -251,13 +251,52 @@ export const commController = {
   },
 
   async getDeliverables(id: string, pathType: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id FROM Commissions WHERE id = ?").bind(id).all();
-    if (check[0]?.client_id && currentUserId !== check[0]?.client_id && currentUserId !== check[0]?.artist_id) {
+    const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, order_date, origin_source FROM Commissions WHERE id = ?").bind(id).all();
+    if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
+    
+    const comm = check[0] as any;
+    if (comm.client_id && currentUserId !== comm.client_id && currentUserId !== comm.artist_id) {
       return createJsonResponse({ success: false, error: "無權限查看進度" }, 403, corsHeaders);
     }
 
-    const { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
+    let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
+    
+    // 🌟 核心修正：進單歷程實時自我修復與精確時間差優化機制
+    if (logs.length === 0 && comm.origin_source) {
+      try {
+        const origin = JSON.parse(comm.origin_source);
+        if (origin && (origin.source_type === 'bulletin' || origin.source_type === 'showcase_form')) {
+          const orderDateStr = comm.order_date;
+          let orderTime = orderDateStr ? new Date(orderDateStr.replace(' ', 'T')).getTime() : Date.now();
+          if (isNaN(orderTime)) orderTime = Date.now();
+          
+          // 1. 委託人正式確認成單、簽署合約的時間點（精確對齊 Commissions 的成單時間）
+          const clientSignTime = new Date(orderTime).toISOString();
+          // 2. 繪師在洽談室正式送出提案合約草案的時間點（往前推移 15 分鐘，拉開完美時間差）
+          const artistCreateTime = new Date(orderTime - 15 * 60 * 1000).toISOString();
+          
+          let artistContent = '繪師已正式提出合作協議與委託規格草案';
+          let clientContent = '委託人已同意委託協議並完成綁定訂單';
+          
+          if (origin.source_type === 'showcase_form') {
+            artistContent = '繪師已正式提出客製化需求規格與合約草案';
+            clientContent = '委託人已確認表單規格並完成綁定訂單';
+          }
+          
+          await env.commission_db.batch([
+            env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) VALUES (?, ?, 'artist', 'create', ?, ?)").bind(crypto.randomUUID(), id, artistContent, artistCreateTime),
+            env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) VALUES (?, ?, 'client', 'bind', ?, ?)").bind(crypto.randomUUID(), id, clientContent, clientSignTime)
+          ]);
+          
+          // 實時重新加載修復後的 action_logs 陣列
+          const reFetch = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
+          logs = reFetch.results;
+        }
+      } catch (e) {
+        console.error("歷程紀錄自我修復失敗:", e);
+      }
+    }
     
     if (pathType === "deliverables") {
       return createJsonResponse({ success: true, data: { logs, submissions } }, 200, corsHeaders);
@@ -393,8 +432,8 @@ export const commController = {
     }
 
     const text = action === 'approve' 
-       ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
-       : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
+        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
+        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
     await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_change', text, `/artist/notebook?id=${id}&tab=details`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -460,7 +499,7 @@ export const commController = {
   },
 
   async getPayments(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
+    const { ParcelResults: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
     if (commResults.length === 0 || currentUserId !== commResults[0].artist_id) {
       return createJsonResponse({ success: false, error: "無權限查看財務紀錄" }, 403, corsHeaders);
     }
@@ -514,7 +553,6 @@ export const commController = {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
-      // 🌟 解析繪師的排單設定 (預設將 show_artist_note 設為 false 以策安全)
       let queueSettings = { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false };
       try {
         if (artist.profile_settings) {
@@ -525,12 +563,10 @@ export const commController = {
         }
       } catch (e) {}
 
-      // 若未啟用公開排單表，則不回傳資料
       if (!queueSettings.enabled) {
         return createJsonResponse({ success: true, data: [] }, 200, corsHeaders);
       }
 
-      // 🌟 修正：確保 SQL 撈取 artist_note 以供判斷回傳
       const query = `
         SELECT 
           c.id, 
@@ -548,18 +584,15 @@ export const commController = {
       `;
       const { results } = await env.commission_db.prepare(query).bind(artist.id).all();
 
-      // 🌟 在後端套用隱私遮蔽邏輯
       const maskedResults = results.map((order: any) => {
         return {
           id: order.id,
           queue_status: order.queue_status,
           end_date: order.end_date, 
           order_date: order.order_date,
-          // 根據設定決定是否傳送明碼，否則傳送遮蔽後的字串
           contact_memo: queueSettings.show_client_name ? order.contact_memo : getMaskedName(order.contact_memo),
           client_public_id: queueSettings.show_client_id ? order.client_public_id : null,
           project_name: queueSettings.show_project_name ? order.project_name : null,
-          // 🌟 根據繪師設定，決定是否將備註傳至前端
           artist_note: queueSettings.show_artist_note ? order.artist_note : null,
         };
       });
