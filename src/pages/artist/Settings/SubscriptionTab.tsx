@@ -83,11 +83,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      
-      
-      <div style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '16px', borderRadius: '12px', border: '1px solid #BAE6FD', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-        ✨ 系統公測中：目前全站功能開放免費測試，無需額外開啟試用或訂閱。
-      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
         

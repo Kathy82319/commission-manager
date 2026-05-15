@@ -1,3 +1,4 @@
+// src/pages/artist/Settings/ShowcaseTab.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { QuotaInfo } from '../Settings/types';
 import { ShowcaseFormBuilder, type ShowcaseItem } from '../../../components/ShowcaseFormBuilder';
@@ -20,7 +21,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 20;
-    return 6; 
+    // 🌟 免費版上限設定為 3 個
+    return 3; 
   }, [quotaInfo]);
 
   const fetchItems = useCallback(async () => {
@@ -106,7 +108,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
         {quotaInfo?.plan_type === 'free' 
-          ? `📢 目前您的方案僅公開前 6 項項目。 (目前數量: ${items.length} / 配額: ${limit})`
+          ? `📢 目前您的方案可建立最多 ${limit} 項接委託項目。 (目前數量: ${items.length} / 配額: ${limit})`
           : `📢 您的項目將在個人分頁完整公開展示。 (目前數量: ${items.length} / 配額: ${limit})`
         }
       </div>
@@ -149,14 +151,13 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             return (
               <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 
-                
-                {(quotaInfo?.plan_type === 'free' ? index < 6 : index < limit) && (
+                {/* 🌟 修正了這裡原本綁定 index < 6 的硬寫邏輯，改為使用 limit 變數 */}
+                {index < limit && (
                   <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
                     公開展示中
                   </div>
                 )}
 
-                
                 {isFull && (
                   <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#EF4444', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, display: 'flex', alignItems: 'center', gap: '4px' }}>
                     🛑 已滿單
@@ -173,7 +174,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                 <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>{item.title}</div>
                   <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '14px' }}>{item.price_info || '未定價'}</div>
-                  
                   
                   {item.max_orders > 0 && (
                     <div style={{ fontSize: '12px', color: '#7A7269', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>

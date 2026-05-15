@@ -332,7 +332,7 @@ export function PublicProfile() {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
       try {
-        const API_BASE = import.meta.env.vite_api_base_url || import.meta.env.VITE_API_BASE_URL || '';
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
         const userRes = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
         const userData = await userRes.json();
         const showcaseRes = await fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`);
@@ -491,9 +491,12 @@ export function PublicProfile() {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
+    // 🌟 核心修正：將 Showcase 移出 !isFreePlan 區塊，讓免費版使用者也能公開顯示接委託區
+    if (!isHidden('showcase') && showcaseItems.length > 0) {
+      tabs.push({ id: 'showcase', label: '接委託展示區' });
+    }
+
     if (!isFreePlan) {
-      if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
-      
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {
           if (!isHidden(sec.id) && sec.content) {
@@ -516,7 +519,6 @@ export function PublicProfile() {
     return tabs;
   }, [settings, showcaseItems, artist]);
 
-  // 🌟 網址驅動與狀態混合衍生邏輯
   const currentTab = useMemo(() => {
     if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) {
       return 'showcase';
@@ -531,7 +533,6 @@ export function PublicProfile() {
     });
   };
 
-  // 🌟 當網址上有卡片 ID 且商品清單載入完畢後，主動綁定 Lightbox 資料
   useEffect(() => {
     if (showcaseIdParam && showcaseItems.length > 0) {
       const found = showcaseItems.find(item => item.id === showcaseIdParam);

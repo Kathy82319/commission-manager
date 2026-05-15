@@ -238,9 +238,10 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
+  // 🌟 將 'showcase' 加入免費用戶可存取的 Tab 列表中
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'bulletin_settings', 'queue_settings'
+    'bulletin_settings', 'queue_settings', 'showcase'
   ];
   
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
