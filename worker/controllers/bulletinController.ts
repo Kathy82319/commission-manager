@@ -180,7 +180,8 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 3);
+      // 💡 此處已由 + 3 變更為 + 30，新發布的文章將會有 30 天的存活期！
+      expiresAt.setDate(expiresAt.getDate() + 30);
 
       await env.commission_db.prepare(
         `INSERT INTO Bulletins (id, client_id, title, content, tags, payment_methods, budget_min, budget_max, schedule_type, specific_date, ref_image_key, category, expires_at, status)
