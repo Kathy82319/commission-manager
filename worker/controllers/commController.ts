@@ -203,9 +203,10 @@ export const commController = {
 
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
-        if (isBinding && key === 'client_id') {
+        // 🌟 核心修正：若當前正處於 isBinding 狀態（初次簽署），特別放行讓委託人更新 status 與合約快照
+        if (isBinding && (key === 'client_id' || key === 'status' || key === 'agreed_tos_snapshot')) {
           updates.push(`${key} = ?`);
-          params.push(sanitizeAndLimit(body[key], fieldLimits[key]));
+          params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : sanitizeAndLimit(body[key], fieldLimits[key]));
         } else if (isArtist && !clientAllowedFields.includes(key)) {
           updates.push(`${key} = ?`);
           params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : (typeof body[key] === 'string' ? sanitizeAndLimit(body[key], fieldLimits[key]) : body[key]));
@@ -262,7 +263,7 @@ export const commController = {
     let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
     
-    // 🌟 核心修正：進單歷程實時自我修復與精確時間差優化機制
+    // 🌟 進單歷程實時自我修復與精確時間差優化機制
     if (logs.length === 0 && comm.origin_source) {
       try {
         const origin = JSON.parse(comm.origin_source);
@@ -271,9 +272,7 @@ export const commController = {
           let orderTime = orderDateStr ? new Date(orderDateStr.replace(' ', 'T')).getTime() : Date.now();
           if (isNaN(orderTime)) orderTime = Date.now();
           
-          // 1. 委託人正式確認成單、簽署合約的時間點（精確對齊 Commissions 的成單時間）
           const clientSignTime = new Date(orderTime).toISOString();
-          // 2. 繪師在洽談室正式送出提案合約草案的時間點（往前推移 15 分鐘，拉開完美時間差）
           const artistCreateTime = new Date(orderTime - 15 * 60 * 1000).toISOString();
           
           let artistContent = '繪師已正式提出合作協議與委託規格草案';
@@ -289,7 +288,6 @@ export const commController = {
             env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) VALUES (?, ?, 'client', 'bind', ?, ?)").bind(crypto.randomUUID(), id, clientContent, clientSignTime)
           ]);
           
-          // 實時重新加載修復後的 action_logs 陣列
           const reFetch = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
           logs = reFetch.results;
         }
@@ -499,7 +497,8 @@ export const commController = {
   },
 
   async getPayments(id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { ParcelResults: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
+    // 🌟 修正：型態解構綁定已由 ParcelResults 改回正軌的 results
+    const { results: commResults } = await env.commission_db.prepare("SELECT artist_id FROM Commissions WHERE id = ?").bind(id).all();
     if (commResults.length === 0 || currentUserId !== commResults[0].artist_id) {
       return createJsonResponse({ success: false, error: "無權限查看財務紀錄" }, 403, corsHeaders);
     }
