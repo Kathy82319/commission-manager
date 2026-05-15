@@ -441,10 +441,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   <span 
                     className="font-bold text-[#b45309]" 
                     style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
-                    title={selectionType === 'curated' ? `預計招收 ${maxSlots} 名 (繪師會選設定接搞)` : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`}
+                    title={selectionType === 'curated' ? `預計收 ${maxSlots} 名 (繪師選設定接搞)` : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`}
                   >
                     {selectionType === 'curated' 
-                      ? `預計招收 ${maxSlots} 名 (💡繪師會選設定接搞)` 
+                      ? `預計收 ${maxSlots} 名 (💡繪師選設定接稿)` 
                       : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`
                     }
                   </span>

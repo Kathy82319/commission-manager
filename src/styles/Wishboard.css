@@ -84,7 +84,7 @@ body {
 .wish-expiry-standalone {
   display: flex; align-items: center; justify-content: center;
   padding: 6px 16px; background-color: #f1f5f9; color: #475569;
-  border-radius: 20px; font-size: 13px; font-weight: 800;
+  border-radius: 20px; font-size: 11px; font-weight: 800;
   margin: 16px 20px 12px 20px; /* 這裡的 margin-bottom 就是圖片往下的間距 */
   align-self: flex-start;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
