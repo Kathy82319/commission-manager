@@ -12,7 +12,6 @@
   box-sizing: border-box;
 }
 
-/* ================== 左側複合式清單欄 ================== */
 .inbox-master-sidebar {
   width: 340px; 
   background-color: #FFFFFF;
@@ -62,7 +61,7 @@
   color: #5D4A3E;
 }
 
-/* 🌟 新增：過濾開關區塊 */
+
 .inbox-filter-container {
   padding: 16px 20px;
   background-color: #FFFFFF;
@@ -207,7 +206,7 @@
 .mini-badge.declined { background: #F4F0EB; color: #A0978D; border: 1px solid #DED9D3; }
 .mini-badge.bulletin { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
 
-/* ================== 右側主畫面 ================== */
+
 .inbox-main-content {
   flex: 1;
   overflow-y: auto;
@@ -260,7 +259,7 @@
     left: 0;
     bottom: 0;
     height: 100%;
-    /* 這裡不再使用 100%，改交由 inline style 控制 */
+    
     box-shadow: 4px 0 24px rgba(0,0,0,0.15);
     transform: translateX(-100%);
     z-index: 999 !important;

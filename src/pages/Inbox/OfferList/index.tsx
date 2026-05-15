@@ -60,7 +60,7 @@ export const OfferList: React.FC<OfferListProps> = ({
         </div>
       )}
 
-      {/* 🌟 核心：改成 CSS Grid 網格佈局 */}
+      
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', 

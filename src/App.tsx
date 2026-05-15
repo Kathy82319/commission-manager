@@ -42,15 +42,12 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 身分驗證路由 */}
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         
-        {/* 繪師後台路由 */}
         <Route path="/artist" element={<ArtistLayout />}>
           <Route index element={<Navigate to="queue" replace />} />
           <Route path="queue" element={<Queue />} />
-          {/* 🌟 已經移除獨立的 QuoteBuilder 路由，因為它現在作為彈窗運作 */}
           <Route path="customers" element={<Customers />} />
           <Route path="customer/:id" element={<CustomerDetail />} />
           <Route path="notebook" element={<Notebook />} />
@@ -59,7 +56,6 @@ export function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* 案主後台路由 */}
         <Route path="/client" element={<ClientLayout />}>
           <Route path="home" element={<Navigate to="/client/orders" replace />} />
           <Route path="orders" element={<ClientOrders />} />
@@ -70,15 +66,12 @@ export function App() {
           <Route path="favorites" element={<ArtistManager />} />
         </Route>
 
-        {/* 洽談與聊天室路由 */}
         <Route path="/quote/:id" element={<ClientForm />} />
         <Route path="/workspace" element={<Workspace />} />
         <Route path="/workspace/:id" element={<Workspace />} />
 
-        {/* 公開頁面群組 (套用 PublicLayout) */}
         <Route element={<PublicLayout />}>
           <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=success" replace />} />
-          {/* 首頁即為許願池 */}
           <Route path="/" element={<Wishboard />} />
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
           
@@ -90,13 +83,10 @@ export function App() {
           
         </Route>
 
-        {/* 繪師個人首頁 (動態路由) */}
           <Route path="/:artistId" element={<PublicProfile />} />
         
-        {/* 管理員後台 (路徑已做簡單遮掩) */}
         <Route path="/adminbalabababa" element={<Dashboard />} />
 
-        {/* 萬用路由：找不到頁面時一律回首頁*/}
         <Route path="*" element={<Navigate to="/" replace />} />
         
       </Routes>

@@ -190,7 +190,7 @@
 
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   
-  /* 🌟 修改點 1：調整 Grid 比例，為第 4 欄 (自訂日期) 騰出不重疊的空間 */
+  
   .queue-table thead tr {
     display: grid;
     grid-template-columns: 45px 1fr 65px 45px 65px;
@@ -240,7 +240,7 @@
     width: 100%;
   }
 
-  /* 🌟 未展開的狀態：全面改用 nth-child 防禦資料欄位名稱重複或動態變化 */
+  
   .queue-table tr:not(.is-expanded) .workflow-badge-wrapper {
     display: none !important;
   }
@@ -283,7 +283,7 @@
 
   .queue-table tr:not(.is-expanded) .date-input { display: none !important; }
   
-  /* 🌟 讓第 4 欄 (自訂日期) 的文字強制顯現 */
+  
   .queue-table tr:not(.is-expanded) td:nth-child(4) .date-text-display {
     display: block !important;
     font-size: 11px !important; color: #A0978D !important; text-align: center; width: 100%;
@@ -297,7 +297,7 @@
     letter-spacing: -0.3px; 
   }
 
-  /* 🌟 展開的狀態：全面改用 nth-child 精準控制 */
+  
   .queue-table tbody tr.is-expanded {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
@@ -316,19 +316,19 @@
     width: 100%; align-items: flex-start;
   }
 
-  /* 使用 attr(data-label) 動態抓取 React 給的欄位名稱 */
+  
   .queue-table tr.is-expanded td::before {
     content: attr(data-label); font-size: 12px; color: #A0978D; margin-bottom: 6px; display: block; font-weight: bold; text-align: left; width: 100%;
   }
   
-  /* 隱藏第1欄與第2欄的標題字 */
+  
   .queue-table tr.is-expanded td:nth-child(2)::before,
   .queue-table tr.is-expanded td:nth-child(1)::before { display: none; }
 
-  /* 完全隱藏第1欄 (建立日期) */
+  
   .queue-table tr.is-expanded td:nth-child(1) { display: none; }
   
-  /* 委託人資訊滿版 */
+  
   .queue-table tr.is-expanded td:nth-child(2) { 
     grid-column: 1 / -1; padding-bottom: 12px; border-bottom: 1px dashed #F0ECE7; margin-bottom: 4px;
   }

@@ -1,6 +1,6 @@
 /* src/styles/ClientLayout.css */
 
-/* --- 佈局架構 --- */
+
 .client-layout-wrapper {
   min-height: 100vh;
   background-color: #f9fafb;
@@ -33,7 +33,6 @@
   justify-content: center;
 }
 
-/* --- 左側邊欄 (手機版預設為隱藏的側滑抽屜) --- */
 .client-sidebar {
   position: fixed;
   top: 0;
@@ -53,7 +52,7 @@
   transform: translateX(0);
 }
 
-/* 手機版側邊欄遮罩 */
+
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -143,7 +142,7 @@
   background-color: #e5e7eb;
 }
 
-/* --- 右側主內容區 --- */
+
 .client-main-container {
   flex: 1;
   display: flex;
@@ -174,7 +173,7 @@
   flex-wrap: wrap;
 }
 
-/* 頂部導覽列與通知鈴鐺樣式 */
+
 .client-top-header {
   height: 60px;
   background: white;

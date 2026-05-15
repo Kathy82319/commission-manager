@@ -210,7 +210,7 @@ export const Inbox: React.FC = () => {
   return (
     <div className="inbox-layout">
       
-      {/* 🌟 核心修正 1：絕對生效的內聯樣式遮罩 */}
+      
       {showMobileSidebar && (
         <div 
           style={{ 
@@ -221,7 +221,7 @@ export const Inbox: React.FC = () => {
         />
       )}
 
-      {/* 🌟 核心修正 2：強制覆蓋側邊欄寬度，確保不會佔滿全螢幕 */}
+      
       <div 
         className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}
         style={showMobileSidebar ? { transform: 'translateX(0)', width: '85vw', maxWidth: '320px', zIndex: 999 } : {}}
@@ -230,7 +230,7 @@ export const Inbox: React.FC = () => {
           <h1 className="inbox-sidebar-title">收件匣</h1>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
-            {/* 🌟 核心修正 3：加入實體的關閉按鈕 */}
+            
             {showMobileSidebar && (
               <button 
                 onClick={() => setShowMobileSidebar(false)} 
@@ -242,8 +242,8 @@ export const Inbox: React.FC = () => {
           </div>
         </div>
 
-        {/* ... (過濾器與清單內容皆不變) ... */}
-        {/* 🌟 切換開關區塊 */}
+        
+        
         <div className="inbox-filter-container">
           <div className="filter-toggle-box">
             <button className={`filter-tab-btn ${!showArchived ? 'active' : ''}`} onClick={() => setShowArchived(false)}>
@@ -412,7 +412,7 @@ export const Inbox: React.FC = () => {
         </div>
       </div>
 
-      {/* ========== 原有的 Modals ========== */}
+      
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
            <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>

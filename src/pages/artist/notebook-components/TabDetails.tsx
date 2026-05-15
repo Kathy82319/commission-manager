@@ -89,7 +89,7 @@ export function TabDetails({
   return (
     <div className="tab-details-container">
       
-      {/* 財務與收款狀態 */}
+      
       <div className="section-card">
         <div className="section-header">
           <h3 className="section-title">財務與收款狀態</h3>
@@ -145,7 +145,7 @@ export function TabDetails({
         </div>
       </div>
 
-      {/* 初始需求單 / 媒合軌跡 */}
+      
       {originData && (
         <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
@@ -215,7 +215,7 @@ export function TabDetails({
         </div>
       )}
 
-      {/* 委託單細項 */}
+      
       <div className="section-card">
         <div className="section-header-no-border">
           <h3 className="section-title">委託單細項</h3>
@@ -254,7 +254,7 @@ export function TabDetails({
           {renderRequestField('附加項目：', 'add_ons')}
         </div>
 
-        {/* 📝 最終確認規格 / 備忘錄 */}
+        
         {(selectedOrder.agreed_memo || editData.agreed_memo) && (
           <div className="detailed-settings-wrapper">
             <span className="field-label" style={{ color: '#4A7294' }}>📝 最終確認規格 / 備忘錄 (雙方共識)：</span>

@@ -118,9 +118,6 @@ export const userController = {
     return new Response(JSON.stringify({ success: true, data: user }), { status: 200, headers: corsHeaders });
   },
 
-  /**
-   * 更新使用者設定 (PATCH /api/users/:id)
-   */
   async updateUser(request: Request, userIdParam: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const targetId = userIdParam === "me" ? currentUserId : userIdParam;
 
@@ -133,7 +130,6 @@ export const userController = {
 
     const body: any = await request.json();
     
-    // 🌟 1. 動態解析 Profile Settings
     let settings: any = null;
     let hasSettingsUpdate = false;
     

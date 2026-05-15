@@ -55,7 +55,7 @@
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease-in-out;
-  z-index: 1000; /* 提升層級 */
+  z-index: 1000; 
 }
 
 .sidebar-header {
@@ -65,7 +65,7 @@
   flex-direction: column !important;
   align-items: flex-start !important;
   text-align: left !important;
-  position: relative; /* 為了讓關閉按鈕定位 */
+  position: relative; 
 }
 
 .app-sidebar .sidebar-nav {
@@ -102,7 +102,6 @@
   gap: 10px;
 }
 
-/* 關閉按鈕預設隱藏 */
 .mobile-close-btn { display: none; }
 
 /* ==========================================================================
@@ -187,7 +186,6 @@
   .mobile-close-btn { display: none !important; }
 }
 
-/* 其他共用元件 */
 .sidebar-action-btn {
   width: 100%;
   padding: 10px;

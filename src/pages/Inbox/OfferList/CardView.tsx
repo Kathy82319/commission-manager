@@ -193,7 +193,7 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 彈窗修復：優化 flex 與 minWidth 避免手機版內容被擠到看不見 */}
+      
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
           <div 

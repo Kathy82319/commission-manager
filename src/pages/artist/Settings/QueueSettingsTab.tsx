@@ -84,7 +84,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
               />
               顯示項目名稱 <span style={{ color: '#A0978D', fontSize: '12px' }}>(取消勾選將一律顯示為 "私人委託項目")</span>
             </label>
-            {/* 🌟 新增：備註欄位顯示開關 */}
+            
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#5D4A3E' }}>
               <input 
                 type="checkbox" 

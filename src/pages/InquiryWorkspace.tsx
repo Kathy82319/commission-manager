@@ -653,7 +653,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </button>
               </div>
 
-              {/* 核心參數編輯區 */}
+              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -719,7 +719,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              {/* 雙方備忘錄 */}
+              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                 <textarea 
@@ -732,7 +732,7 @@ export const InquiryWorkspace: React.FC = () => {
                 />
               </div>
 
-              {/* 繪師專屬協議條款編輯器 (TOS) */}
+              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0, flexShrink: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>

@@ -463,12 +463,12 @@ export function Notebook() {
                 </div>
                 
                 <div className="main-header-actions">
-                  {/* 🌟 只有活躍單（進行中）才可以進行強制結案 */}
+                  
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
                     <button className="action-btn btn-outline-success" onClick={handleForceComplete}>強制結案</button>
                   )}
 
-                  {/* 🌟 修正：優化 JSX 嵌套語法，防止嚴格編譯模式下發生括號不對稱與型態不匹配 Bug */}
+                  
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' ? (
                     <button className="action-btn btn-outline-danger" onClick={handleToggleArchive}>作廢封存</button>
                   ) : (

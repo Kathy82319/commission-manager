@@ -280,11 +280,11 @@
 .public-queue-section th,
 .public-queue-section td {
   padding: 12px 8px;
-  /* 讓文字盡量不換行，保持清爽 */
+  
   white-space: nowrap;
 }
 
-/* 針對「項目名稱」若太長允許換行，但設定最大寬度 */
+
 .public-queue-section td:nth-child(2) {
   white-space: normal;
   max-width: 250px;
@@ -293,20 +293,20 @@
 
 @media (max-width: 768px) {
   .public-queue-section {
-    padding: 16px 12px !important; /* 手機版內距縮小 */
+    padding: 16px 12px !important; 
   }
 
-  /* 手機版：允許表格橫向滑動，避免擠壓變形 */
+  
   .public-queue-section > div {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: 0 -12px; /* 讓表格貼齊邊緣滑動 */
+    margin: 0 -12px; 
     padding: 0 12px;
   }
 
   .public-queue-section table {
-    min-width: 450px; /* 強制最小寬度，超出就會出現橫向捲軸 */
-    font-size: 13px !important; /* 手機版整體字體縮小 */
+    min-width: 450px; 
+    font-size: 13px !important; 
   }
 
   .public-queue-section th,
@@ -562,16 +562,16 @@
   .social-links { justify-content: center; }
   .profile-bio { text-align: center; }
 
-  /* == 修復手機版彈窗滾動與高度陷阱 == */
+  
   .showcase-content-box {
     flex-direction: column;
-    height: 90vh; /* 避免過高被瀏覽器 UI 擋住 */
-    overflow-y: auto !important; /* 將捲軸權限移交給整張卡片 */
-    display: block !important; /* 打破原本的 Flexbox 限制 */
+    height: 90vh; 
+    overflow-y: auto !important; 
+    display: block !important; 
   }
   
   .showcase-cover {
-    height: 240px !important; /* 強制縮小封面圖比例，騰出空間 */
+    height: 240px !important; 
     min-height: 240px;
     flex: none !important;
     width: 100%;
@@ -579,15 +579,15 @@
   
   .showcase-details {
     padding: 24px !important;
-    display: block !important; /* 強制蓋掉 TSX 裡的 inline display: flex */
-    min-height: 0 !important; /* 解除 Flexbox 高度陷阱 */
+    display: block !important; 
+    min-height: 0 !important; 
     height: auto !important;
     overflow: visible !important;
   }
   
   .description-scroll-area,
   .custom-scrollbar {
-    overflow-y: visible !important; /* 關閉內部文字區的捲軸 */
+    overflow-y: visible !important; 
     height: auto !important;
     flex: none !important;
     padding-right: 0 !important;

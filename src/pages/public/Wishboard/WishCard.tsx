@@ -199,10 +199,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     <>
       <div className="wish-card-wide">
         
-        {/* 💡 左側：圖片與桌機版專屬作者區塊 */}
+        
         <div className="wish-card-image-wrapper">
           
-          {/* 💡 這是新增的：電腦版獨立的倒數計時區塊 (會把圖片稍微往下推) */}
+          
           <div className="wish-expiry-standalone">
             <Clock size={14} style={{ marginRight: '6px' }} /> {getTimeRemaining(bulletin.expires_at)}
           </div>
@@ -240,7 +240,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </div>
               )}
 
-              {/* 💡 這是原本疊加在圖片上的標籤，現在改為手機版專用 (用 CSS 控制顯示) */}
+              
               <div className="wish-expiry-overlay">
                 <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
               </div>
@@ -257,7 +257,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             </div>
           )}
 
-          {/* 💡 電腦版專屬：作者區塊 (改為左右排版：左頭像、右資訊) */}
+          
           <div className="desktop-author-block">
             <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
               {posterAvatar ? (
@@ -294,13 +294,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           </div>
         </div>
 
-        {/* 💡 右側：卡片資訊與手機版專屬作者區塊 */}
+        
         <div className="wish-card-info">
           <div className="wish-card-header">
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
               
-              {/* 💡 手機版專屬作者區塊 (mobile-author-block) */}
+              
               <div className="wish-card-author-wrapper mobile-author-block">
                 <User size={14} className="wish-card-author-icon" />
                 

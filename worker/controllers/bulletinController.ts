@@ -548,9 +548,7 @@ export const bulletinController = {
     }
   },
 
-  /**
-   * 🌟 許願池檢舉 API (具備防重複檢舉與權重計算機制)
-   */
+
   async reportBulletin(request: Request, targetId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body: any = await request.json();

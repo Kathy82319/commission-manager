@@ -6,24 +6,24 @@
 .inquiry-workspace-container > div {
   height: 100%;
   max-height: 100vh;
-  max-height: 100dvh; /* 支援手機端動態高度 */
+  max-height: 100dvh; 
 }
 
 .iw-chat-section {
   height: 100%;
   max-height: 100%;
-  overflow: hidden; /* 絕對禁止超出外框 */
+  overflow: hidden; 
 }
 
 .iw-chat-header,
 .iw-chat-footer {
-  flex-shrink: 0 !important; /* 保護頭尾，絕對不准被擠壓或消失 */
+  flex-shrink: 0 !important; 
 }
 
 .iw-chat-main {
   flex: 1 1 0 !important; 
-  min-height: 0 !important; /* 破解 Flexbox 陷阱的靈魂設定 */
-  overflow-y: auto !important; /* 強制把滾輪限制在這個區塊內 */
+  min-height: 0 !important; 
+  overflow-y: auto !important; 
 }
 
 
@@ -223,10 +223,10 @@
     padding: 8px 12px !important;
   }
 
-  /* 💡 徹底移除偏方，交給頂部的全域防護來自動排版 */
+  
   .iw-chat-footer {
     padding: 10px !important;
-    position: relative !important; /* 確保不會因為 sticky 產生靈異現象 */
+    position: relative !important; 
   }
   .iw-chat-footer textarea {
     padding: 10px !important;
@@ -254,7 +254,7 @@
     right: 0;
   }
 
-  /* 💡 保留對「合約彈窗」的防護，讓它能正常產生滾輪 */
+  
   .iw-modal-content-paper {
     height: 90vh !important;
     max-height: 90vh !important;
