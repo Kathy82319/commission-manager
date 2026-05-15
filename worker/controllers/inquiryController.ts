@@ -83,8 +83,24 @@ export const inquiryController = {
     }
   },
 
-  async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
+  async getMessages(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：讀取聊天訊息前先提取當事人雙方身分進行安全核對
+      const inquiry = await env.commission_db.prepare(`
+        SELECT i.artist_id, b.client_id as bulletin_client_id 
+        FROM BulletinInquiries i 
+        JOIN Bulletins b ON i.bulletin_id = b.id 
+        WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (!inquiry) {
+        return new Response(JSON.stringify({ success: false, message: '找不到洽談紀錄' }), { status: 404, headers: corsHeaders });
+      }
+
+      if (currentUserId !== inquiry.artist_id && currentUserId !== inquiry.bulletin_client_id) {
+        return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
       const { results } = await env.commission_db.prepare(`
         SELECT id, sender_id, content, created_at, 'inquiry' as source
         FROM InquiryMessages 
@@ -109,6 +125,20 @@ export const inquiryController = {
 
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：發送訊息前先提取當事人雙方身分進行安全核對
+      const inquiryData = await env.commission_db.prepare(`
+        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+      `).bind(inquiryId).first() as any;
+
+      if (!inquiryData) {
+        return new Response(JSON.stringify({ success: false, message: '找不到洽談紀錄' }), { status: 404, headers: corsHeaders });
+      }
+
+      if (currentUserId !== inquiryData.artist_id && currentUserId !== inquiryData.bulletin_client_id) {
+        return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
       const body = await request.json() as any;
       const { content, message_type = 'text' } = body;
       const id = crypto.randomUUID();
@@ -118,16 +148,9 @@ export const inquiryController = {
         env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
       ]);
 
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
-
-      if (inquiryData) {
-        const targetUserId = currentUserId === inquiryData.artist_id ? inquiryData.bulletin_client_id : inquiryData.artist_id;
-        const text = `💬 洽談室「${inquiryData.title || '未命名'}」有新的聊天訊息。`;
-        await notificationController.createNotification(env, targetUserId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
-      }
+      const targetUserId = currentUserId === inquiryData.artist_id ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+      const text = `💬 洽談室「${inquiryData.title || '未命名'}」有新的聊天訊息。`;
+      await notificationController.createNotification(env, targetUserId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
 
       return new Response(JSON.stringify({ success: true, data: { id, content } }), { headers: corsHeaders });
     } catch (error: any) {
