@@ -175,13 +175,18 @@ export const commController = {
     if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     const comm = check[0] as any;
 
-    // 🌟 核心改動：策略 B 實作（狀態單向流動唯讀卡控）
-    // 如果當前單據在資料庫中已經是已結案（completed）或已取消（cancelled），則封鎖一切修改行為
-    if (comm.status === 'completed' || comm.status === 'cancelled') {
+    // 🌟 核心改動：取得繪師的方案資料，確認是否為專業版/試用期
+    const artistData = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(comm.artist_id).first() as any;
+    const isPro = artistData?.plan_type === 'pro' && (!artistData.pro_expires_at || new Date(artistData.pro_expires_at) > new Date());
+    const isTrial = artistData?.plan_type === 'trial' && (!artistData.trial_end_at || new Date(artistData.trial_end_at) > new Date());
+    const isPremium = isPro || isTrial;
+
+    // 🌟 若非付費會員，執行策略 B 實作（狀態單向流動唯讀卡控）
+    if (!isPremium && (comm.status === 'completed' || comm.status === 'cancelled')) {
       return createJsonResponse({ 
         success: false, 
         error: "ORDER_LOCKED", 
-        message: "此委託單已結案或作廢，系統已將其轉為唯讀歷史紀錄，無法再進行任何更動。" 
+        message: "此委託單已結案或作廢。升級專業版即可隨時解鎖並恢復歷史訂單！" 
       }, 403, corsHeaders);
     }
 
@@ -265,7 +270,7 @@ export const commController = {
   },
 
   async getDeliverables(id: string, pathType: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const { Antiquities: check } = await env.commission_db.prepare("SELECT artist_id, client_id, order_date, origin_source FROM Commissions WHERE id = ?").bind(id).all();
+    const { results: check } = await env.commission_db.prepare("SELECT artist_id, client_id, order_date, origin_source FROM Commissions WHERE id = ?").bind(id).all();
     if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     
     const comm = check[0] as any;

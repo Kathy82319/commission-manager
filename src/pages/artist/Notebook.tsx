@@ -19,6 +19,7 @@ export function Notebook() {
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
   const [myId, setMyId] = useState<string>(''); 
+  const [isPremium, setIsPremium] = useState<boolean>(false); // 🌟 新增：紀錄繪師是否為付費或試用會員
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
     { id: 'all', label: '全部' },
@@ -47,7 +48,15 @@ export function Notebook() {
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => { if (data.success) setMyId(data.data.id); })
+      .then(data => { 
+        if (data.success) {
+          setMyId(data.data.id); 
+          // 🌟 新增：即時計算付費與試用期狀態，用以驅動前端 UI 權限鎖定
+          const isPro = data.data.plan_type === 'pro' && (!data.data.pro_expires_at || new Date(data.data.pro_expires_at) > new Date());
+          const isTrial = data.data.plan_type === 'trial' && (!data.data.trial_end_at || new Date(data.data.trial_end_at) > new Date());
+          setIsPremium(isPro || isTrial);
+        }
+      })
       .catch(err => console.error("取得使用者身分失敗", err));
   }, [API_BASE]);
 
@@ -216,11 +225,17 @@ export function Notebook() {
     const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
     if (!window.confirm(confirmMsg)) return;
     
-    await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
+    // 🌟 後端現在會根據方案類型進行審查，若免費版嘗試恢復會回傳 403 錯誤
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: isCancelled ? 'quote_created' : 'cancelled' })
     });
+    
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || "操作失敗");
+    }
     fetchCommissions();
   };
 
@@ -228,11 +243,16 @@ export function Notebook() {
     if (!selectedId || !selectedOrder) return;
     if (!window.confirm('確定要強制結案嗎？這將會把訂單狀態直接改為已完成。')) return;
     
-    await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
+    const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed' })
     });
+    
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || "操作失敗");
+    }
     fetchCommissions();
   };
 
@@ -379,7 +399,6 @@ export function Notebook() {
     <div className="notebook-page">
       <div className="notebook-container">
         
-        
         <NotebookSidebar 
           filteredOrders={filteredOrders}
           selectedId={selectedId}
@@ -394,13 +413,11 @@ export function Notebook() {
           getClientNameDisplay={getClientNameDisplay}
         />
 
-        
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOrder ? (
             <div className="main-empty">請由列表選擇委託單以檢視詳情</div> 
           ) : (
             <div className="main-content-wrapper">
-              
               
               <div className="main-header">
                 <div className="main-header-info">
@@ -435,16 +452,23 @@ export function Notebook() {
                 </div>
                 
                 <div className="main-header-actions">
+                  {/* 🌟 只有活躍單（進行中）才可以進行強制結案 */}
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
                     <button className="action-btn btn-outline-success" onClick={handleForceComplete}>強制結案</button>
                   )}
-                  <button className={`action-btn ${selectedOrder.status === 'cancelled' ? 'btn-outline-success' : 'btn-outline-danger'}`} onClick={handleToggleArchive}>
-                    {selectedOrder.status === 'cancelled' ? '恢復預訂' : '作廢封存'}
-                  </button>
+
+                  {/* 🌟 核心修正：依照方案控管作廢與恢復。活躍單大家都能作廢；若已作廢，只有 Premium 級別能看到並操作「恢復預訂」 */}
+                  {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' ? (
+                    <button className="action-btn btn-outline-danger" onClick={handleToggleArchive}>作廢封存</button>
+                  ) : (
+                    isPremium && selectedOrder.status === 'cancelled' && (
+                      <button className="action-btn btn-outline-success" onClick={handleToggleArchive}>恢復預訂</button>
+                    )
+                  )}
+
                   {!selectedOrder.is_external && (
                     <button className="action-btn btn-outline-default" onClick={() => copyLink(selectedOrder.id)}>複製連結</button>
                   )}
-                  
                   
                   {selectedOrder.client_id && selectedOrder.client_id !== 'guest' && (
                     <button className="action-btn btn-primary" onClick={() => {
@@ -457,14 +481,12 @@ export function Notebook() {
                 </div>
               </div>
 
-              
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>委託單細項</button>
                 <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
                 <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
               </div>
 
-              
               <div className="tab-content-area">
                 {activeTab === 'details' && (
                   <TabDetails 
