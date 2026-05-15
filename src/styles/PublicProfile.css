@@ -268,6 +268,7 @@
    排單狀況 (Public Queue) 優化
    ========================================================================== */
 .public-queue-section {
+
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -280,9 +281,11 @@
 .public-queue-section th,
 .public-queue-section td {
   padding: 12px 8px;
+  /* 讓文字盡量不換行，保持清爽 */
   white-space: nowrap;
 }
 
+/* 針對「項目名稱」若太長允許換行，但設定最大寬度 */
 .public-queue-section td:nth-child(2) {
   white-space: normal;
   max-width: 250px;
@@ -291,18 +294,22 @@
 
 @media (max-width: 768px) {
   .public-queue-section {
-    padding: 16px 12px !important;
+    padding: 16px 12px !important; /* 手機版內距縮小 */
   }
+
+  /* 手機版：允許表格橫向滑動，避免擠壓變形 */
   .public-queue-section > div {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin: 0 -12px;
+    margin: 0 -12px; /* 讓表格貼齊邊緣滑動 */
     padding: 0 12px;
   }
+
   .public-queue-section table {
-    min-width: 450px;
-    font-size: 13px !important;
+    min-width: 450px; /* 強制最小寬度，超出就會出現橫向捲軸 */
+    font-size: 13px !important; /* 手機版整體字體縮小 */
   }
+
   .public-queue-section th,
   .public-queue-section td {
     padding: 10px 6px !important;
@@ -310,7 +317,7 @@
 }
 
 /* ==========================================================================
-   6. 徵委託詳情彈窗 (設計升級) - 電腦版
+   6. 徵委託詳情彈窗 (設計升級)
    ========================================================================== */
 
 .showcase-modal-overlay {
@@ -393,8 +400,7 @@
   border-bottom: 1.5px dashed #eee; 
 }
 
-.description-scroll-area,
-.custom-scrollbar {
+.description-scroll-area {
   flex: 1;
   background: #ffffff; 
   border-radius: 20px; 
@@ -416,7 +422,7 @@
 }
 
 /* ==========================================================================
-   7. 燈箱元件 (Lightbox)
+   7. 燈箱元件 (Lightbox) - 修正放大後跑到視窗下方的問題
    ========================================================================== */
 
 .lightbox-overlay {
@@ -458,13 +464,18 @@
 
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.3); transform: rotate(90deg); }
 
+
+/* ==========================================================================
+   燈箱左右切換按鈕 (補上的缺漏樣式)
+   ========================================================================== */
+
 .lightbox-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.15);
   border: none;
-  color: #FFF; 
+  color: #FFF; /* 確保 Lucide 圖示為白色 */
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -473,19 +484,50 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  z-index: 100001; 
+  z-index: 100001; /* 必須大於 overlay 的 z-index */
 }
 
 .lightbox-nav:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-50%) scale(1.1);
+  transform: translateY(-50%) scale(1.1); /* 懸浮時稍微放大 */
 }
 
-.lightbox-nav.prev { left: 40px; }
-.lightbox-nav.next { right: 40px; }
+.lightbox-nav.prev {
+  left: 40px;
+}
+
+.lightbox-nav.next {
+  right: 40px;
+}
+
+/* 針對手機版的燈箱按鈕優化，避免擋住太多圖片 */
+@media (max-width: 768px) {
+  .lightbox-nav {
+    width: 44px;
+    height: 44px;
+  }
+  .lightbox-nav.prev {
+    left: 10px;
+  }
+  .lightbox-nav.next {
+    right: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-top-right-actions {
+    top: 10px !important;
+    right: 10px !important;
+    gap: 6px !important;
+  }
+  .profile-top-right-actions button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+}
 
 /* ==========================================================================
-   8. 標籤與響應式 (含手機版卡片核心修復)
+   8. 標籤與響應式
    ========================================================================== */
 
 .tag-filter-bar {
@@ -515,51 +557,15 @@
   border-color: #1a1a1a;
 }
 
-/* 🌟 手機/平板版：重構排版與彈窗黃金比例 */
 @media (max-width: 1100px) {
   .profile-layout-root { flex-direction: column; }
   .profile-sidebar { width: 100%; height: auto; position: relative; }
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
   .profile-bio { text-align: center; }
-  
-  /* 釋放整張卡片，改為「整張卡片上下滑動」 */
-  .showcase-content-box { 
-      flex-direction: column !important; 
-      height: auto !important; 
-      max-height: 85vh !important; 
-      max-height: 85svh !important; 
-      overflow-y: auto !important; 
-      -webkit-overflow-scrolling: touch !important;
-  }
-  
-  /* 強制將封面圖片縮小至 240px，避免霸佔螢幕 */
-  .showcase-cover { 
-      height: 240px !important; 
-      min-height: 240px !important;
-      flex: none !important; 
-      border-right: none !important;
-      border-bottom: 1px solid #eee !important;
-  }
-  
-  /* 讓文字區塊能盡情往下長 */
-  .showcase-details { 
-      padding: 24px !important; 
-      height: auto !important;
-      min-height: auto !important;
-      overflow: visible !important;
-  }
-
-  /* 拔除內部的短滾輪，統一交給最外層的卡片滾動 */
-  .description-scroll-area, 
-  .custom-scrollbar {
-      overflow: visible !important;
-      height: auto !important;
-      min-height: auto !important;
-      border: none !important;
-      padding: 10px 0 !important;
-      box-shadow: none !important;
-  }
+  .showcase-content-box { flex-direction: column; height: 95vh; }
+  .showcase-cover { height: 40vh; flex: none; }
+  .showcase-details { padding: 30px; }
 }
 
 /* ==========================================================================
@@ -596,9 +602,16 @@
 }
 
 @keyframes splashTextFadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 
 .default-avatar-placeholder {
   background-color: #E2E8F0; 
@@ -736,7 +749,7 @@
   .portfolio-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-  } 
+  }
 
   .masonry-grid {
     column-count: 2;
@@ -746,23 +759,6 @@
   .masonry-item {
     margin-bottom: 12px;
     border-radius: 16px;
-  }
-  
-  .lightbox-nav {
-    width: 44px;
-    height: 44px;
-  }
-  .lightbox-nav.prev { left: 10px; }
-  .lightbox-nav.next { right: 10px; }
-  
-  .profile-top-right-actions {
-    top: 10px !important;
-    right: 10px !important;
-    gap: 6px !important;
-  }
-  .profile-top-right-actions button {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
   }
 }
 
@@ -786,16 +782,13 @@
     width: 28px;
     height: 28px;
   }
-  
+
   .sidebar-bottom {
     padding: 16px 16px 20px 16px;
   }
 }
 
-/* 確保行動版的獨立富文本區塊不會超出畫面 */
-@media (max-width: 768px) {
-  .rich-text-content {
-    padding: 24px 16px; 
-    border-radius: 20px; 
-  }
+.rich-text-content {
+  padding: 24px 16px; 
+  border-radius: 20px; 
 }
