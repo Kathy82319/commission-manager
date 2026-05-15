@@ -176,47 +176,47 @@
 @media (max-width: 768px) {
   
   .iw-chat-section {
-    width: 100vw !important;
+    width: 100vw ;
   }
 
   
   .iw-chat-header {
-    padding: 10px 12px !important;
+    padding: 10px 12px ;
   }
-  .iw-back-btn { padding: 4px !important; }
-  .iw-chat-title { max-width: 120px; font-size: 15px !important; }
-  .iw-role-badge { display: none !important; } 
+  .iw-back-btn { padding: 4px ; }
+  .iw-chat-title { max-width: 120px; font-size: 15px ; }
+  .iw-role-badge { display: none ; } 
   
   
   .iw-mobile-toggle-btn {
-    display: block !important;
+    display: block ;
   }
   .iw-mobile-overlay {
-    display: block !important;
+    display: block ;
   }
 
   
   .iw-chat-main {
-    padding: 12px !important;
+    padding: 12px ;
   }
   .iw-chat-bubble {
-    max-width: 90% !important; 
-    font-size: 14px !important;
-    padding: 8px 12px !important;
+    max-width: 90% ; 
+    font-size: 14px ;
+    padding: 8px 12px ;
   }
 
-  /* 💡 徹底移除會讓輸入框浮在半空的 sticky 問題 */
+  /* 💡 徹底移除會讓輸入框浮在半空的 sticky 問題，由外層 height: 100% 來壓制 */
   .iw-chat-footer {
-    padding: 10px !important;
+    padding: 10px ;
   }
   .iw-chat-footer textarea {
-    padding: 10px !important;
-    font-size: 14px !important;
-    min-height: 40px !important;
+    padding: 10px ;
+    font-size: 14px ;
+    min-height: 40px ;
   }
   .iw-chat-footer button {
-    padding: 10px 16px !important;
-    font-size: 14px !important;
+    padding: 10px 16px ;
+    font-size: 14px ;
   }
 
   
@@ -225,11 +225,11 @@
     top: 0;
     bottom: 0;
     right: -100%; 
-    width: 85% !important; 
+    width: 85% ; 
     max-width: 320px;
     box-shadow: -4px 0 15px rgba(0,0,0,0.1);
     transition: right 0.3s ease-in-out;
-    border-left: none !important;
+    border-left: none ;
   }
   
   
@@ -239,27 +239,27 @@
 
   /* 💡 徹底解決手機版彈窗 Flexbox 高度陷阱 */
   .iw-modal-content-paper {
-    height: 90vh !important; /* 強制取得固定高度 */
-    max-height: 90vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 0 !important; /* 核心解法：防止內容無限撐開 */
+    height: 90vh ; /* 強制取得固定高度 */
+    max-height: 90vh ;
+    display: flex ;
+    flex-direction: column ;
+    min-height: 0 ; /* 核心解法：防止內容無限撐開 */
   }
 
   .iw-modal-content-paper > div.custom-scrollbar {
-    padding: 20px 16px !important;
-    min-height: 0 !important; /* 核心解法：讓內部捲動區的 flex 運作正常 */
-    flex: 1 !important;
-    overflow-y: auto !important;
+    padding: 20px 16px ;
+    min-height: 0 ; /* 核心解法：讓內部捲動區的 flex 運作正常 */
+    flex: 1 ;
+    overflow-y: auto ;
   }
 
   .iw-modal-content-paper > div:last-child {
-    padding: 16px !important;
+    padding: 16px ;
   }
 
   .iw-modal-actions {
     flex-direction: column;
-    gap: 10px !important;
+    gap: 10px ;
   }
 
   .iw-modal-actions button {
@@ -268,6 +268,6 @@
 
   
   .accepted-modal {
-    padding: 24px 16px !important;
+    padding: 24px 16px ;
   }
 }

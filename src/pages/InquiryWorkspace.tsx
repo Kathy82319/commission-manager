@@ -413,11 +413,12 @@ export const InquiryWorkspace: React.FC = () => {
 
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
-      {/* 💡 修復高度坍塌 1：補上 height: '100%', minHeight: 0 保證撐滿螢幕 */}
-      <div style={{ display: 'flex', width: '100%', height: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative', minHeight: 0 }}>
+      
+      {/* 💡 嚴格限制外層的高度，防止視窗無限擴張 */}
+      <div style={{ display: 'flex', width: '100%', height: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
         
-        {/* 💡 修復高度坍塌 2：補上 height: '100%', minHeight: 0 建立嚴格的 Flex 高度計算 */}
-        <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative', height: '100%', minHeight: 0 }}>
+        {/* 💡 鎖死聊天區塊的高度，讓它能在內部產生捲軸 */}
+        <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative', height: '100%', minHeight: 0, overflow: 'hidden' }}>
           
           <header className="iw-chat-header" style={{ backgroundColor: '#FFFFFF', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', zIndex: 10, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
@@ -439,9 +440,7 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </header>
 
-          {/* 💡 修復高度坍塌 3：補上 minHeight: 0 確保 flex: 1 正常運作，不被內容撐破 */}
           <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative', minHeight: 0 }}>
-            
             {isAccepted && (
               <div style={{ backgroundColor: '#EBF5EB', color: '#4E7A5A', padding: '12px', borderRadius: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', border: '1px solid #C8E6C9', marginBottom: '8px' }}>
                 🎉 委託單已正式成立！您可以繼續在此與對方討論。
@@ -476,7 +475,7 @@ export const InquiryWorkspace: React.FC = () => {
             </button>
           )}
 
-          {/* 💡 保護 Footer：加入 flexShrink: 0 確保不會被過長的 main 壓扁 */}
+          {/* 💡 加上 flexShrink: 0 確保輸入框絕對不會被壓扁，永遠佔據底部 */}
           <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
             <button 
@@ -493,8 +492,9 @@ export const InquiryWorkspace: React.FC = () => {
           </footer>
         </div>
 
+        {/* 💡 側邊欄同樣鎖定高度 */}
         {!isAccepted && (
-          <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20 }}>
+          <aside className={`iw-aside-section custom-scrollbar ${showMobileAside ? 'mobile-open' : ''}`} style={{ width: '440px', height: '100%', borderLeft: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', display: 'flex', flexDirection: 'column', zIndex: 20, overflow: 'hidden', flexShrink: 0 }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #EAE6E1', backgroundColor: '#FFFFFF', flexShrink: 0 }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
@@ -640,6 +640,7 @@ export const InquiryWorkspace: React.FC = () => {
 
         {showFinalModal && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
+            {/* 💡 確保彈窗不會無止盡長高 */}
             <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh', minHeight: 0 }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
               
