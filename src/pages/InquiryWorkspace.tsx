@@ -40,7 +40,6 @@ export const InquiryWorkspace: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showMobileAside, setShowMobileAside] = useState(false);
   
-  // 🌟 新增：控制置頂成功橫幅的收合狀態
   const [isBannerExpanded, setIsBannerExpanded] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +140,6 @@ export const InquiryWorkspace: React.FC = () => {
         const currentUserIsArtist = (myId === targetArtistId);
         setIsArtist(currentUserIsArtist);
         
-        // 偵測狀態變化
         if (prevStatusRef.current && prevStatusRef.current !== 'accepted' && data.status === 'accepted') {
           setIsAccepted(true);
         }
@@ -327,6 +325,7 @@ export const InquiryWorkspace: React.FC = () => {
     alert('協議草稿已儲存！');
   };
 
+  // 🌟 修正順序：先送出系統提示，確保成功寫入對話紀錄，再改變後端狀態
   const handlePropose = async () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
        return alert('抱歉，您本月的建單額度已滿。請升級為專業版以解鎖！');
@@ -334,11 +333,13 @@ export const InquiryWorkspace: React.FC = () => {
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
       await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
+      
+      // 1. 先送系統提示
+      await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】繪師已送出正式提案，請委託人確認合約規格與報價。' });
+      
+      // 2. 再送成單狀態改變
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/propose`, {});
       if (res.success) {
-        // 🌟 觸發系統提示訊息
-        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】繪師已送出正式提案，請委託人確認合約規格與報價。' });
-        
         alert('已送出正式提案給案主！');
         setShowMobileAside(false); 
         fetchData();
@@ -346,14 +347,16 @@ export const InquiryWorkspace: React.FC = () => {
     } catch (error: any) { alert('送出提案失敗：' + error.message); }
   };
 
+  // 🌟 修正順序：先送出系統提示，再改變後端狀態
   const handleRejectProposal = async () => {
     if (!window.confirm("確定要退回提案，讓繪師重新修改合約與規格嗎？")) return;
     try {
+      // 1. 先送系統提示
+      await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。' });
+      
+      // 2. 再退回狀態
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, {});
       if (res.success) {
-        // 🌟 觸發系統提示訊息
-        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。' });
-        
         alert('已將提案退回，繪師現在可以重新編輯並送出了。');
         fetchData();
       } else alert('操作失敗：' + (res.message || res.error));
@@ -362,13 +365,18 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
+  // 🌟 修正順序：最關鍵的 Finalize，先送系統提示才不會被後端擋住
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
+      // 1. 先送系統提示 (此時狀態還是 proposed，後端允許寫入對話)
+      await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已確認同意協議書，委託單正式成立！' });
+      
+      // 2. 再送最終確認狀態 (此後後端可能鎖死對話)
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
-        // 🌟 觸發系統提示訊息
-        await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已確認同意協議書，委託單正式成立！' });
+        // 為了讓委託人跳轉前能在畫面看到剛剛送出的系統訊息，手動刷新一下畫面
+        await fetchData(); 
         
         const commId = res.commission_id || res.id;
         alert('🎉 委託單已成功建立！系統將為您跳轉至管理頁面。');
@@ -491,7 +499,6 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </header>
 
-          {/* 🌟 永遠吸頂的折疊橫幅 (不再被聊天紀錄洗掉) */}
           {isAccepted && (
             <div style={{ backgroundColor: '#EBF5EB', borderBottom: '1px solid #C8E6C9', flexShrink: 0, zIndex: 9, transition: 'all 0.3s' }}>
               <div 
@@ -516,7 +523,6 @@ export const InquiryWorkspace: React.FC = () => {
           <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative' }}>
             
             {messages.map((msg) => {
-              // 🌟 判斷是否為系統提示訊息
               const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
 
@@ -780,10 +786,10 @@ export const InquiryWorkspace: React.FC = () => {
 
         {showFinalModal && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
-            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh', minHeight: 0 }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
               
-              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
+              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px', minHeight: 0 }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
                 
                 <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
@@ -813,7 +819,7 @@ export const InquiryWorkspace: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB' }}>
+              <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', flexShrink: 0 }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '20px' }}>
                   <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer', marginTop: '2px' }} />
                   <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold', lineHeight: '1.4' }}>我已詳細閱讀並同意以上委託規格與繪師協議。</span>
