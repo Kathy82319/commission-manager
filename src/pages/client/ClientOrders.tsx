@@ -238,7 +238,6 @@ export function ClientOrders() {
 
       const syntheticLogs: ActionLog[] = [];
       if (orderData.order_date) {
-        
         if (orderData.status !== 'quote_created' && orderData.status !== 'pending') {
           const bindLogIndex = fetchedLogs.findIndex(l => l.content.includes('綁定訂單'));
           
@@ -253,8 +252,19 @@ export function ClientOrders() {
 
       const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => parseTime(b.created_at) - parseTime(a.created_at));
       
+      // 🌟 核心修正：前端防禦性去重處理 (避免多路請求因並行競態條件導致後端重複寫入的紀錄干擾畫面)
+      const uniqueLogs: ActionLog[] = [];
+      const seenLogKeys = new Set<string>();
+      for (const log of allLogs) {
+        const uniqueKey = `${log.content}_${log.created_at}`;
+        if (!seenLogKeys.has(uniqueKey)) {
+          seenLogKeys.add(uniqueKey);
+          uniqueLogs.push(log);
+        }
+      }
+      
       setSubmissions(fetchedSubmissions);
-      setLogs(allLogs);
+      setLogs(uniqueLogs);
 
     } catch (error) {}
   };
@@ -762,7 +772,6 @@ export function ClientOrders() {
                       )}
                     </div>
 
-                    
                     <div className="section-card">
                       <h3 className="section-title" style={{ marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>委託協議</h3>
                       <div className="tos-snapshot-wrapper" style={{ margin: 0 }}>
@@ -774,7 +783,6 @@ export function ClientOrders() {
                   </div>
                 )}
 
-                
                 {activeTab === 'review' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {selectedOrder.delivery_method !== '一鍵出圖' && (
@@ -787,7 +795,6 @@ export function ClientOrders() {
                   </div>
                 )}
 
-                
                 {activeTab === 'history' && (
                    <div className="section-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
                      <h3 className="section-title logs-title">歷程紀錄</h3>

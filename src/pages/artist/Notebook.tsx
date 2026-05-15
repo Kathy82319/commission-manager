@@ -19,7 +19,7 @@ export function Notebook() {
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
 
   const [myId, setMyId] = useState<string>(''); 
-  const [isPremium, setIsPremium] = useState<boolean>(false); // 🌟 新增：紀錄繪師是否為付費或試用會員
+  const [isPremium, setIsPremium] = useState<boolean>(false); // 🌟 紀錄繪師是否為付費或試用會員
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
     { id: 'all', label: '全部' },
@@ -51,7 +51,7 @@ export function Notebook() {
       .then(data => { 
         if (data.success) {
           setMyId(data.data.id); 
-          // 🌟 新增：即時計算付費與試用期狀態，用以驅動前端 UI 權限鎖定
+          // 🌟 即時計算付費與試用期狀態，用以驅動前端 UI 權限鎖定
           const isPro = data.data.plan_type === 'pro' && (!data.data.pro_expires_at || new Date(data.data.pro_expires_at) > new Date());
           const isTrial = data.data.plan_type === 'trial' && (!data.data.trial_end_at || new Date(data.data.trial_end_at) > new Date());
           setIsPremium(isPro || isTrial);
@@ -128,7 +128,19 @@ export function Notebook() {
     const data = await res.json();
     if (data.success) {
       setSubmissions(data.data.submissions || []); 
-      setLogs(data.data.logs || []);
+      
+      const fetchedLogs: ActionLog[] = data.data.logs || [];
+      // 🌟 核心修正：前端防禦性去重過濾，封死因併發競態導致重複寫入資料庫的重疊歷程
+      const uniqueLogs: ActionLog[] = [];
+      const seenLogKeys = new Set<string>();
+      for (const log of fetchedLogs) {
+        const uniqueKey = `${log.content}_${log.created_at}`;
+        if (!seenLogKeys.has(uniqueKey)) {
+          seenLogKeys.add(uniqueKey);
+          uniqueLogs.push(log);
+        }
+      }
+      setLogs(uniqueLogs);
     }
   };
 
@@ -225,7 +237,6 @@ export function Notebook() {
     const confirmMsg = isCancelled ? '確定要恢復此委託單嗎？' : '確定要將此委託單作廢/封存嗎？';
     if (!window.confirm(confirmMsg)) return;
     
-    // 🌟 後端現在會根據方案類型進行審查，若免費版嘗試恢復會回傳 403 錯誤
     const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -457,13 +468,13 @@ export function Notebook() {
                     <button className="action-btn btn-outline-success" onClick={handleForceComplete}>強制結案</button>
                   )}
 
-                  {/* 🌟 核心修正：依照方案控管作廢與恢復。活躍單大家都能作廢；若已作廢，只有 Premium 級別能看到並操作「恢復預訂」 */}
+                  {/* 🌟 修正：優化 JSX 嵌套語法，防止嚴格編譯模式下發生括號不對稱與型態不匹配 Bug */}
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' ? (
                     <button className="action-btn btn-outline-danger" onClick={handleToggleArchive}>作廢封存</button>
                   ) : (
-                    isPremium && selectedOrder.status === 'cancelled' && (
+                    isPremium && selectedOrder.status === 'cancelled' ? (
                       <button className="action-btn btn-outline-success" onClick={handleToggleArchive}>恢復預訂</button>
-                    )
+                    ) : null
                   )}
 
                   {!selectedOrder.is_external && (
