@@ -550,7 +550,8 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
                 {isArtist && artistQuota && (
-                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8' }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
+                   <span style={{ flexShrink: 0, whiteSpace: 'nowrap',fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8' }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `本月建單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
+                
                 )}
               </div>
             </div>
@@ -686,17 +687,32 @@ export const InquiryWorkspace: React.FC = () => {
 
               {/* 繪師專屬協議條款編輯器 (TOS) */}
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
-                  {isEditableByArtist && (
-                    <button 
-                      onClick={() => setDraft({...draft, custom_tos: artistTos})}
-                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      📥 帶入個人範本
-                    </button>
-                  )}
-                </div>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' /* 👈 建議補上 gap 讓它們不會黏在一起 */ }}>
+  <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
+  {isEditableByArtist && (
+    <button 
+      onClick={() => setDraft({...draft, custom_tos: artistTos})}
+      style={{ 
+        fontSize: '11px', 
+        padding: '4px 8px', 
+        background: '#F1F5F9', 
+        border: '1px solid #E2E8F0', 
+        borderRadius: '4px', 
+        cursor: 'pointer', 
+        color: '#4A7294', 
+        fontWeight: 'bold', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '4px',
+        // 👇 加上這兩行
+        whiteSpace: 'nowrap',
+        flexShrink: 0
+      }}
+    >
+      📥 帶入個人範本
+    </button>
+  )}
+</div>
                 {isEditableByArtist ? (
                   <div className="quote-quill-wrapper" style={{ margin: 0 }}>
                     <ReactQuill 
