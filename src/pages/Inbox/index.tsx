@@ -423,7 +423,7 @@ export const Inbox: React.FC = () => {
             
             <ul style={{ padding: 0, margin: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '1.6' }}>
               <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>許願池時效限制</strong>：刊登文章限時 <span style={{ color: '#EF4444' }}>3 天</span>，過期將自動下架，確保提案都是最新需求。
+                <strong style={{ color: '#4A7294' }}>許願池時效限制</strong>：刊登限時 <span style={{ color: '#EF4444' }}>30 天</span>，過期將自動下架，確保提案都是最新需求。
               </li>
               <li style={{ marginBottom: '12px' }}>
                 <strong style={{ color: '#4A7294' }}>處理期限</strong>：收到提案後請盡速處理。倒數 <span style={{ color: '#EF4444' }}>不足 12 小時</span> 的提案將亮起紅燈警示。
