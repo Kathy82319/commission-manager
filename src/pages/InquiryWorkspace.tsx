@@ -635,10 +635,12 @@ export const InquiryWorkspace: React.FC = () => {
 
         {showFinalModal && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001, padding: '20px' }}>
-            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            {/* 💡 修正 Flexbox 高度陷阱：補上 minHeight: 0 */}
+            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '650px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', maxHeight: '90vh', minHeight: 0 }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '8px', background: 'repeating-linear-gradient(45deg, #C27A7A 0, #C27A7A 20px, #FDFDFB 20px, #FDFDFB 40px, #7A93AC 40px, #7A93AC 60px, #FDFDFB 60px, #FDFDFB 80px)' }}></div>
               
-              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px' }}>
+              {/* 💡 修正 Flexbox 高度陷阱：補上 minHeight: 0 */}
+              <div className="custom-scrollbar" style={{ padding: '30px', overflowY: 'auto', flex: 1, marginTop: '8px', minHeight: 0 }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '20px', textAlign: 'center' }}>📄 最終委託合約確認</h2>
                 
                 <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>

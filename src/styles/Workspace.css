@@ -239,21 +239,31 @@
     right: 0;
   }
 
-  
+  /* 💡 徹底解決手機版彈窗 Flexbox 高度陷阱 */
   .iw-modal-content-paper {
-    height: auto !important;
-    max-height: 95vh !important;
+    height: 90vh !important; /* 強制取得固定高度 */
+    max-height: 90vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important; /* 核心解法：防止內容無限撐開 */
   }
+
   .iw-modal-content-paper > div.custom-scrollbar {
     padding: 20px 16px !important;
+    min-height: 0 !important; /* 核心解法：讓內部捲動區的 flex 運作正常 */
+    flex: 1 !important;
+    overflow-y: auto !important;
   }
+
   .iw-modal-content-paper > div:last-child {
     padding: 16px !important;
   }
+
   .iw-modal-actions {
     flex-direction: column;
     gap: 10px !important;
   }
+
   .iw-modal-actions button {
     width: 100%;
   }
