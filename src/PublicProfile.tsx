@@ -3,7 +3,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban } from 'lucide-react';
+import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, BookUser, Image as ImageIcon } from 'lucide-react';
+// 🌟 新增：引入唯讀角色卡元件
+import { OCDetailCard } from '../../components/OC/OCDetailCard';
 import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
@@ -119,6 +121,10 @@ export function PublicProfile() {
 
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 🌟 新增：公開的 OC 角色卡列表與當前選中 OC 的狀態
+  const [publicOCs, setPublicOCs] = useState<any[]>([]);
+  const [activeOCId, setActiveOCId] = useState<string | null>(null);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
@@ -412,6 +418,30 @@ export function PublicProfile() {
           });
           setShowcaseItems(formattedItems);
         }
+
+        // 🌟 新增：在背景抓取該使用者的公開 OC 角色卡列表
+        try {
+          // 注意：此處串接新增的公開路由 /api/public/oc/:userId
+          const ocRes = await fetch(`${API_BASE}/api/public/oc/${currentArtistId}`);
+          const ocData = await ocRes.json();
+          if (ocRes.ok && ocData.success) {
+            const formattedOCs = (ocData.data || []).map((oc: any) => ({
+              ...oc,
+              hair_colors: typeof oc.hair_colors === 'string' ? JSON.parse(oc.hair_colors || '[]') : (oc.hair_colors || []),
+              eyes_colors: typeof oc.eyes_colors === 'string' ? JSON.parse(oc.eyes_colors || '[]') : (oc.eyes_colors || []),
+              clothing_colors: typeof oc.clothing_colors === 'string' ? JSON.parse(oc.clothing_colors || '[]') : (oc.clothing_colors || []),
+              keywords: typeof oc.keywords === 'string' ? JSON.parse(oc.keywords || '[]') : (oc.keywords || []),
+              images: typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []),
+            }));
+            setPublicOCs(formattedOCs);
+            if (formattedOCs.length > 0) {
+              setActiveOCId(formattedOCs[0].id); // 預設選中第一張
+            }
+          }
+        } catch (e) {
+          console.error('無法讀取公開角色卡資料', e);
+        }
+
       } catch (error) {
         setShowSplash(false);
       } finally {
@@ -491,9 +521,13 @@ export function PublicProfile() {
       tabs.push({ id: 'queue', label: '排單狀況' });
     }
 
-    // 🌟 核心修正：將 Showcase 移出 !isFreePlan 區塊，讓免費版使用者也能公開顯示接委託區
     if (!isHidden('showcase') && showcaseItems.length > 0) {
       tabs.push({ id: 'showcase', label: '接委託展示區' });
+    }
+
+    // 🌟 新增：只要此用戶有任何公開的角色卡，就注入「角色設定」分頁
+    if (publicOCs.length > 0) {
+      tabs.push({ id: 'oc', label: '角色設定' });
     }
 
     if (!isFreePlan) {
@@ -517,7 +551,7 @@ export function PublicProfile() {
     }
 
     return tabs;
-  }, [settings, showcaseItems, artist]);
+  }, [settings, showcaseItems, artist, publicOCs]);
 
   const currentTab = useMemo(() => {
     if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) {
@@ -546,7 +580,8 @@ export function PublicProfile() {
     }
   }, [showcaseIdParam, showcaseItems]);
 
-  const isWideTab = ['portfolio', 'showcase', 'queue'].includes(currentTab); 
+  // 🌟 修正：將 'oc' 納入 WideTab 寬版型陣列，讓設定卡擁有舒服的滿版寬度空間
+  const isWideTab = ['portfolio', 'showcase', 'queue', 'oc'].includes(currentTab); 
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -604,6 +639,11 @@ export function PublicProfile() {
     }
   };
 
+  // 🌟 新增：動態尋找當前選中的公開 OC 物件
+  const currentSelectedOC = useMemo(() => {
+    return publicOCs.find(o => o.id === activeOCId) || publicOCs[0] || null;
+  }, [publicOCs, activeOCId]);
+
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
 
@@ -616,6 +656,14 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
+      {/* 🌟 注入響應式排版 CSS 規則，完美調度網頁版小標籤與手機版限動頭像圈 */}
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-oc-tabs-wrapper { display: none !important; }
+          .mobile-oc-avatars-wrapper { display: flex !important; }
+        }
+      `}</style>
+
       <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
@@ -669,7 +717,7 @@ export function PublicProfile() {
           <div className="sidebar-bottom">
             <div className="bio-section">
               <p className="profile-bio" style={{ color: textColor }}>
-                {artist.bio || '這名繪師還沒有寫下簡介。'}
+                {artist.bio || '這名用戶還沒有寫下簡介。'}
               </p>
             </div>
 
@@ -685,7 +733,7 @@ export function PublicProfile() {
               <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'center', flexDirection: 'column' }}>
                 <button onClick={() => handleToggleRelation('favorite')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`, background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', color: relationStatus === 'favorite' ? '#ef4444' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
                   <Heart size={16} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
-                  {relationStatus === 'favorite' ? '已收藏' : '收藏繪師'}
+                  {relationStatus === 'favorite' ? '已收藏' : '收藏創作者'}
                 </button>
                 
                 <button onClick={() => handleToggleRelation('blacklist')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`, background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent', color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
@@ -701,11 +749,80 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
+              {/* 🌟 新增：渲染角色設定 (OC) 分頁 */}
+              {currentTab === 'oc' && publicOCs.length > 0 && (
+                <div className="public-oc-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+                  
+                  {/* 多角色切換列 (大於 1 張公開卡時才激活) */}
+                  {publicOCs.length > 1 && (
+                    <>
+                      {/* 1. 網頁版：低調、高質感的橫向小頁籤 */}
+                      <div className="desktop-oc-tabs-wrapper" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderBottom: isDarkText ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+                        {publicOCs.map(oc => (
+                          <button
+                            key={oc.id}
+                            onClick={() => setActiveOCId(oc.id)}
+                            style={{
+                              padding: '6px 14px', borderRadius: '8px', border: '1px solid',
+                              borderColor: activeOCId === oc.id ? '#8CB369' : borderColor,
+                              backgroundColor: activeOCId === oc.id ? 'rgba(140, 179, 105, 0.1)' : 'transparent',
+                              color: activeOCId === oc.id ? '#8CB369' : textColor,
+                              fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s'
+                            }}
+                          >
+                            {oc.name || '未命名角色'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 2. 手機版：IG 限動圓圈大頭貼橫向滑動列 */}
+                      <div className="mobile-oc-avatars-wrapper" style={{ display: 'none', gap: '16px', overflowX: 'auto', padding: '4px 4px 12px 4px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                        {publicOCs.map(oc => {
+                          const isSelected = activeOCId === oc.id;
+                          const coverImg = oc.images?.[0]?.previewUrl;
+                          return (
+                            <div 
+                              key={oc.id} 
+                              onClick={() => setActiveOCId(oc.id)}
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}
+                            >
+                              <div style={{
+                                width: '58px', height: '58px', borderRadius: '50%',
+                                border: isSelected ? '2.5px solid #8CB369' : `1.5px solid ${borderColor}`,
+                                padding: '2px', transition: 'all 0.2s', backgroundColor: 'transparent'
+                              }}>
+                                <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#F4F0EB' }}>
+                                  {coverImg ? (
+                                    <img src={coverImg} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}><ImageIcon size={16} /></div>
+                                  )}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: textColor, fontWeight: isSelected ? 'bold' : 'normal', maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isSelected ? 1 : 0.8 }}>
+                                {oc.name || '未命名'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* 核心內容：直接調用一體化緊湊型唯讀設定卡 */}
+                  {currentSelectedOC && (
+                    <div style={{ width: '100%', color: '#332D28', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 30px rgba(0,0,0,0.03)' }}>
+                      <OCDetailCard ocData={currentSelectedOC} />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
                   <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
                   {publicQueue.length === 0 ? (
-                    <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目日前尚無公開的排單資訊。</p>
+                    <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px', color: textColor }}>

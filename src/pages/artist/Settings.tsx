@@ -12,6 +12,8 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
+// 🌟 新增：引入我們寫好的 OC 展示設定分頁元件
+import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
 
@@ -83,6 +85,9 @@ export function Settings() {
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
+  // 🌟 新增：用來紀錄該創作者是否有建立過任何 OC 卡片
+  const [hasOC, setHasOC] = useState<boolean>(false);
+
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [], 
     detailed_intro: '', 
@@ -100,7 +105,6 @@ export function Settings() {
     theme_mode: 'dark',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
-    // 🌟 新增 show_artist_note 預設值
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
     tab_order: [] 
   });
@@ -112,8 +116,15 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
+  // 🌟 核心修改：選單動態渲染，只有當 hasOC 為 true 時，才會注入 OC 展示設定項目
   const categories: MenuCategory[] = [
-    { title: '個人資訊', items: [{ id: 'profile_basic', label: '頭像與簡介' }] },
+    { 
+      title: '個人資訊', 
+      items: [
+        { id: 'profile_basic', label: '頭像與簡介' },
+        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) // 🌟 動態注入開關
+      ] 
+    },
     { title: '頁面外觀', items: [
         { id: 'theme', label: '背景與版型設定' },
         { id: 'splash', label: '開場動畫設定' }
@@ -142,7 +153,7 @@ export function Settings() {
       }
       return group;
     });
-  }, [settings.custom_sections]);
+  }, [settings.custom_sections, hasOC]); // 加入 hasOC 依賴確保正確即時更新
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -186,6 +197,20 @@ export function Settings() {
             tab_order: parsed.tab_order || []
           }));
         }
+
+        // 🌟 新增：悄悄在背景檢查該創作者是否有建立角色卡
+        try {
+          const ocRes = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
+          if (ocRes.ok) {
+            const ocData = await ocRes.json();
+            if (ocData.success && ocData.data && ocData.data.length > 0) {
+              setHasOC(true); // 觸發側邊欄選單解鎖
+            }
+          }
+        } catch (e) {
+          console.error("背景檢查 OC 列表失敗", e);
+        }
+
       }
     } catch (error) {
       console.error("讀取設定失敗", error);
@@ -238,15 +263,18 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 🌟 將 'showcase' 加入免費用戶可存取的 Tab 列表中
+  // 🌟 將 'oc_display' 加入免費用戶可存取的 Tab 列表中
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'bulletin_settings', 'queue_settings', 'showcase'
+    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
   ];
   
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
+
+  // 🌟 判斷是否要隱藏底部的全域儲存按鈕（當在 OC 展示頁時自動隱藏，因為該頁是點擊就即時存檔）
+  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display';
 
   return (
     <div className="settings-page">
@@ -343,6 +371,9 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
+            {/* 🌟 新增：渲染 OC 角色卡展示設定分頁 */}
+            {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
+
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
@@ -371,7 +402,7 @@ export function Settings() {
             {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />}
           </div>
 
-          {!hideGlobalSave && (
+          {!shouldHideGlobalSave && (
             <div className="save-action-bar">
               <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
                 {isSaving ? '儲存中...' : '儲存所有變更'}
