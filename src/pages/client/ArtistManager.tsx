@@ -123,15 +123,15 @@ export function ArtistManager() {
       <header className="crm-header">
         <h2>追蹤與黑名單</h2>
         <div className="customers-header-actions">
+          {/* 🌟 修改點：將原本的 style={{ width: '240px' }} 改用 className，讓 CSS 控制 RWD */}
           <input 
             type="text" 
-            className="crm-form-input" 
-            style={{ width: '240px' }}
+            className="crm-form-input crm-search-input" 
             placeholder="搜尋名稱、ID 或備註..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button className="crm-submit-btn" style={{ background: '#3b82f6' }} onClick={() => navigate('/')}>
+          <button className="crm-submit-btn crm-primary-btn" onClick={() => navigate('/')}>
             前往許願池探索
           </button>
         </div>
@@ -160,53 +160,57 @@ export function ArtistManager() {
         <table className="crm-table">
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', paddingLeft: '20px' }}>繪師資訊</th>
-              <th style={{ textAlign: 'center' }}>標籤狀態</th>
-              <th style={{ textAlign: 'left' }}>私人備註</th>
-              <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
+              <th className="th-left-align">繪師資訊</th>
+              <th className="th-center-align">標籤狀態</th>
+              <th className="th-left-align">私人備註</th>
+              <th className="crm-th-action th-center-align">操作</th>            
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+              <tr><td colSpan={4} className="td-empty-state">讀取中...</td></tr>
             ) : displayRelations.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', padding: '60px 20px', color: '#9ca3af' }}>
+                <td colSpan={4} className="td-empty-state td-empty-text">
                   {activeTab === 'favorite' 
                     ? '您目前尚未收藏任何繪師。在許願池或繪師個人頁點擊 ❤️ 即可收藏！' 
                     : '目前沒有黑名單紀錄。'}
                 </td>
               </tr>
             ) : displayRelations.map(rel => (
-              <tr key={rel.id} onClick={() => window.open(`/${rel.public_id}`, '_blank')} style={{ cursor: 'pointer' }}>
-                <td style={{ paddingLeft: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <tr key={rel.id} onClick={() => window.open(`/${rel.public_id}`, '_blank')} className="crm-clickable-row">
+                <td className="td-artist-info">
+                  <div className="artist-info-wrapper">
+                    <div className="artist-avatar-box">
                       {rel.avatar_url ? (
-                        <img src={rel.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={rel.avatar_url} alt="avatar" className="artist-avatar-img" />
                       ) : (
                         <User size={20} color="#94a3b8" />
                       )}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{rel.display_name || '未命名繪師'}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b', fontFamily: 'monospace' }}>{rel.public_id}</div>
+                      <div className="artist-name-text">{rel.display_name || '未命名繪師'}</div>
+                      <div className="artist-id-text">{rel.public_id}</div>
                     </div>
                   </div>
                 </td>
 
-                <td style={{ textAlign: 'center' }}>
+                <td className="td-center-align td-mobile-tag">
                   <span className={`crm-tag crm-tag-${rel.relation_type === 'favorite' ? 'vip' : 'blacklisted'}`}>
                     {rel.relation_type === 'favorite' ? '❤️ 收藏' : '🚫 黑名單'}
                   </span>
                 </td>
                 
-                <td className="crm-td-note" style={{ textAlign: 'left', maxWidth: '250px' }}>
-                  {rel.custom_note || <span style={{ opacity: 0.4 }}>尚未填寫備註</span>}
+                <td className="crm-td-note td-note-text">
+                  {rel.custom_note ? (
+                    <span className="note-content">{rel.custom_note}</span>
+                  ) : (
+                    <span className="note-placeholder">尚未填寫備註</span>
+                  )}
                 </td>
                 
-                <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                  <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(rel); }}>
+                <td className="crm-td-action td-center-align" onClick={(e) => e.stopPropagation()}>
+                  <button className="crm-tab-btn crm-action-btn" onClick={(e) => { e.stopPropagation(); openEditModal(rel); }}>
                     編輯備註
                   </button>
                 </td>
@@ -218,13 +222,13 @@ export function ArtistManager() {
 
       {modalMode === 'edit' && selectedRel && (
         <div className="crm-modal-overlay">
-          <div className="crm-modal-card" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+          <div className="crm-modal-card" onClick={e => e.stopPropagation()}>
             <div className="crm-edit-mode">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, color: '#5D4A3E' }}>編輯名單標記</h3>
+              <div className="modal-header-wrapper">
+                <h3 className="modal-title">編輯名單標記</h3>
                 <button 
                   onClick={() => window.open(`/${selectedRel.public_id}`, '_blank')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+                  className="modal-preview-btn"
                 >
                   查看公開頁 <ExternalLink size={14} />
                 </button>
@@ -232,12 +236,12 @@ export function ArtistManager() {
               
               <div className="crm-form-section">
                 <label className="crm-form-label">狀態切換</label>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <div className="radio-group-wrapper">
+                  <label className="radio-label">
                     <input type="radio" name="relType" checked={editType === 'favorite'} onChange={() => setEditType('favorite')} />
                     ❤️ 收藏
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#ef4444' }}>
+                  <label className="radio-label radio-label-danger">
                     <input type="radio" name="relType" checked={editType === 'blacklist'} onChange={() => setEditType('blacklist')} />
                     🚫 黑名單
                   </label>
@@ -247,17 +251,16 @@ export function ArtistManager() {
               <div className="crm-form-section">
                 <label className="crm-form-label">私人備註 (僅您自己可見)</label>
                 <textarea 
-                  className="crm-form-input" 
-                  style={{ height: '100px', resize: 'none' }} 
-                  placeholder="例如：畫風很精緻，但排單要等一個月..."
+                  className="crm-form-input textarea-note" 
+                  placeholder="例如：跑單過..."
                   value={editNote} 
                   onChange={e => setEditNote(e.target.value)} 
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+              <div className="modal-footer-wrapper">
                 <button className="crm-delete-btn" onClick={() => handleDelete(selectedRel.target_user_id)}>移除名單</button>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="modal-action-buttons">
                   <button className="crm-tab-btn" onClick={() => setModalMode('none')}>取消</button>
                   <button className="crm-submit-btn" onClick={handleSave}>儲存變更</button>
                 </div>
