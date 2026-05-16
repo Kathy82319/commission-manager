@@ -242,8 +242,8 @@ export function OCCardPage() {
                     </div>
 
                     <div className="oc-short-intro">
-                      <div className="oc-short-intro-title">個性簡述：</div>
-                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的個性（最多120字）..." isTextArea={true} />
+                      <div className="oc-short-intro-title">其他簡述：</div>
+                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多120字）..." isTextArea={true} />
                     </div>
                   </div>
                 )}
@@ -251,15 +251,15 @@ export function OCCardPage() {
                 {activeTab === 'background' && (
                   <div className="fade-in oc-form-column">
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性 (無字數限制)</h4>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性</h4>
                       <textarea value={selectedOC.personality} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, personality: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="詳細描述角色的內在性格、價值觀或口癖..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明 (無字數限制)</h4>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明</h4>
                       <textarea value={selectedOC.background} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, background: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="敘述角色的生平、世界觀或重要人際關係..." style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明 (無字數限制)</h4>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明 </h4>
                       <textarea value={selectedOC.other_notes} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, other_notes: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="任何其他想讓繪師知道的細節（例如武器設定、特殊狀態等）..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
                     </div>
                   </div>

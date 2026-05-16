@@ -50,19 +50,33 @@ export function OCDashedInput({
     }
   };
 
-  // 🌟 修正：極致壓縮 padding 與 border 寬度
   const containerStyle: React.CSSProperties = {
     position: 'relative',
     display: 'flex',
     alignItems: isTextArea ? 'flex-start' : 'center',
     border: `1.5px dashed ${isFocused ? '#A67B3E' : '#DED9D3'}`,
     borderRadius: '6px',
-    padding: '4px 8px', /* 大幅縮小上下左右間距 */
+    padding: '4px 8px', 
     backgroundColor: isFocused ? '#FFF' : '#FBFBF9',
     transition: 'all 0.2s',
     cursor: isFocused ? 'text' : 'pointer',
     width: '100%',
     minHeight: isTextArea ? 'auto' : '32px'
+  };
+
+  // 🌟 核心修正：強制清除所有全域 input 的預設樣式
+  const resetInputStyle: React.CSSProperties = {
+    flex: 1, 
+    border: 'none', 
+    outline: 'none', 
+    backgroundColor: 'transparent', 
+    boxShadow: 'none',          // 清除可能存在的圓角陰影
+    WebkitAppearance: 'none',   // 清除 iOS/Safari 預設樣式
+    appearance: 'none', 
+    margin: 0,
+    padding: 0,
+    fontSize: '13px', 
+    color: '#5D4A3E',
   };
 
   return (
@@ -79,7 +93,7 @@ export function OCDashedInput({
             onBlur={handleBlur}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', resize: 'vertical', minHeight: '80px', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.5', padding: 0 }}
+            style={{ ...resetInputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5' }}
           />
         ) : (
           <input
@@ -91,7 +105,7 @@ export function OCDashedInput({
             onFocus={() => setIsFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: '#5D4A3E', padding: 0 }}
+            style={resetInputStyle}
           />
         )}
         <Pencil size={12} color="#A0978D" style={{ marginLeft: '6px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />
