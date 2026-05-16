@@ -9,6 +9,7 @@ import { NotebookSidebar } from './notebook-components/NotebookSidebar';
 import { TabDetails } from './notebook-components/TabDetails';
 import { TabDelivery } from './notebook-components/TabDelivery';
 import { TabLogs } from './notebook-components/TabLogs';
+import { TabOC } from './notebook-components/TabOC'; // 🌟 新增：引入 OC 分頁元件
 
 export function Notebook() {
   const location = useLocation();
@@ -16,10 +17,11 @@ export function Notebook() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
-  const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs') || 'details';
+  // 🌟 修正：加入 'oc' 到型別斷言中
+  const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs' | 'oc') || 'details';
 
   const [myId, setMyId] = useState<string>(''); 
-  const [isPremium, setIsPremium] = useState<boolean>(false); // 🌟 紀錄繪師是否為付費或試用會員
+  const [isPremium, setIsPremium] = useState<boolean>(false);
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const tabs = [
     { id: 'all', label: '全部' },
@@ -31,7 +33,7 @@ export function Notebook() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-  const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs' | 'oc'>(initialTab);
 
   const [editData, setEditData] = useState<Partial<Commission>>({});
   const [isEditingRequest, setIsEditingRequest] = useState(false);
@@ -51,7 +53,6 @@ export function Notebook() {
       .then(data => { 
         if (data.success) {
           setMyId(data.data.id); 
-          // 🌟 即時計算付費與試用期狀態，用以驅動前端 UI 權限鎖定
           const isPro = data.data.plan_type === 'pro' && (!data.data.pro_expires_at || new Date(data.data.pro_expires_at) > new Date());
           const isTrial = data.data.plan_type === 'trial' && (!data.data.trial_end_at || new Date(data.data.trial_end_at) > new Date());
           setIsPremium(isPro || isTrial);
@@ -130,7 +131,6 @@ export function Notebook() {
       setSubmissions(data.data.submissions || []); 
       
       const fetchedLogs: ActionLog[] = data.data.logs || [];
-      // 🌟 核心修正：前端防禦性去重過濾，封死因併發競態導致重複寫入資料庫的重疊歷程
       const uniqueLogs: ActionLog[] = [];
       const seenLogKeys = new Set<string>();
       for (const log of fetchedLogs) {
@@ -496,6 +496,8 @@ export function Notebook() {
                 <button className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>委託單細項</button>
                 <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
                 <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
+                {/* 🌟 新增：角色設定分頁按鈕 */}
+                <button className={`tab-btn ${activeTab === 'oc' ? 'active' : ''}`} onClick={() => setActiveTab('oc')}>角色設定 (OC)</button>
               </div>
 
               <div className="tab-content-area">
@@ -520,6 +522,10 @@ export function Notebook() {
                 )}
                 {activeTab === 'logs' && (
                   <TabLogs logs={logs} />
+                )}
+                {/* 🌟 新增：角色設定分頁內容 */}
+                {activeTab === 'oc' && (
+                  <TabOC selectedOrder={selectedOrder} />
                 )}
               </div>
             </div>

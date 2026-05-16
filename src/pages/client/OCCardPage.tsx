@@ -207,11 +207,11 @@ export function OCCardPage() {
                         <div className="oc-form-row-2">
                           <div>
                             <div className="oc-field-label">性別：</div>
-                            <OCDashedInput value={selectedOC.gender} onSave={(val: string) => handleSaveOC({ ...selectedOC, gender: val })} placeholder="例如：女" />
+                            <OCDashedInput value={selectedOC.gender} onSave={(val: string) => handleSaveOC({ ...selectedOC, gender: val })}  />
                           </div>
                           <div>
                             <div className="oc-field-label">體型：</div>
-                            <OCDashedInput value={selectedOC.body_type} onSave={(val: string) => handleSaveOC({ ...selectedOC, body_type: val })} placeholder="例如：瘦小" />
+                            <OCDashedInput value={selectedOC.body_type} onSave={(val: string) => handleSaveOC({ ...selectedOC, body_type: val })}  />
                           </div>
                         </div>
 
@@ -221,7 +221,7 @@ export function OCCardPage() {
 
                         <div>
                           <div className="oc-field-label">特點／配件：</div>
-                          <OCDashedInput value={selectedOC.traits} onSave={(val: string) => handleSaveOC({ ...selectedOC, traits: val })} placeholder="例如：左眼下有淚痣、戴黑框眼鏡" />
+                          <OCDashedInput value={selectedOC.traits} onSave={(val: string) => handleSaveOC({ ...selectedOC, traits: val })}  />
                         </div>
                         
                         <div className="oc-must-have">
@@ -230,12 +230,12 @@ export function OCCardPage() {
                         </div>
 
                         <div className="oc-donts">
-                          <div className="oc-field-label">絕對雷點：</div>
-                          <OCDashedInput value={selectedOC.donts} onSave={(val: string) => handleSaveOC({ ...selectedOC, donts: val })} placeholder="絕對禁止畫出的地雷..." />
+                          <div className="oc-field-label">雷點：</div>
+                          <OCDashedInput value={selectedOC.donts} onSave={(val: string) => handleSaveOC({ ...selectedOC, donts: val })} placeholder="例如：禁止畫出的元素..." />
                         </div>
 
                         <div>
-                          <div className="oc-field-label">印象關鍵字：</div>
+                          <div className="oc-field-label">關鍵字標籤：</div>
                           <OCTagInput tags={selectedOC.keywords} onChange={(newTags: string[]) => handleSaveOC({ ...selectedOC, keywords: newTags })} />
                         </div>
                       </div>
@@ -252,7 +252,7 @@ export function OCCardPage() {
                   <div className="fade-in oc-form-column">
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
                       <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性</h4>
-                      <textarea value={selectedOC.personality} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, personality: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="詳細描述角色的內在性格、價值觀或口癖..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
+                      <textarea value={selectedOC.personality} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, personality: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="描述角色的內在性格、價值觀或喜好..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
                       <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明</h4>
