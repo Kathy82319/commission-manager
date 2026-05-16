@@ -56,6 +56,27 @@ export const ocController = {
   async create(request: any, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
+      
+      // 🛡️ 業務邏輯防護：檢查長文本與陣列長度，避免惡意 Payload 塞爆資料庫
+      const MAX_TEXT_LENGTH = 1000; // 允許些微緩衝
+      if (
+        (body.personality && body.personality.length > MAX_TEXT_LENGTH) ||
+        (body.background && body.background.length > MAX_TEXT_LENGTH) ||
+        (body.other_notes && body.other_notes.length > MAX_TEXT_LENGTH)
+      ) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "部分設定內容字數過長，為確保系統穩定，請將各欄位控制在 800 字以內喔！" 
+        }), { status: 400, headers: corsHeaders });
+      }
+
+      if (body.images && Array.isArray(body.images) && body.images.length > 10) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "上傳的圖片數量超過上限，每張角色卡最多支援 10 張圖片喔！" 
+        }), { status: 400, headers: corsHeaders });
+      }
+
       const id = body.id || `oc-${Date.now()}`;
       const isPublicInt = body.is_public ? 1 : 0;
 
@@ -89,6 +110,27 @@ export const ocController = {
   async update(request: any, ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
+
+      // 🛡️ 業務邏輯防護：檢查長文本與陣列長度
+      const MAX_TEXT_LENGTH = 1000;
+      if (
+        (body.personality && body.personality.length > MAX_TEXT_LENGTH) ||
+        (body.background && body.background.length > MAX_TEXT_LENGTH) ||
+        (body.other_notes && body.other_notes.length > MAX_TEXT_LENGTH)
+      ) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "部分設定內容字數過長，為確保系統穩定，請將各欄位控制在 800 字以內喔！" 
+        }), { status: 400, headers: corsHeaders });
+      }
+
+      if (body.images && Array.isArray(body.images) && body.images.length > 10) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "上傳的圖片數量超過上限，每張角色卡最多支援 10 張圖片喔！" 
+        }), { status: 400, headers: corsHeaders });
+      }
+
       const isPublicInt = body.is_public ? 1 : 0;
 
       await env.commission_db.prepare(
