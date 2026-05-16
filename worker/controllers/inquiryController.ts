@@ -101,7 +101,7 @@ export const inquiryController = {
       }
 
       const { results } = await env.commission_db.prepare(`
-        SELECT id, sender_id, content, created_at, 'inquiry' as source
+        SELECT id, sender_id, content, created_at, 'inquiry' as source, message_type
         FROM InquiryMessages 
         WHERE inquiry_id = ?
 
@@ -109,7 +109,7 @@ export const inquiryController = {
 
         SELECT m.id, 
                CASE WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
-               m.content, m.created_at, 'commission' as source
+               m.content, m.created_at, 'commission' as source, 'text' as message_type
         FROM Messages m
         JOIN Commissions c ON m.commission_id = c.id
         WHERE json_extract(c.origin_source, '$.inquiry_id') = ?
@@ -122,6 +122,7 @@ export const inquiryController = {
     }
   },
 
+  // 🌟 核心功能修改：處理 OC 快照發送
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -138,8 +139,46 @@ export const inquiryController = {
       }
 
       const body = await request.json() as any;
-      const { content, message_type = 'text' } = body;
+      let { content, message_type = 'text', oc_id = null } = body;
       const id = crypto.randomUUID();
+
+      // === 資安防護：伺服器端抓取 OC 快照 ===
+      if (message_type === 'oc_snapshot' && oc_id) {
+        // 去資料庫找這張 OC 卡，並確認擁有者是當前發送者
+        const ocRecord = await env.commission_db.prepare(`
+          SELECT * FROM oc_cards WHERE id = ? AND user_id = ?
+        `).bind(oc_id, currentUserId).first() as any;
+
+        if (!ocRecord) {
+           return new Response(JSON.stringify({ success: false, error: '找不到指定的角色卡或無權限存取' }), { status: 403, headers: corsHeaders });
+        }
+
+        // 把資料庫字串轉回物件
+        const finalSnapshot = {
+          id: ocRecord.id,
+          name: ocRecord.name,
+          gender: ocRecord.gender,
+          body_type: ocRecord.body_type,
+          hair_desc: ocRecord.hair_desc,
+          hair_colors: JSON.parse(ocRecord.hair_colors || '[]'),
+          eyes_desc: ocRecord.eyes_desc,
+          eyes_colors: JSON.parse(ocRecord.eyes_colors || '[]'),
+          clothing_desc: ocRecord.clothing_desc,
+          clothing_colors: JSON.parse(ocRecord.clothing_colors || '[]'),
+          traits: ocRecord.traits,
+          must_have: ocRecord.must_have,
+          donts: ocRecord.donts,
+          keywords: JSON.parse(ocRecord.keywords || '[]'),
+          short_intro: ocRecord.short_intro,
+          personality: ocRecord.personality,
+          background: ocRecord.background,
+          other_notes: ocRecord.other_notes,
+          images: JSON.parse(ocRecord.images || '[]')
+        };
+
+        // 鎖定 Content 為這份快照的 JSON 字串
+        content = JSON.stringify(finalSnapshot);
+      }
       
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
@@ -147,10 +186,13 @@ export const inquiryController = {
       ]);
 
       const targetUserId = currentUserId === inquiryData.artist_id ? inquiryData.bulletin_client_id : inquiryData.artist_id;
-      const text = `💬 洽談室「${inquiryData.title || '未命名'}」有新的聊天訊息。`;
+      const text = message_type === 'oc_snapshot' 
+        ? `📇 委託人已在「${inquiryData.title || '未命名'}」發送了一張專屬角色設定卡 (OC)。`
+        : `💬 洽談室「${inquiryData.title || '未命名'}」有新的聊天訊息。`;
+
       await notificationController.createNotification(env, targetUserId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
 
-      return new Response(JSON.stringify({ success: true, data: { id, content } }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, data: { id, content, message_type } }), { headers: corsHeaders });
     } catch (error: any) {
       return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
     }
@@ -158,7 +200,6 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：提取 i.status 用以防禦 TOCTOU 漏洞
       const inquiryData = await env.commission_db.prepare(`
         SELECT i.status, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
@@ -173,8 +214,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
       }
 
-      // 🌟 核心修正：防禦 TOCTOU / Race Condition 合約竄改漏洞
-      // 若合約已經處於 proposed(已送出) 或 accepted(已成立) 狀態，嚴禁再修改草稿內容
       if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted') {
         return new Response(JSON.stringify({ 
           success: false, 
@@ -302,6 +341,7 @@ export const inquiryController = {
       let parsedArtistSnapshot = inquiryData.artist_snapshot;
       try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
+      // 🌟 核心修正：將 draft 裡的 oc_snapshot 抽出來寫入獨立欄位
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
         inquiry_id: inquiryId, 
@@ -315,18 +355,22 @@ export const inquiryController = {
       const clientName = clientInfo?.display_name || '案主';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
+      // 🌟 把 draft.oc_snapshot 寫入新欄位，供 TabOC 讀取
+      const finalOcSnapshot = draft.oc_snapshot ? JSON.stringify(draft.oc_snapshot) : null;
+
       await env.commission_db.prepare(
         `INSERT INTO Commissions (
           id, client_id, artist_id, type_id, project_name, 
           contact_memo, total_price, status, origin_source, 
           usage_type, is_rush, draw_scope, char_count, bg_type, add_ons,
-          delivery_method, workflow_mode, latest_message_at, agreed_tos_snapshot
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP, ?)`
+          delivery_method, workflow_mode, latest_message_at, agreed_tos_snapshot,
+          oc_snapshot
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?, ?, ?, '三階段審閱', 'standard', CURRENT_TIMESTAMP, ?, ?)`
       ).bind(
         commissionId, actualClientId, actualArtistId, 'type-01', finalProjectName,
         clientName, draft.total_price || 0, origin_source, draft.usage_type || '個人收藏', draft.is_rush || '否',
         draft.draw_scope || '未定', draft.char_count || 1, draft.bg_type || '透明/純色', draft.add_ons || '',
-        tosText
+        tosText, finalOcSnapshot
       ).run();
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();

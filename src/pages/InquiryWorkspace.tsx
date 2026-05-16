@@ -6,6 +6,9 @@ import DOMPurify from 'dompurify';
 import ReactQuill from 'react-quill-new'; 
 import 'react-quill-new/dist/quill.snow.css'; 
 import '../styles/Workspace.css';
+// 🌟 新增：引入必要的圖示與 OC 預覽元件
+import { BookUser, Maximize2, X, Image as ImageIcon } from 'lucide-react';
+import { OCDetailCard } from '../components/OC/OCDetailCard';
 
 const R2_PUBLIC_URL = "https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev";
 
@@ -57,6 +60,12 @@ export const InquiryWorkspace: React.FC = () => {
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
   const [paymentPresets, setPaymentPresets] = useState<string[]>([]);
 
+  // 🌟 新增：OC 卡片選擇與檢視狀態
+  const [showOCSelection, setShowOCSelection] = useState(false);
+  const [myOCs, setMyOCs] = useState<any[]>([]);
+  const [isLoadingOCs, setIsLoadingOCs] = useState(false);
+  const [viewingOCSnapshot, setViewingOCSnapshot] = useState<any | null>(null);
+
   useEffect(() => {
     const savedPresets = localStorage.getItem('payment_timing_presets');
     if (savedPresets) {
@@ -97,7 +106,8 @@ export const InquiryWorkspace: React.FC = () => {
     payment_timing: '全額付清後動筆', 
     add_ons: '',
     agreed_memo: '',
-    custom_tos: undefined 
+    custom_tos: undefined,
+    oc_snapshot: null // 🌟 新增：紀錄綁定的 OC 快照
   });
 
   const formatLocalTime = (dateStr: string) => {
@@ -227,6 +237,38 @@ export const InquiryWorkspace: React.FC = () => {
     fetchData();
   };
 
+  // 🌟 新增：打開角色卡選擇器
+  const handleOpenOCSelection = async () => {
+    setShowOCSelection(true);
+    setIsLoadingOCs(true);
+    try {
+      const res = await apiClient.get('/api/oc');
+      if (res.success) {
+        setMyOCs(res.data || []);
+      }
+    } catch (e) {
+      console.error("無法讀取角色卡", e);
+    } finally {
+      setIsLoadingOCs(false);
+    }
+  };
+
+  // 🌟 新增：發送 OC 卡
+  const handleSendOC = async (ocId: string) => {
+    if (!window.confirm('確定要發送這張角色卡到洽談室嗎？發送後系統將會建立快照，對方會看到卡片當下的設定。')) return;
+    setShowOCSelection(false);
+    try {
+      await apiClient.post(`/api/${apiPrefix}/${id}/messages`, {
+        oc_id: ocId,
+        message_type: 'oc_snapshot'
+      });
+      setIsScrolledUp(false);
+      fetchData();
+    } catch (e: any) {
+      alert('發送角色卡失敗：' + e.message);
+    }
+  };
+
   const silentCompressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -327,17 +369,14 @@ export const InquiryWorkspace: React.FC = () => {
 
   const handlePropose = async () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
-       // 🌟 更新前端提示文案為活躍訂單概念
        return alert('抱歉，您的活躍委託單已達免費版上限。請先結案舊訂單或升級專業版以解鎖！');
     }
     if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
     try {
       await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
       
-      // 1. 先送系統提示
       await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】繪師已送出正式提案，請委託人確認合約規格與報價。' });
       
-      // 2. 再送成單狀態改變
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/propose`, {});
       if (res.success) {
         alert('已送出正式提案給案主！');
@@ -350,10 +389,8 @@ export const InquiryWorkspace: React.FC = () => {
   const handleRejectProposal = async () => {
     if (!window.confirm("確定要退回提案，讓繪師重新修改合約與規格嗎？")) return;
     try {
-      // 1. 先送系統提示
       await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。' });
       
-      // 2. 再退回狀態
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/reject-proposal`, {});
       if (res.success) {
         alert('已將提案退回，繪師現在可以重新編輯並送出了。');
@@ -367,13 +404,10 @@ export const InquiryWorkspace: React.FC = () => {
   const handleFinalize = async () => {
     if (!agreedToTerms) return alert('請先勾選同意委託協議。');
     try {
-      // 1. 先送系統提示 (此時狀態還是 proposed，後端允許寫入對話)
       await apiClient.post(`/api/${apiPrefix}/${id}/messages`, { content: '【系統提示】委託人已確認同意協議書，委託單正式成立！' });
       
-      // 2. 再送最終確認狀態 (此後後端可能鎖死對話)
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/finalize`, {});
       if (res.success) {
-        // 為了讓委託人跳轉前能在畫面看到剛剛送出的系統訊息，手動刷新一下畫面
         await fetchData(); 
         
         const commId = res.commission_id || res.id;
@@ -524,6 +558,73 @@ export const InquiryWorkspace: React.FC = () => {
               const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
 
+              // 🌟 新增：專屬渲染 OC 快照卡片
+              if (msg.message_type === 'oc_snapshot') {
+                let ocData: any = null;
+                try { ocData = JSON.parse(msg.content); } catch (e) {}
+
+                return (
+                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                      <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
+                      <span>{formatLocalTime(msg.created_at)}</span>
+                    </div>
+                    <div className="iw-chat-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
+                      {ocData ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', borderBottom: isMe ? '1px solid rgba(255,255,255,0.2)' : '1px solid #EAE6E1', paddingBottom: '8px', fontSize: '13px' }}>
+                            <BookUser size={16} /> 角色設定卡快照
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
+                              {ocData.images && ocData.images.length > 0 ? (
+                                <img src={ocData.images[0].previewUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
+                              )}
+                            </div>
+                            <div style={{ overflow: 'hidden' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ocData.name || '未命名角色'}</div>
+                              <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>{ocData.gender} {ocData.body_type}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                            <button
+                              onClick={() => setViewingOCSnapshot(ocData)}
+                              style={{ width: '100%', padding: '8px 0', backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : '#F4F0EB', color: isMe ? '#FFF' : '#5D4A3E', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                              <Maximize2 size={14} /> 檢視設定卡內容
+                            </button>
+
+                            {/* 🌟 繪師專屬：帶入合約按鈕 */}
+                            {isArtist && isEditableByArtist && (
+                              <button
+                                onClick={() => {
+                                  setDraft({ ...draft, oc_snapshot: ocData });
+                                  alert('已將此角色設定卡帶入合約草稿！');
+                                  if (window.innerWidth < 1024) setShowMobileAside(true);
+                                }}
+                                style={{ width: '100%', padding: '8px 0', backgroundColor: '#8CB369', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A9E58'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#8CB369'}
+                              >
+                                📌 帶入合約草稿
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '13px', color: '#A05C5C' }}>[角色設定卡資料損毀或解析失敗]</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               if (isSystemMsg) {
                 return (
                   <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
@@ -561,6 +662,19 @@ export const InquiryWorkspace: React.FC = () => {
           )}
 
           <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            {/* 🌟 新增：傳送角色卡按鈕 (僅委託人可見) */}
+            {!isArtist && inquiry?.status !== 'accepted' && (
+              <button 
+                onClick={handleOpenOCSelection}
+                style={{ padding: '10px', background: '#FDF4E6', border: '1px solid #FDE0B5', borderRadius: '50%', color: '#A67B3E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, transition: 'all 0.2s' }}
+                title="傳送專屬角色設定卡 (OC)"
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <span style={{ fontSize: '20px' }}>📇</span>
+              </button>
+            )}
+
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
             <button 
               onClick={() => fileInputRef.current?.click()} 
@@ -599,7 +713,6 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
                 {isArtist && artistQuota && (
-                   // 🌟 核心更新：將「本月建單」變更為「活躍訂單」的對應用語
                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `活躍訂單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
               </div>
@@ -656,6 +769,34 @@ export const InquiryWorkspace: React.FC = () => {
               
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
+                
+                {/* 🌟 新增：顯示已綁定的 OC 設定卡 (繪師可移除) */}
+                <div style={{ padding: '12px', backgroundColor: '#FDFDFB', borderRadius: '8px', border: '1px solid #EAE6E1', marginBottom: '16px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><BookUser size={14} /> 綁定角色設定卡</span>
+                    {isEditableByArtist && draft.oc_snapshot && (
+                      <button onClick={() => { if(window.confirm('確定要從合約中移除此角色卡嗎？')) { const newDraft = {...draft}; delete newDraft.oc_snapshot; setDraft(newDraft); } }} style={{ background: 'none', border: 'none', color: '#A05C5C', fontSize: '11px', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}>✕ 移除</button>
+                    )}
+                  </label>
+                  {draft.oc_snapshot ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
+                        {draft.oc_snapshot.images && draft.oc_snapshot.images.length > 0 ? (
+                          <img src={draft.oc_snapshot.images[0].previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : <ImageIcon size={16} style={{ margin: '12px auto', display: 'block', color: '#A0978D' }} />}
+                      </div>
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#332D28', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{draft.oc_snapshot.name}</div>
+                        <button onClick={() => setViewingOCSnapshot(draft.oc_snapshot)} style={{ background: 'none', border: 'none', color: '#4A7294', fontSize: '11px', cursor: 'pointer', padding: 0, marginTop: '2px', fontWeight: 'bold' }}>檢視設定卡內容</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>
+                      {isArtist ? '尚未綁定。若委託人有在聊天室發送角色卡，可點擊「帶入合約」按鈕進行綁定。' : '繪師尚未將您的角色卡綁定入合約中。'}
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div><label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'block', marginBottom: '6px' }}>項目名稱</label><input disabled={!isEditableByArtist} className="draft-input" value={draft.project_name} onChange={(e) => setDraft({...draft, project_name: e.target.value})} /></div>
                   
@@ -801,7 +942,13 @@ export const InquiryWorkspace: React.FC = () => {
                     <p style={{ margin: 0 }}><strong>人物數量：</strong> {draft.char_count} 人</p>
                     <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
                     <p style={{ margin: 0 }}><strong>急件需求：</strong> {draft.is_rush}</p>
-                    <p style={{ margin: 0, gridColumn: '1 / -1' }}><strong>委託用途：</strong> {draft.usage_type}</p>
+                    <p style={{ margin: 0 }}><strong>委託用途：</strong> {draft.usage_type}</p>
+                    {/* 🌟 最終確認畫面上顯示綁定角色名稱 */}
+                    {draft.oc_snapshot && (
+                      <p style={{ margin: 0, gridColumn: '1 / -1' }}>
+                        <strong>綁定角色設定卡：</strong> <span style={{ color: '#4A7294', fontWeight: 'bold' }}>{draft.oc_snapshot.name}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -831,6 +978,77 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* 🌟 彈出視窗：委託人選擇發送哪一張 OC 卡 */}
+        {showOCSelection && (
+          <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px', animation: 'fadeIn 0.2s ease-in-out' }}>
+            <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
+               <h3 style={{ marginTop: 0, color: '#5D4A3E', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 選擇要發送的角色卡
+                 <button onClick={() => setShowOCSelection(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#A0978D' }}>✕</button>
+               </h3>
+
+               <div style={{ maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                 {isLoadingOCs ? (
+                   <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>讀取您的角色庫中...</div>
+                 ) : myOCs.length === 0 ? (
+                   <div style={{ textAlign: 'center', color: '#A0978D', padding: '30px 20px', backgroundColor: '#F4F0EB', borderRadius: '8px' }}>
+                     您還沒有建立任何專屬角色卡喔！<br/>請先前往「我的角色卡 (OC)」介面建立。
+                   </div>
+                 ) : (
+                   myOCs.map(oc => {
+                     let firstImage = null;
+                     try { firstImage = JSON.parse(oc.images || '[]')[0]?.previewUrl; } catch(e){}
+
+                     return (
+                       <div key={oc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
+                              {firstImage ? (
+                                <img src={firstImage} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DED9D3' }}><ImageIcon size={20} /></div>
+                              )}
+                            </div>
+                            <div style={{ overflow: 'hidden' }}>
+                              <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{oc.name || '未命名角色'}</div>
+                              <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>{oc.gender || '無性別'} {oc.body_type || ''}</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleSendOC(oc.id)}
+                            style={{ padding: '8px 16px', backgroundColor: '#8CB369', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A9E58'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#8CB369'}
+                          >
+                            發送快照
+                          </button>
+                       </div>
+                     );
+                   })
+                 )}
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🌟 彈出視窗：檢視完整的 OC 卡片快照內容 */}
+        {viewingOCSnapshot && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.2s ease-in-out' }}>
+            <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', backgroundColor: 'transparent', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <button
+                onClick={() => setViewingOCSnapshot(null)}
+                style={{ position: 'absolute', top: '-40px', right: 0, background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold' }}
+              >
+                關閉 <X size={20} />
+              </button>
+              <div style={{ overflowY: 'auto', borderRadius: '12px', backgroundColor: '#FDFDFB' }}>
+                <OCDetailCard ocData={viewingOCSnapshot} />
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div> 
   );
