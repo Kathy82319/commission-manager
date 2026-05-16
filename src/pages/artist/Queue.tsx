@@ -520,7 +520,7 @@ export function Queue() {
                         color: 'inherit', 
                         fontWeight: 'bold', 
                         fontSize: 'inherit', 
-                        width: '80px',
+                        width: '100px',
                         padding: '2px 4px',
                         borderRadius: '4px',
                         cursor: 'text',
@@ -651,7 +651,11 @@ export function Queue() {
           </table>
         </div>
       ) : (
-        <QueueCalendarView commissions={filteredCommissions} dateColumnLabel={dateColumnLabel} />
+        <QueueCalendarView 
+          commissions={filteredCommissions} 
+          dateColumnLabel={dateColumnLabel} 
+          handleUpdateField={handleUpdateField} 
+        />
       )}
 
       {isQuoteModalOpen && (
