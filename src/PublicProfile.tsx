@@ -746,9 +746,17 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 渲染角色設定 (OC) 分頁 */}
+              {/* 🌟 修正後的角色設定 (OC) 分頁片段 */}
               {currentTab === 'oc' && publicOCs.length > 0 && (
-                <div className="public-oc-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+                <div className="public-oc-layout fade-in" style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '24px', 
+                  width: '100%',
+                  maxWidth: '1020px', // 🌟 置中收束最大寬度，防止橫向過度攤平
+                  margin: '0 auto',    // 🌟 左右留白呼吸空間
+                  padding: '10px 4px'
+                }}>
                   
                   {publicOCs.length > 1 && (
                     <>
@@ -805,9 +813,9 @@ export function PublicProfile() {
                     </>
                   )}
 
-                  {/* 核心內容：直接調用一體化緊湊型唯讀設定卡 */}
+                  {/* 核心內容：啟用高質感扁平毛玻璃樣式 */}
                   {currentSelectedOC && (
-                    <div style={{ width: '100%', color: '#332D28' }}>
+                    <div style={{ width: '100%' }}>
                       <OCDetailCard ocData={currentSelectedOC} variant="flat" />
                     </div>
                   )}

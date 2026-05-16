@@ -1,6 +1,6 @@
 // src/components/OC/OCDetailCard.tsx
 import { useState } from 'react';
-import { Copy, Check, Image as ImageIcon, ZoomIn, X } from 'lucide-react';
+import { Check, Image as ImageIcon } from 'lucide-react';
 import type { OCImageItem } from './OCImageManager';
 import '../../styles/OCCardPage.css'; 
 
@@ -29,7 +29,6 @@ export interface OCCardData {
 
 interface OCDetailCardProps {
   ocData: OCCardData;
-  // 🌟 新增 variant 屬性：'default' 為卡片模式，'flat' 為個人頁無框雜誌模式
   variant?: 'default' | 'flat';
 }
 
@@ -83,30 +82,45 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
   };
 
   return (
-    // 🌟 根據模式決定外框樣式
-    <div style={{ 
-      backgroundColor: isFlat ? 'transparent' : '#FDFDFB', 
-      borderRadius: isFlat ? '0' : '12px', 
-      overflow: isFlat ? 'visible' : 'hidden', 
-      position: 'relative' 
-    }}>
+    <div style={
+      isFlat ? {
+        backgroundColor: 'rgba(255, 255, 255, 0.78)', // 🌟 高級感 78% 半透明白底
+        backdropFilter: 'blur(16px)',                  // 🌟 毛玻璃核心特效
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.3)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04)',
+        position: 'relative'
+      } : {
+        backgroundColor: '#FDFDFB', 
+        borderRadius: '12px', 
+        overflow: 'hidden', 
+        position: 'relative' 
+      }
+    }>
       
-      {/* 燈箱與 Toast 保持不變... */}
+      {/* 燈箱 */}
       {zoomedImage && (
         <div onClick={() => setZoomedImage(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 100005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}>
           <img src={zoomedImage} alt="放大" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px' }} />
         </div>
       )}
 
+      {/* Toast */}
       {toastMsg && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#5D4A3E', color: 'white', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Check size={16} color="#A67B3E" /> {toastMsg}
         </div>
       )}
 
-      {/* 🌟 根據模式調整內距 */}
-      <div style={{ padding: isFlat ? '10px 0' : '24px' }}>
-        <div className="oc-intro-grid" style={{ gridTemplateColumns: '1fr 1.2fr', gap: isFlat ? '32px' : '24px' }}>
+      {/* 內距調整 */}
+      <div style={{ padding: isFlat ? '32px' : '24px' }}>
+        {/* 🌟 限制左欄圖片最大寬度為 380px，右欄自適應延伸 */}
+        <div className="oc-intro-grid" style={{ 
+          display: 'grid',
+          gridTemplateColumns: isFlat ? 'minmax(200px, 380px) 1fr' : '1fr 1.2fr', 
+          gap: isFlat ? '36px' : '24px' 
+        }}>
           
           {/* 左側：圖片區 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -130,16 +144,14 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
 
           {/* 右側：詳細資料區 */}
           <div className="oc-form-column" style={{ gap: '12px' }}>
-            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              {/* 若為扁平模式，名字可以稍微再放大一點加強雜誌感 */}
-              <h2 style={{ margin: 0, fontSize: isFlat ? '32px' : '28px', color: '#5D4A3E', fontWeight: 'bold' }}>
+              <h2 style={{ margin: 0, fontSize: isFlat ? '30px' : '28px', color: '#5D4A3E', fontWeight: 'bold' }}>
                 {ocData.name || '未命名角色'}
               </h2>
               
-              {/* 🌟 切換按鈕的樣式分支 */}
+              {/* 切換按鈕的樣式分支 */}
               {isFlat ? (
-                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
                   <button 
                     onClick={() => setActiveTab('intro')}
                     style={{ border: 'none', background: 'none', padding: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'intro' ? '#5D4A3E' : '#A0978D', borderBottom: activeTab === 'intro' ? '2px solid #5D4A3E' : '2px solid transparent', transition: 'all 0.2s' }}
@@ -241,12 +253,12 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
             {ocData.keywords && ocData.keywords.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
                 {ocData.keywords.map((kw, i) => (
-                  <span key={i} style={{ backgroundColor: '#F4F0EB', color: '#5D4A3E', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>#{kw}</span>
+                  <span key={i} style={{ backgroundColor: '#rgba(0,0,0,0.05)', color: '#5D4A3E', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>#{kw}</span>
                 ))}
               </div>
             )}
             {ocData.short_intro && (
-              <div className="oc-short-intro" style={{ margin: 0, padding: '12px 16px' }}>
+              <div className="oc-short-intro" style={{ margin: 0, padding: '12px 16px', backgroundColor: 'rgba(0,0,0,0.02)' }}>
                 <div className="oc-short-intro-title" style={{ fontSize: '13px' }}>個性簡述：</div>
                 <ReadOnlyText text={ocData.short_intro} />
               </div>
