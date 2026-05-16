@@ -4,7 +4,6 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, Image as ImageIcon } from 'lucide-react';
-// 🌟 修正：因為檔案在 src/ 底下，且 CSS 位於 src/styles/，正確路徑應為 `./styles/...`
 import { OCDetailCard } from './components/OC/OCDetailCard';
 import './styles/PublicProfile.css';
 
@@ -507,29 +506,31 @@ export function PublicProfile() {
     );
   }, [showcaseItems, selectedTags]);
 
+  // 🌟 核心修正：移除一刀切的 if (!settings) return []; 阻斷，改用 optional chaining 確保在無外觀設定下也能解鎖 OC 分頁
   const availableTabs = useMemo(() => {
-    if (!settings) return [];
     const tabs: any[] = [];
-    const isHidden = (id: string) => settings.hidden_sections?.includes(id) || false;
+    const isHidden = (id: string) => settings?.hidden_sections?.includes(id) || false;
     const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
 
-    if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-    if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-    
-    if (settings.queue_settings?.enabled) {
-      tabs.push({ id: 'queue', label: '排單狀況' });
+    if (settings) {
+      if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
+      if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
+      
+      if (settings.queue_settings?.enabled) {
+        tabs.push({ id: 'queue', label: '排單狀況' });
+      }
     }
 
     if (!isHidden('showcase') && showcaseItems.length > 0) {
       tabs.push({ id: 'showcase', label: '接委託展示區' });
     }
 
-    // 只要此用戶有任何公開的角色卡，就注入「角色設定」分頁
+    // 🌟 核心增補：只要此用戶有任何公開的角色卡，就無差別注入「角色設定」分頁（不受 settings 限制）
     if (publicOCs.length > 0) {
       tabs.push({ id: 'oc', label: '角色設定' });
     }
 
-    if (!isFreePlan) {
+    if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec) => {
           if (!isHidden(sec.id) && sec.content) {
@@ -539,7 +540,7 @@ export function PublicProfile() {
       }
     }
 
-    if (!isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
+    if (settings && !isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
       tabs.sort((a, b) => {
         let idxA = settings.tab_order!.indexOf(a.id);
         let idxB = settings.tab_order!.indexOf(b.id);
@@ -815,7 +816,7 @@ export function PublicProfile() {
 
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
-                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
+                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目日前排單狀況</h2>
                   {publicQueue.length === 0 ? (
                     <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
                   ) : (
