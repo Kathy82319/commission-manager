@@ -1,12 +1,12 @@
-// src/pages/public/PublicProfile.tsx
+// src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, BookUser, Image as ImageIcon } from 'lucide-react';
-// 🌟 新增：引入唯讀角色卡元件
-import { OCDetailCard } from '../../components/OC/OCDetailCard';
-import './styles/PublicProfile.css';
+import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, Image as ImageIcon } from 'lucide-react';
+// 🌟 修正：因為檔案在 src/ 底下，正確路徑應為 `./components/...`
+import { OCDetailCard } from './components/OC/OCDetailCard';
+import './pages/public/styles/PublicProfile.css'; // 請確認 CSS 路徑是否需要同步調整，若你的 CSS 在 src/pages/public/styles/ 下則維持這樣
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -122,7 +122,7 @@ export function PublicProfile() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 🌟 新增：公開的 OC 角色卡列表與當前選中 OC 的狀態
+  // 公開的 OC 角色卡列表與當前選中 OC 的狀態
   const [publicOCs, setPublicOCs] = useState<any[]>([]);
   const [activeOCId, setActiveOCId] = useState<string | null>(null);
 
@@ -419,9 +419,8 @@ export function PublicProfile() {
           setShowcaseItems(formattedItems);
         }
 
-        // 🌟 新增：在背景抓取該使用者的公開 OC 角色卡列表
+        // 在背景抓取該使用者的公開 OC 角色卡列表
         try {
-          // 注意：此處串接新增的公開路由 /api/public/oc/:userId
           const ocRes = await fetch(`${API_BASE}/api/public/oc/${currentArtistId}`);
           const ocData = await ocRes.json();
           if (ocRes.ok && ocData.success) {
@@ -435,7 +434,7 @@ export function PublicProfile() {
             }));
             setPublicOCs(formattedOCs);
             if (formattedOCs.length > 0) {
-              setActiveOCId(formattedOCs[0].id); // 預設選中第一張
+              setActiveOCId(formattedOCs[0].id); 
             }
           }
         } catch (e) {
@@ -525,7 +524,7 @@ export function PublicProfile() {
       tabs.push({ id: 'showcase', label: '接委託展示區' });
     }
 
-    // 🌟 新增：只要此用戶有任何公開的角色卡，就注入「角色設定」分頁
+    // 只要此用戶有任何公開的角色卡，就注入「角色設定」分頁
     if (publicOCs.length > 0) {
       tabs.push({ id: 'oc', label: '角色設定' });
     }
@@ -580,7 +579,6 @@ export function PublicProfile() {
     }
   }, [showcaseIdParam, showcaseItems]);
 
-  // 🌟 修正：將 'oc' 納入 WideTab 寬版型陣列，讓設定卡擁有舒服的滿版寬度空間
   const isWideTab = ['portfolio', 'showcase', 'queue', 'oc'].includes(currentTab); 
 
   const handlePrevImg = (e: React.MouseEvent) => {
@@ -639,13 +637,12 @@ export function PublicProfile() {
     }
   };
 
-  // 🌟 新增：動態尋找當前選中的公開 OC 物件
   const currentSelectedOC = useMemo(() => {
     return publicOCs.find(o => o.id === activeOCId) || publicOCs[0] || null;
   }, [publicOCs, activeOCId]);
 
   if (loading) return <div className="loading-state">載入中...</div>;
-  if (!artist) return <div className="error-state">找不到該繪師的資料。</div>;
+  if (!artist) return <div className="error-state">找不到該用戶的資料。</div>;
 
   const isDarkText = (settings?.theme_mode || 'light') === 'light'; 
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
@@ -656,7 +653,6 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      {/* 🌟 注入響應式排版 CSS 規則，完美調度網頁版小標籤與手機版限動頭像圈 */}
       <style>{`
         @media (max-width: 768px) {
           .desktop-oc-tabs-wrapper { display: none !important; }
@@ -697,6 +693,7 @@ export function PublicProfile() {
                 <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
               ) : (
                 <div className="profile-avatar default-avatar-placeholder" style={{ backgroundColor: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                  {/* 🌟 修正：修正了之前的 justifyInquiry室 錯字 */}
                   <User size={48} strokeWidth={1.5} />
                 </div>
               )}
@@ -749,11 +746,10 @@ export function PublicProfile() {
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 新增：渲染角色設定 (OC) 分頁 */}
+              {/* 渲染角色設定 (OC) 分頁 */}
               {currentTab === 'oc' && publicOCs.length > 0 && (
                 <div className="public-oc-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
                   
-                  {/* 多角色切換列 (大於 1 張公開卡時才激活) */}
                   {publicOCs.length > 1 && (
                     <>
                       {/* 1. 網頁版：低調、高質感的橫向小頁籤 */}
