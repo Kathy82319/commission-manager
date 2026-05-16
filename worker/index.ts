@@ -15,6 +15,7 @@ import { inquiryController } from './controllers/inquiryController';
 import { directInquiryController } from './controllers/directInquiryController';
 import { notificationController } from "./controllers/notificationController";
 import { userRelationController } from "./controllers/userRelationController";
+import { ocController } from "./controllers/ocController"; // 🌟 新增：引入 ocController
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -142,7 +143,6 @@ export default {
           return bulletinController.submitResponse(request, targetId, currentUserId!, env, corsHeaders);
         }
 
-        // 🌟 修正：補上 GET messages 時遺漏的 currentUserId 參數
         if (targetId && subAction === "messages") {
           if (request.method === "GET") {
             const authErr = requireAuth(currentUserId, corsHeaders);
@@ -214,6 +214,23 @@ export default {
             if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);
             if (request.method === "POST") return directInquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
           }
+        }
+      }
+
+      // --- OC 角色設定卡路由 ---
+      if (sanitizedPath.startsWith("/api/oc")) {
+        const authErr = requireAuth(currentUserId, corsHeaders); 
+        if (authErr) return authErr;
+        
+        const targetId = pathParts[3]; 
+
+        if (!targetId) {
+          if (request.method === "GET") return ocController.getList(currentUserId!, env, corsHeaders);
+          if (request.method === "POST") return ocController.create(request, currentUserId!, env, corsHeaders);
+        } else {
+          if (request.method === "GET") return ocController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (request.method === "PATCH") return ocController.update(request, targetId, currentUserId!, env, corsHeaders);
+          if (request.method === "DELETE") return ocController.delete(targetId, currentUserId!, env, corsHeaders);
         }
       }
 
