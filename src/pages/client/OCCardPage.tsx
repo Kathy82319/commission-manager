@@ -6,6 +6,7 @@ import { OCTagInput } from '../../components/OC/OCTagInput';
 import { OCImageManager } from '../../components/OC/OCImageManager';
 import type { OCImageItem } from '../../components/OC/OCImageManager';
 import '../../styles/Notebook.css'; 
+import '../../styles/OCCardPage.css'; // 🌟 引入全新專屬 CSS
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
@@ -104,7 +105,7 @@ export function OCCardPage() {
 
   const selectedOC = ocList.find(oc => oc.id === selectedId);
 
-  // 🌟 修正：明確拆分描述欄位名稱與顏色欄位名稱，避免隨機拼湊字串錯誤
+  // 統一封裝顏色與描述欄位
   const ColorField = ({ 
     label, 
     descFieldName, 
@@ -121,13 +122,13 @@ export function OCCardPage() {
     maxColors?: number 
   }) => {
     return (
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>{label}</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '150px' }}>
-            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ ...selectedOC!, [descFieldName]: val })} placeholder={`輸入${label}...`} />
+      <div>
+        <div className="oc-field-label">{label}</div>
+        <div className="oc-color-group">
+          <div style={{ flex: 1, minWidth: '160px' }}>
+            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ ...selectedOC!, [descFieldName]: val })} placeholder={`輸入${label}的描述...`} />
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             {Array.from({ length: maxColors }).map((_, i) => {
               const color = colors[i] || '';
               return (
@@ -140,11 +141,8 @@ export function OCCardPage() {
                       newColors[i] = e.target.value;
                       handleSaveOC({ ...selectedOC!, [colorFieldName]: newColors });
                     }}
-                    style={{
-                      width: '32px', height: '32px', padding: 0, border: '1px solid #DED9D3',
-                      borderRadius: '4px', cursor: 'pointer',
-                      opacity: color ? 1 : 0.3 
-                    }}
+                    className="oc-color-picker"
+                    style={{ opacity: color ? 1 : 0.4 }}
                     title="點擊選擇代表色"
                   />
                   {!color && (
@@ -163,10 +161,11 @@ export function OCCardPage() {
     <div className="notebook-page">
       <div className="notebook-container">
         
+        {/* 左側側邊欄：OC 列表 */}
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
           <div className="sidebar-header">
             <span className="sidebar-title">我的角色卡 (OC)</span>
-            <span style={{ fontSize: '12px', color: '#A0978D' }}>{ocList.length} / 3</span>
+            <span style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold' }}>{ocList.length} / 3</span>
           </div>
 
           <div className="sidebar-list-container" style={{ padding: '16px' }}>
@@ -177,18 +176,20 @@ export function OCCardPage() {
                     key={oc.id} 
                     onClick={() => { setSelectedId(oc.id); window.scrollTo(0,0); }} 
                     className={`sidebar-card ${selectedId === oc.id ? 'selected' : ''}`}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', cursor: 'pointer', borderRadius: '8px', border: selectedId === oc.id ? '2px solid #A67B3E' : '1px solid #EAE6E1', backgroundColor: selectedId === oc.id ? '#FDFDFB' : '#FFF', marginBottom: '12px' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', cursor: 'pointer', borderRadius: '10px', border: selectedId === oc.id ? '2px solid #A67B3E' : '1px solid #EAE6E1', backgroundColor: selectedId === oc.id ? '#FDFDFB' : '#FFF', marginBottom: '12px', transition: 'all 0.2s' }}
                   >
-                    <div style={{ width: '50px', height: '50px', borderRadius: '8px', backgroundColor: '#FBFBF9', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '8px', backgroundColor: '#FBFBF9', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
                       {oc.images && oc.images.length > 0 ? (
                         <img src={oc.images[0].previewUrl} alt="頭像" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DED9D3' }}>無圖</div>
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DED9D3', fontSize: '12px', fontWeight: 'bold' }}>無圖</div>
                       )}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>{oc.name || '未命名角色'}</div>
-                      <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '4px' }}>
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        {oc.name || '未命名角色'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '6px' }}>
                         更新於 {new Date(oc.updated_at).toLocaleDateString('zh-TW')}
                       </div>
                     </div>
@@ -198,12 +199,12 @@ export function OCCardPage() {
                 {ocList.length < 3 && (
                   <div 
                     onClick={handleCreateNewOC}
-                    style={{ border: '2px dashed #DED9D3', borderRadius: '8px', padding: '16px', textAlign: 'center', cursor: 'pointer', color: '#A0978D', backgroundColor: '#FBFBF9', transition: 'all 0.2s' }}
+                    style={{ border: '2px dashed #DED9D3', borderRadius: '10px', padding: '20px', textAlign: 'center', cursor: 'pointer', color: '#A0978D', backgroundColor: '#FBFBF9', transition: 'all 0.2s' }}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#A67B3E'; e.currentTarget.style.color = '#A67B3E'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#DED9D3'; e.currentTarget.style.color = '#A0978D'; }}
                   >
-                    <Plus size={24} style={{ margin: '0 auto', marginBottom: '8px' }} />
-                    <div style={{ fontWeight: 'bold' }}>新增角色設定卡</div>
+                    <Plus size={26} style={{ margin: '0 auto', marginBottom: '10px' }} />
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>新增角色設定卡</div>
                   </div>
                 )}
               </>
@@ -211,126 +212,134 @@ export function OCCardPage() {
           </div>
         </div>
 
+        {/* 右側：編輯詳情 */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`}>
           {!selectedOC ? <div className="main-empty">請從左側選擇或新增一個角色卡</div> : (
             <div className="main-content-wrapper fade-in">
               
-              <div className="main-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-                  <button className="mobile-back-btn" onClick={() => setSelectedId(null)} style={{ display: 'flex', alignItems: 'center', padding: '8px', background: 'none', border: 'none', color: '#5D4A3E', fontWeight: 'bold' }}>
-                    <ChevronLeft size={20} /> 返回列表
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <OCDashedInput value={selectedOC.name} onSave={(val: string) => handleSaveOC({ ...selectedOC, name: val })} placeholder="輸入角色名稱..." />
-                  </div>
-                </div>
+              {/* 頂部僅保留返回按鈕與標題提示 */}
+              <div className="oc-main-header">
+                <button className="mobile-back-btn" onClick={() => setSelectedId(null)} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', background: 'none', border: 'none', color: '#5D4A3E', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <ChevronLeft size={20} /> 返回列表
+                </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 24px', gap: '8px', marginTop: '-10px' }}>
+              {/* 綠色分頁按鈕 */}
+              <div className="oc-tabs-wrapper">
                 <button 
+                  className={`oc-tab-btn ${activeTab === 'intro' ? 'active' : 'inactive'}`}
                   onClick={() => setActiveTab('intro')}
-                  style={{ padding: '8px 24px', backgroundColor: activeTab === 'intro' ? '#8CB369' : '#DED9D3', color: activeTab === 'intro' ? '#FFF' : '#7A7269', border: 'none', borderRadius: '8px 8px 0 0', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
                 >
                   簡介
                 </button>
                 <button 
+                  className={`oc-tab-btn ${activeTab === 'background' ? 'active' : 'inactive'}`}
                   onClick={() => setActiveTab('background')}
-                  style={{ padding: '8px 24px', backgroundColor: activeTab === 'background' ? '#8CB369' : '#DED9D3', color: activeTab === 'background' ? '#FFF' : '#7A7269', border: 'none', borderRadius: '8px 8px 0 0', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
                 >
                   背景詳細設定
                 </button>
               </div>
 
-              <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px 0 12px 12px', padding: '24px', minHeight: '600px' }}>
+              <div className="oc-content-panel">
                 
+                {/* 分頁 1：簡介 */}
                 {activeTab === 'intro' && (
                   <div className="fade-in">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }} className="oc-intro-grid">
+                    <div className="oc-intro-grid">
                       
-                      <div style={{ gridColumn: '1 / span 1' }}>
+                      {/* 左側：圖片管理 */}
+                      <div>
                         <OCImageManager images={selectedOC.images} onChange={(newImages: OCImageItem[]) => handleSaveOC({ ...selectedOC, images: newImages })} />
                       </div>
 
-                      <div style={{ gridColumn: '2 / span 1', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* 右側：表單設定 */}
+                      <div className="oc-form-column">
                         
-                        <div style={{ display: 'flex', gap: '16px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>性別：</div>
+                        {/* 🌟 角色名稱已移動至表單最頂部 */}
+                        <div>
+                          <div className="oc-field-label">角色名稱：</div>
+                          <OCDashedInput value={selectedOC.name} onSave={(val: string) => handleSaveOC({ ...selectedOC, name: val })} placeholder="請輸入角色名稱..." />
+                        </div>
+
+                        <div className="oc-form-row-2">
+                          <div>
+                            <div className="oc-field-label">性別：</div>
                             <OCDashedInput value={selectedOC.gender} onSave={(val: string) => handleSaveOC({ ...selectedOC, gender: val })} placeholder="例如：女" />
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>體型：</div>
+                          <div>
+                            <div className="oc-field-label">體型：</div>
                             <OCDashedInput value={selectedOC.body_type} onSave={(val: string) => handleSaveOC({ ...selectedOC, body_type: val })} placeholder="例如：瘦小" />
                           </div>
                         </div>
 
-                        {/* 🌟 修正：此處精準指名描述與顏色的各別對應欄位 */}
                         <ColorField label="髮色／髮型：" descFieldName="hair_desc" colorFieldName="hair_colors" value={selectedOC.hair_desc} colors={selectedOC.hair_colors} />
                         <ColorField label="瞳色／瞳型：" descFieldName="eyes_desc" colorFieldName="eyes_colors" value={selectedOC.eyes_desc} colors={selectedOC.eyes_colors} />
                         <ColorField label="服裝：" descFieldName="clothing_desc" colorFieldName="clothing_colors" value={selectedOC.clothing_desc} colors={selectedOC.clothing_colors} />
 
                         <div>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>特點／配件：</div>
+                          <div className="oc-field-label">特點／配件：</div>
                           <OCDashedInput value={selectedOC.traits} onSave={(val: string) => handleSaveOC({ ...selectedOC, traits: val })} placeholder="例如：左眼下有淚痣、戴黑框眼鏡" />
                         </div>
                         
-                        <div style={{ borderLeft: '3px solid #8CB369', paddingLeft: '12px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>必帶元素：</div>
+                        <div className="oc-must-have">
+                          <div className="oc-field-label">必帶元素：</div>
                           <OCDashedInput value={selectedOC.must_have} onSave={(val: string) => handleSaveOC({ ...selectedOC, must_have: val })} placeholder="繪師絕對不能漏掉的細節..." />
                         </div>
 
-                        <div style={{ borderLeft: '3px solid #E11D48', paddingLeft: '12px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#E11D48', marginBottom: '6px' }}>絕對雷點：</div>
+                        <div className="oc-donts">
+                          <div className="oc-field-label">絕對雷點：</div>
                           <OCDashedInput value={selectedOC.donts} onSave={(val: string) => handleSaveOC({ ...selectedOC, donts: val })} placeholder="絕對禁止畫出的地雷..." />
                         </div>
 
                         <div>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>印象關鍵字：</div>
+                          <div className="oc-field-label">印象關鍵字：</div>
                           <OCTagInput tags={selectedOC.keywords} onChange={(newTags: string[]) => handleSaveOC({ ...selectedOC, keywords: newTags })} />
                         </div>
 
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '24px', backgroundColor: '#FFFEE0', padding: '20px', borderRadius: '12px', border: '1px solid #F0E68C' }}>
-                      <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#8B8000', marginBottom: '12px' }}>個性簡述：</div>
+                    {/* 底部：個性簡述 */}
+                    <div className="oc-short-intro">
+                      <div className="oc-short-intro-title">個性簡述：</div>
                       <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的個性（最多120字）..." isTextArea={true} />
                     </div>
                   </div>
                 )}
 
+                {/* 分頁 2：背景詳細設定 */}
                 {activeTab === 'background' && (
-                  <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
-                      <h4 style={{ color: '#5D4A3E', marginTop: 0, marginBottom: '12px', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px' }}>角色個性 (無字數限制)</h4>
+                  <div className="fade-in oc-form-column">
+                    <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '12px', marginBottom: '16px' }}>角色個性 (無字數限制)</h4>
                       <textarea
                         value={selectedOC.personality}
                         onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, personality: e.target.value } : oc))}
                         onBlur={() => handleSaveOC(selectedOC)}
                         placeholder="詳細描述角色的內在性格、價值觀或口癖..."
-                        style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.6', color: '#5D4A3E' }}
+                        style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '15px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }}
                       />
                     </div>
 
-                    <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
-                      <h4 style={{ color: '#5D4A3E', marginTop: 0, marginBottom: '12px', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px' }}>人物背景說明 (無字數限制)</h4>
+                    <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '12px', marginBottom: '16px' }}>人物背景說明 (無字數限制)</h4>
                       <textarea
                         value={selectedOC.background}
                         onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, background: e.target.value } : oc))}
                         onBlur={() => handleSaveOC(selectedOC)}
                         placeholder="敘述角色的生平、世界觀或重要人際關係..."
-                        style={{ width: '100%', minHeight: '150px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.6', color: '#5D4A3E' }}
+                        style={{ width: '100%', minHeight: '160px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '15px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }}
                       />
                     </div>
 
-                    <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
-                      <h4 style={{ color: '#5D4A3E', marginTop: 0, marginBottom: '12px', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px' }}>其他說明 (無字數限制)</h4>
+                    <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '12px', marginBottom: '16px' }}>其他說明 (無字數限制)</h4>
                       <textarea
                         value={selectedOC.other_notes}
                         onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, other_notes: e.target.value } : oc))}
                         onBlur={() => handleSaveOC(selectedOC)}
                         placeholder="任何其他想讓繪師知道的細節（例如武器設定、特殊狀態等）..."
-                        style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.6', color: '#5D4A3E' }}
+                        style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '15px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }}
                       />
                     </div>
                   </div>
@@ -341,14 +350,6 @@ export function OCCardPage() {
           )}
         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        @media (max-width: 768px) {
-          .oc-intro-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}} />
     </div>
   );
 }

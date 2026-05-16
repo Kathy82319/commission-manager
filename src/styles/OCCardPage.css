@@ -1,0 +1,177 @@
+/* src/styles/OCCardPage.css */
+
+/* 頂部標題列精簡化 */
+.oc-main-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px 0 24px;
+  min-height: 48px;
+}
+
+/* 分頁頁籤容器 */
+.oc-tabs-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 24px;
+  gap: 8px;
+  margin-top: -10px; /* 讓頁籤稍微貼合下方的容器 */
+  position: relative;
+  z-index: 2;
+}
+
+/* 獨立的分頁按鈕 */
+.oc-tab-btn {
+  padding: 10px 28px;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.oc-tab-btn.active {
+  background-color: #8CB369; /* 契合你草圖的綠色 */
+  color: #FFF;
+  box-shadow: 0 -2px 10px rgba(140, 179, 105, 0.2);
+}
+
+.oc-tab-btn.inactive {
+  background-color: #EAE6E1;
+  color: #7A7269;
+}
+
+.oc-tab-btn.inactive:hover {
+  background-color: #DED9D3;
+}
+
+/* 主要編輯區塊外框 */
+.oc-content-panel {
+  background-color: #FDFDFB;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px 0 12px 12px;
+  padding: 32px;
+  min-height: 600px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+/* 簡介分頁的左右切割 Grid */
+.oc-intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr; /* 左側圖片較小，右側表單較寬 */
+  gap: 40px;
+  align-items: start;
+}
+
+/* 右側表單的垂直排列 */
+.oc-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 雙欄位並排 (如性別/體型) */
+.oc-form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* 統一的欄位標題樣式 */
+.oc-field-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #5D4A3E;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* 顏色輸入框群組 */
+.oc-color-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 顏色挑選器方塊 */
+.oc-color-picker {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #EAE6E1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.oc-color-picker:hover {
+  transform: scale(1.05);
+}
+
+/* 防護線樣式設計 */
+.oc-must-have {
+  border-left: 4px solid #8CB369;
+  padding-left: 16px;
+  background-color: rgba(140, 179, 105, 0.05);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+}
+
+.oc-donts {
+  border-left: 4px solid #E11D48;
+  padding-left: 16px;
+  background-color: rgba(225, 29, 72, 0.05);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+}
+
+.oc-donts .oc-field-label {
+  color: #E11D48;
+}
+
+/* 個性簡述區塊 (黃色背景) */
+.oc-short-intro {
+  margin-top: 32px;
+  background-color: #FFFEE0;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #F0E68C;
+}
+
+.oc-short-intro-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #8B8000;
+  margin-bottom: 12px;
+}
+
+/* RWD 手機版適配 */
+@media (max-width: 768px) {
+  .oc-intro-grid {
+    grid-template-columns: 1fr; /* 圖片與表單改為上下堆疊 */
+    gap: 32px;
+  }
+
+  .oc-form-row-2 {
+    grid-template-columns: 1fr; /* 性別與體型改為上下堆疊 */
+    gap: 16px;
+  }
+
+  .oc-content-panel {
+    padding: 20px;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .oc-tabs-wrapper {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 16px;
+  }
+  
+  .oc-tab-btn {
+    padding: 10px 20px;
+    flex-shrink: 0;
+  }
+}
