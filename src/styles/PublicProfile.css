@@ -859,84 +859,84 @@
   
   /* 1. 大幅縮小頂部主選單與大頭貼之間的距離 */
   .profile-main-content {
-    padding: 12px 16px !important; 
+    padding: 12px 16px; 
   }
 
   /* 2. 縮小圓形大頭貼與下方卡片的距離 */
   .mobile-oc-avatars-wrapper {
-    gap: 12px !important;
-    padding: 0 16px 4px 16px !important; 
-    margin: 0 -16px !important; 
-    justify-content: flex-start !important;
+    gap: 12px;
+    padding: 0 16px 4px 16px; 
+    margin: 0 -16px; 
+    justify-content: flex-start;
   }
   
   /* 3. 卡片內部呼吸空間微調 */
   .oc-detail-container.is-flat .oc-card-content-wrapper {
-    padding: 24px 20px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+    padding: 24px 20px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* 4. 上下堆疊圖片與內容 */
   .oc-detail-container.is-flat .oc-intro-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 20px !important;
-    width: 100% !important; /* 確保網格整體撐滿 */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%; /* 確保網格整體撐滿 */
   }
   .oc-images-section {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* 🌟 核心修正：強制內容區塊撐滿 100%，拒絕因為文字太少而內縮！ */
   .oc-form-column {
-    width: 100% !important;
-    min-width: 100% !important;
+    width: 100%;
+    min-width: 100%;
     min-height: 380px; 
     box-sizing: border-box;
   }
 
   /* 5. 終極解決標題與按鈕跳動問題 */
   .oc-card-header {
-    width: 100% !important; /* 🌟 確保標題區塊撐滿 */
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 12px !important;
-    padding-bottom: 0 !important;
-    border-bottom: none !important;
+    width: 100%; /* 🌟 確保標題區塊撐滿 */
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 0;
+    border-bottom: none;
     box-sizing: border-box;
   }
   .oc-card-header h2 {
-    font-size: 26px !important;
+    font-size: 26px;
   }
   
   /* 讓底部擁有一條完整的灰線 */
   .oc-card-tabs {
-    width: 100% !important;
-    display: flex !important;
-    border-bottom: 2px solid rgba(0,0,0,0.06) !important;
-    background: transparent !important; 
-    padding: 0 !important;
+    width: 100%;
+    display: flex;
+    border-bottom: 2px solid rgba(0,0,0,0.06);
+    background: transparent; 
+    padding: 0;
     margin-bottom: 4px;
   }
   
   /* 🌟 強制兩個按鈕絕對等寬，且嚴禁文字斷行 */
   .oc-tab-btn.flat {
-    flex: 1 1 0% !important; /* 忽略內容長度，強迫各佔 50% */
-    white-space: nowrap !important; /* 嚴禁文字被擠到第二行 */
-    text-align: center !important;
-    padding: 10px 0 !important;
-    font-size: 15px !important;
-    background: transparent !important; 
-    border-radius: 0 !important;
-    border: none !important;
-    border-bottom: 2px solid transparent !important;
-    margin-bottom: -2px !important; 
+    flex: 1 1 0%; /* 忽略內容長度，強迫各佔 50% */
+    white-space: nowrap; /* 嚴禁文字被擠到第二行 */
+    text-align: center;
+    padding: 10px 0;
+    font-size: 15px;
+    background: transparent; 
+    border-radius: 0;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px; 
   }
   .oc-tab-btn.flat.active {
-    border-bottom: 2px solid #5D4A3E !important;
-    color: #5D4A3E !important;
+    border-bottom: 2px solid #5D4A3E;
+    color: #5D4A3E;
   }
 }
 
