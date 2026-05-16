@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GripVertical, X, Edit2, Calendar as CalendarIcon, List as ListIcon } from 'lucide-react';
 import { QuoteBuilder } from './QuoteBuilder';
-// 🌟 引入我們剛剛寫好的日曆元件
 import { QueueCalendarView } from './notebook-components/QueueCalendarView';
 import '../../styles/Queue.css';
 
@@ -130,7 +129,6 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   
-  // 🌟 新增：視圖切換狀態 (列表 vs 日曆)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const [paidAmounts, setPaidAmounts] = useState<Record<string, number>>({});
@@ -450,7 +448,6 @@ export function Queue() {
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
 
-          {/* 🌟 視圖切換按鈕群組 */}
           <div style={{ display: 'flex', backgroundColor: '#F1F5F9', borderRadius: '8px', padding: '4px', gap: '4px' }}>
             <button
               onClick={() => setViewMode('list')}
@@ -497,7 +494,6 @@ export function Queue() {
         </div>
       </div>
 
-      {/* 🌟 根據 viewMode 條件渲染對應的視圖元件 */}
       {viewMode === 'list' ? (
         <div className="queue-table-wrapper">
           <table className="queue-table">
@@ -655,7 +651,7 @@ export function Queue() {
           </table>
         </div>
       ) : (
-        <QueueCalendarView commissions={filteredCommissions} />
+        <QueueCalendarView commissions={filteredCommissions} dateColumnLabel={dateColumnLabel} />
       )}
 
       {isQuoteModalOpen && (

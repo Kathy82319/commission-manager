@@ -15,6 +15,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
 interface QueueCalendarViewProps {
   commissions: any[];
+  dateColumnLabel: string; // 🌟 新增：接收從父元件傳來的自訂日期標籤
 }
 
 interface CalendarEventData {
@@ -29,7 +30,7 @@ interface CalendarEventData {
 
 const PRESET_COLORS = ['#4A7294', '#8CB369', '#A67B3E', '#A05C5C', '#8E7E8E', '#5D4A3E'];
 
-export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
+export function QueueCalendarView({ commissions, dateColumnLabel }: QueueCalendarViewProps) {
   const navigate = useNavigate();
   const [events, setEvents] = useState<CalendarEventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +60,7 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
     fetchCalendarEvents();
   }, []);
 
-  // 混合資料：將委託單(截稿日)與私人行程轉為日曆套件格式
+  // 混合資料：將委託單與私人行程轉為日曆套件格式
   const calendarDisplayEvents = useMemo(() => {
     const displayList: any[] = [];
 
@@ -68,7 +69,8 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
       if (c.end_date) {
         displayList.push({
           id: `comm-${c.id}`,
-          title: `[截稿] ${c.client_custom_title || c.project_name || '未命名'}`,
+          // 🌟 移除寫死的 [截稿] 標籤
+          title: `${c.client_custom_title || c.project_name || '未命名'}`,
           start: new Date(c.end_date),
           end: new Date(c.end_date),
           allDay: true,
@@ -79,7 +81,6 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
 
     // 2. 私人行程 (自訂色塊)
     events.forEach(e => {
-      // 判斷是否關聯了委託單
       let displayTitle = e.title;
       if (e.linked_commission_id) {
         const linkedComm = commissions.find(c => c.id === e.linked_commission_id);
@@ -92,7 +93,7 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
         id: e.id,
         title: displayTitle,
         start: new Date(e.start_date),
-        end: new Date(e.end_date), // 若要跨日，結束日會自動延展
+        end: new Date(e.end_date), 
         allDay: true,
         resource: { type: 'custom', data: e }
       });
@@ -128,7 +129,6 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
   // 點擊日曆空白格子 -> 新增行程
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     const formattedStart = moment(slotInfo.start).format('YYYY-MM-DD');
-    // react-big-calendar 的 end date 通常會多包一天，若是單日選取，我們將其扣回
     const formattedEnd = moment(slotInfo.start).isSame(moment(slotInfo.end).subtract(1, 'day'), 'day') 
       ? formattedStart 
       : moment(slotInfo.end).subtract(1, 'day').format('YYYY-MM-DD');
@@ -176,7 +176,7 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
       const data = await res.json();
       if (data.success) {
         setModalMode('none');
-        fetchCalendarEvents(); // 重新整理
+        fetchCalendarEvents(); 
       } else {
         alert('儲存失敗：' + data.error);
       }
@@ -214,7 +214,6 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
   return (
     <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '20px', border: '1px solid #EAE6E1', height: '800px', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 局部注入日曆套件的客製化樣式，避免破壞全域 */}
       <style dangerouslySetInnerHTML={{__html: `
         .rbc-calendar { font-family: inherit; }
         .rbc-toolbar button { border-radius: 6px; color: #5D4A3E; border-color: #DED9D3; }
@@ -227,7 +226,8 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
       `}} />
 
       <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '13px', color: '#7A7269', alignItems: 'center' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C04B4B', display: 'inline-block' }}></span> 委託死線</span>
+        {/* 🌟 帶入動態標籤 */}
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#C04B4B', display: 'inline-block' }}></span> {dateColumnLabel}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#4A7294', display: 'inline-block' }}></span> 自訂行程 / 工作期</span>
         <span style={{ marginLeft: 'auto', fontStyle: 'italic', fontSize: '12px', color: '#A0978D' }}>💡 點擊空白處新增行程，點擊色塊編輯。</span>
       </div>
@@ -248,9 +248,7 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
         />
       </div>
 
-      {/* =======================================================
-          彈出視窗：新增/編輯 私人行程
-          ======================================================= */}
+      {/* 彈出視窗：新增/編輯 私人行程 */}
       {modalMode === 'edit_custom' && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#FFF', width: '100%', maxWidth: '400px', borderRadius: '12px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
@@ -325,15 +323,14 @@ export function QueueCalendarView({ commissions }: QueueCalendarViewProps) {
         </div>
       )}
 
-      {/* =======================================================
-          彈出視窗：檢視 委託單紅點
-          ======================================================= */}
+      {/* 彈出視窗：檢視 委託單紅點 */}
       {modalMode === 'view_commission' && selectedCommission && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#FFF', width: '100%', maxWidth: '350px', borderRadius: '12px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <span style={{ fontSize: '11px', backgroundColor: '#FEEBEB', color: '#C04B4B', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>委託死線</span>
+                {/* 🌟 帶入動態標籤 */}
+                <span style={{ fontSize: '11px', backgroundColor: '#FEEBEB', color: '#C04B4B', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>{dateColumnLabel}</span>
                 <h3 style={{ margin: '8px 0 0 0', color: '#5D4A3E' }}>{selectedCommission.client_custom_title || selectedCommission.project_name || '未命名'}</h3>
               </div>
               <button onClick={() => setModalMode('none')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D' }}><X size={20}/></button>
