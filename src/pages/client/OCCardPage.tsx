@@ -1,5 +1,5 @@
 // src/pages/client/OCCardPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, ChevronLeft, Trash2 } from 'lucide-react';
 import { OCDashedInput } from '../../components/OC/OCDashedInput';
 import { OCTagInput } from '../../components/OC/OCTagInput';
@@ -24,6 +24,15 @@ export function OCCardPage() {
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [isLoading, setIsLoading] = useState(true);
 
+  // 🌟 核心防護 1：使用 useRef 隨時追蹤最新的 ocList，避免 React 閉包陷阱導致舊資料覆蓋新資料
+  const latestOcList = useRef<OCCardData[]>([]);
+  // 🌟 核心防護 2：使用 AbortController 阻擋短時間內連續觸發的 API 請求（防範網路傳輸的 Race Condition）
+  const saveAbortController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    latestOcList.current = ocList;
+  }, [ocList]);
+
   useEffect(() => {
     const fetchOCs = async () => {
       try {
@@ -32,7 +41,6 @@ export function OCCardPage() {
           const data = await res.json();
           const list = data.data || [];
           setOcList(list);
-          // 🌟 修正：載入完成後，自動選取第一個 OC
           if (list.length > 0) setSelectedId(list[0].id);
         }
       } catch (error) {
@@ -44,14 +52,39 @@ export function OCCardPage() {
     fetchOCs();
   }, []);
 
-  const handleSaveOC = async (updatedData: OCCardData) => {
-    setOcList(prev => prev.map(oc => oc.id === updatedData.id ? updatedData : oc));
+  // 🌟 改寫 handleSaveOC，現在只需傳入「要修改的欄位 (updates)」，不再需要傳遞整包資料
+  const handleSaveOC = async (updates: Partial<OCCardData>) => {
+    if (!selectedId) return;
+
+    // 確保永遠拿到記憶體中「最新」的卡片資料
+    const currentOC = latestOcList.current.find(oc => oc.id === selectedId);
+    if (!currentOC) return;
+
+    const mergedOC = { ...currentOC, ...updates };
+
+    // 立即更新前端畫面 (Optimistic Update)
+    setOcList(prev => prev.map(oc => oc.id === selectedId ? mergedOC : oc));
+
+    // 取消上一個還在飛的請求，只讓最後一個攜帶完整狀態的請求抵達後端
+    if (saveAbortController.current) {
+      saveAbortController.current.abort();
+    }
+    const abortController = new AbortController();
+    saveAbortController.current = abortController;
+
     try {
-      await fetch(`${API_BASE}/api/oc/${updatedData.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify(updatedData)
+      await fetch(`${API_BASE}/api/oc/${selectedId}`, {
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' }, 
+        credentials: 'include',
+        body: JSON.stringify(mergedOC),
+        signal: abortController.signal
       });
-    } catch (e) { console.error("儲存失敗", e); }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        console.error("儲存失敗", e);
+      }
+    }
   };
 
   const handleCreateNewOC = async () => {
@@ -63,7 +96,7 @@ export function OCCardPage() {
     };
     setOcList([...ocList, newOC]);
     setSelectedId(newOC.id);
-    setActiveTab('intro'); // 新增時自動跳回簡介
+    setActiveTab('intro'); 
     try {
       await fetch(`${API_BASE}/api/oc`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -72,7 +105,6 @@ export function OCCardPage() {
     } catch (e) { console.error("建立失敗", e); }
   };
 
-  // 🌟 新增：刪除 OC 卡片功能
   const handleDeleteOC = async () => {
     if (!selectedId) return;
     if (!window.confirm("確定要刪除這個角色卡嗎？此動作無法復原！")) return;
@@ -98,7 +130,8 @@ export function OCCardPage() {
         <div className="oc-field-label">{label}</div>
         <div className="oc-color-group">
           <div style={{ flex: 1, minWidth: '160px' }}>
-            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ ...selectedOC!, [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
+            {/* 🌟 寫法變得非常簡潔，不會再有舊狀態被傳入 */}
+            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {Array.from({ length: maxColors }).map((_, i) => {
@@ -108,7 +141,7 @@ export function OCCardPage() {
                   <input type="color" value={color || '#FFFFFF'}
                     onChange={(e) => {
                       const newColors = [...colors]; newColors[i] = e.target.value;
-                      handleSaveOC({ ...selectedOC!, [colorFieldName]: newColors });
+                      handleSaveOC({ [colorFieldName]: newColors });
                     }}
                     className="oc-color-picker" style={{ opacity: color ? 1 : 0.4 }} title="點擊選擇代表色"
                   />
@@ -167,7 +200,6 @@ export function OCCardPage() {
           </div>
         </div>
 
-        {/* 🌟 修正：加入 overflowY: 'auto' 確保右側獨立出現滾動條，不被截斷 */}
         <div className={`notebook-main ${!selectedId ? 'mobile-hide' : ''}`} style={{ overflowY: 'auto', height: '100%' }}>
           {!selectedOC ? <div className="main-empty" style={{ paddingTop: '100px' }}>請從左側選擇或新增一個角色卡</div> : (
             <div className="main-content-wrapper fade-in" style={{ paddingBottom: '100px' }}>
@@ -178,7 +210,6 @@ export function OCCardPage() {
                 </button>
               </div>
 
-              {/* 🌟 修正：加入刪除按鈕並與 Tabs 並排 */}
               <div className="oc-tabs-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
                 <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '6px', color: '#EF4444', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2' }}>
                   <Trash2 size={14} /> 刪除角色
@@ -195,23 +226,23 @@ export function OCCardPage() {
                   <div className="fade-in">
                     <div className="oc-intro-grid">
                       <div>
-                        <OCImageManager images={selectedOC.images} onChange={(newImages: OCImageItem[]) => handleSaveOC({ ...selectedOC, images: newImages })} />
+                        <OCImageManager images={selectedOC.images} onChange={(newImages: OCImageItem[]) => handleSaveOC({ images: newImages })} />
                       </div>
 
                       <div className="oc-form-column">
                         <div>
                           <div className="oc-field-label">角色名稱：</div>
-                          <OCDashedInput value={selectedOC.name} onSave={(val: string) => handleSaveOC({ ...selectedOC, name: val })} placeholder="請輸入角色名稱..." />
+                          <OCDashedInput value={selectedOC.name} onSave={(val: string) => handleSaveOC({ name: val })} placeholder="請輸入角色名稱..." />
                         </div>
 
                         <div className="oc-form-row-2">
                           <div>
                             <div className="oc-field-label">性別：</div>
-                            <OCDashedInput value={selectedOC.gender} onSave={(val: string) => handleSaveOC({ ...selectedOC, gender: val })}  />
+                            <OCDashedInput value={selectedOC.gender} onSave={(val: string) => handleSaveOC({ gender: val })}  />
                           </div>
                           <div>
                             <div className="oc-field-label">體型：</div>
-                            <OCDashedInput value={selectedOC.body_type} onSave={(val: string) => handleSaveOC({ ...selectedOC, body_type: val })}  />
+                            <OCDashedInput value={selectedOC.body_type} onSave={(val: string) => handleSaveOC({ body_type: val })}  />
                           </div>
                         </div>
 
@@ -221,46 +252,65 @@ export function OCCardPage() {
 
                         <div>
                           <div className="oc-field-label">特點／配件：</div>
-                          <OCDashedInput value={selectedOC.traits} onSave={(val: string) => handleSaveOC({ ...selectedOC, traits: val })}  />
+                          <OCDashedInput value={selectedOC.traits} onSave={(val: string) => handleSaveOC({ traits: val })}  />
                         </div>
                         
                         <div className="oc-must-have">
                           <div className="oc-field-label">必帶元素：</div>
-                          <OCDashedInput value={selectedOC.must_have} onSave={(val: string) => handleSaveOC({ ...selectedOC, must_have: val })} placeholder="繪師絕對不能漏掉的細節..." />
+                          <OCDashedInput value={selectedOC.must_have} onSave={(val: string) => handleSaveOC({ must_have: val })} placeholder="繪師絕對不能漏掉的細節..." />
                         </div>
 
                         <div className="oc-donts">
                           <div className="oc-field-label">雷點：</div>
-                          <OCDashedInput value={selectedOC.donts} onSave={(val: string) => handleSaveOC({ ...selectedOC, donts: val })} placeholder="例如：禁止畫出的元素..." />
+                          <OCDashedInput value={selectedOC.donts} onSave={(val: string) => handleSaveOC({ donts: val })} placeholder="例如：禁止畫出的元素..." />
                         </div>
 
                         <div>
                           <div className="oc-field-label">關鍵字標籤：</div>
-                          <OCTagInput tags={selectedOC.keywords} onChange={(newTags: string[]) => handleSaveOC({ ...selectedOC, keywords: newTags })} />
+                          <OCTagInput tags={selectedOC.keywords} onChange={(newTags: string[]) => handleSaveOC({ keywords: newTags })} />
                         </div>
                       </div>
                     </div>
 
                     <div className="oc-short-intro">
                       <div className="oc-short-intro-title">其他簡述：</div>
-                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多200字）..." isTextArea={true} />
+                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多200字）..." isTextArea={true} />
                     </div>
                   </div>
                 )}
 
+                {/* 🌟 核心修正：正式啟用 OCDashedInput 與限制 800 字 */}
                 {activeTab === 'background' && (
                   <div className="fade-in oc-form-column">
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
                       <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性</h4>
-                      <textarea value={selectedOC.personality} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, personality: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="描述角色的內在性格、價值觀或喜好..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
+                      <OCDashedInput 
+                        value={selectedOC.personality} 
+                        onSave={(val: string) => handleSaveOC({ personality: val })} 
+                        placeholder="描述角色的內在性格、價值觀或喜好..." 
+                        isTextArea={true}
+                        maxLength={800}
+                      />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
                       <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明</h4>
-                      <textarea value={selectedOC.background} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, background: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="敘述角色的生平、世界觀或重要人際關係..." style={{ width: '100%', minHeight: '120px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
+                      <OCDashedInput 
+                        value={selectedOC.background} 
+                        onSave={(val: string) => handleSaveOC({ background: val })} 
+                        placeholder="敘述角色的生平、世界觀或重要人際關係..." 
+                        isTextArea={true}
+                        maxLength={800}
+                      />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明 </h4>
-                      <textarea value={selectedOC.other_notes} onChange={(e) => setOcList(prev => prev.map(oc => oc.id === selectedId ? { ...oc, other_notes: e.target.value } : oc))} onBlur={() => handleSaveOC(selectedOC)} placeholder="任何其他想讓繪師知道的細節（例如武器設定、特殊狀態等）..." style={{ width: '100%', minHeight: '100px', border: 'none', outline: 'none', resize: 'vertical', fontSize: '14px', lineHeight: '1.8', color: '#5D4A3E', backgroundColor: 'transparent' }} />
+                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明</h4>
+                      <OCDashedInput 
+                        value={selectedOC.other_notes} 
+                        onSave={(val: string) => handleSaveOC({ other_notes: val })} 
+                        placeholder="任何其他想讓繪師知道的細節（例如武器設定、特殊狀態等）..." 
+                        isTextArea={true}
+                        maxLength={800}
+                      />
                     </div>
                   </div>
                 )}
