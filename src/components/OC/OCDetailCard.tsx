@@ -1,10 +1,9 @@
 // src/components/OC/OCDetailCard.tsx
 import { useState } from 'react';
-import { Copy, Check, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, Image as ImageIcon, ZoomIn, X } from 'lucide-react';
 import type { OCImageItem } from './OCImageManager';
-import '../../styles/OCCardPage.css'; // 沿用我們之前寫好的排版 CSS
+import '../../styles/OCCardPage.css'; 
 
-// 定義傳入的資料型別
 export interface OCCardData {
   id: string;
   name: string;
@@ -36,8 +35,10 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [mainImage, setMainImage] = useState<string | null>(ocData.images?.[0]?.previewUrl || null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  
+  // 🌟 新增：控制放大燈箱的狀態
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  // 複製色碼功能
   const handleCopyColor = (color: string) => {
     if (!color) return;
     navigator.clipboard.writeText(color.toUpperCase());
@@ -45,14 +46,12 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
     setTimeout(() => setToastMsg(null), 2000);
   };
 
-  // 唯讀的文字顯示區塊
   const ReadOnlyText = ({ text, placeholder = '無' }: { text: string, placeholder?: string }) => (
     <div style={{ fontSize: '14px', color: text ? '#332D28' : '#A0978D', lineHeight: '1.6', padding: '4px 0' }}>
       {text || placeholder}
     </div>
   );
 
-  // 唯讀的顏色顯示區塊 (支援點擊複製)
   const ReadOnlyColorField = ({ label, desc, colors }: { label: string, desc: string, colors: string[] }) => {
     const validColors = colors.filter(c => c);
     return (
@@ -87,7 +86,32 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
   return (
     <div style={{ backgroundColor: '#FDFDFB', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
       
-      {/* Toast 提示 (複製色碼時顯示) */}
+      {/* 🌟 新增：全螢幕放大燈箱 (Lightbox) */}
+      {zoomedImage && (
+        <div 
+          onClick={() => setZoomedImage(null)}
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 100005, // 確保蓋過所有現有 Modal
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+            cursor: 'zoom-out', animation: 'fadeIn 0.2s ease-in-out'
+          }}
+        >
+          <button 
+            onClick={() => setZoomedImage(null)}
+            style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}
+          >
+            關閉 <X size={28} />
+          </button>
+          <img 
+            src={zoomedImage} 
+            alt="放大檢視" 
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} 
+          />
+        </div>
+      )}
+
+      {/* Toast 提示 */}
       {toastMsg && (
         <div style={{ 
           position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', 
@@ -130,13 +154,30 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
               
               {/* 左側：圖片預覽畫廊 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ 
-                  width: '100%', aspectRatio: '4/3', backgroundColor: '#F4F0EB', 
-                  borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
+                <div 
+                  onClick={() => mainImage && setZoomedImage(mainImage)}
+                  style={{ 
+                    width: '100%', aspectRatio: '4/3', backgroundColor: '#F4F0EB', 
+                    borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: mainImage ? 'zoom-in' : 'default', position: 'relative' // 🌟 游標變更
+                  }}
+                  onMouseEnter={(e) => {
+                    const icon = e.currentTarget.querySelector('.zoom-icon') as HTMLElement;
+                    if (icon) icon.style.opacity = '1';
+                  }}
+                  onMouseLeave={(e) => {
+                    const icon = e.currentTarget.querySelector('.zoom-icon') as HTMLElement;
+                    if (icon) icon.style.opacity = '0';
+                  }}
+                >
                   {mainImage ? (
-                    <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <>
+                      <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <div className="zoom-icon" style={{ position: 'absolute', bottom: '12px', right: '12px', backgroundColor: 'rgba(0,0,0,0.6)', color: '#FFF', padding: '8px', borderRadius: '50%', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ZoomIn size={20} />
+                      </div>
+                    </>
                   ) : (
                     <div style={{ color: '#A0978D', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <ImageIcon size={32} opacity={0.5} />
