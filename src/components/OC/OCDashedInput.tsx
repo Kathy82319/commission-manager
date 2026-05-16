@@ -17,7 +17,7 @@ export function OCDashedInput({
   maxLength = 200, 
   isTextArea = false 
 }: OCDashedInputProps) {
-  const [localValue, setLocalValue] = useState(value);
+  const [localValue, setLocalValue] = useState(value || '');
   const [isFocused, setIsFocused] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -64,9 +64,12 @@ export function OCDashedInput({
     minHeight: isTextArea ? 'auto' : '32px'
   };
 
+  // 動態計算字數顏色，接近上限時變紅警告
+  const isNearLimit = localValue.length >= maxLength * 0.9;
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* 🌟 修正：將 padding 從 0 改為 0 4px，給予文字左右呼吸空間 */}
+      {/* 🌟 局部樣式防護 */}
       <style dangerouslySetInnerHTML={{__html: `
         .oc-clean-input {
           flex: 1; border: none !important; outline: none !important;
@@ -78,6 +81,10 @@ export function OCDashedInput({
         .oc-clean-input:-webkit-autofill {
           -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
           transition: background-color 5000s ease-in-out 0s;
+        }
+        @keyframes fadeUpIn {
+          from { opacity: 0; transform: translate(-50%, 10px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
         }
       `}} />
 
@@ -94,7 +101,7 @@ export function OCDashedInput({
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             className="oc-clean-input"
-            style={{ resize: 'vertical', minHeight: '80px' }}
+            style={{ resize: 'vertical', minHeight: '80px', paddingBottom: '24px' }} // 預留空間給字數統計
           />
         ) : (
           <input
@@ -110,16 +117,33 @@ export function OCDashedInput({
           />
         )}
         <Pencil size={12} color="#A0978D" style={{ marginLeft: '6px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />
+        
+        {/* 🌟 新增：長文本字數即時統計 */}
+        {isTextArea && isFocused && (
+          <div style={{
+            position: 'absolute',
+            bottom: '6px',
+            right: '12px',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            color: isNearLimit ? '#C04B4B' : '#A0978D',
+            pointerEvents: 'none',
+            transition: 'color 0.2s'
+          }}>
+            {localValue.length} / {maxLength}
+          </div>
+        )}
       </div>
       
+      {/* 🌟 優化 Toast 動畫與層級 */}
       {showToast && (
         <div style={{ 
-          position: 'absolute', bottom: '-35px', left: '50%', transform: 'translateX(-50%)', 
-          backgroundColor: 'rgba(0,0,0,0.8)', color: 'white', padding: '6px 12px', 
-          borderRadius: '4px', fontSize: '12px', zIndex: 10, whiteSpace: 'nowrap', 
-          pointerEvents: 'none', animation: 'fadeIn 0.2s ease-in-out' 
+          position: 'absolute', bottom: '-40px', left: '50%', transform: 'translateX(-50%)', 
+          backgroundColor: 'rgba(93, 74, 62, 0.95)', color: 'white', padding: '6px 14px', 
+          borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', zIndex: 100, whiteSpace: 'nowrap', 
+          pointerEvents: 'none', animation: 'fadeUpIn 0.2s ease-out', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
         }}>
-          限制字數為 {maxLength} 字喔！
+          ⚠️ 內容已達 {maxLength} 字上限！
         </div>
       )}
     </div>
