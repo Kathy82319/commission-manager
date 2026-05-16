@@ -1,3 +1,4 @@
+// src/pages/artist/Customers.tsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Customers.css';
@@ -15,7 +16,6 @@ interface Customer {
   platform_name?: string;
   contact_methods: string;  
 }
-
 
 const DEFAULT_LABELS = ['一般', 'VIP'];
 
@@ -240,6 +240,36 @@ export function Customers() {
 
   return (
     <div className="crm-container">
+      {/* 🌟 局部作用域樣式 (Scoped Style)：僅在此元件生效，解決手機版跑版問題 */}
+      <style>{`
+        @media (max-width: 768px) {
+          .local-search-input { width: 100% !important; }
+          .local-cust-td {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 12px 0 !important;
+            border-bottom: 1px dashed #F0ECE7 !important;
+            text-align: right !important;
+          }
+          .local-cust-td:last-child { border-bottom: none !important; padding-bottom: 0 !important; }
+          .local-td-label { display: block !important; color: #8A7E72; font-size: 13px; font-weight: 600; }
+          .local-name-cell {
+            flex-direction: column; 
+            align-items: flex-start !important; 
+            background: #F9F7F5; 
+            padding: 16px !important; 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            border: none !important;
+          }
+          .local-name-cell .local-td-label { display: none !important; }
+          .local-td-content { text-align: right; max-width: 60%; }
+          .local-name-cell .local-td-content { text-align: left; max-width: 100%; font-size: 16px; color: #5D4A3E; }
+        }
+        .local-td-label { display: none; }
+      `}</style>
+
       {toast && <div className="crm-toast-container"><div className="crm-toast">✓ {toast}</div></div>}
 
       <header className="crm-header">
@@ -247,13 +277,13 @@ export function Customers() {
         <div className="customers-header-actions">
           <input 
             type="text" 
-            className="crm-form-input" 
+            className="crm-form-input local-search-input" 
             style={{ width: '220px' }}
             placeholder="搜尋 ID、暱稱、標籤、社群..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button className="crm-submit-btn" onClick={() => {
+          <button className="crm-submit-btn local-search-input" onClick={() => {
             setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
             setModalMode('add');
             setSuggestions([]);
@@ -281,16 +311,21 @@ export function Customers() {
           <tbody>
             {isLoading ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+            ) : displayCustomers.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px 20px', color: '#A0978D' }}>查無相關客戶紀錄</td></tr>
             ) : displayCustomers.map(c => {
               const socialArr = parseSocialMethods(c.contact_methods);
               return (
-                <tr key={c.id} onClick={() => openViewModal(c)} style={{ cursor: 'pointer' }}>
-                  <td style={{ fontWeight: '600', textAlign: 'center' }}>
-                    {c.alias_name || c.platform_name || '未命名'}
+                <tr key={c.id} onClick={() => openViewModal(c)} className="crm-clickable-row" style={{ cursor: 'pointer' }}>
+                  
+                  <td className="local-cust-td local-name-cell" style={{ fontWeight: '600', textAlign: 'center' }}>
+                    <span className="local-td-label">暱稱</span>
+                    <div className="local-td-content">{c.alias_name || c.platform_name || '未命名'}</div>
                   </td>
 
-                  <td style={{ textAlign: 'center'}}>
-                    <div className="crm-id-social-wrapper" style={{ alignItems: 'center' }}>
+                  <td className="local-cust-td" style={{ textAlign: 'center'}}>
+                    <span className="local-td-label">識別 ID / 社群</span>
+                    <div className="crm-id-social-wrapper local-td-content" style={{ alignItems: 'center' }}>
                       <div className="crm-id-box">
                         <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
                       </div>
@@ -302,18 +337,34 @@ export function Customers() {
                     </div>
                   </td>
 
-                  <td style={{ textAlign: 'center' }}>
-                    <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                      {c.custom_label}
-                    </span>
+                  <td className="local-cust-td" style={{ textAlign: 'center' }}>
+                    <span className="local-td-label">標籤分類</span>
+                    <div className="local-td-content">
+                      <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
+                        {c.custom_label}
+                      </span>
+                    </div>
                   </td>
-                  <td style={{ textAlign: 'center' }}>{c.order_count} 次</td>
-                  <td className="crm-td-note" style={{ textAlign: 'center' }}>{c.short_note || '---'}</td>
-                  <td className="crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                    <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
-                      編輯
-                    </button>
+
+                  <td className="local-cust-td" style={{ textAlign: 'center' }}>
+                    <span className="local-td-label">合作次數</span>
+                    <div className="local-td-content">{c.order_count} 次</div>
                   </td>
+
+                  <td className="local-cust-td crm-td-note" style={{ textAlign: 'center' }}>
+                    <span className="local-td-label">備註</span>
+                    <div className="local-td-content">{c.short_note || '---'}</div>
+                  </td>
+
+                  <td className="local-cust-td crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    <span className="local-td-label">操作</span>
+                    <div className="local-td-content">
+                      <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
+                        編輯
+                      </button>
+                    </div>
+                  </td>
+
                 </tr>
               );
             })}
