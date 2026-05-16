@@ -1,10 +1,10 @@
 // src/pages/client/OCCardPage.tsx
-import { useState, useEffect } from 'react'; // 修正：移除未使用的 React
+import { useState, useEffect } from 'react';
 import { Plus, ChevronLeft } from 'lucide-react';
 import { OCDashedInput } from '../../components/OC/OCDashedInput';
 import { OCTagInput } from '../../components/OC/OCTagInput';
 import { OCImageManager } from '../../components/OC/OCImageManager';
-import type { OCImageItem } from '../../components/OC/OCImageManager'; // 修正：獨立引入型別
+import type { OCImageItem } from '../../components/OC/OCImageManager';
 import '../../styles/Notebook.css'; 
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
@@ -104,13 +104,28 @@ export function OCCardPage() {
 
   const selectedOC = ocList.find(oc => oc.id === selectedId);
 
-  const ColorField = ({ label, fieldName, value, colors, maxColors = 3 }: { label: string, fieldName: keyof OCCardData, value: string, colors: string[], maxColors?: number }) => {
+  // 🌟 修正：明確拆分描述欄位名稱與顏色欄位名稱，避免隨機拼湊字串錯誤
+  const ColorField = ({ 
+    label, 
+    descFieldName, 
+    colorFieldName, 
+    value, 
+    colors, 
+    maxColors = 3 
+  }: { 
+    label: string, 
+    descFieldName: keyof OCCardData, 
+    colorFieldName: 'hair_colors' | 'eyes_colors' | 'clothing_colors', 
+    value: string, 
+    colors: string[], 
+    maxColors?: number 
+  }) => {
     return (
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>{label}</div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '150px' }}>
-            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ ...selectedOC!, [fieldName]: val })} placeholder={`輸入${label}...`} />
+            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ ...selectedOC!, [descFieldName]: val })} placeholder={`輸入${label}...`} />
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
             {Array.from({ length: maxColors }).map((_, i) => {
@@ -123,7 +138,7 @@ export function OCCardPage() {
                     onChange={(e) => {
                       const newColors = [...colors];
                       newColors[i] = e.target.value;
-                      handleSaveOC({ ...selectedOC!, [`${fieldName}_colors`]: newColors });
+                      handleSaveOC({ ...selectedOC!, [colorFieldName]: newColors });
                     }}
                     style={{
                       width: '32px', height: '32px', padding: 0, border: '1px solid #DED9D3',
@@ -249,9 +264,10 @@ export function OCCardPage() {
                           </div>
                         </div>
 
-                        <ColorField label="髮色／髮型：" fieldName="hair_desc" value={selectedOC.hair_desc} colors={selectedOC.hair_colors} />
-                        <ColorField label="瞳色／瞳型：" fieldName="eyes_desc" value={selectedOC.eyes_desc} colors={selectedOC.eyes_colors} />
-                        <ColorField label="服裝：" fieldName="clothing_desc" value={selectedOC.clothing_desc} colors={selectedOC.clothing_colors} />
+                        {/* 🌟 修正：此處精準指名描述與顏色的各別對應欄位 */}
+                        <ColorField label="髮色／髮型：" descFieldName="hair_desc" colorFieldName="hair_colors" value={selectedOC.hair_desc} colors={selectedOC.hair_colors} />
+                        <ColorField label="瞳色／瞳型：" descFieldName="eyes_desc" colorFieldName="eyes_colors" value={selectedOC.eyes_desc} colors={selectedOC.eyes_colors} />
+                        <ColorField label="服裝：" descFieldName="clothing_desc" colorFieldName="clothing_colors" value={selectedOC.clothing_desc} colors={selectedOC.clothing_colors} />
 
                         <div>
                           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>特點／配件：</div>

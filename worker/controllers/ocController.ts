@@ -3,13 +3,12 @@ import type { Env } from "../shared/types";
 
 export const ocController = {
   // 取得委託人的所有 OC 卡片
-  async getList(userId: string, env: Env, corsHeaders: any) {
+  async getList(userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const { results } = await env.DB.prepare(
         `SELECT * FROM oc_cards WHERE user_id = ? ORDER BY updated_at DESC`
       ).bind(userId).all();
 
-      // 將資料庫裡存的字串轉回 JSON Array 給前端
       const data = results.map((row: any) => ({
         ...row,
         hair_colors: JSON.parse(row.hair_colors || '[]'),
@@ -26,7 +25,7 @@ export const ocController = {
   },
 
   // 建立新的 OC 卡片
-  async create(request: Request, userId: string, env: Env, corsHeaders: any) {
+  async create(request: any, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
       const id = body.id || `oc-${Date.now()}`;
@@ -56,7 +55,7 @@ export const ocController = {
   },
 
   // 自動儲存更新
-  async update(request: Request, ocId: string, userId: string, env: Env, corsHeaders: any) {
+  async update(request: any, ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
 
@@ -86,7 +85,7 @@ export const ocController = {
   },
 
   // 取得單一詳情 (備用)
-  async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any) {
+  async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const data = await env.DB.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
       if (!data) return new Response(JSON.stringify({ success: false, error: "Not Found" }), { status: 404, headers: corsHeaders });
@@ -96,8 +95,8 @@ export const ocController = {
     }
   },
 
-  // 刪除 OC 卡片 (未來擴充用)
-  async delete(ocId: string, userId: string, env: Env, corsHeaders: any) {
+  // 刪除 OC 卡片
+  async delete(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       await env.DB.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
