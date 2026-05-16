@@ -23,7 +23,7 @@ export function OCDashedInput({
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setLocalValue(value);
+    setLocalValue(value || '');
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -46,21 +46,23 @@ export function OCDashedInput({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isTextArea && e.key === 'Enter') {
       e.preventDefault();
-      inputRef.current?.blur(); // 觸發 blur 以執行儲存
+      inputRef.current?.blur(); 
     }
   };
 
+  // 🌟 修正：極致壓縮 padding 與 border 寬度
   const containerStyle: React.CSSProperties = {
     position: 'relative',
     display: 'flex',
     alignItems: isTextArea ? 'flex-start' : 'center',
-    border: `2px dashed ${isFocused ? '#A67B3E' : '#DED9D3'}`,
-    borderRadius: '8px',
-    padding: '8px 12px',
+    border: `1.5px dashed ${isFocused ? '#A67B3E' : '#DED9D3'}`,
+    borderRadius: '6px',
+    padding: '4px 8px', /* 大幅縮小上下左右間距 */
     backgroundColor: isFocused ? '#FFF' : '#FBFBF9',
     transition: 'all 0.2s',
     cursor: isFocused ? 'text' : 'pointer',
-    width: '100%'
+    width: '100%',
+    minHeight: isTextArea ? 'auto' : '32px'
   };
 
   return (
@@ -77,7 +79,7 @@ export function OCDashedInput({
             onBlur={handleBlur}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', resize: 'vertical', minHeight: '80px', fontSize: '14px', color: '#5D4A3E', lineHeight: '1.5' }}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', resize: 'vertical', minHeight: '80px', fontSize: '13px', color: '#5D4A3E', lineHeight: '1.5', padding: 0 }}
           />
         ) : (
           <input
@@ -89,10 +91,10 @@ export function OCDashedInput({
             onFocus={() => setIsFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', color: '#5D4A3E' }}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: '#5D4A3E', padding: 0 }}
           />
         )}
-        <Pencil size={14} color="#A0978D" style={{ marginLeft: '8px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />
+        <Pencil size={12} color="#A0978D" style={{ marginLeft: '6px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />
       </div>
       
       {showToast && (
