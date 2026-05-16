@@ -1,7 +1,7 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User, Heart } from 'lucide-react';
+import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User, Heart, Contact } from 'lucide-react';
 import '../styles/ClientLayout.css'; 
 
 export function ClientLayout() {
@@ -173,9 +173,12 @@ export function ClientLayout() {
           <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
             <ClipboardList size={20} /><span>委託單管理</span>
           </NavLink>
-            <NavLink to="/client/favorites" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-                <Heart size={20} /><span>繪師追蹤名單</span>
-            </NavLink>          
+          <NavLink to="/client/my-oc" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+            <Contact size={20} /><span>我的角色卡 (OC)</span>
+          </NavLink>
+          <NavLink to="/client/favorites" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
+            <Heart size={20} /><span>繪師追蹤名單</span>
+          </NavLink>          
           <NavLink to="/client/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
             <User size={20} /><span>個人設定</span>
           </NavLink>

@@ -309,12 +309,6 @@ CREATE TABLE IF NOT EXISTS Notifications (
 -- 建立索引以加快查詢速度
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON Notifications(user_id);
 
-
--- ==========================================
--- 5/6後新增的資料庫(正式機還沒有)
--- ==========================================
-
-
 -- 1. 擴充現有的 ShowcaseItems，加入表單結構欄位
 ALTER TABLE ShowcaseItems ADD COLUMN form_schema TEXT DEFAULT '[]';
 
@@ -364,7 +358,42 @@ ALTER TABLE Commissions ADD COLUMN agreed_memo TEXT;
 
 ALTER TABLE ShowcaseItems ADD COLUMN current_orders_count INTEGER DEFAULT 0;
  ALTER TABLE Commissions ADD COLUMN latest_message_at DATETIME DEFAULT NULL;
+
+
+
 -- ==========================================
+-- 5/16後新增的資料庫(正式機還沒有)
+-- ==========================================
+
+CREATE TABLE oc_cards (
+    id TEXT PRIMARY KEY,                  
+    user_id TEXT NOT NULL,               
+    name TEXT DEFAULT '',         
+    gender TEXT DEFAULT '',            
+    body_type TEXT DEFAULT '',       
+    hair_desc TEXT DEFAULT '',        
+    hair_colors TEXT DEFAULT '[]',       
+    eyes_desc TEXT DEFAULT '',           
+    eyes_colors TEXT DEFAULT '[]',      
+    clothing_desc TEXT DEFAULT '',        
+    clothing_colors TEXT DEFAULT '[]',    
+    traits TEXT DEFAULT '',          
+    must_have TEXT DEFAULT '',          
+    donts TEXT DEFAULT '',             
+    keywords TEXT DEFAULT '[]',         
+    short_intro TEXT DEFAULT '',         
+    personality TEXT DEFAULT '',        
+    background TEXT DEFAULT '',        
+    other_notes TEXT DEFAULT '',        
+    images TEXT DEFAULT '[]',             
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_oc_user_id ON oc_cards(user_id);
+
+ALTER TABLE Commissions ADD COLUMN oc_snapshot TEXT DEFAULT NULL;
+
+-- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
 
