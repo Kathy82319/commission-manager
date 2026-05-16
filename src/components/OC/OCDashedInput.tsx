@@ -66,13 +66,13 @@ export function OCDashedInput({
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* 🌟 暴力清除所有全域 input/textarea 樣式的 CSS */}
+      {/* 🌟 修正：將 padding 從 0 改為 0 4px，給予文字左右呼吸空間 */}
       <style dangerouslySetInnerHTML={{__html: `
         .oc-clean-input {
           flex: 1; border: none !important; outline: none !important;
           background: transparent !important; box-shadow: none !important;
           -webkit-appearance: none !important; appearance: none !important;
-          margin: 0 !important; padding: 0 !important; border-radius: 0 !important;
+          margin: 0 !important; padding: 0 4px !important; border-radius: 0 !important;
           font-size: 13px !important; color: #5D4A3E !important; line-height: 1.5 !important;
         }
         .oc-clean-input:-webkit-autofill {

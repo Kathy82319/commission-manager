@@ -13,6 +13,13 @@ import { ImageUploader } from '../ImageUploader';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
+// ==========================================
+// 🌟 核心關鍵：請把這裡換成你 R2 真正的公開網址！
+// ==========================================
+// 獲取方法：Cloudflare 後台 -> R2 -> 點進 commission-public -> 設定 (Settings) -> 公開存取 (Public Access)
+// 裡面會有一個 R2.dev 子網域 (例如: https://pub-xxxxxxxxxxxxxx.r2.dev)
+const R2_PUBLIC_DOMAIN = (import.meta as any).env?.VITE_R2_PUBLIC_DOMAIN || 'https://你的-r2-公開網址.r2.dev'; 
+
 export interface OCImageItem {
   id: string;
   previewUrl: string;
@@ -77,7 +84,6 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
     try {
       const ext = blobs.preview.type === 'image/jpeg' ? 'jpg' : 'png';
       
-      // 🌟 修正：對齊 r2Controller 需要的參數 (folder 與 originalName)
       const res = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,11 +98,14 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
       const data = await res.json();
       
       if (data.success && data.uploadUrl && data.fileName) {
+        // 1. 將圖片推送到 R2
         await fetch(data.uploadUrl, { method: 'PUT', body: blobs.preview, headers: { 'Content-Type': blobs.preview.type } });
         
-        // 🌟 修正：嚴格使用後端回傳的 data.fileName 來組裝正確的讀取網址
-        const finalUrl = `https://commission-public.cath-commission-manager.pages.dev/${data.fileName}`; 
+        // 2. 🌟 結合正確的 R2_PUBLIC_DOMAIN 與後端回傳的檔名
+        const cleanDomain = R2_PUBLIC_DOMAIN.replace(/\/$/, '');
+        const finalUrl = `${cleanDomain}/${data.fileName}`; 
         
+        // 3. 寫入 State (這時候存入的就是真正的雲端網址，不是 blob 了！)
         const newItem: OCImageItem = { id: `img-${Date.now()}`, previewUrl: finalUrl };
         onChange([...images, newItem]);
       } else {
