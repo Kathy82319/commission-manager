@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
+// 🌟 新增：引入我們之前寫好的 OC 展示設定元件
+import { OCDisplaySettingsTab } from '../artist/Settings/OCDisplaySettingsTab';
 import type { FormDataState } from '../artist/Settings/types';
 import '../../styles/Settings.css'; 
 
@@ -156,6 +158,15 @@ export function ClientSettings() {
             >
               頭像與基礎資料
             </button>
+            
+            {/* 🌟 新增：勾選角色卡公開展示的按鈕 */}
+            <button 
+              className={`tab-btn ${activeTab === 'oc_display' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('oc_display')}
+            >
+              角色設定卡展示
+            </button>
+
             <button 
               className={`tab-btn ${activeTab === 'detailed_intro' ? 'active' : ''}`} 
               onClick={() => setActiveTab('detailed_intro')}
@@ -164,7 +175,6 @@ export function ClientSettings() {
             </button>
           </div>
 
-          
           <div className="sidebar-group" style={{ marginTop: 'auto', paddingTop: '40px' }}>
             <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
               <h4 style={{ margin: '0 0 8px 0', color: '#334155', fontSize: '14px' }}>想開始接案賺錢嗎？</h4>
@@ -187,7 +197,13 @@ export function ClientSettings() {
         <div className="settings-content-area">
           
           <div className="settings-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3>{activeTab === 'profile_basic' ? '頭像與基礎資料' : '自訂公開詳細介紹'}</h3>
+            {/* 🌟 標題隨分頁動態切換 */}
+            <h3>
+              {activeTab === 'profile_basic' && '頭像與基礎資料'}
+              {activeTab === 'oc_display' && '角色設定卡展示'}
+              {activeTab === 'detailed_intro' && '自訂公開詳細介紹'}
+            </h3>
+            
             {publicId && (
               <button 
                 onClick={() => window.open(`/${publicId}`, '_blank')}
@@ -216,6 +232,11 @@ export function ClientSettings() {
                 setSettings={setSettings as any} 
               />
             )}
+
+            {/* 🌟 新增渲染：OC 角色卡展示分頁 */}
+            {activeTab === 'oc_display' && (
+              <OCDisplaySettingsTab onToast={showToast} />
+            )}
             
             {activeTab === 'detailed_intro' && (
               <>
@@ -231,11 +252,14 @@ export function ClientSettings() {
             )}
           </div>
 
-          <div className="save-action-bar">
-            <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
-              {isSaving ? '儲存中...' : '儲存所有變更'}
-            </button>
-          </div>
+          {/* 🌟 核心修正：僅在非 OC 展示頁面時才顯示底部儲存按鈕（因為 OC 頁面是點擊就即時存檔） */}
+          {activeTab !== 'oc_display' && (
+            <div className="save-action-bar">
+              <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
+                {isSaving ? '儲存中...' : '儲存所有變更'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

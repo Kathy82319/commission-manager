@@ -12,8 +12,6 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
-// 🌟 新增：引入 OC 展示設定元件
-import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
 
@@ -84,9 +82,6 @@ export function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
-  
-  // 🌟 新增：紀錄使用者身分 (用來判斷是否要顯示 OC 設定)
-  const [userRole, setUserRole] = useState<string>('user'); 
 
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [], 
@@ -105,6 +100,7 @@ export function Settings() {
     theme_mode: 'dark',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
+    // 🌟 新增 show_artist_note 預設值
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
     tab_order: [] 
   });
@@ -116,37 +112,21 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
-  // 🌟 核心修改：選單動態渲染，非繪師身分才顯示 OC 設定卡展示
   const categories: MenuCategory[] = [
-    { 
-      title: '個人資訊', 
-      items: [
-        { id: 'profile_basic', label: '頭像與簡介' },
-        ...(userRole !== 'artist' ? [{ id: 'oc_display', label: '角色設定卡展示' }] : [])
-      ] 
-    },
-    { 
-      title: '頁面外觀', 
-      items: [
+    { title: '個人資訊', items: [{ id: 'profile_basic', label: '頭像與簡介' }] },
+    { title: '頁面外觀', items: [
         { id: 'theme', label: '背景與版型設定' },
         { id: 'splash', label: '開場動畫設定' }
-      ]
-    },
-    { 
-      title: '內容管理', 
-      items: [
+    ]},
+    { title: '內容管理', items: [
         { id: 'bulletin_settings', label: '許願池接案設定' },
         { id: 'queue_settings', label: '排單表顯示設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
-      ]
-    },
-    { 
-      title: '訂閱方案', 
-      items: [{ id: 'subscription', label: '方案查看與升級' }] 
-    }
+    ]},
+    { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
   const menuGroups = useMemo(() => {
@@ -162,7 +142,7 @@ export function Settings() {
       }
       return group;
     });
-  }, [settings.custom_sections, userRole]); // 加入 userRole 依賴
+  }, [settings.custom_sections]);
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -174,9 +154,6 @@ export function Settings() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        // 🌟 儲存使用者身分
-        setUserRole(data.data.role || 'user');
-
         setFormData({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
@@ -261,18 +238,15 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 🌟 將 'oc_display' 加入免費用戶可存取的 Tab 列表中
+  // 🌟 將 'showcase' 加入免費用戶可存取的 Tab 列表中
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
-    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
+    'bulletin_settings', 'queue_settings', 'showcase'
   ];
   
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
-
-  // 🌟 判斷是否要隱藏底部的全域儲存按鈕
-  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display';
 
   return (
     <div className="settings-page">
@@ -369,9 +343,6 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
-            {/* 🌟 新增渲染：OC 角色卡展示分頁 */}
-            {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
-
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
@@ -400,8 +371,7 @@ export function Settings() {
             {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />}
           </div>
 
-          {/* 🌟 隱藏全域儲存按鈕 */}
-          {!shouldHideGlobalSave && (
+          {!hideGlobalSave && (
             <div className="save-action-bar">
               <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
                 {isSaving ? '儲存中...' : '儲存所有變更'}
