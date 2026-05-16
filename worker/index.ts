@@ -289,8 +289,14 @@ export default {
         const artistId = pathParts[4];
         return commController.getPublicQueue(artistId, env, corsHeaders);
       }
+      
+      {/* 🌟 新增：開通前台免驗證公開撈取 OC 牆的角色卡路由 */}
+      if (sanitizedPath.startsWith("/api/public/oc/")) {
+        const userId = pathParts[4];
+        return ocController.getPublicList(userId, env, corsHeaders);
+      }
 
-      // --- 管理員路由 ---
+      // --- 系統管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -400,5 +406,5 @@ export default {
       return env.ASSETS.fetch(indexRequest as any);
     }
     return assetResponse as any;
-  }   
+  } 
 };
