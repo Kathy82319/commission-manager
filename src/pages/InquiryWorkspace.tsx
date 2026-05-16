@@ -60,7 +60,7 @@ export const InquiryWorkspace: React.FC = () => {
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
   const [paymentPresets, setPaymentPresets] = useState<string[]>([]);
 
-  // 🌟 新增：OC 卡片選擇與檢視狀態
+  // 🌟 OC 卡片選擇與檢視狀態
   const [showOCSelection, setShowOCSelection] = useState(false);
   const [myOCs, setMyOCs] = useState<any[]>([]);
   const [isLoadingOCs, setIsLoadingOCs] = useState(false);
@@ -107,7 +107,7 @@ export const InquiryWorkspace: React.FC = () => {
     add_ons: '',
     agreed_memo: '',
     custom_tos: undefined,
-    oc_snapshot: null // 🌟 新增：紀錄綁定的 OC 快照
+    oc_snapshot: null // 紀錄綁定的 OC 快照
   });
 
   const formatLocalTime = (dateStr: string) => {
@@ -237,7 +237,7 @@ export const InquiryWorkspace: React.FC = () => {
     fetchData();
   };
 
-  // 🌟 新增：打開角色卡選擇器
+  // 打開角色卡選擇器
   const handleOpenOCSelection = async () => {
     setShowOCSelection(true);
     setIsLoadingOCs(true);
@@ -253,7 +253,7 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  // 🌟 新增：發送 OC 卡
+  // 發送 OC 卡
   const handleSendOC = async (ocId: string) => {
     if (!window.confirm('確定要發送這張角色卡到洽談室嗎？發送後系統將會建立快照，對方會看到卡片當下的設定。')) return;
     setShowOCSelection(false);
@@ -508,6 +508,27 @@ export const InquiryWorkspace: React.FC = () => {
 
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
+      
+      {/* 🌟 局部作用域樣式 (Scoped Style)：修復 OC 卡片與彈出視窗在手機版的跑版問題 */}
+      <style>{`
+        @media (max-width: 768px) {
+          .oc-snapshot-bubble { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+          .oc-selection-item { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+          .oc-selection-item button { width: 100% !important; }
+          .oc-selection-info { width: 100% !important; }
+          .oc-view-modal-container { padding: 10px !important; align-items: flex-start !important; padding-top: 50px !important; overflow-y: auto; }
+          .oc-view-close-btn { 
+            top: 10px !important; 
+            right: 10px !important; 
+            background: rgba(0,0,0,0.7) !important; 
+            padding: 8px 16px !important; 
+            border-radius: 20px !important; 
+            position: fixed !important; 
+            z-index: 10005 !important;
+          }
+        }
+      `}</style>
+
       <div style={{ display: 'flex', width: '100%', maxWidth: '1200px', backgroundColor: '#FFFFFF', boxShadow: '0 0 20px rgba(0,0,0,0.05)', position: 'relative' }}>
         
         <div className="iw-chat-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
@@ -558,7 +579,7 @@ export const InquiryWorkspace: React.FC = () => {
               const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
 
-              // 🌟 新增：專屬渲染 OC 快照卡片
+              // 🌟 專屬渲染 OC 快照卡片
               if (msg.message_type === 'oc_snapshot') {
                 let ocData: any = null;
                 try { ocData = JSON.parse(msg.content); } catch (e) {}
@@ -569,7 +590,8 @@ export const InquiryWorkspace: React.FC = () => {
                       <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
                       <span>{formatLocalTime(msg.created_at)}</span>
                     </div>
-                    <div className="iw-chat-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
+                    {/* 🌟 套用 className="oc-snapshot-bubble" 給 RWD 使用 */}
+                    <div className="iw-chat-bubble oc-snapshot-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
                       {ocData ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', borderBottom: isMe ? '1px solid rgba(255,255,255,0.2)' : '1px solid #EAE6E1', paddingBottom: '8px', fontSize: '13px' }}>
@@ -600,7 +622,6 @@ export const InquiryWorkspace: React.FC = () => {
                               <Maximize2 size={14} /> 檢視設定卡內容
                             </button>
 
-                            {/* 🌟 繪師專屬：帶入合約按鈕 */}
                             {isArtist && isEditableByArtist && (
                               <button
                                 onClick={() => {
@@ -662,7 +683,6 @@ export const InquiryWorkspace: React.FC = () => {
           )}
 
           <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-            {/* 🌟 新增：傳送角色卡按鈕 (僅委託人可見) */}
             {!isArtist && inquiry?.status !== 'accepted' && (
               <button 
                 onClick={handleOpenOCSelection}
@@ -766,11 +786,10 @@ export const InquiryWorkspace: React.FC = () => {
                 </button>
               </div>
 
-              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 
-                {/* 🌟 新增：顯示已綁定的 OC 設定卡 (繪師可移除) */}
+                {/* 顯示已綁定的 OC 設定卡 (繪師可移除) */}
                 <div style={{ padding: '12px', backgroundColor: '#FDFDFB', borderRadius: '8px', border: '1px solid #EAE6E1', marginBottom: '16px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><BookUser size={14} /> 綁定角色設定卡</span>
@@ -856,11 +875,9 @@ export const InquiryWorkspace: React.FC = () => {
                       </div>
                     )}
                   </div>
-
                 </div>
               </div>
 
-              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 8px 0' }}>📝 最終確認規格 / 備忘錄</h4>
                 <textarea 
@@ -873,7 +890,6 @@ export const InquiryWorkspace: React.FC = () => {
                 />
               </div>
 
-              
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
                   <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: 0, flexShrink: 0 }}>📜 繪師專屬協議條款 (TOS)</h4>
@@ -943,7 +959,6 @@ export const InquiryWorkspace: React.FC = () => {
                     <p style={{ margin: 0 }}><strong>背景類型：</strong> {draft.bg_type}</p>
                     <p style={{ margin: 0 }}><strong>急件需求：</strong> {draft.is_rush}</p>
                     <p style={{ margin: 0 }}><strong>委託用途：</strong> {draft.usage_type}</p>
-                    {/* 🌟 最終確認畫面上顯示綁定角色名稱 */}
                     {draft.oc_snapshot && (
                       <p style={{ margin: 0, gridColumn: '1 / -1' }}>
                         <strong>綁定角色設定卡：</strong> <span style={{ color: '#4A7294', fontWeight: 'bold' }}>{draft.oc_snapshot.name}</span>
@@ -1001,8 +1016,8 @@ export const InquiryWorkspace: React.FC = () => {
                      try { firstImage = JSON.parse(oc.images || '[]')[0]?.previewUrl; } catch(e){}
 
                      return (
-                       <div key={oc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                       <div key={oc.id} className="oc-selection-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
+                          <div className="oc-selection-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
                             <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
                               {firstImage ? (
                                 <img src={firstImage} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1034,11 +1049,12 @@ export const InquiryWorkspace: React.FC = () => {
 
         {/* 🌟 彈出視窗：檢視完整的 OC 卡片快照內容 */}
         {viewingOCSnapshot && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.2s ease-in-out' }}>
+          <div className="oc-view-modal-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.2s ease-in-out' }}>
             <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', backgroundColor: 'transparent', position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <button
+                className="oc-view-close-btn"
                 onClick={() => setViewingOCSnapshot(null)}
-                style={{ position: 'absolute', top: '-40px', right: 0, background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold' }}
+                style={{ position: 'absolute', top: '-40px', right: 0, background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold', zIndex: 10004 }}
               >
                 關閉 <X size={20} />
               </button>
