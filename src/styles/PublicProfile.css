@@ -819,57 +819,98 @@
 }
 
 /* ==========================================================================
-   9. 角色設定 (OC) 卡片 - 扁平雜誌模式的手機版響應式設計
+   9. 角色設定 (OC) 卡片 - 頂級雜誌排版 (手機/平板優化)
    ========================================================================== */
 
+/* --- 桌面版 & 共用樣式輔助 --- */
+.oc-tab-btn {
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.oc-tab-btn.default {
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  background-color: transparent;
+  color: #A0978D;
+}
+.oc-tab-btn.default.active {
+  background-color: #FFF;
+  color: #8CB369;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.oc-tab-btn.flat {
+  background: none;
+  padding: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #A0978D;
+  border-bottom: 3px solid transparent;
+}
+.oc-tab-btn.flat.active {
+  color: #5D4A3E;
+  border-bottom: 3px solid #5D4A3E;
+}
+
+/* --- 手機版特化 (Max Width: 768px) --- */
 @media (max-width: 768px) {
-  /* 讓最外層的內距在手機上縮小，避免留白過多佔用螢幕空間 */
-  .public-oc-layout {
-    padding: 10px 0 !important;
+  
+  /* 1. 修正「頭像間距過大」：採用 IG 限動式緊湊排版 */
+  .mobile-oc-avatars-wrapper {
+    gap: 12px !important;
+    padding: 0 16px 16px 16px !important;
+    margin: 0 -16px !important; /* 讓滾動條可以貼齊螢幕邊緣 */
+    justify-content: flex-start !important;
+  }
+  
+  /* 2. 修正「卡片內距過大」：讓內容有呼吸空間但不浪費螢幕 */
+  .oc-detail-container.is-flat .oc-card-content-wrapper {
+    padding: 24px 20px !important;
   }
 
-  /* 針對 OCDetailCard 內部的網格，將原本的「左右兩欄」改為「上下堆疊」 */
-  .oc-intro-grid {
+  /* 3. 修正「圖文比例失衡」：改為上下堆疊，圖片佔滿寬度 */
+  .oc-detail-container.is-flat .oc-intro-grid {
     display: flex !important;
     flex-direction: column !important;
-    gap: 20px !important;
+    gap: 24px !important;
   }
-
-  /* 放寬左側圖片在手機上的最大寬度限制，讓它佔滿畫面以利觀看 */
-  .oc-intro-grid > div:first-child {
-    max-width: 100% !important;
+  .oc-images-section {
     width: 100% !important;
+    max-width: 100% !important;
   }
 
-  /* 如果卡片的外層使用了內聯樣式 (inline-style) 設定 padding，在這裡強制縮小以適應手機 */
-  .public-oc-layout > div > div {
-    padding: 20px 16px !important;
-    border-radius: 12px !important;
+  /* 4. 修正「標題與按鈕打架」：分列顯示，按鈕佔滿寬度變成 App 標籤列 */
+  .oc-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
   }
-
-  /* 手機版的角色名稱字體縮小一點，避免折行過於突兀 */
-  .oc-form-column h2 {
-    font-size: 24px !important;
+  .oc-card-header h2 {
+    font-size: 26px !important;
   }
-
-  /* 細節文字區塊在手機上可以更緊湊 */
-  .oc-form-column .oc-form-row-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
+  
+  .oc-card-tabs {
+    width: 100% !important;
+    display: flex !important;
+    border-bottom: 1px solid rgba(0,0,0,0.08) !important;
   }
-
-  /* 針對下方標籤的微調 */
-  .oc-short-intro {
-    padding: 12px !important;
+  
+  /* 讓兩個按鈕平均分配寬度，更像原生手機 App */
+  .oc-tab-btn.flat {
+    flex: 1;
+    text-align: center;
+    padding-bottom: 10px !important;
+    font-size: 14px !important;
   }
 }
 
 /* ==========================================================================
-   修正全螢幕燈箱 (Lightbox) 內圖片的點擊與防誤觸
+   修正全螢幕燈箱 (Lightbox) 指標圖示防誤觸
    ========================================================================== */
-
-/* 確保全螢幕燈箱放大時的指標圖示正常 */
 .showcase-modal-overlay img,
 .lightbox-content img {
   cursor: default;

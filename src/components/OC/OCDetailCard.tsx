@@ -1,7 +1,7 @@
 // src/components/OC/OCDetailCard.tsx
 import { useState } from 'react';
-import { Check, Image as ImageIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { Check, Image as ImageIcon } from 'lucide-react';
 import type { OCImageItem } from './OCImageManager';
 import '../../styles/OCCardPage.css'; 
 
@@ -57,20 +57,20 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
   const ReadOnlyColorField = ({ label, desc, colors }: { label: string, desc: string, colors: string[] }) => {
     const validColors = colors.filter(c => c);
     return (
-      <div style={{ marginBottom: '4px' }}>
-        <div className="oc-field-label" style={{ fontSize: '12px', marginBottom: '2px' }}>{label}</div>
-        <div className="oc-color-group" style={{ gap: '8px' }}>
+      <div style={{ marginBottom: '6px' }}>
+        <div className="oc-field-label" style={{ fontSize: '12px', marginBottom: '2px', color: '#7A7269' }}>{label}</div>
+        <div className="oc-color-group" style={{ gap: '12px', display: 'flex', alignItems: 'center' }}>
           <div style={{ flex: 1, minWidth: '120px' }}>
             <ReadOnlyText text={desc} placeholder={`無描述`} />
           </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             {validColors.map((color, i) => (
               <div 
                 key={i} 
                 onClick={() => handleCopyColor(color)}
                 style={{ 
                   width: '24px', height: '24px', backgroundColor: color, 
-                  border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', 
+                  border: '1px solid rgba(0,0,0,0.15)', borderRadius: '6px', 
                   cursor: 'pointer', transition: 'transform 0.1s'
                 }}
                 title={`點擊複製 ${color.toUpperCase()}`}
@@ -83,10 +83,10 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
   };
 
   return (
-    <div style={
+    <div className={`oc-detail-container ${isFlat ? 'is-flat' : ''}`} style={
       isFlat ? {
-        backgroundColor: 'rgba(255, 255, 255, 0.78)', // 🌟 高級感 78% 半透明白底
-        backdropFilter: 'blur(16px)',                  // 🌟 毛玻璃核心特效
+        backgroundColor: 'rgba(255, 255, 255, 0.78)', 
+        backdropFilter: 'blur(16px)',                  
         WebkitBackdropFilter: 'blur(16px)',
         borderRadius: '16px',
         border: '1px solid rgba(255, 255, 255, 0.3)',
@@ -100,7 +100,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
       }
     }>
       
-      {/* 🌟 修正：使用 createPortal 將燈箱傳送到 document.body，徹底跳脫毛玻璃陷阱 */}
+      {/* 燈箱 */}
       {zoomedImage && createPortal(
         <div 
           onClick={(e) => {
@@ -108,20 +108,11 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
             setZoomedImage(null);
           }} 
           style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            width: '100vw', 
-            height: '100vh', 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            width: '100vw', height: '100vh', 
             backgroundColor: 'rgba(0, 0, 0, 0.85)', 
-            zIndex: 999999, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '24px', 
-            cursor: 'zoom-out' 
+            zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            padding: '24px', cursor: 'zoom-out' 
           }}
         >
           <img 
@@ -131,7 +122,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
             style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }} 
           />
         </div>,
-        document.body // 🌟 傳送目標：網頁的最外層
+        document.body 
       )}
 
       {/* Toast */}
@@ -141,9 +132,9 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
         </div>
       )}
 
-      {/* 內距調整 */}
-      <div style={{ padding: isFlat ? '32px' : '24px' }}>
-        {/* 🌟 限制左欄圖片最大寬度為 380px，右欄自適應延伸 */}
+      {/* 🌟 加入 className 以利 RWD 控制 */}
+      <div className="oc-card-content-wrapper" style={{ padding: isFlat ? '32px' : '24px' }}>
+        
         <div className="oc-intro-grid" style={{ 
           display: 'grid',
           gridTemplateColumns: isFlat ? 'minmax(200px, 380px) 1fr' : '1fr 1.2fr', 
@@ -151,18 +142,18 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
         }}>
           
           {/* 左側：圖片區 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="oc-images-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div 
               onClick={() => mainImage && setZoomedImage(mainImage)}
-              style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#F4F0EB', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EAE6E1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-in', position: 'relative' }}
+              style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#EFECE7', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-in', position: 'relative' }}
             >
-              {mainImage ? <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={32} opacity={0.5} />}
+              {mainImage ? <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={32} opacity={0.3} color="#5D4A3E" />}
             </div>
             
             {ocData.images && ocData.images.length > 1 && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                 {ocData.images.map((img) => (
-                  <div key={img.id} onClick={() => setMainImage(img.previewUrl)} style={{ aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', border: mainImage === img.previewUrl ? '2px solid #A67B3E' : '1px solid #EAE6E1', cursor: 'pointer' }}>
+                  <div key={img.id} onClick={() => setMainImage(img.previewUrl)} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: mainImage === img.previewUrl ? '2px solid #5D4A3E' : '1px solid rgba(0,0,0,0.05)', cursor: 'pointer', opacity: mainImage === img.previewUrl ? 1 : 0.6, transition: 'all 0.2s' }}>
                     <img src={img.previewUrl} alt="縮圖" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ))}
@@ -171,102 +162,90 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
           </div>
 
           {/* 右側：詳細資料區 */}
-          <div className="oc-form-column" style={{ gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <h2 style={{ margin: 0, fontSize: isFlat ? '30px' : '28px', color: '#5D4A3E', fontWeight: 'bold' }}>
+          <div className="oc-form-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* 🌟 標題與標籤切換區 */}
+            <div className="oc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
+              <h2 style={{ margin: 0, fontSize: isFlat ? '30px' : '26px', color: '#4A3B32', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1.2', wordBreak: 'break-word' }}>
                 {ocData.name || '未命名角色'}
               </h2>
               
-              {/* 切換按鈕的樣式分支 */}
-              {isFlat ? (
-                <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
-                  <button 
-                    onClick={() => setActiveTab('intro')}
-                    style={{ border: 'none', background: 'none', padding: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'intro' ? '#5D4A3E' : '#A0978D', borderBottom: activeTab === 'intro' ? '2px solid #5D4A3E' : '2px solid transparent', transition: 'all 0.2s' }}
-                  >
-                    簡介
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('background')}
-                    style={{ border: 'none', background: 'none', padding: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'background' ? '#5D4A3E' : '#A0978D', borderBottom: activeTab === 'background' ? '2px solid #5D4A3E' : '2px solid transparent', transition: 'all 0.2s' }}
-                  >
-                    詳細設定
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', backgroundColor: '#F4F0EB', padding: '3px', borderRadius: '8px' }}>
-                  <button 
-                    onClick={() => setActiveTab('intro')}
-                    style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'intro' ? '#FFF' : 'transparent', color: activeTab === 'intro' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'intro' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
-                  >
-                    簡介
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('background')}
-                    style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'background' ? '#FFF' : 'transparent', color: activeTab === 'background' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'background' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
-                  >
-                    設定
-                  </button>
-                </div>
-              )}
+              <div className="oc-card-tabs" style={{ display: 'flex', gap: isFlat ? '16px' : '4px', backgroundColor: isFlat ? 'transparent' : '#F4F0EB', padding: isFlat ? '0' : '3px', borderRadius: '8px', width: isFlat ? 'auto' : 'fit-content' }}>
+                <button 
+                  onClick={() => setActiveTab('intro')}
+                  className={`oc-tab-btn ${activeTab === 'intro' ? 'active' : ''} ${isFlat ? 'flat' : 'default'}`}
+                >
+                  簡介
+                </button>
+                <button 
+                  onClick={() => setActiveTab('background')}
+                  className={`oc-tab-btn ${activeTab === 'background' ? 'active' : ''} ${isFlat ? 'flat' : 'default'}`}
+                >
+                  詳細設定
+                </button>
+              </div>
             </div>
-
-            <div style={{ height: '1px', backgroundColor: '#EAE6E1', width: '100%' }}></div>
 
             {/* 內容切換 */}
             {activeTab === 'intro' ? (
-              <div className="fade-in">
-                <div className="oc-form-row-2" style={{ marginBottom: '8px' }}>
+              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="oc-form-row-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <div className="oc-field-label" style={{ fontSize: '12px' }}>性別：</div>
+                    <div className="oc-field-label" style={{ fontSize: '12px', color: '#7A7269', marginBottom: '2px' }}>性別：</div>
                     <ReadOnlyText text={ocData.gender} />
                   </div>
                   <div>
-                    <div className="oc-field-label" style={{ fontSize: '12px' }}>體型：</div>
+                    <div className="oc-field-label" style={{ fontSize: '12px', color: '#7A7269', marginBottom: '2px' }}>體型：</div>
                     <ReadOnlyText text={ocData.body_type} />
                   </div>
                 </div>
 
-                <ReadOnlyColorField label="髮色／髮型：" desc={ocData.hair_desc} colors={ocData.hair_colors} />
-                <ReadOnlyColorField label="瞳色／瞳型：" desc={ocData.eyes_desc} colors={ocData.eyes_colors} />
-                <ReadOnlyColorField label="服裝：" desc={ocData.clothing_desc} colors={ocData.clothing_colors} />
+                <div>
+                  <ReadOnlyColorField label="髮色／髮型：" desc={ocData.hair_desc} colors={ocData.hair_colors} />
+                  <ReadOnlyColorField label="瞳色／瞳型：" desc={ocData.eyes_desc} colors={ocData.eyes_colors} />
+                  <ReadOnlyColorField label="服裝：" desc={ocData.clothing_desc} colors={ocData.clothing_colors} />
+                </div>
 
-                <div style={{ marginTop: '8px' }}>
-                  <div className="oc-field-label" style={{ fontSize: '12px' }}>特點／配件：</div>
+                <div>
+                  <div className="oc-field-label" style={{ fontSize: '12px', color: '#7A7269', marginBottom: '2px' }}>特點／配件：</div>
                   <ReadOnlyText text={ocData.traits} />
                 </div>
                 
-                {ocData.must_have && (
-                  <div className="oc-must-have" style={{ marginTop: '12px', padding: '8px 12px' }}>
-                    <div className="oc-field-label" style={{ fontSize: '12px', marginBottom: '2px' }}>必帶元素：</div>
-                    <ReadOnlyText text={ocData.must_have} />
-                  </div>
-                )}
+                {(ocData.must_have || ocData.donts) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                    {ocData.must_have && (
+                      <div className="oc-must-have" style={{ padding: '10px 14px', backgroundColor: 'rgba(140, 179, 105, 0.1)', borderLeft: '4px solid #8CB369', borderRadius: '4px 8px 8px 4px' }}>
+                        <div className="oc-field-label" style={{ fontSize: '12px', fontWeight: 'bold', color: '#6A8A4F', marginBottom: '4px' }}>必帶元素：</div>
+                        <div style={{ fontSize: '14px', color: '#332D28', lineHeight: '1.5' }}>{ocData.must_have}</div>
+                      </div>
+                    )}
 
-                {ocData.donts && (
-                  <div className="oc-donts" style={{ marginTop: '8px', padding: '8px 12px' }}>
-                    <div className="oc-field-label" style={{ fontSize: '12px', marginBottom: '2px' }}>絕對雷點：</div>
-                    <ReadOnlyText text={ocData.donts} />
+                    {ocData.donts && (
+                      <div className="oc-donts" style={{ padding: '10px 14px', backgroundColor: 'rgba(217, 83, 79, 0.08)', borderLeft: '4px solid #D9534F', borderRadius: '4px 8px 8px 4px' }}>
+                        <div className="oc-field-label" style={{ fontSize: '12px', fontWeight: 'bold', color: '#B53D39', marginBottom: '4px' }}>絕對雷點：</div>
+                        <div style={{ fontSize: '14px', color: '#332D28', lineHeight: '1.5' }}>{ocData.donts}</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <div className="oc-field-label" style={{ fontSize: '12px', color: '#8CB369' }}>角色個性：</div>
-                  <div style={{ fontSize: '13px', lineHeight: '1.6', color: '#332D28', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
+                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>角色個性：</div>
+                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
                     {ocData.personality || '無詳細說明'}
                   </div>
                 </div>
                 <div>
-                  <div className="oc-field-label" style={{ fontSize: '12px', color: '#8CB369' }}>人物背景：</div>
-                  <div style={{ fontSize: '13px', lineHeight: '1.6', color: '#332D28', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
+                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>人物背景：</div>
+                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
                     {ocData.background || '無詳細說明'}
                   </div>
                 </div>
                 <div>
-                  <div className="oc-field-label" style={{ fontSize: '12px', color: '#8CB369' }}>其他說明：</div>
-                  <div style={{ fontSize: '13px', lineHeight: '1.6', color: '#332D28', whiteSpace: 'pre-wrap', maxHeight: '100px', overflowY: 'auto' }}>
+                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>其他說明：</div>
+                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
                     {ocData.other_notes || '無詳細說明'}
                   </div>
                 </div>
@@ -277,18 +256,18 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
 
         {/* 底部印象關鍵字與個性簡述 */}
         {activeTab === 'intro' && (
-          <div className="fade-in" style={{ marginTop: '20px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px' }}>
+          <div className="fade-in" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
             {ocData.keywords && ocData.keywords.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                 {ocData.keywords.map((kw, i) => (
-                  <span key={i} style={{ backgroundColor: '#rgba(0,0,0,0.05)', color: '#5D4A3E', padding: '3px 10px', borderRadius: '12px', fontSize: '12px' }}>#{kw}</span>
+                  <span key={i} style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: '#5D4A3E', padding: '4px 12px', borderRadius: '50px', fontSize: '13px', fontWeight: '600' }}>#{kw}</span>
                 ))}
               </div>
             )}
             {ocData.short_intro && (
-              <div className="oc-short-intro" style={{ margin: 0, padding: '12px 16px', backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                <div className="oc-short-intro-title" style={{ fontSize: '13px' }}>個性簡述：</div>
-                <ReadOnlyText text={ocData.short_intro} />
+              <div className="oc-short-intro" style={{ margin: 0, padding: '16px', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                <div className="oc-short-intro-title" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>個性簡述：</div>
+                <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#444' }}>{ocData.short_intro}</div>
               </div>
             )}
           </div>
