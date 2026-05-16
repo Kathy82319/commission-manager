@@ -243,7 +243,7 @@ export function OCCardPage() {
 
                     <div className="oc-short-intro">
                       <div className="oc-short-intro-title">其他簡述：</div>
-                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多120字）..." isTextArea={true} />
+                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ ...selectedOC, short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多200字）..." isTextArea={true} />
                     </div>
                   </div>
                 )}

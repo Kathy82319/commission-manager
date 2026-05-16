@@ -14,7 +14,7 @@ export function OCDashedInput({
   value, 
   onSave, 
   placeholder = '', 
-  maxLength = 120, 
+  maxLength = 200, 
   isTextArea = false 
 }: OCDashedInputProps) {
   const [localValue, setLocalValue] = useState(value);
@@ -64,23 +64,23 @@ export function OCDashedInput({
     minHeight: isTextArea ? 'auto' : '32px'
   };
 
-  // 🌟 核心修正：強制清除所有全域 input 的預設樣式
-  const resetInputStyle: React.CSSProperties = {
-    flex: 1, 
-    border: 'none', 
-    outline: 'none', 
-    backgroundColor: 'transparent', 
-    boxShadow: 'none',          // 清除可能存在的圓角陰影
-    WebkitAppearance: 'none',   // 清除 iOS/Safari 預設樣式
-    appearance: 'none', 
-    margin: 0,
-    padding: 0,
-    fontSize: '13px', 
-    color: '#5D4A3E',
-  };
-
   return (
     <div style={{ position: 'relative', width: '100%' }}>
+      {/* 🌟 暴力清除所有全域 input/textarea 樣式的 CSS */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .oc-clean-input {
+          flex: 1; border: none !important; outline: none !important;
+          background: transparent !important; box-shadow: none !important;
+          -webkit-appearance: none !important; appearance: none !important;
+          margin: 0 !important; padding: 0 !important; border-radius: 0 !important;
+          font-size: 13px !important; color: #5D4A3E !important; line-height: 1.5 !important;
+        }
+        .oc-clean-input:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}} />
+
       <div 
         style={containerStyle}
         onClick={() => inputRef.current?.focus()}
@@ -93,7 +93,8 @@ export function OCDashedInput({
             onBlur={handleBlur}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
-            style={{ ...resetInputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5' }}
+            className="oc-clean-input"
+            style={{ resize: 'vertical', minHeight: '80px' }}
           />
         ) : (
           <input
@@ -105,7 +106,7 @@ export function OCDashedInput({
             onFocus={() => setIsFocused(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            style={resetInputStyle}
+            className="oc-clean-input"
           />
         )}
         <Pencil size={12} color="#A0978D" style={{ marginLeft: '6px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />

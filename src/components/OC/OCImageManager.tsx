@@ -72,26 +72,30 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
     }
   };
 
-  // 🌟 修正：真實將裁切後的圖片上傳至 Cloudflare R2
   const handleUpload = async (blobs: { preview: Blob; original?: Blob }) => {
     setIsUploading(true);
     try {
       const ext = blobs.preview.type === 'image/jpeg' ? 'jpg' : 'png';
-      const fileName = `oc/${Date.now()}-${Math.random().toString(36).substring(2,8)}.${ext}`;
       
+      // 🌟 修正：對齊 r2Controller 需要的參數 (folder 與 originalName)
       const res = await fetch(`${API_BASE}/api/r2/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ bucketType: 'public', fileName, contentType: blobs.preview.type })
+        body: JSON.stringify({ 
+          bucketType: 'public', 
+          folder: 'oc', 
+          contentType: blobs.preview.type,
+          originalName: `image.${ext}`
+        })
       });
       const data = await res.json();
       
-      if (data.success && data.uploadUrl) {
+      if (data.success && data.uploadUrl && data.fileName) {
         await fetch(data.uploadUrl, { method: 'PUT', body: blobs.preview, headers: { 'Content-Type': blobs.preview.type } });
         
-        // 假設你的 R2 public url 格式，若後端有回傳 publicUrl 則優先使用
-        const finalUrl = data.publicUrl || `https://commission-public.cath-commission-manager.pages.dev/${fileName}`; 
+        // 🌟 修正：嚴格使用後端回傳的 data.fileName 來組裝正確的讀取網址
+        const finalUrl = `https://commission-public.cath-commission-manager.pages.dev/${data.fileName}`; 
         
         const newItem: OCImageItem = { id: `img-${Date.now()}`, previewUrl: finalUrl };
         onChange([...images, newItem]);
