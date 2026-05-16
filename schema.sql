@@ -392,7 +392,7 @@ CREATE TABLE oc_cards (
 CREATE INDEX idx_oc_user_id ON oc_cards(user_id);
 
 ALTER TABLE Commissions ADD COLUMN oc_snapshot TEXT DEFAULT NULL;
-
+ALTER TABLE oc_cards ADD COLUMN is_public INTEGER DEFAULT 0;
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

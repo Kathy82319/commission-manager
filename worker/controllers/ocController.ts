@@ -11,6 +11,8 @@ export const ocController = {
 
       const data = results.map((row: any) => ({
         ...row,
+        // 🌟 新增：把資料庫的整數 0/1 轉為布林值給前端
+        is_public: Boolean(row.is_public),
         hair_colors: JSON.parse(row.hair_colors || '[]'),
         eyes_colors: JSON.parse(row.eyes_colors || '[]'),
         clothing_colors: JSON.parse(row.clothing_colors || '[]'),
@@ -29,14 +31,17 @@ export const ocController = {
     try {
       const body: any = await request.json();
       const id = body.id || `oc-${Date.now()}`;
+      // 🌟 新增：預設 is_public 為 0 (不公開)
+      const isPublicInt = body.is_public ? 1 : 0;
 
       await env.commission_db.prepare(
         `INSERT INTO oc_cards (
           id, user_id, name, gender, body_type, hair_desc, hair_colors,
           eyes_desc, eyes_colors, clothing_desc, clothing_colors,
           traits, must_have, donts, keywords, short_intro,
-          personality, background, other_notes, images, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+          personality, background, other_notes, images, created_at, updated_at,
+          is_public
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?)`
       ).bind(
         id, userId, body.name || '', body.gender || '', body.body_type || '',
         body.hair_desc || '', JSON.stringify(body.hair_colors || []),
@@ -45,7 +50,8 @@ export const ocController = {
         body.traits || '', body.must_have || '', body.donts || '',
         JSON.stringify(body.keywords || []), body.short_intro || '',
         body.personality || '', body.background || '', body.other_notes || '',
-        JSON.stringify(body.images || [])
+        JSON.stringify(body.images || []),
+        isPublicInt // 🌟 新增寫入參數
       ).run();
 
       return new Response(JSON.stringify({ success: true, data: { id } }), { headers: corsHeaders });
@@ -58,13 +64,16 @@ export const ocController = {
   async update(request: any, ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
+      // 🌟 新增：解析布林值為整數
+      const isPublicInt = body.is_public ? 1 : 0;
 
       await env.commission_db.prepare(
         `UPDATE oc_cards SET
           name = ?, gender = ?, body_type = ?, hair_desc = ?, hair_colors = ?,
           eyes_desc = ?, eyes_colors = ?, clothing_desc = ?, clothing_colors = ?,
           traits = ?, must_have = ?, donts = ?, keywords = ?, short_intro = ?,
-          personality = ?, background = ?, other_notes = ?, images = ?, updated_at = datetime('now')
+          personality = ?, background = ?, other_notes = ?, images = ?, updated_at = datetime('now'),
+          is_public = ?
          WHERE id = ? AND user_id = ?`
       ).bind(
         body.name || '', body.gender || '', body.body_type || '',
@@ -75,6 +84,7 @@ export const ocController = {
         JSON.stringify(body.keywords || []), body.short_intro || '',
         body.personality || '', body.background || '', body.other_notes || '',
         JSON.stringify(body.images || []),
+        isPublicInt, // 🌟 新增更新參數
         ocId, userId
       ).run();
 
