@@ -1,6 +1,7 @@
 // src/components/OC/OCDetailCard.tsx
 import { useState } from 'react';
 import { Check, Image as ImageIcon } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import type { OCImageItem } from './OCImageManager';
 import '../../styles/OCCardPage.css'; 
 
@@ -99,12 +100,11 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
       }
     }>
       
-      {/* 燈箱 */}
-      {/* 🌟 修正後的全螢幕燈箱 */}
-      {zoomedImage && (
+      {/* 🌟 修正：使用 createPortal 將燈箱傳送到 document.body，徹底跳脫毛玻璃陷阱 */}
+      {zoomedImage && createPortal(
         <div 
           onClick={(e) => {
-            e.stopPropagation(); // 阻止事件冒泡到下層元素
+            e.stopPropagation(); 
             setZoomedImage(null);
           }} 
           style={{ 
@@ -116,7 +116,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
             width: '100vw', 
             height: '100vh', 
             backgroundColor: 'rgba(0, 0, 0, 0.85)', 
-            zIndex: 999999, // 拉到最高層級
+            zIndex: 999999, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
@@ -127,10 +127,11 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
           <img 
             src={zoomedImage} 
             alt="放大" 
-            onClick={(e) => e.stopPropagation()} // 點擊圖片本身不關閉 (可選，依你的偏好)
+            onClick={(e) => e.stopPropagation()} 
             style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }} 
           />
-        </div>
+        </div>,
+        document.body // 🌟 傳送目標：網頁的最外層
       )}
 
       {/* Toast */}
