@@ -100,9 +100,36 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
     }>
       
       {/* 燈箱 */}
+      {/* 🌟 修正後的全螢幕燈箱 */}
       {zoomedImage && (
-        <div onClick={() => setZoomedImage(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 100005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}>
-          <img src={zoomedImage} alt="放大" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px' }} />
+        <div 
+          onClick={(e) => {
+            e.stopPropagation(); // 阻止事件冒泡到下層元素
+            setZoomedImage(null);
+          }} 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            width: '100vw', 
+            height: '100vh', 
+            backgroundColor: 'rgba(0, 0, 0, 0.85)', 
+            zIndex: 999999, // 拉到最高層級
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '24px', 
+            cursor: 'zoom-out' 
+          }}
+        >
+          <img 
+            src={zoomedImage} 
+            alt="放大" 
+            onClick={(e) => e.stopPropagation()} // 點擊圖片本身不關閉 (可選，依你的偏好)
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }} 
+          />
         </div>
       )}
 
