@@ -369,12 +369,6 @@ export const inquiryController = {
         `UPDATE BulletinInquiries SET status = 'submitted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
 
-      const msgId = crypto.randomUUID();
-      const systemMsg = '【系統提示】委託人已將提案退回，請繪師重新確認合約規格與報價，修改後可再次送出。';
-      await env.commission_db.prepare(
-        `INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, 'text')`
-      ).bind(msgId, inquiryId, currentUserId, systemMsg).run();
-
       const text = `⚠️ 委託人已將「${inquiryData.title || '未命名'}」的提案退回，請前往洽談室修改合約。`;
       await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
 
