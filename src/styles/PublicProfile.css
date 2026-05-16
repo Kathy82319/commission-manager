@@ -857,12 +857,12 @@
 /* --- 手機版特化 (Max Width: 768px) --- */
 @media (max-width: 768px) {
   
-  /* 🌟 1. 大幅縮小頂部主選單與大頭貼之間的距離 */
+  /* 1. 大幅縮小頂部主選單與大頭貼之間的距離 */
   .profile-main-content {
     padding: 12px 16px !important; 
   }
 
-  /* 🌟 2. 縮小圓形大頭貼與下方卡片的距離 */
+  /* 2. 縮小圓形大頭貼與下方卡片的距離 */
   .mobile-oc-avatars-wrapper {
     gap: 12px !important;
     padding: 0 16px 4px 16px !important; 
@@ -873,6 +873,8 @@
   /* 3. 卡片內部呼吸空間微調 */
   .oc-detail-container.is-flat .oc-card-content-wrapper {
     padding: 24px 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* 4. 上下堆疊圖片與內容 */
@@ -880,19 +882,30 @@
     display: flex !important;
     flex-direction: column !important;
     gap: 20px !important;
+    width: 100% !important; /* 確保網格整體撐滿 */
   }
   .oc-images-section {
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  /* 🌟 5. 終極解決標題與按鈕跳動問題 */
+  /* 🌟 核心修正：強制內容區塊撐滿 100%，拒絕因為文字太少而內縮！ */
+  .oc-form-column {
+    width: 100% !important;
+    min-width: 100% !important;
+    min-height: 380px; 
+    box-sizing: border-box;
+  }
+
+  /* 5. 終極解決標題與按鈕跳動問題 */
   .oc-card-header {
+    width: 100% !important; /* 🌟 確保標題區塊撐滿 */
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 12px !important;
     padding-bottom: 0 !important;
     border-bottom: none !important;
+    box-sizing: border-box;
   }
   .oc-card-header h2 {
     font-size: 26px !important;
@@ -908,9 +921,10 @@
     margin-bottom: 4px;
   }
   
-  /* 兩個按鈕等寬 50%，絕對不會因為字體變粗而推擠位移 */
+  /* 🌟 強制兩個按鈕絕對等寬，且嚴禁文字斷行 */
   .oc-tab-btn.flat {
-    flex: 1 !important;
+    flex: 1 1 0% !important; /* 忽略內容長度，強迫各佔 50% */
+    white-space: nowrap !important; /* 嚴禁文字被擠到第二行 */
     text-align: center !important;
     padding: 10px 0 !important;
     font-size: 15px !important;
@@ -918,16 +932,11 @@
     border-radius: 0 !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    margin-bottom: -2px !important; /* 🌟 讓選中時的底線精準覆蓋在灰線上 */
+    margin-bottom: -2px !important; 
   }
   .oc-tab-btn.flat.active {
     border-bottom: 2px solid #5D4A3E !important;
     color: #5D4A3E !important;
-  }
-
-  /* 為了防止切換時高度坍塌造成的網頁滾動跳躍，給內容區一個最低高度 */
-  .oc-form-column {
-    min-height: 380px; 
   }
 }
 
