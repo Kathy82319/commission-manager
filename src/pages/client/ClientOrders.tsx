@@ -4,6 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import '../../styles/Notebook.css'; 
 
+// 🌟 引入 OC 卡片相關元件與型別
+import { OCDetailCard } from '../../components/OC/OCDetailCard';
+import type { OCCardData } from '../../components/OC/OCDetailCard';
+
 interface CommissionDetail {
   id: string; status: string; type_name?: string; project_name: string; client_custom_title?: string;
   total_price: number; draw_scope: string; char_count: number; bg_type: string; add_ons: string;
@@ -16,6 +20,7 @@ interface CommissionDetail {
   artist_id?: string;
   artist_public_id?: string; 
   origin_source?: string;
+  oc_snapshot?: string; // 🌟 OC 快照欄位
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -115,7 +120,8 @@ export function ClientOrders() {
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-  const [activeTab, setActiveTab] = useState<'main' | 'review' | 'history'>('main');
+  // 🌟 擴充 activeTab 的型別加入 'oc'
+  const [activeTab, setActiveTab] = useState<'main' | 'oc' | 'review' | 'history'>('main');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [logs, setLogs] = useState<ActionLog[]>([]);
   
@@ -131,7 +137,7 @@ export function ClientOrders() {
     if (currentId && currentId !== selectedId) {
       handleSelect(currentId);
       const tab = queryParams.get('tab');
-      if (tab === 'review' || tab === 'history') {
+      if (tab === 'review' || tab === 'history' || tab === 'oc') {
         setActiveTab(tab);
       }
     }
@@ -252,7 +258,6 @@ export function ClientOrders() {
 
       const allLogs = [...fetchedLogs, ...syntheticLogs].sort((a, b) => parseTime(b.created_at) - parseTime(a.created_at));
       
-      // 🌟 核心修正：前端防禦性去重處理 (避免多路請求因並行競態條件導致後端重複寫入的紀錄干擾畫面)
       const uniqueLogs: ActionLog[] = [];
       const seenLogKeys = new Set<string>();
       for (const log of allLogs) {
@@ -634,10 +639,14 @@ export function ClientOrders() {
                 </div>
               </div>
 
+              {/* 🌟 核心修正：將所有誤植為小寫的 justifycontent 修正為駝峰式的 justifyContent */}
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
                   詳細內容
                   {parsedChanges && <span style={{ marginLeft: '6px', fontSize: '10px', backgroundColor: '#A05C5C', color: 'white', padding: '2px 6px', borderRadius: '10px' }}>有異動</span>}
+                </button>
+                <button className={`tab-btn ${activeTab === 'oc' ? 'active' : ''}`} onClick={() => setActiveTab('oc')}>
+                  角色設定 (OC)
                 </button>
                 <button className={`tab-btn ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>
                   稿件審閱
@@ -753,7 +762,7 @@ export function ClientOrders() {
 
                       {parsedChanges && (
                         <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#FFF5F5', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <div style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '14px' }}>⚠️ 繪師提出了合約規格異動</div>
+                          <div style={{ color: '#A05C5C', fontWeight: 'bold', fontSize: '14px' }}>⚠️ 幕後提出了合約規格異動</div>
                           <div style={{ fontSize: '13px', color: '#7A7269' }}>請確認上方的修改內容（灰色刪除線為原內容，紅色粗體為新內容）。確認無誤後請按下同意以更新合約。</div>
                           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
                             <button onClick={() => handleReviewChange('reject')} disabled={isProcessing} className="action-btn btn-outline-danger" style={{ padding: '8px 16px', fontSize: '13px' }}>拒絕修改</button>
@@ -780,6 +789,41 @@ export function ClientOrders() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* 🌟 OC 分頁渲染區塊 */}
+                {activeTab === 'oc' && (
+                  <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    {(() => {
+                      let ocData: OCCardData | null = null;
+                      try {
+                        if (selectedOrder?.oc_snapshot) {
+                          ocData = JSON.parse(selectedOrder.oc_snapshot);
+                        }
+                      } catch (e) {
+                        console.error("無法解析 OC 資料", e);
+                      }
+
+                      if (!ocData) {
+                        return (
+                          <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '40px', textAlign: 'center', border: '1px dashed #DED9D3', color: '#A0978D' }}>
+                            此委託單尚未綁定任何專屬角色設定卡 (OC)。
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div style={{
+                          border: '1px solid #EAE6E1',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+                        }}>
+                          <OCDetailCard ocData={ocData} />
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
