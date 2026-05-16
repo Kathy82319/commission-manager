@@ -388,3 +388,49 @@ tr.drag-over-target > td {
   background-color: rgba(93, 74, 62, 0.08) !important; 
   transition: background-color 0.15s ease-in-out;
 }
+
+/* ==========================================================================
+   日曆模式樣式 (React Big Calendar 自訂覆蓋)
+   ========================================================================== */
+.rbc-calendar { 
+  font-family: inherit; 
+}
+.rbc-toolbar button { 
+  border-radius: 6px; 
+  color: #5D4A3E; 
+  border-color: #DED9D3; 
+}
+.rbc-toolbar button.rbc-active { 
+  background-color: #5D4A3E; 
+  color: white; 
+  border-color: #5D4A3E; 
+  box-shadow: none; 
+}
+.rbc-toolbar button:hover:not(.rbc-active) { 
+  background-color: #FBFBF9; 
+}
+.rbc-today { 
+  background-color: #FDF4E6; 
+}
+.rbc-month-view { 
+  border-color: #EAE6E1; 
+  border-radius: 8px; 
+  overflow: hidden; 
+}
+.rbc-header { 
+  padding: 8px 0; 
+  font-weight: bold; 
+  color: #7A7269; 
+  border-bottom: 1px solid #EAE6E1; 
+}
+.rbc-off-range-bg { 
+  background-color: #F8F9FA; 
+}
+
+/* 🌟 核心修正：強制調整日曆色塊內距，解決文字貼齊邊緣問題 */
+.rbc-event { 
+  padding: 2px 4px; 
+}
+.rbc-event-content { 
+  padding: 0 4px; 
+}

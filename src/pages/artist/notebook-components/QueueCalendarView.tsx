@@ -16,7 +16,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 interface QueueCalendarViewProps {
   commissions: any[];
   dateColumnLabel: string;
-  handleUpdateField: (id: string, field: string, value: string) => Promise<void>; // 🌟 新增：接收修改函數
+  handleUpdateField: (id: string, field: string, value: string) => Promise<void>;
 }
 
 interface CalendarEventData {
@@ -29,7 +29,6 @@ interface CalendarEventData {
   linked_commission_id?: string;
 }
 
-// 🌟 將紅色 (#C04B4B) 加入自訂行程的色盤中
 const PRESET_COLORS = ['#4A7294', '#8CB369', '#A67B3E', '#A05C5C', '#8E7E8E', '#5D4A3E', '#C04B4B'];
 
 export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateField }: QueueCalendarViewProps) {
@@ -65,7 +64,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
 
     commissions.forEach(c => {
       if (c.end_date) {
-        // 🌟 邏輯：判斷急單並加上標籤 (純文字)
         const rushTag = (c.is_rush === '是' || c.is_rush === 1 || c.is_rush === '1') ? '[急單] ' : '';
         displayList.push({
           id: `comm-${c.id}`,
@@ -103,7 +101,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
   const eventStyleGetter = (event: any) => {
     let backgroundColor = '#4A7294';
     if (event.resource?.type === 'commission') {
-      backgroundColor = '#5D4A3E'; // 🌟 委託單預設改為深茶色
+      backgroundColor = '#5D4A3E';
     } else if (event.resource?.type === 'custom') {
       backgroundColor = event.resource.data.color_hex || '#4A7294';
     }
@@ -117,8 +115,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         color: 'white',
         display: 'block',
         fontSize: '12px',
-        fontWeight: 'bold',
-        padding: '2px 8px' // 🌟 加大 Padding 避免文字貼邊
+        fontWeight: 'bold'
       }
     };
   };
@@ -195,7 +192,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
     }
   };
 
-  // 🌟 輔助函數：取得委託來源資訊
   const getOrderOriginInfo = (order: any) => {
     if (!order.origin_source) return null;
     try {
@@ -212,18 +208,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
 
   return (
     <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '20px', border: '1px solid #EAE6E1', minHeight: '800px', display: 'flex', flexDirection: 'column' }}>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .rbc-calendar { font-family: inherit; }
-        .rbc-toolbar button { border-radius: 6px; color: #5D4A3E; border-color: #DED9D3; }
-        .rbc-toolbar button.rbc-active { background-color: #5D4A3E; color: white; border-color: #5D4A3E; box-shadow: none; }
-        .rbc-toolbar button:hover:not(.rbc-active) { background-color: #FBFBF9; }
-        .rbc-today { background-color: #FDF4E6; }
-        .rbc-event { padding: 0 !important; }
-        .rbc-month-view { border-color: #EAE6E1; border-radius: 8px; overflow: hidden; }
-        .rbc-header { padding: 8px 0; font-weight: bold; color: #7A7269; border-bottom: 1px solid #EAE6E1; }
-        .rbc-off-range-bg { background-color: #F8F9FA; }
-      `}} />
 
       <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '13px', color: '#7A7269', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#5D4A3E', display: 'inline-block' }}></span> {dateColumnLabel}</span>
@@ -321,9 +305,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         </div>
       )}
 
-      {/* =======================================================
-          彈出視窗：檢視 委託單詳細資訊 (可直接修改日期)
-          ======================================================= */}
+      {/* 彈出視窗：檢視 委託單詳細資訊 (可直接修改日期) */}
       {modalMode === 'view_commission' && selectedCommission && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="fade-in" style={{ background: '#FFF', width: '90%', maxWidth: '400px', borderRadius: '16px', padding: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
@@ -364,7 +346,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
                 <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#B4ADA5', marginTop: '2px' }}>ID: {selectedCommission.client_public_id || '未綁定'} / No: {selectedCommission.id.split('-')[1] || selectedCommission.id}</div>
               </div>
 
-              {/* 🌟 核心修正：日曆中直接修改日期 */}
+              {/* 日曆中直接修改日期 */}
               <div>
                 <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '4px' }}>{dateColumnLabel}</div>
                 <input 
@@ -373,7 +355,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
                   onChange={async (e) => {
                     const newVal = e.target.value;
                     await handleUpdateField(selectedCommission.id, 'end_date', newVal);
-                    // 同步更新本地彈窗狀態，避免視覺不一致
                     setSelectedCommission({ ...selectedCommission, end_date: newVal });
                   }}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EAE6E1', fontSize: '14px', color: '#5D4A3E', backgroundColor: '#FDFDFB' }} 
