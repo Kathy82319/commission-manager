@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
-// 🌟 新增：引入我們之前寫好的 OC 展示設定元件
+// 🌟 引入 OC 展示設定元件
 import { OCDisplaySettingsTab } from '../artist/Settings/OCDisplaySettingsTab';
 import type { FormDataState } from '../artist/Settings/types';
 import '../../styles/Settings.css'; 
@@ -147,47 +147,44 @@ export function ClientSettings() {
       )}
       
       <div className="settings-layout">
-        <aside className="settings-sidebar">
+        {/* 將側邊欄包裝在外層容器，防止手機版橫向滾動時把升級卡片壓扁 */}
+        <aside className="settings-sidebar-wrapper">
           <div className="sidebar-title">帳號設定</div>
           
-          <div className="sidebar-group">
-            <div className="group-label">個人資訊</div>
-            <button 
-              className={`tab-btn ${activeTab === 'profile_basic' ? 'active' : ''}`} 
-              onClick={() => setActiveTab('profile_basic')}
-            >
-              頭像與基礎資料
-            </button>
-            
-            {/* 🌟 新增：勾選角色卡公開展示的按鈕 */}
-            <button 
-              className={`tab-btn ${activeTab === 'oc_display' ? 'active' : ''}`} 
-              onClick={() => setActiveTab('oc_display')}
-            >
-              角色設定卡展示
-            </button>
+          <div className="settings-sidebar">
+            <div className="sidebar-group">
+              <div className="group-label">個人資訊</div>
+              <button 
+                className={`tab-btn ${activeTab === 'profile_basic' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('profile_basic')}
+              >
+                頭像與基礎資料
+              </button>
+              
+              <button 
+                className={`tab-btn ${activeTab === 'oc_display' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('oc_display')}
+              >
+                角色設定卡展示
+              </button>
 
-            <button 
-              className={`tab-btn ${activeTab === 'detailed_intro' ? 'active' : ''}`} 
-              onClick={() => setActiveTab('detailed_intro')}
-            >
-              自訂公開詳細介紹
-            </button>
+              <button 
+                className={`tab-btn ${activeTab === 'detailed_intro' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('detailed_intro')}
+              >
+                自訂公開詳細介紹
+              </button>
+            </div>
           </div>
 
-          <div className="sidebar-group" style={{ marginTop: 'auto', paddingTop: '40px' }}>
-            <div style={{ padding: '16px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#334155', fontSize: '14px' }}>想開始接案賺錢嗎？</h4>
-              <p style={{ margin: '0 0 12px 0', color: '#64748B', fontSize: '12px', lineHeight: '1.5' }}>
+          {/* 升級創作者區塊：抽離出 sidebar-group 以便單獨做手機版 RWD 降級處理 */}
+          <div className="upgrade-card-container">
+            <div className="upgrade-card">
+              <h4 className="upgrade-card-title">想開始接案賺錢嗎？</h4>
+              <p className="upgrade-card-desc">
                 一鍵開通創作者身分，免費解鎖排單表、專屬作品集與報價功能。
               </p>
-              <button 
-                onClick={handleUpgradeClick}
-                style={{
-                  width: '100%', padding: '8px', borderRadius: '6px', border: 'none',
-                  backgroundColor: '#3b82f6', color: '#fff', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer'
-                }}
-              >
+              <button onClick={handleUpgradeClick} className="upgrade-card-btn">
                 🚀 免費開通創作者
               </button>
             </div>
@@ -195,9 +192,7 @@ export function ClientSettings() {
         </aside>
 
         <div className="settings-content-area">
-          
-          <div className="settings-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {/* 🌟 標題隨分頁動態切換 */}
+          <div className="settings-header">
             <h3>
               {activeTab === 'profile_basic' && '頭像與基礎資料'}
               {activeTab === 'oc_display' && '角色設定卡展示'}
@@ -207,18 +202,10 @@ export function ClientSettings() {
             {publicId && (
               <button 
                 onClick={() => window.open(`/${publicId}`, '_blank')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0',
-                  backgroundColor: '#FFF', color: '#475569', fontSize: '14px', 
-                  fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFF'}
+                className="preview-profile-btn"
               >
                 <ExternalLink size={16} />
-                預覽個人頁
+                <span>預覽個人頁</span>
               </button>
             )}
           </div>
@@ -233,14 +220,13 @@ export function ClientSettings() {
               />
             )}
 
-            {/* 🌟 新增渲染：OC 角色卡展示分頁 */}
             {activeTab === 'oc_display' && (
               <OCDisplaySettingsTab onToast={showToast} />
             )}
             
             {activeTab === 'detailed_intro' && (
               <>
-                <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '20px' }}>
+                <p className="tab-instruction-text">
                   在這裡輸入的內容，將會展示在您的個人公開頁面上。您可以利用這裡寫下更詳細的自我介紹或委託偏好。
                 </p>
                 <RichTextTab 
@@ -252,7 +238,6 @@ export function ClientSettings() {
             )}
           </div>
 
-          {/* 🌟 核心修正：僅在非 OC 展示頁面時才顯示底部儲存按鈕（因為 OC 頁面是點擊就即時存檔） */}
           {activeTab !== 'oc_display' && (
             <div className="save-action-bar">
               <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
