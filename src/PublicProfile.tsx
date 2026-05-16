@@ -751,11 +751,11 @@ export function PublicProfile() {
                 <div className="public-oc-layout fade-in" style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
-                  gap: '24px', 
+                  gap: '8px', // 🌟 從 24px 縮小到 10px，大幅拉近頭像與卡片的距離
                   width: '100%',
-                  maxWidth: '1020px', // 🌟 置中收束最大寬度，防止橫向過度攤平
-                  margin: '0 auto',    // 🌟 左右留白呼吸空間
-                  padding: '10px 4px'
+                  maxWidth: '1020px', 
+                  margin: '0 auto',    
+                  padding: '0' // 🌟 移除多餘的上下內距
                 }}>
                   
                   {publicOCs.length > 1 && (
