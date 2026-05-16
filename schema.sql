@@ -393,6 +393,21 @@ CREATE INDEX idx_oc_user_id ON oc_cards(user_id);
 
 ALTER TABLE Commissions ADD COLUMN oc_snapshot TEXT DEFAULT NULL;
 ALTER TABLE oc_cards ADD COLUMN is_public INTEGER DEFAULT 0;
+
+
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id TEXT PRIMARY KEY,
+  artist_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  color_hex TEXT,
+  linked_commission_id TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_events_artist ON calendar_events(artist_id);
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

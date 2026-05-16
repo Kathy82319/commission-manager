@@ -15,7 +15,8 @@ import { inquiryController } from './controllers/inquiryController';
 import { directInquiryController } from './controllers/directInquiryController';
 import { notificationController } from "./controllers/notificationController";
 import { userRelationController } from "./controllers/userRelationController";
-import { ocController } from "./controllers/ocController"; // 🌟 新增：引入 ocController
+import { ocController } from "./controllers/ocController"; 
+import { calendarController } from "./controllers/calendarController"; // 🌟 新增：引入日曆控制器
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -234,6 +235,26 @@ export default {
         }
       }
 
+      // --- 🌟 新增：日曆排單行程 (Calendar Events) 路由分支 ---
+      if (sanitizedPath.startsWith("/api/calendar-events")) {
+        const authErr = requireAuth(currentUserId, corsHeaders); 
+        if (authErr) return authErr;
+        
+        const targetId = pathParts[3]; // 對應 eventId
+
+        if (!targetId) {
+          if (request.method === "GET") return calendarController.getEvents(currentUserId!, env, corsHeaders);
+          if (request.method === "POST") return calendarController.createEvent(request, currentUserId!, env, corsHeaders);
+        } else {
+          if (request.method === "PUT" || request.method === "PATCH") {
+            return calendarController.updateEvent(request, targetId, currentUserId!, env, corsHeaders);
+          }
+          if (request.method === "DELETE") {
+            return calendarController.deleteEvent(targetId, currentUserId!, env, corsHeaders);
+          }
+        }
+      }
+
       if (sanitizedPath.startsWith("/api/customers")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
@@ -290,7 +311,6 @@ export default {
         return commController.getPublicQueue(artistId, env, corsHeaders);
       }
       
-      {/* 🌟 新增：開通前台免驗證公開撈取 OC 牆的角色卡路由 */}
       if (sanitizedPath.startsWith("/api/public/oc/")) {
         const userId = pathParts[4];
         return ocController.getPublicList(userId, env, corsHeaders);

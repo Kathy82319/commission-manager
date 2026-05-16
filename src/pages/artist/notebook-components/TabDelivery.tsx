@@ -70,7 +70,7 @@ export function TabDelivery({
   return (
     <div className="fade-in">
       <div className="delivery-hint-wrapper">
-        <span className="hint-text">[提示]：上傳後系統會自動進行壓縮與壓製浮水印...</span>
+        <span className="hint-text">[提示]：上傳後將自動進行壓縮與壓製浮水印...</span>
       </div>
       {renderStageBox('階段 1：草稿 (Sketch)', 'sketch', selectedOrder?.current_stage === 'sketch_reviewing', isStageActuallyReviewed('草稿'))}
       {renderStageBox('階段 2：線稿 (Lineart)', 'lineart', selectedOrder?.current_stage === 'lineart_reviewing', isStageActuallyReviewed('線稿'))}

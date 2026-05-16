@@ -1,8 +1,10 @@
 // src/pages/artist/Queue.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical, X, Edit2 } from 'lucide-react';
+import { GripVertical, X, Edit2, Calendar as CalendarIcon, List as ListIcon } from 'lucide-react';
 import { QuoteBuilder } from './QuoteBuilder';
+// 🌟 引入我們剛剛寫好的日曆元件
+import { QueueCalendarView } from './notebook-components/QueueCalendarView';
 import '../../styles/Queue.css';
 
 interface Commission {
@@ -128,6 +130,9 @@ export function Queue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stages, setStages] = useState<string[]>(() => JSON.parse(localStorage.getItem('artist_all_stages') || JSON.stringify(INITIAL_STAGES)));
   
+  // 🌟 新增：視圖切換狀態 (列表 vs 日曆)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
   const [paidAmounts, setPaidAmounts] = useState<Record<string, number>>({});
   
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -418,7 +423,6 @@ export function Queue() {
     return order.contact_memo ? order.contact_memo : '(未綁定)';
   };
 
-  // 🌟 額度限制判斷邏輯修正：只計算該使用者作為「繪師」且活躍的訂單
   const planLimits: Record<string, number> = { 'free': 3, 'trial': 20, 'pro': 999999 };
   const currentLimit = planLimits[userData?.plan_type || 'free'] || 3;
   const activeArtistCommissions = commissions.filter(c => c.artist_id === myId);
@@ -445,6 +449,23 @@ export function Queue() {
       <div className="queue-header">
         <h2 className="queue-title">工作排單表</h2>
         <div className="queue-controls">
+
+          {/* 🌟 視圖切換按鈕群組 */}
+          <div style={{ display: 'flex', backgroundColor: '#F1F5F9', borderRadius: '8px', padding: '4px', gap: '4px' }}>
+            <button
+              onClick={() => setViewMode('list')}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: 'none', borderRadius: '4px', background: viewMode === 'list' ? '#FFF' : 'transparent', color: viewMode === 'list' ? '#5D4A3E' : '#94A3B8', fontWeight: 'bold', boxShadow: viewMode === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <ListIcon size={16} /> 列表
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: 'none', borderRadius: '4px', background: viewMode === 'calendar' ? '#FFF' : 'transparent', color: viewMode === 'calendar' ? '#5D4A3E' : '#94A3B8', fontWeight: 'bold', boxShadow: viewMode === 'calendar' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <CalendarIcon size={16} /> 日曆
+            </button>
+          </div>
+
           <input placeholder="搜尋項目" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search" />
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
             <option value="all">全部月份</option>
@@ -476,161 +497,166 @@ export function Queue() {
         </div>
       </div>
 
-      <div className="queue-table-wrapper">
-        <table className="queue-table">
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>委託人</th>
-              <th>進度</th>
-              <th className="dynamic-date-th">
-                <div className="queue-desktop-col-edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <input 
-                    type="text" 
-                    value={dateColumnLabel} 
-                    onChange={e => setDateColumnLabel(e.target.value)}
-                    onBlur={(e) => handleSaveDateLabel(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.currentTarget.blur();
-                      }
-                    }}
-                    style={{ 
-                      background: 'transparent', 
-                      border: '1px dashed transparent', 
-                      color: 'inherit', 
-                      fontWeight: 'bold', 
-                      fontSize: 'inherit', 
-                      width: '80px',
-                      padding: '2px 4px',
-                      borderRadius: '4px',
-                      cursor: 'text',
-                      transition: 'border-color 0.2s, background-color 0.2s'
-                    }}
-                    onFocus={e => e.target.style.border = '1px dashed #A0978D'}
-                    onMouseOver={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)' }}
-                    onMouseOut={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'transparent' }}
-                  />
-                  <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
-                </div>
-                <span className="queue-mobile-col-name">日期</span>
-              </th>
-              <th>付款</th>
-              <th className="queue-hide-mobile">備註欄位</th>
-              <th className="queue-hide-mobile">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCommissions.map((order) => {
-              const isExpanded = expandedId === order.id;
-              
-              const originData = getOriginData(order);
-              
-              const total = order.total_price || 0;
-              const paid = paidAmounts[order.id] || 0;
-              const hasAmountData = total > 0;
-              
-              return (
-              <tr 
-                key={order.id}
-                onDragOver={(e) => handleDragOver(e, order.id)}
-                onDrop={(e) => handleDrop(e, order.id)}
-                onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                className={`${draggedId === order.id ? 'is-dragging' : ''} ${dragOverId === order.id ? 'drag-over-target' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
-              >
-                <td data-label="日期">
-                  <div className="cell-content cell-date">
-                    <div 
-                      draggable 
-                      onDragStart={() => handleDragStart(order.id)} 
-                      onDragEnd={handleDragEnd} 
-                      className="drag-handle queue-hide-mobile"
-                    >
-                      <GripVertical size={16} />
-                    </div>
-                    <span>{order.order_date ? order.order_date.substring(5, 10).replace('-', '/') : '未定'}</span>
-                  </div>
-                </td>
-                <td data-label="委託人資訊">
-                  <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
-                    <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
-                      <div className="workflow-badge-wrapper">
-                        
-                        {originData ? (
-                          <span className="bulletin-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                            {originData.type === 'showcase_form' ? '接委託表單' : '許願池'}
-                          </span>
-                        ) : (
-                          <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                            {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="client-details-extra">
-                      <div style={{ fontSize: '13px', color: '#7A7269' }}><strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}</div>
-                      <div style={{ fontSize: '13px', color: '#7A7269' }}><span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>{order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})</span></div>
-                    </div>
-                  </div>
-                </td>
-                <td data-label="當前進度">
-                  <div className="cell-content cell-status">
-                    <div className="cell-content cell-status" onClick={e => e.stopPropagation()}></div>
-                    <StageDropdown 
-                      value={order.queue_status} 
-                      isExpanded={isExpanded}
-                      onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} 
-                      stages={stages} 
-                      onAdd={(v:any) => setStages([...stages, v])} 
-                      onDelete={(v:any) => setStages(stages.filter(s=>s!==v))}
-                      onToggle={(isOpen: boolean) => setOpenDropdownId(isOpen ? order.id : null)}
+      {/* 🌟 根據 viewMode 條件渲染對應的視圖元件 */}
+      {viewMode === 'list' ? (
+        <div className="queue-table-wrapper">
+          <table className="queue-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>委託人</th>
+                <th>進度</th>
+                <th className="dynamic-date-th">
+                  <div className="queue-desktop-col-edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input 
+                      type="text" 
+                      value={dateColumnLabel} 
+                      onChange={e => setDateColumnLabel(e.target.value)}
+                      onBlur={(e) => handleSaveDateLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      style={{ 
+                        background: 'transparent', 
+                        border: '1px dashed transparent', 
+                        color: 'inherit', 
+                        fontWeight: 'bold', 
+                        fontSize: 'inherit', 
+                        width: '80px',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                        cursor: 'text',
+                        transition: 'border-color 0.2s, background-color 0.2s'
+                      }}
+                      onFocus={e => e.target.style.border = '1px dashed #A0978D'}
+                      onMouseOver={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)' }}
+                      onMouseOut={e => { if(document.activeElement !== e.target) e.currentTarget.style.backgroundColor = 'transparent' }}
                     />
+                    <Edit2 size={12} color="#A0978D" style={{ cursor: 'pointer', flexShrink: 0 }} />
                   </div>
-                </td>
-                <td data-label={dateColumnLabel}>
-                  <div className="cell-content cell-date-input">
-                    <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
-                    <input type="date" defaultValue={order.end_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
-                  </div>
-                </td>
-                <td data-label="付款進度">
-                  <div className="cell-content cell-payment" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', width: '100%' }}>
-                    <select 
-                      value={order.payment_status} 
-                      onClick={e => isExpanded && e.stopPropagation()} 
-                      onChange={e => handlePaymentChange(order, e.target.value)} 
-                      style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text, width: '100%' }} 
-                      className="payment-select"
-                    >
-                      <option value="unpaid">未付</option>
-                      <option value="partial">訂金</option>
-                      <option value="paid">已付</option>
-                    </select>
-                    {hasAmountData && (
-                      <div className="payment-amount-text" style={{ color: '#8A7A7A', whiteSpace: 'nowrap', marginTop: '2px', alignSelf: 'center' }}>
-                        ${paid} / ${total}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td data-label="備註欄位">
-                  <div className="cell-content cell-note">
-                    {order.client_custom_label === '黑名單' && (
-                      <span className="queue-blacklist-tag" onClick={(e) => { e.stopPropagation(); navigate(`/artist/customers?id=${order.crm_record_id}`); }} title="點擊查看黑名單原因" style={{ cursor: 'pointer', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}>黑名單</span>
-                    )}
-                    {order.is_rush === '是' && <span className="rush-badge">急單</span>}
-                    <input defaultValue={order.artist_note} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
-                  </div>
-                </td>
-                <td data-label="操作管理">
-                  <div className="cell-content cell-manage"><button onClick={(e) => { e.stopPropagation(); navigate(`/artist/notebook?id=${order.id}`); }} className="manage-button">管理</button></div>
-                </td>
+                  <span className="queue-mobile-col-name">日期</span>
+                </th>
+                <th>付款</th>
+                <th className="queue-hide-mobile">備註欄位</th>
+                <th className="queue-hide-mobile">操作</th>
               </tr>
-            )})}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredCommissions.map((order) => {
+                const isExpanded = expandedId === order.id;
+                
+                const originData = getOriginData(order);
+                
+                const total = order.total_price || 0;
+                const paid = paidAmounts[order.id] || 0;
+                const hasAmountData = total > 0;
+                
+                return (
+                <tr 
+                  key={order.id}
+                  onDragOver={(e) => handleDragOver(e, order.id)}
+                  onDrop={(e) => handleDrop(e, order.id)}
+                  onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                  className={`${draggedId === order.id ? 'is-dragging' : ''} ${dragOverId === order.id ? 'drag-over-target' : ''} ${openDropdownId === order.id ? 'active-row' : ''} ${isExpanded ? 'is-expanded' : ''}`}
+                >
+                  <td data-label="日期">
+                    <div className="cell-content cell-date">
+                      <div 
+                        draggable 
+                        onDragStart={() => handleDragStart(order.id)} 
+                        onDragEnd={handleDragEnd} 
+                        className="drag-handle queue-hide-mobile"
+                      >
+                        <GripVertical size={16} />
+                      </div>
+                      <span>{order.order_date ? order.order_date.substring(5, 10).replace('-', '/') : '未定'}</span>
+                    </div>
+                  </td>
+                  <td data-label="委託人資訊">
+                    <div className="cell-content-right" style={{ textAlign: 'left', lineHeight: '1.6' }}>
+                      <div style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 'bold' }}>{getClientNameDisplay(order)}</span>
+                        <div className="workflow-badge-wrapper">
+                          
+                          {originData ? (
+                            <span className="bulletin-badge" style={{ backgroundColor: originData.type === 'showcase_form' ? '#4A7294' : '#8E7E8E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                              {originData.type === 'showcase_form' ? '接委託表單' : '許願池'}
+                            </span>
+                          ) : (
+                            <span className={`workflow-badge ${order.workflow_mode === 'free' ? 'free' : 'standard'}`} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                              {order.workflow_mode === 'free' ? '自由紀錄' : '標準委託'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="client-details-extra">
+                        <div style={{ fontSize: '13px', color: '#7A7269' }}><strong>項目：</strong>{order.project_name || order.type_name || '未命名項目'}</div>
+                        <div style={{ fontSize: '13px', color: '#7A7269' }}><span style={{ color: '#A0978D', marginLeft: '1px', fontSize: '11px', fontFamily: 'monospace' }}>{order.client_public_id ||'未綁定'} (訂單編號：{order.id.split('-')[1] || order.id})</span></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-label="當前進度">
+                    <div className="cell-content cell-status">
+                      <div className="cell-content cell-status" onClick={e => e.stopPropagation()}></div>
+                      <StageDropdown 
+                        value={order.queue_status} 
+                        isExpanded={isExpanded}
+                        onChange={(v:any) => handleUpdateField(order.id, 'queue_status', v)} 
+                        stages={stages} 
+                        onAdd={(v:any) => setStages([...stages, v])} 
+                        onDelete={(v:any) => setStages(stages.filter(s=>s!==v))}
+                        onToggle={(isOpen: boolean) => setOpenDropdownId(isOpen ? order.id : null)}
+                      />
+                    </div>
+                  </td>
+                  <td data-label={dateColumnLabel}>
+                    <div className="cell-content cell-date-input">
+                      <span className="date-text-display">{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</span>
+                      <input type="date" defaultValue={order.end_date} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'end_date', e.target.value)} className="date-input" />
+                    </div>
+                  </td>
+                  <td data-label="付款進度">
+                    <div className="cell-content cell-payment" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', width: '100%' }}>
+                      <select 
+                        value={order.payment_status} 
+                        onClick={e => isExpanded && e.stopPropagation()} 
+                        onChange={e => handlePaymentChange(order, e.target.value)} 
+                        style={{ background: paymentColors[order.payment_status]?.bg, color: paymentColors[order.payment_status]?.text, width: '100%' }} 
+                        className="payment-select"
+                      >
+                        <option value="unpaid">未付</option>
+                        <option value="partial">訂金</option>
+                        <option value="paid">已付</option>
+                      </select>
+                      {hasAmountData && (
+                        <div className="payment-amount-text" style={{ color: '#8A7A7A', whiteSpace: 'nowrap', marginTop: '2px', alignSelf: 'center' }}>
+                          ${paid} / ${total}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td data-label="備註欄位">
+                    <div className="cell-content cell-note">
+                      {order.client_custom_label === '黑名單' && (
+                        <span className="queue-blacklist-tag" onClick={(e) => { e.stopPropagation(); navigate(`/artist/customers?id=${order.crm_record_id}`); }} title="點擊查看黑名單原因" style={{ cursor: 'pointer', color: '#FF4D4D', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #FF4D4D', marginRight: '6px', flexShrink: 0 }}>黑名單</span>
+                      )}
+                      {order.is_rush === '是' && <span className="rush-badge">急單</span>}
+                      <input defaultValue={order.artist_note} onClick={e => isExpanded && e.stopPropagation()} onBlur={e => handleUpdateField(order.id, 'artist_note', e.target.value)} className="note-input" placeholder="點擊編輯..." />
+                    </div>
+                  </td>
+                  <td data-label="操作管理">
+                    <div className="cell-content cell-manage"><button onClick={(e) => { e.stopPropagation(); navigate(`/artist/notebook?id=${order.id}`); }} className="manage-button">管理</button></div>
+                  </td>
+                </tr>
+              )})}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <QueueCalendarView commissions={filteredCommissions} />
+      )}
 
       {isQuoteModalOpen && (
         <div className="quote-modal-overlay" onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px', cursor: 'default' }}>
