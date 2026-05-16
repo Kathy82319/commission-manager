@@ -18,7 +18,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 // ==========================================
 // 獲取方法：Cloudflare 後台 -> R2 -> 點進 commission-public -> 設定 (Settings) -> 公開存取 (Public Access)
 // 裡面會有一個 R2.dev 子網域 (例如: https://pub-xxxxxxxxxxxxxx.r2.dev)
-const R2_PUBLIC_DOMAIN = (import.meta as any).env?.VITE_R2_PUBLIC_DOMAIN || 'https://你的-r2-公開網址.r2.dev'; 
+const R2_PUBLIC_DOMAIN = (import.meta as any).env?.VITE_R2_PUBLIC_DOMAIN || 'https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev'; 
 
 export interface OCImageItem {
   id: string;
