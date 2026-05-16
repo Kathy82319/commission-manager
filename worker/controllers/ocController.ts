@@ -2,7 +2,7 @@
 import type { Env } from "../shared/types";
 
 export const ocController = {
-  // 取得委託人的所有 OC 卡片
+  // 取得委託人的所有 OC 卡片 (後台專用，需登入驗證)
   async getList(userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const { results } = await env.commission_db.prepare(
@@ -11,8 +11,30 @@ export const ocController = {
 
       const data = results.map((row: any) => ({
         ...row,
-        // 🌟 新增：把資料庫的整數 0/1 轉為布林值給前端
         is_public: Boolean(row.is_public),
+        hair_colors: JSON.parse(row.hair_colors || '[]'),
+        eyes_colors: JSON.parse(row.eyes_colors || '[]'),
+        clothing_colors: JSON.parse(row.clothing_colors || '[]'),
+        keywords: JSON.parse(row.keywords || '[]'),
+        images: JSON.parse(row.images || '[]')
+      }));
+
+      return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 🌟 確保這段程式碼有完整寫入：取得指定用戶的「公開」OC 卡片 (前台個人頁專用，不需登入驗證)
+  async getPublicList(userId: string, env: Env, corsHeaders: any): Promise<any> {
+    try {
+      const { results } = await env.commission_db.prepare(
+        `SELECT * FROM oc_cards WHERE user_id = ? AND is_public = 1 ORDER BY updated_at DESC`
+      ).bind(userId).all();
+
+      const data = results.map((row: any) => ({
+        ...row,
+        is_public: true,
         hair_colors: JSON.parse(row.hair_colors || '[]'),
         eyes_colors: JSON.parse(row.eyes_colors || '[]'),
         clothing_colors: JSON.parse(row.clothing_colors || '[]'),
@@ -31,7 +53,6 @@ export const ocController = {
     try {
       const body: any = await request.json();
       const id = body.id || `oc-${Date.now()}`;
-      // 🌟 新增：預設 is_public 為 0 (不公開)
       const isPublicInt = body.is_public ? 1 : 0;
 
       await env.commission_db.prepare(
@@ -51,7 +72,7 @@ export const ocController = {
         JSON.stringify(body.keywords || []), body.short_intro || '',
         body.personality || '', body.background || '', body.other_notes || '',
         JSON.stringify(body.images || []),
-        isPublicInt // 🌟 新增寫入參數
+        isPublicInt
       ).run();
 
       return new Response(JSON.stringify({ success: true, data: { id } }), { headers: corsHeaders });
@@ -64,7 +85,6 @@ export const ocController = {
   async update(request: any, ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
-      // 🌟 新增：解析布林值為整數
       const isPublicInt = body.is_public ? 1 : 0;
 
       await env.commission_db.prepare(
@@ -84,7 +104,7 @@ export const ocController = {
         JSON.stringify(body.keywords || []), body.short_intro || '',
         body.personality || '', body.background || '', body.other_notes || '',
         JSON.stringify(body.images || []),
-        isPublicInt, // 🌟 新增更新參數
+        isPublicInt,
         ocId, userId
       ).run();
 
@@ -94,7 +114,7 @@ export const ocController = {
     }
   },
 
-  // 取得單一詳情 (備用)
+  // 取得單一詳情
   async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const data = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
@@ -106,12 +126,12 @@ export const ocController = {
   },
 
   // 刪除 OC 卡片
-  async delete(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
+  async delete(ocId: string, userId: string, env: Env, credentials: any): Promise<any> {
     try {
       await env.commission_db.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();
-      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true }), { headers: credentials });
     } catch(e: any) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: credentials });
     }
   }
-}; 
+};
