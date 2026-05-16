@@ -420,7 +420,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="form-section">
             <label className="section-title">詳細接案說明</label>
-            <textarea rows={4} className="detail-textarea" placeholder="除了上述設定外，還有其他想補充的細節嗎？" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
+            <textarea rows={4} className="detail-textarea" placeholder="詳細的說明你接案的內容" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
           </div>
 
           <div className="modal-footer">
