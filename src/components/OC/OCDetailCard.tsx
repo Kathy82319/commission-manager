@@ -1,6 +1,6 @@
 // src/components/OC/OCDetailCard.tsx
 import { useState } from 'react';
-import { Check, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, Image as ImageIcon, ZoomIn, X } from 'lucide-react';
 import type { OCImageItem } from './OCImageManager';
 import '../../styles/OCCardPage.css'; 
 
@@ -29,13 +29,17 @@ export interface OCCardData {
 
 interface OCDetailCardProps {
   ocData: OCCardData;
+  // 🌟 新增 variant 屬性：'default' 為卡片模式，'flat' 為個人頁無框雜誌模式
+  variant?: 'default' | 'flat';
 }
 
-export function OCDetailCard({ ocData }: OCDetailCardProps) {
+export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps) {
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [mainImage, setMainImage] = useState<string | null>(ocData.images?.[0]?.previewUrl || null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+  const isFlat = variant === 'flat';
 
   const handleCopyColor = (color: string) => {
     if (!color) return;
@@ -79,27 +83,32 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
   };
 
   return (
-    <div style={{ backgroundColor: '#FDFDFB', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+    // 🌟 根據模式決定外框樣式
+    <div style={{ 
+      backgroundColor: isFlat ? 'transparent' : '#FDFDFB', 
+      borderRadius: isFlat ? '0' : '12px', 
+      overflow: isFlat ? 'visible' : 'hidden', 
+      position: 'relative' 
+    }}>
       
-      {/* 燈箱 */}
+      {/* 燈箱與 Toast 保持不變... */}
       {zoomedImage && (
         <div onClick={() => setZoomedImage(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 100005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}>
           <img src={zoomedImage} alt="放大" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px' }} />
         </div>
       )}
 
-      {/* Toast */}
       {toastMsg && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#5D4A3E', color: 'white', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Check size={16} color="#A67B3E" /> {toastMsg}
         </div>
       )}
 
-      {/* 🌟 核心改動：一體化排版，移除頂部標題 */}
-      <div style={{ padding: '24px' }}>
-        <div className="oc-intro-grid" style={{ gridTemplateColumns: '1fr 1.2fr', gap: '24px' }}>
+      {/* 🌟 根據模式調整內距 */}
+      <div style={{ padding: isFlat ? '10px 0' : '24px' }}>
+        <div className="oc-intro-grid" style={{ gridTemplateColumns: '1fr 1.2fr', gap: isFlat ? '32px' : '24px' }}>
           
-          {/* 左側：圖片區 (不隨分頁切換而消失) */}
+          {/* 左側：圖片區 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div 
               onClick={() => mainImage && setZoomedImage(mainImage)}
@@ -119,28 +128,47 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
             )}
           </div>
 
-          {/* 右側：詳細資料區 (包含名字與切換按鈕) */}
+          {/* 右側：詳細資料區 */}
           <div className="oc-form-column" style={{ gap: '12px' }}>
             
-            {/* 🌟 名字整合在此 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <h2 style={{ margin: 0, fontSize: '28px', color: '#5D4A3E', fontWeight: 'bold' }}>{ocData.name || '未命名角色'}</h2>
+              {/* 若為扁平模式，名字可以稍微再放大一點加強雜誌感 */}
+              <h2 style={{ margin: 0, fontSize: isFlat ? '32px' : '28px', color: '#5D4A3E', fontWeight: 'bold' }}>
+                {ocData.name || '未命名角色'}
+              </h2>
               
-              {/* 🌟 極簡小分頁切換器 */}
-              <div style={{ display: 'flex', backgroundColor: '#F4F0EB', padding: '3px', borderRadius: '8px' }}>
-                <button 
-                  onClick={() => setActiveTab('intro')}
-                  style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'intro' ? '#FFF' : 'transparent', color: activeTab === 'intro' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'intro' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
-                >
-                  簡介
-                </button>
-                <button 
-                  onClick={() => setActiveTab('background')}
-                  style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'background' ? '#FFF' : 'transparent', color: activeTab === 'background' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'background' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
-                >
-                  設定
-                </button>
-              </div>
+              {/* 🌟 切換按鈕的樣式分支 */}
+              {isFlat ? (
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  <button 
+                    onClick={() => setActiveTab('intro')}
+                    style={{ border: 'none', background: 'none', padding: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'intro' ? '#5D4A3E' : '#A0978D', borderBottom: activeTab === 'intro' ? '2px solid #5D4A3E' : '2px solid transparent', transition: 'all 0.2s' }}
+                  >
+                    簡介
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('background')}
+                    style={{ border: 'none', background: 'none', padding: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', color: activeTab === 'background' ? '#5D4A3E' : '#A0978D', borderBottom: activeTab === 'background' ? '2px solid #5D4A3E' : '2px solid transparent', transition: 'all 0.2s' }}
+                  >
+                    詳細設定
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', backgroundColor: '#F4F0EB', padding: '3px', borderRadius: '8px' }}>
+                  <button 
+                    onClick={() => setActiveTab('intro')}
+                    style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'intro' ? '#FFF' : 'transparent', color: activeTab === 'intro' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'intro' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
+                  >
+                    簡介
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('background')}
+                    style={{ border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: activeTab === 'background' ? '#FFF' : 'transparent', color: activeTab === 'background' ? '#8CB369' : '#A0978D', boxShadow: activeTab === 'background' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: 'all 0.2s' }}
+                  >
+                    設定
+                  </button>
+                </div>
+              )}
             </div>
 
             <div style={{ height: '1px', backgroundColor: '#EAE6E1', width: '100%' }}></div>
@@ -207,7 +235,7 @@ export function OCDetailCard({ ocData }: OCDetailCardProps) {
           </div>
         </div>
 
-        {/* 底部印象關鍵字與個性簡述 (Intro 模式下顯示) */}
+        {/* 底部印象關鍵字與個性簡述 */}
         {activeTab === 'intro' && (
           <div className="fade-in" style={{ marginTop: '20px', borderTop: '1px dashed #EAE6E1', paddingTop: '16px' }}>
             {ocData.keywords && ocData.keywords.length > 0 && (

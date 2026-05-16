@@ -807,8 +807,8 @@ export function PublicProfile() {
 
                   {/* 核心內容：直接調用一體化緊湊型唯讀設定卡 */}
                   {currentSelectedOC && (
-                    <div style={{ width: '100%', color: '#332D28', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 30px rgba(0,0,0,0.03)' }}>
-                      <OCDetailCard ocData={currentSelectedOC} />
+                    <div style={{ width: '100%', color: '#332D28' }}>
+                      <OCDetailCard ocData={currentSelectedOC} variant="flat" />
                     </div>
                   )}
                 </div>
