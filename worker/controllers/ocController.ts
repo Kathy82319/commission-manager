@@ -25,12 +25,16 @@ export const ocController = {
     }
   },
 
-  // 🌟 確保這段程式碼有完整寫入：取得指定用戶的「公開」OC 卡片 (前台個人頁專用，不需登入驗證)
-  async getPublicList(userId: string, env: Env, corsHeaders: any): Promise<any> {
+  // 🌟 核心修正：取得指定用戶的「公開」OC 卡片，支援傳入 public_id
+  async getPublicList(targetId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
+      // 透過 JOIN Users 表，讓前台傳入的 targetId 可以對應到 public_id 或是真實 id
       const { results } = await env.commission_db.prepare(
-        `SELECT * FROM oc_cards WHERE user_id = ? AND is_public = 1 ORDER BY updated_at DESC`
-      ).bind(userId).all();
+        `SELECT oc.* FROM oc_cards oc
+         JOIN Users u ON oc.user_id = u.id
+         WHERE (u.id = ? OR u.public_id = ?) AND oc.is_public = 1 
+         ORDER BY oc.updated_at DESC`
+      ).bind(targetId, targetId).all();
 
       const data = results.map((row: any) => ({
         ...row,
