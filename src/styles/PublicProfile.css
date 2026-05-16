@@ -817,3 +817,60 @@
   padding: 24px 16px; 
   border-radius: 20px; 
 }
+
+/* ==========================================================================
+   9. 角色設定 (OC) 卡片 - 扁平雜誌模式的手機版響應式設計
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* 讓最外層的內距在手機上縮小，避免留白過多佔用螢幕空間 */
+  .public-oc-layout {
+    padding: 10px 0 !important;
+  }
+
+  /* 針對 OCDetailCard 內部的網格，將原本的「左右兩欄」改為「上下堆疊」 */
+  .oc-intro-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  /* 放寬左側圖片在手機上的最大寬度限制，讓它佔滿畫面以利觀看 */
+  .oc-intro-grid > div:first-child {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* 如果卡片的外層使用了內聯樣式 (inline-style) 設定 padding，在這裡強制縮小以適應手機 */
+  .public-oc-layout > div > div {
+    padding: 20px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  /* 手機版的角色名稱字體縮小一點，避免折行過於突兀 */
+  .oc-form-column h2 {
+    font-size: 24px !important;
+  }
+
+  /* 細節文字區塊在手機上可以更緊湊 */
+  .oc-form-column .oc-form-row-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* 針對下方標籤的微調 */
+  .oc-short-intro {
+    padding: 12px !important;
+  }
+}
+
+/* ==========================================================================
+   修正全螢幕燈箱 (Lightbox) 內圖片的點擊與防誤觸
+   ========================================================================== */
+
+/* 確保全螢幕燈箱放大時的指標圖示正常 */
+.showcase-modal-overlay img,
+.lightbox-content img {
+  cursor: default;
+}
