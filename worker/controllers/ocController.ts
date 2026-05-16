@@ -5,7 +5,7 @@ export const ocController = {
   // 取得委託人的所有 OC 卡片
   async getList(userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
-      const { results } = await env.DB.prepare(
+      const { results } = await env.commission_db.prepare(
         `SELECT * FROM oc_cards WHERE user_id = ? ORDER BY updated_at DESC`
       ).bind(userId).all();
 
@@ -30,7 +30,7 @@ export const ocController = {
       const body: any = await request.json();
       const id = body.id || `oc-${Date.now()}`;
 
-      await env.DB.prepare(
+      await env.commission_db.prepare(
         `INSERT INTO oc_cards (
           id, user_id, name, gender, body_type, hair_desc, hair_colors,
           eyes_desc, eyes_colors, clothing_desc, clothing_colors,
@@ -59,7 +59,7 @@ export const ocController = {
     try {
       const body: any = await request.json();
 
-      await env.DB.prepare(
+      await env.commission_db.prepare(
         `UPDATE oc_cards SET
           name = ?, gender = ?, body_type = ?, hair_desc = ?, hair_colors = ?,
           eyes_desc = ?, eyes_colors = ?, clothing_desc = ?, clothing_colors = ?,
@@ -87,7 +87,7 @@ export const ocController = {
   // 取得單一詳情 (備用)
   async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
-      const data = await env.DB.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
+      const data = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
       if (!data) return new Response(JSON.stringify({ success: false, error: "Not Found" }), { status: 404, headers: corsHeaders });
       return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
     } catch (e: any) {
@@ -98,7 +98,7 @@ export const ocController = {
   // 刪除 OC 卡片
   async delete(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
-      await env.DB.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();
+      await env.commission_db.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch(e: any) {
       return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
