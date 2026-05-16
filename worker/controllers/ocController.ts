@@ -1,0 +1,108 @@
+// worker/controllers/ocController.ts
+import type { Env } from "../shared/types";
+
+export const ocController = {
+  // 取得委託人的所有 OC 卡片
+  async getList(userId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM oc_cards WHERE user_id = ? ORDER BY updated_at DESC`
+      ).bind(userId).all();
+
+      // 將資料庫裡存的字串轉回 JSON Array 給前端
+      const data = results.map((row: any) => ({
+        ...row,
+        hair_colors: JSON.parse(row.hair_colors || '[]'),
+        eyes_colors: JSON.parse(row.eyes_colors || '[]'),
+        clothing_colors: JSON.parse(row.clothing_colors || '[]'),
+        keywords: JSON.parse(row.keywords || '[]'),
+        images: JSON.parse(row.images || '[]')
+      }));
+
+      return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 建立新的 OC 卡片
+  async create(request: Request, userId: string, env: Env, corsHeaders: any) {
+    try {
+      const body: any = await request.json();
+      const id = body.id || `oc-${Date.now()}`;
+
+      await env.DB.prepare(
+        `INSERT INTO oc_cards (
+          id, user_id, name, gender, body_type, hair_desc, hair_colors,
+          eyes_desc, eyes_colors, clothing_desc, clothing_colors,
+          traits, must_have, donts, keywords, short_intro,
+          personality, background, other_notes, images, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+      ).bind(
+        id, userId, body.name || '', body.gender || '', body.body_type || '',
+        body.hair_desc || '', JSON.stringify(body.hair_colors || []),
+        body.eyes_desc || '', JSON.stringify(body.eyes_colors || []),
+        body.clothing_desc || '', JSON.stringify(body.clothing_colors || []),
+        body.traits || '', body.must_have || '', body.donts || '',
+        JSON.stringify(body.keywords || []), body.short_intro || '',
+        body.personality || '', body.background || '', body.other_notes || '',
+        JSON.stringify(body.images || [])
+      ).run();
+
+      return new Response(JSON.stringify({ success: true, data: { id } }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 自動儲存更新
+  async update(request: Request, ocId: string, userId: string, env: Env, corsHeaders: any) {
+    try {
+      const body: any = await request.json();
+
+      await env.DB.prepare(
+        `UPDATE oc_cards SET
+          name = ?, gender = ?, body_type = ?, hair_desc = ?, hair_colors = ?,
+          eyes_desc = ?, eyes_colors = ?, clothing_desc = ?, clothing_colors = ?,
+          traits = ?, must_have = ?, donts = ?, keywords = ?, short_intro = ?,
+          personality = ?, background = ?, other_notes = ?, images = ?, updated_at = datetime('now')
+         WHERE id = ? AND user_id = ?`
+      ).bind(
+        body.name || '', body.gender || '', body.body_type || '',
+        body.hair_desc || '', JSON.stringify(body.hair_colors || []),
+        body.eyes_desc || '', JSON.stringify(body.eyes_colors || []),
+        body.clothing_desc || '', JSON.stringify(body.clothing_colors || []),
+        body.traits || '', body.must_have || '', body.donts || '',
+        JSON.stringify(body.keywords || []), body.short_intro || '',
+        body.personality || '', body.background || '', body.other_notes || '',
+        JSON.stringify(body.images || []),
+        ocId, userId
+      ).run();
+
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 取得單一詳情 (備用)
+  async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any) {
+    try {
+      const data = await env.DB.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
+      if (!data) return new Response(JSON.stringify({ success: false, error: "Not Found" }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  // 刪除 OC 卡片 (未來擴充用)
+  async delete(ocId: string, userId: string, env: Env, corsHeaders: any) {
+    try {
+      await env.DB.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch(e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  }
+};

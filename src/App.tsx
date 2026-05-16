@@ -38,6 +38,8 @@ import { RefundPolicy } from './pages/RefundPolicy';
 // Admin Pages
 import { Dashboard } from './pages/admin/Dashboard';
 
+import { OCCardPage } from './pages/client/OCCardPage';
+
 export function App() {
   return (
     <BrowserRouter>
@@ -64,6 +66,7 @@ export function App() {
           <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<ClientSettings />} />
           <Route path="favorites" element={<ArtistManager />} />
+          <Route path="my-oc" element={<OCCardPage />} />
         </Route>
 
         <Route path="/quote/:id" element={<ClientForm />} />
