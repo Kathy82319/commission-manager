@@ -4,9 +4,9 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import DOMPurify from 'dompurify'; 
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, Image as ImageIcon } from 'lucide-react';
-// 🌟 修正：因為檔案在 src/ 底下，正確路徑應為 `./components/...`
+// 🌟 修正：因為檔案在 src/ 底下，且 CSS 位於 src/styles/，正確路徑應為 `./styles/...`
 import { OCDetailCard } from './components/OC/OCDetailCard';
-import './pages/public/styles/PublicProfile.css'; // 請確認 CSS 路徑是否需要同步調整，若你的 CSS 在 src/pages/public/styles/ 下則維持這樣
+import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -693,7 +693,6 @@ export function PublicProfile() {
                 <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
               ) : (
                 <div className="profile-avatar default-avatar-placeholder" style={{ backgroundColor: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
-                  {/* 🌟 修正：修正了之前的 justifyInquiry室 錯字 */}
                   <User size={48} strokeWidth={1.5} />
                 </div>
               )}
