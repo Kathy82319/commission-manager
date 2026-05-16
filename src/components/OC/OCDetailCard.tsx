@@ -100,6 +100,41 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
       }
     }>
       
+      {/* 🌟 局部作用域樣式 (Scoped Style)：強迫覆蓋行內樣式，修復手機版跑版 */}
+      <style>{`
+        .local-responsive-grid {
+          display: grid;
+          grid-template-columns: ${isFlat ? 'minmax(200px, 380px) 1fr' : '1fr 1.2fr'};
+          gap: ${isFlat ? '36px' : '24px'};
+        }
+        @media (max-width: 768px) {
+          .local-responsive-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .oc-card-content-wrapper {
+            padding: 16px !important;
+          }
+          .oc-card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          .oc-card-header h2 {
+            font-size: 22px !important;
+          }
+          .oc-card-tabs {
+            width: 100% !important;
+            justify-content: flex-start !important;
+            overflow-x: auto !important;
+          }
+          .oc-tab-btn {
+            flex: 1;
+            text-align: center;
+          }
+        }
+      `}</style>
+
       {/* 燈箱 */}
       {zoomedImage && createPortal(
         <div 
@@ -132,14 +167,11 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
         </div>
       )}
 
-      {/* 🌟 加入 className 以利 RWD 控制 */}
+      {/* 外框 Padding 改交給 RWD CSS 控制 */}
       <div className="oc-card-content-wrapper" style={{ padding: isFlat ? '32px' : '24px' }}>
         
-        <div className="oc-intro-grid" style={{ 
-          display: 'grid',
-          gridTemplateColumns: isFlat ? 'minmax(200px, 380px) 1fr' : '1fr 1.2fr', 
-          gap: isFlat ? '36px' : '24px' 
-        }}>
+        {/* 🌟 核心修正：把寫死在行內樣式的 grid-template-columns 抽離到 class 裡 */}
+        <div className="oc-intro-grid local-responsive-grid">
           
           {/* 左側：圖片區 */}
           <div className="oc-images-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -164,7 +196,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
           {/* 右側：詳細資料區 */}
           <div className="oc-form-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
-            {/* 🌟 標題與標籤切換區 */}
+            {/* 標題與標籤切換區 */}
             <div className="oc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
               <h2 style={{ margin: 0, fontSize: isFlat ? '30px' : '26px', color: '#4A3B32', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1.2', wordBreak: 'break-word' }}>
                 {ocData.name || '未命名角色'}
