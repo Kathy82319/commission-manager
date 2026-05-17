@@ -8,8 +8,19 @@
   position: sticky; 
   top: 0;
   height: 100vh;
+  box-sizing: border-box; /* 🌟 確保 padding 不會讓高度爆掉 */
   box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
+  
+  /* 🌟 讓側邊欄可以獨立滾動，並隱藏捲軸 */
+  overflow-y: auto; 
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+}
+
+/* 🌟 隱藏 Chrome, Safari 的捲軸 */
+.profile-sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-top {
@@ -129,9 +140,14 @@
   font-weight: 900; 
 }
 
-
 @media (max-width: 1100px) {
-  .profile-sidebar { width: 100%; height: auto; position: relative; padding-top: 60px ;}
+  .profile-sidebar { 
+    width: 100%; 
+    height: auto; 
+    position: relative; 
+    padding-top: 60px;
+    overflow-y: visible; /* 手機版不需要側邊欄獨立滾動 */
+  }
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
   .profile-bio { text-align: center; }
@@ -215,18 +231,6 @@
     border-radius: 12px;
     text-align: center;
   }
-}
-
-.your-sidebar-class {
-  overflow-y: auto; 
-  
-  scrollbar-width: none; 
-  -ms-overflow-style: none; 
-}
-
-/* 隱藏 Chrome, Safari 和 Opera 的捲軸 */
-.your-sidebar-class::-webkit-scrollbar {
-  display: none;
 }
 
 @media (max-width: 500px) {
