@@ -177,6 +177,31 @@
 .btn-primary:hover { background-color: #1d4ed8; }
 .btn-secondary:hover { background-color: #f3f4f6; }
 
+
+/* ==========================================================================
+   🌟 修正富文本 (TOS) <p> 標籤造成的頂部/底部多餘空白 (無 !important 解法)
+   ========================================================================== */
+.inquiry-workspace-container .tos-read-only-content p {
+  margin-top: 0;
+  margin-bottom: 0.5em; /* 稍微保留段落之間的間距，讓排版好看 */
+}
+
+.inquiry-workspace-container .tos-read-only-content p:last-child,
+.inquiry-workspace-container .tos-read-only-content > :last-child {
+  margin-bottom: 0;
+}
+
+.inquiry-workspace-container .tos-read-only-content > :first-child {
+  margin-top: 0;
+}
+
+/* 電腦版預設隱藏手機專用的黑幕與關閉按鈕 */
+.iw-mobile-overlay-bg,
+.iw-mobile-close-btn {
+  display: none;
+}
+
+
 /* ==========================================================================
    🌟 洽談室 (InquiryWorkspace) 專屬響應式設計 (Mobile UI)
    ========================================================================== */
@@ -210,8 +235,11 @@
   .iw-mobile-toggle-btn {
     display: block !important;
   }
-  .iw-mobile-overlay {
-    display: block !important;
+
+  /* 顯示手機版專用的側邊欄黑幕遮罩與關閉按鈕 */
+  .inquiry-workspace-container .iw-mobile-overlay-bg,
+  .inquiry-workspace-container .iw-mobile-close-btn {
+    display: block !important; 
   }
   
   .iw-chat-main {
@@ -286,18 +314,4 @@
   .accepted-modal {
     padding: 24px 16px !important;
   }
-}
-
-/* ==========================================================================
-   🌟 修正富文本 (TOS) <p> 標籤造成的頂部/底部多餘空白
-   ========================================================================== */
-.tos-read-only-content > *:first-child {
-  margin-top: 0 ;
-}
-.tos-read-only-content > *:last-child {
-  margin-bottom: 0 ;
-}
-
-.tos-read-only-content p {
-  margin-top: 0 ;
 }
