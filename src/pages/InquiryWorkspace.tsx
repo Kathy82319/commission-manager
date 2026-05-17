@@ -851,7 +851,7 @@ export const InquiryWorkspace: React.FC = () => {
                           style={{ padding: '0 12px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#4A7294', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
                           title="儲存為常用付款方式"
                         >
-                          💾 儲存
+                          儲存
                         </button>
                       )}
                     </div>
@@ -896,9 +896,9 @@ export const InquiryWorkspace: React.FC = () => {
                   {isEditableByArtist && (
                     <button 
                       onClick={() => setDraft({...draft, custom_tos: artistTos})}
-                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, paddingTop: '0px' }}
                     >
-                      📥 帶入個人範本
+                      帶入個人範本
                     </button>
                   )}
                 </div>
