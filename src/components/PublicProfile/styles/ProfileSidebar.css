@@ -146,7 +146,7 @@
     height: auto; 
     position: relative; 
     padding-top: 60px;
-    overflow-y: visible; /* 當橫向或堆疊排版時，關閉獨立滾動 */
+    overflow-y: visible; 
   }
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
@@ -207,19 +207,24 @@
   }
 
   .social-icon { width: 32px; height: 32px; }
-  .sidebar-bottom { padding: 12px 24px 0px 24px !important; } 
   
-  /* 🌟 手機版簡介外層排版佈局 */
+  /* 🌟 大幅縮減與上方的 padding 距離，從 12px 降為 4px */
+  .sidebar-bottom { padding: 4px 24px 0px 24px !important; } 
+  
   .bio-section {
-    position: relative; /* 🌟 核心：設定為 relative，定位按鈕 */
-    margin-bottom: 16px;
+    position: relative; /* 🌟 讓按鈕可以針對這個區塊做絕對定位 */
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: 100%; /* 🌟 確保容器佔滿寬度 */
+    width: 100%; 
   }
 
-  /* 🌟 手機版：限制 3 行、加上漸層透明淡化遮罩 */
+  /* 🌟 將預設的上距 margin 也縮小 */
+  .profile-bio {
+    margin-top: 4px;
+  }
+
   .profile-bio.clamped {
     text-align: left;
     display: -webkit-box;
@@ -228,16 +233,12 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    
-    /* 🌟 新增：為按鈕預留空間，避免文字直接被按鈕裁斷，能自然自然的「浮」在淡出的文字上方 */
-    padding-bottom: 32px; 
-    
-    /* 🌟 修改：調整遮罩渐變，文字淡出開始得更晚，讓按鈕覆盖在有文字的區域上方 */
-    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    padding-bottom: 0; /* 移除佔位空間 */
+    /* 遮罩漸層：在最底部才開始淡化，讓圖示能浮在上面 */
+    mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
   }
 
-  /* 🌟 點擊展開時釋放所有限制與遮罩 */
   .profile-bio.expanded {
     text-align: left;
     display: block;
@@ -245,37 +246,26 @@
     line-clamp: unset;
     mask-image: none;
     -webkit-mask-image: none;
-    padding-bottom: 0; /* 🌟 展開時移除預留空間 */
+    padding-bottom: 24px; /* 展開時給按鈕一點空間，避免蓋住文字 */
   }
 
-  /* 🌟 展開/收合的小按鈕樣式 - 製作重疊毛玻璃效果 */
+  /* 🌟 極簡化按鈕設計：定位在文字右下角 */
   .bio-toggle-btn {
-    /* 🌟 新增：絕對定位，並重疊到淡出區域 */
     position: absolute;
-    bottom: -10px; /* 🌟 核心：定位按鈕 */
-    left: 0;
+    bottom: -4px; /* 對齊到最下緣 */
     right: 0;
-    z-index: 2; /* 🌟 確保按鈕在文字上方 */
-    
-    /* 🌟 製作半透明毛玻璃背景按鈕 */
-    background: rgba(255, 255, 255, 0.7); /* 🌟 半透明背景 */
-    backdrop-filter: blur(5px); /* 🌟 毛玻璃效果 */
-    -webkit-backdrop-filter: blur(5px);
-    border-radius: 16px;
-    height: 32px;
+    z-index: 2;
+    background: transparent; /* 完全透明無背景 */
+    border: none;
+    box-shadow: none; /* 移除陰影 */
+    backdrop-filter: none; /* 移除毛玻璃 */
+    -webkit-backdrop-filter: none;
+    padding: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 16px;
-    font-weight: bold;
-    font-size: 13px;
-    gap: 4px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* 🌟 微小陰影增強層次 */
-    border: 1px solid rgba(0, 0, 0, 0.05); /* 🌟 微小邊框 */
+    cursor: pointer;
   }
-
-  /* 如果按鈕顏色不清晰，可以根據主題色動態調整，或者使用 CSS 混合模式 */
-  /* .bio-toggle-btn { mix-blend-mode: difference; } */
 
   .sidebar-nav {
     display: flex;
@@ -305,5 +295,5 @@
   .profile-avatar { width: 80px !important; height: 80px !important; border-radius: 20px; }
   .profile-name { font-size: 18px; }
   .social-icon { width: 28px; height: 28px; }
-  .sidebar-bottom { padding: 16px 16px 0px 16px !important; }
+  .sidebar-bottom { padding: 12px 16px 0px 16px !important; } /* 這裡同步稍微縮小 */
 }

@@ -35,19 +35,16 @@ export function ProfileSidebar({
   isViewerLoading, onToggleRelation
 }: ProfileSidebarProps) {
   
-  // 🌟 控制簡介展開狀態
   const [isExpanded, setIsExpanded] = useState(false);
-  // 🌟 控制是否需要顯示展開按鈕（只有超過 3 行才顯示）
   const [showMoreBtn, setShowMoreBtn] = useState(false);
   const bioRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (bioRef.current) {
-      // 偵測簡介的原始渲染高度是否大於容器可視高度
       const isOverflow = bioRef.current.scrollHeight > bioRef.current.clientHeight;
       setShowMoreBtn(isOverflow);
     }
-  }, [artist.bio]); // 當簡介變更時重新計算
+  }, [artist.bio]);
 
   return (
     <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
@@ -96,7 +93,6 @@ export function ProfileSidebar({
 
       <div className="sidebar-bottom">
         <div className="bio-section">
-          {/* 🌟 動態綁定 class 與 ref */}
           <p 
             ref={bioRef}
             className={`profile-bio ${!isExpanded ? 'clamped' : 'expanded'}`} 
@@ -105,18 +101,14 @@ export function ProfileSidebar({
             {artist.bio || '這名用戶還沒有寫下簡介。'}
           </p>
           
-          {/* 🌟 展開/收合按鈕 */}
+          {/* 🌟 拔除文字背景，改為純小圖示，極度簡約 */}
           {showMoreBtn && (
             <button 
               className="bio-toggle-btn" 
               onClick={() => setIsExpanded(!isExpanded)}
               style={{ color: textColor, opacity: 0.8 }}
             >
-              {isExpanded ? (
-                <><ChevronUp size={14} /> 收合簡介</>
-              ) : (
-                <><ChevronDown size={14} /> 展開全部</>
-              )}
+              {isExpanded ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
             </button>
           )}
         </div>
