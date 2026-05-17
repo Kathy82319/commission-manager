@@ -101,7 +101,6 @@ export function ProfileSidebar({
             {artist.bio || '這名用戶還沒有寫下簡介。'}
           </p>
           
-          {/* 🌟 拔除文字背景，改為純小圖示，極度簡約 */}
           {showMoreBtn && (
             <button 
               className="bio-toggle-btn" 

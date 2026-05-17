@@ -1,5 +1,5 @@
 // src/pages/artist/Settings/OrderTab.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // 🌟 新增 useEffect 用於動態偵測
 import { GripVertical } from 'lucide-react';
 import type { CompleteSettings } from '../Settings';
 
@@ -9,13 +9,41 @@ interface Props {
 }
 
 export function OrderTab({ settings, setSettings }: Props) {
+  const [hasOC, setHasOC] = useState(false);
+
+  useEffect(() => {
+    const checkOCEntries = async () => {
+      try {
+        const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
+        const res = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          // 🌟 若帳號內已有建立角色卡，則開啟「角色設定」分頁的排序權限
+          if (data.data && data.data.length > 0) {
+            setHasOC(true);
+          }
+        }
+      } catch (e) {
+        console.error("偵測 OC 分頁排序權限失敗:", e);
+      }
+    };
+    checkOCEntries();
+  }, []);
+
   const allPossibleTabs = [
     { id: 'portfolio', label: '作品展示' },
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'showcase', label: '接委託區' },
-    { id: 'queue', label: '排單狀況' },
-    ...settings.custom_sections.map((sec: any) => ({ id: sec.id, label: sec.title || '未命名分頁' }))
+    { id: 'queue', label: '排單狀況' }
   ];
+
+  if (hasOC) {
+    allPossibleTabs.push({ id: 'oc', label: '角色設定' });
+  }
+
+  allPossibleTabs.push(
+    ...settings.custom_sections.map((sec: any) => ({ id: sec.id, label: sec.title || '未命名分頁' }))
+  );
 
   const activeOrder = (settings.tab_order || []).filter((id: string) => allPossibleTabs.some(t => t.id === id));
   allPossibleTabs.forEach(t => {
