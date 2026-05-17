@@ -217,6 +217,18 @@
   }
 }
 
+.your-sidebar-class {
+  overflow-y: auto; 
+  
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+}
+
+/* 隱藏 Chrome, Safari 和 Opera 的捲軸 */
+.your-sidebar-class::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 500px) {
   .sidebar-top { padding: 0 16px; gap: 16px; }
   .profile-avatar { width: 80px !important; height: 80px !important; border-radius: 20px; }
