@@ -75,19 +75,37 @@ export function ProfileSidebar({
           ))}
         </nav>
 
-        {!isViewerLoading && viewerId !== artist?.id && (
-          <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'center', flexDirection: 'column' }}>
-            <button onClick={() => onToggleRelation('favorite')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`, background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', color: relationStatus === 'favorite' ? '#ef4444' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
-              <Heart size={16} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
-              {relationStatus === 'favorite' ? '已收藏' : '收藏創作者'}
-            </button>
-            
-            <button onClick={() => onToggleRelation('blacklist')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`, background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent', color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
-              <Ban size={16} />
-              {relationStatus === 'blacklist' ? '已封鎖' : '黑名單'}
-            </button>
+        <div className="name-social-section">
+          <h1 className="profile-name">{artist.display_name}</h1>
+          <div className="social-links">
+            {settings?.social_links?.map((link: any, idx: number) => (
+              <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
+                {getSocialIcon(link.platform)}
+              </a>
+            ))}
           </div>
-        )}
+
+          {/* 🌟 移到這裡！精緻化的藥丸按鈕，橫排且節省空間 */}
+          {!isViewerLoading && viewerId !== artist?.id && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => onToggleRelation('favorite')} 
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 14px', borderRadius: '50px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`, background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', color: relationStatus === 'favorite' ? '#ef4444' : textColor, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
+              >
+                <Heart size={14} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
+                {relationStatus === 'favorite' ? '已收藏' : '收藏'}
+              </button>
+              
+              <button 
+                onClick={() => onToggleRelation('blacklist')} 
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px 14px', borderRadius: '50px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`, background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent', color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor, cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.2s' }}
+              >
+                <Ban size={14} />
+                {relationStatus === 'blacklist' ? '已封鎖' : '封鎖'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );
