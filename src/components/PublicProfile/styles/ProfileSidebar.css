@@ -1,0 +1,226 @@
+/* src/components/PublicProfile/styles/ProfileSidebar.css */
+
+.profile-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky; 
+  top: 0;
+  height: 100vh;
+  box-shadow: 6px 0 20px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.sidebar-top {
+  padding: 40px 30px 10px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; 
+  text-align: left; 
+}
+
+.profile-avatar {
+  width: 240px;
+  height: 240px;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  margin-bottom: 8px; 
+  border: 4px solid rgba(255,255,255,0.1);
+}
+
+.default-avatar-placeholder {
+  background-color: #E2E8F0; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .default-avatar-placeholder {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.name-social-section {
+  width: 100%;
+  text-align: left;
+}
+
+.profile-name {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 4px; 
+  letter-spacing: -0.5px;
+}
+
+.social-links {
+  display: flex;
+  justify-content: flex-start; 
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.social-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.sidebar-bottom {
+  padding: 0 30px 40px 30px;
+  flex: 1;
+}
+
+.bio-section {
+  margin-bottom: 20px;
+}
+
+.profile-bio {
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left; 
+  opacity: 0.9;
+  white-space: pre-wrap; 
+  word-break: break-word;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; 
+}
+
+.nav-item {
+  text-align: left;
+  padding: 10px 16px; 
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: inherit;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-item.active {
+  background: rgba(0, 0, 0, 0.15); 
+  opacity: 1; 
+  color: inherit; 
+  font-weight: 900; 
+}
+
+/* --- 平板與手機版名片模式特化 (含間距緊湊化優化) --- */
+@media (max-width: 1100px) {
+  .profile-sidebar { width: 100%; height: auto; position: relative; }
+  .sidebar-top { align-items: center; text-align: center; } 
+  .social-links { justify-content: center; }
+  .profile-bio { text-align: center; }
+}
+
+@media (max-width: 768px) {
+  .profile-sidebar {
+    padding-top: 16px !important; /* 縮減頂部留白 */
+    padding-bottom: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .sidebar-top {
+    padding: 0 24px;
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 20px;
+    text-align: left;
+  }
+
+  .avatar-section { flex-shrink: 0; }
+
+  .profile-avatar {
+    width: 96px !important;
+    height: 96px !important;
+    border-radius: 24px;
+    margin-bottom: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    border-width: 2px;
+  }
+
+  .name-social-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0; 
+  }
+
+  .profile-name {
+    font-size: 20px;
+    margin-bottom: 8px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .social-links {
+    justify-content: flex-start;
+    margin-bottom: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .social-icon { width: 32px; height: 32px; }
+  .sidebar-bottom { padding: 12px 24px 16px 24px !important; } /* 緊湊化 */
+  .bio-section { margin-bottom: 16px; }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 0 8px 0;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 12px !important; /* 壓縮分頁與下方內容的距離 */
+  }
+
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+
+  .nav-item {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 12px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 500px) {
+  .sidebar-top { padding: 0 16px; gap: 16px; }
+  .profile-avatar { width: 80px !important; height: 80px !important; border-radius: 20px; }
+  .profile-name { font-size: 18px; }
+  .social-icon { width: 28px; height: 28px; }
+  .sidebar-bottom { padding: 16px 16px 20px 16px !important; }
+}
