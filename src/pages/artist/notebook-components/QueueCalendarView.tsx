@@ -44,7 +44,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
   const [selectedCommission, setSelectedCommission] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 監聽視窗大小改變
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -233,8 +232,8 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
           startAccessor="start"
           endAccessor="end"
           style={{ height: '800px' }}
-          // 🌟 核心：電腦版顯示 月/週，手機版顯示 月/待辦清單
-          views={isMobile ? [Views.MONTH, Views.AGENDA] : [Views.MONTH, Views.WEEK]}
+          // 🌟 核心：移除手機版的待辦清單，強制使用月視圖
+          views={isMobile ? [Views.MONTH] : [Views.MONTH, Views.WEEK]}
           eventPropGetter={eventStyleGetter}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}

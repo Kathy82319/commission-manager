@@ -174,7 +174,6 @@
   width: 100%;
 }
 
-
 /* ==========================================================================
    手機版樣式 (RWD)
    ========================================================================== */
@@ -184,9 +183,15 @@
 
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   
-  .queue-controls { flex-direction: row; align-items: center; width: 100%; gap: 8px; flex-wrap: nowrap; }
-  .queue-search { flex: 1; min-width: 0; box-sizing: border-box; }
-  .queue-select { width: auto; flex-shrink: 0; box-sizing: border-box; }
+  /* 🌟 核心修正：手機版的控制列改為 wrap，避免擠壓按鈕 */
+  .queue-controls { flex-direction: row; align-items: center; width: 100%; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+  
+  /* 🌟 隱藏搜尋框，節省手機版空間 */
+  .queue-search.queue-hide-mobile { display: none !important; }
+  
+  .queue-select { flex: 1; min-width: 80px; box-sizing: border-box; }
+  .create-quote-btn { flex: 1; text-align: center; }
+  .view-mode-toggle { flex-shrink: 0; }
 
   .queue-table thead { display: block; width: 100%; margin-bottom: 8px; }
   
@@ -427,17 +432,14 @@ tr.drag-over-target > td {
   background-color: #F8F9FA; 
 }
 
-/* 🌟 核心修正：強制調整日曆色塊內距，解決文字貼齊邊緣問題 */
 .rbc-event { 
-  padding: 2px 4px; 
+  padding: 2px 4px !important; 
 }
 .rbc-event-content { 
-  padding: 0 4px; 
+  padding: 0 4px !important; 
 }
 
-/* ==========================================================================
-   日曆模式樣式 (React Big Calendar 手機版優化)
-   ========================================================================== */
+/* 🌟 日曆手機版專用調整 */
 @media (max-width: 768px) {
   .calendar-view-container .rbc-toolbar {
     display: flex;
