@@ -18,6 +18,13 @@
   min-height: 100vh;
 }
 
+/* 🌟 補上這個！當螢幕小於 1100px 時，主架構由橫排變直排，內容才不會被擠到右邊螢幕外 */
+@media (max-width: 1100px) {
+  .profile-layout-root {
+    flex-direction: column !important;
+  }
+}
+
 .profile-top-right-actions {
   position: fixed;
   top: 20px;
