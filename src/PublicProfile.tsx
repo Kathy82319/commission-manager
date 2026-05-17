@@ -6,9 +6,8 @@ import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
 import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
-import './styles/PublicProfile.css'; // 保留全局框架與開場動畫
-import './components/PublicProfile/styles/ShowcaseGrid.css'; // 載入主畫面與瀑布流
-
+import './styles/PublicProfile.css'; 
+import './components/PublicProfile/styles/ShowcaseGrid.css'; 
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
@@ -102,7 +101,6 @@ export function PublicProfile() {
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
 
-  // 大量的 API Fetching 邏輯保留在主元件 (已簡化展示)
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
@@ -242,10 +240,10 @@ export function PublicProfile() {
     if (settings) {
       if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
       if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-      if (settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: '排單狀況' });
+      if (!isHidden('queue') && settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: '排單狀況' });
     }
     if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
-    if (publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
+    if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
     if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {
@@ -254,6 +252,20 @@ export function PublicProfile() {
         });
       }
     }
+
+    if (settings?.tab_order && Array.isArray(settings.tab_order)) {
+      tabs.sort((a, b) => {
+        const indexA = settings.tab_order.indexOf(a.id);
+        const indexB = settings.tab_order.indexOf(b.id);
+        
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        
+        return indexA - indexB;
+      });
+    }
+
     return tabs;
   }, [settings, showcaseItems, artist, publicOCs]);
 
