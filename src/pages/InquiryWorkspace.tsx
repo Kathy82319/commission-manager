@@ -912,8 +912,7 @@ export const InquiryWorkspace: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
-                )}
+<div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />                )}
               </div>
 
             </div>
@@ -976,8 +975,7 @@ export const InquiryWorkspace: React.FC = () => {
 
                 <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                   <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
-                  <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
-                </div>
+<div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />                </div>
               </div>
 
               <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', flexShrink: 0 }}>
