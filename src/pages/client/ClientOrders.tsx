@@ -1,10 +1,10 @@
 // src/pages/client/ClientOrders.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom'; // 🌟 新增：引入 createPortal 實現全螢幕燈箱
 import DOMPurify from 'dompurify';
 import '../../styles/Notebook.css'; 
 
-// 🌟 引入 OC 卡片相關元件與型別
 import { OCDetailCard } from '../../components/OC/OCDetailCard';
 import type { OCCardData } from '../../components/OC/OCDetailCard';
 
@@ -20,7 +20,7 @@ interface CommissionDetail {
   artist_id?: string;
   artist_public_id?: string; 
   origin_source?: string;
-  oc_snapshot?: string; // 🌟 OC 快照欄位
+  oc_snapshot?: string; 
 }
 
 interface Submission { id: string; stage: string; file_url: string; version: number; created_at: string; }
@@ -120,7 +120,6 @@ export function ClientOrders() {
   const [blacklistedIds, setBlacklistedIds] = useState<string[]>([]);
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-  // 🌟 擴充 activeTab 的型別加入 'oc'
   const [activeTab, setActiveTab] = useState<'main' | 'oc' | 'review' | 'history'>('main');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [logs, setLogs] = useState<ActionLog[]>([]);
@@ -131,6 +130,9 @@ export function ClientOrders() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
+
+  // 🌟 新增：用於控制放大稿件燈箱的狀態
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const currentId = queryParams.get('id') || queryParams.get('open');
@@ -405,7 +407,12 @@ export function ClientOrders() {
             <div>
                <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{formatLocalTime(sub.created_at)} (v{sub.version})</div>
                
-               <div style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
+               {/* 🌟 核心修改：加上 cursor: 'zoom-in' 與點擊放大事件 */}
+               <div 
+                 style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center', cursor: 'zoom-in' }}
+                 onClick={() => setZoomedImage(sub.file_url.split('|')[0])}
+                 title="點擊放大檢視"
+               >
                  <img src={sub.file_url.split('|')[0]} alt="稿件預覽" style={{ width: '100%', maxWidth: '400px', maxHeight: '400px', objectFit: 'contain', display: 'block' }} />
                </div>
 
@@ -485,6 +492,32 @@ export function ClientOrders() {
 
   return (
     <div className="notebook-page">
+      
+      {/* 🌟 稿件燈箱 (全螢幕) */}
+      {zoomedImage && createPortal(
+        <div 
+          onClick={(e) => {
+            e.stopPropagation(); 
+            setZoomedImage(null);
+          }} 
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            width: '100vw', height: '100vh', 
+            backgroundColor: 'rgba(0, 0, 0, 0.85)', 
+            zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            padding: '24px', cursor: 'zoom-out' 
+          }}
+        >
+          <img 
+            src={zoomedImage} 
+            alt="放大稿件" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }} 
+          />
+        </div>,
+        document.body 
+      )}
+
       <div className="notebook-container">
         
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
@@ -639,7 +672,6 @@ export function ClientOrders() {
                 </div>
               </div>
 
-              {/* 🌟 核心修正：將所有誤植為小寫的 justifycontent 修正為駝峰式的 justifyContent */}
               <div className="scroll-tabs">
                 <button className={`tab-btn ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>
                   詳細內容
@@ -792,7 +824,6 @@ export function ClientOrders() {
                   </div>
                 )}
 
-                {/* 🌟 OC 分頁渲染區塊 */}
                 {activeTab === 'oc' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {(() => {
