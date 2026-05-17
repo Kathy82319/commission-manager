@@ -57,33 +57,6 @@ export function ProfileSidebar({
               </a>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="sidebar-bottom">
-        <div className="bio-section">
-          <p className="profile-bio" style={{ color: textColor }}>
-            {artist.bio || '這名用戶還沒有寫下簡介。'}
-          </p>
-        </div>
-
-        <nav className="sidebar-nav">
-          {availableTabs.map((tab: any) => (
-            <button key={tab.id} onClick={() => onTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="name-social-section">
-          <h1 className="profile-name">{artist.display_name}</h1>
-          <div className="social-links">
-            {settings?.social_links?.map((link: any, idx: number) => (
-              <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
-                {getSocialIcon(link.platform)}
-              </a>
-            ))}
-          </div>
 
           {/* 🌟 移到這裡！精緻化的藥丸按鈕，橫排且節省空間 */}
           {!isViewerLoading && viewerId !== artist?.id && (
@@ -106,6 +79,24 @@ export function ProfileSidebar({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="sidebar-bottom">
+        <div className="bio-section">
+          <p className="profile-bio" style={{ color: textColor }}>
+            {artist.bio || '這名用戶還沒有寫下簡介。'}
+          </p>
+        </div>
+
+        <nav className="sidebar-nav">
+          {availableTabs.map((tab: any) => (
+            <button key={tab.id} onClick={() => onTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        
       </div>
     </aside>
   );
