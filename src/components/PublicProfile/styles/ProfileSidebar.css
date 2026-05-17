@@ -140,7 +140,7 @@
 @media (max-width: 768px) {
   .profile-sidebar {
     padding-top: 16px !important; /* 縮減頂部留白 */
-    padding-bottom: 12px !important;
+    padding-bottom: 0px ;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
 
@@ -222,5 +222,5 @@
   .profile-avatar { width: 80px !important; height: 80px !important; border-radius: 20px; }
   .profile-name { font-size: 18px; }
   .social-icon { width: 28px; height: 28px; }
-  .sidebar-bottom { padding: 16px 16px 20px 16px !important; }
+  .sidebar-bottom { padding: 16px 16px 0px 16px !important; }
 }
