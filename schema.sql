@@ -427,6 +427,9 @@ VALUES ('type-01', 'u-artist-01', '一般插畫委託', 1000, 14);
 -- 1. 先清空與「洽談單/訂單」相關的對話紀錄
 DELETE FROM InquiryMessages;
 DELETE FROM Messages;
+DELETE FROM DirectInquiryMessages;
+DELETE FROM PaymentRecords;
+DELETE FROM ActionLogs;
 
 -- 3. 現在沒有人綁著它們了，可以安心刪除主單據
 DELETE FROM Commissions;
@@ -438,29 +441,3 @@ DELETE FROM InquiryMessages;
 DELETE FROM BulletinInquiries;
 DELETE FROM Bulletins;
 DELETE FROM DirectInquiries;
-
-
-
-
-
-DELETE FROM ActionLogs WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-DELETE FROM Submissions WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-DELETE FROM Messages WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-DELETE FROM PaymentRecords WHERE commission_id IN (SELECT id FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-DELETE FROM InquiryMessages WHERE inquiry_id IN (SELECT id FROM BulletinInquiries WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068'));
-
-DELETE FROM Reports WHERE bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-
-DELETE FROM Commissions WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM BulletinInquiries WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068');
-DELETE FROM Bulletins WHERE client_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-
-DELETE FROM ArtistProfiles WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM CommissionTypes WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM PaymentOrders WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM ShowcaseItems WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM CustomerRecords WHERE artist_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR client_user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM Notifications WHERE user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-DELETE FROM UserRelations WHERE source_user_id = 'Uc48e198d2f403534b59b7c97c9c30068' OR target_user_id = 'Uc48e198d2f403534b59b7c97c9c30068';
-
-DELETE FROM Users WHERE id = 'Uc48e198d2f403534b59b7c97c9c30068';

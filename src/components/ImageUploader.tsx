@@ -170,11 +170,31 @@ export function ImageUploader({
               }}
             />
           </div>
-          <div style={{ width: '90%', maxWidth: '700px', backgroundColor: '#FFF', padding: '20px', borderRadius: '12px', marginTop: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>縮放</span>
-            <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={{ flex: 1 }} />
-            <button onClick={() => { setImageSrc(null); setSelectedFile(null); }} style={{ padding: '10px 20px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>取消</button>
-            <button onClick={handleConfirm} disabled={isProcessing} style={{ padding: '10px 24px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>{isProcessing ? '處理中...' : '確認上傳'}</button>
+          <div style={{ width: '90%', maxWidth: '700px', backgroundColor: '#FFF', padding: '16px', borderRadius: '12px', marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+            
+            {/* 1. 縮放滑桿區塊：空間足夠時橫排，不夠時佔滿一行 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 200px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>縮放</span>
+              <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={{ flex: 1 }} />
+            </div>
+            
+            {/* 2. 按鈕區塊：手機版時會自動掉到第二行，並且橫向平均分配寬度 */}
+            <div style={{ display: 'flex', gap: '10px', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setImageSrc(null); setSelectedFile(null); }} 
+                style={{ flex: 1, padding: '10px 16px', backgroundColor: '#F5EBEB', color: '#A05C5C', border: 'none', borderRadius: '8px', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+              >
+                取消
+              </button>
+              <button 
+                onClick={handleConfirm} 
+                disabled={isProcessing} 
+                style={{ flex: 2, padding: '10px 16px', backgroundColor: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+              >
+                {isProcessing ? '處理中...' : '確認上傳'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
