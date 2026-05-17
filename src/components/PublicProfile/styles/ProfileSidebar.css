@@ -131,7 +131,7 @@
 
 /* --- 平板與手機版名片模式特化 (含間距緊湊化優化) --- */
 @media (max-width: 1100px) {
-  .profile-sidebar { width: 100%; height: auto; position: relative; }
+  .profile-sidebar { width: 100%; height: auto; position: relative; padding-top: 60px ;}
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
   .profile-bio { text-align: center; }
@@ -139,7 +139,7 @@
 
 @media (max-width: 768px) {
   .profile-sidebar {
-    padding-top: 16px !important; /* 縮減頂部留白 */
+    padding-top: 36px !important; /* 縮減頂部留白 */
     padding-bottom: 0px ;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
