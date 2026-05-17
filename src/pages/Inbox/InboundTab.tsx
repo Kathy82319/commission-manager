@@ -40,7 +40,6 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     .filter(filterOldItems);
 
   return (
-    // 🌟 核心修正：加入 width 與 box-sizing
     <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease', boxSizing: 'border-box' }}>
       
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '20px' }}>

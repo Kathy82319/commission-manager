@@ -240,7 +240,7 @@ export function Customers() {
 
   return (
     <div className="crm-container">
-      {/* 🌟 局部作用域樣式 (Scoped Style)：僅在此元件生效，解決手機版跑版問題 */}
+      
       <style>{`
         @media (max-width: 768px) {
           .local-search-input { width: 100% !important; }

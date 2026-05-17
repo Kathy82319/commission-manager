@@ -5,7 +5,7 @@ export interface QueueSettings {
   show_client_name: boolean;
   show_client_id: boolean;
   show_project_name: boolean;
-  show_artist_note?: boolean; // 🌟 新增：是否顯示備註欄位
+  show_artist_note?: boolean; 
   date_column_label?: string; 
   custom_order?: string[];    
 }
@@ -16,7 +16,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     show_client_name: true,
     show_client_id: false,
     show_project_name: true,
-    show_artist_note: false, // 🌟 預設不顯示
+    show_artist_note: false,
     date_column_label: '預計開始日'
   };
 

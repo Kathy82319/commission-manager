@@ -328,7 +328,7 @@
   }
 
   .crm-search-input {
-    width: 100% !important; /* 搜尋框滿版 */
+    width: 100% !important;
   }
 
   .crm-submit-btn {
@@ -346,7 +346,7 @@
     white-space: nowrap;
   }
 
-  /* 🌟 核心修改：將 Table 轉為 Card 列表 */
+ 
   .crm-table-wrapper {
     background: transparent;
     border: none;
@@ -355,11 +355,11 @@
 
   .crm-table {
     display: block;
-    min-width: 0; /* 移除橫向捲動 */
+    min-width: 0;
   }
 
   .crm-table thead {
-    display: none; /* 隱藏表頭 */
+    display: none;
   }
 
   .crm-table tbody, .crm-table tr, .crm-table td {
@@ -379,7 +379,7 @@
   .crm-table td {
     padding: 8px 0;
     border-bottom: 1px solid #F9F7F5;
-    text-align: left !important; /* 手機版一律靠左 */
+    text-align: left !important;
   }
 
   .td-artist-info {
@@ -396,7 +396,7 @@
   }
 
   .note-content {
-    white-space: normal; /* 備註在手機版允許多行顯示 */
+    white-space: normal;
   }
 
   .crm-table td:last-child {
@@ -405,11 +405,11 @@
   }
 
   .crm-action-btn {
-    width: 100%; /* 操作按鈕滿版 */
+    width: 100%;
     margin-top: 8px;
   }
 
-  /* Modal RWD */
+ 
   .crm-modal-card {
     padding: 24px;
     width: 90%;

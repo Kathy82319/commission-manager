@@ -58,7 +58,7 @@ export function ProfileSidebar({
             ))}
           </div>
 
-          {/* 🌟 移到這裡！精緻化的藥丸按鈕，橫排且節省空間 */}
+          
           {!isViewerLoading && viewerId !== artist?.id && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
               <button 

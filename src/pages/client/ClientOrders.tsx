@@ -1,7 +1,7 @@
 // src/pages/client/ClientOrders.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { createPortal } from 'react-dom'; // 🌟 新增：引入 createPortal 實現全螢幕燈箱
+import { createPortal } from 'react-dom'; 
 import DOMPurify from 'dompurify';
 import '../../styles/Notebook.css'; 
 
@@ -131,7 +131,6 @@ export function ClientOrders() {
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
-  // 🌟 新增：用於控制放大稿件燈箱的狀態
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -407,7 +406,7 @@ export function ClientOrders() {
             <div>
                <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '12px', textAlign: 'left' }}>最後更新：{formatLocalTime(sub.created_at)} (v{sub.version})</div>
                
-               {/* 🌟 核心修改：加上 cursor: 'zoom-in' 與點擊放大事件 */}
+               
                <div 
                  style={{ border: '1px solid #EAE6E1', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FBFBF9', maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'center', cursor: 'zoom-in' }}
                  onClick={() => setZoomedImage(sub.file_url.split('|')[0])}
@@ -493,7 +492,7 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       
-      {/* 🌟 稿件燈箱 (全螢幕) */}
+      
       {zoomedImage && createPortal(
         <div 
           onClick={(e) => {

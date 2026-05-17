@@ -64,12 +64,10 @@ export function OCDashedInput({
     minHeight: isTextArea ? 'auto' : '32px'
   };
 
-  // 動態計算字數顏色，接近上限時變紅警告
   const isNearLimit = localValue.length >= maxLength * 0.9;
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* 🌟 局部樣式防護 */}
       <style dangerouslySetInnerHTML={{__html: `
         .oc-clean-input {
           flex: 1; border: none !important; outline: none !important;
@@ -118,7 +116,7 @@ export function OCDashedInput({
         )}
         <Pencil size={12} color="#A0978D" style={{ marginLeft: '6px', flexShrink: 0, marginTop: isTextArea ? '4px' : '0' }} />
         
-        {/* 🌟 新增：長文本字數即時統計 */}
+        
         {isTextArea && isFocused && (
           <div style={{
             position: 'absolute',
@@ -135,7 +133,7 @@ export function OCDashedInput({
         )}
       </div>
       
-      {/* 🌟 優化 Toast 動畫與層級 */}
+      
       {showToast && (
         <div style={{ 
           position: 'absolute', bottom: '-40px', left: '50%', transform: 'translateX(-50%)', 

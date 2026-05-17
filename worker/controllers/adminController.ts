@@ -146,9 +146,6 @@ export const adminController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // ==========================================
-  // 🌟 Phase 3: 關鍵字與許願池審核防護 API
-  // ==========================================
 
   async getKeywords(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);

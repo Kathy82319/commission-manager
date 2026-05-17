@@ -278,15 +278,13 @@ export function ShowcaseFormBuilder({
 
   return (
     <>
-      {/* 🌟 響應式 CSS 區塊 */}
+      
       <style>{`
-        /* --- 基本設定視圖 (Basic View) 手機版微調 --- */
         .basic-card { padding: 30px; }
         .basic-action-group { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 24px; margin-top: 8px; }
         .btn-cancel { padding: 12px 24px; background: #FAFAFA; color: #7A7269; border: 1px solid #DED9D3; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         .btn-submit { padding: 12px 32px; background: #5D4A3E; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 4px 12px rgba(93, 74, 62, 0.2); }
 
-        /* --- 表單建置器 (Form View) 版面 --- */
         .fb-header { padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #EAE6E1; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
         .fb-header-left { display: flex; align-items: center; gap: 16px; }
         .fb-header-left h2 { margin: 0; font-size: 18px; color: #5D4A3E; font-weight: bold; }
@@ -297,14 +295,11 @@ export function ShowcaseFormBuilder({
         .fb-left { flex: 1.2; overflow-y: auto; padding: 40px; background: #F4F0EB; }
         .fb-right { flex: 1; background: #E6E1DA; padding: 40px; overflow-y: auto; border-left: 1px solid #DED9D3; display: block; }
 
-        /* 📱 手機版 RWD 設定 */
         @media (max-width: 768px) {
-          /* 基本設定視圖 */
           .basic-card { padding: 16px !important; }
           .basic-action-group { gap: 8px; }
           .btn-cancel, .btn-submit { flex: 1; padding: 12px 8px !important; font-size: 14px !important; text-align: center; }
           
-          /* 表單建置器視圖 */
           .fb-header { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
           .fb-header-left { flex-direction: column; align-items: stretch; gap: 8px; }
           .fb-btn-back { align-self: flex-start; }
@@ -387,7 +382,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* 修改點 1：按鈕區塊套用 class */}
+            
             <div className="basic-action-group">
               <button onClick={onClose} className="btn-cancel">
                 返回接委託區
@@ -416,7 +411,7 @@ export function ShowcaseFormBuilder({
           </div>
 
           <div className="fb-main">
-            {/* 左側編輯區 */}
+            
             <div className="custom-scrollbar fb-left">
               <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
@@ -628,7 +623,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* 右側預覽區 (手機版會排在下方) */}
+            
             <div className="custom-scrollbar fb-right">
               <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
                 

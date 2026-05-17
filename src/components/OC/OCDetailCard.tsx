@@ -100,7 +100,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
       }
     }>
       
-      {/* 🌟 局部作用域樣式 (Scoped Style)：強迫覆蓋行內樣式，修復手機版跑版 */}
+      
       <style>{`
         .local-responsive-grid {
           display: grid;
@@ -135,7 +135,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
         }
       `}</style>
 
-      {/* 燈箱 */}
+      
       {zoomedImage && createPortal(
         <div 
           onClick={(e) => {
@@ -160,20 +160,19 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
         document.body 
       )}
 
-      {/* Toast */}
+      
       {toastMsg && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#5D4A3E', color: 'white', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', zIndex: 100, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Check size={16} color="#A67B3E" /> {toastMsg}
         </div>
       )}
 
-      {/* 外框 Padding 改交給 RWD CSS 控制 */}
+      
       <div className="oc-card-content-wrapper" style={{ padding: isFlat ? '32px' : '24px' }}>
         
-        {/* 🌟 核心修正：把寫死在行內樣式的 grid-template-columns 抽離到 class 裡 */}
         <div className="oc-intro-grid local-responsive-grid">
           
-          {/* 左側：圖片區 */}
+          
           <div className="oc-images-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div 
               onClick={() => mainImage && setZoomedImage(mainImage)}
@@ -193,10 +192,10 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
             )}
           </div>
 
-          {/* 右側：詳細資料區 */}
+          
           <div className="oc-form-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
-            {/* 標題與標籤切換區 */}
+            
             <div className="oc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
               <h2 style={{ margin: 0, fontSize: isFlat ? '30px' : '26px', color: '#4A3B32', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: '1.2', wordBreak: 'break-word' }}>
                 {ocData.name || '未命名角色'}
@@ -218,7 +217,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
               </div>
             </div>
 
-            {/* 內容切換 */}
+            
             {activeTab === 'intro' ? (
               <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className="oc-form-row-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -286,7 +285,7 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
           </div>
         </div>
 
-        {/* 底部印象關鍵字與個性簡述 */}
+        
         {activeTab === 'intro' && (
           <div className="fade-in" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
             {ocData.keywords && ocData.keywords.length > 0 && (

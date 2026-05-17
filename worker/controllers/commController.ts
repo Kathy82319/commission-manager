@@ -13,7 +13,6 @@ const createJsonResponse = (body: any, status: number, corsHeaders: HeadersInit)
   });
 };
 
-// 🌟 新增：匿名遮蔽函式 (保留頭尾，中間用星號取代)
 const getMaskedName = (name: string) => {
   if (!name) return '匿名委託';
   const len = name.length;
@@ -175,13 +174,11 @@ export const commController = {
     if (check.length === 0) return createJsonResponse({ success: false, error: "找不到該單據" }, 404, corsHeaders);
     const comm = check[0] as any;
 
-    // 🌟 核心改動：取得繪師的方案資料，確認是否為專業版/試用期
     const artistData = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(comm.artist_id).first() as any;
     const isPro = artistData?.plan_type === 'pro' && (!artistData.pro_expires_at || new Date(artistData.pro_expires_at) > new Date());
     const isTrial = artistData?.plan_type === 'trial' && (!artistData.trial_end_at || new Date(artistData.trial_end_at) > new Date());
     const isPremium = isPro || isTrial;
 
-    // 🌟 若非付費會員，執行策略 B 實作（狀態單向流動唯讀卡控）
     if (!isPremium && (comm.status === 'completed' || comm.status === 'cancelled')) {
       return createJsonResponse({ 
         success: false, 
@@ -278,7 +275,6 @@ export const commController = {
       return createJsonResponse({ success: false, error: "無權限查看進度" }, 403, corsHeaders);
     }
 
-    // 🚀 修正 1：使用 datetime(created_at) 進行排序
     let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
     const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
     
@@ -290,7 +286,6 @@ export const commController = {
           let orderTime = orderDateStr ? new Date(orderDateStr.replace(' ', 'T')).getTime() : Date.now();
           if (isNaN(orderTime)) orderTime = Date.now();
           
-          // 🚀 修正 2：統一產生的時間格式為 'YYYY-MM-DD HH:MM:SS'
           const clientSignTime = new Date(orderTime).toISOString().replace('T', ' ').substring(0, 19);
           const artistCreateTime = new Date(orderTime - 15 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
           
@@ -307,7 +302,6 @@ export const commController = {
             env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) VALUES (?, ?, 'client', 'bind', ?, ?)").bind(crypto.randomUUID(), id, clientContent, clientSignTime)
           ]);
           
-          // 🚀 修正 3：同樣使用 datetime() 重新抓取
           const reFetch = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
           logs = reFetch.results;
         }

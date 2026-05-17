@@ -25,7 +25,7 @@
 
 /* 獨立的分頁按鈕 */
 .oc-tab-btn {
-  padding: 8px 24px; /* 縮小按鈕高度 */
+  padding: 8px 24px;
   border: none;
   border-radius: 10px 10px 0 0;
   font-weight: bold;
@@ -54,8 +54,8 @@
   background-color: #FDFDFB;
   border: 1px solid #EAE6E1;
   border-radius: 12px 0 12px 12px;
-  padding: 24px; /* 從 32px 縮小為 24px */
-  /* 移除死硬的 min-height，讓它自然生長，解決無法滾動截斷的問題 */
+  padding: 24px;
+ 
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
@@ -63,7 +63,7 @@
 .oc-intro-grid {
   display: grid;
   grid-template-columns: 1fr 1.3fr;
-  gap: 24px; /* 從 40px 大幅縮小 */
+  gap: 24px;
   align-items: start;
 }
 
@@ -71,22 +71,22 @@
 .oc-form-column {
   display: flex;
   flex-direction: column;
-  gap: 12px; /* 欄位群組間距從 20px 縮小至 12px */
+  gap: 12px;
 }
 
 /* 雙欄位並排 (如性別/體型) */
 .oc-form-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px; /* 縮小左右間距 */
+  gap: 16px;
 }
 
 /* 統一的欄位標題樣式 */
 .oc-field-label {
-  font-size: 13px; /* 縮小字體以提升精緻度 */
+  font-size: 13px;
   font-weight: bold;
   color: #5D4A3E;
-  margin-bottom: 6px; /* 縮小與輸入框的距離 */
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
 }
@@ -101,7 +101,7 @@
 
 /* 顏色挑選器方塊 */
 .oc-color-picker {
-  width: 32px; /* 從 36px 縮小 */
+  width: 32px;
   height: 32px;
   padding: 0;
   border: 2px solid #EAE6E1;
@@ -118,14 +118,14 @@
 .oc-must-have {
   border-left: 4px solid #8CB369;
   background-color: rgba(140, 179, 105, 0.05);
-  padding: 10px 14px; /* 縮小上下內距 */
+  padding: 10px 14px;
   border-radius: 0 8px 8px 0;
 }
 
 .oc-donts {
   border-left: 4px solid #E11D48;
   background-color: rgba(225, 29, 72, 0.05);
-  padding: 10px 14px; /* 縮小上下內距 */
+  padding: 10px 14px;
   border-radius: 0 8px 8px 0;
 }
 
@@ -135,9 +135,9 @@
 
 /* 個性簡述區塊 (黃色背景) */
 .oc-short-intro {
-  margin-top: 16px; /* 從 32px 縮小 */
+  margin-top: 16px;
   background-color: #FFFEE0;
-  padding: 16px; /* 從 24px 縮小 */
+  padding: 16px;
   border-radius: 12px;
   border: 1px solid #F0E68C;
 }
@@ -152,7 +152,7 @@
 /* RWD 手機版適配 */
 @media (max-width: 768px) {
   .mobile-only-btn {
-    display: flex !important; /* 手機版才顯示返回按鈕 */
+    display: flex !important;
   }
 
   .oc-main-header {

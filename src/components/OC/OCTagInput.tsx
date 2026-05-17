@@ -12,10 +12,8 @@ export function OCTagInput({ tags, onChange, placeholder = '輸入印象關鍵�
   const [inputValue, setInputValue] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // 攔截 Enter 與逗號
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      // 移除首尾空白，並防呆移除使用者自己打的 # 號
       const newTag = inputValue.trim().replace(/^#/, ''); 
       
       if (newTag && !tags.includes(newTag)) {
@@ -31,7 +29,7 @@ export function OCTagInput({ tags, onChange, placeholder = '輸入印象關鍵�
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-      {/* 標籤展示區 */}
+      {}
       {tags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {tags.map(tag => (
@@ -51,7 +49,7 @@ export function OCTagInput({ tags, onChange, placeholder = '輸入印象關鍵�
         </div>
       )}
       
-      {/* 虛線輸入框 */}
+      {}
       <input
         type="text"
         value={inputValue}

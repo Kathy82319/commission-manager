@@ -87,10 +87,8 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
     }
   };
 
-  // 找出當前選中的那筆資料
   const selectedInq = inquiries.find(i => i.id === selectedInquiryId);
 
-  // 防呆：如果找不到資料
   if (!selectedInq) {
     return (
       <div style={{ textAlign: 'center', padding: '80px 20px', color: '#A0978D' }}>
@@ -110,7 +108,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.2s ease' }}>
       
-      {/* 標題與基礎資訊 */}
+      
       <div className="main-header" style={{ marginBottom: '24px', backgroundColor: 'transparent', padding: 0 }}>
         <div className="main-header-info">
           <h2 className="main-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '24px' }}>
@@ -130,7 +128,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       </div>
 
-      {/* 婉拒狀態提示 */}
+      
       {selectedInq.status === 'declined' && (
         <div style={{ padding: '16px', backgroundColor: '#FCE8E6', border: '1px solid #F5C6C6', borderRadius: '12px', color: '#A05C5C', marginBottom: '24px' }}>
           <strong style={{ display: 'block', marginBottom: '4px' }}>此申請已被婉拒或取消</strong>
@@ -138,7 +136,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       )}
 
-      {/* 訪客專屬聯絡資訊 (醒目展示) */}
+      
       {isGuestSelected && selectedInq.guest_contact_info && (
         <div className="section-card" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', marginBottom: '24px' }}>
           <h3 className="section-title" style={{ color: '#92400E', borderBottomColor: '#FDE68A', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -153,7 +151,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       )}
 
-      {/* 表單問答內容區 */}
+      
       <div className="section-card" style={{ opacity: selectedInq.status === 'declined' ? 0.6 : 1, filter: selectedInq.status === 'declined' ? 'grayscale(50%)' : 'none', transition: 'all 0.3s' }}>
         <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <span>📝 委託需求表單內容</span>
@@ -174,7 +172,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       </div>
 
-      {/* 🌟 底部操作列 (Action Bar) - 修復手機版按鈕換行與縮放問題 */}
+      
       <div className="section-card" style={{ marginTop: '24px', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         
         {selectedInq.status === 'declined' ? (

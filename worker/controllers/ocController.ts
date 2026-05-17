@@ -25,10 +25,8 @@ export const ocController = {
     }
   },
 
-  // 🌟 核心修正：取得指定用戶的「公開」OC 卡片，支援傳入 public_id
   async getPublicList(targetId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
-      // 透過 JOIN Users 表，讓前台傳入的 targetId 可以對應到 public_id 或是真實 id
       const { results } = await env.commission_db.prepare(
         `SELECT oc.* FROM oc_cards oc
          JOIN Users u ON oc.user_id = u.id
@@ -52,13 +50,11 @@ export const ocController = {
     }
   },
 
-  // 建立新的 OC 卡片
   async create(request: any, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
       
-      // 🛡️ 業務邏輯防護：檢查長文本與陣列長度，避免惡意 Payload 塞爆資料庫
-      const MAX_TEXT_LENGTH = 1000; // 允許些微緩衝
+      const MAX_TEXT_LENGTH = 1000; 
       if (
         (body.personality && body.personality.length > MAX_TEXT_LENGTH) ||
         (body.background && body.background.length > MAX_TEXT_LENGTH) ||

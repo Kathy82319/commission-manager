@@ -183,7 +183,7 @@
    ========================================================================== */
 .inquiry-workspace-container .tos-read-only-content p {
   margin-top: 0;
-  margin-bottom: 0.5em; /* 稍微保留段落之間的間距，讓排版好看 */
+  margin-bottom: 0.5em;
 }
 
 .inquiry-workspace-container .tos-read-only-content p:last-child,
@@ -195,7 +195,6 @@
   margin-top: 0;
 }
 
-/* 電腦版預設隱藏手機專用的黑幕與關閉按鈕 */
 .iw-mobile-overlay-bg,
 .iw-mobile-close-btn {
   display: none;
@@ -236,7 +235,7 @@
     display: block !important;
   }
 
-  /* 顯示手機版專用的側邊欄黑幕遮罩與關閉按鈕 */
+ 
   .inquiry-workspace-container .iw-mobile-overlay-bg,
   .inquiry-workspace-container .iw-mobile-close-btn {
     display: block !important; 

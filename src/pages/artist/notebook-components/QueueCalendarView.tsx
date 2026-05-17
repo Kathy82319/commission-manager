@@ -36,7 +36,6 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
   const [events, setEvents] = useState<CalendarEventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🌟 手機版偵測邏輯
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [modalMode, setModalMode] = useState<'none' | 'edit_custom' | 'view_commission'>('none');
@@ -232,14 +231,12 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
           startAccessor="start"
           endAccessor="end"
           style={{ height: '800px' }}
-          // 🌟 核心：移除手機版的待辦清單，強制使用月視圖
           views={isMobile ? [Views.MONTH] : [Views.MONTH, Views.WEEK]}
           eventPropGetter={eventStyleGetter}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           selectable
           popup
-          // 🌟 核心：介面全中文化
           messages={{
             allDay: '全天',
             previous: '＜',

@@ -156,7 +156,6 @@ export const userController = {
       }
     }
 
-    // 🌟 2. 動態組合 Users 表的更新語法 (真正的 Partial Update)
     const userUpdates: string[] = [];
     const userParams: any[] = [];
 
@@ -187,7 +186,6 @@ export const userController = {
       batchQueue.push(updateUsersQuery);
     }
 
-    // 🌟 3. 動態處理 ArtistProfiles 關聯表
     if (hasSettingsUpdate) {
       const c1 = settings.custom_sections?.[0] || {};
       const c2 = settings.custom_sections?.[1] || {};

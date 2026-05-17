@@ -24,9 +24,7 @@ export function OCCardPage() {
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🌟 核心防護 1：使用 useRef 隨時追蹤最新的 ocList，避免 React 閉包陷阱導致舊資料覆蓋新資料
   const latestOcList = useRef<OCCardData[]>([]);
-  // 🌟 核心防護 2：使用 AbortController 阻擋短時間內連續觸發的 API 請求（防範網路傳輸的 Race Condition）
   const saveAbortController = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -52,20 +50,16 @@ export function OCCardPage() {
     fetchOCs();
   }, []);
 
-  // 🌟 改寫 handleSaveOC，現在只需傳入「要修改的欄位 (updates)」，不再需要傳遞整包資料
   const handleSaveOC = async (updates: Partial<OCCardData>) => {
     if (!selectedId) return;
 
-    // 確保永遠拿到記憶體中「最新」的卡片資料
     const currentOC = latestOcList.current.find(oc => oc.id === selectedId);
     if (!currentOC) return;
 
     const mergedOC = { ...currentOC, ...updates };
 
-    // 立即更新前端畫面 (Optimistic Update)
     setOcList(prev => prev.map(oc => oc.id === selectedId ? mergedOC : oc));
 
-    // 取消上一個還在飛的請求，只讓最後一個攜帶完整狀態的請求抵達後端
     if (saveAbortController.current) {
       saveAbortController.current.abort();
     }
@@ -130,7 +124,7 @@ export function OCCardPage() {
         <div className="oc-field-label">{label}</div>
         <div className="oc-color-group">
           <div style={{ flex: 1, minWidth: '160px' }}>
-            {/* 🌟 寫法變得非常簡潔，不會再有舊狀態被傳入 */}
+            
             <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -279,7 +273,7 @@ export function OCCardPage() {
                   </div>
                 )}
 
-                {/* 🌟 核心修正：正式啟用 OCDashedInput 與限制 800 字 */}
+                
                 {activeTab === 'background' && (
                   <div className="fade-in oc-form-column">
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>

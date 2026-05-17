@@ -16,7 +16,7 @@ import { directInquiryController } from './controllers/directInquiryController';
 import { notificationController } from "./controllers/notificationController";
 import { userRelationController } from "./controllers/userRelationController";
 import { ocController } from "./controllers/ocController"; 
-import { calendarController } from "./controllers/calendarController"; // 🌟 新增：引入日曆控制器
+import { calendarController } from "./controllers/calendarController";
 
 export default {
   async fetch(request: any, env: Env): Promise<any> {
@@ -84,7 +84,6 @@ export default {
         }
       }
 
-      // --- 許願池 (Bulletins) 相關路由 ---
       if (sanitizedPath.startsWith("/api/bulletins")) {
         if (sanitizedPath === "/api/bulletins/quota" && request.method === "GET") {
           const authErr = requireAuth(currentUserId, corsHeaders);
@@ -128,7 +127,6 @@ export default {
         }
       }
 
-      // --- 意向/洽談 (Inquiries) 相關路由 ---
       if (sanitizedPath.startsWith("/api/inquiries") && !sanitizedPath.startsWith("/api/direct-inquiries")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
@@ -184,9 +182,7 @@ export default {
         }        
       }
 
-      // =========================================================================
-      // 🌟 個人頁客製表單直接委託 (Direct Inquiries) 路由
-      // =========================================================================
+  
       if (sanitizedPath.startsWith("/api/direct-inquiries")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
@@ -235,12 +231,11 @@ export default {
         }
       }
 
-      // --- 🌟 新增：日曆排單行程 (Calendar Events) 路由分支 ---
       if (sanitizedPath.startsWith("/api/calendar-events")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 
         if (authErr) return authErr;
         
-        const targetId = pathParts[3]; // 對應 eventId
+        const targetId = pathParts[3]; 
 
         if (!targetId) {
           if (request.method === "GET") return calendarController.getEvents(currentUserId!, env, corsHeaders);

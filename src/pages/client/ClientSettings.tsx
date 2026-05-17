@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
-// 🌟 引入 OC 展示設定元件
 import { OCDisplaySettingsTab } from '../artist/Settings/OCDisplaySettingsTab';
 import type { FormDataState } from '../artist/Settings/types';
 import '../../styles/Settings.css'; 
@@ -147,7 +146,7 @@ export function ClientSettings() {
       )}
       
       <div className="settings-layout">
-        {/* 將側邊欄包裝在外層容器，防止手機版橫向滾動時把升級卡片壓扁 */}
+        
         <aside className="settings-sidebar-wrapper">
           <div className="sidebar-title">帳號設定</div>
           
@@ -177,7 +176,7 @@ export function ClientSettings() {
             </div>
           </div>
 
-          {/* 升級創作者區塊：抽離出 sidebar-group 以便單獨做手機版 RWD 降級處理 */}
+          
           <div className="upgrade-card-container">
             <div className="upgrade-card">
               <h4 className="upgrade-card-title">想開始接案賺錢嗎？</h4>

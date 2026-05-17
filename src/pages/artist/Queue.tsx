@@ -123,7 +123,6 @@ export function Queue() {
   const [fullProfileSettings, setFullProfileSettings] = useState<any>({});
   const [dateColumnLabel, setDateColumnLabel] = useState<string>('預計開始日');
   
-  // 🌟 新增：偵測是否為手機版，用於動態切換文字與版型
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
   useEffect(() => {
@@ -458,7 +457,7 @@ export function Queue() {
         <div className="queue-controls">
 
           <div className="view-mode-toggle" style={{ display: 'flex', backgroundColor: '#F1F5F9', borderRadius: '8px', padding: '4px', gap: '4px' }}>
-            {/* 🌟 加上 whiteSpace: nowrap 避免「列表」兩個字變直排 */}
+            
             <button
               onClick={() => setViewMode('list')}
               style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: 'none', borderRadius: '4px', background: viewMode === 'list' ? '#FFF' : 'transparent', color: viewMode === 'list' ? '#5D4A3E' : '#94A3B8', fontWeight: 'bold', boxShadow: viewMode === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
@@ -473,11 +472,11 @@ export function Queue() {
             </button>
           </div>
 
-          {/* 🌟 加上 queue-hide-mobile class 在手機版隱藏搜尋框 */}
+          
           <input placeholder="搜尋項目" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="queue-search queue-hide-mobile" />
           
           <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="queue-select">
-            {/* 🌟 手機版文字精簡為「月份」 */}
+            
             <option value="all">{isMobile ? '月份' : '全部月份'}</option>
             {Array.from(new Set(commissions.map(c => c.order_date ? c.order_date.substring(0, 7) : ''))).filter(m => m).map(m => <option key={m} value={m}>{m}</option>)}
           </select>
@@ -499,7 +498,7 @@ export function Queue() {
               borderRadius: '6px', 
               cursor: isQuotaFull ? 'not-allowed' : 'pointer', 
               fontWeight: 'bold',
-              whiteSpace: 'nowrap' /* 🌟 防止文字直排 */
+              whiteSpace: 'nowrap' 
             }}
             title={isQuotaFull ? `活躍額度已滿 (${currentLimit}/${currentLimit})` : ''}
           >

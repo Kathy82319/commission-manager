@@ -123,7 +123,7 @@ export function ArtistManager() {
       <header className="crm-header">
         <h2>追蹤與黑名單</h2>
         <div className="customers-header-actions">
-          {/* 🌟 修改點：將原本的 style={{ width: '240px' }} 改用 className，讓 CSS 控制 RWD */}
+          
           <input 
             type="text" 
             className="crm-form-input crm-search-input" 

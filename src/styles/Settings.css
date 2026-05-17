@@ -404,14 +404,12 @@
   margin-top: 12px;
 }
 
-/* 新增的側邊欄外層容器，確保桌機與手機大版面正確 */
 .settings-sidebar-wrapper {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-/* 升級卡片基本樣式 (電腦版) */
 .upgrade-card-container {
   margin-top: auto;
   padding-top: 40px;
@@ -456,7 +454,6 @@
   background-color: #2563eb;
 }
 
-/* 預覽個人頁按鈕基本樣式 */
 .preview-profile-btn {
   display: flex;
   align-items: center;
@@ -489,7 +486,7 @@
 
 @media (min-width: 1024px) {
   .settings-sidebar-wrapper {
-    width: 240px; /* 電腦版固定側邊欄寬度 */
+    width: 240px;
     flex-shrink: 0;
   }
 }
@@ -500,9 +497,9 @@
     gap: 12px;
   }
 
-  /* 調整手機版上的預覽按鈕寬度與排版，避免與標題打架 */
+ 
   .settings-header {
-    flex-direction: row !important; /* 蓋掉原本部分強制改 column 的設定，讓標題與預覽按鈕在同一橫列 */
+    flex-direction: row !important;
     justify-content: space-between;
     width: 100%;
   }
@@ -513,14 +510,13 @@
   }
   
   .preview-profile-btn span {
-    display: none; /* 手機版隱藏文字，只留下圖標以節省寬度空間 */
+    display: none;
   }
 
-  /* 🌟 核心修正：將升級卡片在手機版移出側邊欄滾動，改為滿版橫帶 */
   .upgrade-card-container {
     margin-top: 0;
     padding-top: 4px;
-    order: 2; /* 透過 flex order 讓卡片在手機版排在橫向選單下方 */
+    order: 2;
   }
 
   .upgrade-card {
@@ -528,7 +524,7 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 14px;
-    background-color: #EFF6FF; /* 手機版換成顯眼的淡藍色底 */
+    background-color: #EFF6FF;
     border: 1px solid #BFDBFE;
   }
 

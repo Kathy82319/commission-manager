@@ -122,7 +122,6 @@ export const inquiryController = {
     }
   },
 
-  // 🌟 核心功能修改：處理 OC 快照發送
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
@@ -142,9 +141,7 @@ export const inquiryController = {
       let { content, message_type = 'text', oc_id = null } = body;
       const id = crypto.randomUUID();
 
-      // === 資安防護：伺服器端抓取 OC 快照 ===
       if (message_type === 'oc_snapshot' && oc_id) {
-        // 去資料庫找這張 OC 卡，並確認擁有者是當前發送者
         const ocRecord = await env.commission_db.prepare(`
           SELECT * FROM oc_cards WHERE id = ? AND user_id = ?
         `).bind(oc_id, currentUserId).first() as any;
@@ -153,7 +150,6 @@ export const inquiryController = {
            return new Response(JSON.stringify({ success: false, error: '找不到指定的角色卡或無權限存取' }), { status: 403, headers: corsHeaders });
         }
 
-        // 把資料庫字串轉回物件
         const finalSnapshot = {
           id: ocRecord.id,
           name: ocRecord.name,
@@ -176,7 +172,6 @@ export const inquiryController = {
           images: JSON.parse(ocRecord.images || '[]')
         };
 
-        // 鎖定 Content 為這份快照的 JSON 字串
         content = JSON.stringify(finalSnapshot);
       }
       
@@ -341,7 +336,6 @@ export const inquiryController = {
       let parsedArtistSnapshot = inquiryData.artist_snapshot;
       try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
-      // 🌟 核心修正：將 draft 裡的 oc_snapshot 抽出來寫入獨立欄位
       const origin_source = JSON.stringify({
         source_type: 'bulletin',
         inquiry_id: inquiryId, 
@@ -355,7 +349,6 @@ export const inquiryController = {
       const clientName = clientInfo?.display_name || '案主';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
-      // 🌟 把 draft.oc_snapshot 寫入新欄位，供 TabOC 讀取
       const finalOcSnapshot = draft.oc_snapshot ? JSON.stringify(draft.oc_snapshot) : null;
 
       await env.commission_db.prepare(

@@ -129,7 +129,7 @@
   font-weight: 900; 
 }
 
-/* --- 平板與手機版名片模式特化 (含間距緊湊化優化) --- */
+
 @media (max-width: 1100px) {
   .profile-sidebar { width: 100%; height: auto; position: relative; padding-top: 60px ;}
   .sidebar-top { align-items: center; text-align: center; } 
@@ -139,7 +139,7 @@
 
 @media (max-width: 768px) {
   .profile-sidebar {
-    padding-top: 36px !important; /* 縮減頂部留白 */
+    padding-top: 36px !important; 
     padding-bottom: 0px ;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
@@ -191,7 +191,7 @@
   }
 
   .social-icon { width: 32px; height: 32px; }
-  .sidebar-bottom { padding: 12px 24px 0px 24px !important; } /* 緊湊化 */
+  .sidebar-bottom { padding: 12px 24px 0px 24px !important; } 
   .bio-section { margin-bottom: 16px; }
 
   .sidebar-nav {
@@ -203,7 +203,7 @@
     gap: 10px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    margin-bottom: 0px !important; /* 壓縮分頁與下方內容的距離 */
+    margin-bottom: 0px !important; 
   }
 
   .sidebar-nav::-webkit-scrollbar { display: none; }

@@ -12,7 +12,6 @@ export function OCDisplaySettingsTab({ onToast }: OCDisplaySettingsTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
-  // 1. 取得使用者的 OC 列表
   useEffect(() => {
     const fetchOCs = async () => {
       try {
@@ -33,11 +32,9 @@ export function OCDisplaySettingsTab({ onToast }: OCDisplaySettingsTabProps) {
     fetchOCs();
   }, [API_BASE, onToast]);
 
-  // 2. 切換公開狀態並即時儲存
   const toggleVisibility = async (oc: OCCardData & { is_public: boolean }) => {
     const newStatus = !oc.is_public;
 
-    // 樂觀更新前端畫面
     setOcList(prev => prev.map(item => item.id === oc.id ? { ...item, is_public: newStatus } : item));
 
     try {
@@ -53,7 +50,6 @@ export function OCDisplaySettingsTab({ onToast }: OCDisplaySettingsTabProps) {
       
       onToast(`角色卡「${oc.name}」已設為${newStatus ? '公開' : '不公開'}`);
     } catch (e) {
-      // 若更新失敗，倒退回原本的狀態
       setOcList(prev => prev.map(item => item.id === oc.id ? { ...item, is_public: !newStatus } : item));
       onToast('儲存公開狀態失敗', 'err');
     }

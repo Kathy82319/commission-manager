@@ -183,10 +183,8 @@
 
   .queue-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   
-  /* 🌟 核心修正：手機版的控制列改為 wrap，避免擠壓按鈕 */
   .queue-controls { flex-direction: row; align-items: center; width: 100%; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
   
-  /* 🌟 隱藏搜尋框，節省手機版空間 */
   .queue-search.queue-hide-mobile { display: none !important; }
   
   .queue-select { flex: 1; min-width: 80px; box-sizing: border-box; }
@@ -439,7 +437,6 @@ tr.drag-over-target > td {
   padding: 0 4px !important; 
 }
 
-/* 🌟 日曆手機版專用調整 */
 @media (max-width: 768px) {
   .calendar-view-container .rbc-toolbar {
     display: flex;

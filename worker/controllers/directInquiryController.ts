@@ -12,8 +12,6 @@ export const directInquiryController = {
         return new Response(JSON.stringify({ success: false, error: '缺少必要欄位' }), { status: 400, headers: corsHeaders });
       }
 
-      // 🌟 1. 後端自己去抓 TOS，不信任前端傳來的 tos_snapshot
-      // 優先權：ShowcaseItems.tos_content -> ArtistProfiles.tos_content -> 預設字串
       let finalTosSnapshot = "（無特定協議內容）";
       
       const showcaseRow = await env.commission_db.prepare(`SELECT tos_content FROM ShowcaseItems WHERE id = ?`).bind(showcase_id).first<{ tos_content: string }>();
@@ -69,7 +67,6 @@ export const directInquiryController = {
 
   async getInboxList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：加入 LEFT JOIN ShowcaseItems 並 Select s.title as showcase_title
       const { results } = await env.commission_db.prepare(`
         SELECT d.*, 
                s.title as showcase_title,
@@ -100,7 +97,6 @@ export const directInquiryController = {
 
   async getOutboundList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 修正：同樣加入 LEFT JOIN ShowcaseItems 並撈出名稱，讓寄件匣也能正常顯示
       const { results } = await env.commission_db.prepare(`
         SELECT d.*, 
                s.title as showcase_title,
@@ -189,7 +185,6 @@ export const directInquiryController = {
 
       if (!inquiry) throw new Error('找不到訂單或權限不足');
 
-      // 🌟 新增：提出合約前的活躍額度卡控
       const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
       const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
       const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());
@@ -279,7 +274,6 @@ export const directInquiryController = {
 
       if (!inquiryData) throw new Error('找不到該訂單或權限不足');
 
-      // 🌟 新增：轉化為自由單前的活躍額度卡控
       const artistInfo = await env.commission_db.prepare("SELECT plan_type, pro_expires_at, trial_end_at FROM Users WHERE id = ?").bind(currentUserId).first() as any;
       const isPro = artistInfo?.plan_type === 'pro' && (!artistInfo.pro_expires_at || new Date(artistInfo.pro_expires_at) > new Date());
       const isTrial = artistInfo?.plan_type === 'trial' && (!artistInfo.trial_end_at || new Date(artistInfo.trial_end_at) > new Date());

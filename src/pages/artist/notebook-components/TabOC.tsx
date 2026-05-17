@@ -9,7 +9,6 @@ interface TabOCProps {
 
 export function TabOC({ selectedOrder }: TabOCProps) {
 
-  // 嘗試從訂單解析 OC 快照
   let ocData: OCCardData | null = null;
   try {
     if ((selectedOrder as any).oc_snapshot) {
@@ -19,7 +18,6 @@ export function TabOC({ selectedOrder }: TabOCProps) {
     console.error("無法解析 OC 資料", e);
   }
 
-  // 若尚未綁定 OC
   if (!ocData) {
     return (
       <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '40px', textAlign: 'center', border: '1px dashed #DED9D3', color: '#A0978D' }}>
@@ -28,7 +26,6 @@ export function TabOC({ selectedOrder }: TabOCProps) {
     );
   }
 
-  // 🌟 拋棄摘要與彈窗，直接渲染完整的 OC 卡片，讓它自然填滿整個分頁
   return (
     <div className="fade-in" style={{ 
       border: '1px solid #EAE6E1', 

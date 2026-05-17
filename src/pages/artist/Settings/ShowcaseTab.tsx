@@ -21,7 +21,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
   const limit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 20;
-    // 🌟 免費版上限設定為 3 個
     return 3; 
   }, [quotaInfo]);
 

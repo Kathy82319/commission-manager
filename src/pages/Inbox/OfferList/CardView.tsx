@@ -192,7 +192,7 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      {/* 🌟 彈窗修復：允許整個 Modal 垂直滾動，移除寫死的高度限制 */}
+      
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
           <div 
@@ -205,7 +205,7 @@ export const CardView: React.FC<CardViewProps> = ({
               backgroundColor: '#FFFFFF'
             }}
           >
-            {/* 🌟 圖片區塊：不再限制 40vh，改用 minHeight 確保空間，並讓它隨文字自然延展 */}
+            
             <div style={{ flex: '1 1 350px', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
               {validImages.length > 0 ? (
                 <>
@@ -227,9 +227,9 @@ export const CardView: React.FC<CardViewProps> = ({
               )}
             </div>
             
-            {/* 🌟 文字區塊：移除 maxHeight 限制，與圖片區塊一起自然撐開 */}
+            
             <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
-              {/* 讓標頭 Sticky 貼頂，這樣往下滑時也能點選關閉 */}
+              
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 10 }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <img src={avatarUrl || ''} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none', border: '1px solid #EAE6E1' }} />

@@ -12,7 +12,6 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
-// 🌟 新增：引入我們寫好的 OC 展示設定分頁元件
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
@@ -85,7 +84,6 @@ export function Settings() {
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  // 🌟 新增：用來紀錄該創作者是否有建立過任何 OC 卡片
   const [hasOC, setHasOC] = useState<boolean>(false);
 
   const [settings, setSettings] = useState<CompleteSettings>({
@@ -116,13 +114,12 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
-  // 🌟 核心修改：選單動態渲染，只有當 hasOC 為 true 時，才會注入 OC 展示設定項目
   const categories: MenuCategory[] = [
     { 
       title: '個人資訊', 
       items: [
         { id: 'profile_basic', label: '頭像與簡介' },
-        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) // 🌟 動態注入開關
+        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) 
       ] 
     },
     { title: '頁面外觀', items: [
@@ -153,7 +150,7 @@ export function Settings() {
       }
       return group;
     });
-  }, [settings.custom_sections, hasOC]); // 加入 hasOC 依賴確保正確即時更新
+  }, [settings.custom_sections, hasOC]); 
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -198,13 +195,12 @@ export function Settings() {
           }));
         }
 
-        // 🌟 新增：悄悄在背景檢查該創作者是否有建立角色卡
         try {
           const ocRes = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
           if (ocRes.ok) {
             const ocData = await ocRes.json();
             if (ocData.success && ocData.data && ocData.data.length > 0) {
-              setHasOC(true); // 觸發側邊欄選單解鎖
+              setHasOC(true); 
             }
           }
         } catch (e) {
@@ -263,7 +259,6 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 🌟 將 'oc_display' 加入免費用戶可存取的 Tab 列表中
   const freeAllowedTabs = [
     'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
     'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
@@ -273,7 +268,6 @@ export function Settings() {
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
-  // 🌟 判斷是否要隱藏底部的全域儲存按鈕（當在 OC 展示頁時自動隱藏，因為該頁是點擊就即時存檔）
   const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display';
 
   return (
@@ -371,7 +365,7 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
-            {/* 🌟 新增：渲染 OC 角色卡展示設定分頁 */}
+            
             {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
 
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}

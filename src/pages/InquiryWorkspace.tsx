@@ -6,7 +6,6 @@ import DOMPurify from 'dompurify';
 import ReactQuill from 'react-quill-new'; 
 import 'react-quill-new/dist/quill.snow.css'; 
 import '../styles/Workspace.css';
-// 🌟 新增：引入必要的圖示與 OC 預覽元件
 import { BookUser, Maximize2, X, Image as ImageIcon } from 'lucide-react';
 import { OCDetailCard } from '../components/OC/OCDetailCard';
 
@@ -60,7 +59,6 @@ export const InquiryWorkspace: React.FC = () => {
   const [artistQuota, setArtistQuota] = useState<{ used_quota: number; max_quota: number; plan_type: string } | null>(null);
   const [paymentPresets, setPaymentPresets] = useState<string[]>([]);
 
-  // 🌟 OC 卡片選擇與檢視狀態
   const [showOCSelection, setShowOCSelection] = useState(false);
   const [myOCs, setMyOCs] = useState<any[]>([]);
   const [isLoadingOCs, setIsLoadingOCs] = useState(false);
@@ -107,7 +105,7 @@ export const InquiryWorkspace: React.FC = () => {
     add_ons: '',
     agreed_memo: '',
     custom_tos: undefined,
-    oc_snapshot: null // 紀錄綁定的 OC 快照
+    oc_snapshot: null
   });
 
   const formatLocalTime = (dateStr: string) => {
@@ -237,7 +235,6 @@ export const InquiryWorkspace: React.FC = () => {
     fetchData();
   };
 
-  // 打開角色卡選擇器
   const handleOpenOCSelection = async () => {
     setShowOCSelection(true);
     setIsLoadingOCs(true);
@@ -253,7 +250,7 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-  // 發送 OC 卡
+
   const handleSendOC = async (ocId: string) => {
     if (!window.confirm('確定要發送這張角色卡到洽談室嗎？發送後系統將會建立快照，對方會看到卡片當下的設定。')) return;
     setShowOCSelection(false);
@@ -509,7 +506,7 @@ export const InquiryWorkspace: React.FC = () => {
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
       
-      {/* 🌟 局部作用域樣式 (Scoped Style)：修復 OC 卡片與彈出視窗在手機版的跑版問題 */}
+      
       <style>{`
         @media (max-width: 768px) {
           .oc-snapshot-bubble { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
@@ -579,7 +576,7 @@ export const InquiryWorkspace: React.FC = () => {
               const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
 
-              // 🌟 專屬渲染 OC 快照卡片
+
               if (msg.message_type === 'oc_snapshot') {
                 let ocData: any = null;
                 try { ocData = JSON.parse(msg.content); } catch (e) {}
@@ -590,7 +587,6 @@ export const InquiryWorkspace: React.FC = () => {
                       <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
                       <span>{formatLocalTime(msg.created_at)}</span>
                     </div>
-                    {/* 🌟 套用 className="oc-snapshot-bubble" 給 RWD 使用 */}
                     <div className="iw-chat-bubble oc-snapshot-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
                       {ocData ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -789,7 +785,7 @@ export const InquiryWorkspace: React.FC = () => {
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
                 
-                {/* 顯示已綁定的 OC 設定卡 (繪師可移除) */}
+                
                 <div style={{ padding: '12px', backgroundColor: '#FDFDFB', borderRadius: '8px', border: '1px solid #EAE6E1', marginBottom: '16px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><BookUser size={14} /> 綁定角色設定卡</span>
@@ -992,7 +988,7 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         )}
 
-        {/* 🌟 彈出視窗：委託人選擇發送哪一張 OC 卡 */}
+        
         {showOCSelection && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px', animation: 'fadeIn 0.2s ease-in-out' }}>
             <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
@@ -1045,7 +1041,7 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         )}
 
-        {/* 🌟 彈出視窗：檢視完整的 OC 卡片快照內容 */}
+        
         {viewingOCSnapshot && (
           <div className="oc-view-modal-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.2s ease-in-out' }}>
             <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', backgroundColor: 'transparent', position: 'relative', display: 'flex', flexDirection: 'column' }}>

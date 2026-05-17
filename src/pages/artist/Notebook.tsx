@@ -9,7 +9,7 @@ import { NotebookSidebar } from './notebook-components/NotebookSidebar';
 import { TabDetails } from './notebook-components/TabDetails';
 import { TabDelivery } from './notebook-components/TabDelivery';
 import { TabLogs } from './notebook-components/TabLogs';
-import { TabOC } from './notebook-components/TabOC'; // 🌟 新增：引入 OC 分頁元件
+import { TabOC } from './notebook-components/TabOC'; 
 
 export function Notebook() {
   const location = useLocation();
@@ -17,7 +17,6 @@ export function Notebook() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
-  // 🌟 修正：加入 'oc' 到型別斷言中
   const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs' | 'oc') || 'details';
 
   const [myId, setMyId] = useState<string>(''); 
@@ -523,7 +522,7 @@ export function Notebook() {
                 {activeTab === 'logs' && (
                   <TabLogs logs={logs} />
                 )}
-                {/* 🌟 新增：角色設定分頁內容 */}
+                
                 {activeTab === 'oc' && (
                   <TabOC selectedOrder={selectedOrder} />
                 )}

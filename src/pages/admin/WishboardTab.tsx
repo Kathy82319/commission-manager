@@ -4,15 +4,12 @@ import { apiClient } from '../../api/client';
 import { KeywordManager } from './components/KeywordManager';
 import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock, Edit } from 'lucide-react'; 
 
-// 轉換 UTC 時間字串為本地顯示用
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '未知時間';
-  // SQLite 的 YYYY-MM-DD HH:MM:SS 如果沒帶 Z，手動補上強制轉為 UTC 再讓瀏覽器換算為台灣時間
   const utcStr = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   return new Date(utcStr).toLocaleString('zh-TW', { hour12: true });
 };
 
-// 轉換字串給 datetime-local input 使用
 const toDatetimeLocal = (dateStr: string) => {
   if (!dateStr) return '';
   const utcStr = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
@@ -21,7 +18,6 @@ const toDatetimeLocal = (dateStr: string) => {
   return d.toISOString().slice(0, 16);
 };
 
-// 從 datetime-local input 轉回 SQLite UTC 格式
 const fromDatetimeLocal = (localStr: string) => {
   const d = new Date(localStr);
   return d.toISOString().replace('T', ' ').slice(0, 19);
@@ -35,13 +31,11 @@ export function WishboardTab() {
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // 檢舉紀錄彈窗
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [, setSelectedBulletinId] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState<any[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
 
-  // 編輯貼文彈窗
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
@@ -174,7 +168,6 @@ export function WishboardTab() {
               const postDetails = parsePostData(item);
               const hitKeyword = checkKeywordTrigger(postDetails.description);
               const isHidden = item.status === 'hidden_under_review';
-              // 檢查過期時間也需要轉為正確的時區判斷
               const expiresDate = new Date(item.expires_at.includes('Z') ? item.expires_at : item.expires_at.replace(' ', 'T') + 'Z');
               const isExpired = expiresDate < new Date();
               
@@ -381,7 +374,6 @@ export function WishboardTab() {
   );
 }
 
-// Styles
 const thStyle = { padding: '16px', fontSize: '13px', color: '#6B7280', fontWeight: 'bold', borderBottom: '2px solid #E5E7EB' };
 const tdStyle = { padding: '20px 16px', fontSize: '14px', verticalAlign: 'top' as const };
 const actionBtnStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%', transition: 'all 0.2s' };

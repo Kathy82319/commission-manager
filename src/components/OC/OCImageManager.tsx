@@ -13,9 +13,7 @@ import { ImageUploader } from '../ImageUploader';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
-// ==========================================
-// 🌟 核心關鍵：請把這裡換成你 R2 真正的公開網址！
-// ==========================================
+
 
 const R2_PUBLIC_DOMAIN = (import.meta as any).env?.VITE_R2_PUBLIC_DOMAIN || 'https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev'; 
 
@@ -97,14 +95,11 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
       const data = await res.json();
       
       if (data.success && data.uploadUrl && data.fileName) {
-        // 1. 將圖片推送到 R2
         await fetch(data.uploadUrl, { method: 'PUT', body: blobs.preview, headers: { 'Content-Type': blobs.preview.type } });
         
-        // 2. 🌟 結合正確的 R2_PUBLIC_DOMAIN 與後端回傳的檔名
         const cleanDomain = R2_PUBLIC_DOMAIN.replace(/\/$/, '');
         const finalUrl = `${cleanDomain}/${data.fileName}`; 
         
-        // 3. 寫入 State (這時候存入的就是真正的雲端網址，不是 blob 了！)
         const newItem: OCImageItem = { id: `img-${Date.now()}`, previewUrl: finalUrl };
         onChange([...images, newItem]);
       } else {

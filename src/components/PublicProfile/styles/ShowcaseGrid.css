@@ -24,7 +24,7 @@
 .tab-inner-wrapper.layout-narrow { max-width: 850px; }
 .tab-content-area { flex: 1; width: 100%; }
 
-/* --- 標籤篩選列 --- */
+
 .tag-filter-bar {
   display: flex;
   gap: 10px;
@@ -52,7 +52,7 @@
   border-color: #1a1a1a;
 }
 
-/* --- 瀑布流網格 --- */
+
 .masonry-grid {
   column-count: 4;
   column-gap: 24px;
@@ -98,27 +98,27 @@
 .item-tags { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
 .item-tags span { font-size: 10px; font-weight: bold; color: #666; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px; }
 
-/* --- 作品網格 & 富文本 --- */
+
 .rich-text-content { background: #FFFFFF; padding: 50px; border-radius: 28px; box-shadow: 0 4px 30px rgba(0,0,0,0.03); width: 100%; line-height: 2; }
 .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%; }
 .portfolio-item { cursor: pointer !important; pointer-events: auto !important; z-index: 5; aspect-ratio: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: transform 0.4s ease; }
 .portfolio-item:hover { transform: scale(1.04); }
 .portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
 
-/* --- 排單狀況 --- */
+
 .public-queue-section { max-width: 1000px; margin: 0 auto; }
 .public-queue-section table { width: 100%; border-collapse: collapse; }
 .public-queue-section th, .public-queue-section td { padding: 12px 8px; white-space: nowrap; }
 .public-queue-section td:nth-child(2) { white-space: normal; max-width: 250px; word-wrap: break-word; }
 
-/* --- OC 角色設定相關 --- */
+
 .oc-tab-btn { border: none; cursor: pointer; transition: all 0.2s; }
 .oc-tab-btn.default { padding: 4px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; background-color: transparent; color: #A0978D; }
 .oc-tab-btn.default.active { background-color: #FFF; color: #8CB369; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .oc-tab-btn.flat { background: transparent !important; padding: 0 0 6px 0; font-size: 15px; font-weight: 800; color: #A0978D; border-bottom: 3px solid transparent; }
 .oc-tab-btn.flat.active { color: #5D4A3E; border-bottom: 3px solid #5D4A3E; }
 
-/* --- 頁尾 --- */
+
 .profile-internal-footer { width: 100%; padding: 60px 0 30px 0; margin-top: auto !important; text-align: center; }
 .profile-internal-footer .footer-links { display: flex; justify-content: center; gap: 16px; font-size: 13px; font-weight: 600; }
 
@@ -126,21 +126,21 @@
    手機版響應式優化 (方案 B + 緊湊間距整合區)
    ========================================================================== */
 @media (max-width: 768px) {
-  .profile-main-content { padding:0px 16px 24px 16px !important; } /* 主要內容區往上提 */
+  .profile-main-content { padding:0px 16px 24px 16px !important; } 
   .portfolio-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .rich-text-content { padding: 24px 16px; border-radius: 20px; }
   
-  /* 排單表格適配 */
+  
   .public-queue-section { padding: 16px 12px !important; }
   .public-queue-section > div { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px; }
   .public-queue-section table { min-width: 450px; font-size: 13px !important; }
   .public-queue-section th, .public-queue-section td { padding: 10px 6px !important; }
 
-  /* 緊湊標籤 */
+  
   .tag-filter-bar { margin-bottom: 16px !important; gap: 8px !important; }
   .tag-btn { padding: 6px 14px !important; font-size: 13px !important; border-radius: 16px !important; }
 
-  /* 🌟 方案 B 核心實裝：文字卡片移到下方，拒絕遮擋圖片 */
+  
   .masonry-grid { column-count: 2; column-gap: 12px; }
   .masonry-item {
     margin-bottom: 12px;
@@ -153,20 +153,20 @@
   .masonry-item img { border-radius: 16px 16px 0 0 !important; width: 100% !important; }
   
   .floating-info-box {
-    position: relative !important; /* 解除浮動 */
+    position: relative !important; 
     bottom: auto !important; right: auto !important;
     max-width: 100% !important; width: 100% !important;
     padding: 12px !important;
-    background: transparent !important; /* 拔除毛玻璃 */
+    background: transparent !important; 
     backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
     border: none !important; border-radius: 0 !important;
-    text-align: left !important; /* 手機靠左好閱讀 */
+    text-align: left !important; 
     box-shadow: none !important;
   }
   .item-title { font-size: 14px !important; color: #333333 !important; }
   .item-price { font-size: 14px !important; color: #A67B3E !important; }
 
-  /* OC 手機排版適配不跳動 */
+  
   .mobile-oc-avatars-wrapper { gap: 12px !important; padding: 0 16px 4px 16px !important; margin: 0 -16px !important; justify-content: flex-start !important; }
   .oc-detail-container.is-flat .oc-card-content-wrapper { padding: 24px 20px !important; width: 100% !important; box-sizing: border-box !important; }
   .oc-detail-container.is-flat .oc-intro-grid { display: flex !important; flex-direction: column !important; gap: 20px !important; width: 100% !important; }
