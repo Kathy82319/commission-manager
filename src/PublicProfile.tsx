@@ -2,9 +2,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
-import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, ChevronLeft, ChevronRight, X, User, Heart, Ban, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
+import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
+import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
 import './styles/PublicProfile.css';
 
 const decodeHTML = (html?: string) => {
@@ -30,69 +31,6 @@ const getTime = (dateStr?: string) => {
   return new Date(str).getTime();
 };
 
-export interface FormFieldSchema {
-  id: string;
-  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
-  label: string;
-  required: boolean;
-  options?: string[];
-}
-
-interface ProfileSettings {
-  portfolio: string[];
-  detailed_intro: string;
-  custom_sections: { id: string; title: string; content: string }[];
-  social_links: { platform: string; url: string }[];
-  hidden_sections: string[];
-  splash_enabled?: boolean;
-  splash_image?: string;
-  splash_duration?: number;
-  splash_text?: string;
-  background_color?: string;
-  gradient_enabled?: boolean;
-  gradient_direction?: string;
-  theme_mode?: 'light' | 'dark';
-  queue_settings?: {
-    enabled: boolean;
-    show_client_name: boolean;
-    show_client_id: boolean;
-    show_project_name: boolean;
-    show_artist_note?: boolean; 
-    date_column_label?: string; 
-    custom_order?: string[];
-  };
-  tab_order?: string[]; 
-  terms_of_service?: string; 
-  rules?: string;
-}
-
-interface ShowcaseItem {
-  id: string;
-  title: string;
-  cover_url: string;
-  price_info: string;
-  tags: string[];
-  description: string;
-  form_schema?: string; 
-  allow_guest?: number;
-  max_orders?: number;
-  show_quota?: number;
-  tos_content?: string;
-  current_orders_count?: number;
-}
-
-const getSocialIcon = (platform: string) => {
-  const size = 18; 
-  switch (platform) {
-    case 'Facebook': return <SiFacebook size={size} color="#1877F2" />;
-    case 'Twitter / X': return <SiX size={size} color="#000000" />;
-    case 'Instagram': return <SiInstagram size={size} color="#E1306C" />;
-    case 'Threads': return <SiThreads size={size} color="#000000" />;
-    case 'Plurk': return <SiPlurk size={size} color="#FF574D" />;
-    case '個人網站': default: return <Globe size={size} color="#333333" />;
-  }
-};
-
 export function PublicProfile() {
   const { artistId } = useParams();
   const currentArtistId = artistId || '';
@@ -102,13 +40,13 @@ export function PublicProfile() {
   const showcaseIdParam = searchParams.get('showcaseId') || '';
 
   const [artist, setArtist] = useState<any>(null);
-  const [settings, setSettings] = useState<ProfileSettings | null>(null);
-  const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+  const [showcaseItems, setShowcaseItems] = useState<any[]>([]);
   const [publicQueue, setPublicQueue] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   
   const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
-  const [selectedShowcase, setSelectedShowcase] = useState<ShowcaseItem | null>(null);
+  const [selectedShowcase, setSelectedShowcase] = useState<any | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
   
   const [showSplash, setShowSplash] = useState(false);
@@ -121,28 +59,21 @@ export function PublicProfile() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 公開的 OC 角色卡列表與當前選中 OC 的狀態
   const [publicOCs, setPublicOCs] = useState<any[]>([]);
   const [activeOCId, setActiveOCId] = useState<string | null>(null);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
-    if (role) setIsLoggedIn(true);
-    else setIsLoggedIn(false);
+    setIsLoggedIn(!!role);
   }, []);
 
   const handleLogout = async () => {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
-    } catch (e) {
-      console.error("登出通訊失敗:", e);
-    } finally {
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('is_logged_in');
-      localStorage.removeItem('last_active_role');
-      window.location.href = '/'; 
-    }
+    try { await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch (e) {}
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('is_logged_in');
+    localStorage.removeItem('last_active_role');
+    window.location.href = '/'; 
   };
 
   const handleDashboardClick = () => {
@@ -150,165 +81,6 @@ export function PublicProfile() {
     if (lastActiveRole === 'artist') navigate('/artist/queue');
     else if (lastActiveRole === 'client') navigate('/client/orders');
     else navigate('/portal');
-  };
-
-  const [modalMode, setModalMode] = useState<'view' | 'form1' | 'form2'>('view');
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const parsedSchema: FormFieldSchema[] = useMemo(() => {
-    if (!selectedShowcase || !selectedShowcase.form_schema) return [];
-    try { return JSON.parse(selectedShowcase.form_schema); } catch (e) { return []; }
-  }, [selectedShowcase]);
-
-  const hasForm = parsedSchema.length > 0;
-  const isFull = (selectedShowcase?.max_orders || 0) > 0 && (selectedShowcase?.current_orders_count || 0) >= (selectedShowcase?.max_orders || 0);
-
-  const tosContent = useMemo(() => {
-    if (selectedShowcase?.tos_content) return selectedShowcase.tos_content;
-    if (!settings) return "繪師尚未提供專屬協議說明。";
-    return settings.terms_of_service || settings.rules || "繪師尚未提供專屬協議說明。";
-  }, [settings, selectedShowcase]);
-
-  const handleOpenCommission = () => {
-    if (!isLoggedIn && selectedShowcase?.allow_guest !== 1) {
-      alert("此項目僅開放給平台會員委託，請先登入或註冊！");
-      navigate('/login');
-      return;
-    }
-    if (isFull) {
-      alert("此項目目前已滿單暫停收件囉！");
-      return;
-    }
-    setModalMode('form1');
-    setFormData({});
-    setAgreedToTerms(false);
-  };
-
-  const handleCloseLightbox = () => {
-    setSearchParams(prev => {
-      prev.delete('showcaseId');
-      return prev;
-    });
-    setModalMode('view');
-  };
-
-  const handleInputChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({ ...prev, [fieldId]: value }));
-  };
-
-  const handleCheckboxChange = (fieldId: string, option: string, isChecked: boolean) => {
-    setFormData(prev => {
-      const currentArr = (prev[fieldId] || []) as string[];
-      if (isChecked) return { ...prev, [fieldId]: [...currentArr, option] };
-      return { ...prev, [fieldId]: currentArr.filter(o => o !== option) };
-    });
-  };
-
-  const handleNextStep = () => {
-    for (const field of parsedSchema) {
-      if (field.required) {
-        const val = formData[field.id];
-        if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '') || (Array.isArray(val) && val.length === 0)) {
-          alert(`請填寫必填欄位：${field.label}`);
-          return;
-        }
-      }
-    }
-    setModalMode('form2');
-  };
-
-  const handleSubmitOrder = async () => {
-    if (!agreedToTerms) return alert("請先同意繪師協議");
-    if (!artist || !selectedShowcase) return;
-
-    setIsSubmitting(true);
-    try {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-      const formattedAnswers = parsedSchema.map(field => ({
-        question: field.label,
-        answer: formData[field.id] || (field.type === 'checkbox' ? [] : '')
-      }));
-
-      const payload = {
-        showcase_id: selectedShowcase.id,
-        artist_id: artist.id,
-        form_answers: JSON.stringify(formattedAnswers),
-        tos_snapshot: tosContent
-      };
-
-      const res = await fetch(`${API_BASE}/api/direct-inquiries`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        if (isLoggedIn) {
-          alert("委託申請已成功送出！請至「我的委託」查看進度，等待繪師確認。");
-          navigate('/client/orders');
-        } else {
-          alert("訪客委託申請已成功送出！\n繪師將會透過您留下的聯絡方式與您聯繫，感謝您的委託。");
-        }
-        handleCloseLightbox();
-      } else {
-        if (data.error === "UNAUTHORIZED" || res.status === 401) {
-          alert("登入逾時或權限不足，請重新登入！");
-          navigate('/login');
-        } else {
-          alert(data.error || "送出失敗，請稍後再試");
-        }
-      }
-    } catch (err) {
-      alert("網路連線錯誤，送出失敗");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const renderDynamicField = (field: FormFieldSchema) => {
-    const value = formData[field.id] || '';
-    return (
-      <div key={field.id} style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px', fontSize: '14px' }}>
-          {field.label} {field.required && <span style={{ color: '#A05C5C' }}>*</span>}
-        </label>
-
-        {field.type === 'text' && <input type="text" className="form-input" style={{ width: '100%' }} value={value} onChange={e => handleInputChange(field.id, e.target.value)} placeholder="請輸入..." />}
-        {field.type === 'textarea' && <textarea className="form-input" style={{ width: '100%', minHeight: '80px', resize: 'vertical' }} value={value} onChange={e => handleInputChange(field.id, e.target.value)} placeholder="請詳細描述..." />}
-        {field.type === 'date' && <input type="date" className="form-input" value={value} onChange={e => handleInputChange(field.id, e.target.value)} />}
-        {field.type === 'select' && (
-          <select className="form-input" style={{ width: '100%' }} value={value} onChange={e => handleInputChange(field.id, e.target.value)}>
-            <option value="">請選擇...</option>
-            {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-        )}
-        {field.type === 'radio' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {field.options?.map(opt => (
-              <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E' }}>
-                <input type="radio" name={field.id} value={opt} checked={value === opt} onChange={e => handleInputChange(field.id, e.target.value)} /> {opt}
-              </label>
-            ))}
-          </div>
-        )}
-        {field.type === 'checkbox' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {field.options?.map(opt => {
-              const isChecked = (formData[field.id] || []).includes(opt);
-              return (
-                <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E' }}>
-                  <input type="checkbox" checked={isChecked} onChange={e => handleCheckboxChange(field.id, opt, e.target.checked)} /> {opt}
-                </label>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const backgroundStyle = useMemo(() => {
@@ -323,25 +95,26 @@ export function PublicProfile() {
 
   const splashBgStyle = useMemo(() => {
     if (settings?.splash_image) {
-      return { 
-        backgroundImage: `url(${settings.splash_image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      };
+      return { backgroundImage: `url(${settings.splash_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
     }
     return backgroundStyle;
   }, [settings?.splash_image, backgroundStyle]);
 
+  // 大量的 API Fetching 邏輯保留在主元件 (已簡化展示)
   useEffect(() => {
     const fetchArtistData = async () => {
       if (!currentArtistId) return;
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        const userRes = await fetch(`${API_BASE}/api/users/${currentArtistId}`);
+        const [userRes, showcaseRes, ocRes] = await Promise.all([
+          fetch(`${API_BASE}/api/users/${currentArtistId}`),
+          fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`),
+          fetch(`${API_BASE}/api/public/oc/${currentArtistId}`)
+        ]);
+
         const userData = await userRes.json();
-        const showcaseRes = await fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`);
         const showcaseData = await showcaseRes.json();
+        const ocData = await ocRes.json();
 
         if (userData.success && userData.data) {
           setArtist(userData.data);
@@ -352,19 +125,9 @@ export function PublicProfile() {
               const rawSettings = userData.data.profile_settings;
               parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
               if (parsedSettings.splash_enabled === true) setShowSplash(true);
-              
-              const safeCustomSections = (parsedSettings.custom_sections || []).map((sec: any, idx: number) => ({
-                ...sec, id: sec.id || `custom_legacy_${idx}`
-              }));
-              parsedSettings.custom_sections = safeCustomSections;
-
               setSettings(parsedSettings);
-            } catch (e) {
-              setShowSplash(false);
-            }
-          } else {
-            setShowSplash(false);
-          }
+            } catch (e) { setShowSplash(false); }
+          } else setShowSplash(false);
 
           if (parsedSettings?.queue_settings?.enabled) {
             try {
@@ -373,7 +136,6 @@ export function PublicProfile() {
               if (queueData.success) {
                 let list = queueData.data;
                 const customOrder = parsedSettings.queue_settings.custom_order || [];
-                
                 if (customOrder.length > 0) {
                   list.sort((a: any, b: any) => {
                     const idxA = customOrder.indexOf(a.id);
@@ -386,12 +148,9 @@ export function PublicProfile() {
                 } else {
                   list.sort((a: any, b: any) => getTime(a.order_date) - getTime(b.order_date));
                 }
-                
                 setPublicQueue(list);
               }
-            } catch (e) {
-              console.error('無法讀取排單表資料');
-            }
+            } catch (e) {}
           }
         }
 
@@ -404,47 +163,22 @@ export function PublicProfile() {
                 const parsed = JSON.parse(item.tags);
                 safeTags = Array.isArray(parsed) ? parsed : [];
               }
-            } catch (e) { safeTags = []; }
-            return { 
-              ...item, 
-              tags: safeTags,
-              allow_guest: item.allow_guest || 0,
-              max_orders: item.max_orders || 0,
-              show_quota: item.show_quota ?? 1,
-              tos_content: item.tos_content || '',
-              current_orders_count: item.current_orders_count || 0
-            };
+            } catch (e) {}
+            return { ...item, tags: safeTags };
           });
           setShowcaseItems(formattedItems);
         }
 
-        // 在背景抓取該使用者的公開 OC 角色卡列表
-        try {
-          const ocRes = await fetch(`${API_BASE}/api/public/oc/${currentArtistId}`);
-          const ocData = await ocRes.json();
-          if (ocRes.ok && ocData.success) {
-            const formattedOCs = (ocData.data || []).map((oc: any) => ({
-              ...oc,
-              hair_colors: typeof oc.hair_colors === 'string' ? JSON.parse(oc.hair_colors || '[]') : (oc.hair_colors || []),
-              eyes_colors: typeof oc.eyes_colors === 'string' ? JSON.parse(oc.eyes_colors || '[]') : (oc.eyes_colors || []),
-              clothing_colors: typeof oc.clothing_colors === 'string' ? JSON.parse(oc.clothing_colors || '[]') : (oc.clothing_colors || []),
-              keywords: typeof oc.keywords === 'string' ? JSON.parse(oc.keywords || '[]') : (oc.keywords || []),
-              images: typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []),
-            }));
-            setPublicOCs(formattedOCs);
-            if (formattedOCs.length > 0) {
-              setActiveOCId(formattedOCs[0].id); 
-            }
-          }
-        } catch (e) {
-          console.error('無法讀取公開角色卡資料', e);
+        if (ocData.success) {
+          const formattedOCs = (ocData.data || []).map((oc: any) => ({
+            ...oc,
+            images: typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []),
+          }));
+          setPublicOCs(formattedOCs);
+          if (formattedOCs.length > 0) setActiveOCId(formattedOCs[0].id);
         }
 
-      } catch (error) {
-        setShowSplash(false);
-      } finally {
-        setLoading(false);
-      }
+      } catch (error) { setShowSplash(false); } finally { setLoading(false); }
     };
     fetchArtistData();
   }, [currentArtistId]);
@@ -467,23 +201,14 @@ export function PublicProfile() {
             }
           }
         }
-      } catch (e) {
-      } finally {
-        setIsViewerLoading(false);  
-      }
+      } catch (e) {} finally { setIsViewerLoading(false); }
     };
-    if (artist && artist.id) {
-      fetchViewerAndRelations();
-    }
+    if (artist && artist.id) fetchViewerAndRelations();
   }, [artist]);
 
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    showcaseItems.forEach(item => {
-      if (Array.isArray(item.tags)) {
-        item.tags.forEach(t => { if (t) tags.add(t); });
-      }
-    });
+    showcaseItems.forEach(item => { if (Array.isArray(item.tags)) item.tags.forEach(t => { if (t) tags.add(t); }); });
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
@@ -491,22 +216,16 @@ export function PublicProfile() {
     setSelectedTags(prev => {
       if (tag === '全部') return ['全部'];
       const filters = prev.filter(t => t !== '全部');
-      if (filters.includes(tag)) {
-        const next = filters.filter(t => t !== tag);
-        return next.length === 0 ? ['全部'] : next;
-      }
+      if (filters.includes(tag)) return filters.filter(t => t !== tag).length === 0 ? ['全部'] : filters.filter(t => t !== tag);
       return [...filters, tag];
     });
   };
 
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return showcaseItems;
-    return showcaseItems.filter(item => 
-      Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag))
-    );
+    return showcaseItems.filter(item => Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag)));
   }, [showcaseItems, selectedTags]);
 
-  // 🌟 核心修正：移除一刀切的 if (!settings) return []; 阻斷，改用 optional chaining 確保在無外觀設定下也能解鎖 OC 分頁
   const availableTabs = useMemo(() => {
     const tabs: any[] = [];
     const isHidden = (id: string) => settings?.hidden_sections?.includes(id) || false;
@@ -515,86 +234,37 @@ export function PublicProfile() {
     if (settings) {
       if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
       if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-      
-      if (settings.queue_settings?.enabled) {
-        tabs.push({ id: 'queue', label: '排單狀況' });
-      }
+      if (settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: '排單狀況' });
     }
-
-    if (!isHidden('showcase') && showcaseItems.length > 0) {
-      tabs.push({ id: 'showcase', label: '接委託展示區' });
-    }
-
-    // 🌟 核心增補：只要此用戶有任何公開的角色卡，就無差別注入「角色設定」分頁（不受 settings 限制）
-    if (publicOCs.length > 0) {
-      tabs.push({ id: 'oc', label: '角色設定' });
-    }
+    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
+    if (publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
     if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {
-        settings.custom_sections.forEach((sec) => {
-          if (!isHidden(sec.id) && sec.content) {
-            tabs.push({ id: sec.id, label: sec.title || '自訂分頁' });
-          }
+        settings.custom_sections.forEach((sec: any) => {
+          if (!isHidden(sec.id) && sec.content) tabs.push({ id: sec.id, label: sec.title || '自訂分頁' });
         });
       }
     }
-
-    if (settings && !isFreePlan && settings.tab_order && settings.tab_order.length > 0) {
-      tabs.sort((a, b) => {
-        let idxA = settings.tab_order!.indexOf(a.id);
-        let idxB = settings.tab_order!.indexOf(b.id);
-        idxA = idxA === -1 ? 999 : idxA;
-        idxB = idxB === -1 ? 999 : idxB;
-        return idxA - idxB;
-      });
-    }
-
     return tabs;
   }, [settings, showcaseItems, artist, publicOCs]);
 
   const currentTab = useMemo(() => {
-    if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) {
-      return 'showcase';
-    }
+    if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) return 'showcase';
     return tabParam || (availableTabs.length > 0 ? availableTabs[0].id : '');
   }, [tabParam, showcaseIdParam, availableTabs]);
 
   const handleTabChange = (tabId: string) => {
-    setSearchParams(prev => {
-      prev.set('tab', tabId);
-      return prev;
-    });
+    setSearchParams(prev => { prev.set('tab', tabId); return prev; });
   };
 
   useEffect(() => {
     if (showcaseIdParam && showcaseItems.length > 0) {
-      const found = showcaseItems.find(item => item.id === showcaseIdParam);
-      if (found) {
-        setSelectedShowcase(found);
-      } else {
-        setSelectedShowcase(null);
-      }
-    } else {
-      setSelectedShowcase(null);
-    }
+      setSelectedShowcase(showcaseItems.find(item => item.id === showcaseIdParam) || null);
+    } else { setSelectedShowcase(null); }
   }, [showcaseIdParam, showcaseItems]);
 
   const isWideTab = ['portfolio', 'showcase', 'queue', 'oc'].includes(currentTab); 
-
-  const handlePrevImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (selectedImgIndex !== null && settings?.portfolio) {
-      setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length);
-    }
-  };
-
-  const handleNextImg = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (selectedImgIndex !== null && settings?.portfolio) {
-      setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length);
-    }
-  };
 
   useEffect(() => {
     if (!loading && settings?.splash_enabled !== false && showSplash) {
@@ -604,22 +274,13 @@ export function PublicProfile() {
         setIsSplashClosing(true);
         removeTimer = setTimeout(() => setShowSplash(false), 800);
       }, duration);
-      return () => {
-        clearTimeout(timer);
-        if (removeTimer) clearTimeout(removeTimer);
-      };
+      return () => { clearTimeout(timer); if (removeTimer) clearTimeout(removeTimer); };
     }
   }, [loading, settings, showSplash]);
 
   const handleToggleRelation = async (type: 'favorite' | 'blacklist') => {
-    if (!viewerId) {
-      alert("請先登入系統後再進行操作喔！");
-      return;
-    }
-    if (viewerId === artist?.id) {
-      alert("您無法將自己的頁面加入名單中。");
-      return;
-    }
+    if (!viewerId) return alert("請先登入系統後再進行操作喔！");
+    if (viewerId === artist?.id) return alert("您無法將自己的頁面加入名單中。");
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     try {
@@ -633,14 +294,10 @@ export function PublicProfile() {
         });
         if (res.ok) setRelationStatus(type);
       }
-    } catch (err) {
-      console.error("更新標記狀態失敗", err);
-    }
+    } catch (err) {}
   };
 
-  const currentSelectedOC = useMemo(() => {
-    return publicOCs.find(o => o.id === activeOCId) || publicOCs[0] || null;
-  }, [publicOCs, activeOCId]);
+  const currentSelectedOC = useMemo(() => publicOCs.find(o => o.id === activeOCId) || publicOCs[0] || null, [publicOCs, activeOCId]);
 
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該用戶的資料。</div>;
@@ -664,17 +321,11 @@ export function PublicProfile() {
       <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
-            <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-              回到管理後台
-            </button>
-            <button onClick={handleLogout} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>
-              登出
-            </button>
+            <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>回到管理後台</button>
+            <button onClick={handleLogout} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>登出</button>
           </>
         ) : (
-          <button onClick={() => navigate('/login')} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 18px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            登入 / 註冊
-          </button>
+          <button onClick={() => navigate('/login')} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 18px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>登入 / 註冊</button>
         )}
       </div>
 
@@ -687,120 +338,40 @@ export function PublicProfile() {
       )}
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
-          <div className="sidebar-top">
-            <div className="avatar-section">
-              {artist.avatar_url ? (
-                <img src={artist.avatar_url} alt="Avatar" className="profile-avatar" />
-              ) : (
-                <div className="profile-avatar default-avatar-placeholder" style={{ backgroundColor: '#E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
-                  <User size={48} strokeWidth={1.5} />
-                </div>
-              )}
-            </div>
-            
-            <div className="name-social-section">
-              <h1 className="profile-name">{artist.display_name}</h1>
-              <div className="social-links">
-                {settings?.social_links?.map((link, idx) => (
-                  <a key={idx} href={link.url} target="_blank" rel="noreferrer" className="social-icon">
-                    {getSocialIcon(link.platform)}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="sidebar-bottom">
-            <div className="bio-section">
-              <p className="profile-bio" style={{ color: textColor }}>
-                {artist.bio || '這名用戶還沒有寫下簡介。'}
-              </p>
-            </div>
-
-            <nav className="sidebar-nav">
-              {availableTabs.map((tab: any) => (
-                <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-
-            {!isViewerLoading && viewerId !== artist?.id && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '24px', justifyContent: 'center', flexDirection: 'column' }}>
-                <button onClick={() => handleToggleRelation('favorite')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'favorite' ? '#ef4444' : borderColor}`, background: relationStatus === 'favorite' ? 'rgba(239, 68, 68, 0.1)' : 'transparent', color: relationStatus === 'favorite' ? '#ef4444' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
-                  <Heart size={16} fill={relationStatus === 'favorite' ? '#ef4444' : 'none'} />
-                  {relationStatus === 'favorite' ? '已收藏' : '收藏創作者'}
-                </button>
-                
-                <button onClick={() => handleToggleRelation('blacklist')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${relationStatus === 'blacklist' ? '#71717a' : borderColor}`, background: relationStatus === 'blacklist' ? 'rgba(113, 113, 122, 0.2)' : 'transparent', color: relationStatus === 'blacklist' ? '#a1a1aa' : textColor, cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}>
-                  <Ban size={16} />
-                  {relationStatus === 'blacklist' ? '已封鎖' : '黑名單'}
-                </button>
-              </div>
-            )}
-          </div>
-        </aside>
+        
+        {/* 抽出後的 Sidebar 元件 */}
+        <ProfileSidebar 
+          artist={artist} settings={settings} textColor={textColor} borderColor={borderColor} 
+          availableTabs={availableTabs} currentTab={currentTab} onTabChange={handleTabChange} 
+          viewerId={viewerId} relationStatus={relationStatus} isViewerLoading={isViewerLoading} 
+          onToggleRelation={handleToggleRelation} 
+        />
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
-              {/* 🌟 修正後的角色設定 (OC) 分頁片段 */}
               {currentTab === 'oc' && publicOCs.length > 0 && (
-                <div className="public-oc-layout fade-in" style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '8px', // 🌟 從 24px 縮小到 10px，大幅拉近頭像與卡片的距離
-                  width: '100%',
-                  maxWidth: '1020px', 
-                  margin: '0 auto',    
-                  padding: '0' // 🌟 移除多餘的上下內距
-                }}>
-                  
+                <div className="public-oc-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '1020px', margin: '0 auto', padding: '0' }}>
                   {publicOCs.length > 1 && (
                     <>
-                      {/* 1. 網頁版：低調、高質感的橫向小頁籤 */}
                       <div className="desktop-oc-tabs-wrapper" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderBottom: isDarkText ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
                         {publicOCs.map(oc => (
-                          <button
-                            key={oc.id}
-                            onClick={() => setActiveOCId(oc.id)}
-                            style={{
-                              padding: '6px 14px', borderRadius: '8px', border: '1px solid',
-                              borderColor: activeOCId === oc.id ? '#8CB369' : borderColor,
-                              backgroundColor: activeOCId === oc.id ? 'rgba(140, 179, 105, 0.1)' : 'transparent',
-                              color: activeOCId === oc.id ? '#8CB369' : textColor,
-                              fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s'
-                            }}
-                          >
+                          <button key={oc.id} onClick={() => setActiveOCId(oc.id)} style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid', borderColor: activeOCId === oc.id ? '#8CB369' : borderColor, backgroundColor: activeOCId === oc.id ? 'rgba(140, 179, 105, 0.1)' : 'transparent', color: activeOCId === oc.id ? '#8CB369' : textColor, fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' }}>
                             {oc.name || '未命名角色'}
                           </button>
                         ))}
                       </div>
 
-                      {/* 2. 手機版：IG 限動圓圈大頭貼橫向滑動列 */}
                       <div className="mobile-oc-avatars-wrapper" style={{ display: 'none', gap: '16px', overflowX: 'auto', padding: '4px 4px 12px 4px', width: '100%', WebkitOverflowScrolling: 'touch' }}>
                         {publicOCs.map(oc => {
                           const isSelected = activeOCId === oc.id;
                           const coverImg = oc.images?.[0]?.previewUrl;
                           return (
-                            <div 
-                              key={oc.id} 
-                              onClick={() => setActiveOCId(oc.id)}
-                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}
-                            >
-                              <div style={{
-                                width: '58px', height: '58px', borderRadius: '50%',
-                                border: isSelected ? '2.5px solid #8CB369' : `1.5px solid ${borderColor}`,
-                                padding: '2px', transition: 'all 0.2s', backgroundColor: 'transparent'
-                              }}>
+                            <div key={oc.id} onClick={() => setActiveOCId(oc.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}>
+                              <div style={{ width: '58px', height: '58px', borderRadius: '50%', border: isSelected ? '2.5px solid #8CB369' : `1.5px solid ${borderColor}`, padding: '2px', transition: 'all 0.2s', backgroundColor: 'transparent' }}>
                                 <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#F4F0EB' }}>
-                                  {coverImg ? (
-                                    <img src={coverImg} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}><ImageIcon size={16} /></div>
-                                  )}
+                                  {coverImg ? <img src={coverImg} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}><ImageIcon size={16} /></div>}
                                 </div>
                               </div>
                               <span style={{ fontSize: '11px', color: textColor, fontWeight: isSelected ? 'bold' : 'normal', maxWidth: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isSelected ? 1 : 0.8 }}>
@@ -812,19 +383,13 @@ export function PublicProfile() {
                       </div>
                     </>
                   )}
-
-                  {/* 核心內容：啟用高質感扁平毛玻璃樣式 */}
-                  {currentSelectedOC && (
-                    <div style={{ width: '100%' }}>
-                      <OCDetailCard ocData={currentSelectedOC} variant="flat" />
-                    </div>
-                  )}
+                  {currentSelectedOC && <div style={{ width: '100%' }}><OCDetailCard ocData={currentSelectedOC} variant="flat" /></div>}
                 </div>
               )}
 
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
-                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目日前排單狀況</h2>
+                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
                   {publicQueue.length === 0 ? (
                     <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
                   ) : (
@@ -836,9 +401,7 @@ export function PublicProfile() {
                             <th style={{ padding: '12px 8px' }}>項目名稱</th>
                             <th style={{ padding: '12px 8px' }}>當前進度</th>
                             <th style={{ padding: '12px 8px' }}>{settings.queue_settings.date_column_label || '預計開始日'}</th>
-                            {settings.queue_settings.show_artist_note && (
-                              <th style={{ padding: '12px 8px' }}>備註</th>
-                            )}
+                            {settings.queue_settings.show_artist_note && <th style={{ padding: '12px 8px' }}>備註</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -846,29 +409,14 @@ export function PublicProfile() {
                             <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
                               <td style={{ padding: '12px 8px' }}>
                                 <div style={{ fontWeight: 'bold' }}>
-                                  {settings.queue_settings!.show_client_name 
-                                    ? (order.contact_memo || '匿名委託') 
-                                    : getMaskedName(order.contact_memo)
-                                  }
+                                  {settings.queue_settings!.show_client_name ? (order.contact_memo || '匿名委託') : getMaskedName(order.contact_memo)}
                                 </div>
-                                {settings.queue_settings!.show_client_id && order.client_public_id && (
-                                  <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>
-                                )}
+                                {settings.queue_settings!.show_client_id && order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
                               </td>
-                              <td style={{ padding: '12px 8px' }}>
-                                {settings.queue_settings!.show_project_name && order.project_name ? order.project_name : '私人委託項目'}
-                              </td>
-                              <td style={{ padding: '12px 8px' }}>
-                                <span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span>
-                              </td>
-                              <td style={{ padding: '12px 8px', opacity: 0.8 }}>
-                                {order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}
-                              </td>
-                              {settings.queue_settings!.show_artist_note && (
-                                <td style={{ padding: '12px 8px', opacity: 0.8 }}>
-                                  {order.artist_note || '-'}
-                                </td>
-                              )}
+                              <td style={{ padding: '12px 8px' }}>{settings.queue_settings!.show_project_name && order.project_name ? order.project_name : '私人委託項目'}</td>
+                              <td style={{ padding: '12px 8px' }}><span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span></td>
+                              <td style={{ padding: '12px 8px', opacity: 0.8 }}>{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</td>
+                              {settings.queue_settings!.show_artist_note && <td style={{ padding: '12px 8px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
                             </tr>
                           ))}
                         </tbody>
@@ -882,25 +430,15 @@ export function PublicProfile() {
                 <div className="showcase-section">
                   {availableTags.length > 1 && (
                     <div className="tag-filter-bar">
-                      {availableTags.map(tag => {
-                        const isSelected = selectedTags.includes(tag);
-                        return (
-                          <button key={tag} className={`tag-btn ${isSelected ? 'active' : ''}`} onClick={() => handleTagClick(tag)}>
-                            {tag}
-                          </button>
-                        );
-                      })}
+                      {availableTags.map(tag => (
+                        <button key={tag} className={`tag-btn ${selectedTags.includes(tag) ? 'active' : ''}`} onClick={() => handleTagClick(tag)}>{tag}</button>
+                      ))}
                     </div>
                   )}
                   <div className="masonry-grid">
                     {filteredShowcaseItems.map(item => (
                       <div key={item.id} className="masonry-item" onClick={() => { 
-                        setSearchParams(prev => {
-                          prev.set('tab', 'showcase');
-                          prev.set('showcaseId', item.id);
-                          return prev;
-                        });
-                        setModalMode('view'); 
+                        setSearchParams(prev => { prev.set('tab', 'showcase'); prev.set('showcaseId', item.id); return prev; });
                       }}>
                         <img src={item.cover_url} alt={item.title} loading="lazy" />
                         <div className="floating-info-box">
@@ -915,7 +453,7 @@ export function PublicProfile() {
 
               {currentTab === 'portfolio' && (
                 <div className="portfolio-grid">
-                  {settings?.portfolio.map((img, idx) => (
+                  {settings?.portfolio.map((img: string, idx: number) => (
                     <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
                       <img src={img} alt="作品" loading="lazy" />
                     </div>
@@ -927,7 +465,7 @@ export function PublicProfile() {
                 <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />
               )}
 
-              {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec) => {
+              {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec: any) => {
                 return currentTab === sec.id && (
                   <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content || '')) }} />
                 );
@@ -936,12 +474,9 @@ export function PublicProfile() {
 
             <footer className="profile-internal-footer">
               <div className="footer-links" style={{ color: isDarkText ? '#888' : 'rgba(255,255,255,0.6)' }}>
-                <span>|</span>
-                <Link to="/terms">服務條款</Link>
-                <span>|</span>
-                <Link to="/privacy">隱私權政策</Link>
-                <span>|</span>
-                <Link to="/refund-policy">退款政策</Link>
+                <span>|</span><Link to="/terms">服務條款</Link>
+                <span>|</span><Link to="/privacy">隱私權政策</Link>
+                <span>|</span><Link to="/refund-policy">退款政策</Link>
                 <span>|</span>
               </div>
             </footer>
@@ -949,132 +484,25 @@ export function PublicProfile() {
         </main>
       </div>
 
+      {/* 抽出後的 Showcase Modal 彈窗元件 */}
       {selectedShowcase && (
-        <div className="lightbox-overlay showcase-modal-overlay" onClick={handleCloseLightbox}>
-          <button className="lightbox-close" onClick={handleCloseLightbox}><X size={32}/></button>
-          
-          <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
-            {modalMode === 'view' && (
-              <>
-                <div className="showcase-cover">
-                  <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
-                </div>
-                <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <div className="showcase-header">
-                    <h2>{selectedShowcase.title}</h2>
-                    {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
-                  </div>
-
-                  {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (
-                    <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '12px' }}>
-                      🔥 限量接單：目前剩餘 {(selectedShowcase.max_orders || 0) - (selectedShowcase.current_orders_count || 0)} 個名額
-                    </div>
-                  )}
-
-                  {Array.isArray(selectedShowcase.tags) && selectedShowcase.tags.length > 0 && (
-                    <div className="modal-tags">
-                      {selectedShowcase.tags.map(tag => <span key={tag} className="tag-chip">#{tag}</span>)}
-                    </div>
-                  )}
-
-                  <div className="description-scroll-area" style={{ flex: 1 }}>
-                    <div className="rich-text-content description" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(selectedShowcase.description)) }} />
-                  </div>
-
-                  {hasForm && (
-                    <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
-                      <button 
-                        onClick={handleOpenCommission}
-                        disabled={isFull}
-                        style={{ 
-                          width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', 
-                          backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', 
-                          color: '#FFF', 
-                          cursor: isFull ? 'not-allowed' : 'pointer' 
-                        }}
-                      >
-                        {isFull ? '🛑 已滿單 / 暫停收件' : '我要委託'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            {modalMode === 'form1' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
-                  📝 填寫委託需求 - {selectedShowcase.title}
-                </h2>
-                
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px', minHeight: 0 }}>
-                  {!isLoggedIn && selectedShowcase.allow_guest === 1 && (
-                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
-                        💡 <strong>您目前為訪客身分</strong><br/>
-                        提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>
-                        若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
-                      </div>
-                      <div>
-                        <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                          前往登入 / 註冊帳號
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {parsedSchema.length > 0 ? (
-                    parsedSchema.map(renderDynamicField)
-                  ) : (
-                    <div style={{ color: '#7A7269', fontSize: '15px', lineHeight: '1.6', textAlign: 'center', padding: '40px 0' }}>
-                      此項目沒有特別指定的客製化問題。<br/>若無其他特殊要求，請直接點擊「下一步」確認協議。
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #EAE6E1' }}>
-                  <button onClick={() => setModalMode('view')} style={{ flex: 1, padding: '14px', background: '#FAFAFA', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>取消</button>
-                  <button onClick={handleNextStep} style={{ flex: 2, padding: '14px', background: '#5D4A3E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}>下一步：確認協議</button>
-                </div>
-              </div>
-            )}
-
-            {modalMode === 'form2' && (
-              <div className="showcase-details" style={{ width: '100%', maxWidth: '100%', padding: '30px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <h2 style={{ borderBottom: '1px solid #EAE6E1', paddingBottom: '16px', marginBottom: '20px', color: '#5D4A3E', fontSize: '20px' }}>
-                  📄 確認繪師協議 (TOS)
-                </h2>
-                <div className="custom-scrollbar" style={{ overflowY: 'auto', flex: 1, paddingRight: '10px', minHeight: 0 }}>
-                  <div style={{ backgroundColor: '#FDFDFB', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '14px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(tosContent) }} />
-                  </div>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', padding: '16px', backgroundColor: '#FBFBF9', borderRadius: '8px', border: '1px solid #DED9D3' }}>
-                    <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width: '20px', height: '20px', marginTop: '2px', cursor: 'pointer' }} />
-                    <span style={{ fontSize: '15px', color: '#5D4A3E', fontWeight: 'bold', lineHeight: '1.5' }}>
-                      我已詳細閱讀並同意上述繪師協議，承諾遵守交易規範。
-                    </span>
-                  </label>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #EAE6E1' }}>
-                  <button onClick={() => setModalMode('form1')} style={{ flex: 1, padding: '14px', background: '#FAFAFA', border: '1px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>返回修改</button>
-                  <button onClick={handleSubmitOrder} disabled={!agreedToTerms || isSubmitting} style={{ flex: 2, padding: '14px', background: '#4E7A5A', color: 'white', border: 'none', borderRadius: '8px', cursor: (!agreedToTerms || isSubmitting) ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '15px', opacity: (!agreedToTerms || isSubmitting) ? 0.6 : 1 }}>
-                    {isSubmitting ? '送出中...' : '正式送出委託申請'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
+        <ShowcaseModal 
+          selectedShowcase={selectedShowcase} 
+          artist={artist} 
+          settings={settings} 
+          isLoggedIn={isLoggedIn} 
+          onClose={() => setSearchParams(prev => { prev.delete('showcaseId'); return prev; })}
+        />
       )}
 
       {selectedImgIndex !== null && settings?.portfolio && (
         <div className="lightbox-overlay" onClick={() => setSelectedImgIndex(null)}>
           <button className="lightbox-close" onClick={() => setSelectedImgIndex(null)}><X size={32}/></button>
-          <button className="lightbox-nav prev" onClick={handlePrevImg}><ChevronLeft size={48}/></button>
+          <button className="lightbox-nav prev" onClick={(e) => { e.stopPropagation(); setSelectedImgIndex((selectedImgIndex - 1 + settings.portfolio.length) % settings.portfolio.length); }}><ChevronLeft size={48}/></button>
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
             <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" />
           </div>
-          <button className="lightbox-nav next" onClick={handleNextImg}><ChevronRight size={48}/></button>
+          <button className="lightbox-nav next" onClick={(e) => { e.stopPropagation(); setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length); }}><ChevronRight size={48}/></button>
         </div>
       )}
     </div>
