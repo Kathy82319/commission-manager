@@ -287,3 +287,17 @@
     padding: 24px 16px !important;
   }
 }
+
+/* ==========================================================================
+   🌟 修正富文本 (TOS) <p> 標籤造成的頂部/底部多餘空白
+   ========================================================================== */
+.tos-read-only-content > *:first-child {
+  margin-top: 0 ;
+}
+.tos-read-only-content > *:last-child {
+  margin-bottom: 0 ;
+}
+
+.tos-read-only-content p {
+  margin-top: 0 ;
+}

@@ -896,7 +896,7 @@ export const InquiryWorkspace: React.FC = () => {
                   {isEditableByArtist && (
                     <button 
                       onClick={() => setDraft({...draft, custom_tos: artistTos})}
-                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0, paddingTop: '0px' }}
+                      style={{ fontSize: '11px', padding: '4px 8px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0  }}
                     >
                       帶入個人範本
                     </button>
