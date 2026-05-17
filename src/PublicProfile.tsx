@@ -208,7 +208,11 @@ export function PublicProfile() {
 
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    showcaseItems.forEach(item => { if (Array.isArray(item.tags)) item.tags.forEach(t => { if (t) tags.add(t); }); });
+    showcaseItems.forEach(item => { 
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach((t: string) => { if (t) tags.add(t); }); 
+      }
+    });
     return ['全部', ...Array.from(tags)];
   }, [showcaseItems]);
 
@@ -223,7 +227,9 @@ export function PublicProfile() {
 
   const filteredShowcaseItems = useMemo(() => {
     if (selectedTags.includes('全部')) return showcaseItems;
-    return showcaseItems.filter(item => Array.isArray(item.tags) && item.tags.some(tag => selectedTags.includes(tag)));
+    return showcaseItems.filter(item => 
+      Array.isArray(item.tags) && item.tags.some((tag: string) => selectedTags.includes(tag))
+    );
   }, [showcaseItems, selectedTags]);
 
   const availableTabs = useMemo(() => {

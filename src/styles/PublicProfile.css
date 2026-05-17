@@ -947,3 +947,72 @@
 .lightbox-content img {
   cursor: default;
 }
+
+/* ==========================================================================
+   終極手機版優化 (版面緊湊化 + 標籤縮小 + 方案 B 圖片不遮擋)
+   請放在 CSS 檔案的最下方確保覆蓋生效
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 1. 收緊整體上下間距 */
+  .profile-sidebar {
+    padding-top: 16px !important;
+  }
+  .sidebar-bottom {
+    padding: 12px 24px 16px 24px !important;
+  }
+  .profile-main-content {
+    padding: 12px 16px 24px 16px !important;
+  }
+  .tag-filter-bar {
+    margin-bottom: 16px !important;
+    gap: 8px !important;
+  }
+
+  /* 2. 拯救巨大的標籤 */
+  .tag-btn {
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    border-radius: 16px !important;
+  }
+
+  /* 3. 方案 B：毛玻璃資訊框移至圖片下方，不再遮擋圖片 */
+  .masonry-item {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #FFFFFF !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+  }
+
+  .masonry-item img {
+    border-radius: 16px 16px 0 0 !important; /* 只有上方有圓角 */
+    width: 100% !important;
+  }
+
+  .floating-info-box {
+    position: relative !important; /* 解除浮動 */
+    bottom: auto !important;
+    right: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 12px !important; /* 調整為舒適的內距 */
+    background: transparent !important; /* 移除毛玻璃背景 */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    text-align: left !important; /* 文字改為靠左閱讀較順暢 */
+    box-shadow: none !important;
+  }
+
+  .item-title {
+    font-size: 14px !important;
+    color: #333333 !important;
+  }
+
+  .item-price {
+    font-size: 14px !important;
+    color: #A67B3E !important;
+  }
+}
