@@ -69,13 +69,17 @@ export const directInquiryController = {
 
   async getInboxList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：加入 LEFT JOIN ShowcaseItems 並 Select s.title as showcase_title
       const { results } = await env.commission_db.prepare(`
         SELECT d.*, 
+               s.title as showcase_title,
+               s.title as bulletin_title,
                COALESCE(c.client_id, d.client_id) as client_id,
                COALESCE(bu.display_name, u.display_name) as client_name, 
                COALESCE(bu.public_id, u.public_id) as client_public_id,
                c.id as commission_id
         FROM DirectInquiries d
+        LEFT JOIN ShowcaseItems s ON d.showcase_id = s.id
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
         LEFT JOIN Users u ON d.client_id = u.id
         LEFT JOIN Users bu ON c.client_id = bu.id
@@ -96,16 +100,19 @@ export const directInquiryController = {
 
   async getOutboundList(currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 🌟 修正：同樣加入 LEFT JOIN ShowcaseItems 並撈出名稱，讓寄件匣也能正常顯示
       const { results } = await env.commission_db.prepare(`
         SELECT d.*, 
+               s.title as showcase_title,
+               s.title as bulletin_title,
                a.display_name as artist_name, 
                a.public_id as artist_public_id,
                COALESCE(c.client_id, d.client_id) as client_id,
                c.id as commission_id
         FROM DirectInquiries d
+        LEFT JOIN ShowcaseItems s ON d.showcase_id = s.id
         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = d.id
         LEFT JOIN Users a ON d.artist_id = a.id
-       
         WHERE d.client_id = ? OR c.client_id = ?
         ORDER BY d.created_at DESC
       `).bind(currentUserId, currentUserId).all();
