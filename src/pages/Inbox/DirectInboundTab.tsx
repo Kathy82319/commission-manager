@@ -42,11 +42,9 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         alert("轉換成功！已將該表單建立為自由模式委託單。");
         window.location.href = '/artist/notebook';
       } else {
-        // 🌟 修正：優先抓取後端回傳的 message，如果沒有才抓 error
         alert(res.message || res.error || "轉換失敗，請稍後再試");
       }
     } catch (e: any) {
-      // 🌟 修正：攔截 apiClient 拋出的 Error，提取後端的 JSON 錯誤訊息
       const errorMessage = e?.response?.data?.message || e?.response?.data?.error || e?.message || "網路異常，轉換失敗";
       alert(errorMessage);
     } finally {
@@ -112,7 +110,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.2s ease' }}>
       
-      
+      {/* 標題與基礎資訊 */}
       <div className="main-header" style={{ marginBottom: '24px', backgroundColor: 'transparent', padding: 0 }}>
         <div className="main-header-info">
           <h2 className="main-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '24px' }}>
@@ -132,7 +130,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       </div>
 
-      
+      {/* 婉拒狀態提示 */}
       {selectedInq.status === 'declined' && (
         <div style={{ padding: '16px', backgroundColor: '#FCE8E6', border: '1px solid #F5C6C6', borderRadius: '12px', color: '#A05C5C', marginBottom: '24px' }}>
           <strong style={{ display: 'block', marginBottom: '4px' }}>此申請已被婉拒或取消</strong>
@@ -140,7 +138,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       )}
 
-      
+      {/* 訪客專屬聯絡資訊 (醒目展示) */}
       {isGuestSelected && selectedInq.guest_contact_info && (
         <div className="section-card" style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A', marginBottom: '24px' }}>
           <h3 className="section-title" style={{ color: '#92400E', borderBottomColor: '#FDE68A', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -155,7 +153,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       )}
 
-      
+      {/* 表單問答內容區 */}
       <div className="section-card" style={{ opacity: selectedInq.status === 'declined' ? 0.6 : 1, filter: selectedInq.status === 'declined' ? 'grayscale(50%)' : 'none', transition: 'all 0.3s' }}>
         <h3 className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <span>📝 委託需求表單內容</span>
@@ -176,14 +174,14 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         </div>
       </div>
 
-      
-      <div className="section-card" style={{ marginTop: '24px', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+      {/* 🌟 底部操作列 (Action Bar) - 修復手機版按鈕換行與縮放問題 */}
+      <div className="section-card" style={{ marginTop: '24px', backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: 0, display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         
         {selectedInq.status === 'declined' ? (
           <button 
             disabled={isProcessing}
             className="action-btn"
-            style={{ backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3', padding: '14px 24px', fontSize: '15px' }}
+            style={{ flex: '1 1 auto', backgroundColor: '#FFFFFF', color: '#5D4A3E', border: '1px solid #DED9D3', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
             onClick={() => handleRestore(selectedInq.id)}
           >
             {isProcessing ? '處理中...' : '↺ 恢復此委託'}
@@ -195,7 +193,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
                 <button 
                   disabled={isProcessing}
                   className="action-btn"
-                  style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px' }}
+                  style={{ flex: '1 1 auto', minWidth: '120px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
                   onClick={() => handleDeclineGuest(selectedInq.id)}
                 >
                   婉拒 / 取消
@@ -203,7 +201,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
                 <button 
                   disabled={isProcessing}
                   className="action-btn btn-success"
-                  style={{ padding: '14px 24px', fontSize: '15px' }}
+                  style={{ flex: '2 1 auto', minWidth: '200px', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
                   onClick={() => handleConvertToFreeMode(selectedInq.id)}
                 >
                   建立自由模式委託單 ➔
@@ -213,14 +211,14 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
               <>
                 <button 
                   className="action-btn"
-                  style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px' }}
+                  style={{ flex: '1 1 auto', minWidth: '120px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
                   onClick={() => { setSelectedInquiry(selectedInq); setShowDeclineModal(true); }}
                 >
                   婉拒申請
                 </button>
                 <button 
                   className="action-btn btn-primary"
-                  style={{ padding: '14px 24px', fontSize: '15px' }}
+                  style={{ flex: '2 1 auto', minWidth: '160px', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
                   onClick={() => handleEnterInquiryWorkspace(selectedInq.id)}
                 >
                   💬 進入洽談室查看
@@ -231,7 +229,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
         ) : selectedInq.status === 'accepted' ? (
           <button 
             className="action-btn btn-success"
-            style={{ padding: '14px 24px', fontSize: '15px' }}
+            style={{ flex: '1 1 auto', padding: '14px 24px', fontSize: '15px', textAlign: 'center' }}
             onClick={() => handleViewCommission(selectedInq.commission_id)}
           >
             前往查看正式委託單 ➔
