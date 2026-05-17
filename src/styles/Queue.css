@@ -434,3 +434,48 @@ tr.drag-over-target > td {
 .rbc-event-content { 
   padding: 0 4px; 
 }
+
+/* ==========================================================================
+   日曆模式樣式 (React Big Calendar 手機版優化)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .calendar-view-container .rbc-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .calendar-view-container .rbc-toolbar .rbc-toolbar-label {
+    font-size: 16px;
+    margin: 8px 0;
+  }
+
+  .calendar-view-container .rbc-btn-group {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .calendar-view-container .rbc-btn-group button {
+    flex: 1;
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .calendar-view-container .rbc-agenda-view table.rbc-agenda-table {
+    border-collapse: collapse;
+  }
+
+  .calendar-view-container .rbc-agenda-view th {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+
+  .calendar-view-container .rbc-agenda-view td {
+    font-size: 13px;
+    padding: 10px 6px;
+    vertical-align: middle;
+  }
+}

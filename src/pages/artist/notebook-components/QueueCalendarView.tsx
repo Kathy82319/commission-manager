@@ -1,7 +1,7 @@
 // src/pages/artist/notebook-components/QueueCalendarView.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 // @ts-ignore: moment 語系檔缺乏官方 TypeScript 宣告，此處忽略 TS 型別檢查
 import 'moment/locale/zh-tw';
@@ -36,10 +36,20 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
   const [events, setEvents] = useState<CalendarEventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 🌟 手機版偵測邏輯
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
   const [modalMode, setModalMode] = useState<'none' | 'edit_custom' | 'view_commission'>('none');
   const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<Partial<CalendarEventData>>({});
   const [selectedCommission, setSelectedCommission] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 監聽視窗大小改變
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchCalendarEvents = async () => {
     try {
@@ -115,7 +125,8 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         color: 'white',
         display: 'block',
         fontSize: '12px',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        padding: '2px 8px'
       }
     };
   };
@@ -207,12 +218,12 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
   }
 
   return (
-    <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '20px', border: '1px solid #EAE6E1', minHeight: '800px', display: 'flex', flexDirection: 'column' }}>
+    <div className="calendar-view-container" style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: isMobile ? '12px' : '20px', border: '1px solid #EAE6E1', minHeight: '800px', display: 'flex', flexDirection: 'column' }}>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '13px', color: '#7A7269', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', fontSize: '13px', color: '#7A7269', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#5D4A3E', display: 'inline-block' }}></span> {dateColumnLabel}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#4A7294', display: 'inline-block' }}></span> 自訂行程 / 工作期</span>
-        <span style={{ marginLeft: 'auto', fontStyle: 'italic', fontSize: '12px', color: '#A0978D' }}>💡 點擊空白處新增行程，點擊色塊查看與編輯詳情。</span>
+        <span style={{ marginLeft: isMobile ? '0' : 'auto', width: isMobile ? '100%' : 'auto', fontStyle: 'italic', fontSize: '12px', color: '#A0978D' }}>💡 點擊空白處新增行程，點擊色塊查看與編輯詳情。</span>
       </div>
 
       <div style={{ flex: 1 }}>
@@ -222,19 +233,36 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
           startAccessor="start"
           endAccessor="end"
           style={{ height: '800px' }}
-          views={['month', 'week']}
+          // 🌟 核心：電腦版顯示 月/週，手機版顯示 月/待辦清單
+          views={isMobile ? [Views.MONTH, Views.AGENDA] : [Views.MONTH, Views.WEEK]}
           eventPropGetter={eventStyleGetter}
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           selectable
           popup
+          // 🌟 核心：介面全中文化
+          messages={{
+            allDay: '全天',
+            previous: '＜',
+            next: '＞',
+            today: '今天',
+            month: '月',
+            week: '週',
+            day: '日',
+            agenda: '待辦清單',
+            date: '日期',
+            time: '時間',
+            event: '項目',
+            noEventsInRange: '這段期間沒有任何排程。',
+            showMore: total => `+${total} 項`
+          }}
         />
       </div>
 
-      {/* 彈出視窗：新增/編輯 私人行程 */}
+      {/* 新增/編輯 私人行程 Modal */}
       {modalMode === 'edit_custom' && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="fade-in" style={{ background: '#FFF', width: '90%', maxWidth: '400px', borderRadius: '12px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="fade-in" style={{ background: '#FFF', width: '100%', maxWidth: '400px', borderRadius: '12px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}><CalendarIcon size={18} /> {selectedCalendarEvent.id ? '編輯行程' : '新增排程'}</h3>
               <button onClick={() => setModalMode('none')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D' }}><X size={20}/></button>
@@ -247,7 +275,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
                   type="text" 
                   value={selectedCalendarEvent.title || ''} 
                   onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, title: e.target.value})} 
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3', boxSizing: 'border-box' }}
                   placeholder="例如：休假、草稿繪製期..."
                 />
               </div>
@@ -255,11 +283,11 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '6px', display: 'block' }}>開始日期</label>
-                  <input type="date" value={selectedCalendarEvent.start_date || ''} onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, start_date: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3' }} />
+                  <input type="date" value={selectedCalendarEvent.start_date || ''} onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, start_date: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', marginBottom: '6px', display: 'block' }}>結束日期</label>
-                  <input type="date" value={selectedCalendarEvent.end_date || ''} onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, end_date: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3' }} />
+                  <input type="date" value={selectedCalendarEvent.end_date || ''} onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, end_date: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #DED9D3', boxSizing: 'border-box' }} />
                 </div>
               </div>
 
@@ -281,7 +309,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
                 <select 
                   value={selectedCalendarEvent.linked_commission_id || ''} 
                   onChange={e => setSelectedCalendarEvent({...selectedCalendarEvent, linked_commission_id: e.target.value})}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #DED9D3', background: '#FFF' }}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #DED9D3', background: '#FFF', boxSizing: 'border-box' }}
                 >
                   <option value="">-- 不關聯任何委託單 --</option>
                   {commissions.filter(c => c.status !== 'completed' && c.status !== 'cancelled').map(c => (
@@ -292,12 +320,12 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
                 {selectedCalendarEvent.id ? (
-                  <button onClick={handleDeleteCustomEvent} disabled={isSaving} style={{ background: 'none', border: '1px solid #FECACA', color: '#C04B4B', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Trash2 size={16}/> 刪除</button>
+                  <button onClick={handleDeleteCustomEvent} disabled={isSaving} style={{ background: 'none', border: '1px solid #FECACA', color: '#C04B4B', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}><Trash2 size={16}/> 刪除</button>
                 ) : <div></div>}
                 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setModalMode('none')} style={{ background: '#F1F5F9', border: 'none', color: '#64748B', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>取消</button>
-                  <button onClick={handleSaveCustomEvent} disabled={isSaving} style={{ background: '#5D4A3E', border: 'none', color: 'white', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>{isSaving ? '儲存中...' : '儲存行程'}</button>
+                  <button onClick={() => setModalMode('none')} style={{ background: '#F1F5F9', border: 'none', color: '#64748B', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>取消</button>
+                  <button onClick={handleSaveCustomEvent} disabled={isSaving} style={{ background: '#5D4A3E', border: 'none', color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>{isSaving ? '儲存中...' : '儲存行程'}</button>
                 </div>
               </div>
             </div>
@@ -305,12 +333,11 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         </div>
       )}
 
-      {/* 彈出視窗：檢視 委託單詳細資訊 (可直接修改日期) */}
+      {/* 檢視 委託單詳細資訊 Modal */}
       {modalMode === 'view_commission' && selectedCommission && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="fade-in" style={{ background: '#FFF', width: '90%', maxWidth: '400px', borderRadius: '16px', padding: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="fade-in" style={{ background: '#FFF', width: '100%', maxWidth: '400px', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}>
             
-            {/* 黑名單提醒 */}
             {selectedCommission.client_custom_label === '黑名單' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#EF4444', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: 'bold' }}>
                 <AlertCircle size={16} /> ⚠️ 提醒：此委託人已被您列入黑名單
@@ -320,33 +347,29 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                   {/* 來源標籤 */}
                    {(() => {
                      const origin = getOrderOriginInfo(selectedCommission);
                      return origin && (
                        <span style={{ fontSize: '11px', backgroundColor: origin.color, color: '#FFF', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>{origin.label}</span>
                      );
                    })()}
-                   {/* 急單標籤 */}
                    {(selectedCommission.is_rush === '是' || selectedCommission.is_rush === 1 || selectedCommission.is_rush === '1') && (
                      <span style={{ fontSize: '11px', backgroundColor: '#FFF1F2', color: '#E11D48', border: '1px solid #FDA4AF', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>[急單]</span>
                    )}
                 </div>
-                <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px', lineHeight: '1.4' }}>{selectedCommission.client_custom_title || selectedCommission.project_name || '未命名項目'}</h3>
+                <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '18px', lineHeight: '1.4' }}>{selectedCommission.client_custom_title || selectedCommission.project_name || '未命名項目'}</h3>
               </div>
               <button onClick={() => setModalMode('none')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: '4px' }}><X size={24}/></button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: '#5D4A3E', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: '#5D4A3E', marginBottom: '24px' }}>
               
-              {/* 委託人完整資訊 */}
               <div>
                 <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '4px' }}>委託人資訊</div>
                 <div style={{ fontWeight: 'bold' }}>{selectedCommission.client_name || '(未綁定)'} {selectedCommission.contact_memo && <span style={{ fontWeight: 'normal', color: '#7A7269' }}>({selectedCommission.contact_memo})</span>}</div>
-                <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#B4ADA5', marginTop: '2px' }}>ID: {selectedCommission.client_public_id || '未綁定'} / No: {selectedCommission.id.split('-')[1] || selectedCommission.id}</div>
+                <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#B4ADA5', marginTop: '2px' }}>ID: {selectedCommission.client_public_id || '未綁定'}</div>
               </div>
 
-              {/* 日曆中直接修改日期 */}
               <div>
                 <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '4px' }}>{dateColumnLabel}</div>
                 <input 
@@ -357,11 +380,10 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
                     await handleUpdateField(selectedCommission.id, 'end_date', newVal);
                     setSelectedCommission({ ...selectedCommission, end_date: newVal });
                   }}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EAE6E1', fontSize: '14px', color: '#5D4A3E', backgroundColor: '#FDFDFB' }} 
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #EAE6E1', fontSize: '14px', color: '#5D4A3E', backgroundColor: '#FDFDFB', boxSizing: 'border-box' }} 
                 />
               </div>
 
-              {/* 付款進度 */}
               <div>
                 <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '4px' }}>付款與狀態</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -387,13 +409,13 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
             <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 onClick={() => setModalMode('none')}
-                style={{ flex: 1, background: '#F1F5F9', border: 'none', color: '#64748B', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ flex: 1, background: '#F1F5F9', border: 'none', color: '#64748B', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
               >
                 關閉
               </button>
               <button 
                 onClick={() => navigate(`/artist/notebook?id=${selectedCommission.id}`)}
-                style={{ flex: 2, background: '#5D4A3E', border: 'none', color: 'white', padding: '14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ flex: 2, background: '#5D4A3E', border: 'none', color: 'white', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '13px' }}
               >
                 進入單據管理 ➔
               </button>
