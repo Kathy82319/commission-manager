@@ -1,6 +1,7 @@
 // src/pages/Inbox/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import { useNavigate, useSearchParams } from 'react-router-dom'; 
 import { apiClient } from '../../api/client';
 import '../../styles/Inbox.css';
 
@@ -24,6 +25,7 @@ const formatShortTime = (dateStr: string) => {
 
 export const Inbox: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
@@ -103,6 +105,24 @@ export const Inbox: React.FC = () => {
   };
 
   useEffect(() => { fetchInbox(); }, []);
+
+useEffect(() => {
+    const typeParam = searchParams.get('type');
+    const idParam = searchParams.get('id');
+    
+    if (typeParam && idParam) {
+      setSelectedItem({ type: typeParam, id: idParam });
+      
+      // 同步把左側對應的資料夾展開
+      setExpandedGroups(prev => {
+        const newSet = new Set(prev);
+        if (typeParam === 'bulletin') newSet.add('wishes');
+        if (typeParam === 'direct') newSet.add('inbound');
+        if (typeParam === 'outbound') newSet.add('outbound');
+        return newSet;
+      });
+    }
+  }, [searchParams]);
 
   const toggleGroup = (group: string) => {
     setExpandedGroups(prev => {
