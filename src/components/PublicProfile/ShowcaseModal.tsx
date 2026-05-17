@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { X } from 'lucide-react';
+import './styles/ShowcaseModal.css';
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return '';

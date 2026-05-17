@@ -1,6 +1,8 @@
 // src/components/PublicProfile/ProfileSidebar.tsx
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
 import { Globe, User, Heart, Ban } from 'lucide-react';
+import './styles/ProfileSidebar.css';
+
 
 const getSocialIcon = (platform: string) => {
   const size = 18;

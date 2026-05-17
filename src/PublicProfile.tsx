@@ -8,8 +8,7 @@ import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
 import './styles/PublicProfile.css'; // 保留全局框架與開場動畫
 import './components/PublicProfile/styles/ShowcaseGrid.css'; // 載入主畫面與瀑布流
-import './styles/ProfileSidebar.css'; // 側邊欄專用
-import './styles/ShowcaseModal.css'; // 彈窗與 Lightbox 專用
+
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return ''; 
