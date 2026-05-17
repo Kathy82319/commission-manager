@@ -360,11 +360,6 @@ ALTER TABLE ShowcaseItems ADD COLUMN current_orders_count INTEGER DEFAULT 0;
  ALTER TABLE Commissions ADD COLUMN latest_message_at DATETIME DEFAULT NULL;
 
 
-
--- ==========================================
--- 5/16後新增的資料庫(正式機還沒有)
--- ==========================================
-
 CREATE TABLE oc_cards (
     id TEXT PRIMARY KEY,                  
     user_id TEXT NOT NULL,               

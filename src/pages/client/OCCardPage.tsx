@@ -1,6 +1,6 @@
 // src/pages/client/OCCardPage.tsx
 import { useState, useEffect, useRef } from 'react';
-import { Plus, ChevronLeft, Trash2 } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, X } from 'lucide-react'; // 🌟 新增引入 X 圖示
 import { OCDashedInput } from '../../components/OC/OCDashedInput';
 import { OCTagInput } from '../../components/OC/OCTagInput';
 import { OCImageManager } from '../../components/OC/OCImageManager';
@@ -118,28 +118,72 @@ export function OCCardPage() {
 
   const selectedOC = ocList.find(oc => oc.id === selectedId);
 
+  // 🌟 修正後的 ColorField，加入移除色票功能
   const ColorField = ({ label, descFieldName, colorFieldName, value, colors, maxColors = 3 }: any) => {
     return (
       <div>
         <div className="oc-field-label">{label}</div>
         <div className="oc-color-group">
           <div style={{ flex: 1, minWidth: '160px' }}>
-            
             <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {Array.from({ length: maxColors }).map((_, i) => {
               const color = colors[i] || '';
               return (
-                <div key={i} style={{ position: 'relative' }}>
-                  <input type="color" value={color || '#FFFFFF'}
+                <div key={i} style={{ position: 'relative', width: '32px', height: '32px' }}>
+                  {/* 顏色選擇器 */}
+                  <input 
+                    type="color" 
+                    value={color || '#FFFFFF'}
                     onChange={(e) => {
-                      const newColors = [...colors]; newColors[i] = e.target.value;
+                      const newColors = [...colors]; 
+                      // 確保即使原本陣列長度不夠，也能對應位置塞入顏色
+                      while (newColors.length <= i) newColors.push('');
+                      newColors[i] = e.target.value;
                       handleSaveOC({ [colorFieldName]: newColors });
                     }}
-                    className="oc-color-picker" style={{ opacity: color ? 1 : 0.4 }} title="點擊選擇代表色"
+                    className="oc-color-picker" 
+                    style={{ 
+                      width: '100%', height: '100%', border: 'none', padding: 0, 
+                      cursor: 'pointer', borderRadius: '6px', overflow: 'hidden',
+                      opacity: color ? 1 : 0.4, transition: 'all 0.2s',
+                      backgroundColor: color || '#FFF'
+                    }} 
+                    title={color ? '點擊更改顏色' : '點擊新增顏色'}
                   />
+                  
+                  {/* 未選色時顯示加號 */}
                   {!color && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', color: '#A0978D', fontSize: '18px', fontWeight: 'bold' }}>+</div>}
+                  
+                  {/* 🌟 已選色時顯示移除 (X) 按鈕 */}
+                  {color && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // 建立新陣列，將該位置的顏色清空 (設為空字串)，保持陣列長度不變以防順序亂掉
+                        const newColors = [...colors];
+                        newColors[i] = ''; 
+                        
+                        // 移除陣列末端多餘的空字串，保持資料庫乾淨
+                        while(newColors.length > 0 && newColors[newColors.length - 1] === '') {
+                          newColors.pop();
+                        }
+                        
+                        handleSaveOC({ [colorFieldName]: newColors });
+                      }}
+                      style={{
+                        position: 'absolute', top: '-6px', right: '-6px', 
+                        width: '16px', height: '16px', borderRadius: '50%', 
+                        backgroundColor: '#EF4444', color: '#FFF', border: 'none', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', padding: 0
+                      }}
+                      title="移除此色票"
+                    >
+                      <X size={10} strokeWidth={3} />
+                    </button>
+                  )}
                 </div>
               );
             })}
