@@ -202,7 +202,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
 
       
       {isModal && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingRight: '40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', paddingRight: '40px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>建立新委託單</h2>
             {quotaInfo?.plan_type === 'free' && <span style={{ fontSize: '12px', color: '#7A7269' }}>本月額度：{quotaInfo.used_quota} / {quotaInfo.max_quota} 筆</span>}

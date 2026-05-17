@@ -32,14 +32,17 @@
 .plan-badge.trial { background-color: #FDF4E6; color: #A67B3E; }
 .plan-badge.free { background-color: #F4F0EB; color: #7A7269; }
 
+/* 🌟 核心修正：加入 flex-wrap nowrap 確保按鈕不換行 */
 .mode-toggle-group {
   display: flex;
   background-color: #EAE6E1;
   padding: 4px;
   border-radius: 10px;
   width: fit-content;
+  flex-wrap: nowrap;
 }
 
+/* 🌟 核心修正：強制按鈕文字白話 nowrap */
 .mode-btn {
   padding: 8px 20px;
   border: none;
@@ -50,6 +53,7 @@
   transition: all 0.2s ease;
   background-color: transparent;
   color: #A0978D;
+  white-space: nowrap; 
 }
 
 .mode-btn.active {
