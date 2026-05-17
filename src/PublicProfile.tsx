@@ -326,7 +326,7 @@ export function PublicProfile() {
         }
       `}</style>
 
-      <div className="profile-top-right-actions" style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
+      <div className="profile-top-right-actions" style={{ position: 'absolute', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
         {isLoggedIn ? (
           <>
             <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>回到管理後台</button>
