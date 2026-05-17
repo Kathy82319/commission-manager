@@ -20,12 +20,19 @@
   min-height: 100vh;
 }
 
-/* 🌟 新增：確保右側主內容區塊可以撐滿剩餘空間，解決白底問題 */
+/* 🌟 核心：確保右側主內容區塊可以撐滿剩餘空間，解決白底問題 */
 .profile-main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0; /* 防止子層內容過寬撐破版面 */
+}
+
+/* 🌟 新增：手機版簡介與圖片區塊更靠近 */
+@media (max-width: 768px) {
+  .profile-bio {
+    margin-top: 8px !important; /* 🌟 縮小與上方的間距 */
+  }
 }
 
 @media (max-width: 1100px) {
@@ -52,15 +59,6 @@
   .profile-top-right-actions button {
     padding: 6px 12px !important;
     font-size: 12px !important;
-  }
-.profile-bio {
-    text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 3; 
-    line-clamp: 3;         
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
