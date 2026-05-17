@@ -8,17 +8,17 @@
   position: sticky; 
   top: 0;
   height: 100vh;
-  box-sizing: border-box; /* 🌟 確保 padding 不會讓高度爆掉 */
+  box-sizing: border-box; /* 確保內距計算不會撐破固定高度 */
   box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
-  
-  /* 🌟 讓側邊欄可以獨立滾動，並隱藏捲軸 */
+
+  /* 🌟 電腦版側邊欄內容過長時可獨立滾動，並對外隱藏捲軸 */
   overflow-y: auto; 
   scrollbar-width: none; 
   -ms-overflow-style: none; 
 }
 
-/* 🌟 隱藏 Chrome, Safari 的捲軸 */
+/* 🌟 隱藏 Chrome, Safari 的網頁捲軸 */
 .profile-sidebar::-webkit-scrollbar {
   display: none;
 }
@@ -146,7 +146,7 @@
     height: auto; 
     position: relative; 
     padding-top: 60px;
-    overflow-y: visible; /* 手機版不需要側邊欄獨立滾動 */
+    overflow-y: visible; /* 當橫向或堆疊排版時，關閉獨立滾動 */
   }
   .sidebar-top { align-items: center; text-align: center; } 
   .social-links { justify-content: center; }
@@ -208,7 +208,58 @@
 
   .social-icon { width: 32px; height: 32px; }
   .sidebar-bottom { padding: 12px 24px 0px 24px !important; } 
-  .bio-section { margin-bottom: 16px; }
+  
+  /* 🌟 手機版簡介外層排版佈局 */
+  .bio-section {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* 🌟 手機版：限制 3 行、加上漸層透明淡化遮罩 */
+  .profile-bio.clamped {
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    /* 使用遮罩進行底部純透明淡出，完美融入任何動態背景色 */
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  }
+
+  /* 🌟 點擊展開時釋放所有限制與遮罩 */
+  .profile-bio.expanded {
+    text-align: left;
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  /* 🌟 展開/收合的小按鈕樣式 */
+  .bio-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 0;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s;
+  }
+
+  .bio-toggle-btn:hover {
+    text-decoration: underline;
+  }
 
   .sidebar-nav {
     display: flex;

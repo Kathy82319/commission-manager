@@ -1,8 +1,7 @@
-// src/components/PublicProfile/ProfileSidebar.tsx
+import { useState, useRef, useEffect } from 'react';
 import { SiFacebook, SiX, SiInstagram, SiThreads, SiPlurk } from '@icons-pack/react-simple-icons';
-import { Globe, User, Heart, Ban } from 'lucide-react';
+import { Globe, User, Heart, Ban, ChevronDown, ChevronUp } from 'lucide-react';
 import './styles/ProfileSidebar.css';
-
 
 const getSocialIcon = (platform: string) => {
   const size = 18;
@@ -35,6 +34,21 @@ export function ProfileSidebar({
   currentTab, onTabChange, viewerId, relationStatus, 
   isViewerLoading, onToggleRelation
 }: ProfileSidebarProps) {
+  
+  // 🌟 控制簡介展開狀態
+  const [isExpanded, setIsExpanded] = useState(false);
+  // 🌟 控制是否需要顯示展開按鈕（只有超過 3 行才顯示）
+  const [showMoreBtn, setShowMoreBtn] = useState(false);
+  const bioRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (bioRef.current) {
+      // 偵測簡介的原始渲染高度是否大於容器可視高度
+      const isOverflow = bioRef.current.scrollHeight > bioRef.current.clientHeight;
+      setShowMoreBtn(isOverflow);
+    }
+  }, [artist.bio]); // 當簡介變更時重新計算
+
   return (
     <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
       <div className="sidebar-top">
@@ -58,7 +72,6 @@ export function ProfileSidebar({
             ))}
           </div>
 
-          
           {!isViewerLoading && viewerId !== artist?.id && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
               <button 
@@ -83,9 +96,29 @@ export function ProfileSidebar({
 
       <div className="sidebar-bottom">
         <div className="bio-section">
-          <p className="profile-bio" style={{ color: textColor }}>
+          {/* 🌟 動態綁定 class 與 ref */}
+          <p 
+            ref={bioRef}
+            className={`profile-bio ${!isExpanded ? 'clamped' : 'expanded'}`} 
+            style={{ color: textColor }}
+          >
             {artist.bio || '這名用戶還沒有寫下簡介。'}
           </p>
+          
+          {/* 🌟 展開/收合按鈕 */}
+          {showMoreBtn && (
+            <button 
+              className="bio-toggle-btn" 
+              onClick={() => setIsExpanded(!isExpanded)}
+              style={{ color: textColor, opacity: 0.8 }}
+            >
+              {isExpanded ? (
+                <><ChevronUp size={14} /> 收合簡介</>
+              ) : (
+                <><ChevronDown size={14} /> 展開全部</>
+              )}
+            </button>
+          )}
         </div>
 
         <nav className="sidebar-nav">
@@ -95,8 +128,6 @@ export function ProfileSidebar({
             </button>
           ))}
         </nav>
-
-        
       </div>
     </aside>
   );
