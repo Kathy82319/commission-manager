@@ -151,12 +151,11 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
 
-
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
             {canDecline && (
               <button 
                 onClick={() => setShowDeclineModal(true)}
-                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
+                style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
               >
@@ -166,7 +165,7 @@ export const CardView: React.FC<CardViewProps> = ({
             {inquiry.inquiry_status === 'pending' && (
               <button 
                 onClick={() => handleDirectInvite(inquiry)}
-                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
+                style={{ flex: '2 1 auto', minWidth: '120px', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3B5D7A'}
                 onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4A7294'}
               >
@@ -193,22 +192,24 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
       </div>
 
-      
+      {/* 🌟 彈窗修復：允許整個 Modal 垂直滾動，移除寫死的高度限制 */}
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
           <div 
-            className="inbox-modal-content" 
+            className="inbox-modal-content custom-scrollbar" 
             onClick={stopPropagation} 
             style={{ 
               maxWidth: '900px', width: '100%', padding: '0', 
               display: 'flex', flexWrap: 'wrap', 
-              maxHeight: '90vh', overflow: 'hidden', borderRadius: '16px' 
+              maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden', borderRadius: '16px',
+              backgroundColor: '#FFFFFF'
             }}
           >
-            <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '250px', maxHeight: '40vh' }}>
+            {/* 🌟 圖片區塊：不再限制 40vh，改用 minHeight 確保空間，並讓它隨文字自然延展 */}
+            <div style={{ flex: '1 1 350px', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
               {validImages.length > 0 ? (
                 <>
-                  <img src={validImages[imgIdx]} alt="放大檢視" style={{ width: '100%', height: '100%', objectFit: 'contain' }} referrerPolicy="no-referrer" />
+                  <img src={validImages[imgIdx]} alt="放大檢視" style={{ width: '100%', height: '100%', maxHeight: '50vh', objectFit: 'contain' }} referrerPolicy="no-referrer" />
                   {validImages.length > 1 && (
                     <>
                       <button onClick={prevImg} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>❮</button>
@@ -226,8 +227,10 @@ export const CardView: React.FC<CardViewProps> = ({
               )}
             </div>
             
-            <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', maxHeight: '50vh' }}>
-              <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            {/* 🌟 文字區塊：移除 maxHeight 限制，與圖片區塊一起自然撐開 */}
+            <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
+              {/* 讓標頭 Sticky 貼頂，這樣往下滑時也能點選關閉 */}
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 10 }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <img src={avatarUrl || ''} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none', border: '1px solid #EAE6E1' }} />
                   <div>
@@ -241,7 +244,7 @@ export const CardView: React.FC<CardViewProps> = ({
                 <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: '4px' }}><X size={24} /></button>
               </div>
               
-              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, boxSizing: 'border-box' }} className="custom-scrollbar">
+              <div style={{ padding: '24px', boxSizing: 'border-box' }}>
                 {(snapshot.specialties || snapshot.no_gos) && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#7A7269', borderBottom: '2px solid #EAE6E1', paddingBottom: '8px', marginBottom: '16px' }}>個人設定 / 偏好</h3>
