@@ -278,8 +278,9 @@ export const commController = {
       return createJsonResponse({ success: false, error: "無權限查看進度" }, 403, corsHeaders);
     }
 
-    let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
-    const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
+    // 🚀 修正 1：使用 datetime(created_at) 進行排序
+    let { results: logs } = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
+    const { results: submissions } = await env.commission_db.prepare("SELECT * FROM Submissions WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
     
     if (logs.length === 0 && comm.origin_source) {
       try {
@@ -289,8 +290,9 @@ export const commController = {
           let orderTime = orderDateStr ? new Date(orderDateStr.replace(' ', 'T')).getTime() : Date.now();
           if (isNaN(orderTime)) orderTime = Date.now();
           
-          const clientSignTime = new Date(orderTime).toISOString();
-          const artistCreateTime = new Date(orderTime - 15 * 60 * 1000).toISOString();
+          // 🚀 修正 2：統一產生的時間格式為 'YYYY-MM-DD HH:MM:SS'
+          const clientSignTime = new Date(orderTime).toISOString().replace('T', ' ').substring(0, 19);
+          const artistCreateTime = new Date(orderTime - 15 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19);
           
           let artistContent = '繪師已正式提出合作協議與委託規格草案';
           let clientContent = '委託人已同意委託協議並完成綁定訂單';
@@ -305,7 +307,8 @@ export const commController = {
             env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content, created_at) VALUES (?, ?, 'client', 'bind', ?, ?)").bind(crypto.randomUUID(), id, clientContent, clientSignTime)
           ]);
           
-          const reFetch = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY created_at DESC").bind(id).all();
+          // 🚀 修正 3：同樣使用 datetime() 重新抓取
+          const reFetch = await env.commission_db.prepare("SELECT * FROM ActionLogs WHERE commission_id = ? ORDER BY datetime(created_at) DESC").bind(id).all();
           logs = reFetch.results;
         }
       } catch (e) {
