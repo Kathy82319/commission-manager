@@ -104,3 +104,38 @@
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   處理 Rich Text (富文本) 從外部貼上導致的破版與顯示問題
+   ========================================================================== */
+
+.rich-text-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word; 
+  word-wrap: break-word;
+  word-break: break-word; 
+  
+  line-height: 1.8; 
+}
+
+.rich-text-content img,
+.rich-text-content video,
+.rich-text-content iframe {
+  max-width: 100% !important; 
+  height: auto !important;   
+  object-fit: contain;
+}
+
+
+.rich-text-content pre,
+.rich-text-content table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.rich-text-content p {
+  margin-bottom: 1em;
+}
+
