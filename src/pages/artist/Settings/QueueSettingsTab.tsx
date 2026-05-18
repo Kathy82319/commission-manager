@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { X } from 'lucide-react'; // 引入關閉圖示
 
 const customQuillModules = {
   toolbar: [
@@ -28,8 +29,22 @@ export interface QueueSettings {
   snapshot_data?: any[];
 }
 
+// 輔助函式：遮蔽名稱
+const getMaskedName = (name: string) => {
+  if (!name) return '匿名委託';
+  const len = name.length;
+  if (len <= 1) return name;
+  if (len === 2) return name[0] + '*';
+  return name[0] + '*'.repeat(len - 2) + name[len - 1];
+};
+
 export function QueueSettingsTab({ settings, setSettings }: any) {
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any[] | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'preview' | 'view'>('preview'); 
+  
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
   const qs: QueueSettings = settings.queue_settings || {
@@ -47,9 +62,61 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     setSettings({ ...settings, queue_settings: { ...qs, [field]: val } });
   };
 
-  const handlePublishSnapshot = async () => {
-    if (!window.confirm('確定要發佈當前的排單表快照到公開頁面嗎？\n(前台將以您目前設定的隱私顯示範圍進行快照)')) return;
-    
+  // 點擊「發佈快照」-> 先獲取目前實時訂單並產生預覽
+  const handleOpenPreview = async () => {
+    setIsLoadingPreview(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/commissions`, { credentials: 'include' });
+      const data = await res.json();
+      
+      if (data.success) {
+        // 1. 過濾與排序
+        let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
+        const customOrder = qs.custom_order || [];
+        
+        if (customOrder.length > 0) {
+          liveList.sort((a: any, b: any) => {
+            const idxA = customOrder.indexOf(a.id);
+            const idxB = customOrder.indexOf(b.id);
+            const timeA = new Date(a.order_date || 0).getTime();
+            const timeB = new Date(b.order_date || 0).getTime();
+            if (idxA === -1 && idxB === -1) return timeA - timeB;
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+          });
+        } else {
+          liveList.sort((a: any, b: any) => new Date(a.order_date || 0).getTime() - new Date(b.order_date || 0).getTime());
+        }
+
+        // 2. 依照目前前端設定進行遮蔽 (Masking)
+        const previewMasked = liveList.map((order: any) => ({
+          id: order.id,
+          queue_status: order.queue_status || '處理中',
+          end_date: order.end_date, 
+          order_date: order.order_date,
+          contact_memo: qs.show_client_name ? (order.contact_memo || '匿名委託') : getMaskedName(order.contact_memo),
+          client_public_id: qs.show_client_id ? order.client_public_id : null,
+          project_name: qs.show_project_name ? (order.project_name || '私人委託項目') : '私人委託項目',
+          artist_note: qs.show_artist_note ? order.artist_note : null,
+        }));
+
+        setPreviewData(previewMasked);
+        setModalMode('preview');
+        setIsModalOpen(true);
+      } else {
+        alert("無法獲取排單資料進行預覽。");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("網路錯誤，無法產生預覽。");
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  // 在預覽 Modal 點擊「確認發佈」
+  const handleConfirmPublish = async () => {
     setIsPublishing(true);
     try {
       const res = await fetch(`${API_BASE}/api/queue/snapshot`, {
@@ -63,6 +130,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       if (data.success) {
         update('last_snapshot_at', data.last_snapshot_at);
         update('snapshot_data', data.snapshot_data);
+        setIsModalOpen(false);
         alert('✅ 快照發佈成功！公開頁面已更新。');
       } else {
         alert(`發佈失敗：${data.error || '未知錯誤'}`);
@@ -73,6 +141,47 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  // 點擊下方縮圖展開觀看已發佈的快照
+  const handleViewPublishedSnapshot = () => {
+    setPreviewData(qs.snapshot_data || []);
+    setModalMode('view');
+    setIsModalOpen(true);
+  };
+
+  // 共用的排單表渲染元件 (用於預覽、縮圖與全螢幕觀看)
+  const renderQueueTable = (data: any[], isThumbnail = false) => {
+    if (!data || data.length === 0) {
+      return <div style={{ padding: '20px', textAlign: 'center', color: '#7A7269' }}>目前沒有進行中的排單資料</div>;
+    }
+    return (
+      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: isThumbnail ? '14px' : '15px', color: '#5D4A3E', background: '#FFF' }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid #DED9D3', background: '#F4F0EB' }}>
+            <th style={{ padding: '12px' }}>委託人</th>
+            <th style={{ padding: '12px' }}>項目名稱</th>
+            <th style={{ padding: '12px' }}>當前進度</th>
+            <th style={{ padding: '12px' }}>{qs.date_column_label || '預計開始日'}</th>
+            {qs.show_artist_note && <th style={{ padding: '12px' }}>備註</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((order, idx) => (
+            <tr key={order.id || idx} style={{ borderBottom: '1px solid #E5E0DA' }}>
+              <td style={{ padding: '12px' }}>
+                <div style={{ fontWeight: 'bold' }}>{order.contact_memo || '匿名委託'}</div>
+                {order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
+              </td>
+              <td style={{ padding: '12px' }}>{order.project_name || '私人委託項目'}</td>
+              <td style={{ padding: '12px' }}><span style={{ padding: '4px 8px', background: '#E8F3EB', color: '#4E7A5A', borderRadius: '4px', fontSize: '13px' }}>{order.queue_status || '處理中'}</span></td>
+              <td style={{ padding: '12px', opacity: 0.8 }}>{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</td>
+              {qs.show_artist_note && <td style={{ padding: '12px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   return (
@@ -94,6 +203,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       {qs.enabled && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* 排單規則設定區塊 */}
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h4 style={{ margin: 0, color: '#5D4A3E', fontSize: '15px' }}>排單規則說明</h4>
@@ -119,6 +229,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             )}
           </div>
 
+          {/* 隱私控制區塊 */}
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px', marginBottom: '16px' }}>顯示範圍控制 (隱私設定)</h4>
 
@@ -157,6 +268,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             </div>
           </div>
 
+          {/* 快照發佈區塊 */}
           <div style={{ background: '#FDF4E6', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ flex: 1, minWidth: '200px' }}>
@@ -167,27 +279,80 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 </p>
               </div>
               <button 
-                onClick={handlePublishSnapshot}
-                disabled={isPublishing}
-                style={{ backgroundColor: isPublishing ? '#A0978D' : '#5D4A3E', color: '#FFF', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: isPublishing ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                onClick={handleOpenPreview}
+                disabled={isLoadingPreview}
+                style={{ backgroundColor: isLoadingPreview ? '#A0978D' : '#5D4A3E', color: '#FFF', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: isLoadingPreview ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                {isPublishing ? '發佈中...' : '發佈當前快照'}
+                {isLoadingPreview ? '產生預覽中...' : '預覽並發佈快照'}
               </button>
             </div>
 
-            {qs.last_snapshot_at && (
-              <div style={{ marginTop: '20px', borderTop: '1px dashed #DED9D3', paddingTop: '20px' }}>
+            {/* 快照縮圖展示 */}
+            {qs.last_snapshot_at && qs.snapshot_data && (
+              <div style={{ marginTop: '24px', borderTop: '1px dashed #DED9D3', paddingTop: '20px' }}>
                 <p style={{ fontSize: '13px', color: '#7A7269', marginBottom: '12px', fontWeight: 'bold' }}>
                   最後發佈時間：{new Date(qs.last_snapshot_at).toLocaleString()}
                 </p>
-                <div 
-                  className="snapshot-thumbnail" 
-                  style={{ width: '150px', height: '100px', backgroundColor: '#FFF', border: '1px solid #DED9D3', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#A0978D', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
-                  onClick={() => alert("快照預覽功能開發中。您的快照已成功在個人頁面上線！")}
-                >
-                  <span style={{ fontSize: '24px', marginBottom: '4px' }}>📊</span>
-                  <span style={{ fontSize: '12px' }}>共 {qs.snapshot_data?.length || 0} 筆委託</span>
+                <div style={{ display: 'inline-block' }}>
+                  {/* 利用 CSS Transform Scale 來製作偽圖片縮圖 */}
+                  <div 
+                    onClick={handleViewPublishedSnapshot}
+                    style={{ position: 'relative', width: '280px', height: '160px', overflow: 'hidden', border: '2px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', background: '#FFF', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}
+                    title="點擊放大觀看已發佈的排單表"
+                  >
+                    <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '800px', pointerEvents: 'none' }}>
+                      {renderQueueTable(qs.snapshot_data, true)}
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(255,255,255,0.9), transparent)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '12px' }}>
+                      <span style={{ background: 'rgba(0,0,0,0.6)', color: '#FFF', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>🔍 點擊放大預覽</span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: 用於發佈前預覽 或 觀看已發佈的快照 */}
+      {isModalOpen && previewData && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px' }} onClick={() => !isPublishing && setIsModalOpen(false)}>
+          <div style={{ width: '100%', maxWidth: '900px', background: '#FDF4E6', padding: '24px', borderRadius: '12px', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #DED9D3', paddingBottom: '16px', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px' }}>
+                {modalMode === 'preview' ? '即將發佈的排單表預覽' : '已發佈的排單表快照'}
+              </h2>
+              <button disabled={isPublishing} onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: isPublishing ? 'not-allowed' : 'pointer', color: '#5D4A3E' }}>
+                <X size={28} />
+              </button>
+            </div>
+
+            {modalMode === 'preview' && (
+              <div style={{ marginBottom: '20px', padding: '12px', background: '#FEF3C7', color: '#92400E', borderRadius: '8px', fontSize: '14px', border: '1px solid #F59E0B' }}>
+                <strong>預覽確認：</strong> 請確認下方資料的隱藏狀態是否正確。點擊確認發佈後，此快照將公開顯示於您的個人頁面。
+              </div>
+            )}
+
+            <div style={{ overflowX: 'auto', background: '#FFF', borderRadius: '8px', border: '1px solid #DED9D3' }}>
+              {renderQueueTable(previewData)}
+            </div>
+
+            {modalMode === 'preview' && (
+              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isPublishing}
+                  style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #DED9D3', background: '#FFF', color: '#5D4A3E', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={handleConfirmPublish}
+                  disabled={isPublishing}
+                  style={{ padding: '10px 24px', borderRadius: '6px', border: 'none', background: '#8CB369', color: '#FFF', fontWeight: 'bold', cursor: isPublishing ? 'not-allowed' : 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                >
+                  {isPublishing ? '發佈中...' : '確認發佈'}
+                </button>
               </div>
             )}
           </div>
