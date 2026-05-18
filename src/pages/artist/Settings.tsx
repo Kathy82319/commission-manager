@@ -98,9 +98,10 @@ export function Settings() {
     splash_duration: 2, 
     splash_text: '',
     layout_type: 'blog', 
-    background_color: '#F4F0EB', 
-    gradient_direction: 'to bottom right',
-    theme_mode: 'dark',
+    // 將預設值改為空字串，避免使用者未操作時被當成有效設定存入 DB
+    background_color: '', 
+    gradient_direction: '',
+    theme_mode: '',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },

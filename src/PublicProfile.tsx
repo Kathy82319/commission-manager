@@ -75,14 +75,9 @@ export function PublicProfile() {
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      // 這裡將 backgroundColor 作為實體底色，徹底阻擋 index.css 透出
-      return { 
-        backgroundColor: baseColor,
-        backgroundImage: `linear-gradient(${direction}, ${baseColor}, #00000015)`, 
-        backgroundAttachment: 'fixed' 
-      };
+      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)`, backgroundAttachment: 'fixed' };
     }
-    return { backgroundColor: baseColor, backgroundAttachment: 'fixed' };
+    return { background: baseColor, backgroundAttachment: 'fixed' };
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {
