@@ -94,8 +94,10 @@ export function ClientLayout() {
   };
 
   const handleOpenNotifMenu = async () => {
-    // 【修改處】當使用者點擊鈴鐺時，順便向 OS 請求通知權限以解鎖 Badge 功能
-    if ('Notification' in window && Notification.permission === 'default') {
+    // 【修改處】加入手機版偵測邏輯，只在手機或小螢幕裝置上請求權限
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
+    if (isMobile && 'Notification' in window && Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
       } catch (err) {

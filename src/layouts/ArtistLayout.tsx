@@ -63,7 +63,6 @@ export function ArtistLayout() {
 
   // 監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
   useEffect(() => {
-    // 必須先確認使用者有授權通知，OS 才會允許顯示 Badge (特別是 iOS)
     if ('setAppBadge' in navigator && 'Notification' in window && Notification.permission === 'granted') {
       try {
         if (unreadCount > 0) {
@@ -117,8 +116,10 @@ export function ArtistLayout() {
   };
 
   const handleOpenNotifMenu = async () => {
-    // 【修改處】當使用者點擊鈴鐺時，順便向 OS 請求通知權限以解鎖 Badge 功能
-    if ('Notification' in window && Notification.permission === 'default') {
+    // 【修改處】加入手機版偵測邏輯，只在手機或小螢幕裝置上請求權限
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
+    if (isMobile && 'Notification' in window && Notification.permission === 'default') {
       try {
         await Notification.requestPermission();
       } catch (err) {
