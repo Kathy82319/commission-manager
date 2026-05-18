@@ -669,7 +669,7 @@ export function Queue() {
       )}
 
       {isQuoteModalOpen && (
-        <div className="quote-modal-overlay" onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px', cursor: 'default' }}>
+        <div className="quote-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px', cursor: 'default' }}>
           <div className="quote-modal-content" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '800px', background: '#FAFAFA', padding: '24px', borderRadius: '12px', position: 'relative', cursor: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             <button onClick={() => setIsQuoteModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#5D4A3E' }}><X size={28}/></button>
             <QuoteBuilder isModal onSuccess={() => { setIsQuoteModalOpen(false); fetchQueue(); }} />
