@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 為了讓 PWA 在手機上體驗更像原生 APP，鎖定縮放比例 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA 必備標籤 -->
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
     <title>Arti繪師小幫手</title>
   </head>
   <body>

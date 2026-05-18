@@ -4,7 +4,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
 
-
 export function ArtistLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,6 +61,21 @@ export function ArtistLayout() {
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
 
+  // 新增：監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
+  useEffect(() => {
+    if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
+      try {
+        if (unreadCount > 0) {
+          (navigator as any).setAppBadge(unreadCount).catch(console.error);
+        } else {
+          (navigator as any).clearAppBadge().catch(console.error);
+        }
+      } catch (e) {
+        console.error("App Badge 更新失敗:", e);
+      }
+    }
+  }, [unreadCount]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -81,6 +95,10 @@ export function ArtistLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
+      // 登出時清空紅點
+      if ('clearAppBadge' in navigator) {
+        (navigator as any).clearAppBadge().catch(console.error);
+      }
       window.location.href = '/'; 
     }
   };
@@ -103,7 +121,7 @@ export function ArtistLayout() {
     setShowNotifMenu(nextState);
 
     if (nextState && unreadCount > 0) {
-      setUnreadCount(0); 
+      setUnreadCount(0); // 這裡歸零會自動觸發上面的 PWA Badge 清除效果
       try {
         await fetch(`${API_BASE}/api/notifications/read?role=artist`, {
           method: 'POST',
@@ -209,75 +227,75 @@ export function ArtistLayout() {
         )}
       </div>
 
-    <div className="artist-layout-wrapper">
-      <header className="mobile-app-bar">
-        <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">☰</button>
-        <div className="mobile-app-title">
-          <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-          <div style={{ fontSize: '13px', color: '#A0978D' }}>管理後台</div>
-        </div>
-      </header>
-
-      <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-
-          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-          <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
-          {artist && (
-            <div style={{ padding: '10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: planBadgeBg, color: planBadgeColor }}>
-              <div>{planDisplay}</div>
-              {expiryDateText && <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'normal', marginTop: '2px' }}>{expiryDateText}</div>}
-            </div>
-          )}
-        </div>
-          
-          <nav className="sidebar-nav">
-            {navItems.map(item => (
-              <Link 
-                key={item.path} 
-                to={item.path} 
-                className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="sidebar-footer">
-            <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
-            <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
-            
-            <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
-              <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
-              <span style={{ margin: '0 4px' }}>|</span>
-              <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
-              <span style={{ margin: '0 4px' }}>|</span>
-              <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
-              <div style={{ marginTop: '8px' }}>
-                <button onClick={handleLogout} style={{ background: 'none', border: '1px solid #D1D5DB', color: '#9CA3AF', cursor: 'pointer', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>登出系統</button>
-              </div>
-            </div>
+      <div className="artist-layout-wrapper">
+        <header className="mobile-app-bar">
+          <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">☰</button>
+          <div className="mobile-app-title">
+            <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+            <div style={{ fontSize: '13px', color: '#A0978D' }}>管理後台</div>
           </div>
-        </aside>
+        </header>
 
-        <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
+        <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
 
-        <main className="app-main-content">
-          <div className="content-wrapper">
-            {showWarningBanner && (
-              <div className="plan-warning-banner">
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold' }}>⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！</div>
-                  <div style={{ fontSize: '12px', marginTop: '4px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
-                </div>
-                <button onClick={() => navigate('/artist/settings')} className="renew-plan-btn">立即查看續費方案</button>
+            <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
+            <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
+            {artist && (
+              <div style={{ padding: '10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: planBadgeBg, color: planBadgeColor }}>
+                <div>{planDisplay}</div>
+                {expiryDateText && <div style={{ fontSize: '10px', opacity: 0.8, fontWeight: 'normal', marginTop: '2px' }}>{expiryDateText}</div>}
               </div>
             )}
-            <Outlet />
           </div>
-        </main>
-      </div>
+            
+            <nav className="sidebar-nav">
+              {navItems.map(item => (
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="sidebar-footer">
+              <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
+              <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
+              
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
+                <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+                <span style={{ margin: '0 4px' }}>|</span>
+                <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+                <span style={{ margin: '0 4px' }}>|</span>
+                <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
+                <div style={{ marginTop: '8px' }}>
+                  <button onClick={handleLogout} style={{ background: 'none', border: '1px solid #D1D5DB', color: '#9CA3AF', cursor: 'pointer', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>登出系統</button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
+
+          <main className="app-main-content">
+            <div className="content-wrapper">
+              {showWarningBanner && (
+                <div className="plan-warning-banner">
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！</div>
+                    <div style={{ fontSize: '12px', marginTop: '4px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
+                  </div>
+                  <button onClick={() => navigate('/artist/settings')} className="renew-plan-btn">立即查看續費方案</button>
+                </div>
+              )}
+              <Outlet />
+            </div>
+          </main>
+        </div>
     </>
   );
 }

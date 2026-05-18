@@ -9,20 +9,35 @@ const formatOutputTime = (dateStr: string | null | undefined) => {
 
 export const notificationController = {
   
-
   async createNotification(env: Env, userId: string, type: string, text: string, linkUrl: string) {
     try {
-      const id = crypto.randomUUID();
-      await env.commission_db.prepare(`
-        INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read) 
-        VALUES (?, ?, ?, '系統通知', ?, ?, 0)
-      `).bind(id, userId, type, text, linkUrl).run();
+      // 【防抖邏輯實作】
+      // 先檢查是否已經有一筆「同一個使用者、指向同一個連結 (洽談室)、且尚未讀取」的通知
+      const existingNotif = await env.commission_db.prepare(`
+        SELECT id FROM Notifications 
+        WHERE user_id = ? AND link_to = ? AND is_read = 0
+      `).bind(userId, linkUrl).first<{ id: string }>();
+
+      if (existingNotif) {
+        // 如果已經存在未讀通知，只更新它的時間戳記與內容，讓它浮到最上面
+        await env.commission_db.prepare(`
+          UPDATE Notifications 
+          SET created_at = CURRENT_TIMESTAMP, content = ? 
+          WHERE id = ?
+        `).bind(text, existingNotif.id).run();
+      } else {
+        // 如果不存在，才新增一筆全新的通知
+        const id = crypto.randomUUID();
+        await env.commission_db.prepare(`
+          INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read, created_at) 
+          VALUES (?, ?, ?, '系統通知', ?, ?, 0, CURRENT_TIMESTAMP)
+        `).bind(id, userId, type, text, linkUrl).run();
+      }
     } catch (e) {
       console.error("發送通知失敗:", e);
     }
   },
 
-  
   async getNotifications(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const countRes = await env.commission_db.prepare(`
@@ -60,7 +75,6 @@ export const notificationController = {
     }
   },
 
-
   async getUnreadCount(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const countRes = await env.commission_db.prepare(`
@@ -75,7 +89,6 @@ export const notificationController = {
       return new Response(JSON.stringify({ success: false, count: 0, error: error.message }), { status: 500, headers: corsHeaders });
     }
   },
-
   
   async markAsRead(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
