@@ -1,3 +1,4 @@
+// src/pages/artist/Settings/ThemeTab.tsx
 import type { ProfileSettings } from '../Settings/types';
 
 interface Props {
@@ -57,14 +58,14 @@ export function ThemeTab({ settings, setSettings }: Props) {
         <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>介面文字對比模式</label>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
-            onClick={() => updateTheme({ theme_mode: 'light' })}
-            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'light' ? '2px solid #5D4A3E' : '1px solid #DED9D3', background: '#FFF', color: '#333', fontWeight: 'bold', cursor: 'pointer' }}
+            onClick={() => updateTheme({ theme_mode: 'dark' })}
+            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'dark' ? '2px solid #5D4A3E' : '1px solid #DED9D3', background: '#FFF', color: '#333', fontWeight: 'bold', cursor: 'pointer' }}
           >
             深色文字 (適合淺色背景)
           </button>
           <button 
-            onClick={() => updateTheme({ theme_mode: 'dark' })}
-            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'dark' ? '2px solid #A67B3E' : '1px solid #DED9D3', background: '#333', color: '#FFF', fontWeight: 'bold', cursor: 'pointer' }}
+            onClick={() => updateTheme({ theme_mode: 'light' })}
+            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: settings.theme_mode === 'light' ? '2px solid #A67B3E' : '1px solid #DED9D3', background: '#333', color: '#FFF', fontWeight: 'bold', cursor: 'pointer' }}
           >
             淺色文字 (適合深色背景)
           </button>
@@ -79,7 +80,7 @@ export function ThemeTab({ settings, setSettings }: Props) {
         justifyContent: 'center',
         borderRadius: '12px', 
         background: previewBackground, 
-        color: settings.theme_mode === 'dark' ? '#FFF' : '#333', 
+        color: settings.theme_mode === 'light' ? '#FFF' : '#333', 
         border: '1px solid #EAE6E1', 
         boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)', 
         transition: 'all 0.3s ease'
