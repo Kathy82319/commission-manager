@@ -307,14 +307,14 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該用戶的資料。</div>;
 
-  const isDarkText = (settings?.theme_mode || 'dark') === 'dark'; 
+  const isDarkText = (settings?.theme_mode || 'light') === 'dark'; 
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
   const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
   const sectionBg = isDarkText ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)';
   const badgeBg = isDarkText ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)';
 
   return (
-    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
       <style>{`
         @media (max-width: 768px) {
