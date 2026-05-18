@@ -371,11 +371,8 @@ export const directInquiryController = {
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json() as any;
-      const id = crypto.randomUUID();
-      
-      await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
-      await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
+      // 核心修復：先撈取洽談單資料，進行嚴格的參與者驗證 (IDOR 防護)
       const inquiry = await env.commission_db.prepare(`
         SELECT di.artist_id, 
                COALESCE(c.client_id, di.client_id) as client_id, 
@@ -386,20 +383,32 @@ export const directInquiryController = {
         WHERE di.id = ?
       `).bind(inquiryId).first() as any;
 
-      if (inquiry) {
-        const isArtist = currentUserId === inquiry.artist_id;
-        const targetUserId = isArtist ? inquiry.client_id : inquiry.artist_id;
+      if (!inquiry) {
+         return new Response(JSON.stringify({ success: false, message: '找不到此洽談單' }), { status: 404, headers: corsHeaders });
+      }
 
-        if (targetUserId && targetUserId !== 'guest') {
-          const projectTitle = inquiry.title || '客製化委託';
-          await notificationController.createNotification(
-            env, 
-            targetUserId, 
-            'inquiry_msg', 
-            `💬 洽談室「${projectTitle}」有新的聊天訊息。`, 
-            `/inquiry/workspace/${inquiryId}`
-          );
-        }
+      if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
+         return new Response(JSON.stringify({ success: false, message: '權限不足：您非此洽談單之參與者' }), { status: 403, headers: corsHeaders });
+      }
+
+      // 驗證通過，繼續後續的新增訊息與更新邏輯
+      const id = crypto.randomUUID();
+      
+      await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();
+      await env.commission_db.prepare(`UPDATE DirectInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+
+      const isArtist = currentUserId === inquiry.artist_id;
+      const targetUserId = isArtist ? inquiry.client_id : inquiry.artist_id;
+
+      if (targetUserId && targetUserId !== 'guest') {
+        const projectTitle = inquiry.title || '客製化委託';
+        await notificationController.createNotification(
+          env, 
+          targetUserId, 
+          'inquiry_msg', 
+          `💬 洽談室「${projectTitle}」有新的聊天訊息。`, 
+          `/inquiry/workspace/${inquiryId}`
+        );
       }
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
