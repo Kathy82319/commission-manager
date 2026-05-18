@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DOMPurify from 'dompurify'; 
-import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
 import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
@@ -14,22 +14,6 @@ const decodeHTML = (html?: string) => {
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
-};
-
-const getMaskedName = (name: string) => {
-  if (!name) return '匿名委託';
-  const len = name.length;
-  if (len <= 1) return name;
-  if (len === 2) return name[0] + '*';
-  return name[0] + '*'.repeat(len - 2) + name[len - 1];
-};
-
-const getTime = (dateStr?: string) => {
-  if (!dateStr) return 0;
-  let str = dateStr.trim();
-  if (!str.includes('T')) str = str.replace(' ', 'T');
-  if (!str.endsWith('Z') && !str.includes('+')) str += 'Z';
-  return new Date(str).getTime();
 };
 
 export function PublicProfile() {
@@ -62,6 +46,8 @@ export function PublicProfile() {
 
   const [publicOCs, setPublicOCs] = useState<any[]>([]);
   const [activeOCId, setActiveOCId] = useState<string | null>(null);
+
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
@@ -131,25 +117,24 @@ export function PublicProfile() {
 
           if (parsedSettings?.queue_settings?.enabled) {
             try {
-              const queueRes = await fetch(`${API_BASE}/api/public/queue/${currentArtistId}`);
-              const queueData = await queueRes.json();
-              if (queueData.success) {
-                let list = queueData.data;
-                const customOrder = parsedSettings.queue_settings.custom_order || [];
-                if (customOrder.length > 0) {
-                  list.sort((a: any, b: any) => {
-                    const idxA = customOrder.indexOf(a.id);
-                    const idxB = customOrder.indexOf(b.id);
-                    if (idxA === -1 && idxB === -1) return getTime(a.order_date) - getTime(b.order_date);
-                    if (idxA === -1) return 1;
-                    if (idxB === -1) return -1;
-                    return idxA - idxB;
-                  });
-                } else {
-                  list.sort((a: any, b: any) => getTime(a.order_date) - getTime(b.order_date));
-                }
-                setPublicQueue(list);
+              let list = parsedSettings.queue_settings.snapshot_data || [];
+              const customOrder = parsedSettings.queue_settings.custom_order || [];
+              
+              if (customOrder.length > 0) {
+                list.sort((a: any, b: any) => {
+                  const idxA = customOrder.indexOf(a.id);
+                  const idxB = customOrder.indexOf(b.id);
+                  const timeA = new Date(a.order_date || 0).getTime();
+                  const timeB = new Date(b.order_date || 0).getTime();
+                  if (idxA === -1 && idxB === -1) return timeA - timeB;
+                  if (idxA === -1) return 1;
+                  if (idxB === -1) return -1;
+                  return idxA - idxB;
+                });
+              } else {
+                list.sort((a: any, b: any) => new Date(a.order_date || 0).getTime() - new Date(b.order_date || 0).getTime());
               }
+              setPublicQueue(list);
             } catch (e) {}
           }
         }
@@ -358,8 +343,6 @@ export function PublicProfile() {
       )}
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        
-        {/* 抽出後的 Sidebar 元件 */}
         <ProfileSidebar 
           artist={artist} settings={settings} textColor={textColor} borderColor={borderColor} 
           availableTabs={availableTabs} currentTab={currentTab} onTabChange={handleTabChange} 
@@ -409,7 +392,28 @@ export function PublicProfile() {
 
               {currentTab === 'queue' && settings?.queue_settings && (
                 <div className="public-queue-section" style={{ background: sectionBg, padding: '20px', borderRadius: '12px', color: textColor }}>
-                  <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>目前排單狀況</h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <h2 style={{ margin: 0, fontSize: '18px' }}>目前排單狀況</h2>
+                      {settings.queue_settings.last_snapshot_at && (
+                        <span style={{ fontSize: '12px', opacity: 0.6, background: badgeBg, padding: '4px 8px', borderRadius: '12px' }}>
+                          快照發佈於: {new Date(settings.queue_settings.last_snapshot_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {settings.queue_settings.show_rules && settings.queue_settings.rules_content && (
+                      <button 
+                        onClick={() => setShowRulesModal(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: `1px solid ${borderColor}`, color: textColor, padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', fontWeight: 'bold' }}
+                        onMouseOver={e => e.currentTarget.style.backgroundColor = badgeBg}
+                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <Info size={14} /> 排單規則
+                      </button>
+                    )}
+                  </div>
+
                   {publicQueue.length === 0 ? (
                     <p style={{ color: textColor, opacity: 0.7, textAlign: 'center', padding: '40px 0' }}>目前尚無公開的排單資訊。</p>
                   ) : (
@@ -428,15 +432,13 @@ export function PublicProfile() {
                           {publicQueue.map((order) => (
                             <tr key={order.id} style={{ borderBottom: `1px solid ${borderColor}` }}>
                               <td style={{ padding: '12px 8px' }}>
-                                <div style={{ fontWeight: 'bold' }}>
-                                  {settings.queue_settings!.show_client_name ? (order.contact_memo || '匿名委託') : getMaskedName(order.contact_memo)}
-                                </div>
-                                {settings.queue_settings!.show_client_id && order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
+                                <div style={{ fontWeight: 'bold' }}>{order.contact_memo || '匿名委託'}</div>
+                                {order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
                               </td>
-                              <td style={{ padding: '12px 8px' }}>{settings.queue_settings!.show_project_name && order.project_name ? order.project_name : '私人委託項目'}</td>
+                              <td style={{ padding: '12px 8px' }}>{order.project_name || '私人委託項目'}</td>
                               <td style={{ padding: '12px 8px' }}><span style={{ padding: '4px 8px', background: badgeBg, borderRadius: '4px' }}>{order.queue_status || '處理中'}</span></td>
                               <td style={{ padding: '12px 8px', opacity: 0.8 }}>{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</td>
-                              {settings.queue_settings!.show_artist_note && <td style={{ padding: '12px 8px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
+                              {settings.queue_settings.show_artist_note && <td style={{ padding: '12px 8px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
                             </tr>
                           ))}
                         </tbody>
@@ -504,13 +506,33 @@ export function PublicProfile() {
         </main>
       </div>
 
-      {/* 抽出後的 Showcase Modal 彈窗元件 */}
+      {showRulesModal && (
+        <div className="lightbox-overlay" onClick={() => setShowRulesModal(false)} style={{ zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div 
+            className="lightbox-content rich-text-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ backgroundColor: isDarkText ? '#FFF' : '#1A1A1A', color: textColor, padding: '30px', borderRadius: '12px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+          >
+            <button 
+              onClick={() => setShowRulesModal(false)} 
+              style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: textColor, cursor: 'pointer', padding: '4px', borderRadius: '50%' }}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = badgeBg}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <X size={24} />
+            </button>
+            <h3 style={{ marginTop: 0, marginBottom: '20px', borderBottom: `1px solid ${borderColor}`, paddingBottom: '10px' }}>排單規則說明</h3>
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings?.queue_settings?.rules_content || '')) }} />
+          </div>
+        </div>
+      )}
+
       {selectedShowcase && (
         <ShowcaseModal 
           selectedShowcase={selectedShowcase} 
           artist={artist} 
           settings={settings} 
-          isLoggedIn={isLoggedIn} 
+          isLoggedIn={isLoggedIn}  
           onClose={() => setSearchParams(prev => { prev.delete('showcaseId'); return prev; })}
         />
       )}

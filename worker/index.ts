@@ -310,6 +310,13 @@ export default {
         return ocController.getPublicList(userId, env, corsHeaders);
       }
 
+      // --- [新增] 排單表快照發佈路由 ---
+      if (sanitizedPath === "/api/queue/snapshot" && request.method === "POST") {
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+        return commController.publishSnapshot(request, currentUserId!, env, corsHeaders);
+      }
+
       // --- 系統管理員路由 ---
       if (sanitizedPath.startsWith("/api/admin/")) {
         const authErr = requireAuth(currentUserId, corsHeaders); 

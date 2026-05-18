@@ -18,7 +18,6 @@ export function OrderTab({ settings, setSettings }: Props) {
         const res = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
-          // 🌟 若帳號內已有建立角色卡，則開啟「角色設定」分頁的排序權限
           if (data.data && data.data.length > 0) {
             setHasOC(true);
           }

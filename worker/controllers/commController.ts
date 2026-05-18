@@ -54,6 +54,71 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
 }
 
 export const commController = {
+  // [新增] 儲存排單表快照 API
+  async publishSnapshot(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    try {
+      const { queue_settings } = await request.json() as any;
+      if (!queue_settings || !queue_settings.enabled) {
+        return createJsonResponse({ success: false, error: "未啟用排單表" }, 400, corsHeaders);
+      }
+
+      // 1. 抓取目前該繪師所有的進行中訂單
+      const query = `
+        SELECT 
+          c.id, c.contact_memo, c.project_name, c.queue_status, 
+          c.end_date, c.order_date, c.artist_note,
+          u.public_id AS client_public_id
+        FROM Commissions c
+        LEFT JOIN Users u ON c.client_id = u.id
+        WHERE c.artist_id = ? AND c.status NOT IN ('completed', 'cancelled')
+        ORDER BY c.order_date ASC
+      `;
+      const { results } = await env.commission_db.prepare(query).bind(currentUserId).all();
+
+      // 2. 資料過濾與去識別化 (Data Masking)
+      const snapshotData = results.map((order: any) => ({
+        id: order.id,
+        queue_status: order.queue_status,
+        end_date: order.end_date, 
+        order_date: order.order_date,
+        contact_memo: queue_settings.show_client_name ? order.contact_memo : getMaskedName(order.contact_memo),
+        client_public_id: queue_settings.show_client_id ? order.client_public_id : null,
+        project_name: queue_settings.show_project_name ? order.project_name : null,
+        artist_note: queue_settings.show_artist_note ? order.artist_note : null,
+      }));
+
+      const timestamp = new Date().toISOString();
+
+      // 3. 更新 User 表的 profile_settings
+      const user = await env.commission_db.prepare("SELECT profile_settings FROM Users WHERE id = ?").bind(currentUserId).first<{profile_settings: string}>();
+      let currentSettings = {};
+      try {
+        if (user && user.profile_settings) currentSettings = JSON.parse(user.profile_settings);
+      } catch (e) {}
+
+      const updatedSettings = {
+        ...currentSettings,
+        queue_settings: {
+          ...queue_settings,
+          last_snapshot_at: timestamp,
+          snapshot_data: snapshotData
+        }
+      };
+
+      await env.commission_db.prepare("UPDATE Users SET profile_settings = ? WHERE id = ?")
+        .bind(JSON.stringify(updatedSettings), currentUserId).run();
+
+      return createJsonResponse({ 
+        success: true, 
+        last_snapshot_at: timestamp,
+        snapshot_data: snapshotData 
+      }, 200, corsHeaders);
+    } catch (e) {
+      return createJsonResponse({ success: false, error: "發佈快照失敗" }, 500, corsHeaders);
+    }
+  },
+
+  // 舊的 getList，維持不變（保留你的原有邏輯）
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
       SELECT 
@@ -557,6 +622,7 @@ export const commController = {
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
+  // 雖然前台不再呼叫此函式，但建議暫時保留以防其他模組仍有相依
   async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const artist = await env.commission_db.prepare("SELECT id, profile_settings FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string, profile_settings: string}>();
