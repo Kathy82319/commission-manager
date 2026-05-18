@@ -54,9 +54,9 @@ export function ClientLayout() {
     return () => clearInterval(intervalId);
   }, [profile, API_BASE]);
 
-  // 新增：監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
+  // 監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
   useEffect(() => {
-    if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
+    if ('setAppBadge' in navigator && 'Notification' in window && Notification.permission === 'granted') {
       try {
         if (unreadCount > 0) {
           (navigator as any).setAppBadge(unreadCount).catch(console.error);
@@ -86,7 +86,6 @@ export function ClientLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
-      // 登出時清空紅點
       if ('clearAppBadge' in navigator) {
         (navigator as any).clearAppBadge().catch(console.error);
       }
@@ -95,11 +94,20 @@ export function ClientLayout() {
   };
 
   const handleOpenNotifMenu = async () => {
+    // 【修改處】當使用者點擊鈴鐺時，順便向 OS 請求通知權限以解鎖 Badge 功能
+    if ('Notification' in window && Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch (err) {
+        console.error("請求通知權限失敗:", err);
+      }
+    }
+
     const nextState = !showNotifMenu;
     setShowNotifMenu(nextState);
 
     if (nextState && unreadCount > 0) {
-      setUnreadCount(0); // 這裡歸零會觸發 PWA Badge 清除
+      setUnreadCount(0);
       try {
         await fetch(`${API_BASE}/api/notifications/read?role=client`, {
           method: 'POST',
