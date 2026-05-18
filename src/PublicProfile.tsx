@@ -75,10 +75,10 @@ export function PublicProfile() {
     const isGradient = settings?.gradient_enabled !== false;    
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      // 改用 backgroundColor 墊底，並將透明度漸層放在 backgroundImage
+      // 這裡將 backgroundColor 作為實體底色，徹底阻擋 index.css 透出
       return { 
-        backgroundColor: baseColor, 
-        backgroundImage: `linear-gradient(${direction}, ${baseColor}, rgba(0, 0, 0, 0.4))`, 
+        backgroundColor: baseColor,
+        backgroundImage: `linear-gradient(${direction}, ${baseColor}, #00000015)`, 
         backgroundAttachment: 'fixed' 
       };
     }
@@ -312,15 +312,14 @@ export function PublicProfile() {
   if (loading) return <div className="loading-state">載入中...</div>;
   if (!artist) return <div className="error-state">找不到該用戶的資料。</div>;
 
-  // 預設為深色主題 (對應白字)，以符合深藍色背景
-  const isDarkText = (settings?.theme_mode || 'dark') === 'light'; 
+  const isDarkText = (settings?.theme_mode || 'light') === 'light'; 
   const textColor = isDarkText ? '#333333' : '#FFFFFF';
   const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
   const sectionBg = isDarkText ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)';
   const badgeBg = isDarkText ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)';
 
   return (
-    <div className={`public-profile-container theme-${settings?.theme_mode || 'dark'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
+    <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
       <style>{`
         @media (max-width: 768px) {
