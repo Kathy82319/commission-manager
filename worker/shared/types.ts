@@ -1,3 +1,4 @@
+// worker/shared/types.ts
 import type { Fetcher, D1Database, R2Bucket } from '@cloudflare/workers-types';
 
 export interface Env {
@@ -18,6 +19,8 @@ export interface Env {
   NEWEBPAY_MERCHANT_ID: string;
   NEWEBPAY_HASH_KEY: string;
   NEWEBPAY_HASH_IV: string;
+  RESEND_API_KEY: string;
+  RESEND_FROM_EMAIL: string;
 }
 
 export interface CreateCommissionBody {
@@ -56,3 +59,14 @@ export interface ShowcaseItem {
   tos_content: string;
   current_orders_count: number;
 }
+
+export interface UpdateNotificationSettingsBody {
+  notification_email?: string | null;
+  email_art_chat?: number;
+  email_art_progress?: number;
+  email_art_inbound?: number;
+  email_cli_chat?: number;
+  email_cli_progress?: number;
+  email_cli_bulletin?: number;
+}
+

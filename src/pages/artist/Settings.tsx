@@ -13,6 +13,8 @@ import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTa
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
+// 新增引入即將建立的通知設定分頁
+import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
 
@@ -79,6 +81,14 @@ export function Settings() {
   }, [location.search]);
 
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  
+  // 新增：通知與信箱設定的專屬狀態
+  const [notifyConfig, setNotifyConfig] = useState<any>({
+    notification_email: '',
+    email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
+    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
+  });
+
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
@@ -98,7 +108,6 @@ export function Settings() {
     splash_duration: 2, 
     splash_text: '',
     layout_type: 'blog', 
-    // 將預設值改為空字串，避免使用者未操作時被當成有效設定存入 DB
     background_color: '', 
     gradient_direction: '',
     theme_mode: '',
@@ -120,6 +129,7 @@ export function Settings() {
       title: '個人資訊', 
       items: [
         { id: 'profile_basic', label: '頭像與簡介' },
+        { id: 'notification_settings', label: '通知與信箱設定' }, // 新增這行
         ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) 
       ] 
     },
@@ -167,6 +177,17 @@ export function Settings() {
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
+        });
+
+        // 載入 Email 相關設定
+        setNotifyConfig({
+          notification_email: data.data.notification_email || '',
+          email_art_chat: data.data.email_art_chat ?? 1,
+          email_art_progress: data.data.email_art_progress ?? 1,
+          email_art_inbound: data.data.email_art_inbound ?? 1,
+          email_cli_chat: data.data.email_cli_chat ?? 1,
+          email_cli_progress: data.data.email_cli_progress ?? 1,
+          email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
         });
         
         setQuotaInfo({
@@ -230,7 +251,8 @@ export function Settings() {
           avatar_url: formData.avatar_url,
           bio: formData.bio,
           profile_settings: JSON.stringify(settings),
-          question_template: settings.question_template
+          question_template: settings.question_template,
+          ...notifyConfig // 將通知設定打平加入 Root Payload
         })
       });
       const data = await res.json();
@@ -260,8 +282,9 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
+  // 允許免費版使用的功能清單（加入 notification_settings）
   const freeAllowedTabs = [
-    'profile_basic', 'portfolio', 'detailed_intro', 'subscription', 
+    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'subscription', 
     'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
   ];
   
@@ -366,6 +389,10 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
+            {/* 新增通知設定分頁：注入 role="artist" */}
+            {activeTab === 'notification_settings' && (
+              <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />
+            )}
             
             {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
 

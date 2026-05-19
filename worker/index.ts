@@ -19,7 +19,8 @@ import { ocController } from "./controllers/ocController";
 import { calendarController } from "./controllers/calendarController";
 
 export default {
-  async fetch(request: any, env: Env): Promise<any> {
+  // 加入 ctx (Execution Context) 參數，為未來背景發信 (waitUntil) 預留空間
+  async fetch(request: any, env: Env, ctx: any): Promise<any> {
     const url = new URL(request.url);
     const sanitizedPath = url.pathname.replace(/\/$/, "");
     const pathParts = sanitizedPath.split("/");

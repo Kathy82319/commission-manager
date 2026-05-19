@@ -5,6 +5,8 @@ import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
 import { OCDisplaySettingsTab } from '../artist/Settings/OCDisplaySettingsTab';
+// 引入與 Artist 共用的通知設定元件
+import { NotificationSettingsTab } from '../artist/Settings/NotificationSettingsTab';
 import type { FormDataState } from '../artist/Settings/types';
 import '../../styles/Settings.css'; 
 
@@ -12,6 +14,14 @@ export function ClientSettings() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile_basic');
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  
+  // 新增：通知設定狀態
+  const [notifyConfig, setNotifyConfig] = useState<any>({
+    notification_email: '',
+    email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
+    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
@@ -64,6 +74,17 @@ export function ClientSettings() {
           bio: data.data.bio || '',
         });
 
+        // 載入 Email 相關設定
+        setNotifyConfig({
+          notification_email: data.data.notification_email || '',
+          email_art_chat: data.data.email_art_chat ?? 1,
+          email_art_progress: data.data.email_art_progress ?? 1,
+          email_art_inbound: data.data.email_art_inbound ?? 1,
+          email_cli_chat: data.data.email_cli_chat ?? 1,
+          email_cli_progress: data.data.email_cli_progress ?? 1,
+          email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
+        });
+
         if (data.data.profile_settings) {
           const parsed = typeof data.data.profile_settings === 'string' 
             ? JSON.parse(data.data.profile_settings) 
@@ -97,12 +118,13 @@ export function ClientSettings() {
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
           bio: formData.bio,
-          profile_settings: JSON.stringify(settings)
+          profile_settings: JSON.stringify(settings),
+          ...notifyConfig // 將通知設定打平加入 Root Payload
         })
       });
       const data = await res.json();
       if (data.success) {
-        showToast('個人資料已成功儲存', 'ok');
+        showToast('設定已成功儲存', 'ok');
       } else {
         showToast(data.error || '儲存失敗', 'err');
       }
@@ -159,6 +181,13 @@ export function ClientSettings() {
               >
                 頭像與基礎資料
               </button>
+
+              <button 
+                className={`tab-btn ${activeTab === 'notification_settings' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('notification_settings')}
+              >
+                通知與信箱設定
+              </button>
               
               <button 
                 className={`tab-btn ${activeTab === 'oc_display' ? 'active' : ''}`} 
@@ -194,6 +223,7 @@ export function ClientSettings() {
           <div className="settings-header">
             <h3>
               {activeTab === 'profile_basic' && '頭像與基礎資料'}
+              {activeTab === 'notification_settings' && '通知與信箱設定'}
               {activeTab === 'oc_display' && '角色設定卡展示'}
               {activeTab === 'detailed_intro' && '自訂公開詳細介紹'}
             </h3>
@@ -217,6 +247,11 @@ export function ClientSettings() {
                 settings={settings as any} 
                 setSettings={setSettings as any} 
               />
+            )}
+
+            {/* 新增通知設定分頁：注入 role="client" */}
+            {activeTab === 'notification_settings' && (
+              <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="client" />
             )}
 
             {activeTab === 'oc_display' && (
