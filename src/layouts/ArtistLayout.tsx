@@ -1,7 +1,7 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Bug } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
 
 export function ArtistLayout() {
@@ -116,7 +116,6 @@ export function ArtistLayout() {
   };
 
   const handleOpenNotifMenu = async () => {
-    // 【修改處】加入手機版偵測邏輯，只在手機或小螢幕裝置上請求權限
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
     
     if (isMobile && 'Notification' in window && Notification.permission === 'default') {
@@ -140,6 +139,38 @@ export function ArtistLayout() {
       } catch (e) {
         console.error("無法標記通知為已讀", e);
       }
+    }
+  };
+
+  // 【新增：暴力測試實體通知按鈕】
+  const handleTestNativeNotification = async () => {
+    if (!('Notification' in window)) {
+      alert("您的瀏覽器不支援通知 API");
+      return;
+    }
+    
+    if (Notification.permission !== 'granted') {
+      alert("請先點擊小鈴鐺並允許通知權限！");
+      return;
+    }
+
+    try {
+      // 1. 強制設定紅點
+      if ('setAppBadge' in navigator) {
+        await (navigator as any).setAppBadge(99);
+      }
+      
+      // 2. 透過 Service Worker 發送實體手機通知
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification('Arti 系統測試', {
+        body: '這是一條用來喚醒桌面紅點的實體測試通知！',
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png'
+      });
+      
+      alert("已發送實體通知與紅點訊號，請退回手機桌面查看圖示！");
+    } catch (e: any) {
+      alert(`測試失敗: ${e.message}`);
     }
   };
 
@@ -193,16 +224,27 @@ export function ArtistLayout() {
   return (
     <>
       <div ref={menuRef} style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9999 }}>
-        <div 
-          onClick={handleOpenNotifMenu}
-          style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
-        >
-          <Bell size={22} color="#4b5563" />
-          {unreadCount > 0 && (
-            <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', height: '20px', minWidth: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {/* 測試按鈕：上線後可以移除 */}
+          <div 
+            onClick={handleTestNativeNotification}
+            style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#fef3c7', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #d97706', transition: 'all 0.2s' }}
+            title="測試實體通知與紅點"
+          >
+            <Bug size={20} color="#d97706" />
+          </div>
+
+          <div 
+            onClick={handleOpenNotifMenu}
+            style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
+          >
+            <Bell size={22} color="#4b5563" />
+            {unreadCount > 0 && (
+              <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', height: '20px', minWidth: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </div>
         </div>
         
         {showNotifMenu && (
