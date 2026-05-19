@@ -1,6 +1,5 @@
 // worker/controllers/notificationController.ts
 import type { Env } from "../shared/types";
-// 假設您已經建立好了這個服務，並具有送信的基礎方法
 import { emailService } from "../services/email"; 
 
 const formatOutputTime = (dateStr: string | null | undefined) => {
@@ -27,7 +26,7 @@ export const notificationController = {
 
       if (existingNotif) {
         // 如果已經存在未讀通知，只更新它的時間戳記與內容
-        // ⚠️ 關鍵：因為進入了防抖，直接 return 結束，絕對『不』觸發 Email 寄信！
+        // 關鍵：因為進入了防抖，直接 return 結束，絕對不觸發 Email 寄信！
         await env.commission_db.prepare(`
           UPDATE Notifications 
           SET created_at = CURRENT_TIMESTAMP, content = ? 
@@ -35,7 +34,7 @@ export const notificationController = {
         `).bind(safeText, existingNotif.id).run();
         return; 
       } else {
-        // 如果不存在，才新增一筆全新的通知小鈴鐺
+        // 如果不存在，才新增一筆全新的通知 (恢復原本的 INSERT 結構)
         const id = crypto.randomUUID();
         await env.commission_db.prepare(`
           INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read) 
@@ -44,7 +43,7 @@ export const notificationController = {
       }
 
       // ==========================================
-      // 🚀 Email 寄信與使用者偏好設定檢查模組
+      // 🚀 Email 寄信與使用者偏好設定檢查模組 (已修復關閉無效問題)
       // ==========================================
       
       // 1. 取得收件人的 Email 設定與指定的收件信箱
@@ -59,44 +58,73 @@ export const notificationController = {
       if (userSettings && userSettings.notification_email) {
         let shouldSendEmail = false;
 
-        // 簡單判定通知所屬的「身分」環境 (透過 URL 與文字特徵)
-        const isArtistContext = safeLinkUrl.includes('/artist/') || safeLinkUrl.includes('role=artist') || safeText.includes('您的接委託') || safeText.includes('您的徵委託');
-        const isClientContext = safeLinkUrl.includes('/client/') || safeText.includes('為您建立') || safeText.includes('邀請您');
-        const contextRole = isArtistContext ? 'artist' : (isClientContext ? 'client' : 'unknown');
+        // 🌟 強化身分環境判定：精準捕捉正式單與洽談單的路由邏輯特徵
+        const isArtistContext = 
+          safeLinkUrl.includes('/artist/') || 
+          safeLinkUrl.includes('role=artist') || 
+          safeText.includes('您的接委託') || 
+          safeText.includes('您的徵委託') ||
+          (safeLinkUrl.includes('/inquiry/workspace/') && safeText.includes('送出了新的委託申請')); // 表單進來歸類為創作者
 
-        // 根據文字特徵對應使用者的 6 個開關
-        if (safeText.includes('聊天') || safeText.includes('💬')) {
-            // 聊天訊息類
-            if (contextRole === 'artist' && userSettings.email_art_chat === 1) shouldSendEmail = true;
-            if (contextRole === 'client' && userSettings.email_cli_chat === 1) shouldSendEmail = true;
-            if (contextRole === 'unknown' && (userSettings.email_art_chat === 1 || userSettings.email_cli_chat === 1)) shouldSendEmail = true;
+        const isClientContext = 
+          safeLinkUrl.includes('/client/') || 
+          safeText.includes('為您建立') || 
+          safeText.includes('邀請您') ||
+          (!safeLinkUrl.includes('role=artist') && safeLinkUrl.includes('/workspace/') && (safeText.includes('上傳') || safeText.includes('提交')));
+
+        // 確保數值全部強制轉為強型別 Number，防範 DB 傳出字串或其他弱型別真值
+        const artChat = Number(userSettings.email_art_chat ?? 1);
+        const artProgress = Number(userSettings.email_art_progress ?? 1);
+        const artInbound = Number(userSettings.email_art_inbound ?? 1);
+        const cliChat = Number(userSettings.email_cli_chat ?? 1);
+        const cliProgress = Number(userSettings.email_cli_progress ?? 1);
+        const cliBulletin = Number(userSettings.email_cli_bulletin ?? 1);
+
+        // 3. 根據系統分類與文字特徵進行精準二進制邏輯閘相咬
+        if (safeText.includes('聊天') || safeText.includes('💬') || safeType === 'chat') {
+          // 聊天訊息類：若為創作者環境，則嚴格遵從 artChat 開關；若為委託人環境，則嚴格遵從 cliChat 開關
+          if (isArtistContext) {
+            if (artChat === 1) shouldSendEmail = true;
+          } else if (isClientContext) {
+            if (cliChat === 1) shouldSendEmail = true;
+          } else {
+            // 安全退化資產：若真的無法識別，只要其中一邊有關閉，就採取保守防禦不寄送（改為交集判定）
+            if (artChat === 1 && cliChat === 1) shouldSendEmail = true;
+          }
         }
         else if (safeText.includes('投遞') || safeText.includes('應徵') || safeText.includes('送出了新的委託申請') || safeText.includes('婉拒') || safeText.includes('詳談') || safeText.includes('額滿')) {
-            // 許願池與主動詢問類 (Inbound / Bulletin)
-            if (contextRole === 'artist' && userSettings.email_art_inbound === 1) shouldSendEmail = true;
-            if (contextRole === 'client' && userSettings.email_cli_bulletin === 1) shouldSendEmail = true;
-            if (contextRole === 'unknown' && (userSettings.email_art_inbound === 1 || userSettings.email_cli_bulletin === 1)) shouldSendEmail = true;
+          // 許願池與主動表單洽談類
+          if (isArtistContext) {
+            if (artInbound === 1) shouldSendEmail = true;
+          } else if (isClientContext) {
+            if (cliBulletin === 1) shouldSendEmail = true;
+          } else {
+            if (artInbound === 1 && cliBulletin === 1) shouldSendEmail = true;
+          }
         }
         else {
-            // 剩餘狀態皆歸類為：委託進度與合約變更 (Progress)
-            if (contextRole === 'artist' && userSettings.email_art_progress === 1) shouldSendEmail = true;
-            if (contextRole === 'client' && userSettings.email_cli_progress === 1) shouldSendEmail = true;
-            if (contextRole === 'unknown' && (userSettings.email_art_progress === 1 || userSettings.email_cli_progress === 1)) shouldSendEmail = true;
+          // 剩餘狀態皆歸類為：委託進度與合約變更 (Progress)
+          if (isArtistContext) {
+            if (artProgress === 1) shouldSendEmail = true;
+          } else if (isClientContext) {
+            if (cliProgress === 1) shouldSendEmail = true;
+          } else {
+            if (artProgress === 1 && cliProgress === 1) shouldSendEmail = true;
+          }
         }
 
-        // 3. 判定通過，執行寄信
+        // 4. 判定通過，執行寄信
         if (shouldSendEmail) {
           try {
-            // 組裝完整的跳轉網址供 Email 內部點擊
-            const frontendUrl = env.FRONTEND_URL || 'https://arti.tw';
+            const frontendUrl = env.FRONTEND_URL || 'https://arti7.net';
             const fullLink = safeLinkUrl.startsWith('http') ? safeLinkUrl : `${frontendUrl}${safeLinkUrl}`;
             
             await emailService.sendNotificationEmail(
               env,
               userSettings.notification_email,
-              "【Arti 繪師小幫手】您有一則新通知", // 信件主旨
-              safeText, // 信件純文字預覽
-              fullLink // 信件中的按鈕網址
+              "【Arti 繪師小幫手】您有一則新通知", 
+              safeText, 
+              fullLink 
             );
           } catch (emailErr) {
             console.error("Email API 呼叫失敗，但不影響主流程:", emailErr);
@@ -106,7 +134,6 @@ export const notificationController = {
 
     } catch (e) {
       console.error("發送通知(含防抖)失敗，啟動降級方案:", e);
-      // Fallback 方案：如果上面的防抖因為 DB Schema 不支援而失敗，退回最原始且保證成功的寫入方式
       try {
         const id = crypto.randomUUID();
         await env.commission_db.prepare(`

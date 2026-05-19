@@ -118,7 +118,6 @@ export const commController = {
     }
   },
 
-  // 舊的 getList，維持不變（保留你的原有邏輯）
   async getList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const query = `
       SELECT 
@@ -227,7 +226,8 @@ export const commController = {
     ]);
     
     if (!body.is_external && clientId) {
-       await notificationController.createNotification(env, String(clientId), 'commission_msg', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?id=${newOrderId}`);
+       // 🟢 類型替換：進度
+       await notificationController.createNotification(env, String(clientId), 'progress', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?id=${newOrderId}`);
     }
     
     return createJsonResponse({ success: true, id: newOrderId }, 200, corsHeaders);
@@ -323,7 +323,8 @@ export const commController = {
         const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
         
-        await notificationController.createNotification(env, String(comm.artist_id), 'commission_msg', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}&tab=details`);
+        // 🟢 類型替換：進度
+        await notificationController.createNotification(env, String(comm.artist_id), 'progress', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}&tab=details`);
       }
       
       await env.commission_db.batch(batch);
@@ -406,7 +407,8 @@ export const commController = {
     ]);
 
     if (comm[0].client_id) {
-       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_msg', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?id=${id}&tab=review`);
+       // 🟢 類型替換：進度
+       await notificationController.createNotification(env, String(comm[0].client_id), 'progress', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?id=${id}&tab=review`);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -448,7 +450,9 @@ export const commController = {
     const text = body.action === 'reject' 
       ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
       : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
-    await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_msg', text, `/artist/notebook?id=${id}&tab=delivery`);
+    
+    // 🟢 類型替換：進度
+    await notificationController.createNotification(env, String(comm[0].artist_id), 'progress', text, `/artist/notebook?id=${id}&tab=delivery`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
@@ -470,7 +474,8 @@ export const commController = {
     ]);
     
     if (comm[0].client_id) {
-       await notificationController.createNotification(env, String(comm[0].client_id), 'commission_change', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?id=${id}`);
+       // 🟢 類型替換：進度
+       await notificationController.createNotification(env, String(comm[0].client_id), 'progress', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?id=${id}`);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -511,7 +516,9 @@ export const commController = {
     const text = action === 'approve' 
        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
-    await notificationController.createNotification(env, String(comm[0].artist_id), 'commission_change', text, `/artist/notebook?id=${id}&tab=details`);
+    
+    // 🟢 類型替換：進度
+    await notificationController.createNotification(env, String(comm[0].artist_id), 'progress', text, `/artist/notebook?id=${id}&tab=details`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
@@ -569,7 +576,8 @@ export const commController = {
     const targetUrl = inquiryId ? `/inquiry/workspace/${inquiryId}` : `/workspace/${id}${roleQuery}`;
 
     if (targetUserId) {
-      await notificationController.createNotification(env, String(targetUserId), 'commission_msg', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, targetUrl);
+      // 🟢 類型替換：對話聊天
+      await notificationController.createNotification(env, String(targetUserId), 'chat', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, targetUrl);
     }
 
     return createJsonResponse({ success: true }, 200, corsHeaders);

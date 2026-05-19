@@ -592,25 +592,20 @@ export const bulletinController = {
           env.commission_db.prepare(`UPDATE Bulletins SET status = 'hidden_under_review' WHERE id = ?`).bind(targetId)
         );
         
+        if (batchStatements.length > 0) {
+          await env.commission_db.batch(batchStatements);
+        }
+
         const { results: admins } = await env.commission_db.prepare(`
           SELECT id FROM Users WHERE role = 'admin'
         `).all();
 
         if (admins.length > 0) {
-          const stmt = env.commission_db.prepare(`
-            INSERT INTO Notifications (id, user_id, type, title, content, link_to, is_read)
-            VALUES (?, ?, 'SYSTEM_ALERT', '🚨 社群風控警報', ?, ?, 0)
-          `);
-
           const alertContent = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
-
-          admins.forEach(admin => {
-            batchStatements.push(stmt.bind(crypto.randomUUID(), admin.id, alertContent, targetId));
-          });
-        }
-
-        if (batchStatements.length > 0) {
-          await env.commission_db.batch(batchStatements);
+          // 🚀 修正：改呼叫統一的通知控制器，這樣管理員若有設定 Email 也能觸發！
+          await Promise.all(admins.map(admin => 
+            notificationController.createNotification(env, String(admin.id), 'SYSTEM_ALERT', alertContent, `/admin/wishboard/reported`)
+          ));
         }
       }
 
