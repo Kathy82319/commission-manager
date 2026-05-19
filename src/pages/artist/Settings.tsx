@@ -13,10 +13,10 @@ import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTa
 import { OrderTab } from './Settings/OrderTab'; 
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
-// 新增引入即將建立的通知設定分頁
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
-import { useLocation } from 'react-router-dom';
+// [修改] 引入 useNavigate
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export interface CompleteSettings {
   portfolio: string[];
@@ -66,6 +66,7 @@ interface MenuCategory {
 
 export function Settings() {
   const location = useLocation();
+  const navigate = useNavigate(); // [新增]
   
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
@@ -82,7 +83,6 @@ export function Settings() {
 
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   
-  // 新增：通知與信箱設定的專屬狀態
   const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
@@ -129,7 +129,7 @@ export function Settings() {
       title: '個人資訊', 
       items: [
         { id: 'profile_basic', label: '頭像與簡介' },
-        { id: 'notification_settings', label: '通知與信箱設定' }, // 新增這行
+        { id: 'notification_settings', label: '通知與信箱設定' },
         ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) 
       ] 
     },
@@ -179,7 +179,6 @@ export function Settings() {
           bio: data.data.bio || '',
         });
 
-        // 載入 Email 相關設定
         setNotifyConfig({
           notification_email: data.data.notification_email || '',
           email_art_chat: data.data.email_art_chat ?? 1,
@@ -252,7 +251,7 @@ export function Settings() {
           bio: formData.bio,
           profile_settings: JSON.stringify(settings),
           question_template: settings.question_template,
-          ...notifyConfig // 將通知設定打平加入 Root Payload
+          ...notifyConfig 
         })
       });
       const data = await res.json();
@@ -282,7 +281,6 @@ export function Settings() {
 
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
-  // 允許免費版使用的功能清單（加入 notification_settings）
   const freeAllowedTabs = [
     'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'subscription', 
     'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
@@ -340,28 +338,43 @@ export function Settings() {
                 );
               })}
 
+              {/* [新增] 內容管理區域的底部額外操作按鈕：評價管理與新增分頁 */}
               {group.title.includes('內容管理') && (
-                <button 
-                  onClick={() => {
-                    if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
-                    if (settings.custom_sections.length >= 5) return;
-                    const newId = `custom_${Date.now()}`;
-                    setSettings(prev => ({
-                      ...prev,
-                      custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
-                    }));
-                    setActiveTab(newId);
-                    setHideGlobalSave(false);
-                  }}
-                  style={{
-                    padding: '10px 14px', marginTop: '6px', cursor: 'pointer', background: 'transparent',
-                    border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
-                    textAlign: 'left', fontSize: '14px', width: '100%',
-                    opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
-                  }}
-                >
-                  + 新增分頁
-                </button>
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button 
+                    onClick={() => navigate('/artist/settings/reviews')}
+                    style={{
+                      padding: '10px 14px', cursor: 'pointer', background: '#FDFBF7',
+                      border: '1px solid #D6C8B8', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
+                      textAlign: 'left', fontSize: '14px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}
+                  >
+                    <span>⭐ 評價與信譽管理</span>
+                    <span>→</span>
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
+                      if (settings.custom_sections.length >= 5) return;
+                      const newId = `custom_${Date.now()}`;
+                      setSettings(prev => ({
+                        ...prev,
+                        custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
+                      }));
+                      setActiveTab(newId);
+                      setHideGlobalSave(false);
+                    }}
+                    style={{
+                      padding: '10px 14px', cursor: 'pointer', background: 'transparent',
+                      border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
+                      textAlign: 'left', fontSize: '14px', width: '100%',
+                      opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
+                    }}
+                  >
+                    + 新增分頁
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -389,7 +402,6 @@ export function Settings() {
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
             
-            {/* 新增通知設定分頁：注入 role="artist" */}
             {activeTab === 'notification_settings' && (
               <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />
             )}
