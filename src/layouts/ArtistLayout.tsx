@@ -1,7 +1,7 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Bug } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
 
 export function ArtistLayout() {
@@ -61,21 +61,6 @@ export function ArtistLayout() {
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
 
-  // 監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
-  useEffect(() => {
-    if ('setAppBadge' in navigator && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        if (unreadCount > 0) {
-          (navigator as any).setAppBadge(unreadCount).catch(console.error);
-        } else {
-          (navigator as any).clearAppBadge().catch(console.error);
-        }
-      } catch (e) {
-        console.error("App Badge 更新失敗:", e);
-      }
-    }
-  }, [unreadCount]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -95,9 +80,6 @@ export function ArtistLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
-      if ('clearAppBadge' in navigator) {
-        (navigator as any).clearAppBadge().catch(console.error);
-      }
       window.location.href = '/'; 
     }
   };
@@ -116,16 +98,6 @@ export function ArtistLayout() {
   };
 
   const handleOpenNotifMenu = async () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    
-    if (isMobile && 'Notification' in window && Notification.permission === 'default') {
-      try {
-        await Notification.requestPermission();
-      } catch (err) {
-        console.error("請求通知權限失敗:", err);
-      }
-    }
-
     const nextState = !showNotifMenu;
     setShowNotifMenu(nextState);
 
@@ -142,38 +114,7 @@ export function ArtistLayout() {
     }
   };
 
-  // 【新增：暴力測試實體通知按鈕】
-  const handleTestNativeNotification = async () => {
-    if (!('Notification' in window)) {
-      alert("您的瀏覽器不支援通知 API");
-      return;
-    }
-    
-    if (Notification.permission !== 'granted') {
-      alert("請先點擊小鈴鐺並允許通知權限！");
-      return;
-    }
-
-    try {
-      // 1. 強制設定紅點
-      if ('setAppBadge' in navigator) {
-        await (navigator as any).setAppBadge(99);
-      }
-      
-      // 2. 透過 Service Worker 發送實體手機通知
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification('Arti 系統測試', {
-        body: '這是一條用來喚醒桌面紅點的實體測試通知！',
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png'
-      });
-      
-      alert("已發送實體通知與紅點訊號，請退回手機桌面查看圖示！");
-    } catch (e: any) {
-      alert(`測試失敗: ${e.message}`);
-    }
-  };
-
+  // ... (保留原有的 planDisplay, navItems 等邏輯)
   let planDisplay = '基礎免費版';
   let expiryDateText = '';
   let planBadgeColor = '#4A4A4A';
@@ -224,27 +165,16 @@ export function ArtistLayout() {
   return (
     <>
       <div ref={menuRef} style={{ position: 'fixed', top: '20px', right: '24px', zIndex: 9999 }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {/* 測試按鈕：上線後可以移除 */}
-          <div 
-            onClick={handleTestNativeNotification}
-            style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#fef3c7', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #d97706', transition: 'all 0.2s' }}
-            title="測試實體通知與紅點"
-          >
-            <Bug size={20} color="#d97706" />
-          </div>
-
-          <div 
-            onClick={handleOpenNotifMenu}
-            style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
-          >
-            <Bell size={22} color="#4b5563" />
-            {unreadCount > 0 && (
-              <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', height: '20px', minWidth: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </div>
+        <div 
+          onClick={handleOpenNotifMenu}
+          style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
+        >
+          <Bell size={22} color="#4b5563" />
+          {unreadCount > 0 && (
+            <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', height: '20px', minWidth: '20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid white' }}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </div>
         
         {showNotifMenu && (
@@ -290,7 +220,6 @@ export function ArtistLayout() {
 
         <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
-
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
             <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
             {artist && (
@@ -317,7 +246,6 @@ export function ArtistLayout() {
             <div className="sidebar-footer">
               <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
               <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
-              
               <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
                 <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
                 <span style={{ margin: '0 4px' }}>|</span>

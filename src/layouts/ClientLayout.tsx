@@ -54,21 +54,6 @@ export function ClientLayout() {
     return () => clearInterval(intervalId);
   }, [profile, API_BASE]);
 
-  // 監聽 unreadCount，同步更新 PWA 桌面紅點 Badge
-  useEffect(() => {
-    if ('setAppBadge' in navigator && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        if (unreadCount > 0) {
-          (navigator as any).setAppBadge(unreadCount).catch(console.error);
-        } else {
-          (navigator as any).clearAppBadge().catch(console.error);
-        }
-      } catch (e) {
-        console.error("App Badge 更新失敗:", e);
-      }
-    }
-  }, [unreadCount]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -86,25 +71,11 @@ export function ClientLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
-      if ('clearAppBadge' in navigator) {
-        (navigator as any).clearAppBadge().catch(console.error);
-      }
       window.location.href = '/'; 
     }
   };
 
   const handleOpenNotifMenu = async () => {
-    // 【修改處】加入手機版偵測邏輯，只在手機或小螢幕裝置上請求權限
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    
-    if (isMobile && 'Notification' in window && Notification.permission === 'default') {
-      try {
-        await Notification.requestPermission();
-      } catch (err) {
-        console.error("請求通知權限失敗:", err);
-      }
-    }
-
     const nextState = !showNotifMenu;
     setShowNotifMenu(nextState);
 
@@ -181,10 +152,7 @@ export function ClientLayout() {
         <div style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '18px' }}>委託人中心</div>
       </div>
 
-      <div 
-        className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} 
-        onClick={closeMobileMenu}
-      ></div>
+      <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={closeMobileMenu}></div>
 
       <aside className={`client-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
