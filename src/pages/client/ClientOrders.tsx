@@ -130,8 +130,12 @@ export function ClientOrders() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
-
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+  // === 評價功能相關狀態 ===
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, content: '', client_anonymous: false });
 
   useEffect(() => {
     const currentId = queryParams.get('id') || queryParams.get('open');
@@ -281,6 +285,27 @@ export function ClientOrders() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // === 補回遺失的 handleSaveTitle 函式 ===
+  const handleSaveTitle = async () => {
+    if (!selectedId || saveStatus === 'saving') return;
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
+        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_custom_title: customTitle })
+      });
+      if ((await res.json()).success) {
+        setSavedTitle(customTitle); 
+        setSaveStatus('success'); 
+        setTimeout(() => setSaveStatus('idle'), 2000); 
+      } else {
+        setSaveStatus('idle');
+      }
+    } catch (error) { 
+      setSaveStatus('idle'); 
+    }
+  };
+
   const handleReviewChange = async (action: 'approve' | 'reject') => {
     if (!selectedId) return;
     setIsProcessing(true);
@@ -300,20 +325,6 @@ export function ClientOrders() {
     }
   };
 
-  const handleSaveTitle = async () => {
-    if (!selectedId || saveStatus === 'saving') return;
-    setSaveStatus('saving');
-    try {
-      const res = await fetch(`${API_BASE}/api/commissions/${selectedId}`, {
-        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_custom_title: customTitle })
-      });
-      if ((await res.json()).success) {
-        setSavedTitle(customTitle); setSaveStatus('success'); setTimeout(() => setSaveStatus('idle'), 2000); 
-      } else setSaveStatus('idle');
-    } catch (error) { setSaveStatus('idle'); }
-  };
-
   const handleReview = async (stageKey: string, action: 'approve' | 'reject') => {
     if (!selectedId) return;
     let comment = '';
@@ -329,7 +340,17 @@ export function ClientOrders() {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage: stageKey, action, comment })
       });
-      if ((await res.json()).success) { alert("已送出回覆！"); fetchOrders(); fetchDetailData(selectedId); } else alert("操作失敗");
+      const data = await res.json();
+      if (data.success) { 
+        alert("已送出回覆！"); 
+        await fetchOrders(); 
+        await fetchDetailData(selectedId);
+        
+        // 如果是同意完稿 (結案)，自動跳出評價 Modal
+        if (stageKey === 'final' && action === 'approve') {
+          setIsReviewModalOpen(true);
+        }
+      } else alert("操作失敗");
     } catch (e) { alert("發生錯誤"); } finally { setIsProcessing(false); }
   };
 
@@ -359,6 +380,37 @@ export function ClientOrders() {
     }
   };
 
+  // === 提交評價 API ===
+  const handleSubmitReview = async () => {
+    if (!selectedId) return;
+    if (reviewForm.rating < 1 || reviewForm.rating > 5) return alert('請選擇星等');
+    
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commission_id: selectedId,
+          rating: reviewForm.rating,
+          content: reviewForm.content,
+          client_anonymous: reviewForm.client_anonymous
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('感謝您的評價！繪師已收到您的心意。');
+        setIsReviewModalOpen(false);
+        fetchDetailData(selectedId); // 重新獲取 logs 以隱藏按鈕
+      } else {
+        alert(data.error || '評價送出失敗');
+      }
+    } catch (e) {
+      alert('網路錯誤，請稍後再試');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const getLatestSubmissions = () => {
     const latest: Record<string, Submission> = {};
     submissions.forEach(sub => { if (!latest[sub.stage] || sub.version > latest[sub.stage].version) latest[sub.stage] = sub; });
@@ -366,6 +418,15 @@ export function ClientOrders() {
   };
 
   const selectedOrder = orders.find(o => o.id === selectedId);
+
+  // === 評價按鈕顯示邏輯 (透過分析 Logs) ===
+  const hasReviewed = logs.some(l => l.content.includes('委託人已填寫結案評價'));
+  const completeLog = logs.find(l => l.content.includes('開啟 3 日評價期'));
+  const isWithin3Days = completeLog 
+    ? (Date.now() - new Date(ensureUTC(completeLog.created_at)).getTime() < 3 * 24 * 60 * 60 * 1000) 
+    : false;
+  // 若是舊訂單沒有 completeLog，我們放寬讓後端擋，或者直接不顯示。這裡選擇依賴 completeLog 確保精準。
+  const canReview = selectedOrder?.status === 'completed' && !hasReviewed && isWithin3Days;
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -492,7 +553,7 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       
-      
+      {/* === 圖片放大檢視 === */}
       {zoomedImage && createPortal(
         <div 
           onClick={(e) => {
@@ -513,6 +574,81 @@ export function ClientOrders() {
             onClick={(e) => e.stopPropagation()} 
             style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', cursor: 'default' }} 
           />
+        </div>,
+        document.body 
+      )}
+
+      {/* === 評價填寫 Modal === */}
+      {isReviewModalOpen && createPortal(
+        <div 
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+            zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' 
+          }}
+        >
+          <div style={{ backgroundColor: '#FFF', borderRadius: '12px', width: '100%', maxWidth: '500px', padding: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+            <h2 style={{ marginTop: 0, color: '#334155', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⭐ 填寫委託評價
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '20px' }}>
+              感謝您的委託！請撥空為本次合作留下評價，給予繪師鼓勵或建議。<br/>
+              <span style={{ color: '#F59E0B' }}>(注意：評價送出後不可修改)</span>
+            </p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#475569' }}>滿意度評分</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button 
+                    key={star}
+                    onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                    style={{ background: 'none', border: 'none', fontSize: '32px', cursor: 'pointer', color: star <= reviewForm.rating ? '#F59E0B' : '#E2E8F0', transition: 'color 0.2s' }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#475569' }}>給繪師的話 / 評價內容</label>
+              <textarea 
+                value={reviewForm.content}
+                onChange={(e) => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="例如：溝通很順暢、出圖速度很快、細節處理得很好..."
+                style={{ width: '100%', minHeight: '120px', padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px', resize: 'vertical' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569' }}>
+                <input 
+                  type="checkbox"
+                  checked={reviewForm.client_anonymous}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, client_anonymous: e.target.checked }))}
+                />
+                匿名發布 (繪師端與公開頁面將顯示為「匿名委託人」)
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setIsReviewModalOpen(false)}
+                disabled={isSubmittingReview}
+                style={{ padding: '10px 16px', background: '#F1F5F9', border: 'none', color: '#475569', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                稍後再說
+              </button>
+              <button 
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview}
+                style={{ padding: '10px 20px', background: '#5D4A3E', border: 'none', color: '#FFF', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                {isSubmittingReview ? '送出中...' : '確認送出評價'}
+              </button>
+            </div>
+          </div>
         </div>,
         document.body 
       )}
@@ -704,6 +840,23 @@ export function ClientOrders() {
                       </div>
                     </div>
 
+                    {/* === 補填評價按鈕 (顯示於詳細頁最上方) === */}
+                    {canReview && (
+                      <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                        <div>
+                          <div style={{ color: '#D97706', fontWeight: 'bold', fontSize: '15px' }}>⭐ 委託已順利結案，別忘了填寫評價！</div>
+                          <div style={{ color: '#92400E', fontSize: '13px', marginTop: '4px' }}>填寫評價可以給予繪師最直接的鼓勵。評價權限將在結案後 3 天關閉。</div>
+                        </div>
+                        <button 
+                          onClick={() => setIsReviewModalOpen(true)}
+                          className="action-btn"
+                          style={{ backgroundColor: '#F59E0B', color: '#FFF', border: 'none', padding: '10px 20px', whiteSpace: 'nowrap' }}
+                        >
+                          馬上填寫評價
+                        </button>
+                      </div>
+                    )}
+
                     {originData && (
                       <div className="section-card" style={{ backgroundColor: '#FBFBF9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EAE6E1', paddingBottom: '8px', marginBottom: '12px' }}>
@@ -859,6 +1012,22 @@ export function ClientOrders() {
 
                 {activeTab === 'review' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    
+                    {/* 若結案則在審閱頁面也顯示提示 */}
+                    {canReview && (
+                      <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '12px', textAlign: 'center' }}>
+                        <div style={{ color: '#D97706', fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>🎉 委託已圓滿結案！</div>
+                        <div style={{ color: '#92400E', fontSize: '14px', marginBottom: '16px' }}>滿意這次的合作嗎？快去給繪師留下評價與鼓勵吧。</div>
+                        <button 
+                          onClick={() => setIsReviewModalOpen(true)}
+                          className="action-btn"
+                          style={{ backgroundColor: '#F59E0B', color: '#FFF', border: 'none', padding: '12px 24px', fontSize: '15px' }}
+                        >
+                          ⭐ 立即填寫評價
+                        </button>
+                      </div>
+                    )}
+
                     {selectedOrder.delivery_method !== '一鍵出圖' && (
                       <>
                         {renderClientStageBox('階段 1：草稿', 'sketch', selectedOrder.current_stage === 'sketch_reviewing', ['lineart_drawing', 'lineart_reviewing', 'final_drawing', 'final_reviewing', 'completed'].includes(selectedOrder.current_stage))}
@@ -875,9 +1044,9 @@ export function ClientOrders() {
                      {logs.length === 0 ? <div className="logs-empty">無歷程紀錄</div> : (
                        <div className="logs-list">
                          {logs.map(log => (
-                           <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : 'log-client'}`}>
+                           <div key={log.id} className={`log-card ${log.actor_role === 'artist' ? 'log-artist' : (log.actor_role === 'system' ? 'log-system' : 'log-client')}`}>
                              <div className="log-meta">
-                               {formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : '我 (委託人)'}
+                               {formatLocalTime(log.created_at)} | {log.actor_role === 'artist' ? '繪師' : (log.actor_role === 'system' ? '系統' : '我 (委託人)')}
                              </div>
                              <div className="log-content">{log.content}</div>
                            </div>

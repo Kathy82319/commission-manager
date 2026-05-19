@@ -17,6 +17,8 @@ import { notificationController } from "./controllers/notificationController";
 import { userRelationController } from "./controllers/userRelationController";
 import { ocController } from "./controllers/ocController"; 
 import { calendarController } from "./controllers/calendarController";
+// [新增] 引入評價控制器
+import { reviewController } from "./controllers/reviewController";
 
 export default {
   // 加入 ctx (Execution Context) 參數，為未來背景發信 (waitUntil) 預留空間
@@ -185,7 +187,6 @@ export default {
         }        
       }
 
-  
       if (sanitizedPath.startsWith("/api/direct-inquiries")) {
         const targetId = pathParts[3];
         const subAction = pathParts[4];
@@ -264,10 +265,42 @@ export default {
           if (request.method === "POST") return customerController.create(request, currentUserId!, env, corsHeaders);
         } else if (targetId && subAction === "history") {
           if (request.method === "GET") return customerController.getHistory(targetId, currentUserId!, env, corsHeaders);
+        } else if (targetId && subAction === "reviews") {
+          // [新增] 歷史評價路由：供 CRM (CustomerDetail) 分頁拉取該客戶留給目前繪師的所有評價
+          if (request.method === "GET") return reviewController.getCustomerReviews(targetId, currentUserId!, env, corsHeaders);
         } else {
           if (request.method === "GET") return customerController.getDetail(targetId, currentUserId!, env, corsHeaders);
           if (request.method === "PATCH") return customerController.update(request, targetId, currentUserId!, env, corsHeaders);
           if (request.method === "DELETE") return customerController.delete(targetId, currentUserId!, env, corsHeaders);
+        }
+      }
+
+      // --- [新增] 獨立評價管理模組路由區塊 (Reviews) ---
+      if (sanitizedPath.startsWith("/api/reviews")) {
+        const targetId = pathParts[3];
+        const subAction = pathParts[4];
+
+        // 1. 公開端路由：免身分驗證，供 PublicProfile 渲染精選好評
+        if (targetId === "public" && pathParts[4]) {
+          const artistId = pathParts[4];
+          return reviewController.getPublicReviews(artistId, env, corsHeaders);
+        }
+
+        // 以下為私有操作，必須經過身分驗證
+        const authErr = requireAuth(currentUserId, corsHeaders);
+        if (authErr) return authErr;
+
+        // 2. 委託人送出評價
+        if (!targetId && request.method === "POST") {
+          return reviewController.create(request, currentUserId!, env, corsHeaders);
+        }
+        // 3. 繪師撈取自己的評價總表 (ReviewsManagement)
+        if (targetId === "artist" && request.method === "GET") {
+          return reviewController.getArtistReviews(currentUserId!, env, corsHeaders);
+        }
+        // 4. 繪師審核評價狀態 (是否公開至個人頁與繪師端匿名設定)
+        if (targetId && subAction === "visibility" && request.method === "PATCH") {
+          return reviewController.updateVisibility(request, targetId, currentUserId!, env, corsHeaders);
         }
       }
 

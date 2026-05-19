@@ -54,7 +54,6 @@ async function syncToCRM(env: Env, artistId: string, clientId: string, clientDis
 }
 
 export const commController = {
-  // [新增] 儲存排單表快照 API
   async publishSnapshot(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const { queue_settings } = await request.json() as any;
@@ -62,7 +61,6 @@ export const commController = {
         return createJsonResponse({ success: false, error: "未啟用排單表" }, 400, corsHeaders);
       }
 
-      // 1. 抓取目前該繪師所有的進行中訂單
       const query = `
         SELECT 
           c.id, c.contact_memo, c.project_name, c.queue_status, 
@@ -75,7 +73,6 @@ export const commController = {
       `;
       const { results } = await env.commission_db.prepare(query).bind(currentUserId).all();
 
-      // 2. 資料過濾與去識別化 (Data Masking)
       const snapshotData = results.map((order: any) => ({
         id: order.id,
         queue_status: order.queue_status,
@@ -89,7 +86,6 @@ export const commController = {
 
       const timestamp = new Date().toISOString();
 
-      // 3. 更新 User 表的 profile_settings
       const user = await env.commission_db.prepare("SELECT profile_settings FROM Users WHERE id = ?").bind(currentUserId).first<{profile_settings: string}>();
       let currentSettings = {};
       try {
@@ -226,7 +222,6 @@ export const commController = {
     ]);
     
     if (!body.is_external && clientId) {
-       // 🟢 類型替換：進度
        await notificationController.createNotification(env, String(clientId), 'progress', `🌟 繪師已為您建立專屬委託單「${body.project_name || newOrderId}」`, `/client/orders?id=${newOrderId}`);
     }
     
@@ -282,8 +277,12 @@ export const commController = {
     const clientAllowedFields = ['client_custom_title', 'contact_memo'];
     const specialFields = ['total_price', 'char_count', 'last_read_at_artist', 'last_read_at_client'];
 
+    let globalStatusUpdate = '';
+
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
+        if (key === 'status') globalStatusUpdate = body[key]; // 擷取狀態以便觸發評價通知
+
         if (isBinding && (key === 'client_id' || key === 'status' || key === 'agreed_tos_snapshot')) {
           updates.push(`${key} = ?`);
           params.push(key === 'agreed_tos_snapshot' ? limitRichText(body[key], fieldLimits[key]) : sanitizeAndLimit(body[key], fieldLimits[key]));
@@ -323,8 +322,13 @@ export const commController = {
         const clientNickname = userProfile?.display_name || '未知客戶';
         await syncToCRM(env, comm.artist_id, currentUserId!, clientNickname);
         
-        // 🟢 類型替換：進度
         await notificationController.createNotification(env, String(comm.artist_id), 'progress', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}&tab=details`);
+      }
+
+      // 檢查是否被改為已結案，若是，則觸發 3 日評價期計時器與系統通知
+      if (globalStatusUpdate === 'completed' && comm.status !== 'completed') {
+        batch.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'system', 'status_update', '訂單已結案，開啟 3 日評價期')").bind(crypto.randomUUID(), id));
+        batch.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 委託已順利結案！感謝您的配合。請在 3 日內填寫評價，逾期將自動關閉評價功能。`));
       }
       
       await env.commission_db.batch(batch);
@@ -407,7 +411,6 @@ export const commController = {
     ]);
 
     if (comm[0].client_id) {
-       // 🟢 類型替換：進度
        await notificationController.createNotification(env, String(comm[0].client_id), 'progress', `📝 繪師已上傳「${comm[0].project_name || id}」的 ${stageNameCH} 供您確認。`, `/client/orders?id=${id}&tab=review`);
     }
 
@@ -443,7 +446,14 @@ export const commController = {
       env.commission_db.prepare("UPDATE Commissions SET current_stage = ?, latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(nextStageStatus, id),
       env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] ${logMsg}`)
     ];
-    if (globalStatusUpdate) batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
+    
+    if (globalStatusUpdate) {
+      batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
+      
+      // 結案同時開啟三日評價期，並發送系統訊息
+      batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'system', 'status_update', '訂單已結案，開啟 3 日評價期')").bind(crypto.randomUUID(), id));
+      batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 委託已順利結案！感謝您的配合。請在 3 日內填寫評價，逾期將自動關閉評價功能。`));
+    }
     
     await env.commission_db.batch(batchOps);
 
@@ -451,7 +461,6 @@ export const commController = {
       ? `📝 委託人針對「${comm[0].project_name || id}」的 ${stageNameCH} 提出了修改請求。` 
       : `🌟 委託人已確認「${comm[0].project_name || id}」的 ${stageNameCH}。`;
     
-    // 🟢 類型替換：進度
     await notificationController.createNotification(env, String(comm[0].artist_id), 'progress', text, `/artist/notebook?id=${id}&tab=delivery`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -474,7 +483,6 @@ export const commController = {
     ]);
     
     if (comm[0].client_id) {
-       // 🟢 類型替換：進度
        await notificationController.createNotification(env, String(comm[0].client_id), 'progress', `📝 繪師針對委託單「${comm[0].project_name || id}」提出了合約異動申請。`, `/client/orders?id=${id}`);
     }
 
@@ -514,10 +522,9 @@ export const commController = {
     }
 
     const text = action === 'approve' 
-       ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
-       : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
+        ? `🌟 委託人已同意「${comm[0].project_name || id}」的合約異動。`
+        : `📝 委託人拒絕了「${comm[0].project_name || id}」的合約異動。`;
     
-    // 🟢 類型替換：進度
     await notificationController.createNotification(env, String(comm[0].artist_id), 'progress', text, `/artist/notebook?id=${id}&tab=details`);
 
     return createJsonResponse({ success: true }, 200, corsHeaders);
@@ -576,7 +583,6 @@ export const commController = {
     const targetUrl = inquiryId ? `/inquiry/workspace/${inquiryId}` : `/workspace/${id}${roleQuery}`;
 
     if (targetUserId) {
-      // 🟢 類型替換：對話聊天
       await notificationController.createNotification(env, String(targetUserId), 'chat', `💬 委託單「${comm[0].project_name || id}」有新的聊天訊息。`, targetUrl);
     }
 
@@ -630,7 +636,6 @@ export const commController = {
     return createJsonResponse({ success: true }, 200, corsHeaders);
   },
 
-  // 雖然前台不再呼叫此函式，但建議暫時保留以防其他模組仍有相依
   async getPublicQueue(artistId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const artist = await env.commission_db.prepare("SELECT id, profile_settings FROM Users WHERE id = ? OR public_id = ?").bind(artistId, artistId).first<{id: string, profile_settings: string}>();

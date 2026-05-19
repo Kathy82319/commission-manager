@@ -17,6 +17,8 @@ import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
 import { Customers } from './pages/artist/Customers'; 
 import { CustomerDetail } from './pages/artist/CustomerDetail'; 
+// [新增] 評價管理頁面 (即將於下一步建立)
+import { ReviewsManagement } from './pages/artist/ReviewsManagement';
 
 // Client Pages
 import { ClientForm } from './pages/client/ClientForm'; 
@@ -56,6 +58,8 @@ export function App() {
           <Route path="records" element={<Records />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<Settings />} />
+          {/* [新增] 評價管理子路由，使其成為 Settings 家族的一員 */}
+          <Route path="settings/reviews" element={<ReviewsManagement />} />
         </Route>
 
         <Route path="/client" element={<ClientLayout />}>

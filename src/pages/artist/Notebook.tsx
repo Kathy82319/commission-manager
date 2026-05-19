@@ -17,7 +17,7 @@ export function Notebook() {
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
   const queryParams = new URLSearchParams(location.search);
   const initialSelectedId = queryParams.get('id');
-  const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs' | 'oc') || 'details';
+  const initialTab = (queryParams.get('tab') as 'details' | 'delivery' | 'logs' | 'oc' | 'reviews') || 'details';
 
   const [myId, setMyId] = useState<string>(''); 
   const [isPremium, setIsPremium] = useState<boolean>(false);
@@ -32,7 +32,7 @@ export function Notebook() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-  const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs' | 'oc'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'details' | 'delivery' | 'logs' | 'oc' | 'reviews'>(initialTab);
 
   const [editData, setEditData] = useState<Partial<Commission>>({});
   const [isEditingRequest, setIsEditingRequest] = useState(false);
@@ -44,6 +44,9 @@ export function Notebook() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
+
+  // === 新增：評價狀態 ===
+  const [commissionReview, setCommissionReview] = useState<any | null>(null);
 
   // ================= 生命週期與 API (Effects) =================
   useEffect(() => {
@@ -82,6 +85,7 @@ export function Notebook() {
           setEditData(target);
           fetchPayments(target.id);
           fetchDeliverables(target.id);
+          fetchCommissionReview(target.id); // 拉取評價
         }
       } else if (!isInitialLoad && selectedId) {
         const target = data.data.find((c: Commission) => c.id === selectedId);
@@ -143,6 +147,22 @@ export function Notebook() {
     }
   };
 
+  // === 獲取單據的評價 ===
+  const fetchCommissionReview = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews/artist`, { credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        const rev = data.data.find((r: any) => r.commission_id === id);
+        setCommissionReview(rev || null);
+      } else {
+        setCommissionReview(null);
+      }
+    } catch (e) {
+      setCommissionReview(null);
+    }
+  };
+
   // ================= 互動處理與商業邏輯 (Handlers) =================
   const handleSelect = async (order: Commission) => {
     if (selectedId === order.id) return;
@@ -152,6 +172,7 @@ export function Notebook() {
     setIsTrajectoryExpanded(false); 
     fetchPayments(order.id);
     fetchDeliverables(order.id);
+    fetchCommissionReview(order.id); // 切換單據時拉取評價
 
     try {
       await fetch(`${API_BASE}/api/commissions/${order.id}`, {
@@ -496,7 +517,7 @@ export function Notebook() {
                 <button className={`tab-btn ${activeTab === 'oc' ? 'active' : ''}`} onClick={() => setActiveTab('oc')}>角色設定 (OC)</button>
                 <button className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`} onClick={() => setActiveTab('delivery')}>檔案交付</button>
                 <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>歷程紀錄</button>
-                
+                <button className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>客戶評價</button>
               </div>
 
               <div className="tab-content-area">
@@ -526,6 +547,56 @@ export function Notebook() {
                 {activeTab === 'oc' && (
                   <TabOC selectedOrder={selectedOrder} />
                 )}
+
+                {/* === 新增：客戶評價分頁內容 === */}
+                {activeTab === 'reviews' && (
+                  <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    {commissionReview ? (
+                      <div className="section-card" style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '24px', border: '1px solid #EAE6E1' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
+                           <h3 className="section-title" style={{ margin: 0 }}>⭐ 客戶評價</h3>
+                           <span style={{ fontSize: '13px', color: '#64748B' }}>{new Date(commissionReview.created_at).toLocaleDateString()}</span>
+                        </div>
+                        
+                        <div style={{ color: '#F59E0B', fontSize: '24px', marginBottom: '16px' }}>
+                           {'★'.repeat(commissionReview.rating) + '☆'.repeat(5 - commissionReview.rating)}
+                        </div>
+                        
+                        <div style={{ padding: '16px', backgroundColor: '#F8FAFC', borderRadius: '8px', whiteSpace: 'pre-wrap', color: '#334155', lineHeight: '1.6', fontSize: '14px' }}>
+                           {commissionReview.content || '(無文字評價)'}
+                        </div>
+                        
+                        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', flexWrap: 'wrap', gap: '12px' }}>
+                           <div style={{ color: '#64748B' }}>
+                             由 <strong style={{ color: '#334155' }}>{commissionReview.client_anonymous ? '匿名委託人' : getClientNameDisplay(selectedOrder)}</strong> 提供
+                           </div>
+                           
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                             {commissionReview.is_public ? (
+                               <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓ 已公開至個人頁</span>
+                             ) : (
+                               <span style={{ color: '#94A3B8' }}>未公開</span>
+                             )}
+                             <button 
+                               onClick={() => navigate('/artist/settings/reviews')} 
+                               className="action-btn btn-outline-default" 
+                               style={{ padding: '6px 12px', fontSize: '12px' }}
+                             >
+                               前往管理
+                             </button>
+                           </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="section-card" style={{ textAlign: 'center', padding: '40px 20px', color: '#94A3B8' }}>
+                         {selectedOrder?.status === 'completed' 
+                           ? '委託人尚未填寫評價，或已超過 3 日評價期限。' 
+                           : '此委託單尚未結案，目前無法產生評價。'}
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </div>
           )}

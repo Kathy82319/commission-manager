@@ -28,6 +28,7 @@ export function PublicProfile() {
   const [settings, setSettings] = useState<any>(null);
   const [showcaseItems, setShowcaseItems] = useState<any[]>([]);
   const [publicQueue, setPublicQueue] = useState<any[]>([]); 
+  const [publicReviews, setPublicReviews] = useState<any[]>([]); // 新增：公開評價狀態
   const [loading, setLoading] = useState(true);
   
   const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
@@ -92,15 +93,21 @@ export function PublicProfile() {
       if (!currentArtistId) return;
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        const [userRes, showcaseRes, ocRes] = await Promise.all([
+        const [userRes, showcaseRes, ocRes, reviewRes] = await Promise.all([
           fetch(`${API_BASE}/api/users/${currentArtistId}`),
           fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`),
-          fetch(`${API_BASE}/api/public/oc/${currentArtistId}`)
+          fetch(`${API_BASE}/api/public/oc/${currentArtistId}`),
+          fetch(`${API_BASE}/api/reviews/public/${currentArtistId}`) // 新增：拉取公開評價
         ]);
 
         const userData = await userRes.json();
         const showcaseData = await showcaseRes.json();
         const ocData = await ocRes.json();
+        const reviewData = await reviewRes.json();
+
+        if (reviewData.success) {
+          setPublicReviews(reviewData.data || []);
+        }
 
         if (userData.success && userData.data) {
           setArtist(userData.data);
@@ -230,6 +237,9 @@ export function PublicProfile() {
     if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
     if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
+    // 新增：如果有公開評價，動態產生精選評價 Tab (預設不給隱藏，除非一筆都沒有)
+    if (publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
+
     if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {
         settings.custom_sections.forEach((sec: any) => {
@@ -252,7 +262,7 @@ export function PublicProfile() {
     }
 
     return tabs;
-  }, [settings, showcaseItems, artist, publicOCs]);
+  }, [settings, showcaseItems, artist, publicOCs, publicReviews]);
 
   const currentTab = useMemo(() => {
     if (showcaseIdParam && availableTabs.some(t => t.id === 'showcase')) return 'showcase';
@@ -387,6 +397,36 @@ export function PublicProfile() {
                     </>
                   )}
                   {currentSelectedOC && <div style={{ width: '100%' }}><OCDetailCard ocData={currentSelectedOC} variant="flat" /></div>}
+                </div>
+              )}
+
+              {/* === 新增：精選評價展示區塊 === */}
+              {currentTab === 'reviews' && (
+                <div className="public-reviews-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+                  {publicReviews.map(review => (
+                    <div key={review.id} style={{ backgroundColor: sectionBg, border: `1px solid ${borderColor}`, borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '16px', color: textColor }}>
+                          {review.display_client_name}
+                        </div>
+                        <div style={{ fontSize: '13px', opacity: 0.6, color: textColor }}>
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      <div style={{ fontSize: '13px', opacity: 0.8, color: textColor, marginBottom: '16px', paddingBottom: '12px', borderBottom: `1px dashed ${borderColor}` }}>
+                        委託項目：{review.project_name || '客製化委託'}
+                      </div>
+                      
+                      <div style={{ color: '#F59E0B', fontSize: '20px', marginBottom: '16px', letterSpacing: '3px' }}>
+                        {'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}
+                      </div>
+                      
+                      <div style={{ fontSize: '15px', color: textColor, lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: isDarkText ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
+                        {review.content || '(無文字評價)'}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
