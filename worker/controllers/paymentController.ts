@@ -12,11 +12,13 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
+      // 清除該使用者超過 1 小時未付款的 pending 訂單 (避免卡死)
       await env.commission_db.prepare(`
         DELETE FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending' AND datetime(created_at) <= datetime('now', '-1 hour')
       `).bind(currentUserId).run();
 
+      // 檢查目前剩餘的 pending 數量 (防惡意洗單癱瘓)
       const { results: pendingRes } = await env.commission_db.prepare(`
         SELECT COUNT(*) as count FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending'
@@ -32,7 +34,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 150; // 收費金額
+      const amount = 150; // 💡 官方定價：150 元
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
       const backendUrl = env.BACKEND_URL;
@@ -119,15 +121,29 @@ export const paymentController = {
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-      const order = await env.commission_db.prepare("SELECT status, user_id FROM PaymentOrders WHERE id = ?").bind(orderId).first();
+      const order = await env.commission_db.prepare("SELECT status, user_id, amount FROM PaymentOrders WHERE id = ?").bind(orderId).first();
       if (!order) return new Response("OK");
 
-      if (order.status === 'paid') {
+      // 如果訂單已經處理過，或是處於欺詐狀態，就不再重複處理
+      if (order.status === 'paid' || order.status === 'fraud') {
         return new Response("OK");
       }
 
       const userId = order.user_id;
+      
+      // 🍯 溫和監測模式：比對實際金額與預期金額
+      const actualAmt = parseInt(data.Result.Amt, 10);
+      const expectedAmt = order.amount;
 
+      if (actualAmt !== expectedAmt) {
+        // 只寫入 LOG 進行人工監測，不封鎖帳號，讓下方升級邏輯繼續執行
+        await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
+          .bind(`🚨【異常監測 - 結帳金額不符】User: ${userId}, Order: ${orderId}, Expected: ${expectedAmt}, Actual: ${actualAmt}`)
+          .run();
+        console.warn(`Amount mismatch for user ${userId} on order ${orderId}`);
+      }
+
+      // 以下為正常的派發專業版流程
       const userRecord = await env.commission_db.prepare("SELECT plan_type, pro_expires_at FROM Users WHERE id = ?").bind(userId).first();
       
       let newExpiry = new Date();

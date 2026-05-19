@@ -1,3 +1,4 @@
+// worker/controllers/showcaseController.ts
 import { Env } from "../shared/types";
 import { sanitizeAndLimit, limitRichText } from "../utils/security";
 
@@ -94,6 +95,19 @@ export const showcaseController = {
   },
 
   async update(request: Request, itemId: string, userId: string, env: Env, headers: any) {
+    const existing = await env.commission_db.prepare("SELECT artist_id FROM ShowcaseItems WHERE id = ?").bind(itemId).first<{ artist_id: string }>();
+    
+    if (!existing) {
+      return new Response(JSON.stringify({ success: false, error: "找不到該項目" }), { status: 404, headers });
+    }
+
+    if (existing.artist_id !== userId) {
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
+        .bind(`🚨【異常監測 - 惡意越權操作 Showcase Update】User: ${userId} 嘗試更新 Item: ${itemId} (擁有者: ${existing.artist_id})`)
+        .run();
+      return new Response(JSON.stringify({ success: false, error: "無權限操作此項目" }), { status: 403, headers });
+    }
+
     const body: any = await request.json();
     
     const title = sanitizeAndLimit(body.title, 100);
@@ -128,6 +142,19 @@ export const showcaseController = {
   },
 
   async delete(itemId: string, userId: string, env: Env, headers: any) {
+    const existing = await env.commission_db.prepare("SELECT artist_id FROM ShowcaseItems WHERE id = ?").bind(itemId).first<{ artist_id: string }>();
+    
+    if (!existing) {
+      return new Response(JSON.stringify({ success: false, error: "找不到該項目" }), { status: 404, headers });
+    }
+
+    if (existing.artist_id !== userId) {
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
+        .bind(`🚨【異常監測 - 惡意越權刪除 Showcase】User: ${userId} 嘗試刪除 Item: ${itemId} (擁有者: ${existing.artist_id})`)
+        .run();
+      return new Response(JSON.stringify({ success: false, error: "無權限操作此項目" }), { status: 403, headers });
+    }
+
     await env.commission_db
       .prepare("DELETE FROM ShowcaseItems WHERE id = ? AND artist_id = ?")
       .bind(itemId, userId)
@@ -136,6 +163,19 @@ export const showcaseController = {
   },
 
   async resetOrdersCount(itemId: string, userId: string, env: Env, headers: any) {
+    const existing = await env.commission_db.prepare("SELECT artist_id FROM ShowcaseItems WHERE id = ?").bind(itemId).first<{ artist_id: string }>();
+    
+    if (!existing) {
+      return new Response(JSON.stringify({ success: false, error: "找不到該項目" }), { status: 404, headers });
+    }
+
+    if (existing.artist_id !== userId) {
+      await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
+        .bind(`🚨【異常監測 - 惡意越權重置滿單 Showcase】User: ${userId} 嘗試重置 Item: ${itemId} (擁有者: ${existing.artist_id})`)
+        .run();
+      return new Response(JSON.stringify({ success: false, error: "無權限操作此項目" }), { status: 403, headers });
+    }
+
     await env.commission_db
       .prepare("UPDATE ShowcaseItems SET current_orders_count = 0 WHERE id = ? AND artist_id = ?")
       .bind(itemId, userId)
