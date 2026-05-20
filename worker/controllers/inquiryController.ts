@@ -21,7 +21,6 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 🌟 核心修復：相容直接委託與一般許願池委託的資料表查詢
       const isDirect = inquiryId.startsWith('di-');
       let query = '';
       
@@ -48,7 +47,7 @@ export const inquiryController = {
                  LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
                  WHERE i.id = ?`;
       } else {
-        // 一般許願池查詢 (BulletinInquiries)
+        // 一般許願池查詢 (BulletinInquiries) - 🌟 修正：將 i.bulletid 改回正確的 i.bulletin_id
         query = `SELECT i.*, 
                         b.title as bulletin_title, 
                         b.content as bulletin_content, 
@@ -65,7 +64,7 @@ export const inquiryController = {
                         c.id as commission_id,
                         c.contact_memo
                  FROM BulletinInquiries i
-                 JOIN Bulletins b ON i.bulletid = b.id
+                 JOIN Bulletins b ON i.bulletin_id = b.id
                  LEFT JOIN Users a ON i.artist_id = a.id
                  LEFT JOIN Users u ON b.client_id = u.id
                  LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
@@ -85,7 +84,7 @@ export const inquiryController = {
 
       const actualArtistId = data.artist_id;
 
-      // 🌟 計算活跃訂單配额
+      // 計算活躍訂單配額
       let quotaInfo = null;
       if (currentUserId === actualArtistId) {
          const { results: countRes } = await env.commission_db.prepare(`
@@ -263,7 +262,7 @@ export const inquiryController = {
       const actualArtistId = inquiryData.artist_id;
 
       if (currentUserId !== actualArtistId) {
-        return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲弄草稿' }), { status: 403, headers: corsHeaders });
       }
 
       if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted') {
@@ -298,6 +297,7 @@ export const inquiryController = {
           SELECT showcase_title as title, artist_id, client_id as bulletin_client_id FROM DirectInquiries WHERE id = ?
         `).bind(inquiryId).first() as any;
       } else {
+        // 🌟 修正：將 i.bulletid 改回正確的 i.bulletin_id
         inquiryData = await env.commission_db.prepare(`
           SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
           FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
