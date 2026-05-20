@@ -203,13 +203,7 @@ export default {
         if (targetId === "outbound" && request.method === "GET") return directInquiryController.getOutboundList(currentUserId!, env, corsHeaders);
 
         if (targetId && targetId !== "outbound") {
-          
-          // 🌟 核心修改點：前端帶入 di-12345 時，削掉 "di-" 前綴，還原為乾淨的 UUID，並借調寫有 Quota 活躍單計算的 inquiryController
-          if (!subAction && request.method === "GET") {
-            const cleanUuid = targetId.startsWith('di-') ? targetId.replace('di-', '') : targetId;
-            return inquiryController.getInquiryDetail(cleanUuid, currentUserId!, env, corsHeaders);
-          }
-          
+          if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
@@ -380,7 +374,7 @@ export default {
         }
 
         if (pathParts[3] === "wishboard") {
-          if (request.method === "GET" && pathParts[4] === "reported") return adminController.getReportedBulletins(currentUserId!, env, corsHeaders);
+          if (request.method === "GET" && pathParts[4] === "reported") return adminController.getReportedBulletins(request, currentUserId!, env, corsHeaders);
           if (request.method === "GET" && pathParts[4] && pathParts[5] === "reports") {
             return adminController.getBulletinReports(request, pathParts[4], currentUserId!, env, corsHeaders);
           }

@@ -390,8 +390,9 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
       }
 
-      const actualClientId = inquiryData.bulletin_client_id;
-      const actualArtistId = inquiryData.artist_id;
+      const isOffer = inquiryData.bulletin_category === 'offer';
+      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
+      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
 
       if (currentUserId !== actualClientId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
