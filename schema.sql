@@ -404,9 +404,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 
 CREATE INDEX IF NOT EXISTS idx_calendar_events_artist ON calendar_events(artist_id);
 
---==========================================
 
-0519更新
 ALTER TABLE Users ADD COLUMN notification_email TEXT DEFAULT NULL;
 ALTER TABLE Users ADD COLUMN email_art_chat INTEGER DEFAULT 1;
 ALTER TABLE Users ADD COLUMN email_art_progress INTEGER DEFAULT 1;
