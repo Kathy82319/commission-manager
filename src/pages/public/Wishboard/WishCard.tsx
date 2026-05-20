@@ -147,7 +147,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       setIsCancelModalOpen(true);
     } else {
       if (window.confirm("確定要撤銷這篇許願發佈嗎？\n\n因為目前尚無繪師投遞，貼文將直接下架。")) {
-        executeCancel('委託人已撤銷許願 / 結束徵件');
+        executeCancel('已撤銷許願 / 結束徵件');
       }
     }
   };
@@ -562,7 +562,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 再想想
               </button>
               <button 
-                onClick={() => executeCancel(cancelReason || '委託人已撤銷許願 / 結束徵件')}
+                onClick={() => executeCancel(cancelReason || '已撤銷許願 / 結束徵件')}
                 disabled={isRevoking}
                 style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#EF4444', color: '#fff', cursor: isRevoking ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: isRevoking ? 0.7 : 1 }}
               >

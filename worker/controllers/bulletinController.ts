@@ -7,14 +7,13 @@ export const bulletinController = {
   async closeBulletin(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json().catch(() => ({})) as any;
-      const decline_reason = body.decline_reason || '委託人已撤銷許願 / 結束徵件';
+      const decline_reason = body.decline_reason || '已撤銷許願 / 結束徵件';
       
       const safeReason = decline_reason.substring(0, 200).replace(/[<>]/g, '');
 
       const bulletin = await env.commission_db.prepare(`SELECT id, title, category FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足或找不到貼文' }), { status: 403, headers: corsHeaders });
 
-      // 撈出所有尚未成單且未結案的洽談單
       const { results: pendingInquiries } = await env.commission_db.prepare(`
         SELECT i.id as inquiry_id, i.artist_id 
         FROM BulletinInquiries i 
