@@ -11,23 +11,45 @@ export const bulletinController = {
       
       const safeReason = decline_reason.substring(0, 200).replace(/[<>]/g, '');
 
-      const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first();
-      if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
+      const bulletin = await env.commission_db.prepare(`SELECT id, title, category FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
+      if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足或找不到貼文' }), { status: 403, headers: corsHeaders });
 
+      // 撈出所有尚未成單且未結案的洽談單
       const { results: pendingInquiries } = await env.commission_db.prepare(`
-        SELECT i.artist_id, b.title, b.category
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id
-        WHERE b.id = ? AND i.status = 'pending'
+        SELECT i.id as inquiry_id, i.artist_id 
+        FROM BulletinInquiries i 
+        WHERE i.bulletin_id = ? AND i.status IN ('pending', 'submitted', 'proposed')
       `).bind(bulletinId).all();
 
-      await env.commission_db.batch([
-        env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId),
-        env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'closed', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP WHERE bulletin_id = ? AND status = 'pending'`).bind(safeReason, bulletinId)
-      ]);
+      const batchOps = [];
 
+      // 1. 將貼文本身軟刪除 (狀態改為 closed)
+      batchOps.push(env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId));
+      
+      // 2. 將尚未成單的洽談單狀態改為 declined，並寫入婉拒理由
+      batchOps.push(env.commission_db.prepare(`
+        UPDATE BulletinInquiries 
+        SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
+        WHERE bulletin_id = ? AND status IN ('pending', 'submitted', 'proposed')
+      `).bind(safeReason, bulletinId));
+
+      // 3. 在聊天紀錄中替委託人代發婉拒留言
       for (const item of pendingInquiries as any[]) {
-        const title = item.title || '未命名';
-        const isOffer = item.category === 'offer';
+        const msgId = crypto.randomUUID();
+        batchOps.push(
+          env.commission_db.prepare(`
+            INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) 
+            VALUES (?, ?, ?, ?, 'text')
+          `).bind(msgId, item.inquiry_id, currentUserId, `[系統代理] ${safeReason}`)
+        );
+      }
+
+      await env.commission_db.batch(batchOps);
+
+      // 4. 發送系統通知給被婉拒的繪師
+      for (const item of pendingInquiries as any[]) {
+        const title = bulletin.title || '未命名';
+        const isOffer = bulletin.category === 'offer';
         const text = isOffer ? `🌟 「${title}」已額滿或結束招收。` : `🌟 關於提案「${title}」，案主已撤銷許願或結束徵件。`;
         const link = isOffer ? '/client/inbox' : '/artist/inbox';
         await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
@@ -547,7 +569,6 @@ export const bulletinController = {
       return new Response(JSON.stringify({ success: false, error: '讀取額度發生異常' }), { status: 500, headers: corsHeaders });
     }
   },
-
 
   async reportBulletin(request: Request, targetId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
