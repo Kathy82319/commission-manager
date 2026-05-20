@@ -33,6 +33,14 @@ export default {
       redirectUrl.searchParams.set("payment", "success");
       return Response.redirect(redirectUrl.toString(), 303);
     }
+
+    // 💡 核心修正一：高階邊緣路由放行閘道
+    // 凡是不屬於 /api/ 的請求（例如前端路由 /portal, /artist/queue 或靜態資產），
+    // 立即交還給 Cloudflare Pages 內建的網頁引擎處理，絕對不要在 Worker 內部執行二次代理，
+    // 這能百分之百根治手機端 LINE 內建瀏覽器與複製分頁的 "redirect mode is not 'follow'" 災難。
+    if (!sanitizedPath.startsWith("/api")) {
+      return env.ASSETS.fetch(request);
+    }
     
     const allowedOrigins = [
       env.FRONTEND_URL, 
@@ -441,14 +449,12 @@ export default {
         if (request.method === "POST" && sanitizedPath.endsWith("/mock-upgrade")) return testController.mockUpgrade(currentUserId!, env, corsHeaders);
       }
 
+      // 💡 修正二：當請求屬於 /api/ 路徑但未能匹配任何終端節點時，回傳標準的 API 404 邊緣防禦響應
       return new Response(JSON.stringify({ success: false, error: "API Route Not Found" }), { status: 404, headers: corsHeaders });
     }
 
-    const assetResponse = await env.ASSETS.fetch(request as any);
-    if (assetResponse.status === 404 || sanitizedPath.includes("@")) {
-      const indexRequest = new Request(new URL("/", request.url).toString(), request as any);
-      return env.ASSETS.fetch(indexRequest as any);
-    }
-    return assetResponse as any;
+    // 💡 修正三：徹底移除原本混淆的末端 ASSETS.fetch 快取回退邏輯，
+    // 讓純網頁請求完全在第 21 行放行回歸 Cloudflare Native Pages 引擎處理。
+    return new Response(JSON.stringify({ success: false, error: "Malformed System Routing" }), { status: 400, headers: corsHeaders });
   } 
 };

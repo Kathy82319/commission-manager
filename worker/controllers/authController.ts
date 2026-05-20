@@ -4,10 +4,8 @@ import { getLineLoginUrl, getLineToken, getLineProfile } from "../services/line"
 import { generateToken, sanitizeAndLimit } from "../utils/security";
 import { getUserById, createNewUser } from "../services/db";
 
-// 💡 修正一：將登入憑證改為 SameSite=None; Secure，確保手機版 LINE/Threads 內建瀏覽器跳轉時不被強行丟棄
-const SESSION_COOKIE_OPTIONS = "Path=/; Max-Age=2592000; SameSite=None; Secure; HttpOnly";
-// 💡 修正二：加入 Partitioned 屬性（CHIPS），確保在 iOS / 現代智慧型手機高度限縮第三方 Cookie 的環境下，oauth_state 依然能在 LINE 內建瀏覽器中被正確寫入與讀取
-const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnly; Partitioned";
+const SESSION_COOKIE_OPTIONS = "Path=/; Max-Age=2592000; SameSite=Lax; Secure; HttpOnly";
+const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnly";
 
 export const authController = {
 
@@ -83,8 +81,7 @@ export const authController = {
       const responseHeaders = new Headers(corsHeaders);
       responseHeaders.set('Location', `${baseUrl}${targetPath}`);
       responseHeaders.append('Set-Cookie', `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`);
-      // 💡 修正三：清理 oauth_state 時同步補上 Partitioned 與 SameSite=None，確保乾淨抹除
-      responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly; Partitioned`);
+      responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly`);
 
       return new Response(null, {
         status: 302,
@@ -103,8 +100,7 @@ export const authController = {
       status: 200,
       headers: {
         ...corsHeaders,
-        // 💡 修正四：登出時 user_session 的清理策略需與 SESSION_COOKIE_OPTIONS 的 SameSite=None 保持完全一致，否則瀏覽器會拒絕抹除
-        'Set-Cookie': `user_session=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly`,
+        'Set-Cookie': `user_session=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly`,
       }
     });
   }
