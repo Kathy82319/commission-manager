@@ -49,26 +49,35 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   
   const [tosContent, setTosContent] = useState('');
 
-  const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; used_quota: number; max_quota: number } | null>(null);
+  // 🌟 核心修正：改為監控活躍訂單額度
+  const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; active_quota: number; max_quota: number } | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
 
   useEffect(() => {
     const fetchArtistSettings = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
-        const data = await res.json();
+        // 🌟 修正：改撈取活躍單數量
+        const [meRes, commRes] = await Promise.all([
+            fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
+            fetch(`${API_BASE}/api/commissions`, { credentials: 'include' })
+        ]);
+        const meData = await meRes.json();
+        const commData = await commRes.json();
         
-        if (data.success && data.data) {
+        if (meData.success && meData.data) {
+          // 計算目前 status 不為 'completed' 或 'cancelled' 的訂單數量
+          const activeOrders = commData.success ? commData.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled') : [];
+          
           setQuotaInfo({
-            plan_type: data.data.plan_type || 'free',
-            used_quota: data.data.used_quota || 0,
-            max_quota: data.data.max_quota || 3
+            plan_type: meData.data.plan_type || 'free',
+            active_quota: activeOrders.length,
+            max_quota: meData.data.plan_type === 'pro' ? 999999 : 3
           });
 
-          if (data.data.profile_settings) {
+          if (meData.data.profile_settings) {
             try {
-              const parsed = JSON.parse(data.data.profile_settings);
+              const parsed = JSON.parse(meData.data.profile_settings);
               if (parsed.rules) setTosContent(parsed.rules);
             } catch (e) {}
           }
@@ -80,7 +89,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     fetchArtistSettings();
   }, []);
 
-  const isQuotaExceeded = quotaInfo !== null && quotaInfo.max_quota !== -1 && quotaInfo.used_quota >= quotaInfo.max_quota;
+  const isQuotaExceeded = quotaInfo !== null && quotaInfo.max_quota !== 999999 && quotaInfo.active_quota >= quotaInfo.max_quota;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -110,7 +119,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   };
 
   const handleSubmit = async () => {
-    if (isQuotaExceeded) return alert('建單額度已用盡，請升級方案！');
+    if (isQuotaExceeded) return alert('目前活躍單已達上限，請先結案舊訂單或升級方案！');
     
     if (workflowMode === 'standard') {
         if (formData.usage_type === '其他' && !customFields.usage_type.trim()) return alert('請填寫委託用途');
@@ -176,9 +185,9 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
             <h2 className="quote-header-title">產出新委託單</h2>
             {quotaInfo && (
               <div className={`plan-badge ${quotaInfo.plan_type}`}>
-                {quotaInfo.plan_type === 'pro' && '目前方案：專業版 (無限建單額度)'}
-                {quotaInfo.plan_type === 'trial' && `目前方案：專業版試用 | 試用期已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
-                {quotaInfo.plan_type === 'free' && `目前方案：基礎免費版 | 本月已建立：${quotaInfo.used_quota} / ${quotaInfo.max_quota} 筆`}
+                {quotaInfo.plan_type === 'pro' && '目前方案：專業版 (無限活躍單額度)'}
+                {(quotaInfo.plan_type === 'free' || quotaInfo.plan_type === 'trial') && 
+                  `目前方案：${quotaInfo.plan_type === 'free' ? '基礎免費版' : '專業版試用'} | 目前活躍單：${quotaInfo.active_quota} / ${quotaInfo.max_quota} 筆`}
               </div>
             )}
           </div>
@@ -199,13 +208,12 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
           </div>
         </div>
       )}
-
       
       {isModal && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', paddingRight: '40px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '20px', color: '#5D4A3E' }}>建立新委託單</h2>
-            {quotaInfo?.plan_type === 'free' && <span style={{ fontSize: '12px', color: '#7A7269' }}>本月額度：{quotaInfo.used_quota} / {quotaInfo.max_quota} 筆</span>}
+            {quotaInfo && <span style={{ fontSize: '12px', color: '#7A7269' }}>活躍單額度：{quotaInfo.active_quota} / {quotaInfo.max_quota} 筆</span>}
           </div>
           <div className="mode-toggle-group" style={{ margin: 0 }}>
             <button onClick={() => setWorkflowMode('standard')} className={`mode-btn ${workflowMode === 'standard' ? 'active' : ''}`}>標準委託</button>
@@ -224,8 +232,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
         <div className="quote-card">
           <h3 className="quote-card-title">基本資訊設定</h3>
           <div className="form-grid">
-            
-            
             <div className="form-grid-full">
               <label className="form-label">委託人名稱 (選填)</label>
               <input type="text" name="client_name" value={formData.client_name} onChange={handleChange} className="form-input" placeholder="可在此紀錄委託方的暱稱或聯絡方式" />
@@ -301,17 +307,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
                   <option value="三階段審閱">三階段審閱</option><option value="一鍵出圖">一鍵出圖</option>
                 </select>
               )}
-              
-              {showDeliveryHelp && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                  <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)' }} onClick={() => setShowDeliveryHelp(false)} />
-                  <div style={{ position: 'relative', width: '100%', maxWidth: '300px', padding: '20px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
-                    <h4 style={{ marginTop: 0, fontSize: '15px' }}>交稿方式說明</h4>
-                    <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0' }}>三階段模式下，系統會引導委託人進行草稿/線稿/完稿審閱。完稿需經委託人按下「同意稿件」才會結單。</p>
-                    <button onClick={() => setShowDeliveryHelp(false)} style={{ marginTop: '16px', width: '100%', padding: '8px', background: '#F4F0EB', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>關閉</button>
-                  </div>
-                </div>
-              )}
             </div>
             
             <div>
@@ -344,7 +339,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
             </div>
 
             <div className="form-grid-full" style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px dashed #EAE6E1' }}>
-              
               <label className="form-label">附加項目{workflowMode === 'standard' && <span className="req-star">*</span>}</label>
               <div className="addon-tags-container" style={{ alignItems: 'center' }}>
                 {baseAddOnsList.map(item => {
@@ -384,30 +378,16 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
 
         <div className="quote-card form-grid-full">
           <h3 className="quote-card-title">協議書內容與備註</h3>
-
           <div>
-            <label className="form-label">
-              協議書內容 (自訂)
-              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
-                *內容將做為該單的初始協議書快照，之後無法更改*
-              </span>
-              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
-                *可至個人設定→協議書內容那寫入範本，之後每次會自動代入*
-              </span>
-            </label>
+            <label className="form-label">協議書內容 (自訂)</label>
             <div className="quote-quill-wrapper">
               <ReactQuill theme="snow" value={tosContent} onChange={setTosContent} modules={customQuillModules} />
             </div>
           </div>
-
           <div>
-            <label className="form-label">
-              詳細設定 
-              {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}> (僅繪師註記)</span>}
-            </label>
+            <label className="form-label">詳細設定</label>
             <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} className="form-input" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
           </div>
-
           <div style={{ marginTop: '12px' }}>
             <button onClick={handleSubmit} className="submit-btn" style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
               確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
@@ -420,20 +400,13 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
         <div className="quota-modal-overlay">
           <div className="quota-modal-box">
             <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
-            <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>建單額度已用盡</h3>
+            <h3 style={{ margin: '0 0 12px 0', color: '#5D4A3E', fontSize: '22px' }}>活躍委託已達上限</h3>
             <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
-              {quotaInfo?.plan_type === 'trial' 
-                ? '您的專業版試用額度已用完。升級專業版獲得無限建單額度！' 
-                : '基礎免費版每月最多建立 3 筆委託。升級以解鎖無限額度！'}
+              目前您有 {quotaInfo?.active_quota} 筆活躍中的委託。基礎免費版同時僅允許 {quotaInfo?.max_quota} 筆進行中訂單。請先結案舊訂單或升級方案！
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); navigate('/artist/settings'); }} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-                前往升級方案
-              </button>
-              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); else navigate('/artist/queue'); }} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                返回
-              </button>
-            </div>
+            <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+              前往管理 / 升級方案
+            </button>
           </div>
         </div>
       )}

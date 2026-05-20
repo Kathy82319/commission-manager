@@ -154,15 +154,13 @@ export const userController = {
         settings = {};
       }
 
-      const limits: Record<string, number> = { free: 6, trial: 20, pro: 30 };
+      const limits: Record<string, number> = { free: 6, trial: 20, pro: 40 };
       const currentLimit = limits[userPlan as string] || 6;
 
+      // [優化] 改為優雅截斷陣列，而不是直接拒絕儲存
       if (Array.isArray(settings.portfolio)) {
-        if (settings.portfolio.length > 40) {
-          return new Response(JSON.stringify({ success: false, error: "系統容量極限為 40 張" }), { status: 403, headers: corsHeaders });
-        }
         if (settings.portfolio.length > currentLimit) {
-          return new Response(JSON.stringify({ success: false, error: "免費版本已達上限" }), { status: 403, headers: corsHeaders });
+          settings.portfolio = settings.portfolio.slice(0, currentLimit);
         }
       }
     }
@@ -184,7 +182,7 @@ export const userController = {
       userParams.push(sanitizeAndLimit(body.bio, 500));
     }
 
-    // 新增：Email 相關設定更新
+    // Email 相關設定更新
     if (body.notification_email !== undefined) {
       userUpdates.push("notification_email = ?");
       userParams.push(body.notification_email ? sanitizeAndLimit(body.notification_email, 150) : null);
@@ -196,7 +194,7 @@ export const userController = {
     for (const flag of emailFlags) {
       if (body[flag] !== undefined) {
         userUpdates.push(`${flag} = ?`);
-        userParams.push(body[flag] ? 1 : 0); // 確保轉為 1 或 0 存入 DB
+        userParams.push(body[flag] ? 1 : 0); 
       }
     }
 
