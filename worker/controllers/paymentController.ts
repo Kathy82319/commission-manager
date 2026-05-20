@@ -23,7 +23,7 @@ export const paymentController = {
       const { results: pendingRes } = await env.commission_db.prepare(`
         SELECT COUNT(*) as count FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending'
-      `).all();
+      `).bind(currentUserId).all();
 
       if (((pendingRes[0]?.count as number) || 0) >= 5) {
         return new Response(JSON.stringify({ 
