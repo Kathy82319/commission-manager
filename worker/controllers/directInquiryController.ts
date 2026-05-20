@@ -119,49 +119,65 @@ export const directInquiryController = {
     }
   },
 
-  async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
-    try {
-      const inquiry = await env.commission_db.prepare(`
-        SELECT di.*, 
-               s.title as bulletin_title, 
-               s.title as showcase_title,
-               a.profile_settings as artist_settings,
-               a.display_name as artist_name,
-               a.public_id as artist_public_id,
-              
-               COALESCE(c.client_id, di.client_id) as client_id,
-               COALESCE(bu.display_name, u.display_name) as client_name,
-               COALESCE(bu.public_id, u.public_id) as client_public_id,
-               c.id as commission_id,
-               c.contact_memo
-        FROM DirectInquiries di
-        JOIN ShowcaseItems s ON di.showcase_id = s.id
-        JOIN Users a ON di.artist_id = a.id
-        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
-        LEFT JOIN Users u ON di.client_id = u.id
-        LEFT JOIN Users bu ON c.client_id = bu.id
-        WHERE di.id = ?
-      `).bind(inquiryId).first() as any;
+  // 修改後的 worker/controllers/directInquiryController.ts -> getDetail 方法
+async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
+  try {
+    const inquiry = await env.commission_db.prepare(`
+      SELECT di.*, 
+             s.title as showcase_title,
+             a.profile_settings as artist_settings,
+             a.plan_type as artist_plan, 
+             a.pro_expires_at, 
+             a.trial_end_at,
+             a.display_name as artist_name,
+             a.public_id as artist_public_id,
+             COALESCE(c.client_id, di.client_id) as client_id,
+             COALESCE(bu.display_name, u.display_name) as client_name,
+             COALESCE(bu.public_id, u.public_id) as client_public_id,
+             c.id as commission_id,
+             c.contact_memo
+      FROM DirectInquiries di
+      JOIN ShowcaseItems s ON di.showcase_id = s.id
+      JOIN Users a ON di.artist_id = a.id
+      LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
+      LEFT JOIN Users u ON di.client_id = u.id
+      LEFT JOIN Users bu ON c.client_id = bu.id
+      WHERE di.id = ?
+    `).bind(inquiryId).first() as any;
 
-      if (!inquiry) return new Response(JSON.stringify({ success: false, message: '找不到此訂單' }), { status: 404, headers: corsHeaders });
+    if (!inquiry) return new Response(JSON.stringify({ success: false, message: '找不到此訂單' }), { status: 404, headers: corsHeaders });
 
-      if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
-        return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
-      }
-
-      const updateField = currentUserId === inquiry.artist_id ? 'last_read_at_artist' : 'last_read_at_client';
-      await env.commission_db.prepare(`UPDATE DirectInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
-
-      const formattedInquiry = {
-        ...inquiry,
-        client_id: inquiry.client_id === 'guest' ? null : inquiry.client_id
-      };
-
-      return new Response(JSON.stringify({ success: true, data: formattedInquiry }), { headers: corsHeaders });
-    } catch (error: any) {
-      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
+      return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
     }
-  },
+
+    // 新增：計算額度邏輯
+    let quotaInfo = null;
+    if (currentUserId === inquiry.artist_id) {
+       const { results: countRes } = await env.commission_db.prepare(`
+         SELECT COUNT(*) as count FROM Commissions 
+         WHERE artist_id = ? AND status NOT IN ('completed', 'cancelled')
+       `).bind(inquiry.artist_id).all();
+       const used = countRes[0]?.count || 0;
+       
+       const isPro = inquiry.artist_plan === 'pro' && (!inquiry.pro_expires_at || new Date(inquiry.pro_expires_at) > new Date());
+       const isTrial = inquiry.artist_plan === 'trial' && (!inquiry.trial_end_at || new Date(inquiry.trial_end_at) > new Date());
+       const max = (isPro || isTrial) ? -1 : 3;
+       
+       quotaInfo = { used_quota: used, max_quota: max, plan_type: inquiry.artist_plan };
+    }
+
+    const updateField = currentUserId === inquiry.artist_id ? 'last_read_at_artist' : 'last_read_at_client';
+    await env.commission_db.prepare(`UPDATE DirectInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+
+    const formattedInquiry = { ...inquiry, client_id: inquiry.client_id === 'guest' ? null : inquiry.client_id };
+
+    // 回傳時包含 quota
+    return new Response(JSON.stringify({ success: true, data: formattedInquiry, quota: quotaInfo }), { headers: corsHeaders });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+  }
+},
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {

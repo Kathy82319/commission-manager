@@ -725,7 +725,6 @@ export const InquiryWorkspace: React.FC = () => {
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
-                {/* 🌟 核心變更：移除舊有的 `!isDirectInquiry` 分支邏輯，不論何種洽談來源，只要身分為繪師且有額度資訊，一律統一顯示活躍單配額標籤 */}
                 {isArtist && artistQuota && (
                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `活躍訂單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
