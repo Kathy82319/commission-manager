@@ -49,7 +49,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   
   const [tosContent, setTosContent] = useState('');
 
-  // 🌟 核心修正：改為監控活躍訂單額度
+  // 🌟 核心修正：改為監控活躍委託額度資訊狀態
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; active_quota: number; max_quota: number } | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
 
@@ -57,16 +57,16 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     const fetchArtistSettings = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        // 🌟 修正：改撈取活躍單數量
+        // 🌟 修正：並行拉取使用者身分與全部委託清單，用以交叉計算活躍中的總量
         const [meRes, commRes] = await Promise.all([
-            fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
-            fetch(`${API_BASE}/api/commissions`, { credentials: 'include' })
+          fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
+          fetch(`${API_BASE}/api/commissions`, { credentials: 'include' })
         ]);
         const meData = await meRes.json();
         const commData = await commRes.json();
         
         if (meData.success && meData.data) {
-          // 計算目前 status 不為 'completed' 或 'cancelled' 的訂單數量
+          // 🌟 修正：過濾出目前 status 不為 'completed'（已結案）且不為 'cancelled'（已作廢）的活躍訂單
           const activeOrders = commData.success ? commData.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled') : [];
           
           setQuotaInfo({
@@ -89,6 +89,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     fetchArtistSettings();
   }, []);
 
+  // 🌟 核心修正：判斷是否超額的標準改由 active_quota（活躍中訂單量）進行評估
   const isQuotaExceeded = quotaInfo !== null && quotaInfo.max_quota !== 999999 && quotaInfo.active_quota >= quotaInfo.max_quota;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -134,7 +135,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
       workflow_mode: workflowMode,
       add_ons: finalAddOnsString,
       usage_type: formData.usage_type === '其他' ? customFields.usage_type : formData.usage_type,
-      payment_method: formData.payment_method === '其他' ? customFields.payment_method : formData.payment_method,
+      payment_method: formData.payment_method === '開源' || formData.payment_method === '其他' ? customFields.payment_method : formData.payment_method,
       draw_scope: formData.draw_scope === '其他' ? customFields.draw_scope : formData.draw_scope,
       bg_type: formData.bg_type === '其他' ? customFields.bg_type : formData.bg_type,
       agreed_tos_snapshot: tosContent 
@@ -280,7 +281,7 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
                 <select name="usage_type" value={formData.usage_type} onChange={handleChange} className="form-input">
                   <option value="商用">商用</option><option value="非商用">非商用</option><option value="其他">其他</option>
                 </select>
-                {formData.usage_type === '其他' && (
+                {formData.usage_type === '開源' || formData.usage_type === '其他' && (
                   <input type="text" name="usage_type" placeholder="說明..." value={customFields.usage_type} onChange={handleCustomFieldChange} className="form-input" />
                 )}
               </div>
@@ -306,6 +307,17 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
                 <select name="delivery_method" value={formData.delivery_method} onChange={handleChange} className="form-input">
                   <option value="三階段審閱">三階段審閱</option><option value="一鍵出圖">一鍵出圖</option>
                 </select>
+              )}
+              
+              {showDeliveryHelp && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                  <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)' }} onClick={() => setShowDeliveryHelp(false)} />
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '300px', padding: '20px', backgroundColor: '#FFFFFF', border: '1px solid #DED9D3', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', color: '#5D4A3E' }}>
+                    <h4 style={{ marginTop: 0, fontSize: '15px' }}>交稿方式說明</h4>
+                    <p style={{ fontSize: '13px', lineHeight: '1.6', margin: '8px 0 0 0' }}>三階段模式下，系統會引導委託人進行草稿/線稿/完稿審閱。完稿需經委託人按下「同意稿件」才會結單。</p>
+                    <button onClick={() => setShowDeliveryHelp(false)} style={{ marginTop: '16px', width: '100%', padding: '8px', background: '#F4F0EB', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>關閉</button>
+                  </div>
+                </div>
               )}
             </div>
             
@@ -378,16 +390,30 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
 
         <div className="quote-card form-grid-full">
           <h3 className="quote-card-title">協議書內容與備註</h3>
+
           <div>
-            <label className="form-label">協議書內容 (自訂)</label>
+            <label className="form-label">
+              協議書內容 (自訂)
+              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
+                *內容將做為該單的初始協議書快照，之後無法更改*
+              </span>
+              <span style={{ color: '#4A7294', fontSize: '11px', fontWeight: 'normal', display: 'block', marginTop: '4px' }}>
+                *可至個人設定→協議書內容那寫入範本，之後每次會自動代入*
+              </span>
+            </label>
             <div className="quote-quill-wrapper">
               <ReactQuill theme="snow" value={tosContent} onChange={setTosContent} modules={customQuillModules} />
             </div>
           </div>
+
           <div>
-            <label className="form-label">詳細設定</label>
+            <label className="form-label">
+              詳細設定 
+              {workflowMode === 'standard' && <span style={{ color: '#A0978D', fontSize: '11px', fontWeight: 'normal' }}> (僅繪師註記)</span>}
+            </label>
             <textarea name="detailed_settings" value={formData.detailed_settings} onChange={handleChange} className="form-input" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="請輸入角色設定或要求..." />
           </div>
+
           <div style={{ marginTop: '12px' }}>
             <button onClick={handleSubmit} className="submit-btn" style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
               確認產出{workflowMode === 'free' ? '自由紀錄單' : '委託單'}
@@ -404,9 +430,14 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
             <p style={{ color: '#7A7269', fontSize: '14px', lineHeight: '1.6', marginBottom: '30px' }}>
               目前您有 {quotaInfo?.active_quota} 筆活躍中的委託。基礎免費版同時僅允許 {quotaInfo?.max_quota} 筆進行中訂單。請先結案舊訂單或升級方案！
             </p>
-            <button onClick={() => navigate('/artist/settings')} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-              前往管理 / 升級方案
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); navigate('/artist/settings'); }} style={{ padding: '14px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                前往升級方案
+              </button>
+              <button onClick={() => { if(isModal && onSuccess) onSuccess(''); else navigate('/artist/queue'); }} style={{ padding: '12px', backgroundColor: 'transparent', color: '#7A7269', border: '1px solid #DED9D3', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                返回
+              </button>
+            </div>
           </div>
         </div>
       )}

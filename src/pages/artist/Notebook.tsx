@@ -85,7 +85,13 @@ export function Notebook() {
           setEditData(target);
           fetchPayments(target.id);
           fetchDeliverables(target.id);
-          fetchCommissionReview(target.id); // 拉取評價
+          fetchCommissionReview(target.id);
+          
+          // 確保從通知點進來時，activeTab 能立刻同步網址上的 reviews 狀態
+          const urlTab = queryParams.get('tab') as any;
+          if (urlTab === 'reviews') {
+            setActiveTab('reviews');
+          }
         }
       } else if (!isInitialLoad && selectedId) {
         const target = data.data.find((c: Commission) => c.id === selectedId);

@@ -70,8 +70,8 @@ export const reviewController = {
         env, 
         comm.artist_id, 
         'bulletin', 
-        `🌟 委託人已為委託單「${comm.project_name || commissionId}」留下評價，快去評價管理審核公開吧！`, 
-        `/artist/settings?tab=reviews`
+        `🌟 委託人已為委託單「${comm.project_name || commissionId}」留下評價，快去看看評價吧！`, 
+        `/artist/notebook?id=${commissionId}&tab=reviews`
       );
 
       return new Response(JSON.stringify({ success: true, id: reviewId }), { status: 200, headers: corsHeaders });
