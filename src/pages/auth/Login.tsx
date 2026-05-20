@@ -3,7 +3,9 @@ import '../../styles/Auth.css';
 
 export function Login() {
   const handleLineLogin = () => {
-    window.location.href = '/api/auth/line/login';
+    // 💡 商業邏輯優化：使用絕對路徑動態拼接，強制打破 SPA 路由攔截，確保瀏覽器發起真實網域請求
+    const absoluteLoginUrl = `${window.location.origin}/api/auth/line/login`;
+    window.location.href = absoluteLoginUrl;
   };
 
   return (
