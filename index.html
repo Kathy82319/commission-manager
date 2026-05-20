@@ -1,17 +1,43 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <!-- 為了讓 PWA 在手機上體驗更像原生 APP，鎖定縮放比例 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    
-    <!-- PWA 必備標籤 -->
-    <meta name="theme-color" content="#ffffff" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
-    <link rel="manifest" href="/manifest.json" />
-    
-    <title>Arti繪師小幫手</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arti 繪師委託管理系統</title>
+
+    <script>
+      // 1. 檢測是否為手機版內建瀏覽器（LINE, FB, Threads, Instagram 等 WebKit 容器）
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileApp = /Line|FBAV|FBAN|Twitter|Instagram|Threads/i.test(ua);
+
+      if ('serviceWorker' in navigator) {
+        // 2. 如果是手機行動端，在加載前執行「降維打擊」，強制註銷全體舊有的 Service Worker
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          let hasUnregistered = false;
+          for (let registration of registrations) {
+            registration.unregister();
+            hasUnregistered = true;
+          }
+          // 3. 只要有清除舊的 Worker，立刻強制刷新頁面，逼迫手機直接去網路（Network）抓你最新部署的代碼
+          if (hasUnregistered && isMobileApp) {
+            console.log('[Mobile Sync] 偵測到手機內建瀏覽器，強制抹除舊快取並重整...');
+            window.location.reload(true);
+          }
+        }).catch(function(err) {
+          console.error('Service Worker clear failed:', err);
+        });
+      }
+
+      // 4. 全域監聽防禦：如果手機端瀏覽器不幸觸發了底層 Fetch 網路錯誤或沙盒警報
+      window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('FetchEvent')) {
+          console.log('[Mobile Sandbox Recovery] 偵測到手機沙盒衝突，執行強制脫困導向...');
+          // 發現卡死就強制導回首頁或重新加載，打破 chrome-error://chromewebdata/ 的死鎖
+          window.location.href = window.location.origin + '/portal';
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
