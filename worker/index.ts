@@ -203,7 +203,7 @@ export default {
         if (targetId === "outbound" && request.method === "GET") return directInquiryController.getOutboundList(currentUserId!, env, corsHeaders);
 
         if (targetId && targetId !== "outbound") {
-          if (!subAction && request.method === "GET") return directInquiryController.getDetail(targetId, currentUserId!, env, corsHeaders);
+          if (!subAction && request.method === "GET") return inquiryController.getInquiryDetail(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "convert-free" && request.method === "POST") return directInquiryController.convertToFreeMode(targetId, currentUserId!, env, corsHeaders);
           if (subAction === "draft" && request.method === "PATCH") return directInquiryController.saveDraft(request, targetId, currentUserId!, env, corsHeaders);
           if (subAction === "propose" && request.method === "POST") return directInquiryController.proposeAgreement(targetId, currentUserId!, env, corsHeaders);
