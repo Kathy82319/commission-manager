@@ -20,7 +20,7 @@ export const paymentController = {
       const { results: pendingRes } = await env.commission_db.prepare(`
         SELECT COUNT(*) as count FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending'
-      `).bind(currentUserId).all();
+      `).all();
 
       if (((pendingRes[0]?.count as number) || 0) >= 5) {
         return new Response(JSON.stringify({ 
@@ -34,7 +34,9 @@ export const paymentController = {
       
       const amount = 150; //都已經很便宜了就別玩我了QAQ
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      const absoluteFrontendUrl = "https://commission-app.pages.pages.dev";
+      
+      // 商業邏輯優化：動態讀取環境變數，確保轉移網域時，金流導向與主網域完全一致
+      const absoluteFrontendUrl = (env.FRONTEND_URL || "https://arti7.net").replace(/\/$/, "");
       const backendUrl = env.BACKEND_URL;
       
       await env.commission_db.prepare(
@@ -49,7 +51,7 @@ export const paymentController = {
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
         ItemDesc: "繪師管理系統 - 專業版訂閱 (30天)",
-        Email: "user@example.com", 
+        Email: "cath40286@gmail.com", 
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`,
         NotifyURL: `${backendUrl}/api/payment/notify`,

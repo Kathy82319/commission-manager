@@ -9,7 +9,6 @@ const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnl
 
 export const authController = {
 
-
   async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
       return new Response(JSON.stringify({ success: false, error: "環境變數未設定" }), { 
@@ -71,13 +70,13 @@ export const authController = {
         return new Response(JSON.stringify({ success: false, error: "帳號已被停用" }), { 
           status: 401, 
           headers: corsHeaders 
-        });
+          });
       } else {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-
-      const baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
+      // 商業邏輯優化：優先採用主網域 FRONTEND_URL，防止因回調設定不一致產生跨域 Session 丟失
+      const baseUrl = (env.FRONTEND_URL || (env.LINE_REDIRECT_URI ? new URL(env.LINE_REDIRECT_URI).origin : "")).replace(/\/$/, "");
       
       const responseHeaders = new Headers(corsHeaders);
       responseHeaders.set('Location', `${baseUrl}${targetPath}`);
