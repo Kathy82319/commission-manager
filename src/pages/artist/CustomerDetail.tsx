@@ -119,9 +119,6 @@ export function CustomerDetail() {
     handleUpdate({ contact_methods: newContacts });
   };
 
-  const renderStars = (rating: number) => {
-    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
-  };
 
   if (isLoading) return <div className="loading-screen">讀取中...</div>;
   if (!data) return <div className="loading-screen">找不到客戶資料</div>;

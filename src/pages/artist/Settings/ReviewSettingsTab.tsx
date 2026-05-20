@@ -75,17 +75,13 @@ export function ReviewSettingsTab({ onToast }: Props) {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
-  };
+
 
   const pendingReviews = reviews.filter(r => r.is_public === 0);
   const publishedReviews = reviews.filter(r => r.is_public === 1);
   const displayReviews = activeTab === 'pending' ? pendingReviews : publishedReviews;
 
-  const avgRating = reviews.length > 0 
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : '0.0';
+
 
   if (isLoading) {
     return <div style={{ padding: '80px', textAlign: 'center', color: '#A0978D' }}>載入評價資料中...</div>;
