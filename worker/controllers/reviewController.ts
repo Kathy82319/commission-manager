@@ -4,7 +4,6 @@ import { sanitizeAndLimit } from "../utils/security";
 import { notificationController } from './notificationController';
 
 export const reviewController = {
-  // 1. 委託人新增評價 (限結案後 3 天內)
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     try {
       const body = await request.json() as any;

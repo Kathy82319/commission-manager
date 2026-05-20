@@ -2,7 +2,6 @@
 import type { Env } from "../shared/types";
 
 export const ocController = {
-  // 取得委託人的所有 OC 卡片 (後台專用，需登入驗證)
   async getList(userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const { results } = await env.commission_db.prepare(
@@ -102,12 +101,10 @@ export const ocController = {
     }
   },
 
-  // 自動儲存更新
   async update(request: any, ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const body: any = await request.json();
 
-      // 🛡️ 業務邏輯防護：檢查長文本與陣列長度
       const MAX_TEXT_LENGTH = 1000;
       if (
         (body.personality && body.personality.length > MAX_TEXT_LENGTH) ||
@@ -156,7 +153,6 @@ export const ocController = {
     }
   },
 
-  // 取得單一詳情
   async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const data = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();
@@ -167,7 +163,6 @@ export const ocController = {
     }
   },
 
-  // 刪除 OC 卡片
   async delete(ocId: string, userId: string, env: Env, credentials: any): Promise<any> {
     try {
       await env.commission_db.prepare(`DELETE FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).run();

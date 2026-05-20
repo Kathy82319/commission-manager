@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
-// @ts-ignore: moment 語系檔缺乏官方 TypeScript 宣告，此處忽略 TS 型別檢查
+// @ts-ignore: moment 語言包缺失問題
 import 'moment/locale/zh-tw';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { X, Calendar as CalendarIcon, Link as LinkIcon, Trash2, AlertCircle } from 'lucide-react';
@@ -255,7 +255,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         />
       </div>
 
-      {/* 新增/編輯 私人行程 Modal */}
+      
       {modalMode === 'edit_custom' && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="fade-in" style={{ background: '#FFF', width: '100%', maxWidth: '400px', borderRadius: '12px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -329,7 +329,7 @@ export function QueueCalendarView({ commissions, dateColumnLabel, handleUpdateFi
         </div>
       )}
 
-      {/* 檢視 委託單詳細資訊 Modal */}
+      
       {modalMode === 'view_commission' && selectedCommission && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="fade-in" style={{ background: '#FFF', width: '100%', maxWidth: '400px', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}>

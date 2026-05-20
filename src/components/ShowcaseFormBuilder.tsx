@@ -185,7 +185,6 @@ export function ShowcaseFormBuilder({
     }
   };
 
-  // ================= 表單建置器輔助函數 =================
   const addFormField = (type: FormFieldSchema['type']) => {
     if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
     const newField: FormFieldSchema = {
@@ -313,7 +312,6 @@ export function ShowcaseFormBuilder({
       `}</style>
 
       {viewMode === 'basic' ? (
-        // ================= 視圖 1：基本資料 =================
         <div className="fade-in" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="basic-card" style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             
@@ -395,7 +393,6 @@ export function ShowcaseFormBuilder({
           </div>
         </div>
       ) : (
-        // ================= 視圖 2：表單建置器 =================
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
           
           <div className="fb-header">

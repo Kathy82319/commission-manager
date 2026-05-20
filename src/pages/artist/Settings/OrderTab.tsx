@@ -34,7 +34,7 @@ export function OrderTab({ settings, setSettings }: Props) {
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'showcase', label: '接委託區' },
     { id: 'queue', label: '排單狀況' },
-    { id: 'reviews', label: '精選評價' } // 🌟 新增：讓評價分頁可排序
+    { id: 'reviews', label: '精選評價' } 
   ];
 
   if (hasOC) {

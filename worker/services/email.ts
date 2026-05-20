@@ -19,7 +19,6 @@ export const emailService = {
     actionUrl: string
   ): Promise<void> {
     
-    // 從環境變數抓取 API 金鑰與寄件者信箱
     const apiKey = (env as any).RESEND_API_KEY;
     const fromEmail = (env as any).RESEND_FROM_EMAIL || "Arti <noreply@arti.tw>";
 
@@ -28,7 +27,6 @@ export const emailService = {
       return;
     }
 
-    // Arti 專屬的 HTML 郵件模板
     const htmlContent = `
       <!DOCTYPE html>
       <html>

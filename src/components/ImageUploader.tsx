@@ -172,13 +172,13 @@ export function ImageUploader({
           </div>
           <div style={{ width: '90%', maxWidth: '700px', backgroundColor: '#FFF', padding: '16px', borderRadius: '12px', marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
             
-            {/* 1. 縮放滑桿區塊：空間足夠時橫排，不夠時佔滿一行 */}
+            
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 200px' }}>
               <span style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>縮放</span>
               <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={{ flex: 1 }} />
             </div>
             
-            {/* 2. 按鈕區塊：手機版時會自動掉到第二行，並且橫向平均分配寬度 */}
+            
             <div style={{ display: 'flex', gap: '10px', flex: '1 1 auto', justifyContent: 'flex-end' }}>
               <button 
                 onClick={() => { setImageSrc(null); setSelectedFile(null); }} 

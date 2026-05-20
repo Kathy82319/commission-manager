@@ -113,7 +113,6 @@ useEffect(() => {
     if (typeParam && idParam) {
       setSelectedItem({ type: typeParam, id: idParam });
       
-      // 同步把左側對應的資料夾展開
       setExpandedGroups(prev => {
         const newSet = new Set(prev);
         if (typeParam === 'bulletin') newSet.add('wishes');

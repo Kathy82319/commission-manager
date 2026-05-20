@@ -14,7 +14,6 @@ import { OrderTab } from './Settings/OrderTab';
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
-// 🌟 引入新建立的精選評價管理分頁
 import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
@@ -144,7 +143,7 @@ export function Settings() {
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
-        { id: 'reviews', label: '精選評價管理' }, // 🌟 將評價管理加入側邊欄
+        { id: 'reviews', label: '精選評價管理' }, 
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
@@ -291,7 +290,7 @@ export function Settings() {
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
-  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display' || activeTab === 'reviews'; // 評價分頁自帶按鈕，不顯示全域儲存
+  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display' || activeTab === 'reviews'; 
 
   return (
     <div className="settings-page">
@@ -368,7 +367,7 @@ export function Settings() {
 
         <div className="settings-content-area">
           <div className="settings-header">
-            {/* 🌟 在此處將 'reviews' 註冊進「允許顯示全域隱藏切換按鈕」的名單中 */}
+            
             {['showcase', 'portfolio', 'detailed_intro', 'rules', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
@@ -396,7 +395,7 @@ export function Settings() {
             {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'tab_order' && <OrderTab settings={settings} setSettings={setSettings} />}
             
-            {/* 🌟 渲染評價管理分頁元件 */}
+            
             {activeTab === 'reviews' && <ReviewSettingsTab onToast={showToast} />}
             
             {['detailed_intro', 'rules'].includes(activeTab) && (

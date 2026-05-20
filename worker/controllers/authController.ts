@@ -125,7 +125,6 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-      // 🌟 已經將自動升級 pro 的程式碼 (UPDATE Users SET plan_type = 'pro'...) 移除
 
       const baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
       

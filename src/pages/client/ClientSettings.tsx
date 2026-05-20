@@ -5,7 +5,6 @@ import { ExternalLink } from 'lucide-react';
 import { BasicInfoTab } from '../artist/Settings/BasicInfoTab';
 import { RichTextTab } from '../artist/Settings/RichTextTab';
 import { OCDisplaySettingsTab } from '../artist/Settings/OCDisplaySettingsTab';
-// 引入與 Artist 共用的通知設定元件
 import { NotificationSettingsTab } from '../artist/Settings/NotificationSettingsTab';
 import type { FormDataState } from '../artist/Settings/types';
 import '../../styles/Settings.css'; 
@@ -15,7 +14,6 @@ export function ClientSettings() {
   const [activeTab, setActiveTab] = useState('profile_basic');
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
   
-  // 新增：通知設定狀態
   const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
@@ -119,7 +117,7 @@ export function ClientSettings() {
           avatar_url: formData.avatar_url,
           bio: formData.bio,
           profile_settings: JSON.stringify(settings),
-          ...notifyConfig // 將通知設定打平加入 Root Payload
+          ...notifyConfig 
         })
       });
       const data = await res.json();
@@ -249,7 +247,7 @@ export function ClientSettings() {
               />
             )}
 
-            {/* 新增通知設定分頁：注入 role="client" */}
+            
             {activeTab === 'notification_settings' && (
               <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="client" />
             )}

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { X } from 'lucide-react'; // 引入關閉圖示
+import { X } from 'lucide-react';
 
 const customQuillModules = {
   toolbar: [
@@ -29,7 +29,6 @@ export interface QueueSettings {
   snapshot_data?: any[];
 }
 
-// 輔助函式：遮蔽名稱
 const getMaskedName = (name: string) => {
   if (!name) return '匿名委託';
   const len = name.length;
@@ -62,7 +61,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     setSettings({ ...settings, queue_settings: { ...qs, [field]: val } });
   };
 
-  // 點擊「發佈快照」-> 先獲取目前實時訂單並產生預覽
   const handleOpenPreview = async () => {
     setIsLoadingPreview(true);
     try {
@@ -70,7 +68,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       const data = await res.json();
       
       if (data.success) {
-        // 1. 過濾與排序
         let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
         const customOrder = qs.custom_order || [];
         
@@ -89,7 +86,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
           liveList.sort((a: any, b: any) => new Date(a.order_date || 0).getTime() - new Date(b.order_date || 0).getTime());
         }
 
-        // 2. 依照目前前端設定進行遮蔽 (Masking)
         const previewMasked = liveList.map((order: any) => ({
           id: order.id,
           queue_status: order.queue_status || '處理中',
@@ -115,7 +111,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     }
   };
 
-  // 在預覽 Modal 點擊「確認發佈」
   const handleConfirmPublish = async () => {
     setIsPublishing(true);
     try {
@@ -143,14 +138,12 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
     }
   };
 
-  // 點擊下方縮圖展開觀看已發佈的快照
   const handleViewPublishedSnapshot = () => {
     setPreviewData(qs.snapshot_data || []);
     setModalMode('view');
     setIsModalOpen(true);
   };
 
-  // 共用的排單表渲染元件 (用於預覽、縮圖與全螢幕觀看)
   const renderQueueTable = (data: any[], isThumbnail = false) => {
     if (!data || data.length === 0) {
       return <div style={{ padding: '20px', textAlign: 'center', color: '#7A7269' }}>目前沒有進行中的排單資料</div>;
@@ -203,7 +196,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       {qs.enabled && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* 排單規則設定區塊 */}
+          
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h4 style={{ margin: 0, color: '#5D4A3E', fontSize: '15px' }}>排單規則說明</h4>
@@ -229,7 +222,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             )}
           </div>
 
-          {/* 隱私控制區塊 */}
+          
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px', marginBottom: '16px' }}>顯示範圍控制 (隱私設定)</h4>
 
@@ -268,7 +261,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             </div>
           </div>
 
-          {/* 快照發佈區塊 */}
+          
           <div style={{ background: '#FDF4E6', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ flex: 1, minWidth: '200px' }}>
@@ -287,14 +280,14 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
               </button>
             </div>
 
-            {/* 快照縮圖展示 */}
+            
             {qs.last_snapshot_at && qs.snapshot_data && (
               <div style={{ marginTop: '24px', borderTop: '1px dashed #DED9D3', paddingTop: '20px' }}>
                 <p style={{ fontSize: '13px', color: '#7A7269', marginBottom: '12px', fontWeight: 'bold' }}>
                   最後發佈時間：{new Date(qs.last_snapshot_at).toLocaleString()}
                 </p>
                 <div style={{ display: 'inline-block' }}>
-                  {/* 利用 CSS Transform Scale 來製作偽圖片縮圖 */}
+                  
                   <div 
                     onClick={handleViewPublishedSnapshot}
                     style={{ position: 'relative', width: '280px', height: '160px', overflow: 'hidden', border: '2px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', background: '#FFF', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}
@@ -314,7 +307,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
         </div>
       )}
 
-      {/* Modal: 用於發佈前預覽 或 觀看已發佈的快照 */}
+      
       {isModalOpen && previewData && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px' }} onClick={() => !isPublishing && setIsModalOpen(false)}>
           <div style={{ width: '100%', maxWidth: '900px', background: '#FDF4E6', padding: '24px', borderRadius: '12px', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>

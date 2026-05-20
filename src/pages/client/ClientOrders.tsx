@@ -132,7 +132,6 @@ export function ClientOrders() {
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  // === 評價功能相關狀態 ===
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewForm, setReviewForm] = useState({ content: '', client_anonymous: false });
@@ -285,7 +284,6 @@ export function ClientOrders() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // === 補回遺失的 handleSaveTitle 函式 ===
   const handleSaveTitle = async () => {
     if (!selectedId || saveStatus === 'saving') return;
     setSaveStatus('saving');
@@ -346,7 +344,6 @@ export function ClientOrders() {
         await fetchOrders(); 
         await fetchDetailData(selectedId);
         
-        // 如果是同意完稿 (結案)，自動跳出評價 Modal
         if (stageKey === 'final' && action === 'approve') {
           setIsReviewModalOpen(true);
         }
@@ -380,7 +377,6 @@ export function ClientOrders() {
     }
   };
 
-  // === 提交評價 API ===
   const handleSubmitReview = async () => {
     if (!selectedId) return;
     
@@ -398,7 +394,7 @@ export function ClientOrders() {
       if (data.success) {
         alert('感謝您的評價！繪師已收到您的心意。');
         setIsReviewModalOpen(false);
-        fetchDetailData(selectedId); // 重新獲取 logs 以隱藏按鈕
+        fetchDetailData(selectedId); 
       } else {
         alert(data.error || '評價送出失敗');
       }
@@ -417,13 +413,11 @@ export function ClientOrders() {
 
   const selectedOrder = orders.find(o => o.id === selectedId);
 
-  // === 評價按鈕顯示邏輯 (透過分析 Logs) ===
   const hasReviewed = logs.some(l => l.content.includes('委託人已填寫結案評價'));
   const completeLog = logs.find(l => l.content.includes('開啟 3 日評價期'));
   const isWithin3Days = completeLog 
     ? (Date.now() - new Date(ensureUTC(completeLog.created_at)).getTime() < 3 * 24 * 60 * 60 * 1000) 
     : false;
-  // 若是舊訂單沒有 completeLog，我們放寬讓後端擋，或者直接不顯示。這裡選擇依賴 completeLog 確保精準。
   const canReview = selectedOrder?.status === 'completed' && !hasReviewed && isWithin3Days;
 
   const filteredOrders = useMemo(() => {
@@ -551,7 +545,7 @@ export function ClientOrders() {
   return (
     <div className="notebook-page">
       
-      {/* === 圖片放大檢視 === */}
+      
       {zoomedImage && createPortal(
         <div 
           onClick={(e) => {
@@ -576,7 +570,7 @@ export function ClientOrders() {
         document.body 
       )}
 
-      {/* === 評價填寫 Modal === */}
+      
       {isReviewModalOpen && createPortal(
         <div 
           style={{ 
@@ -823,7 +817,7 @@ export function ClientOrders() {
                       </div>
                     </div>
 
-                    {/* === 補填評價按鈕 (顯示於詳細頁最上方) === */}
+                    
                     {canReview && (
                       <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                         <div>
@@ -996,7 +990,7 @@ export function ClientOrders() {
                 {activeTab === 'review' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     
-                    {/* 若結案則在審閱頁面也顯示提示 */}
+                    
                     {canReview && (
                       <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '12px', textAlign: 'center' }}>
                         <div style={{ color: '#D97706', fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>🎉 委託已圓滿結案！</div>

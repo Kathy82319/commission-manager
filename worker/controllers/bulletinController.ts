@@ -23,17 +23,14 @@ export const bulletinController = {
 
       const batchOps = [];
 
-      // 1. 將貼文本身軟刪除 (狀態改為 closed)
       batchOps.push(env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId));
       
-      // 2. 將尚未成單的洽談單狀態改為 declined，並寫入婉拒理由
       batchOps.push(env.commission_db.prepare(`
         UPDATE BulletinInquiries 
         SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
         WHERE bulletin_id = ? AND status IN ('pending', 'submitted', 'proposed')
       `).bind(safeReason, bulletinId));
 
-      // 3. 在聊天紀錄中替委託人代發婉拒留言
       for (const item of pendingInquiries as any[]) {
         const msgId = crypto.randomUUID();
         batchOps.push(
@@ -46,7 +43,6 @@ export const bulletinController = {
 
       await env.commission_db.batch(batchOps);
 
-      // 4. 發送系統通知給被婉拒的繪師
       for (const item of pendingInquiries as any[]) {
         const title = bulletin.title || '未命名';
         const isOffer = bulletin.category === 'offer';
@@ -202,7 +198,6 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const expiresAt = new Date();
-      // 💡 此處已由 + 3 變更為 + 30，新發布的文章將會有 30 天的存活期！
       expiresAt.setDate(expiresAt.getDate() + 30);
 
       await env.commission_db.prepare(
@@ -623,7 +618,6 @@ export const bulletinController = {
 
         if (admins.length > 0) {
           const alertContent = `許願池貼文 #${targetId} 遭社群檢舉達 10 次，已啟動自動隱藏防護，請前往後台進行違規審查。`;
-          // 🚀 修正：改呼叫統一的通知控制器，這樣管理員若有設定 Email 也能觸發！
           await Promise.all(admins.map(admin => 
             notificationController.createNotification(env, String(admin.id), 'SYSTEM_ALERT', alertContent, `/admin/wishboard/reported`)
           ));

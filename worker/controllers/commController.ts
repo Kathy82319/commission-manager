@@ -308,7 +308,6 @@ export const commController = {
       }
     }
 
-    // 🔒 安全修復：限定只有繪師能修改角色卡綁定，且訂單結案/作廢時拒絕寫入
     if (body.oc_snapshot !== undefined) {
       if (!isArtist) {
         return createJsonResponse({ success: false, error: "權限不足：僅繪師可修改角色設定卡綁定" }, 403, corsHeaders);
@@ -573,7 +572,6 @@ export const commController = {
     let messageType = body.message_type || 'text';
 
     if (messageType === 'oc_snapshot' && body.oc_id) {
-      // 🔒 安全修復：嚴格驗證該 oc_id 的擁有者必須是當前發出請求的使用者 (currentUserId)
       const ocRecord = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(body.oc_id, currentUserId).first<any>();
       if (!ocRecord) {
         return createJsonResponse({ success: false, error: '找不到指定的角色卡或無權限存取' }, 403, corsHeaders);

@@ -44,7 +44,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [reportText, setReportText] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   
-  // 撤銷相關狀態
   const [isRevoking, setIsRevoking] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -142,7 +141,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  // 處理撤銷貼文點擊事件
   const handleRevokeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (appliedCount > 0) {
@@ -154,7 +152,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  // 執行 API 撤銷呼叫
   const executeCancel = async (reason: string) => {
     setIsRevoking(true);
     try {
@@ -535,7 +532,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       </div>
 
-      {/* 撤銷貼文且有投遞者的 Modal (情境B) */}
+      
       {isCancelModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsCancelModalOpen(false)}>
           <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -576,7 +573,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       )}
 
-      {/* 檢舉 Modal */}
+      
       {isReportModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsReportModalOpen(false)}>
           <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -629,7 +626,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         </div>
       )}
 
-      {/* 燈箱 Modal */}
+      
       {isLightboxOpen && (
         <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}>

@@ -19,7 +19,6 @@ interface NotificationSettingsTabProps {
 
 export function NotificationSettingsTab({ config, setConfig, role }: NotificationSettingsTabProps) {
   
-  // 處理開關變更
   const handleToggle = (field: keyof NotificationConfig) => {
     setConfig(prev => ({
       ...prev,
@@ -27,7 +26,6 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
     }));
   };
 
-  // 共用的開關 UI 元件
   const ToggleRow = ({ label, description, field }: { label: string, description: string, field: keyof NotificationConfig }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #F3F4F6' }}>
       <div style={{ paddingRight: '24px' }}>
@@ -60,7 +58,7 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
   return (
     <div style={{ maxWidth: '680px', animation: 'fadeIn 0.3s ease-in-out' }}>
       
-      {/* 區塊 1：共用的通知信箱設定 */}
+      
       <div style={{ marginBottom: '32px', backgroundColor: '#F9FAFB', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
         <h4 style={{ margin: '0 0 8px 0', color: '#1F2937', fontSize: '16px' }}>📧 專屬通知信箱</h4>
         <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6B7280' }}>
@@ -78,7 +76,7 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
         />
       </div>
 
-      {/* 區塊 2：創作者專屬設定 (只有身分是 artist 才會渲染) */}
+      
       {role === 'artist' && (
         <div style={{ marginBottom: '40px' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
@@ -109,7 +107,7 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
         </div>
       )}
 
-      {/* 區塊 3：委託人設定 (Artist 與 Client 都會看到，但 Artist 會有明確的視覺區隔提示) */}
+      
       <div>
         {role === 'artist' ? (
           <div style={{ 

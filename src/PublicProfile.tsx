@@ -28,7 +28,7 @@ export function PublicProfile() {
   const [settings, setSettings] = useState<any>(null);
   const [showcaseItems, setShowcaseItems] = useState<any[]>([]);
   const [publicQueue, setPublicQueue] = useState<any[]>([]); 
-  const [publicReviews, setPublicReviews] = useState<any[]>([]); // 新增：公開評價狀態
+  const [publicReviews, setPublicReviews] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   
   const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
@@ -97,7 +97,7 @@ export function PublicProfile() {
           fetch(`${API_BASE}/api/users/${currentArtistId}`),
           fetch(`${API_BASE}/api/public/showcase/${currentArtistId}`),
           fetch(`${API_BASE}/api/public/oc/${currentArtistId}`),
-          fetch(`${API_BASE}/api/reviews/public/${currentArtistId}`) // 新增：拉取公開評價
+          fetch(`${API_BASE}/api/reviews/public/${currentArtistId}`) 
         ]);
 
         const userData = await userRes.json();
@@ -237,7 +237,6 @@ export function PublicProfile() {
     if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
     if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
-    // 新增：如果有公開評價，動態產生精選評價 Tab (預設不給隱藏，除非一筆都沒有)
     if (!isHidden('reviews') && publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
 
     if (settings && !isFreePlan) {
@@ -400,7 +399,7 @@ export function PublicProfile() {
                 </div>
               )}
 
-              {/* === 新增：精選評價展示區塊 === */}
+              
               {currentTab === 'reviews' && (
                 <div className="public-reviews-layout fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
                   {publicReviews.map(review => (

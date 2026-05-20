@@ -114,7 +114,6 @@ export function ArtistLayout() {
     }
   };
 
-  // ... (保留原有的 planDisplay, navItems 等邏輯)
   let planDisplay = '基礎免費版';
   let expiryDateText = '';
   let planBadgeColor = '#4A4A4A';

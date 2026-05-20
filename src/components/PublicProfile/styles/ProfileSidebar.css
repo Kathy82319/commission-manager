@@ -8,17 +8,17 @@
   position: sticky; 
   top: 0;
   height: 100vh;
-  box-sizing: border-box; /* 確保內距計算不會撐破固定高度 */
+  box-sizing: border-box; 
   box-shadow: 6px 0 20px rgba(0,0,0,0.05);
   z-index: 10;
 
-  /* 🌟 電腦版側邊欄內容過長時可獨立滾動，並對外隱藏捲軸 */
+  
   overflow-y: auto; 
   scrollbar-width: none; 
   -ms-overflow-style: none; 
 }
 
-/* 🌟 隱藏 Chrome, Safari 的網頁捲軸 */
+
 .profile-sidebar::-webkit-scrollbar {
   display: none;
 }
@@ -208,11 +208,11 @@
 
   .social-icon { width: 32px; height: 32px; }
   
-  /* 🌟 大幅縮減與上方的 padding 距離，從 12px 降為 4px */
+  
   .sidebar-bottom { padding: 4px 24px 0px 24px !important; } 
   
   .bio-section {
-    position: relative; /* 🌟 讓按鈕可以針對這個區塊做絕對定位 */
+    position: relative; 
     margin-bottom: 12px;
     display: flex;
     flex-direction: column;
@@ -220,7 +220,7 @@
     width: 100%; 
   }
 
-  /* 🌟 將預設的上距 margin 也縮小 */
+  
   .profile-bio {
     margin-top: 4px;
   }
@@ -233,8 +233,8 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-bottom: 0; /* 移除佔位空間 */
-    /* 遮罩漸層：在最底部才開始淡化，讓圖示能浮在上面 */
+    padding-bottom: 0; 
+    
     mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
   }
@@ -246,19 +246,19 @@
     line-clamp: unset;
     mask-image: none;
     -webkit-mask-image: none;
-    padding-bottom: 24px; /* 展開時給按鈕一點空間，避免蓋住文字 */
+    padding-bottom: 24px; 
   }
 
-  /* 🌟 極簡化按鈕設計：定位在文字右下角 */
+  
   .bio-toggle-btn {
     position: absolute;
-    bottom: -4px; /* 對齊到最下緣 */
+    bottom: -4px; 
     right: 0;
     z-index: 2;
-    background: transparent; /* 完全透明無背景 */
+    background: transparent; 
     border: none;
-    box-shadow: none; /* 移除陰影 */
-    backdrop-filter: none; /* 移除毛玻璃 */
+    box-shadow: none; 
+    backdrop-filter: none; 
     -webkit-backdrop-filter: none;
     padding: 4px;
     display: inline-flex;
@@ -295,5 +295,5 @@
   .profile-avatar { width: 80px !important; height: 80px !important; border-radius: 20px; }
   .profile-name { font-size: 18px; }
   .social-icon { width: 28px; height: 28px; }
-  .sidebar-bottom { padding: 12px 16px 0px 16px !important; } /* 這裡同步稍微縮小 */
+  .sidebar-bottom { padding: 12px 16px 0px 16px !important; } 
 }

@@ -11,7 +11,6 @@ interface Transaction {
   status: string;
 }
 
-// 新增 Review 介面
 interface Review {
   id: string;
   commission_id: string;
@@ -26,7 +25,7 @@ interface Review {
 
 interface CustomerData {
   id: string;
-  client_user_id?: string; // 加入這個以便撈取評價
+  client_user_id?: string; 
   platform_nickname: string;
   public_id: string;
   alias_name: string;
@@ -37,11 +36,11 @@ interface CustomerData {
 }
 
 export function CustomerDetail() {
-  const { id: customerIdFromParams } = useParams(); // 避免 id 名稱衝突
+  const { id: customerIdFromParams } = useParams(); 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'info' | 'history' | 'reviews'>('info');
   const [data, setData] = useState<CustomerData | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]); // 儲存歷史評價
+  const [reviews, setReviews] = useState<Review[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [isReviewsLoading, setIsReviewsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -73,7 +72,6 @@ export function CustomerDetail() {
     if (customerIdFromParams) fetchData();
   }, [customerIdFromParams, API_BASE]);
 
-  // 當切換到「歷史評價」Tab 時，如果該客戶有綁定系統帳號，則撈取評價
   useEffect(() => {
     if (activeTab === 'reviews' && data?.client_user_id) {
       const fetchReviews = async () => {
@@ -139,7 +137,7 @@ export function CustomerDetail() {
       <div className="tabs-container">
         <button className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>客戶總覽</button>
         <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>交易紀錄</button>
-        {/* 新增歷史評價 Tab */}
+        
         <button className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>歷史評價</button>
       </div>
 
@@ -242,7 +240,7 @@ export function CustomerDetail() {
         </div>
       )}
 
-      {/* 新增歷史評價區塊 */}
+      
       {activeTab === 'reviews' && (
         <div style={{ marginTop: '20px' }}>
           {!data.client_user_id ? (

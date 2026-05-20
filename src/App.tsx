@@ -57,7 +57,7 @@ export function App() {
           <Route path="records" element={<Records />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<Settings />} />
-          {/* [新增] 評價管理子路由，使其成為 Settings 家族的一員 */}
+          
         </Route>
 
         <Route path="/client" element={<ClientLayout />}>

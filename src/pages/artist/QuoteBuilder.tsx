@@ -49,7 +49,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
   
   const [tosContent, setTosContent] = useState('');
 
-  // 🌟 核心修正：改為監控活躍委託額度資訊狀態
   const [quotaInfo, setQuotaInfo] = useState<{ plan_type: string; active_quota: number; max_quota: number } | null>(null);
   const [showDeliveryHelp, setShowDeliveryHelp] = useState(false);
 
@@ -57,7 +56,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     const fetchArtistSettings = async () => {
       try {
         const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-        // 🌟 修正：並行拉取使用者身分與全部委託清單，用以交叉計算活躍中的總量
         const [meRes, commRes] = await Promise.all([
           fetch(`${API_BASE}/api/users/me`, { credentials: 'include' }),
           fetch(`${API_BASE}/api/commissions`, { credentials: 'include' })
@@ -66,7 +64,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
         const commData = await commRes.json();
         
         if (meData.success && meData.data) {
-          // 🌟 修正：過濾出目前 status 不為 'completed'（已結案）且不為 'cancelled'（已作廢）的活躍訂單
           const activeOrders = commData.success ? commData.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled') : [];
           
           setQuotaInfo({
@@ -89,7 +86,6 @@ export function QuoteBuilder({ isModal = false, onSuccess }: { isModal?: boolean
     fetchArtistSettings();
   }, []);
 
-  // 🌟 核心修正：判斷是否超額的標準改由 active_quota（活躍中訂單量）進行評估
   const isQuotaExceeded = quotaInfo !== null && quotaInfo.max_quota !== 999999 && quotaInfo.active_quota >= quotaInfo.max_quota;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

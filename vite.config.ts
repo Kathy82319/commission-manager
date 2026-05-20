@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
-      manifest: false // 因為我們在 public 手動建立 manifest.json 了，這裡設 false 避免衝突
+      manifest: false 
     })
   ],
   server: {

@@ -104,7 +104,6 @@ export const userController = {
       user.used_quota = usedQuota;
       user.max_quota = maxQuota;
     } else {
-      // 🚨 IDOR 修正：若是訪客讀取他人資料，強制刪除敏感的隱私欄位
       delete user.line_id;
       delete user.notification_email;
       delete user.email_art_chat;
@@ -113,7 +112,6 @@ export const userController = {
       delete user.email_cli_chat;
       delete user.email_cli_progress;
       delete user.email_cli_bulletin;
-      // 若未來有其他如身分證字號等隱私欄位，皆須在此處一併 delete
 
       if (user.plan_type === 'free' && user.profile_settings) {
         try {
@@ -157,7 +155,6 @@ export const userController = {
       const limits: Record<string, number> = { free: 6, trial: 20, pro: 40 };
       const currentLimit = limits[userPlan as string] || 6;
 
-      // [優化] 改為優雅截斷陣列，而不是直接拒絕儲存
       if (Array.isArray(settings.portfolio)) {
         if (settings.portfolio.length > currentLimit) {
           settings.portfolio = settings.portfolio.slice(0, currentLimit);
@@ -168,7 +165,6 @@ export const userController = {
     const userUpdates: string[] = [];
     const userParams: any[] = [];
 
-    // 原有的基礎資料更新
     if (body.display_name !== undefined) {
       userUpdates.push("display_name = ?");
       userParams.push(sanitizeAndLimit(body.display_name, 100));
@@ -182,7 +178,6 @@ export const userController = {
       userParams.push(sanitizeAndLimit(body.bio, 500));
     }
 
-    // Email 相關設定更新
     if (body.notification_email !== undefined) {
       userUpdates.push("notification_email = ?");
       userParams.push(body.notification_email ? sanitizeAndLimit(body.notification_email, 150) : null);

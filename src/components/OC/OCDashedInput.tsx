@@ -99,7 +99,7 @@ export function OCDashedInput({
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             className="oc-clean-input"
-            style={{ resize: 'vertical', minHeight: '80px', paddingBottom: '24px' }} // 預留空間給字數統計
+            style={{ resize: 'vertical', minHeight: '80px', paddingBottom: '24px' }}
           />
         ) : (
           <input

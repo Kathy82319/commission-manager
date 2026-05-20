@@ -1,18 +1,18 @@
 /* src/styles/OCCardPage.css */
 
-/* 隱藏桌機版返回按鈕與外框 */
+
 .mobile-only-btn {
   display: none !important;
 }
 
-/* 頂部標題列精簡化 */
+
 .oc-main-header {
   display: flex;
   align-items: center;
   padding: 16px 24px 0 24px;
 }
 
-/* 分頁頁籤容器 */
+
 .oc-tabs-wrapper {
   display: flex;
   justify-content: flex-end;
@@ -23,7 +23,7 @@
   z-index: 2;
 }
 
-/* 獨立的分頁按鈕 */
+
 .oc-tab-btn {
   padding: 8px 24px;
   border: none;
@@ -49,7 +49,7 @@
   background-color: #DED9D3;
 }
 
-/* 主要編輯區塊外框 */
+
 .oc-content-panel {
   background-color: #FDFDFB;
   border: 1px solid #EAE6E1;
@@ -59,7 +59,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
-/* 簡介分頁的左右切割 Grid */
+
 .oc-intro-grid {
   display: grid;
   grid-template-columns: 1fr 1.3fr;
@@ -67,21 +67,21 @@
   align-items: start;
 }
 
-/* 右側表單的垂直排列 */
+
 .oc-form-column {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* 雙欄位並排 (如性別/體型) */
+
 .oc-form-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-/* 統一的欄位標題樣式 */
+
 .oc-field-label {
   font-size: 13px;
   font-weight: bold;
@@ -91,7 +91,7 @@
   align-items: center;
 }
 
-/* 顏色輸入框群組 */
+
 .oc-color-group {
   display: flex;
   gap: 10px;
@@ -99,7 +99,7 @@
   flex-wrap: wrap;
 }
 
-/* 顏色挑選器方塊 */
+
 .oc-color-picker {
   width: 32px;
   height: 32px;
@@ -114,7 +114,7 @@
   transform: scale(1.05);
 }
 
-/* 防護線樣式設計 (必帶/雷點) */
+
 .oc-must-have {
   border-left: 4px solid #8CB369;
   background-color: rgba(140, 179, 105, 0.05);
@@ -133,7 +133,7 @@
   color: #E11D48;
 }
 
-/* 個性簡述區塊 (黃色背景) */
+
 .oc-short-intro {
   margin-top: 16px;
   background-color: #FFFEE0;
@@ -149,7 +149,7 @@
   margin-bottom: 8px;
 }
 
-/* RWD 手機版適配 */
+
 @media (max-width: 768px) {
   .mobile-only-btn {
     display: flex !important;

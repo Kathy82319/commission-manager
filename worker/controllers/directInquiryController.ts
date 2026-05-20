@@ -119,7 +119,6 @@ export const directInquiryController = {
     }
   },
 
-  // 修改後的 worker/controllers/directInquiryController.ts -> getDetail 方法
 async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
   try {
     const inquiry = await env.commission_db.prepare(`
@@ -151,7 +150,6 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
       return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
     }
 
-    // 新增：計算額度邏輯
     let quotaInfo = null;
     if (currentUserId === inquiry.artist_id) {
        const { results: countRes } = await env.commission_db.prepare(`
@@ -172,7 +170,6 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
 
     const formattedInquiry = { ...inquiry, client_id: inquiry.client_id === 'guest' ? null : inquiry.client_id };
 
-    // 回傳時包含 quota
     return new Response(JSON.stringify({ success: true, data: formattedInquiry, quota: quotaInfo }), { headers: corsHeaders });
   } catch (error: any) {
     return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
@@ -388,7 +385,6 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
     try {
       const body = await request.json() as any;
 
-      // 核心修復：先撈取洽談單資料，進行嚴格的參與者驗證 (IDOR 防護)
       const inquiry = await env.commission_db.prepare(`
         SELECT di.artist_id, 
                COALESCE(c.client_id, di.client_id) as client_id, 
@@ -407,7 +403,6 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
          return new Response(JSON.stringify({ success: false, message: '權限不足：您非此洽談單之參與者' }), { status: 403, headers: corsHeaders });
       }
 
-      // 驗證通過，繼續後續的新增訊息與更新邏輯
       const id = crypto.randomUUID();
       
       await env.commission_db.prepare(`INSERT INTO DirectInquiryMessages (id, inquiry_id, sender_id, content) VALUES (?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, body.content).run();

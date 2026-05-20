@@ -45,10 +45,8 @@ export function Notebook() {
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
 
-  // === 新增：評價狀態 ===
   const [commissionReview, setCommissionReview] = useState<any | null>(null);
 
-  // ================= 生命週期與 API (Effects) =================
   useEffect(() => {
     fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
       .then(res => res.json())
@@ -87,7 +85,6 @@ export function Notebook() {
           fetchDeliverables(target.id);
           fetchCommissionReview(target.id);
           
-          // 確保從通知點進來時，activeTab 能立刻同步網址上的 reviews 狀態
           const urlTab = queryParams.get('tab') as any;
           if (urlTab === 'reviews') {
             setActiveTab('reviews');
@@ -153,7 +150,6 @@ export function Notebook() {
     }
   };
 
-  // === 獲取單據的評價 ===
   const fetchCommissionReview = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/reviews/artist`, { credentials: 'include' });
@@ -169,7 +165,6 @@ export function Notebook() {
     }
   };
 
-  // ================= 互動處理與商業邏輯 (Handlers) =================
   const handleSelect = async (order: Commission) => {
     if (selectedId === order.id) return;
     setSelectedId(order.id);
@@ -178,7 +173,7 @@ export function Notebook() {
     setIsTrajectoryExpanded(false); 
     fetchPayments(order.id);
     fetchDeliverables(order.id);
-    fetchCommissionReview(order.id); // 切換單據時拉取評價
+    fetchCommissionReview(order.id); 
 
     try {
       await fetch(`${API_BASE}/api/commissions/${order.id}`, {
@@ -382,7 +377,6 @@ export function Notebook() {
     finally { setIsUploading(null); }
   };
 
-  // ================= 資料格式化與計算 (Computed) =================
   const getPaymentBadge = (payment_status: string) => {
     if (payment_status === 'paid') return { text: '已收全額', className: 'badge-paid' };
     if (payment_status === 'partial') return { text: '已收訂金', className: 'badge-partial' };
@@ -431,7 +425,6 @@ export function Notebook() {
   const totalUnpaid = selectedOrder ? selectedOrder.total_price - totalPaid : 0;
   const originData = getOriginData(selectedOrder);
 
-  // ================= 畫面渲染 (Render) =================
   return (
     <div className="notebook-page">
       <div className="notebook-container">
@@ -554,7 +547,7 @@ export function Notebook() {
                   <TabOC selectedOrder={selectedOrder} />
                 )}
 
-                {/* === 新增：客戶評價分頁內容 === */}
+                
                 {activeTab === 'reviews' && (
                   <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                     {commissionReview ? (
