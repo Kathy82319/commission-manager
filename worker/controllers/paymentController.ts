@@ -15,6 +15,7 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
+      // 如果上面改完還錯，請檢查是不是這裡的 currentUserId 問號綁定在特定環境下有問題
       await env.commission_db.prepare(`
         DELETE FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending' AND datetime(created_at) <= datetime('now', '-1 hour')
