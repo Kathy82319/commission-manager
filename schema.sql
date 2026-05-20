@@ -428,6 +428,7 @@ CREATE TABLE Reviews (
     FOREIGN KEY (commission_id) REFERENCES Commissions(id) ON DELETE CASCADE
 );
 
+ALTER TABLE Messages ADD COLUMN message_type TEXT DEFAULT 'text';
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

@@ -281,7 +281,7 @@ export const commController = {
 
     for (const key in fieldLimits) {
       if (body[key] !== undefined) {
-        if (key === 'status') globalStatusUpdate = body[key]; // 擷取狀態以便觸發評價通知
+        if (key === 'status') globalStatusUpdate = body[key];
 
         if (isBinding && (key === 'client_id' || key === 'status' || key === 'agreed_tos_snapshot')) {
           updates.push(`${key} = ?`);
@@ -308,6 +308,18 @@ export const commController = {
       }
     }
 
+    // 🔒 安全修復：限定只有繪師能修改角色卡綁定，且訂單結案/作廢時拒絕寫入
+    if (body.oc_snapshot !== undefined) {
+      if (!isArtist) {
+        return createJsonResponse({ success: false, error: "權限不足：僅繪師可修改角色設定卡綁定" }, 403, corsHeaders);
+      }
+      if (comm.status === 'completed' || comm.status === 'cancelled') {
+        return createJsonResponse({ success: false, error: "狀態錯誤：此委託單已結案或作廢，無法修改歷史綁定紀錄" }, 403, corsHeaders);
+      }
+      updates.push(`oc_snapshot = ?`);
+      params.push(body.oc_snapshot);
+    }
+
     if (updates.length > 0 || isBinding) {
       params.push(id);
       const batch = [env.commission_db.prepare(`UPDATE Commissions SET ${updates.join(", ")} WHERE id = ?`).bind(...params)];
@@ -325,7 +337,6 @@ export const commController = {
         await notificationController.createNotification(env, String(comm.artist_id), 'progress', `🌟 委託人已成功登入並綁定委託單「${body.project_name || id}」`, `/artist/notebook?id=${id}&tab=details`);
       }
 
-      // 檢查是否被改為已結案，若是，則觸發 3 日評價期計時器與系統通知
       if (globalStatusUpdate === 'completed' && comm.status !== 'completed') {
         batch.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'system', 'status_update', '訂單已結案，開啟 3 日評價期')").bind(crypto.randomUUID(), id));
         batch.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 委託已順利結案！感謝您的配合。請在 3 日內填寫評價，逾期將自動關閉評價功能。`));
@@ -450,7 +461,6 @@ export const commController = {
     if (globalStatusUpdate) {
       batchOps.push(env.commission_db.prepare("UPDATE Commissions SET status = ? WHERE id = ?").bind(globalStatusUpdate, id));
       
-      // 結案同時開啟三日評價期，並發送系統訊息
       batchOps.push(env.commission_db.prepare("INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'system', 'status_update', '訂單已結案，開啟 3 日評價期')").bind(crypto.randomUUID(), id));
       batchOps.push(env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, 'system', ?)").bind(crypto.randomUUID(), id, `[系統通知] 委託已順利結案！感謝您的配合。請在 3 日內填寫評價，逾期將自動關閉評價功能。`));
     }
@@ -536,12 +546,18 @@ export const commController = {
       return createJsonResponse({ success: false, error: "無權限讀取對話紀錄" }, 403, corsHeaders);
     }
 
-    const { results } = await env.commission_db.prepare("SELECT * FROM Messages WHERE commission_id = ? ORDER BY created_at ASC").bind(id).all();
-    return createJsonResponse({ success: true, data: results }, 200, corsHeaders);
+    const { results } = await env.commission_db.prepare("SELECT id, commission_id, sender_role, content, created_at, message_type FROM Messages WHERE commission_id = ? ORDER BY created_at ASC").bind(id).all();
+    
+    const formattedResults = results.map((r: any) => ({
+      ...r,
+      message_type: r.message_type || (r.content.startsWith('{"id":') && r.content.includes('"body_type"') ? 'oc_snapshot' : 'text')
+    }));
+
+    return createJsonResponse({ success: true, data: formattedResults }, 200, corsHeaders);
   },
 
   async postMessage(request: Request, id: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const body: { sender_role: string; content: string } = await request.json();
+    const body: { sender_role: string; content?: string; oc_id?: string; message_type?: string } = await request.json();
     
     const { results: commResults } = await env.commission_db.prepare("SELECT artist_id, client_id, project_name, origin_source FROM Commissions WHERE id = ?").bind(id).all();
     const comm = commResults as any[];
@@ -552,6 +568,40 @@ export const commController = {
     if (!isArtist && !isClient) return createJsonResponse({ success: false, error: "無權限發送訊息" }, 403, corsHeaders);
     
     const actualRole = isArtist ? 'artist' : 'client';
+
+    let finalContent = body.content || '';
+    let messageType = body.message_type || 'text';
+
+    if (messageType === 'oc_snapshot' && body.oc_id) {
+      // 🔒 安全修復：嚴格驗證該 oc_id 的擁有者必須是當前發出請求的使用者 (currentUserId)
+      const ocRecord = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(body.oc_id, currentUserId).first<any>();
+      if (!ocRecord) {
+        return createJsonResponse({ success: false, error: '找不到指定的角色卡或無權限存取' }, 403, corsHeaders);
+      }
+      
+      const finalSnapshot = {
+        id: ocRecord.id,
+        name: ocRecord.name,
+        gender: ocRecord.gender,
+        body_type: ocRecord.body_type,
+        hair_desc: ocRecord.hair_desc,
+        hair_colors: JSON.parse(ocRecord.hair_colors || '[]'),
+        eyes_desc: ocRecord.eyes_desc,
+        eyes_colors: JSON.parse(ocRecord.eyes_colors || '[]'),
+        clothing_desc: ocRecord.clothing_desc,
+        clothing_colors: JSON.parse(ocRecord.clothing_colors || '[]'),
+        traits: ocRecord.traits,
+        must_have: ocRecord.must_have,
+        donts: ocRecord.donts,
+        keywords: JSON.parse(ocRecord.keywords || '[]'),
+        short_intro: ocRecord.short_intro,
+        personality: ocRecord.personality,
+        background: ocRecord.background,
+        other_notes: ocRecord.other_notes,
+        images: JSON.parse(ocRecord.images || '[]')
+      };
+      finalContent = JSON.stringify(finalSnapshot);
+    }
 
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const { results: recentMsgs } = await env.commission_db.prepare(`
@@ -564,10 +614,10 @@ export const commController = {
     }
 
     const msgId = crypto.randomUUID();
-    const cleanContent = sanitizeAndLimit(body.content, 10000);
+    const cleanContent = messageType === 'oc_snapshot' ? finalContent : sanitizeAndLimit(finalContent, 10000);
     
     await env.commission_db.batch([
-      env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content) VALUES (?, ?, ?, ?)").bind(msgId, id, actualRole, cleanContent),
+      env.commission_db.prepare("INSERT INTO Messages (id, commission_id, sender_role, content, message_type) VALUES (?, ?, ?, ?, ?)").bind(msgId, id, actualRole, cleanContent, messageType),
       env.commission_db.prepare("UPDATE Commissions SET latest_message_at = CURRENT_TIMESTAMP WHERE id = ?").bind(id)
     ]);
     
