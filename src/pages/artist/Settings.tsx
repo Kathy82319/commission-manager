@@ -14,9 +14,10 @@ import { OrderTab } from './Settings/OrderTab';
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
+// 🌟 引入新建立的精選評價管理分頁
+import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import '../../styles/Settings.css';
-// [修改] 引入 useNavigate
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 export interface CompleteSettings {
   portfolio: string[];
@@ -66,7 +67,6 @@ interface MenuCategory {
 
 export function Settings() {
   const location = useLocation();
-  const navigate = useNavigate(); // [新增]
   
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
@@ -144,6 +144,7 @@ export function Settings() {
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
+        { id: 'reviews', label: '精選評價管理' }, // 🌟 將評價管理加入側邊欄
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
@@ -283,14 +284,14 @@ export function Settings() {
   
   const freeAllowedTabs = [
     'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'subscription', 
-    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
+    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display', 'reviews' // 🌟 評價管理為免費功能
   ];
   
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
-  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display';
+  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display' || activeTab === 'reviews'; // 評價分頁自帶按鈕，不顯示全域儲存
 
   return (
     <div className="settings-page">
@@ -338,43 +339,28 @@ export function Settings() {
                 );
               })}
 
-              {/* [新增] 內容管理區域的底部額外操作按鈕：評價管理與新增分頁 */}
               {group.title.includes('內容管理') && (
-                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button 
-                    onClick={() => navigate('/artist/settings/reviews')}
-                    style={{
-                      padding: '10px 14px', cursor: 'pointer', background: '#FDFBF7',
-                      border: '1px solid #D6C8B8', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
-                      textAlign: 'left', fontSize: '14px', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                    }}
-                  >
-                    <span>⭐ 評價與信譽管理</span>
-                    <span>→</span>
-                  </button>
-
-                  <button 
-                    onClick={() => {
-                      if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
-                      if (settings.custom_sections.length >= 5) return;
-                      const newId = `custom_${Date.now()}`;
-                      setSettings(prev => ({
-                        ...prev,
-                        custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
-                      }));
-                      setActiveTab(newId);
-                      setHideGlobalSave(false);
-                    }}
-                    style={{
-                      padding: '10px 14px', cursor: 'pointer', background: 'transparent',
-                      border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
-                      textAlign: 'left', fontSize: '14px', width: '100%',
-                      opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
-                    }}
-                  >
-                    + 新增分頁
-                  </button>
-                </div>
+                <button 
+                  onClick={() => {
+                    if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
+                    if (settings.custom_sections.length >= 5) return;
+                    const newId = `custom_${Date.now()}`;
+                    setSettings(prev => ({
+                      ...prev,
+                      custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
+                    }));
+                    setActiveTab(newId);
+                    setHideGlobalSave(false);
+                  }}
+                  style={{
+                    padding: '10px 14px', marginTop: '6px', cursor: 'pointer', background: 'transparent',
+                    border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
+                    textAlign: 'left', fontSize: '14px', width: '100%',
+                    opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
+                  }}
+                >
+                  + 新增分頁
+                </button>
               )}
             </div>
           ))}
@@ -382,7 +368,8 @@ export function Settings() {
 
         <div className="settings-content-area">
           <div className="settings-header">
-            {['showcase', 'portfolio', 'detailed_intro', 'rules', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
+            {/* 🌟 在此處將 'reviews' 註冊進「允許顯示全域隱藏切換按鈕」的名單中 */}
+            {['showcase', 'portfolio', 'detailed_intro', 'rules', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
@@ -401,18 +388,16 @@ export function Settings() {
 
           <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
-            
-            {activeTab === 'notification_settings' && (
-              <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />
-            )}
-            
+            {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />}
             {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
-
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'tab_order' && <OrderTab settings={settings} setSettings={setSettings} />}
+            
+            {/* 🌟 渲染評價管理分頁元件 */}
+            {activeTab === 'reviews' && <ReviewSettingsTab onToast={showToast} />}
             
             {['detailed_intro', 'rules'].includes(activeTab) && (
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />

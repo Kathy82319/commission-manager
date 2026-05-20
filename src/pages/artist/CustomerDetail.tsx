@@ -272,10 +272,6 @@ export function CustomerDetail() {
                     </div>
                   </div>
 
-                  <div style={{ color: '#F59E0B', fontSize: '18px', marginBottom: '12px' }}>
-                    {renderStars(review.rating)}
-                  </div>
-
                   <div style={{ fontSize: '15px', color: '#334155', lineHeight: '1.6', background: '#F8FAFC', padding: '16px', borderRadius: '8px', marginBottom: '16px', whiteSpace: 'pre-wrap' }}>
                     {review.content || '(無文字評價)'}
                   </div>

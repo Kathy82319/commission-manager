@@ -1,5 +1,5 @@
 // src/pages/artist/Settings/OrderTab.tsx
-import { useState, useEffect } from 'react'; // 🌟 新增 useEffect 用於動態偵測
+import { useState, useEffect } from 'react'; 
 import { GripVertical } from 'lucide-react';
 import type { CompleteSettings } from '../Settings';
 
@@ -33,7 +33,8 @@ export function OrderTab({ settings, setSettings }: Props) {
     { id: 'portfolio', label: '作品展示' },
     { id: 'detailed_intro', label: '詳細介紹' },
     { id: 'showcase', label: '接委託區' },
-    { id: 'queue', label: '排單狀況' }
+    { id: 'queue', label: '排單狀況' },
+    { id: 'reviews', label: '精選評價' } // 🌟 新增：讓評價分頁可排序
   ];
 
   if (hasOC) {

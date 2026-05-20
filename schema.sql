@@ -415,12 +415,11 @@ ALTER TABLE Users ADD COLUMN email_cli_chat INTEGER DEFAULT 1;
 ALTER TABLE Users ADD COLUMN email_cli_progress INTEGER DEFAULT 1;
 ALTER TABLE Users ADD COLUMN email_cli_bulletin INTEGER DEFAULT 1;
 
-CREATE TABLE IF NOT EXISTS Reviews (
+CREATE TABLE Reviews (
     id TEXT PRIMARY KEY,
     commission_id TEXT NOT NULL,
     artist_id TEXT NOT NULL,
     client_id TEXT NOT NULL,
-    rating INTEGER NOT NULL,
     content TEXT,
     client_anonymous INTEGER DEFAULT 0,
     artist_anonymous INTEGER DEFAULT 0,

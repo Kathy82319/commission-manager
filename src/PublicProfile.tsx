@@ -418,9 +418,7 @@ export function PublicProfile() {
                         委託項目：{review.project_name || '客製化委託'}
                       </div>
                       
-                      <div style={{ color: '#F59E0B', fontSize: '20px', marginBottom: '16px', letterSpacing: '3px' }}>
-                        {'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}
-                      </div>
+
                       
                       <div style={{ fontSize: '15px', color: textColor, lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: isDarkText ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
                         {review.content || '(無文字評價)'}

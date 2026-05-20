@@ -70,13 +70,11 @@ export interface UpdateNotificationSettingsBody {
   email_cli_bulletin?: number;
 }
 
-// 新增 Review 介面
 export interface Review {
   id: string;
   commission_id: string;
   artist_id: string;
   client_id: string;
-  rating: number;
   content: string;
   client_anonymous: number;
   artist_anonymous: number;

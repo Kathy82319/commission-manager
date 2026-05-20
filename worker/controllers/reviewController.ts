@@ -52,15 +52,14 @@ export const reviewController = {
       }
 
       const reviewId = crypto.randomUUID();
-      const rating = typeof body.rating === 'number' ? Math.max(1, Math.min(5, body.rating)) : 5;
       const content = sanitizeAndLimit(body.content || '', 2000);
       const clientAnonymous = body.client_anonymous ? 1 : 0;
 
       await env.commission_db.batch([
         env.commission_db.prepare(`
-          INSERT INTO Reviews (id, commission_id, artist_id, client_id, rating, content, client_anonymous, artist_anonymous, is_public)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
-        `).bind(reviewId, commissionId, comm.artist_id, currentUserId, rating, content, clientAnonymous),
+          INSERT INTO Reviews (id, commission_id, artist_id, client_id, content, client_anonymous, artist_anonymous, is_public)
+          VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+        `).bind(reviewId, commissionId, comm.artist_id, currentUserId, content, clientAnonymous),
         
         env.commission_db.prepare(
           "INSERT INTO ActionLogs (id, commission_id, actor_role, action_type, content) VALUES (?, ?, 'client', 'review_submit', '委託人已填寫結案評價')"
@@ -153,7 +152,7 @@ export const reviewController = {
     try {
       const query = `
         SELECT 
-          r.id, r.rating, r.content, r.created_at, r.client_anonymous, r.artist_anonymous,
+          r.id, r.content, r.created_at, r.client_anonymous, r.artist_anonymous,
           c.project_name,
           CASE 
             WHEN r.client_anonymous = 1 OR r.artist_anonymous = 1 THEN '匿名委託人' 

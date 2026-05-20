@@ -135,7 +135,7 @@ export function ClientOrders() {
   // === 評價功能相關狀態 ===
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, content: '', client_anonymous: false });
+  const [reviewForm, setReviewForm] = useState({ content: '', client_anonymous: false });
 
   useEffect(() => {
     const currentId = queryParams.get('id') || queryParams.get('open');
@@ -383,7 +383,6 @@ export function ClientOrders() {
   // === 提交評價 API ===
   const handleSubmitReview = async () => {
     if (!selectedId) return;
-    if (reviewForm.rating < 1 || reviewForm.rating > 5) return alert('請選擇星等');
     
     setIsSubmittingReview(true);
     try {
@@ -391,7 +390,6 @@ export function ClientOrders() {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           commission_id: selectedId,
-          rating: reviewForm.rating,
           content: reviewForm.content,
           client_anonymous: reviewForm.client_anonymous
         })
@@ -595,21 +593,6 @@ export function ClientOrders() {
               感謝您的委託！請撥空為本次合作留下評價，給予繪師鼓勵或建議。<br/>
               <span style={{ color: '#F59E0B' }}>(注意：評價送出後不可修改)</span>
             </p>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#475569' }}>滿意度評分</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button 
-                    key={star}
-                    onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
-                    style={{ background: 'none', border: 'none', fontSize: '32px', cursor: 'pointer', color: star <= reviewForm.rating ? '#F59E0B' : '#E2E8F0', transition: 'color 0.2s' }}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#475569' }}>給繪師的話 / 評價內容</label>
