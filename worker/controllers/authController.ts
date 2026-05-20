@@ -87,27 +87,11 @@ export const authController = {
         status: 302,
         headers: responseHeaders
       });
-    } catch (e: any) {
-      // 💡 偵錯改裝：直接抓取實體的異常錯誤訊息與堆疊軌跡
-      const errorMessage = e?.message || (typeof e === 'object' ? JSON.stringify(e) : String(e));
-      const errorStack = e?.stack || "無可用堆疊軌跡";
-
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `[Debug] LINE登入回調崩潰原因: ${errorMessage}`,
-          stack: errorStack,
-          // 順便把當前 Worker 讀到的重導向環境變數一起倒出來，檢查是不是真的有吃到最新設定
-          debug_env: {
-            LINE_REDIRECT_URI: env.LINE_REDIRECT_URI || "未定義",
-            FRONTEND_URL: env.FRONTEND_URL || "未定義"
-          }
-        }), 
-        { 
-          status: 500, 
-          headers: corsHeaders 
-        }
-      );
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { 
+        status: 500, 
+        headers: corsHeaders 
+      });
     }
   },
 
