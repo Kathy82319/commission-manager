@@ -35,7 +35,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 1; // 都已經很便宜了就別玩我了QAQ
+      const amount = 150; // 都已經很便宜了就別玩我了QAQ
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       
       // 商業邏輯優化：動態讀取環境變數，確保轉移網域時，金流導向與主網域完全一致
