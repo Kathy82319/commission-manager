@@ -21,31 +21,60 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiry = await env.commission_db.prepare(
-        `SELECT i.*, 
-                b.title as bulletin_title, 
-                b.content as bulletin_content, 
-                b.category as bulletin_category, 
-                b.client_id as bulletin_client_id,
-                a.profile_settings as artist_settings, 
-                a.plan_type as artist_plan, 
-                a.pro_expires_at, 
-                a.trial_end_at, 
-                a.display_name as artist_name,
-                a.public_id as artist_public_id,
-                u.display_name as client_name,
-                u.public_id as client_public_id,
-                c.id as commission_id,
-                c.contact_memo
-         FROM BulletinInquiries i
-         JOIN Bulletins b ON i.bulletin_id = b.id
-         LEFT JOIN Users a ON i.artist_id = a.id
-         LEFT JOIN Users u ON b.client_id = u.id
-         LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
-         WHERE i.id = ?`
-      ).bind(inquiryId).all();
+      // 🌟 核心修復：相容直接委託與一般許願池委託的資料表查詢
+      const isDirect = inquiryId.startsWith('di-');
+      let query = '';
+      
+      if (isDirect) {
+        // 直接委託查詢 (DirectInquiries)
+        query = `SELECT i.*, 
+                        i.showcase_title as bulletin_title, 
+                        i.form_answers as bulletin_content, 
+                        'direct' as bulletin_category, 
+                        i.client_id as bulletin_client_id,
+                        a.profile_settings as artist_settings, 
+                        a.plan_type as artist_plan, 
+                        a.pro_expires_at, 
+                        a.trial_end_at, 
+                        a.display_name as artist_name,
+                        a.public_id as artist_public_id,
+                        u.display_name as client_name,
+                        u.public_id as client_public_id,
+                        c.id as commission_id,
+                        c.contact_memo
+                 FROM DirectInquiries i
+                 LEFT JOIN Users a ON i.artist_id = a.id
+                 LEFT JOIN Users u ON i.client_id = u.id
+                 LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
+                 WHERE i.id = ?`;
+      } else {
+        // 一般許願池查詢 (BulletinInquiries)
+        query = `SELECT i.*, 
+                        b.title as bulletin_title, 
+                        b.content as bulletin_content, 
+                        b.category as bulletin_category, 
+                        b.client_id as bulletin_client_id,
+                        a.profile_settings as artist_settings, 
+                        a.plan_type as artist_plan, 
+                        a.pro_expires_at, 
+                        a.trial_end_at, 
+                        a.display_name as artist_name,
+                        a.public_id as artist_public_id,
+                        u.display_name as client_name,
+                        u.public_id as client_public_id,
+                        c.id as commission_id,
+                        c.contact_memo
+                 FROM BulletinInquiries i
+                 JOIN Bulletins b ON i.bulletid = b.id
+                 LEFT JOIN Users a ON i.artist_id = a.id
+                 LEFT JOIN Users u ON b.client_id = u.id
+                 LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = i.id
+                 WHERE i.id = ?`;
+      }
 
+      const inquiry = await env.commission_db.prepare(query).bind(inquiryId).all();
       const data = inquiry.results[0] as any;
+      
       if (!data) {
         return new Response(JSON.stringify({ success: false, message: '找不到洽談紀錄' }), { status: 404, headers: corsHeaders });
       }
@@ -54,10 +83,9 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      const isOffer = data.bulletin_category === 'offer';
-      const actualArtistId = isOffer ? data.bulletin_client_id : data.artist_id;
+      const actualArtistId = data.artist_id;
 
-      // 🌟 核心修復：只要 currentUserId 是這筆單的實際繪師（無論是許願池進來還是直接委託進來），一律注入 quota 防護計算
+      // 🌟 計算活跃訂單配额
       let quotaInfo = null;
       if (currentUserId === actualArtistId) {
          const { results: countRes } = await env.commission_db.prepare(`
@@ -76,7 +104,8 @@ export const inquiryController = {
       }
 
       const updateField = currentUserId === actualArtistId ? 'last_read_at_artist' : 'last_read_at_client';
-      await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
+      await env.commission_db.prepare(`UPDATE ${targetTable} SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
       return new Response(JSON.stringify({ success: true, data, quota: quotaInfo }), { headers: corsHeaders });
     } catch (error: any) {
@@ -86,12 +115,21 @@ export const inquiryController = {
 
   async getMessages(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiry = await env.commission_db.prepare(`
-        SELECT i.artist_id, b.client_id as bulletin_client_id 
-        FROM BulletinInquiries i 
-        JOIN Bulletins b ON i.bulletin_id = b.id 
-        WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiry;
+      
+      if (isDirect) {
+        inquiry = await env.commission_db.prepare(`
+          SELECT artist_id, client_id as bulletin_client_id FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiry = await env.commission_db.prepare(`
+          SELECT i.artist_id, b.client_id as bulletin_client_id 
+          FROM BulletinInquiries i 
+          JOIN Bulletins b ON i.bulletin_id = b.id 
+          WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiry) {
         return new Response(JSON.stringify({ success: false, message: '找不到洽談紀錄' }), { status: 404, headers: corsHeaders });
@@ -125,10 +163,19 @@ export const inquiryController = {
 
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiryData;
+      
+      if (isDirect) {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT client_id as bulletin_client_id, showcase_title as title, artist_id FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
+          FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiryData) {
         return new Response(JSON.stringify({ success: false, message: '找不到洽談紀錄' }), { status: 404, headers: corsHeaders });
@@ -176,9 +223,10 @@ export const inquiryController = {
         content = JSON.stringify(finalSnapshot);
       }
       
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
       await env.commission_db.batch([
         env.commission_db.prepare(`INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) VALUES (?, ?, ?, ?, ?)`).bind(id, inquiryId, currentUserId, content, message_type),
-        env.commission_db.prepare(`UPDATE BulletinInquiries SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
+        env.commission_db.prepare(`UPDATE ${targetTable} SET latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId)
       ]);
 
       const targetUserId = currentUserId === inquiryData.artist_id ? inquiryData.bulletin_client_id : inquiryData.artist_id;
@@ -196,15 +244,23 @@ export const inquiryController = {
 
   async saveDraft(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT i.status, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiryData;
+      
+      if (isDirect) {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT status, artist_id, client_id as bulletin_client_id FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT i.status, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+          FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiryData) throw new Error('找不到該筆洽談');
 
-      const isOffer = inquiryData.bulletin_category === 'offer';
-      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+      const actualArtistId = inquiryData.artist_id;
 
       if (currentUserId !== actualArtistId) {
         return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
@@ -220,8 +276,9 @@ export const inquiryController = {
       const body = await request.json() as any;
       const { draft_json } = body;
       
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
       const result = await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET negotiation_draft = ? WHERE id = ?`
+        `UPDATE ${targetTable} SET negotiation_draft = ? WHERE id = ?`
       ).bind(draft_json, inquiryId).run();
 
       if (result.meta.changes === 0) throw new Error('儲存失敗或資料未變更');
@@ -233,16 +290,24 @@ export const inquiryController = {
 
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletid = b.id WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiryData;
+      
+      if (isDirect) {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT showcase_title as title, artist_id, client_id as bulletin_client_id FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+          FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiryData) throw new Error('找不到該筆洽談');
 
-      const isOffer = inquiryData.bulletin_category === 'offer';
-      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
-      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
+      const actualArtistId = inquiryData.artist_id;
+      const actualClientId = inquiryData.bulletin_client_id;
 
       if (currentUserId !== actualArtistId) {
         return new Response(JSON.stringify({ success: false, message: '必須為該委託的創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
@@ -271,8 +336,9 @@ export const inquiryController = {
          }
       }
 
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
       await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
+        `UPDATE ${targetTable} SET status = 'proposed', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
       
       const text = `🌟 繪師已送出「${inquiryData.title || '未命名'}」的合作協議，請前往確認。`;
@@ -286,18 +352,26 @@ export const inquiryController = {
 
   async finalizeOrder(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT i.*, b.title, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
-        FROM BulletinInquiries i 
-        JOIN Bulletins b ON i.bulletin_id = b.id 
-        WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiryData;
+      
+      if (isDirect) {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT *, showcase_title as title, client_id as bulletin_client_id, 'direct' as bulletin_category, '' as bulletin_content FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT i.*, b.title, b.content as bulletin_content, b.category as bulletin_category, b.client_id as bulletin_client_id
+          FROM BulletinInquiries i 
+          JOIN Bulletins b ON i.bulletin_id = b.id 
+          WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiryData || !inquiryData.negotiation_draft) throw new Error('草稿尚未準備好');
 
-      const isOffer = inquiryData.bulletin_category === 'offer';
-      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
-      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
+      const actualArtistId = inquiryData.artist_id;
+      const actualClientId = inquiryData.bulletin_client_id;
 
       if (currentUserId !== actualClientId) {
         throw new Error('只有案主有權限正式確認委託單');
@@ -309,16 +383,18 @@ export const inquiryController = {
       const draft = JSON.parse(inquiryData.negotiation_draft);
       const timestampStr = Date.now().toString();
       const shortCode = timestampStr.substring(timestampStr.length - 6);
-      const commissionId = `WB-${shortCode}`;
+      const commissionId = isDirect ? `DI-${shortCode}` : `WB-${shortCode}`;
 
       let parsedBulletinContent: any = {};
-      try { parsedBulletinContent = JSON.parse(inquiryData.bulletin_content); } catch (e) {}
+      if (!isDirect) {
+        try { parsedBulletinContent = JSON.parse(inquiryData.bulletin_content); } catch (e) {}
+      }
 
       let tosText = "繪師未提供專屬協議說明。";
       
       if (draft.custom_tos !== undefined) {
         tosText = draft.custom_tos;
-      } else if (parsedBulletinContent && parsedBulletinContent.tos_content && parsedBulletinContent.tos_content.trim() !== '') {
+      } else if (!isDirect && parsedBulletinContent && parsedBulletinContent.tos_content && parsedBulletinContent.tos_content.trim() !== '') {
         tosText = parsedBulletinContent.tos_content;
       } else {
         try {
@@ -338,9 +414,9 @@ export const inquiryController = {
       try { parsedArtistSnapshot = JSON.parse(inquiryData.artist_snapshot); } catch (e) {}
 
       const origin_source = JSON.stringify({
-        source_type: 'bulletin',
+        source_type: isDirect ? 'direct' : 'bulletin',
         inquiry_id: inquiryId, 
-        bulletin_content: parsedBulletinContent,
+        bulletin_content: isDirect ? inquiryData.form_answers : parsedBulletinContent,
         bulletin_category: inquiryData.bulletin_category,
         artist_initial_snapshot: parsedArtistSnapshot,
         client_initial_response: parsedClientResponse,
@@ -348,7 +424,7 @@ export const inquiryController = {
       });
 
       const clientName = clientInfo?.display_name || '案主';
-      let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
+      let finalProjectName = draft.project_name || (isDirect ? `${clientName} 的直接委託` : `${clientName} 的許願池委託`);
 
       const finalOcSnapshot = draft.oc_snapshot ? JSON.stringify(draft.oc_snapshot) : null;
 
@@ -367,7 +443,8 @@ export const inquiryController = {
         tosText, finalOcSnapshot
       ).run();
 
-      await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
+      await env.commission_db.prepare(`UPDATE ${targetTable} SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
       const text = `🌟 恭喜！案主已同意「${inquiryData.title || '未命名'}」的協議，正式成立委託單。`;
       await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, '/artist/notebook');
@@ -380,20 +457,28 @@ export const inquiryController = {
 
   async rejectProposal(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      const inquiryData = await env.commission_db.prepare(`
-        SELECT i.*, b.title, b.category as bulletin_category, b.client_id as bulletin_client_id 
-        FROM BulletinInquiries i 
-        JOIN Bulletins b ON i.bulletin_id = b.id 
-        WHERE i.id = ?
-      `).bind(inquiryId).first() as any;
+      const isDirect = inquiryId.startsWith('di-');
+      let inquiryData;
+      
+      if (isDirect) {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT status, artist_id, client_id as bulletin_client_id, showcase_title as title FROM DirectInquiries WHERE id = ?
+        `).bind(inquiryId).first() as any;
+      } else {
+        inquiryData = await env.commission_db.prepare(`
+          SELECT i.*, b.title, b.category as bulletin_category, b.client_id as bulletin_client_id 
+          FROM BulletinInquiries i 
+          JOIN Bulletins b ON i.bulletin_id = b.id 
+          WHERE i.id = ?
+        `).bind(inquiryId).first() as any;
+      }
 
       if (!inquiryData) {
         return new Response(JSON.stringify({ success: false, message: '找不到該筆洽談單' }), { status: 404, headers: corsHeaders });
       }
 
-      const isOffer = inquiryData.bulletin_category === 'offer';
-      const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
-      const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
+      const actualClientId = inquiryData.bulletin_client_id;
+      const actualArtistId = inquiryData.artist_id;
 
       if (currentUserId !== actualClientId) {
         return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
@@ -403,8 +488,9 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '當前狀態無法退回' }), { status: 400, headers: corsHeaders });
       }
 
+      const targetTable = isDirect ? 'DirectInquiries' : 'BulletinInquiries';
       await env.commission_db.prepare(
-        `UPDATE BulletinInquiries SET status = 'submitted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
+        `UPDATE ${targetTable} SET status = 'submitted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`
       ).bind(inquiryId).run();
 
       const text = `⚠️ 委託人已將「${inquiryData.title || '未命名'}」的提案退回，請前往洽談室修改合約。`;
