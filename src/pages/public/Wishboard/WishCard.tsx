@@ -1,3 +1,4 @@
+// src/public/Wishboard/WishCard.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -42,6 +43,9 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [reportType, setReportType] = useState('洗版與重複發文');
   const [reportText, setReportText] = useState('');
   const [isReporting, setIsReporting] = useState(false);
+  
+  // 新增：撤銷狀態
+  const [isRevoking, setIsRevoking] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -124,6 +128,34 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
+  // 新增：處理撤銷貼文的方法
+  const handleRevoke = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("確定要撤銷這篇許願發佈嗎？\n\n警告：撤銷後貼文將立即下架，且此動作無法復原！若已有繪師投遞，請確保已妥善溝通。")) {
+      return;
+    }
+    
+    setIsRevoking(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/bulletins/${bulletin.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        alert('貼文已成功撤銷！');
+        window.location.reload(); 
+      } else {
+        alert(`撤銷失敗: ${data.error || data.message || '發生未知錯誤'}`);
+      }
+    } catch (err) {
+      alert('系統連線異常，撤銷失敗，請稍後再試。');
+    } finally {
+      setIsRevoking(false);
+    }
+  };
+
   const getTimeRemaining = (expiresAt: string) => {
     const diff = new Date(expiresAt).getTime() - new Date().getTime();
     if (diff <= 0) return '已結束';
@@ -199,9 +231,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     <>
       <div className="wish-card-wide">
         
-        
         <div className="wish-card-image-wrapper">
-          
           
           <div className="wish-expiry-standalone">
             <Clock size={14} style={{ marginRight: '6px' }} /> {getTimeRemaining(bulletin.expires_at)}
@@ -240,7 +270,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </div>
               )}
 
-              
               <div className="wish-expiry-overlay">
                 <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
               </div>
@@ -257,7 +286,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             </div>
           )}
 
-          
           <div className="desktop-author-block">
             <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
               {posterAvatar ? (
@@ -294,12 +322,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           </div>
         </div>
 
-        
         <div className="wish-card-info">
           <div className="wish-card-header">
             <div className="flex-1 min-w-0 pr-4">
               <h3 className="truncate">{unescapeHtml(bulletin.title) || '無標題'}</h3>
-              
               
               <div className="wish-card-author-wrapper mobile-author-block">
                 <User size={14} className="wish-card-author-icon" />
@@ -473,7 +499,14 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
           <div className="card-actions">
             {isMyOwnPost ? (
-              <button disabled className="btn-status-disabled">這是您發布的貼文</button>
+              <button 
+                className="submit-post-btn full-width" 
+                onClick={handleRevoke}
+                disabled={isRevoking}
+                style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
+              >
+                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
+              </button>
             ) : isQuotaFull ? (
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
             ) : hasApplied ? (
