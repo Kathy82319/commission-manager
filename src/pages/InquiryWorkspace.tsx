@@ -250,7 +250,6 @@ export const InquiryWorkspace: React.FC = () => {
     }
   };
 
-
   const handleSendOC = async (ocId: string) => {
     if (!window.confirm('確定要發送這張角色卡到洽談室嗎？發送後系統將會建立快照，對方會看到卡片當下的設定。')) return;
     setShowOCSelection(false);
@@ -506,7 +505,6 @@ export const InquiryWorkspace: React.FC = () => {
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
       
-      
       <style>{`
         @media (max-width: 768px) {
           .oc-snapshot-bubble { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
@@ -575,7 +573,6 @@ export const InquiryWorkspace: React.FC = () => {
             {messages.map((msg) => {
               const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
               const isMe = msg.sender_id === currentUserId;
-
 
               if (msg.message_type === 'oc_snapshot') {
                 let ocData: any = null;
@@ -726,8 +723,9 @@ export const InquiryWorkspace: React.FC = () => {
                   <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
                 </div>
               </h3>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', marginTop: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
+                {/* 🌟 核心變更：移除舊有的 `!isDirectInquiry` 分支邏輯，不論何種洽談來源，只要身分為繪師且有額度資訊，一律統一顯示活躍單配額標籤 */}
                 {isArtist && artistQuota && (
                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `活躍訂單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
@@ -784,7 +782,6 @@ export const InquiryWorkspace: React.FC = () => {
 
               <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 'bold', color: '#7A7269', margin: '0 0 12px 0' }}>⚙️ 系統核心參數</h4>
-                
                 
                 <div style={{ padding: '12px', backgroundColor: '#FDFDFB', borderRadius: '8px', border: '1px solid #EAE6E1', marginBottom: '16px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -871,6 +868,7 @@ export const InquiryWorkspace: React.FC = () => {
                       </div>
                     )}
                   </div>
+
                 </div>
               </div>
 
@@ -971,7 +969,8 @@ export const InquiryWorkspace: React.FC = () => {
 
                 <div style={{ border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px', backgroundColor: '#FFFFFF' }}>
                   <h4 style={{ color: '#5D4A3E', marginBottom: '12px', fontWeight: 'bold', margin: '0 0 12px 0' }}>繪師專屬協議條款 (TOS)</h4>
-<div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />                </div>
+                  <div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
+                </div>
               </div>
 
               <div style={{ padding: '20px 30px', borderTop: '1px solid #EAE6E1', backgroundColor: '#FDFDFB', flexShrink: 0 }}>
@@ -988,7 +987,6 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         )}
 
-        
         {showOCSelection && (
           <div className="iw-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px', animation: 'fadeIn 0.2s ease-in-out' }}>
             <div className="iw-modal-content-paper" style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
@@ -1002,7 +1000,7 @@ export const InquiryWorkspace: React.FC = () => {
                    <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>讀取您的角色庫中...</div>
                  ) : myOCs.length === 0 ? (
                    <div style={{ textAlign: 'center', color: '#A0978D', padding: '30px 20px', backgroundColor: '#F4F0EB', borderRadius: '8px' }}>
-                     您還沒有建立任何專屬角色卡喔！<br/>請先前往「我的角色卡 (OC)」介面建立。
+                     您還沒有建立 any 專屬角色卡喔！<br/>請先前往「我的角色卡 (OC)」介面建立。
                    </div>
                  ) : (
                    myOCs.map(oc => {
@@ -1041,7 +1039,6 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         )}
 
-        
         {viewingOCSnapshot && (
           <div className="oc-view-modal-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', animation: 'fadeIn 0.2s ease-in-out' }}>
             <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', backgroundColor: 'transparent', position: 'relative', display: 'flex', flexDirection: 'column' }}>
