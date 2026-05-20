@@ -8,7 +8,7 @@ interface CardViewProps {
   inquiry: any;
   snapshot: any;
   setSelectedInquiry: (inquiry: any) => void;
-  setShowDeclineModal: (show: boolean) => void;
+  setShowDeclineModal: () => void;
   handleDirectInvite: (inquiry: any) => void;
   isSelected: boolean; 
   onSelect: () => void; 
@@ -25,6 +25,7 @@ const unescapeHtml = (str: string) => {
 export const CardView: React.FC<CardViewProps> = ({
   inquiry,
   snapshot,
+
   setShowDeclineModal,
   handleDirectInvite,
   isSelected,
@@ -33,8 +34,9 @@ export const CardView: React.FC<CardViewProps> = ({
   handleViewCommission,
   blacklistedIds = [] 
 }) => {
-  const canDecline = !['accepted', 'declined', 'closed'].includes(inquiry.inquiry_status);
-  const isDeclined = inquiry.inquiry_status === 'declined';
+  // 定義 isPending 狀態
+  const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending';
+  const isDeclined = inquiry.inquiry_status === 'declined' || inquiry.status === 'closed';
 
   const clientName = inquiry.artist_name || snapshot.client_name || snapshot.artist_name || '匿名用戶';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || snapshot.artist_public_id || 'unknown';
@@ -136,7 +138,7 @@ export const CardView: React.FC<CardViewProps> = ({
           <div style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <h3 style={{ margin: 0, fontWeight: 'bold', color: '#5D4A3E', fontSize: '18px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={clientName}>{clientName}</h3>
-              {isBlacklisted && <span title="黑名單繪師" style={{ display: 'flex', alignItems: 'center' }}><Ban size={16} color="#EF4444" /></span>}
+              {isBlacklisted && <span title="黑名單繪師" style={{ display: 'flex' }}><Ban size={16} color="#EF4444" /></span>}
             </div>
             <div style={{ color: '#A0978D', fontSize: '13px', fontFamily: 'monospace', marginTop: '2px' }}>@{clientId}</div>
           </div>
@@ -152,34 +154,36 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
 
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
-            {canDecline && (
-              <button 
-                onClick={() => setShowDeclineModal(true)}
-                style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#FEF2F2'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
-              >
-                {inquiry.inquiry_status === 'pending' ? '婉拒' : '終止'}
-              </button>
+            {isPending ? (
+              <>
+                <button 
+                  style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
+                  onClick={() => setShowDeclineModal()}
+                >
+                  婉拒
+                </button>
+                <button 
+                  style={{ flex: '2 1 auto', minWidth: '120px', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                  onClick={() => handleDirectInvite(inquiry)}
+                >
+                  邀請詳談
+                </button>
+              </>
+            ) : (
+              <div style={{ width: '100%', textAlign: 'center', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '8px', fontSize: '12px', color: '#9CA3AF' }}>
+                {isDeclined ? '此洽談已終止' : '已結案'}
+              </div>
             )}
-            {inquiry.inquiry_status === 'pending' && (
-              <button 
-                onClick={() => handleDirectInvite(inquiry)}
-                style={{ flex: '2 1 auto', minWidth: '120px', padding: '10px', backgroundColor: '#4A7294', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3B5D7A'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4A7294'}
-              >
-                邀請詳談
-              </button>
-            )}
-            {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed') && (
+
+            {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed' || !isPending) && (
               <button 
                 onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
-                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: isPending ? '#5D4A3E' : '#EAE6E1', color: isPending ? '#FFFFFF' : '#5D4A3E', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
               >
-                進入聊天室
+                {isPending ? '進入聊天室' : '查看歷史'}
               </button>
             )}
+
             {inquiry.inquiry_status === 'accepted' && (
               <button 
                 onClick={() => handleViewCommission(inquiry.commission_id)}
