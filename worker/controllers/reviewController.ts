@@ -71,7 +71,7 @@ export const reviewController = {
         comm.artist_id, 
         'bulletin', 
         `🌟 委託人已為委託單「${comm.project_name || commissionId}」留下評價，快去評價管理審核公開吧！`, 
-        `/artist/settings/reviews`
+        `/artist/settings?tab=reviews`
       );
 
       return new Response(JSON.stringify({ success: true, id: reviewId }), { status: 200, headers: corsHeaders });
@@ -156,15 +156,16 @@ export const reviewController = {
           c.project_name,
           CASE 
             WHEN r.client_anonymous = 1 OR r.artist_anonymous = 1 THEN '匿名委託人' 
-            ELSE u.display_name 
+            ELSE u_client.display_name 
           END as display_client_name
         FROM Reviews r
         JOIN Commissions c ON r.commission_id = c.id
-        JOIN Users u ON r.client_id = u.id
-        WHERE r.artist_id = ? AND r.is_public = 1
+        JOIN Users u_client ON r.client_id = u_client.id
+        JOIN Users u_artist ON r.artist_id = u_artist.id
+        WHERE (u_artist.id = ? OR u_artist.public_id = ?) AND r.is_public = 1
         ORDER BY r.created_at DESC
       `;
-      const { results } = await env.commission_db.prepare(query).bind(artistId).all();
+      const { results } = await env.commission_db.prepare(query).bind(artistId, artistId).all();
       return new Response(JSON.stringify({ success: true, data: results }), { status: 200, headers: corsHeaders });
     } catch (e: any) {
       return new Response(JSON.stringify({ success: false, error: "讀取公開評價失敗" }), { status: 500, headers: corsHeaders });

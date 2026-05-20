@@ -238,7 +238,7 @@ export function PublicProfile() {
     if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
     // 新增：如果有公開評價，動態產生精選評價 Tab (預設不給隱藏，除非一筆都沒有)
-    if (publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
+    if (!isHidden('reviews') && publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
 
     if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {

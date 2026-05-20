@@ -283,8 +283,8 @@ export function Settings() {
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
   const freeAllowedTabs = [
-    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'subscription', 
-    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display', 'reviews' // 🌟 評價管理為免費功能
+    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'rules', 'subscription', 
+    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
   ];
   
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
