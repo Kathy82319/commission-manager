@@ -7,7 +7,7 @@ export const bulletinController = {
   async closeBulletin(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const body = await request.json().catch(() => ({})) as any;
-      const decline_reason = body.decline_reason || '案主已撤銷許願 / 結束徵件';
+      const decline_reason = body.decline_reason || '委託人已撤銷許願 / 結束徵件';
       
       const safeReason = decline_reason.substring(0, 200).replace(/[<>]/g, '');
 
@@ -46,7 +46,7 @@ export const bulletinController = {
       for (const item of pendingInquiries as any[]) {
         const title = bulletin.title || '未命名';
         const isOffer = bulletin.category === 'offer';
-        const text = isOffer ? `🌟 「${title}」已額滿或結束招收。` : `🌟 關於提案「${title}」，案主已撤銷許願或結束徵件。`;
+        const text = isOffer ? `🌟 「${title}」已額滿或結束招收。` : `🌟 關於提案「${title}」，委託人已撤銷許願或結束徵件。`;
         const link = isOffer ? '/client/inbox' : '/artist/inbox';
         await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
       }
@@ -247,7 +247,7 @@ export const bulletinController = {
       if (bulletin.category === 'request' && user.role !== 'artist' && user.role !== 'admin') {
          return new Response(JSON.stringify({ 
            success: false, 
-           message: '這是一篇徵委託貼文，必須開通創作者身分才能向案主投遞應徵。' 
+           message: '這是一篇徵委託貼文，必須開通創作者身分才能向委託人投遞應徵。' 
          }), { status: 403, headers: corsHeaders });
       }
 
@@ -284,7 +284,7 @@ export const bulletinController = {
                   return new Response(JSON.stringify({ 
                       success: false, 
                       error: 'QUOTA_EXCEEDED', 
-                      message: '免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。升級專業版以解鎖投遞限制！' 
+                      message: '免費版每月僅能主動投遞 5 次委託人委託，您的額度已用盡。升級專業版以解鎖投遞限制！' 
                   }), { status: 403, headers: corsHeaders });
               }
           }
@@ -348,7 +348,7 @@ export const bulletinController = {
          SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
          WHERE id = ? 
          AND (artist_id = ? OR bulletin_id IN (SELECT id FROM Bulletins WHERE client_id = ?))`
-      ).bind(decline_reason || '案主已婉拒 / 投遞方已撤回', inquiryId, currentUserId, currentUserId).run();
+      ).bind(decline_reason || '委託人已婉拒 / 投遞方已撤回', inquiryId, currentUserId, currentUserId).run();
 
       if (result.meta.changes === 0) {
         return new Response(JSON.stringify({ success: false, message: '操作失敗或權限不足' }), { status: 403, headers: corsHeaders });
@@ -363,7 +363,7 @@ export const bulletinController = {
            const link = isOffer ? '/artist/inbox' : '/client/inbox';
            await notificationController.createNotification(env, String(inquiryData.bulletin_client_id), 'inquiry_msg', text, link);
         } else {
-           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，案主已婉拒洽談。`;
+           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，委託人已婉拒洽談。`;
            const link = isOffer ? '/client/inbox' : '/artist/inbox';
            await notificationController.createNotification(env, String(inquiryData.artist_id), 'inquiry_msg', text, link);
         }
@@ -400,7 +400,7 @@ export const bulletinController = {
       if (inquiryData) {
         const title = inquiryData.title || '未命名';
         const isOffer = inquiryData.category === 'offer';
-        const text = isOffer ? `🌟 繪師已邀請您針對「${title}」進行詳談，請前往確認。` : `🌟 案主已邀請您針對「${title}」進行詳談，請前往確認。`;
+        const text = isOffer ? `🌟 繪師已邀請您針對「${title}」進行詳談，請前往確認。` : `🌟 委託人已邀請您針對「${title}」進行詳談，請前往確認。`;
         await notificationController.createNotification(env, String(inquiryData.artist_id), 'inquiry_msg', text, `/inquiry/workspace/${inquiryId}`);
       }
 
@@ -511,7 +511,7 @@ export const bulletinController = {
          for (const item of pendingInquiries as any[]) {
            const title = item.title || '未命名';
            const isOffer = item.category === 'offer';
-           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，案主已婉拒洽談。`;
+           const text = isOffer ? `🌟 關於投遞「${title}」，繪師已婉拒洽談。` : `🌟 關於提案「${title}」，委託人已婉拒洽談。`;
            const link = isOffer ? '/client/inbox' : '/artist/inbox';
            await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
          }

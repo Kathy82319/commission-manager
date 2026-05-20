@@ -132,7 +132,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
           <p className="label-hint">
             {isOffer 
               ? '請根據繪師的要求填寫需求，這將幫助繪師決定是否接受您的委託。'
-              : '與其丟文字履歷，不如直接給案主看您的作品！'}
+              : '與其丟文字履歷，不如直接給委託人看您的作品！'}
           </p>
 
           
@@ -265,7 +265,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
 
               <div className="form-section">
                 <label className="section-title">留言訊息</label>
-                <textarea rows={4} className="detail-textarea" placeholder="簡單介紹一下自己，讓案主更想選擇你！" value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} />
+                <textarea rows={4} className="detail-textarea" placeholder="簡單介紹一下自己，讓委託人更想選擇你！" value={inquireDraft.message} onChange={e => setInquireDraft({...inquireDraft, message: e.target.value})} />
               </div>
             </>
           )}

@@ -112,7 +112,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
       <div className="main-header" style={{ marginBottom: '24px', backgroundColor: 'transparent', padding: 0 }}>
         <div className="main-header-info">
           <h2 className="main-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '24px' }}>
-            {isGuestSelected ? '👤 訪客委託' : (selectedInq.client_name || '案主')}
+            {isGuestSelected ? '👤 訪客委託' : (selectedInq.client_name || '委託人')}
           </h2>
           
           <div className="main-subtitle" style={{ fontSize: '15px', color: '#4A7294', fontWeight: 'bold', marginTop: '8px' }}>
@@ -122,7 +122,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
           {isBlacklistSelected && (
             <div style={{ display: 'inline-block', padding: '6px 12px', background: '#FEF2F2', color: '#EF4444', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', border: '1px solid #FECACA', marginTop: '12px' }}>
               <Ban size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> 
-              警告：此案主已被您列入黑名單，請謹慎接單。
+              警告：此委託人已被您列入黑名單，請謹慎接單。
             </div>
           )}
         </div>
@@ -167,7 +167,7 @@ export const DirectInboundTab: React.FC<DirectInboundTabProps> = ({
               <div style={{ whiteSpace: 'pre-wrap', color: '#333' }}>A: {Array.isArray(qa.answer) ? qa.answer.join(', ') : (qa.answer || '(未填寫)')}</div>
             </div>
           )) : (
-            <div style={{ color: '#A0978D', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>此案主未填寫客製化問答。</div>
+            <div style={{ color: '#A0978D', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>此委託人未填寫客製化問答。</div>
           )}
         </div>
       </div>

@@ -299,7 +299,7 @@ export const inquiryController = {
       const actualClientId = isOffer ? inquiryData.artist_id : inquiryData.bulletin_client_id;
 
       if (currentUserId !== actualClientId) {
-        throw new Error('只有案主有權限正式確認委託單');
+        throw new Error('只有委託人有權限正式確認委託單');
       }
 
       const artistInfo = await env.commission_db.prepare("SELECT profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;
@@ -346,7 +346,7 @@ export const inquiryController = {
         final_negotiation_draft: draft
       });
 
-      const clientName = clientInfo?.display_name || '案主';
+      const clientName = clientInfo?.display_name || '委託人';
       let finalProjectName = draft.project_name || `${clientName} 的許願池委託`;
 
       const finalOcSnapshot = draft.oc_snapshot ? JSON.stringify(draft.oc_snapshot) : null;
@@ -368,7 +368,7 @@ export const inquiryController = {
 
       await env.commission_db.prepare(`UPDATE BulletinInquiries SET status = 'accepted', latest_update_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
 
-      const text = `🌟 恭喜！案主已同意「${inquiryData.title || '未命名'}」的協議，正式成立委託單。`;
+      const text = `🌟 恭喜！委託人已同意「${inquiryData.title || '未命名'}」的協議，正式成立委託單。`;
       await notificationController.createNotification(env, actualArtistId, 'inquiry_msg', text, '/artist/notebook');
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
@@ -395,7 +395,7 @@ export const inquiryController = {
       const actualArtistId = isOffer ? inquiryData.bulletin_client_id : inquiryData.artist_id;
 
       if (currentUserId !== actualClientId) {
-        return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, message: '權限不足：只有委託人可以退回提案' }), { status: 403, headers: corsHeaders });
       }
 
       if (inquiryData.status !== 'proposed') {

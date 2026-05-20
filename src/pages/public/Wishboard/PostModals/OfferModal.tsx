@@ -341,7 +341,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           </div>
 
           <div className="form-section">
-            <label className="section-title">提問模板 (案主投單時需回答，最多 3 題)</label>
+            <label className="section-title">提問模板 (委託人投單時需回答，最多 3 題)</label>
             {(form.questions || []).map((q: string, idx: number) => (
               <div key={idx} className="dynamic-question-row">
                 <input type="text" placeholder={`請輸入題目 ${idx + 1}`} value={q} onChange={e => updateQuestion(idx, e.target.value)} style={{ flex: 1 }} />
@@ -353,7 +353,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="form-section">
             <label className="section-title">委託服務條款 (TOS)</label>
-            <p className="label-hint" style={{ margin: '0 0 8px 0' }}>案主在填寫需求單前，必須先點擊同意此條款，此服務條款會持續顯示在雙方的委託單管理頁中。</p>
+            <p className="label-hint" style={{ margin: '0 0 8px 0' }}>委託人在填寫需求單前，必須先點擊同意此條款，此服務條款會持續顯示在雙方的委託單管理頁中。</p>
             <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權說明、修改次數限制、禁止項目等..." value={form.tos_content || ''} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
           </div>
 

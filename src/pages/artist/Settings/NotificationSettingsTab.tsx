@@ -62,11 +62,11 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
       <div style={{ marginBottom: '32px', backgroundColor: '#F9FAFB', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
         <h4 style={{ margin: '0 0 8px 0', color: '#1F2937', fontSize: '16px' }}>📧 專屬通知信箱</h4>
         <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6B7280' }}>
-          系統預設會將通知寄至您的登入信箱。若您希望將通知統一寄至其他信箱（如工作專用信箱），請於下方填寫。
+          系統預設會將通知寄至您填寫的信箱。
         </p>
         <input
           type="email"
-          placeholder="若留空，則使用原本的登入信箱"
+          placeholder="若留空，則只有站內小鈴鐺會收到通知"
           value={config.notification_email || ''}
           onChange={(e) => setConfig(prev => ({ ...prev, notification_email: e.target.value }))}
           style={{ 
@@ -95,12 +95,12 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
             />
             <ToggleRow 
               label="委託單與合約進度" 
-              description="當案主同意合約、確認稿件、提出修改請求，或是退回提案時寄信通知。"
+              description="當委託人同意合約、確認稿件、提出修改請求，或是退回提案時寄信通知。"
               field="email_art_progress" 
             />
             <ToggleRow 
               label="洽談室新訊息" 
-              description="當案主在洽談室或正式委託單中傳送新聊天訊息時寄信通知。"
+              description="當委託人在洽談室或正式委託單中傳送新聊天訊息時寄信通知。"
               field="email_art_chat" 
             />
           </div>
@@ -121,7 +121,7 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
             <div style={{ backgroundColor: '#EFF6FF', color: '#1E3A8A', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '16px' }}>💡</span>
               <div style={{ lineHeight: '1.5' }}>
-                以下為您作為「案主」向其他創作者約稿時的通知設定。<br/>
+                以下為您作為「委託人」向其他創作者約稿時的通知設定。<br/>
                 <span style={{ opacity: 0.8 }}>若您目前只打算接案，沒有發包委託的需求，可以保持預設或忽略此區塊。</span>
               </div>
             </div>
@@ -133,7 +133,7 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
               <h3 style={{ margin: 0, fontSize: '18px', color: '#1F2937' }}>委託管理通知</h3>
             </div>
             <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#6B7280' }}>
-              當您作為案主進行委託時的郵件提醒設定。
+              當您作為委託人進行委託時的郵件提醒設定。
             </p>
           </div>
         )}

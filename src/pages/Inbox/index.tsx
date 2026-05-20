@@ -203,7 +203,7 @@ useEffect(() => {
 
   const handleDirectInvite = async (inq: any) => {
     try {
-      await apiClient.patch(`/api/inquiries/${inq.inquiry_id}/submit-response`, { client_response: "案主已確認提案，開啟聊天室與您詳談。" });
+      await apiClient.patch(`/api/inquiries/${inq.inquiry_id}/submit-response`, { client_response: "委託人已確認提案，開啟聊天室與您詳談。" });
       fetchInbox(); 
     } catch (error: any) { 
       alert('開啟失敗'); 
@@ -320,7 +320,7 @@ useEffect(() => {
                     <span>{formatShortTime(inq.created_at)}</span>
                     {getMiniBadge(inq.status)}
                   </div>
-                  <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '案主')}</div>
+                  <div className="mini-card-title">{isGuest ? '👤 訪客委託' : (inq.client_name || '委託人')}</div>
                   <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
                 </div>
               );

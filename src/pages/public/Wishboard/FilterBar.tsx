@@ -26,7 +26,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <h1 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0 10px 0', color: '#1e293b' }}>
           <Sparkles color="#ff8c00" size={28} /> 創作許願池
         </h1>
-        <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>在這裡遇見你的命定畫師，或為案主實現願望</p>
+        <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>在這裡遇見你的命定畫師，或為委託人實現願望</p>
         
         <div className="tab-group">
           <button className={activeTab === 'request' ? 'active' : ''} onClick={() => setActiveTab('request')}>

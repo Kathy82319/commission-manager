@@ -146,7 +146,7 @@ export function BulletinSettingsTab({ settings, setSettings }: Props) {
           className="form-input" 
           value={settings.bulletin_card?.message || ''} 
           onChange={(e) => updateBulletinCard('message', e.target.value)}
-          placeholder="簡單介紹一下自己，讓案主更想選擇你！此內容會自動帶入提案單中。"
+          placeholder="簡單介紹一下自己，讓委託人更想選擇你！此內容會自動帶入提案單中。"
           style={{ minHeight: '100px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
         />
       </div>

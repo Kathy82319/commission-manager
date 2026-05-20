@@ -367,7 +367,7 @@ export const InquiryWorkspace: React.FC = () => {
     if (artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota) {
        return alert('抱歉，您的活躍委託單已達免費版上限。請先結案舊訂單或升級專業版以解鎖！');
     }
-    if (!window.confirm('送出正式提案後將鎖定內容，直到案主回覆。確定送出？')) return;
+    if (!window.confirm('送出正式提案後將鎖定內容，直到委託人回覆。確定送出？')) return;
     try {
       await apiClient.patch(`/api/${apiPrefix}/${id}/draft`, { draft_json: JSON.stringify(draft) });
       
@@ -375,7 +375,7 @@ export const InquiryWorkspace: React.FC = () => {
       
       const res = await apiClient.post(`/api/${apiPrefix}/${id}/propose`, {});
       if (res.success) {
-        alert('已送出正式提案給案主！');
+        alert('已送出正式提案給委託人！');
         setShowMobileAside(false); 
         fetchData();
       } else alert(res.message || '送出提案失敗');
@@ -718,7 +718,7 @@ export const InquiryWorkspace: React.FC = () => {
                 <span>📝 最終規格與合約確認</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {inquiry.status === 'proposed' ? '待案主同意' : '草稿編修中'}
+                    {inquiry.status === 'proposed' ? '待委託人同意' : '草稿編修中'}
                   </span>
                   <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
                 </div>
@@ -926,7 +926,7 @@ export const InquiryWorkspace: React.FC = () => {
               )}
 
               {inquiry.status === 'proposed' && isArtist && (
-                <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待案主確認中...</div>
+                <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待委託人確認中...</div>
               )}
             </div>
           </aside>

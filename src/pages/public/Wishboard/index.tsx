@@ -220,7 +220,7 @@ export const Wishboard: React.FC = () => {
 
     if (bulletin.category === 'request' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.request_inquire_used >= wishQuota.request_inquire_max) {
-           showToast('免費版每月僅能主動投遞 5 次案主委託，您的額度已用盡。', 'error');
+           showToast('免費版每月僅能主動投遞 5 次委託人委託，您的額度已用盡。', 'error');
            return;
        }
     }
@@ -407,7 +407,7 @@ export const Wishboard: React.FC = () => {
             <ShieldAlert size={56} color="#3b82f6" style={{ margin: '0 auto 16px auto', opacity: 0.9 }} />
             <h2 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '20px', fontWeight: 'bold' }}>需要開通創作者身分</h2>
             <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', margin: '0 0 28px 0' }}>
-              {showUpgradeGuide.type === 'post' ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' : '主動向案主投遞應徵需要創作者身分，以便案主查看您的作品集並與您洽談。'}
+              {showUpgradeGuide.type === 'post' ? '發布接案貼文需要先開通創作者身分，這將解鎖您的作品集與排單表功能。' : '主動向委託人投遞應徵需要創作者身分，以便委託人查看您的作品集並與您洽談。'}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button onClick={() => setShowUpgradeGuide({ ...showUpgradeGuide, show: false })} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#475569', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}>

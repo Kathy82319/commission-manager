@@ -242,7 +242,7 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
 
       const draft = JSON.parse(inquiryData.negotiation_draft);
       const commissionId = `CM-${Date.now().toString().slice(-6)}`;
-      const clientName = "案主"; 
+      const clientName = "委託人"; 
 
       const origin_source = JSON.stringify({
         source_type: 'showcase_form',
@@ -269,7 +269,7 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
       ).run();
 
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'accepted' WHERE id = ?`).bind(inquiryId).run();
-      await notificationController.createNotification(env, inquiryData.artist_id, 'inquiry_msg', `🌟 恭喜！案主已同意協議，委託單正式成立！`, `/artist/notebook`);
+      await notificationController.createNotification(env, inquiryData.artist_id, 'inquiry_msg', `🌟 恭喜！委託人已同意協議，委託單正式成立！`, `/artist/notebook`);
 
       return new Response(JSON.stringify({ success: true, commission_id: commissionId }), { headers: corsHeaders });
     } catch (error: any) {
@@ -442,7 +442,7 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
       }
 
       if (inquiryData.actual_client_id !== currentUserId) {
-        return new Response(JSON.stringify({ success: false, message: '權限不足：只有案主可以退回提案' }), { status: 403, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, message: '權限不足：只有委託人可以退回提案' }), { status: 403, headers: corsHeaders });
       }
 
       if (inquiryData.status !== 'proposed') {
