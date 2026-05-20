@@ -15,7 +15,6 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
-      // 如果上面改完還錯，請檢查是不是這裡的 currentUserId 問號綁定在特定環境下有問題
       await env.commission_db.prepare(`
         DELETE FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending' AND datetime(created_at) <= datetime('now', '-1 hour')
@@ -43,9 +42,10 @@ export const paymentController = {
       const absoluteFrontendUrl = (env.FRONTEND_URL || "https://arti7.net").replace(/\/$/, "");
       const backendUrl = env.BACKEND_URL;
       
+      // 💡 修正：將 5 個欄位全面做成 5 個問號 '?'，讓 D1 完美對齊變數繫結數量
       await env.commission_db.prepare(
-        "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, 'pending')"
-      ).bind(orderId, currentUserId, amount, plan_type).run();
+        "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, ?)"
+      ).bind(orderId, currentUserId, amount, plan_type, 'pending').run();
 
       const tradeInfoObj: any = {
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
