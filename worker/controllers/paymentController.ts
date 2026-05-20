@@ -31,7 +31,7 @@ export const paymentController = {
           error: "已達到未付款單上限（5次），請等一小時或聯繫管理員" 
         }), { status: 200, headers: corsHeaders });
       }
-
+ 
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
