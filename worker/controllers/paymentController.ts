@@ -15,10 +15,10 @@ export const paymentController = {
         return new Response(JSON.stringify({ success: false, error: "系統配置錯誤：金鑰遺失" }), { status: 500, headers: corsHeaders });
       }
 
-      await env.commission_db.prepare(`
+     /* await env.commission_db.prepare(`
         DELETE FROM PaymentOrders 
         WHERE user_id = ? AND status = 'pending' AND datetime(created_at) <= datetime('now', '-1 hour')
-      `).bind(currentUserId).run();
+      `).bind(currentUserId).run();  */
 
       const { results: pendingRes } = await env.commission_db.prepare(`
         SELECT COUNT(*) as count FROM PaymentOrders 
