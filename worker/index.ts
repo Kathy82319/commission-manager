@@ -27,7 +27,9 @@ export default {
     const requestOrigin = request.headers.get("Origin") || "";
     
     if (sanitizedPath === "/payment/result" && request.method === "POST") {
-      const redirectUrl = new URL("/artist/settings", url.origin);
+      // 安全提示：確保轉換時期導向到環境變數設定的主網域，避免被舊網域 Webhook 牽引
+      const targetBase = env.FRONTEND_URL || url.origin;
+      const redirectUrl = new URL("/artist/settings", targetBase);
       redirectUrl.searchParams.set("payment", "success");
       return Response.redirect(redirectUrl.toString(), 303);
     }
