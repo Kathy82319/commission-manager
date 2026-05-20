@@ -13,20 +13,104 @@
   gap: 20px;
 }
 
+/* 電腦版側邊欄預設隱藏，靠 media query 顯示 */
 .settings-sidebar {
-  display: flex;
-  overflow-x: auto; 
-  -webkit-overflow-scrolling: touch; 
-  gap: 12px;
-  border-bottom: 2px solid #EAE6E1; 
-  padding-bottom: 8px;
-  scrollbar-width: none; 
-}
-
-.settings-sidebar::-webkit-scrollbar {
   display: none;
 }
 
+/* ==========================================================================
+   手機版下拉幕導航 (Mobile Nav Dropdown)
+   ========================================================================== */
+.settings-mobile-nav {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 50; /* 確保下拉選單蓋在內容上方 */
+}
+
+.mobile-nav-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #5D4A3E;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.mobile-nav-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background-color: #FFFFFF;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  padding: 16px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mobile-nav-dropdown.open {
+  max-height: 80vh;
+  overflow-y: auto;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-nav-dropdown .sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-nav-dropdown .group-label {
+  font-size: 13px;
+  color: #A0978D;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #F0ECE7;
+  padding-bottom: 8px;
+}
+
+.mobile-nav-dropdown .tab-btn {
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background-color: #F9F7F5;
+  color: #7A7269;
+  font-size: 14px;
+  font-weight: bold;
+  border: 1px solid transparent;
+}
+
+.mobile-nav-dropdown .tab-btn.active {
+  background-color: #5D4A3E !important;
+  color: #FFFFFF;
+}
+
+.mobile-nav-dropdown .add-page-btn {
+  font-size: 12px;
+  background: #FDF4E6;
+  padding: 4px 8px;
+}
+
+/* ==========================================================================
+   共用組件與內容區塊
+   ========================================================================== */
 .group-label {
   display: flex;
   justify-content: space-between;
@@ -48,79 +132,24 @@
 }
 .manage-entry-btn:hover { opacity: 1; }
 
-.tab-btn {
-  white-space: nowrap; 
-  padding: 10px 16px;
-  border: none;
-  background-color: transparent; 
-  color: #A0978D;
-  font-size: 14px;
+/* 自訂新增分頁按鈕 */
+.add-custom-section-btn {
+  padding: 12px;
+  margin-top: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
+  background: transparent;
+  border: 1px dashed #A0978D;
   border-radius: 8px;
-  border-bottom: none !important; 
+  color: #5D4A3E;
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+  width: 100%;
+  transition: all 0.2s ease;
 }
-
-@media (min-width: 1024px) {
-  .settings-layout {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 60px; 
-  }
-  
-  .settings-sidebar {
-    display: flex;
-    flex-direction: column; 
-    width: 240px;
-    border-bottom: none;
-    padding-bottom: 0;
-    overflow-x: visible;
-  }
-
-  .sidebar-title {
-    display: block; 
-    font-size: 24px;
-    color: #5D4A3E;
-    margin-bottom: 40px; 
-    font-weight: bold;
-    padding-left: 0;
-  }
-
-  .sidebar-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 32px;
-  }
-
-  .group-label {
-    font-size: 15px;
-    margin-bottom: 8px;
-    padding-left: 0;
-  }
-
-  .tab-btn {
-    text-align: left;
-    padding: 10px 16px 10px 32px;
-    margin-bottom: 4px;
-    border-left: 4px solid transparent; 
-    border-radius: 0 8px 8px 0;
-    font-size: 15px;
-  }
-
-  .tab-btn.active {
-    background-color: #F9F7F5 !important;
-    color: #5D4A3E;
-    font-weight: bold;
-    border-left: 4px solid #5D4A3E;
-    border-bottom: none !important;
-  }
-
-  .tab-btn:hover:not(.active) {
-    background-color: #FDFBFA;
-    border-left: 4px solid #DED9D3;
-    color: #7A7269;
-  }
+.add-custom-section-btn:hover {
+  background-color: rgba(0,0,0,0.02);
+  border-color: #5D4A3E;
 }
 
 .settings-content-area {
@@ -163,6 +192,9 @@
   transition: all 0.2s ease;
 }
 
+/* ==========================================================================
+   鎖定區塊與彈窗
+   ========================================================================== */
 .lock-overlay {
   position: absolute;
   top: 0;
@@ -216,10 +248,7 @@
   cursor: pointer;
   transition: transform 0.2s;
 }
-
-.lock-card button:hover {
-  transform: translateY(-2px);
-}
+.lock-card button:hover { transform: translateY(-2px); }
 
 .add-page-btn {
   background: none;
@@ -232,19 +261,14 @@
   border-radius: 4px;
   transition: background-color 0.2s;
 }
-
 .add-page-btn:hover {
   background-color: #FDF4E6;
   text-decoration: underline;
 }
 
-.group-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-right: 12px;
-}
-
+/* ==========================================================================
+   儲存按鈕與 Toast
+   ========================================================================== */
 .save-action-bar {
   margin-top: auto;
   padding-top: 32px;
@@ -300,80 +324,9 @@
   to { top: 20px; opacity: 1; }
 }
 
-@media (max-width: 1023px) {
-  .settings-layout {
-    gap: 16px;
-  }
-
-  .sidebar-title {
-    display: none; 
-  }
-
-  .settings-sidebar {
-    padding: 0 4px 12px 4px;
-    align-items: center;
-  }
-
-  .sidebar-group {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    margin-right: 16px;
-  }
-
-  .group-label {
-    margin-bottom: 0;
-    white-space: nowrap;
-    font-size: 14px;
-    padding-right: 12px;
-    border-right: 1px solid #EAE6E1; 
-    gap: 8px; 
-  }
-
-  .tab-btn {
-    background-color: #F9F7F5;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-  }
-
-  .tab-btn.active {
-    background-color: #5D4A3E !important;
-    color: #FFFFFF;
-    border-left: none; 
-  }
-
-  .settings-content-area {
-    padding: 20px 16px;
-    min-height: calc(100vh - 200px); 
-    border-radius: 12px;
-  }
-
-  .settings-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-  }
-
-  .save-action-bar {
-    padding-top: 24px;
-    justify-content: center;
-  }
-
-  .main-save-btn {
-    width: 100%; 
-    padding: 14px;
-  }
-
-  .lock-card {
-    width: 85%;
-    padding: 24px;
-  }
-}
-
+/* ==========================================================================
+   頭像與其他小組件
+   ========================================================================== */
 .avatar-preview-wrapper {
   width: 100px;
   height: 100px;
@@ -404,135 +357,117 @@
   margin-top: 12px;
 }
 
-.settings-sidebar-wrapper {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.upgrade-card-container {
-  margin-top: auto;
-  padding-top: 40px;
-  width: 100%;
-}
-
-.upgrade-card {
-  padding: 16px;
-  background-color: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 12px;
-}
-
-.upgrade-card-title {
-  margin: 0 0 8px 0;
-  color: #334155;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.upgrade-card-desc {
-  margin: 0 0 12px 0;
-  color: #64748B;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.upgrade-card-btn {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  background-color: #3b82f6;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.upgrade-card-btn:hover {
-  background-color: #2563eb;
-}
-
-.preview-profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid #E2E8F0;
-  background-color: #FFFFFF;
-  color: #475569;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.preview-profile-btn:hover {
-  background-color: #F8FAFC;
-}
-
-.tab-instruction-text {
-  color: #64748B;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-
 /* ==========================================================================
-   RWD 響應式微調
+   RWD 響應式：電腦版配置 (Desktop)
    ========================================================================== */
-
 @media (min-width: 1024px) {
-  .settings-sidebar-wrapper {
+  .settings-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 60px; 
+  }
+  
+  .settings-mobile-nav {
+    display: none; /* 電腦版隱藏下拉幕 */
+  }
+
+  .settings-sidebar {
+    display: flex;
+    flex-direction: column; 
     width: 240px;
     flex-shrink: 0;
   }
-}
 
-@media (max-width: 1023px) {
-  .settings-sidebar-wrapper {
-    flex-direction: column;
-    gap: 12px;
+  .sidebar-title {
+    display: block; 
+    font-size: 24px;
+    color: #5D4A3E;
+    margin-bottom: 40px; 
+    font-weight: bold;
+    padding-left: 0;
   }
 
- 
+  .sidebar-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 32px;
+  }
+
+  .group-label {
+    font-size: 15px;
+    margin-bottom: 8px;
+    padding-left: 0;
+  }
+
+  .tab-btn {
+    text-align: left;
+    padding: 10px 16px 10px 32px;
+    margin-bottom: 4px;
+    border: none;
+    border-left: 4px solid transparent; 
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    background-color: transparent;
+    color: #A0978D;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn.active {
+    background-color: #F9F7F5 !important;
+    color: #5D4A3E;
+    font-weight: bold;
+    border-left: 4px solid #5D4A3E;
+  }
+
+  .tab-btn:hover:not(.active) {
+    background-color: #FDFBFA;
+    border-left: 4px solid #DED9D3;
+    color: #7A7269;
+  }
+  
+  .add-custom-section-btn {
+    text-align: left;
+    padding-left: 32px;
+    border-radius: 0 8px 8px 0;
+    border-left: 4px solid transparent;
+  }
+}
+
+/* ==========================================================================
+   RWD 響應式：手機版配置 (Mobile)
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .settings-layout {
+    gap: 16px;
+  }
+
+  .settings-content-area {
+    padding: 20px 16px;
+    min-height: calc(100vh - 200px); 
+    border-radius: 12px;
+  }
+
   .settings-header {
     flex-direction: row !important;
     justify-content: space-between;
     width: 100%;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
   }
 
-  .preview-profile-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
-  
-  .preview-profile-btn span {
-    display: none;
+  .save-action-bar {
+    padding-top: 24px;
+    justify-content: center;
   }
 
-  .upgrade-card-container {
-    margin-top: 0;
-    padding-top: 4px;
-    order: 2;
-  }
-
-  .upgrade-card {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+  .main-save-btn {
+    width: 100%; 
     padding: 14px;
-    background-color: #EFF6FF;
-    border: 1px solid #BFDBFE;
   }
 
-  .upgrade-card-desc {
-    margin-bottom: 8px;
-  }
-
-  .upgrade-card-btn {
-    padding: 8px;
+  .lock-card {
+    width: 85%;
+    padding: 24px;
   }
 }

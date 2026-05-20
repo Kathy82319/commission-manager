@@ -72,6 +72,9 @@ export function Settings() {
     return params.get('tab') || 'profile_basic';
   });
 
+  // 手機版下拉選單狀態
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
@@ -162,6 +165,16 @@ export function Settings() {
       return group;
     });
   }, [settings.custom_sections, hasOC]); 
+
+  // 計算當前顯示的標籤名稱 (供手機版頂部按鈕使用)
+  const currentActiveLabel = useMemo(() => {
+    for (const group of menuGroups) {
+      const found = group.items.find(item => item.id === activeTab);
+      if (found) return found.label;
+    }
+    if (activeTab === 'tab_order') return '變更排序';
+    return '設定';
+  }, [activeTab, menuGroups]);
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -296,6 +309,66 @@ export function Settings() {
     <div className="settings-page">
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="settings-layout">
+        
+        {/* 手機版專屬下拉幕選單 */}
+        <div className="settings-mobile-nav">
+          <button 
+            className="mobile-nav-trigger" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <span>目前查看：{currentActiveLabel}</span>
+            <span className="trigger-arrow" style={{ transform: isMobileMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>▼</span>
+          </button>
+
+          <div className={`mobile-nav-dropdown ${isMobileMenuOpen ? 'open' : ''}`}>
+            {menuGroups.map(group => (
+              <div key={group.title} className="sidebar-group">
+                <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {group.title}
+                  {group.title.includes('內容管理') && (
+                    <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}>變更排序</button>
+                  )}
+                </div>
+                
+                {group.items.map((item: MenuItem) => {
+                  const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
+                  return (
+                    <button 
+                      key={item.id} 
+                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`} 
+                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
+                    >
+                      {item.label} {isLocked && '[鎖定]'}
+                    </button>
+                  );
+                })}
+
+                {group.title.includes('內容管理') && (
+                  <button 
+                    className="add-custom-section-btn"
+                    onClick={() => {
+                      if (isFreePlan) { setActiveTab('custom_locked_placeholder'); setIsMobileMenuOpen(false); return; }
+                      if (settings.custom_sections.length >= 5) return;
+                      const newId = `custom_${Date.now()}`;
+                      setSettings(prev => ({
+                        ...prev,
+                        custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
+                      }));
+                      setActiveTab(newId);
+                      setHideGlobalSave(false);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    style={{ opacity: settings.custom_sections.length >= 5 ? 0.5 : 1 }}
+                  >
+                    + 新增分頁
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 電腦版側邊欄 */}
         <aside className="settings-sidebar">
           <div className="sidebar-title">個人頁編輯</div>
           {menuGroups.map(group => (
@@ -309,28 +382,10 @@ export function Settings() {
               
               {group.items.map((item: MenuItem) => {
                 const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
-                
-                if (item.isCustom) {
-                  return (
-                    <button 
-                      key={item.id} 
-                      className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
-                      style={{ 
-                        border: activeTab === item.id ? '1px solid #5D4A3E' : '1px dashed #A0978D', 
-                        background: activeTab === item.id ? '#FFF' : 'transparent',
-                        marginBottom: '4px'
-                      }}
-                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
-                    >
-                      {item.label} {isLocked && '[鎖定]'}
-                    </button>
-                  );
-                }
-
                 return (
                   <button 
                     key={item.id} 
-                    className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} 
+                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`} 
                     onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
                   >
                     {item.label} {isLocked && '[鎖定]'}
@@ -340,6 +395,7 @@ export function Settings() {
 
               {group.title.includes('內容管理') && (
                 <button 
+                  className="add-custom-section-btn"
                   onClick={() => {
                     if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
                     if (settings.custom_sections.length >= 5) return;
@@ -351,12 +407,7 @@ export function Settings() {
                     setActiveTab(newId);
                     setHideGlobalSave(false);
                   }}
-                  style={{
-                    padding: '10px 14px', marginTop: '6px', cursor: 'pointer', background: 'transparent',
-                    border: '1px dashed #A0978D', borderRadius: '8px', color: '#5D4A3E', fontWeight: 'bold', 
-                    textAlign: 'left', fontSize: '14px', width: '100%',
-                    opacity: settings.custom_sections.length >= 5 ? 0.5 : 1
-                  }}
+                  style={{ opacity: settings.custom_sections.length >= 5 ? 0.5 : 1 }}
                 >
                   + 新增分頁
                 </button>
