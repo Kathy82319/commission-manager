@@ -220,7 +220,20 @@ export function ArtistLayout() {
         <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-            <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px' }}>繪師管理後台</div>
+            
+            {/* 🌟 核心修改：加入使用者 ID 顯示 */}
+            <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px', lineHeight: '1.6' }}>
+              <div>繪師管理後台</div>
+              {artist && (
+                <div style={{ 
+                  fontSize: '11px', color: '#7A7269', background: '#F4F0EB', 
+                  display: 'inline-block', padding: '4px 8px', borderRadius: '4px', marginTop: '6px' 
+                }}>
+                  使用者：<span style={{ userSelect: 'all', fontWeight: 'bold' }}>{artist.public_id}</span>
+                </div>
+              )}
+            </div>
+
             {artist && (
               <div style={{ padding: '10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: planBadgeBg, color: planBadgeColor }}>
                 <div>{planDisplay}</div>
