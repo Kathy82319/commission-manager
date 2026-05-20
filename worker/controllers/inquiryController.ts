@@ -57,6 +57,7 @@ export const inquiryController = {
       const isOffer = data.bulletin_category === 'offer';
       const actualArtistId = isOffer ? data.bulletin_client_id : data.artist_id;
 
+      // 🌟 核心修復：只要 currentUserId 是這筆單的實際繪師（無論是許願池進來還是直接委託進來），一律注入 quota 防護計算
       let quotaInfo = null;
       if (currentUserId === actualArtistId) {
          const { results: countRes } = await env.commission_db.prepare(`
@@ -234,7 +235,7 @@ export const inquiryController = {
     try {
       const inquiryData = await env.commission_db.prepare(`
         SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
-        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
+        FROM BulletinInquiries i JOIN Bulletins b ON i.bulletid = b.id WHERE i.id = ?
       `).bind(inquiryId).first() as any;
 
       if (!inquiryData) throw new Error('找不到該筆洽談');
