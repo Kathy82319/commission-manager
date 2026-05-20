@@ -39,6 +39,9 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     .filter(i => i.bulletin_id === bulletin.id)
     .filter(filterOldItems);
 
+  // 判斷該許願貼文是否已經關閉/撤銷
+  const isClosed = bulletin.status !== 'open';
+
   return (
     <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease', boxSizing: 'border-box' }}>
       
@@ -53,25 +56,39 @@ export const InboundTab: React.FC<InboundTabProps> = ({
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#D97706', backgroundColor: '#FFFBEB', padding: '8px 12px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
-            ⏳ {calculateDaysLeft(bulletin.expires_at)}
+          <span style={{ 
+            fontSize: '13px', 
+            fontWeight: 'bold', 
+            color: isClosed ? '#6B7280' : '#D97706', 
+            backgroundColor: isClosed ? '#F3F4F6' : '#FFFBEB', 
+            padding: '8px 12px', 
+            borderRadius: '8px', 
+            border: `1px solid ${isClosed ? '#D1D5DB' : '#FDE68A'}` 
+          }}>
+            {isClosed ? '🗄️ 已結束' : `⏳ ${calculateDaysLeft(bulletin.expires_at)}`}
           </span>
-          <button 
-            onClick={() => handleCancelBulletin && handleCancelBulletin(bulletin.id)}
-            style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 'bold', color: '#EF4444', backgroundColor: '#FFFFFF', border: '1px solid #FECACA', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-          >
-            🛑 撤銷許願
-          </button>
+          
+          {/* 當貼文還在 open 狀態時，才顯示撤銷按鈕 */}
+          {!isClosed && (
+            <button 
+              onClick={() => handleCancelBulletin && handleCancelBulletin(bulletin.id)}
+              style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 'bold', color: '#EF4444', backgroundColor: '#FFFFFF', border: '1px solid #FECACA', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+            >
+              🛑 撤銷許願
+            </button>
+          )}
         </div>
       </div>
 
       {currentInquiries.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#A0978D' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }}>🍃</div>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7A7269' }}>目前還沒有收到提案喔！</div>
-          <div style={{ fontSize: '14px', marginTop: '8px' }}>請稍候，或至社群分享您的許願池連結。</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#7A7269' }}>
+            {isClosed ? '此許願池沒有留存任何提案紀錄。' : '目前還沒有收到提案喔！'}
+          </div>
+          {!isClosed && <div style={{ fontSize: '14px', marginTop: '8px' }}>請稍候，或至社群分享您的許願池連結。</div>}
         </div>
       ) : (
         <OfferList 

@@ -74,8 +74,11 @@ export const inquiryController = {
          quotaInfo = { used_quota: used, max_quota: max, plan_type: artistData?.plan_type };
       }
 
-      const updateField = currentUserId === actualArtistId ? 'last_read_at_artist' : 'last_read_at_client';
-      await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+      // 如果不是已關閉或已婉拒的唯讀狀態，才更新已讀時間
+      if (data.status !== 'closed' && data.status !== 'declined') {
+        const updateField = currentUserId === actualArtistId ? 'last_read_at_artist' : 'last_read_at_client';
+        await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
+      }
 
       return new Response(JSON.stringify({ success: true, data, quota: quotaInfo }), { headers: corsHeaders });
     } catch (error: any) {
@@ -125,7 +128,7 @@ export const inquiryController = {
   async sendMessage(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
-        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id 
+        SELECT b.client_id as bulletin_client_id, b.title, i.artist_id, i.status
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
       `).bind(inquiryId).first() as any;
 
@@ -135,6 +138,11 @@ export const inquiryController = {
 
       if (currentUserId !== inquiryData.artist_id && currentUserId !== inquiryData.bulletin_client_id) {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
+
+      // [破口1 - Write-After-Close] 攔截關閉/婉拒狀態，防止唯讀模式下被灌入新訊息
+      if (inquiryData.status === 'closed' || inquiryData.status === 'declined') {
+        return new Response(JSON.stringify({ success: false, error: '洽談已終止，無法發送新訊息' }), { status: 400, headers: corsHeaders });
       }
 
       const body = await request.json() as any;
@@ -209,10 +217,11 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
       }
 
-      if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted') {
+      // [破口2 - 歷史快照防覆寫] 阻擋已關閉或已婉拒的合約修改
+      if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted' || inquiryData.status === 'closed' || inquiryData.status === 'declined') {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: '合約已送出或已成立，無法修改草稿。若需修改請請委託人退回提案。' 
+          error: '當前狀態無法修改草稿。若需修改請重新開啟或聯繫客服。' 
         }), { status: 403, headers: corsHeaders });
       }
 
@@ -233,7 +242,7 @@ export const inquiryController = {
   async proposeAgreement(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const inquiryData = await env.commission_db.prepare(`
-        SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id 
+        SELECT b.title, b.category as bulletin_category, b.client_id as bulletin_client_id, i.artist_id, i.status 
         FROM BulletinInquiries i JOIN Bulletins b ON i.bulletin_id = b.id WHERE i.id = ?
       `).bind(inquiryId).first() as any;
 
@@ -245,6 +254,10 @@ export const inquiryController = {
 
       if (currentUserId !== actualArtistId) {
         return new Response(JSON.stringify({ success: false, message: '必須為該委託的創作者身分才能提出報價' }), { status: 403, headers: corsHeaders });
+      }
+
+      if (inquiryData.status === 'closed' || inquiryData.status === 'declined') {
+        return new Response(JSON.stringify({ success: false, message: '此洽談已終止，無法送出提案' }), { status: 400, headers: corsHeaders });
       }
 
       const artist = await env.commission_db.prepare(
@@ -300,6 +313,10 @@ export const inquiryController = {
 
       if (currentUserId !== actualClientId) {
         throw new Error('只有委託人有權限正式確認委託單');
+      }
+
+      if (inquiryData.status === 'closed' || inquiryData.status === 'declined') {
+        return new Response(JSON.stringify({ success: false, message: '此洽談已終止，無法簽署成立委託' }), { status: 400, headers: corsHeaders });
       }
 
       const artistInfo = await env.commission_db.prepare("SELECT profile_settings FROM Users WHERE id = ?").bind(actualArtistId).first() as any;

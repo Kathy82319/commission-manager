@@ -468,9 +468,13 @@ export const InquiryWorkspace: React.FC = () => {
 
   const finalDisplayTos = draft.custom_tos !== undefined ? draft.custom_tos : artistTos;
 
+  // 判斷是否為「歷史唯讀模式」
+  const isClosedOrDeclined = inquiry.status === 'closed' || inquiry.status === 'declined' || inquiry.status === 'cancelled';
+
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
-  const isEditableByArtist = isArtist && (
+  // 若為歷史唯讀模式，強制將編輯權限設為 false
+  const isEditableByArtist = !isClosedOrDeclined && isArtist && (
     (isDirectInquiry && inquiry.status === 'pending') ||
     (!isDirectInquiry && inquiry.status === 'submitted') 
   );
@@ -547,7 +551,15 @@ export const InquiryWorkspace: React.FC = () => {
             </div>
           </header>
 
-          {isAccepted && (
+          {isClosedOrDeclined && (
+            <div style={{ backgroundColor: '#F3F4F6', borderBottom: '1px solid #D1D5DB', flexShrink: 0, zIndex: 9 }}>
+              <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#6B7280', fontSize: '13px', fontWeight: 'bold' }}>
+                🗄️ 此洽談已終止或撤銷，目前為歷史唯讀模式。
+              </div>
+            </div>
+          )}
+
+          {!isClosedOrDeclined && isAccepted && (
             <div style={{ backgroundColor: '#EBF5EB', borderBottom: '1px solid #C8E6C9', flexShrink: 0, zIndex: 9, transition: 'all 0.3s' }}>
               <div 
                 onClick={() => setIsBannerExpanded(!isBannerExpanded)}
@@ -571,7 +583,7 @@ export const InquiryWorkspace: React.FC = () => {
           <main ref={chatMainRef} onScroll={handleScroll} className="iw-chat-main custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FBFBF9', position: 'relative' }}>
             
             {messages.map((msg) => {
-              const isSystemMsg = typeof msg.content === 'string' && msg.content.startsWith('【系統提示】');
+              const isSystemMsg = typeof msg.content === 'string' && (msg.content.startsWith('【系統提示】') || msg.content.startsWith('[系統代理]'));
               const isMe = msg.sender_id === currentUserId;
 
               if (msg.message_type === 'oc_snapshot') {
@@ -675,32 +687,38 @@ export const InquiryWorkspace: React.FC = () => {
             </button>
           )}
 
-          <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-            {!isArtist && inquiry?.status !== 'accepted' && (
+          {isClosedOrDeclined ? (
+            <footer className="iw-chat-footer" style={{ backgroundColor: '#F9FAFB', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', justifyContent: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+              無法傳送訊息：此洽談室已關閉
+            </footer>
+          ) : (
+            <footer className="iw-chat-footer" style={{ backgroundColor: '#FFFFFF', padding: '16px 20px', borderTop: '1px solid #EAE6E1', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+              {!isArtist && inquiry?.status !== 'accepted' && (
+                <button 
+                  onClick={handleOpenOCSelection}
+                  style={{ padding: '10px', background: '#FDF4E6', border: '1px solid #FDE0B5', borderRadius: '50%', color: '#A67B3E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, transition: 'all 0.2s' }}
+                  title="傳送專屬角色設定卡 (OC)"
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <span style={{ fontSize: '20px' }}>📇</span>
+                </button>
+              )}
+
+              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
               <button 
-                onClick={handleOpenOCSelection}
-                style={{ padding: '10px', background: '#FDF4E6', border: '1px solid #FDE0B5', borderRadius: '50%', color: '#A67B3E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, transition: 'all 0.2s' }}
-                title="傳送專屬角色設定卡 (OC)"
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={isUploadingImage}
+                style={{ padding: '10px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '50%', color: '#64748B', cursor: isUploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, opacity: isUploadingImage ? 0.5 : 1 }}
+                title="上傳圖片 (建議 1MB 內)"
               >
-                <span style={{ fontSize: '20px' }}>📇</span>
+                <span style={{ fontSize: '20px' }}>{isUploadingImage ? '⏳' : '🖼️'}</span>
               </button>
-            )}
 
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} style={{ display: 'none' }} />
-            <button 
-              onClick={() => fileInputRef.current?.click()} 
-              disabled={isUploadingImage}
-              style={{ padding: '10px', background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '50%', color: '#64748B', cursor: isUploadingImage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, opacity: isUploadingImage ? 0.5 : 1 }}
-              title="上傳圖片 (建議 1MB 內)"
-            >
-              <span style={{ fontSize: '20px' }}>{isUploadingImage ? '⏳' : '🖼️'}</span>
-            </button>
-
-            <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none' }} />
-            <button onClick={handleSendMessage} disabled={!newMessage.trim() && !isUploadingImage} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: (newMessage.trim() || isUploadingImage) ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>傳送</button>
-          </footer>
+              <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onFocus={() => setFocusedField(true)} onBlur={() => setFocusedField(false)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); } }} placeholder="請輸入訊息..." style={{ flex: 1, padding: '12px 16px', borderRadius: '16px', border: focusedField ? '1.5px solid #5D4A3E' : '1px solid #DED9D3', backgroundColor: '#FBFBF9', fontSize: '14px', color: '#5D4A3E', minHeight: '44px', maxHeight: '120px', outline: 'none', resize: 'none' }} />
+              <button onClick={handleSendMessage} disabled={!newMessage.trim() && !isUploadingImage} style={{ padding: '12px 24px', borderRadius: '99px', backgroundColor: (newMessage.trim() || isUploadingImage) ? '#5D4A3E' : '#DED9D3', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>傳送</button>
+            </footer>
+          )}
         </div>
 
         {showMobileAside && (
@@ -717,15 +735,17 @@ export const InquiryWorkspace: React.FC = () => {
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#5D4A3E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>📝 最終規格與合約確認</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: '#FBFBF9', border: '1px solid #EAE6E1', color: '#7A7269', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {inquiry.status === 'proposed' ? '待委託人同意' : '草稿編修中'}
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', backgroundColor: isClosedOrDeclined ? '#F3F4F6' : '#FBFBF9', border: `1px solid ${isClosedOrDeclined ? '#D1D5DB' : '#EAE6E1'}`, color: isClosedOrDeclined ? '#6B7280' : '#7A7269', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {isClosedOrDeclined ? '已歸檔' : inquiry.status === 'proposed' ? '待委託人同意' : '草稿編修中'}
                   </span>
                   <button className="iw-mobile-close-btn" onClick={() => setShowMobileAside(false)} style={{ display: 'none', background: 'none', border: 'none', color: '#A05C5C', fontSize: '16px', fontWeight: 'bold', padding: 0 }}>✕</button>
                 </div>
               </h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', marginTop: '8px' }}>
-                <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>{isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}</p> 
-                {isArtist && artistQuota && (
+                <p style={{ margin: 0, fontSize: '12px', color: '#A0978D', lineHeight: '1.5' }}>
+                  {isClosedOrDeclined ? '此洽談已終止，以下為當時留存的歷史規格。' : isArtist ? '請在此填寫最終規格，確認後送出提案。' : '繪師送出提案後，您可在此確認並建立委託。'}
+                </p> 
+                {!isClosedOrDeclined && isArtist && artistQuota && (
                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#A05C5C' : '#4A7294', backgroundColor: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '#FDF4F4' : '#EBF2F7', padding: '2px 6px', borderRadius: '4px', border: artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota ? '1px solid #E8C1C1' : '1px solid #C1D6E8', whiteSpace: 'nowrap', flexShrink: 0 }}>{artistQuota.max_quota === -1 ? '專業版無限額度' : `活躍訂單：${artistQuota.used_quota} / ${artistQuota.max_quota}`}</span>
                 )}
               </div>
@@ -905,30 +925,33 @@ export const InquiryWorkspace: React.FC = () => {
                     />
                   </div>
                 ) : (
-<div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />                )}
+                  <div className="tos-read-only-content" style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', whiteSpace: 'pre-wrap', backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '8px', border: '1px solid #EAE6E1' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(finalDisplayTos) }} />
+                )}
               </div>
 
             </div>
 
-            <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
-              {isEditableByArtist && (
-                <>
-                  <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>💾 儲存協議草稿</button>
-                  <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{isQuotaFull ? '❌ 額度已滿' : '🚀 送出正式提案'}</button>
-                </>
-              )}
+            {!isClosedOrDeclined && (
+              <div style={{ padding: '20px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAE6E1', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                {isEditableByArtist && (
+                  <>
+                    <button onClick={handleSaveDraft} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#FBFBF9', color: '#5D4A3E', border: '1px solid #DED9D3', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>💾 儲存協議草稿</button>
+                    <button onClick={handlePropose} disabled={isQuotaFull} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: isQuotaFull ? '#DED9D3' : '#5D4A3E', color: '#FFFFFF', border: 'none', fontWeight: 'bold', cursor: isQuotaFull ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{isQuotaFull ? '❌ 額度已滿' : '🚀 送出正式提案'}</button>
+                  </>
+                )}
 
-              {!isArtist && inquiry.status === 'proposed' && (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>退回修正</button>
-                  <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ flex: 2, padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>✅ 同意並建立委託</button>
-                </div>
-              )}
+                {!isArtist && inquiry.status === 'proposed' && (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleRejectProposal} style={{ flex: 1, padding: '16px', borderRadius: '8px', background: '#FFFFFF', color: '#A05C5C', border: '1px solid #E8C1C1', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>退回修正</button>
+                    <button onClick={() => { setShowMobileAside(false); setShowFinalModal(true); }} style={{ flex: 2, padding: '16px', borderRadius: '8px', background: '#4E7A5A', color: '#FFFFFF', border: 'none', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>✅ 同意並建立委託</button>
+                  </div>
+                )}
 
-              {inquiry.status === 'proposed' && isArtist && (
-                <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待委託人確認中...</div>
-              )}
-            </div>
+                {inquiry.status === 'proposed' && isArtist && (
+                  <div style={{ textAlign: 'center', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', backgroundColor: '#FDF4E6', padding: '12px', borderRadius: '8px', border: '1px solid #FDE0B5' }}>⏳ 已送出提案，等待委託人確認中...</div>
+                )}
+              </div>
+            )}
           </aside>
         )}
 

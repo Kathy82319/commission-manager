@@ -41,16 +41,32 @@ export const OfferList: React.FC<OfferListProps> = ({
 
   const handleBatchDecline = () => {
     if (selectedIds.size === 0) return;
+
+    // 🔒 狀態防護：過濾出真正處於 pending 狀態的 ID，防止誤送已歸檔的單據
+    const validPendingIds = Array.from(selectedIds).filter(id => {
+      const inq = inquiries.find(i => i.inquiry_id === id);
+      return inq && (inq.inquiry_status === 'pending' || inq.status === 'pending');
+    });
+
+    if (validPendingIds.length === 0) {
+      alert('所選項目已不在待處理狀態，無法批次婉拒！');
+      setSelectedIds(new Set()); // 清空無效選取
+      return;
+    }
+
     setSelectedInquiry(null); 
     if (setSelectedIdsForBatch) {
-      setSelectedIdsForBatch(selectedIds);
+      setSelectedIdsForBatch(new Set(validPendingIds));
       setShowDeclineModal(true);
     }
   };
 
+  // 判斷是否還有任何 pending 狀態的提案，用來決定要不要顯示批次工具列
+  const hasPendingInquiries = inquiries.some(i => i.inquiry_status === 'pending' || i.status === 'pending');
+
   return (
     <div className="offer-list-container">
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 && hasPendingInquiries && (
         <div className="batch-action-bar" style={{ marginBottom: '20px', padding: '12px 20px', backgroundColor: '#5D4A3E', color: 'white', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="batch-info" style={{ fontWeight: 'bold' }}>已選取 {selectedIds.size} 筆提案</div>
           <div className="batch-btns" style={{ display: 'flex', gap: '12px' }}>
@@ -60,7 +76,6 @@ export const OfferList: React.FC<OfferListProps> = ({
         </div>
       )}
 
-      
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', 
@@ -73,16 +88,25 @@ export const OfferList: React.FC<OfferListProps> = ({
           let snapshot: any = {};
           try { snapshot = JSON.parse(inquiry.artist_snapshot || '{}'); } catch(e) {}
 
+          const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending';
+
           return (
-            <CardView
+              <CardView
               key={inquiry.inquiry_id}
               inquiry={inquiry}
               snapshot={snapshot}
               isSelected={selectedIds.has(inquiry.inquiry_id)}
-              onSelect={() => toggleSelect(inquiry.inquiry_id)}
+              
+              // 💡 修改處：一律傳入函式，但在函式內部判斷狀態
+              onSelect={() => {
+                if (isPending) toggleSelect(inquiry.inquiry_id);
+              }}
+              
               setSelectedInquiry={setSelectedInquiry}
-              setShowDeclineModal={() => handleSingleDecline(inquiry)}
-              handleDirectInvite={handleDirectInvite}
+              setShowDeclineModal={() => {
+                if (isPending) handleSingleDecline(inquiry);
+              }}
+              handleDirectInvite={isPending ? handleDirectInvite : () => {}}
               handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
               handleViewCommission={handleViewCommission}
               blacklistedIds={blacklistedIds} 
