@@ -39,7 +39,7 @@ export const authController = {
 
       // 生成登入憑證 (Cookie)
       const sessionValue = await generateToken(finalUserId, env.ID_SALT, 30);
-      const baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
+      const baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev" || "https://cath-commission-manager.pages.dev/").replace(/\/$/, "");
 
       // 執行變身登入
       return new Response(null, {
