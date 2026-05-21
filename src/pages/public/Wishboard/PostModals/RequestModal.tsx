@@ -109,8 +109,18 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }));
   };
 
+  // 解析目前綁定 OC 的名字
+  const getSelectedOCName = () => {
+    if (!form.oc_snapshot) return null;
+    try {
+      const parsed = JSON.parse(form.oc_snapshot);
+      return parsed?.name || '未命名角色';
+    } catch (e) {
+      return null;
+    }
+  };
 
-
+  const selectedOCName = getSelectedOCName();
 
   return (
     <div className="modal-overlay" style={{ zIndex: 10001 }}>
@@ -165,57 +175,27 @@ export const RequestModal: React.FC<RequestModalProps> = ({
             </div>
           </div>
 
-{/* 📇 角色設定快照預覽區塊 */}
-<div className="form-section" style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-  <label className="section-title" style={{ margin: 0, border: 'none', padding: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-    <span>📇 插入專屬角色設定卡快照 <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>(選填，創作者可點擊查看完整設定)</span></span>
-    {!form.oc_snapshot && (
-      <button type="button" onClick={handleOpenOCSelection} className="save-hint-btn" style={{ margin: 0, padding: '6px 12px', background: '#fff', border: '1px solid #cbd5e1' }}>
-        + 選擇角色卡
-      </button>
-    )}
-  </label>
-
-  {form.oc_snapshot && (() => {
-    // 當場解析快照，取出大頭貼與基本資料
-    let ocData: any = null;
-    let ocImageUrl = null;
-    try { 
-      ocData = JSON.parse(form.oc_snapshot); 
-      const imgs = Array.isArray(ocData.images) ? ocData.images : JSON.parse(ocData.images || '[]');
-      if (imgs.length > 0) {
-        const rawUrl = imgs[0].previewUrl || imgs[0].url || '';
-        ocImageUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
-      }
-    } catch (e) {}
-
-    if (!ocData) return null;
-
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* 角色大頭貼預覽 */}
-          <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}>
-            {ocImageUrl ? (
-              <img src={ocImageUrl} alt="oc-preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}><ImageIcon size={18} /></div>
+          {/* 連動角色卡區塊 */}
+          <div className="form-section" style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <label className="section-title" style={{ margin: 0, border: 'none', padding: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <span>📇 連動專屬角色設定卡 (OC) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>(選填，便於創作者點擊查看完整設定)</span></span>
+              {!selectedOCName && (
+                <button type="button" onClick={handleOpenOCSelection} className="save-hint-btn" style={{ margin: 0, padding: '6px 12px', background: '#fff', border: '1px solid #cbd5e1' }}>
+                  + 插入設定卡
+                </button>
+              )}
+            </label>
+            {selectedOCName && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
+                <span style={{ fontSize: '14px', color: '#334155', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📌 已成功連動角色卡快照：<strong style={{ color: '#5D4A3E' }}>{selectedOCName}</strong>
+                </span>
+                <button type="button" onClick={handleRemoveOC} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <X size={14} /> 移除連動
+                </button>
+              </div>
             )}
           </div>
-          {/* 角色文字資訊 */}
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>{ocData.name || '未命名角色'}</div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{ocData.gender || '無性別'} {ocData.body_type || ''}</div>
-          </div>
-        </div>
-        {/* 移除按鈕 */}
-        <button type="button" onClick={handleRemoveOC} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 'bold' }}>
-          <X size={14} /> 移除快照
-        </button>
-      </div>
-    );
-  })()}
-</div>
 
           <div className="form-section">
             <label className="section-title">付款方式 (多選)</label>

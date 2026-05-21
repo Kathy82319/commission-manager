@@ -17,7 +17,7 @@ interface WishCardProps {
     offer_used: number, offer_max: number, 
     request_inquire_used: number, request_inquire_max: number 
   } | null;
-  onViewOC?: (snapshotData: any) => void; // 修正：補上對齊大廳大腦的屬性宣告
+  onViewOC?: (snapshotData: any) => void;
 }
 
 const unescapeHtml = (str: string) => {
@@ -238,7 +238,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  // 處理點擊檢視角色卡按鈕邏輯
   const handleViewOCClick = () => {
     if (!bulletin.oc_snapshot || !onViewOC) return;
     try {
@@ -468,31 +467,32 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
 
-{/* 👈 關鍵新增：在這裡插入精緻版 OC 按鈕 (佔用整行 grid-column: '1 / -1' 或獨立一個 meta-item) */}
-{bulletin.oc_snapshot && (
-  <div className="meta-item" style={{ gridColumn: '1 / -1', marginTop: '4px' }}>
-    <button 
-      type="button"
-      onClick={handleViewOCClick}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        background: '#FFFBEB',       // 溫和的淺黃底色，不突兀
-        border: '1px solid #FDE68A', // 微黃邊框
-        color: '#B45309',            // 內斂的棕褐色字體
-        padding: '4px 10px',
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        transition: 'all 0.2s'
-      }}
-    >
-      <BookUser size={14} /> 查看綁定的角色設定卡 (OC)
-    </button>
-  </div>
-)}              
+              {/* 完美嵌入：將 OC 設定卡按鈕置於付款方式的正下方，使用精緻的淡色系標籤設計 */}
+              {bulletin.oc_snapshot && (
+                <div className="meta-item" style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
+                  <button 
+                    type="button"
+                    onClick={handleViewOCClick}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#FFFBEB',       
+                      border: '1px solid #FDE68A', 
+                      color: '#B45309',            
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      outline: 'none'
+                    }}
+                  >
+                    <BookUser size={14} /> 查看綁定的角色設定卡 (OC)
+                  </button>
+                </div>
+              )}
 
               {bulletin.category === 'offer' && paymentTimingLabel && (
                 <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
@@ -545,30 +545,28 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <p className="description-text">{rawDescription}</p>
           </div>
 
-          {/* 動作按鈕區 */}
-// ✅ 修改後（還原成只有主功能按鈕）
-<div className="card-actions">
-  {isMyOwnPost ? (
-    <button 
-      className="submit-post-btn full-width" 
-      onClick={handleRevokeClick}
-      disabled={isRevoking}
-      style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
-    >
-      {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
-    </button>
-  ) : isQuotaFull ? (
-    <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
-  ) : hasApplied ? (
-    <button disabled className="btn-status-disabled">已投遞過此案件</button>
-  ) : isFull ? (
-    <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
-  ) : (
-    <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
-      {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
-    </button>
-  )}
-</div>
+          <div className="card-actions">
+            {isMyOwnPost ? (
+              <button 
+                className="submit-post-btn full-width" 
+                onClick={handleRevokeClick}
+                disabled={isRevoking}
+                style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
+              >
+                {isRevoking ? '撤銷中...' : '撤銷發佈的慢許願'}
+              </button>
+            ) : isQuotaFull ? (
+              <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
+            ) : hasApplied ? (
+              <button disabled className="btn-status-disabled">已投遞過此案件</button>
+            ) : isFull ? (
+              <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
+            ) : (
+              <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
+                {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
