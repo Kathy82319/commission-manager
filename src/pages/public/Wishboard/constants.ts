@@ -7,7 +7,7 @@ export const REQ_TAGS = [
 ];
 
 export const PAY_TAGS = [
-  '皆可配合', '無卡', '匯款', '空包', '超商'
+  '皆可配合', '無卡', '匯款', '超商'
 ];
 
 export const STYLE_WARNINGS = ['會有雜線', '會有溢色', '不接受指定動作', '不接受指定背景', '風格特殊'];
