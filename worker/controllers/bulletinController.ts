@@ -14,41 +14,8 @@ export const bulletinController = {
       const bulletin = await env.commission_db.prepare(`SELECT id, title, category FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足或找不到貼文' }), { status: 403, headers: corsHeaders });
 
-      const { results: pendingInquiries } = await env.commission_db.prepare(`
-        SELECT i.id as inquiry_id, i.artist_id 
-        FROM BulletinInquiries i 
-        WHERE i.bulletin_id = ? AND i.status IN ('pending', 'submitted', 'proposed')
-      `).bind(bulletinId).all();
-
-      const batchOps = [];
-
-      batchOps.push(env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId));
-      
-      batchOps.push(env.commission_db.prepare(`
-        UPDATE BulletinInquiries 
-        SET status = 'declined', decline_reason = ?, latest_update_at = CURRENT_TIMESTAMP 
-        WHERE bulletin_id = ? AND status IN ('pending', 'submitted', 'proposed')
-      `).bind(safeReason, bulletinId));
-
-      for (const item of pendingInquiries as any[]) {
-        const msgId = crypto.randomUUID();
-        batchOps.push(
-          env.commission_db.prepare(`
-            INSERT INTO InquiryMessages (id, inquiry_id, sender_id, content, message_type) 
-            VALUES (?, ?, ?, ?, 'text')
-          `).bind(msgId, item.inquiry_id, currentUserId, `[系統代理] ${safeReason}`)
-        );
-      }
-
-      await env.commission_db.batch(batchOps);
-
-      for (const item of pendingInquiries as any[]) {
-        const title = bulletin.title || '未命名';
-        const isOffer = bulletin.category === 'offer';
-        const text = isOffer ? `🌟 「${title}」已額滿或結束招收。` : `🌟 關於提案「${title}」，委託人已撤銷許願或結束徵件。`;
-        const link = isOffer ? '/client/inbox' : '/artist/inbox';
-        await notificationController.createNotification(env, String(item.artist_id), 'inquiry_msg', text, link);
-      }
+      // 方案 B：僅更新貼文狀態為 closed，絕不修改 BulletinInquiries 的狀態與紀錄
+      await env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId).run();
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
