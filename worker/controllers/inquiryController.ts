@@ -113,7 +113,7 @@ export const inquiryController = {
         UNION ALL
 
         SELECT m.id, 
-               WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
+               CASE WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
                m.content, m.created_at, 'commission' as source, 'text' as message_type
         FROM Messages m
         JOIN Commissions c ON m.commission_id = c.id
