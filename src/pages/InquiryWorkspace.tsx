@@ -134,7 +134,7 @@ export const InquiryWorkspace: React.FC = () => {
 
       if (resInquiry.success) {
         const data = resInquiry.data;
-        console.log("洽談單詳細資料:", data);
+        
         setInquiry(data);
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
 
@@ -500,6 +500,17 @@ export const InquiryWorkspace: React.FC = () => {
   
   let otherPartyName = "未知對象";
   let otherPartyId = "";
+
+  // 使用我們剛剛確認過已經存在的 isArtist 狀態
+  if (isArtist) {
+    // 我是繪師，對方是委託人
+    otherPartyName = inquiry.client_name || "委託人";
+    otherPartyId = inquiry.client_public_id || inquiry.client_id || "未知 ID";
+  } else {
+    // 我是委託人，對方是繪師
+    otherPartyName = inquiry.artist_name || "繪師";
+    otherPartyId = inquiry.artist_public_id || actualArtistId || inquiry.artist_id || "未知 ID";
+  }
 
   if (isArtist) {
     const cName = inquiry?.client_name;
