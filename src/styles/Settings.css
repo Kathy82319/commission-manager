@@ -445,6 +445,8 @@
     padding: 20px 16px;
     min-height: calc(100vh - 200px); 
     border-radius: 12px;
+    min-width: 0; /* 強制 flex 容器不被內容撐開 */
+    word-wrap: break-word; /* 讓長連結斷行 */
   }
 
   .settings-header {
@@ -470,18 +472,12 @@
     padding: 24px;
   }
 
-  /* 修正社群連結突破邊界 */
-.social-links-container, .tab-body {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-}
-
-.settings-content-area {
-  min-width: 0; /* 這對防止 flex 子元素溢出至關重要 */
-  word-wrap: break-word;
-}
-
+  /* 處理社群連結突破邊界的核心樣式 */
+  .social-links-container, .tab-body {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
 }
 
 /* 修改這裡，確保側邊欄結構正確 */
@@ -497,22 +493,6 @@
   font-weight: bold;
 }
 
-/* 確保側邊欄在電腦版顯示 */
-@media (min-width: 1024px) {
-  .settings-sidebar-wrapper {
-    width: 240px;
-    flex-shrink: 0;
-  }
-  
-  .sidebar-title {
-    display: block;
-  }
-
-  .settings-sidebar {
-    display: flex !important; /* 強制顯示 */
-    flex-direction: column;
-  }
-}
 
 /* 補上這段，解決按鈕在電腦版樣式消失的問題 */
 .preview-profile-btn {
@@ -532,6 +512,63 @@
 .preview-profile-btn:hover { background-color: #F9F7F5; }
 
 
+
+/* 確保升級按鈕樣式正確 */
+.upgrade-card-btn {
+  display: block;
+  width: 100%;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.upgrade-card-btn:hover {
+  background-color: #4A3A30;
+}
+
+/* 確保側邊欄容器寬度固定 */
+.settings-sidebar {
+  min-width: 240px;
+}
+
+
+/* 修改這裡，確保側邊欄結構正確 */
+.settings-sidebar-wrapper {
+  width: 100%;
+}
+
+.sidebar-title {
+  display: none; /* 手機版隱藏 */
+  font-size: 24px;
+  color: #5D4A3E;
+  margin-bottom: 40px;
+  font-weight: bold;
+}
+
+/* 補上這段，解決按鈕在電腦版樣式消失的問題 */
+.preview-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #EAE6E1;
+  background-color: #FFFFFF;
+  color: #5D4A3E;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preview-profile-btn:hover { 
+  background-color: #F9F7F5; 
+}
 
 /* 確保升級按鈕樣式正確 */
 .upgrade-card-btn {
