@@ -72,7 +72,6 @@ export function Settings() {
     return params.get('tab') || 'profile_basic';
   });
 
-  // 手機版下拉選單狀態
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -166,7 +165,6 @@ export function Settings() {
     });
   }, [settings.custom_sections, hasOC]); 
 
-  // 計算當前顯示的標籤名稱 (供手機版頂部按鈕使用)
   const currentActiveLabel = useMemo(() => {
     for (const group of menuGroups) {
       const found = group.items.find(item => item.id === activeTab);
@@ -310,7 +308,7 @@ export function Settings() {
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="settings-layout">
         
-        {/* 手機版專屬下拉幕選單 */}
+        
         <div className="settings-mobile-nav">
           <button 
             className="mobile-nav-trigger" 
@@ -368,7 +366,7 @@ export function Settings() {
           </div>
         </div>
 
-        {/* 電腦版側邊欄 */}
+        
         <aside className="settings-sidebar">
           <div className="sidebar-title">個人頁編輯</div>
           {menuGroups.map(group => (

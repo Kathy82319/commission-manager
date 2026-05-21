@@ -282,7 +282,6 @@ export const Inbox: React.FC = () => {
               const isSelected = selectedItem?.type === 'bulletin' && selectedItem?.id === b.id;
               const inqCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
               
-              // 修正邏輯：動態交叉比對當前時間，確認是否已過期
               const isExpired = b.expires_at ? new Date(b.expires_at) < new Date() : false;
               let statusLabel = b.status === 'open' ? '發布中' : '已關閉';
               if (b.status === 'open' && isExpired) {

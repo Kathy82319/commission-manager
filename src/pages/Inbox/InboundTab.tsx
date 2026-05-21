@@ -31,10 +31,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
 }) => {
   const bulletin = clientBulletins[0];
 
-  // 管理當前被勾選的提案 ID 集合
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // 當貼文切換（或者重新整理）時，清空上一次的勾選狀態，避免跨貼文殘留
   useEffect(() => {
     setSelectedIds(new Set());
     if (setSelectedIdsForBatch) {
@@ -50,10 +48,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     .filter(i => i.bulletin_id === bulletin.id)
     .filter(filterOldItems);
 
-  // 判斷該許願貼文是否已經關閉/撤銷
   const isClosed = bulletin.status !== 'open';
 
-  // 接接子元件 OfferList 的勾選回調，與頂層狀態保持同步
   const handleBatchSelectionChange = (newIds: Set<string>) => {
     setSelectedIds(newIds);
     if (setSelectedIdsForBatch) {
@@ -61,10 +57,8 @@ export const InboundTab: React.FC<InboundTabProps> = ({
     }
   };
 
-  // 觸發批次婉拒的 Modal 彈窗
   const triggerBatchDecline = () => {
     if (selectedIds.size === 0) return;
-    // 這裡不需要額外傳入單一應徵單，因為 index.tsx 的 isBatchMode 是靠 batchDeclineIds.size > 0 來判定的
     setSelectedInquiry(null); 
     setShowDeclineModal(true);
   };
@@ -83,7 +77,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* 動態批次功能按鈕：只有當使用者有勾選卡片時才顯示 */}
+          
           {selectedIds.size > 0 && (
             <button
               onClick={triggerBatchDecline}
@@ -118,7 +112,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
             {isClosed ? '🗄️ 已結束' : `⏳ ${calculateDaysLeft(bulletin.expires_at)}`}
           </span>
           
-          {/* 當貼文還在 open 狀態時，才顯示「關閉許願」按鈕 */}
+          
           {!isClosed && (
             <button 
               onClick={() => handleCancelBulletin && handleCancelBulletin(bulletin.id)}

@@ -184,11 +184,10 @@ export const adminController = {
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
     const category = url.searchParams.get('category') || 'request';
-    const statusFilter = url.searchParams.get('status') || 'open'; // 預設篩選顯示中的 open
+    const statusFilter = url.searchParams.get('status') || 'open'; 
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    // 修改點：引入更具價值的營運統計子查詢，並修正為純時間建立倒序排列
     const { results } = await env.commission_db.prepare(`
       SELECT b.*, u.display_name as author_name, u.public_id as author_public_id,
       (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count,

@@ -1,7 +1,5 @@
 // worker/controllers/paymentController.ts
 import type { Env } from "../shared/types";
-// 💡 修正一：將原本在 method 內部的動態載入，提到最頂部進行標準的靜態導入，
-// 這能完美突破 Cloudflare Workers 的執行期動態加載限制，徹底消滅 400 錯誤。
 import { newebpay } from "../utils/crypto";
 
 export const paymentController = {
@@ -38,11 +36,9 @@ export const paymentController = {
       const amount = 150; // 都已經很便宜了就別玩我了QAQ
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       
-      // 商業邏輯優化：動態讀取環境變數，確保轉移網域時，金流導向與主網域完全一致
       const absoluteFrontendUrl = (env.FRONTEND_URL || "https://arti7.net").replace(/\/$/, "");
       const backendUrl = env.BACKEND_URL;
       
-      // 💡 修正：將 5 個欄位全面做成 5 個問號 '?'，讓 D1 完美對齊變數繫結數量
       await env.commission_db.prepare(
         "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, ?)"
       ).bind(orderId, currentUserId, amount, plan_type, 'pending').run();
@@ -66,7 +62,6 @@ export const paymentController = {
         .map(key => `${key}=${tradeInfoObj[key]}`)
         .join('&');
 
-      // 💡 修正二：這裡直接調用最頂部已經就緒的 newebpay 模組，不走 dynamic import
       const aesString = await newebpay.encrypt(params, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
       const shaString = await newebpay.generateSha(aesString, env.NEWEBPAY_HASH_KEY, env.NEWEBPAY_HASH_IV);
 
@@ -82,7 +77,6 @@ export const paymentController = {
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     } catch (error: any) {
-      // 💡 修正三：全面升級支付單建立的偵錯細節輸出，一旦內部有任何閃失，直接在前端噴出原因
       const errorMessage = error?.message || String(error);
       const errorStack = error?.stack || "無可用堆疊軌跡";
       return new Response(

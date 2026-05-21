@@ -468,12 +468,10 @@ export const InquiryWorkspace: React.FC = () => {
 
   const finalDisplayTos = draft.custom_tos !== undefined ? draft.custom_tos : artistTos;
 
-  // 判斷是否為「歷史唯讀模式」
   const isClosedOrDeclined = inquiry.status === 'closed' || inquiry.status === 'declined' || inquiry.status === 'cancelled';
 
   const isQuotaFull = !!(isArtist && artistQuota && artistQuota.max_quota !== -1 && artistQuota.used_quota >= artistQuota.max_quota);
 
-  // 若為歷史唯讀模式，強制將編輯權限設為 false
   const isEditableByArtist = !isClosedOrDeclined && isArtist && (
     (isDirectInquiry && inquiry.status === 'pending') ||
     (!isDirectInquiry && inquiry.status === 'submitted') 

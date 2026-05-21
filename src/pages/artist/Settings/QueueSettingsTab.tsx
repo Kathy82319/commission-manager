@@ -70,10 +70,8 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       if (data.success) {
         const now = new Date();
         
-        // 篩選未結案、未取消的訂單
         let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
         
-        // 映射資料並加入過期判定
         const processedList = liveList.map((c: any) => {
           const targetDate = c.order_date ? new Date(c.order_date.includes('T') ? c.order_date : c.order_date.replace(' ', 'T')) : null;
           const isExpired = targetDate && targetDate < now;

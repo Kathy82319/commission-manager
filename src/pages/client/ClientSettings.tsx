@@ -72,7 +72,6 @@ export function ClientSettings() {
           bio: data.data.bio || '',
         });
 
-        // 載入 Email 相關設定
         setNotifyConfig({
           notification_email: data.data.notification_email || '',
           email_art_chat: data.data.email_art_chat ?? 1,

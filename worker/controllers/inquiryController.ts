@@ -74,7 +74,6 @@ export const inquiryController = {
          quotaInfo = { used_quota: used, max_quota: max, plan_type: artistData?.plan_type };
       }
 
-      // 如果不是已關閉或已婉拒的唯讀狀態，才更新已讀時間
       if (data.status !== 'closed' && data.status !== 'declined') {
         const updateField = currentUserId === actualArtistId ? 'last_read_at_artist' : 'last_read_at_client';
         await env.commission_db.prepare(`UPDATE BulletinInquiries SET ${updateField} = CURRENT_TIMESTAMP WHERE id = ?`).bind(inquiryId).run();
@@ -140,7 +139,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, message: '權限不足' }), { status: 403, headers: corsHeaders });
       }
 
-      // [破口1 - Write-After-Close] 攔截關閉/婉拒狀態，防止唯讀模式下被灌入新訊息
       if (inquiryData.status === 'closed' || inquiryData.status === 'declined') {
         return new Response(JSON.stringify({ success: false, error: '洽談已終止，無法發送新訊息' }), { status: 400, headers: corsHeaders });
       }
@@ -217,7 +215,6 @@ export const inquiryController = {
         return new Response(JSON.stringify({ success: false, error: '權限不足：只有該委託的繪師可以儲存草稿' }), { status: 403, headers: corsHeaders });
       }
 
-      // [破口2 - 歷史快照防覆寫] 阻擋已關閉或已婉拒的合約修改
       if (inquiryData.status === 'proposed' || inquiryData.status === 'accepted' || inquiryData.status === 'closed' || inquiryData.status === 'declined') {
         return new Response(JSON.stringify({ 
           success: false, 

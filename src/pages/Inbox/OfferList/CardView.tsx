@@ -33,7 +33,6 @@ export const CardView: React.FC<CardViewProps> = ({
   handleViewCommission,
   blacklistedIds = [] 
 }) => {
-  // 核心判定邏輯：精確劃分四個生命週期階段，不受貼文過期影響
   const status = inquiry.inquiry_status;
   
   const isPendingStage = status === 'pending';
@@ -157,7 +156,7 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
 
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
-            {/* 階段一：全新投遞（僅出現婉拒與邀請詳談） */}
+            
             {isPendingStage && (
               <>
                 <button 
@@ -175,7 +174,7 @@ export const CardView: React.FC<CardViewProps> = ({
               </>
             )}
 
-            {/* 階段二：開啟洽談（僅出現進入聊天室） */}
+            
             {isNegotiatingStage && (
               <button 
                 onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
@@ -185,7 +184,7 @@ export const CardView: React.FC<CardViewProps> = ({
               </button>
             )}
 
-            {/* 階段三：已成單（僅出現前往委託單） */}
+            
             {isAcceptedStage && (
               <button 
                 onClick={() => handleViewCommission(inquiry.commission_id)}
@@ -195,7 +194,7 @@ export const CardView: React.FC<CardViewProps> = ({
               </button>
             )}
 
-            {/* 階段四：已終止/歸檔（出現狀態提示與查看歷史） */}
+            
             {isArchivedStage && (
               <>
                 <div style={{ width: '100%', textAlign: 'center', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '8px', fontSize: '12px', color: '#9CA3AF', marginBottom: '4px' }}>

@@ -42,7 +42,6 @@ export const OfferList: React.FC<OfferListProps> = ({
   const handleBatchDecline = () => {
     if (selectedIds.size === 0) return;
 
-    // 🔒 狀態防護：過濾出真正處於 pending 狀態的 ID，防止誤送已歸檔的單據
     const validPendingIds = Array.from(selectedIds).filter(id => {
       const inq = inquiries.find(i => i.inquiry_id === id);
       return inq && (inq.inquiry_status === 'pending' || inq.status === 'pending');
@@ -50,7 +49,7 @@ export const OfferList: React.FC<OfferListProps> = ({
 
     if (validPendingIds.length === 0) {
       alert('所選項目已不在待處理狀態，無法批次婉拒！');
-      setSelectedIds(new Set()); // 清空無效選取
+      setSelectedIds(new Set()); 
       return;
     }
 
@@ -61,7 +60,6 @@ export const OfferList: React.FC<OfferListProps> = ({
     }
   };
 
-  // 判斷是否還有任何 pending 狀態的提案，用來決定要不要顯示批次工具列
   const hasPendingInquiries = inquiries.some(i => i.inquiry_status === 'pending' || i.status === 'pending');
 
   return (
@@ -97,7 +95,6 @@ export const OfferList: React.FC<OfferListProps> = ({
               snapshot={snapshot}
               isSelected={selectedIds.has(inquiry.inquiry_id)}
               
-              // 💡 修改處：一律傳入函式，但在函式內部判斷狀態
               onSelect={() => {
                 if (isPending) toggleSelect(inquiry.inquiry_id);
               }}

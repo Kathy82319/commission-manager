@@ -221,7 +221,7 @@ export function ArtistLayout() {
           <div className="sidebar-header">
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
             
-            {/* 🌟 核心修改：加入使用者 ID 顯示 */}
+            
             <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px', lineHeight: '1.6' }}>
               <div>繪師管理後台</div>
               {artist && (

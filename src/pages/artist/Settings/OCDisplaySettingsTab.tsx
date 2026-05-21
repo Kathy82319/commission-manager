@@ -107,7 +107,7 @@ export function OCDisplaySettingsTab({ onToast }: OCDisplaySettingsTabProps) {
                   {oc.is_public ? '已公開展示' : '目前不公開'}
                 </span>
                 
-                {/* Switch Toggle Button */}
+                
                 <button 
                   onClick={() => toggleVisibility(oc)}
                   style={{ 

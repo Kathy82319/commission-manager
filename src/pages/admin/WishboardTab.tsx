@@ -28,7 +28,7 @@ export function WishboardTab() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'request' | 'offer'>('request');
-  const [activeStatus, setActiveStatus] = useState<string>('open'); // 預設只看顯示中的 open 貼文
+  const [activeStatus, setActiveStatus] = useState<string>('open');
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -136,7 +136,7 @@ export function WishboardTab() {
       
       <KeywordManager onKeywordsChange={setActiveKeywords} />
 
-      {/* 第一層分類：類別切換 */}
+      
       <div style={{ display: 'flex', backgroundColor: '#F3F4F6', padding: '4px', borderRadius: '8px', marginBottom: '16px', width: 'fit-content' }}>
         <button 
           onClick={() => { setActiveCategory('request'); setPage(1); }} 
@@ -152,7 +152,7 @@ export function WishboardTab() {
         </button>
       </div>
 
-      {/* 第二層分類：新版方案 B 狀態排查 Tabs */}
+      
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button 
           onClick={() => { setActiveStatus('open'); setPage(1); }}
@@ -205,7 +205,7 @@ export function WishboardTab() {
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
                   
-                  {/* 刊登資訊 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ fontWeight: 'bold', color: '#111827', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <User size={14} /> {item.author_name}
@@ -216,7 +216,7 @@ export function WishboardTab() {
                     </div>
                   </td>
 
-                  {/* 貼文詳細內容 */}
+                  
                   <td style={{...tdStyle, paddingRight: '24px'}}>
                     {hitKeyword && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
@@ -239,21 +239,21 @@ export function WishboardTab() {
                     </div>
                   </td>
 
-                  {/* 總投遞數 */}
+                  
                   <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>
                       <Inbox size={16} style={{ color: '#4B5563' }} /> {item.total_inquiry_count || 0} 份
                     </div>
                   </td>
 
-                  {/* 轉洽談數 */}
+                  
                   <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold', color: (item.chat_inquiry_count > 0 ? '#2563EB' : '#6B7280') }}>
                       <MessageCircle size={16} style={{ color: (item.chat_inquiry_count > 0 ? '#3B82F6' : '#9CA3AF') }} /> {item.chat_inquiry_count || 0} 則
                     </div>
                   </td>
 
-                  {/* 狀態 / 時效 與 邊緣化的檢舉提示 */}
+                  
                   <td style={tdStyle}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: 'bold', 
                       backgroundColor: isHidden ? '#FEF2F2' : (isExpired ? '#F3F4F6' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6')),
@@ -267,7 +267,7 @@ export function WishboardTab() {
                       <Clock size={12} /> {formatLocalTime(item.expires_at)}
                     </div>
 
-                    {/* 邊緣化後的被動防禦檢舉欄 */}
+                    
                     {item.report_count > 0 && (
                       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed #E5E7EB' }}>
                         <span style={{ fontSize: '12px', color: '#DC2626', fontWeight: 'bold' }}>⚠️ 遭檢舉 {item.report_count} 次</span>
@@ -282,7 +282,7 @@ export function WishboardTab() {
                     )}
                   </td>
 
-                  {/* 操作 */}
+                  
                   <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <button onClick={() => openEditModal(item)} disabled={isUpdating} style={{...actionBtnStyle, color: '#2563EB', borderColor: '#2563EB', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
@@ -307,7 +307,7 @@ export function WishboardTab() {
         </table>
       </div>
 
-      {/* 分頁 */}
+      
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -317,7 +317,7 @@ export function WishboardTab() {
         </div>
       </div>
 
-      {/* 檢舉原因彈窗 */}
+      
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -365,7 +365,7 @@ export function WishboardTab() {
         </div>
       )}
 
-      {/* 編輯狀態與時間彈窗 */}
+      
       {isEditModalOpen && editingItem && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsEditModalOpen(false)}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>

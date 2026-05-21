@@ -159,7 +159,7 @@ export function ClientLayout() {
           <h2 style={{ margin: '0 0 4px 0' }}>Arti 繪師小幫手</h2>
           <div className="brand-subtitle" style={{ fontSize: '13px', color: '#6B7280' }}>委託管理 (委託方)</div>
           
-          {/* 🌟 核心修改：加入委託人端的使用者 ID 顯示 */}
+          
           {profile && (
             <div style={{ 
               fontSize: '11px', color: '#4B5563', background: '#F3F4F6', 
