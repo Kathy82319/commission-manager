@@ -153,6 +153,13 @@ export function ClientSettings() {
     }
   };
 
+  const menuItems = [
+  { id: 'profile_basic', label: '頭像與基礎資料' },
+  { id: 'notification_settings', label: '通知與信箱設定' },
+  { id: 'oc_display', label: '角色設定卡展示' },
+  { id: 'detailed_intro', label: '自訂公開詳細介紹' }
+];
+
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
   return (
@@ -166,55 +173,28 @@ export function ClientSettings() {
       
       <div className="settings-layout">
         
-        <aside className="settings-sidebar-wrapper">
-          <div className="sidebar-title">帳號設定</div>
-          
-          <div className="settings-sidebar">
-            <div className="sidebar-group">
-              <div className="group-label">個人資訊</div>
-              <button 
-                className={`tab-btn ${activeTab === 'profile_basic' ? 'active' : ''}`} 
-                onClick={() => setActiveTab('profile_basic')}
-              >
-                頭像與基礎資料
-              </button>
-
-              <button 
-                className={`tab-btn ${activeTab === 'notification_settings' ? 'active' : ''}`} 
-                onClick={() => setActiveTab('notification_settings')}
-              >
-                通知與信箱設定
-              </button>
-              
-              <button 
-                className={`tab-btn ${activeTab === 'oc_display' ? 'active' : ''}`} 
-                onClick={() => setActiveTab('oc_display')}
-              >
-                角色設定卡展示
-              </button>
-
-              <button 
-                className={`tab-btn ${activeTab === 'detailed_intro' ? 'active' : ''}`} 
-                onClick={() => setActiveTab('detailed_intro')}
-              >
-                自訂公開詳細介紹
-              </button>
-            </div>
-          </div>
-
-          
-          <div className="upgrade-card-container">
-            <div className="upgrade-card">
-              <h4 className="upgrade-card-title">想開始接案賺錢嗎？</h4>
-              <p className="upgrade-card-desc">
-                一鍵開通創作者身分，免費解鎖排單表、專屬作品集與報價功能。
-              </p>
-              <button onClick={handleUpgradeClick} className="upgrade-card-btn">
-                🚀 免費開通創作者
-              </button>
-            </div>
-          </div>
-        </aside>
+<aside className="settings-sidebar">
+  <div className="sidebar-title">帳號設定</div>
+  <div className="sidebar-group">
+    {menuItems.map(item => (
+      <button 
+        key={item.id}
+        className={`tab-btn ${activeTab === item.id ? 'active' : ''}`}
+        onClick={() => setActiveTab(item.id)}
+      >
+        {item.label}
+      </button>
+    ))}
+  </div>
+  
+  <div className="upgrade-card-container">
+    <div className="upgrade-card">
+      <h4 className="upgrade-card-title">想開始接案賺錢嗎？</h4>
+      <p className="upgrade-card-desc">一鍵開通創作者身分，免費解鎖排單表、專屬作品集與報價功能。</p>
+      <button onClick={handleUpgradeClick} className="upgrade-card-btn">🚀 免費開通創作者</button>
+    </div>
+  </div>
+</aside>
 
         <div className="settings-content-area">
           <div className="settings-header">

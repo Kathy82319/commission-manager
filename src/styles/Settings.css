@@ -517,3 +517,35 @@
 }
 
 .preview-profile-btn:hover { background-color: #F9F7F5; }
+
+
+/* 修正社群連結突破邊界 */
+.social-links-container, .tab-body {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* 確保升級按鈕樣式正確 */
+.upgrade-card-btn {
+  display: block;
+  width: 100%;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.upgrade-card-btn:hover {
+  background-color: #4A3A30;
+}
+
+/* 確保側邊欄容器寬度固定 */
+.settings-sidebar {
+  min-width: 240px;
+}
