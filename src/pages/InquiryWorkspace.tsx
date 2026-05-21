@@ -498,33 +498,23 @@ export const InquiryWorkspace: React.FC = () => {
   const commissionIdStr = inquiry?.commission_id ? `(${inquiry.commission_id})` : '';
   const headerProjectName = projectNameStr ? `${projectNameStr} ${commissionIdStr}`.trim() : commissionIdStr;
   
-  let otherPartyName = "未知對象";
+let otherPartyName = "未知對象";
   let otherPartyId = "";
-
-  // 使用我們剛剛確認過已經存在的 isArtist 狀態
-  if (isArtist) {
-    // 我是繪師，對方是委託人
-    otherPartyName = inquiry.client_name || "委託人";
-    otherPartyId = inquiry.client_public_id || inquiry.client_id || "未知 ID";
-  } else {
-    // 我是委託人，對方是繪師
-    otherPartyName = inquiry.artist_name || "繪師";
-    otherPartyId = inquiry.artist_public_id || actualArtistId || inquiry.artist_id || "未知 ID";
-  }
 
   if (isArtist) {
     const cName = inquiry?.client_name;
     const cMemo = inquiry?.contact_memo || inquiry?.guest_contact_info;
-    
-    if (inquiry?.client_id === 'guest' || !inquiry?.client_id) {
+
+    if (cName) {
+      otherPartyName = cMemo ? `${cName} (${cMemo})` : cName;
+      otherPartyId = inquiry?.client_public_id || inquiry?.client_id || "未知 ID";
+    } 
+    else if (inquiry?.client_id === 'guest' || !inquiry?.client_id) {
       otherPartyName = cMemo || "訪客";
       otherPartyId = "Guest";
-    } else {
-      if (cName && cMemo) {
-         otherPartyName = `${cName} (${cMemo})`;
-      } else {
-         otherPartyName = cName || cMemo || "委託人";
-      }
+    } 
+    else {
+      otherPartyName = "委託人";
       otherPartyId = inquiry?.client_public_id || inquiry?.client_id || "未知 ID";
     }
   } else {
