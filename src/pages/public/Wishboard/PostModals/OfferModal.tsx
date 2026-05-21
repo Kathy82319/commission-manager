@@ -262,6 +262,12 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
           </div>
 
+          <div className="form-section">
+            <label className="section-title">詳細接案說明</label>
+            <textarea rows={4} className="detail-textarea" placeholder="詳細的說明你接案的內容" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
+          </div>              
+
+
           <div className="form-section selection-mechanism-box">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, margin: 0 }}>名額與徵集機制</label>
@@ -415,11 +421,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
                 />
               </div>
             </div>
-          </div>
-
-          <div className="form-section">
-            <label className="section-title">詳細接案說明</label>
-            <textarea rows={4} className="detail-textarea" placeholder="詳細的說明你接案的內容" value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
           </div>
 
           <div className="modal-footer">
