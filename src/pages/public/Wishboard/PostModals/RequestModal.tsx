@@ -178,20 +178,20 @@ export const RequestModal: React.FC<RequestModalProps> = ({
           
           <div className="form-section" style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <label className="section-title" style={{ margin: 0, border: 'none', padding: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <span>📇 連動專屬角色設定卡 (OC) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>(選填，便於創作者點擊查看完整設定)</span></span>
+              <span>📇 插入專屬角色設定卡 (OC) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>(選填，便於創作者點擊查看完整設定)</span></span>
               {!selectedOCName && (
                 <button type="button" onClick={handleOpenOCSelection} className="save-hint-btn" style={{ margin: 0, padding: '6px 12px', background: '#fff', border: '1px solid #cbd5e1' }}>
-                  + 插入設定卡
+                  + 插入角色卡
                 </button>
               )}
             </label>
             {selectedOCName && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
                 <span style={{ fontSize: '14px', color: '#334155', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  📌 已成功連動角色卡快照：<strong style={{ color: '#5D4A3E' }}>{selectedOCName}</strong>
+                  📌 已成功插入角色卡快照：<strong style={{ color: '#5D4A3E' }}>{selectedOCName}</strong>
                 </span>
                 <button type="button" onClick={handleRemoveOC} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                  <X size={14} /> 移除連動
+                  <X size={14} /> 移除角色卡
                 </button>
               </div>
             )}

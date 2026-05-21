@@ -553,7 +553,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 disabled={isRevoking}
                 style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
               >
-                {isRevoking ? '撤銷中...' : '撤銷發佈的慢許願'}
+                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
               </button>
             ) : isQuotaFull ? (
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
