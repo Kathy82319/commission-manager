@@ -183,29 +183,28 @@ export const InquiryWorkspace: React.FC = () => {
           }
         }
 
+        // ✅ 修正核心：把抓取訊息的 API 移入此大括號括弧內，這樣才能合法與上面的 data 共享作用域
         const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
         if (resMsgs.success) {
           let fetchedMsgs = resMsgs.data || [];
           
-          // 🌟 關鍵邏輯：如果在「徵委託」時有綁定 OC 快照，我們手動將它塞入聊天室歷史紀錄的最前方
+          // 順利讀取當初「徵委託」發布當下的角色卡死資料並置頂
           if (data.bulletin_oc_snapshot) {
             const initialOcMsg = {
               id: 'initial-bulletin-oc',
-              sender_id: data.bulletin_client_id, // 以發布者的名義發出
+              sender_id: data.bulletin_client_id, 
               content: data.bulletin_oc_snapshot,
               message_type: 'oc_snapshot',
               created_at: data.created_at || new Date().toISOString(),
               source: 'inquiry',
-              is_initial_bulletin: true // 特殊標記，讓前端渲染提示橫幅
+              is_initial_bulletin: true 
             };
-            // 將虛擬的初始訊息排在最前面
             fetchedMsgs = [initialOcMsg, ...fetchedMsgs];
           }
 
           setMessages(fetchedMsgs);
         }
-
-      }
+      } // 💡 resInquiry.success 結束的大括號移到了這裡
     } catch (e) { 
       console.error("讀取洽談室失敗:", e); 
     } finally { 
