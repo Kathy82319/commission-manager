@@ -182,13 +182,30 @@ export const InquiryWorkspace: React.FC = () => {
             setDraft((prev: any) => ({ ...prev, project_name: defaultName || "", payment_timing: defaultPaymentTiming }));
           }
         }
-      }
 
-      const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
-      if (resMsgs.success) {
-        setMessages(resMsgs.data);
-      }
+        const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
+        if (resMsgs.success) {
+          let fetchedMsgs = resMsgs.data || [];
+          
+          // 🌟 關鍵邏輯：如果在「徵委託」時有綁定 OC 快照，我們手動將它塞入聊天室歷史紀錄的最前方
+          if (data.bulletin_oc_snapshot) {
+            const initialOcMsg = {
+              id: 'initial-bulletin-oc',
+              sender_id: data.bulletin_client_id, // 以發布者的名義發出
+              content: data.bulletin_oc_snapshot,
+              message_type: 'oc_snapshot',
+              created_at: data.created_at || new Date().toISOString(),
+              source: 'inquiry',
+              is_initial_bulletin: true // 特殊標記，讓前端渲染提示橫幅
+            };
+            // 將虛擬的初始訊息排在最前面
+            fetchedMsgs = [initialOcMsg, ...fetchedMsgs];
+          }
 
+          setMessages(fetchedMsgs);
+        }
+
+      }
     } catch (e) { 
       console.error("讀取洽談室失敗:", e); 
     } finally { 
@@ -590,71 +607,80 @@ export const InquiryWorkspace: React.FC = () => {
                 try { ocData = JSON.parse(msg.content); } catch (e) {}
 
                 return (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                      <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
-                      <span>{formatLocalTime(msg.created_at)}</span>
-                    </div>
-                    <div className="iw-chat-bubble oc-snapshot-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
-                      {ocData ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', borderBottom: isMe ? '1px solid rgba(255,255,255,0.2)' : '1px solid #EAE6E1', paddingBottom: '8px', fontSize: '13px' }}>
-                            <BookUser size={16} /> 角色設定卡快照
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-<div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
-  {(() => {
-    // 關鍵修正：確保對話歷史中發送的角色卡圖片也能對齊正確網域
-    let bubbleImgUrl = null;
-    if (ocData && ocData.images && ocData.images.length > 0) {
-      const rawUrl = ocData.images[0].previewUrl || ocData.images[0].url || '';
-      bubbleImgUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
-    }
-    return bubbleImgUrl ? (
-      <img src={bubbleImgUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-    ) : (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
-    );
-  })()}
-</div>
-                            <div style={{ overflow: 'hidden' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ocData.name || '未命名角色'}</div>
-                              <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>{ocData.gender} {ocData.body_type}</div>
+                  <React.Fragment key={msg.id}>
+                    {msg.is_initial_bulletin && (
+                      <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 10px 0', opacity: 0.8, width: '100%' }}>
+                        <div style={{ flex: 1, height: '1px', backgroundColor: '#EAE6E1' }}></div>
+                        <span style={{ padding: '0 12px', fontSize: '12px', color: '#A67B3E', fontWeight: 'bold' }}>📌 發布委託時夾帶的角色快照</span>
+                        <div style={{ flex: 1, height: '1px', backgroundColor: '#EAE6E1' }}></div>
+                      </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '11px', color: '#A0978D', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                        <span>{msg.sender_id === actualArtistId ? '繪師' : '委託人'}</span>
+                        <span>{formatLocalTime(msg.created_at)}</span>
+                      </div>
+                      <div className="iw-chat-bubble oc-snapshot-bubble" style={{ padding: '16px', backgroundColor: isMe ? '#5D4A3E' : '#FFFFFF', color: isMe ? '#FFFFFF' : '#5D4A3E', borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: isMe ? 'none' : '1px solid #EAE6E1', width: '280px' }}>
+                        {ocData ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', borderBottom: isMe ? '1px solid rgba(255,255,255,0.2)' : '1px solid #EAE6E1', paddingBottom: '8px', fontSize: '13px' }}>
+                              <BookUser size={16} /> 角色設定卡快照
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                              <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
+                                {(() => {
+                                  let bubbleImgUrl = null;
+                                  if (ocData && ocData.images && ocData.images.length > 0) {
+                                    const rawUrl = ocData.images[0].previewUrl || ocData.images[0].url || '';
+                                    bubbleImgUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+                                  }
+                                  return bubbleImgUrl ? (
+                                    <img src={bubbleImgUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                                  ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
+                                  );
+                                })()}
+                              </div>
+                              <div style={{ overflow: 'hidden' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ocData.name || '未命名角色'}</div>
+                                <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>{ocData.gender} {ocData.body_type}</div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                              <button
+                                onClick={() => setViewingOCSnapshot(ocData)}
+                                style={{ width: '100%', padding: '8px 0', backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : '#F4F0EB', color: isMe ? '#FFF' : '#5D4A3E', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                              >
+                                <Maximize2 size={14} /> 檢視設定卡內容
+                              </button>
+
+                              {isArtist && isEditableByArtist && (
+                                <button
+                                  onClick={() => {
+                                    setDraft({ ...draft, oc_snapshot: ocData });
+                                    alert('已將此角色設定卡帶入合約草稿！');
+                                    if (window.innerWidth < 1024) setShowMobileAside(true);
+                                  }}
+                                  style={{ width: '100%', padding: '8px 0', backgroundColor: '#8CB369', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A9E58'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#8CB369'}
+                                >
+                                  📌 帶入合約草稿
+                                </button>
+                              )}
                             </div>
                           </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                            <button
-                              onClick={() => setViewingOCSnapshot(ocData)}
-                              style={{ width: '100%', padding: '8px 0', backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : '#F4F0EB', color: isMe ? '#FFF' : '#5D4A3E', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                            >
-                              <Maximize2 size={14} /> 檢視設定卡內容
-                            </button>
-
-                            {isArtist && isEditableByArtist && (
-                              <button
-                                onClick={() => {
-                                  setDraft({ ...draft, oc_snapshot: ocData });
-                                  alert('已將此角色設定卡帶入合約草稿！');
-                                  if (window.innerWidth < 1024) setShowMobileAside(true);
-                                }}
-                                style={{ width: '100%', padding: '8px 0', backgroundColor: '#8CB369', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A9E58'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#8CB369'}
-                              >
-                                📌 帶入合約草稿
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: '13px', color: '#A05C5C' }}>[角色設定卡資料損毀或解析失敗]</span>
-                      )}
+                        ) : (
+                          <span style={{ fontSize: '13px', color: '#A05C5C' }}>[角色設定卡資料損毀或解析失敗]</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </React.Fragment>
                 );
               }
 
@@ -820,7 +846,6 @@ export const InquiryWorkspace: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
 {(() => {
-  // 關鍵修正：從小快照中取出預覽圖並補上 R2 網域
   let snapshotImgUrl = null;
   try {
     const imgs = draft.oc_snapshot.images;
@@ -1047,7 +1072,6 @@ export const InquiryWorkspace: React.FC = () => {
                    myOCs.map(oc => {
                      let firstImage = null;
                      try {
-    // 關鍵修正：將可能為字串的 oc.images 解析，並動態補上 R2 網域
     const images = typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []);
     if (images.length > 0) {
       const rawUrl = images[0].previewUrl || images[0].url || '';

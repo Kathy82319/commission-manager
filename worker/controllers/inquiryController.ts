@@ -21,12 +21,15 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      // 關鍵修改：在 SELECT 中加入了 b.oc_snapshot AS bulletin_oc_snapshot
+      // 這樣前端一進入洽談室，就能合法拿到當初「徵委託」發布當下的那張靜態角色卡死資料
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, 
                 b.title as bulletin_title, 
                 b.content as bulletin_content, 
                 b.category as bulletin_category, 
                 b.client_id as bulletin_client_id,
+                b.oc_snapshot as bulletin_oc_snapshot, 
                 a.profile_settings as artist_settings, 
                 a.plan_type as artist_plan, 
                 a.pro_expires_at, 
@@ -110,7 +113,7 @@ export const inquiryController = {
         UNION ALL
 
         SELECT m.id, 
-               CASE WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
+               WHEN m.sender_role = 'artist' THEN c.artist_id ELSE c.client_id END as sender_id, 
                m.content, m.created_at, 'commission' as source, 'text' as message_type
         FROM Messages m
         JOIN Commissions c ON m.commission_id = c.id
