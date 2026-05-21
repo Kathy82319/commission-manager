@@ -504,6 +504,7 @@ export const InquiryWorkspace: React.FC = () => {
     otherPartyId = inquiry?.artist_public_id || actualArtistId || inquiry?.artist_id || "未知 ID";
   }
 
+
   return (
     <div className="inquiry-workspace-container" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', backgroundColor: '#EAE6E1', overflow: 'hidden', justifyContent: 'center' }}>
       
@@ -1024,22 +1025,25 @@ export const InquiryWorkspace: React.FC = () => {
           </div>
         ) : (
           myOCs.map(oc => {
-            let imageUrl = null;
+            let firstImageUrl = null;
             try {
               const images = JSON.parse(oc.images || '[]');
               if (images.length > 0) {
                 const rawUrl = images[0].previewUrl || images[0].url || '';
-                imageUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+                // 確保加上前綴，且處理可能重複的斜線問題
+                firstImageUrl = rawUrl.startsWith('http') 
+                  ? rawUrl 
+                  : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
               }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("解析圖片路徑失敗", e); }
 
             return (
               <div key={oc.id} className="oc-selection-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
                 <div className="oc-selection-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
-                    {imageUrl ? (
+                    {firstImageUrl ? (
                       <img 
-                        src={imageUrl} 
+                        src={firstImageUrl} 
                         alt="avatar" 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                         onError={(e) => { e.currentTarget.style.display = 'none'; }} 
