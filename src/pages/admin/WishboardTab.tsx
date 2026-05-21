@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { KeywordManager } from './components/KeywordManager';
-import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock, Edit } from 'lucide-react'; 
+import { AlertCircle, User, Calendar, MessageSquare, ShieldAlert, Clock, Edit, Inbox, MessageCircle } from 'lucide-react'; 
 
 const formatLocalTime = (dateStr: string) => {
   if (!dateStr) return '未知時間';
@@ -28,6 +28,7 @@ export function WishboardTab() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [activeCategory, setActiveCategory] = useState<'request' | 'offer'>('request');
+  const [activeStatus, setActiveStatus] = useState<string>('open'); // 預設只看顯示中的 open 貼文
   const [activeKeywords, setActiveKeywords] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -41,11 +42,11 @@ export function WishboardTab() {
 
   useEffect(() => { 
     fetchPosts(); 
-  }, [page, activeCategory]);
+  }, [page, activeCategory, activeStatus]);
 
   const fetchPosts = async () => {
     try {
-      const res = await apiClient.get(`/api/admin/wishboard/reported?page=${page}&category=${activeCategory}`);
+      const res = await apiClient.get(`/api/admin/wishboard/reported?page=${page}&category=${activeCategory}&status=${activeStatus}`);
       setDataList(res.data);
       if (res.pagination) setTotal(res.pagination.total);
     } catch (e) { console.error(e); }
@@ -135,6 +136,7 @@ export function WishboardTab() {
       
       <KeywordManager onKeywordsChange={setActiveKeywords} />
 
+      {/* 第一層分類：類別切換 */}
       <div style={{ display: 'flex', backgroundColor: '#F3F4F6', padding: '4px', borderRadius: '8px', marginBottom: '16px', width: 'fit-content' }}>
         <button 
           onClick={() => { setActiveCategory('request'); setPage(1); }} 
@@ -149,21 +151,50 @@ export function WishboardTab() {
           💼 接委託列表
         </button>
       </div>
+
+      {/* 第二層分類：新版方案 B 狀態排查 Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #E5E7EB', paddingBottom: '12px', flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => { setActiveStatus('open'); setPage(1); }}
+          style={{ ...subTabBtnStyle, borderBottom: activeStatus === 'open' ? '2px solid #059669' : '2px solid transparent', color: activeStatus === 'open' ? '#059669' : '#6B7280', fontWeight: activeStatus === 'open' ? 'bold' : 'normal' }}
+        >
+          🟢 顯示中 (Open)
+        </button>
+        <button 
+          onClick={() => { setActiveStatus('hidden_under_review'); setPage(1); }}
+          style={{ ...subTabBtnStyle, borderBottom: activeStatus === 'hidden_under_review' ? '2px solid #DC2626' : '2px solid transparent', color: activeStatus === 'hidden_under_review' ? '#DC2626' : '#6B7280', fontWeight: activeStatus === 'hidden_under_review' ? 'bold' : 'normal' }}
+        >
+          🛑 檢舉審查中 (Hidden)
+        </button>
+        <button 
+          onClick={() => { setActiveStatus('closed'); setPage(1); }}
+          style={{ ...subTabBtnStyle, borderBottom: activeStatus === 'closed' ? '2px solid #4B5563' : '2px solid transparent', color: activeStatus === 'closed' ? '#4B5563' : '#6B7280', fontWeight: activeStatus === 'closed' ? 'bold' : 'normal' }}
+        >
+          📁 已結案 (Closed)
+        </button>
+        <button 
+          onClick={() => { setActiveStatus('deleted'); setPage(1); }}
+          style={{ ...subTabBtnStyle, borderBottom: activeStatus === 'deleted' ? '2px solid #9CA3AF' : '2px solid transparent', color: activeStatus === 'deleted' ? '#9CA3AF' : '#6B7280', fontWeight: activeStatus === 'deleted' ? 'bold' : 'normal' }}
+        >
+          🗑️ 已刪除 (Deleted)
+        </button>
+      </div>
       
       <div style={{ backgroundColor: '#FFF', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1100px' }}>
           <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
             <tr>
-              <th style={{...thStyle, width: '18%'}}>刊登資訊</th>
-              <th style={{...thStyle, width: '40%'}}>貼文詳細內容</th>
-              <th style={{...thStyle, width: '12%'}}>檢舉次數</th>
-              <th style={{...thStyle, width: '15%'}}>目前顯示狀態</th>
-              <th style={{...thStyle, width: '15%'}}>審核操作</th>
+              <th style={{...thStyle, width: '16%'}}>刊登資訊</th>
+              <th style={{...thStyle, width: '36%'}}>貼文詳細內容</th>
+              <th style={{...thStyle, width: '12%', textAlign: 'center'}}>總投遞數</th>
+              <th style={{...thStyle, width: '12%', textAlign: 'center'}}>轉洽談數</th>
+              <th style={{...thStyle, width: '12%'}}>狀態 / 時效</th>
+              <th style={{...thStyle, width: '12%'}}>操作</th>
             </tr>
           </thead>
           <tbody>
             {dataList.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>目前沒有貼文資料</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>此分頁目前沒有任何貼文資料</td></tr>
             ) : dataList.map((item) => {
               const postDetails = parsePostData(item);
               const hitKeyword = checkKeywordTrigger(postDetails.description);
@@ -174,18 +205,18 @@ export function WishboardTab() {
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>
                   
-                  
+                  {/* 刊登資訊 */}
                   <td style={tdStyle}>
                     <div style={{ fontWeight: 'bold', color: '#111827', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <User size={14} /> {item.author_name}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>ID: {item.author_public_id || '未知'}</div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>@{item.author_public_id || '未知'}</div>
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>
                       發佈: {formatLocalTime(item.created_at)}
                     </div>
                   </td>
 
-                  
+                  {/* 貼文詳細內容 */}
                   <td style={{...tdStyle, paddingRight: '24px'}}>
                     {hitKeyword && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', border: '1px solid #FCA5A5' }}>
@@ -208,24 +239,23 @@ export function WishboardTab() {
                     </div>
                   </td>
 
-                  
-                  <td style={tdStyle}>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px', color: item.report_count >= 10 ? '#DC2626' : (item.report_count > 0 ? '#D97706' : '#059669') }}>
-                      {item.report_count} 次
+                  {/* 總投遞數 */}
+                  <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold', color: '#374151' }}>
+                      <Inbox size={16} style={{ color: '#4B5563' }} /> {item.total_inquiry_count || 0} 份
                     </div>
-                    {item.report_count > 0 && (
-                      <button 
-                        onClick={() => openReportModal(item.id)}
-                        style={{ marginTop: '8px', background: 'none', border: 'none', color: '#2563EB', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                      >
-                        查看檢舉原因
-                      </button>
-                    )}
                   </td>
 
-                  
+                  {/* 轉洽談數 */}
+                  <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold', color: (item.chat_inquiry_count > 0 ? '#2563EB' : '#6B7280') }}>
+                      <MessageCircle size={16} style={{ color: (item.chat_inquiry_count > 0 ? '#3B82F6' : '#9CA3AF') }} /> {item.chat_inquiry_count || 0} 軌
+                    </div>
+                  </td>
+
+                  {/* 狀態 / 時效 與 邊緣化的檢舉提示 */}
                   <td style={tdStyle}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 'bold', 
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: 'bold', 
                       backgroundColor: isHidden ? '#FEF2F2' : (isExpired ? '#F3F4F6' : (item.status === 'open' ? '#ECFDF5' : '#F3F4F6')),
                       color: isHidden ? '#DC2626' : (isExpired ? '#6B7280' : (item.status === 'open' ? '#059669' : '#6B7280')),
                       border: `1px solid ${isHidden ? '#FCA5A5' : (isExpired ? '#D1D5DB' : (item.status === 'open' ? '#6EE7B7' : '#D1D5DB'))}`
@@ -236,10 +266,24 @@ export function WishboardTab() {
                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Clock size={12} /> {formatLocalTime(item.expires_at)}
                     </div>
+
+                    {/* 邊緣化後的被動防禦檢舉欄 */}
+                    {item.report_count > 0 && (
+                      <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed #E5E7EB' }}>
+                        <span style={{ fontSize: '12px', color: '#DC2626', fontWeight: 'bold' }}>⚠️ 遭檢舉 {item.report_count} 次</span>
+                        <br />
+                        <button 
+                          onClick={() => openReportModal(item.id)}
+                          style={{ background: 'none', border: 'none', color: '#2563EB', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', padding: 0, textDecoration: 'underline', marginTop: '2px' }}
+                        >
+                          查看檢舉原因
+                        </button>
+                      </div>
+                    )}
                   </td>
 
-                  
-                  <td style={tdStyle}>
+                  {/* 操作 */}
+                  <td style={{ ...tdStyle, verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <button onClick={() => openEditModal(item)} disabled={isUpdating} style={{...actionBtnStyle, color: '#2563EB', borderColor: '#2563EB', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
                         <Edit size={14} /> 編輯狀態與時間
@@ -251,7 +295,7 @@ export function WishboardTab() {
                         </button>
                       ) : (
                         <button onClick={() => handleUpdateStatus(item.id, 'open')} disabled={isUpdating} style={{...actionBtnStyle, color: '#059669', borderColor: '#059669', backgroundColor: '#FFF'}}>
-                          顯示 (駁回檢舉)
+                          駁回檢舉並恢復
                         </button>
                       )}
                     </div>
@@ -263,7 +307,7 @@ export function WishboardTab() {
         </table>
       </div>
 
-      
+      {/* 分頁 */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 目前結果共 <b style={{ color: '#111827' }}>{total}</b> 筆資料</span>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -273,7 +317,7 @@ export function WishboardTab() {
         </div>
       </div>
 
-      
+      {/* 檢舉原因彈窗 */}
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsModalOpen(false)}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -321,7 +365,7 @@ export function WishboardTab() {
         </div>
       )}
 
-      
+      {/* 編輯狀態與時間彈窗 */}
       {isEditModalOpen && editingItem && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }} onClick={() => setIsEditModalOpen(false)}>
           <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -379,4 +423,5 @@ const tdStyle = { padding: '20px 16px', fontSize: '14px', verticalAlign: 'top' a
 const actionBtnStyle = { padding: '8px 12px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', width: '100%', transition: 'all 0.2s' };
 const pageBtnStyle = { padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: 'bold' };
 const tabBtnStyle = { padding: '8px 16px', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' };
+const subTabBtnStyle = { padding: '8px 4px', border: 'none', fontSize: '13px', cursor: 'pointer', backgroundColor: 'transparent', transition: 'all 0.15s', marginRight: '12px' };
 const badgeStyle = { fontSize: '12px', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 'bold', border: '1px solid #E0E7FF' };

@@ -25,7 +25,6 @@ const unescapeHtml = (str: string) => {
 export const CardView: React.FC<CardViewProps> = ({
   inquiry,
   snapshot,
-  setSelectedInquiry,
   setShowDeclineModal,
   handleDirectInvite,
   isSelected,

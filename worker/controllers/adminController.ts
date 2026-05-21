@@ -82,7 +82,7 @@ export const adminController = {
     const limit = 20;
     const offset = (page - 1) * limit;
 
-    const { results } = await env.commission_db.prepare(`
+    const {results} = await env.commission_db.prepare(`
       SELECT c.*, 
              a.display_name as artist_name, a.public_id as artist_public_id, 
              u.display_name as client_name, u.public_id as client_public_id,
@@ -146,7 +146,6 @@ export const adminController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-
   async getKeywords(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -185,22 +184,26 @@ export const adminController = {
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
     const category = url.searchParams.get('category') || 'request';
+    const statusFilter = url.searchParams.get('status') || 'open'; // 預設篩選顯示中的 open
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    // 修改點：引入更具價值的營運統計子查詢，並修正為純時間建立倒序排列
     const { results } = await env.commission_db.prepare(`
       SELECT b.*, u.display_name as author_name, u.public_id as author_public_id,
-      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count
+      (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) as report_count,
+      (SELECT COUNT(*) FROM BulletinInquiries WHERE bulletin_id = b.id) as total_inquiry_count,
+      (SELECT COUNT(*) FROM BulletinInquiries WHERE bulletin_id = b.id AND status NOT IN ('pending', 'declined', 'closed', 'cancelled')) as chat_inquiry_count
       FROM Bulletins b
       LEFT JOIN Users u ON b.client_id = u.id
-      WHERE b.category = ?
-      ORDER BY b.status DESC, report_count DESC, b.created_at DESC
+      WHERE b.category = ? AND b.status = ?
+      ORDER BY b.created_at DESC
       LIMIT ? OFFSET ?
-    `).bind(category, limit, offset).all();
+    `).bind(category, statusFilter, limit, offset).all();
 
     const { results: countRes } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as total FROM Bulletins WHERE category = ?
-    `).bind(category).all();
+      SELECT COUNT(*) as total FROM Bulletins WHERE category = ? AND status = ?
+    `).bind(category, statusFilter).all();
 
     return new Response(JSON.stringify({ success: true, data: results, pagination: { total: countRes[0]?.total || 0, page, limit } }), { status: 200, headers: corsHeaders });
   },
