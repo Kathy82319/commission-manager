@@ -77,7 +77,10 @@ export function App() {
 
         <Route element={<PublicLayout />}>
           <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=success" replace />} />
-          <Route path="/" element={<Wishboard />} />
+<Route path="/" element={<Navigate to="/wishboard" replace />} />
+<Route path="/wishboard" element={<Wishboard />}>
+  <Route path=":category" element={<Wishboard />} />
+</Route>
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
           
           <Route path="/terms" element={<Terms />} />

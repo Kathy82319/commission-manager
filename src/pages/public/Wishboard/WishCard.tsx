@@ -1,6 +1,7 @@
 // src/public/Wishboard/WishCard.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate } from 'react-router-dom';
+
 import { 
   Calendar, DollarSign, Tag, Clock, Send, User, 
   ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, 
@@ -216,9 +217,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
   const posterAvatar = bulletin.client_avatar || null;
 
-  const handleProfileClick = (e: React.MouseEvent) => {
+ const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation(); 
-    if (posterId !== 'unknown') {
+    // 直接判斷 posterId 是否存在，移除 category === 'offer' 的限制
+    if (posterId && posterId !== 'unknown') {
       navigate(`/${posterId}`); 
     }
   };
@@ -317,7 +319,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             </div>
             
             <div className="desktop-author-info">
-              <div className="desktop-author-name" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
+              <div className="desktop-author-name" onClick={handleProfileClick} style={{ cursor: posterId !== 'unknown' ? 'pointer' : 'default' }}>
                 {posterName}
               </div>
               <div className="desktop-author-id">@{posterId}</div>
@@ -352,7 +354,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 <User size={14} className="wish-card-author-icon" />
                 
                 {posterId !== 'unknown' ? (
-                  <div className="wish-card-author-link" onClick={handleProfileClick} title="前往繪師個人頁">
+                  <div className="wish-card-author-link" onClick={handleProfileClick} title="前往個人頁面">
                     <span className="wish-card-author-name">{posterName}</span>
                     <span className="wish-card-author-id">@{posterId}</span>
                   </div>
