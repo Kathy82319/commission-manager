@@ -34,9 +34,13 @@ export const CardView: React.FC<CardViewProps> = ({
   handleViewCommission,
   blacklistedIds = [] 
 }) => {
-  // 核心判定邏輯：狀態不在這些拒絕名單內，即為進行中/可互動
-  const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending' || inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed';
-  const isDeclined = inquiry.inquiry_status === 'declined' || inquiry.inquiry_status === 'closed' || inquiry.inquiry_status === 'cancelled';
+  // 核心判定邏輯：精確劃分四個生命週期階段，不受貼文過期影響
+  const status = inquiry.inquiry_status;
+  
+  const isPendingStage = status === 'pending';
+  const isNegotiatingStage = status === 'submitted' || status === 'proposed';
+  const isAcceptedStage = status === 'accepted';
+  const isArchivedStage = ['declined', 'closed', 'cancelled'].includes(status);
 
   const clientName = inquiry.artist_name || snapshot.client_name || snapshot.artist_name || '匿名用戶';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || snapshot.artist_public_id || 'unknown';
@@ -78,12 +82,12 @@ export const CardView: React.FC<CardViewProps> = ({
         onClick={() => setShowDetailsModal(true)} 
         style={{ 
           display: 'flex', flexDirection: 'column', height: '100%', 
-          background: isDeclined ? '#F9F9F9' : '#FFFFFF', 
+          background: isArchivedStage ? '#F9F9F9' : '#FFFFFF', 
           border: `1px solid ${isBlacklisted ? '#EF4444' : (isSelected ? '#4A7294' : '#EAE6E1')}`, 
           borderRadius: '16px', overflow: 'hidden', 
           boxShadow: isSelected ? '0 0 0 2px #4A7294' : '0 4px 12px rgba(0,0,0,0.04)',
-          filter: isDeclined ? 'grayscale(50%)' : 'none',
-          opacity: isDeclined ? 0.7 : 1,
+          filter: isArchivedStage ? 'grayscale(50%)' : 'none',
+          opacity: isArchivedStage ? 0.7 : 1,
           cursor: 'pointer', 
           transition: 'all 0.2s', position: 'relative',
           width: '100%', boxSizing: 'border-box'
@@ -97,8 +101,8 @@ export const CardView: React.FC<CardViewProps> = ({
         </div>
 
         <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}>
-          <span className={`status-${inquiry.inquiry_status}`} style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(4px)', border: '1px solid rgba(0,0,0,0.1)', color: '#5D4A3E', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-            {getStatusLabel(inquiry.inquiry_status)}
+          <span className={`status-${status}`} style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(4px)', border: '1px solid rgba(0,0,0,0.1)', color: '#5D4A3E', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            {getStatusLabel(status)}
           </span>
         </div>
 
@@ -154,7 +158,8 @@ export const CardView: React.FC<CardViewProps> = ({
           )}
 
           <div onClick={stopPropagation} style={{ marginTop: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F0ECE7' }}>
-            {isPending ? (
+            {/* 階段一：全新投遞（僅出現婉拒與邀請詳談） */}
+            {isPendingStage && (
               <>
                 <button 
                   style={{ flex: '1 1 auto', minWidth: '80px', padding: '10px', backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
@@ -169,22 +174,20 @@ export const CardView: React.FC<CardViewProps> = ({
                   邀請詳談
                 </button>
               </>
-            ) : (
-              <div style={{ width: '100%', textAlign: 'center', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '8px', fontSize: '12px', color: '#9CA3AF' }}>
-                {isDeclined ? '此洽談已終止' : '已結案'}
-              </div>
             )}
 
-            {inquiry.inquiry_status !== 'accepted' && (
+            {/* 階段二：開啟洽談（僅出現進入聊天室） */}
+            {isNegotiatingStage && (
               <button 
                 onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
-                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: isPending ? '#5D4A3E' : '#EAE6E1', color: isPending ? '#FFFFFF' : '#5D4A3E', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#5D4A3E', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
               >
-                {isPending ? '進入聊天室' : '查看歷史'}
+                進入聊天室
               </button>
             )}
 
-            {inquiry.inquiry_status === 'accepted' && (
+            {/* 階段三：已成單（僅出現前往委託單） */}
+            {isAcceptedStage && (
               <button 
                 onClick={() => handleViewCommission(inquiry.commission_id)}
                 style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#4E7A5A', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
@@ -192,11 +195,25 @@ export const CardView: React.FC<CardViewProps> = ({
                 前往委託單
               </button>
             )}
+
+            {/* 階段四：已終止/歸檔（出現狀態提示與查看歷史） */}
+            {isArchivedStage && (
+              <>
+                <div style={{ width: '100%', textAlign: 'center', padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '8px', fontSize: '12px', color: '#9CA3AF', marginBottom: '4px' }}>
+                  {status === 'declined' ? '此提案已被婉拒' : '已結案'}
+                </div>
+                <button 
+                  onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
+                  style={{ flex: '1 1 auto', padding: '10px', backgroundColor: '#EAE6E1', color: '#5D4A3E', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  查看歷史
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      
       {showDetailsModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowDetailsModal(false)} style={{ zIndex: 99999 }}>
           <div 
@@ -209,7 +226,6 @@ export const CardView: React.FC<CardViewProps> = ({
               backgroundColor: '#FFFFFF'
             }}
           >
-            
             <div style={{ flex: '1 1 350px', backgroundColor: '#1A1A1A', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
               {validImages.length > 0 ? (
                 <>
@@ -231,9 +247,7 @@ export const CardView: React.FC<CardViewProps> = ({
               )}
             </div>
             
-            
             <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
-              
               <div style={{ padding: '20px 24px', borderBottom: '1px solid #EAE6E1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 10 }}>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                   <img src={avatarUrl || ''} alt="" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', display: avatarUrl ? 'block' : 'none', border: '1px solid #EAE6E1' }} />
@@ -280,7 +294,7 @@ export const CardView: React.FC<CardViewProps> = ({
                   </div>
                 )}
 
-                {isDeclined && inquiry.decline_reason && (
+                {isArchivedStage && inquiry.decline_reason && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '15px', color: '#EF4444', borderBottom: '2px solid #FECACA', paddingBottom: '8px', marginBottom: '16px' }}>終止 / 撤回原因</h3>
                     <div style={{ whiteSpace: 'pre-wrap', color: '#A05C5C', lineHeight: '1.6', backgroundColor: '#FEF2F2', padding: '16px', borderRadius: '8px', border: '1px solid #FECACA' }}>
