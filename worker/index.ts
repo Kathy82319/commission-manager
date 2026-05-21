@@ -37,15 +37,7 @@ export default {
       return env.ASSETS.fetch(request);
     }
     
-    const allowedOrigins = [
-      env.FRONTEND_URL, 
-      "http://localhost:5173", 
-      "https://commission-app.pages.dev",
-      "https://cath-commission-manager.pages.dev",
-      "https://arti7.net",
-      "https://www.arti7.net"
-    ];
-    const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : env.FRONTEND_URL || "";
+    const safeOrigin = requestOrigin || `https://${url.host}`;
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": safeOrigin, 
