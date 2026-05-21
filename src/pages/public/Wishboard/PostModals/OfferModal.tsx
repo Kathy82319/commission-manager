@@ -151,7 +151,6 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <h2>發布接委託</h2>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button type="button" onClick={onLoadDraft} className="save-hint-btn"><Download size={14} /> 載入預設</button>
-            <button type="button" onClick={onSaveDraft} className="save-hint-btn"><Save size={14} /> 儲存預設</button>
             <button type="button" className="close-modal-btn" onClick={onClose}><X size={24} /></button>
           </div>
         </div>
@@ -425,6 +424,9 @@ export const OfferModal: React.FC<OfferModalProps> = ({
 
           <div className="modal-footer">
              <button type="button" className="btn-cancel" onClick={onClose}>取消</button>
+             <button type="button" className="btn-cancel" onClick={onSaveDraft}>
+    <Save size={16} style={{ marginRight: '4px' }} /> 儲存預設
+  </button>
              <button type="submit" className="submit-post-btn" disabled={isUploading}>確認發布接案</button>
           </div>
         </form>
