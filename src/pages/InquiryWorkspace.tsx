@@ -134,6 +134,7 @@ export const InquiryWorkspace: React.FC = () => {
 
       if (resInquiry.success) {
         const data = resInquiry.data;
+        console.log("洽談單詳細資料:", data);
         setInquiry(data);
         if (resInquiry.quota) setArtistQuota(resInquiry.quota);
 
