@@ -184,12 +184,10 @@ export const InquiryWorkspace: React.FC = () => {
           }
         }
 
-        // ✅ 修正核心：把抓取訊息的 API 移入此大括號括弧內，這樣才能合法與上面的 data 共享作用域
         const resMsgs = await apiClient.get(`/api/${apiPrefix}/${id}/messages`);
         if (resMsgs.success) {
           let fetchedMsgs = resMsgs.data || [];
           
-          // 順利讀取當初「徵委託」發布當下的角色卡死資料並置頂
           if (data.bulletin_oc_snapshot) {
             const initialOcMsg = {
               id: 'initial-bulletin-oc',
@@ -205,7 +203,7 @@ export const InquiryWorkspace: React.FC = () => {
 
           setMessages(fetchedMsgs);
         }
-      } // 💡 resInquiry.success 結束的大括號移到了這裡
+      } 
     } catch (e) { 
       console.error("讀取洽談室失敗:", e); 
     } finally { 

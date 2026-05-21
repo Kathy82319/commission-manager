@@ -467,7 +467,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
 
-              {/* 完美嵌入：將 OC 設定卡按鈕置於付款方式的正下方，使用精緻的淡色系標籤設計 */}
+              
               {bulletin.oc_snapshot && (
                 <div className="meta-item" style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
                   <button 

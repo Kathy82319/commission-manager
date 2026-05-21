@@ -61,7 +61,6 @@ export function Workspace() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // OC 相關 State
   const [showOCSelection, setShowOCSelection] = useState(false);
   const [myOCs, setMyOCs] = useState<any[]>([]);
   const [isLoadingOCs, setIsLoadingOCs] = useState(false);
@@ -527,7 +526,6 @@ export function Workspace() {
               let ocData: any = null;
               try { ocData = JSON.parse(msg.content); } catch (e) {}
 
-              // 對話泡泡中的圖片渲染邏輯
               let chatBubbleImgUrl = null;
               if (ocData && ocData.images && ocData.images.length > 0) {
                 const rawBubbleUrl = ocData.images[0].previewUrl || ocData.images[0].url || '';
@@ -653,7 +651,7 @@ export function Workspace() {
         </footer>
       </div>
 
-      {/* 彈窗部分：修正路徑解析，補上對未解析 JSON 字串與相對路徑的處理 */}
+      
       {showOCSelection && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px' }}>
           <div style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
@@ -673,11 +671,9 @@ export function Workspace() {
                 myOCs.map(oc => {
                   let imageUrl = null;
                   try {
-                    // 修正核心點：將可能為字串的 oc.images 解析為物件陣列
                     const images = typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []);
                     if (images.length > 0) {
                       const rawUrl = images[0].previewUrl || images[0].url || '';
-                      // 補上雲端 R2 完整網域前綴
                       imageUrl = rawUrl.startsWith('http') 
                         ? rawUrl 
                         : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;

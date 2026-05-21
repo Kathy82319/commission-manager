@@ -26,7 +26,7 @@
   width: 100%;
   margin-bottom: 12px;
   position: relative;
-  z-index: 50; /* 確保下拉選單蓋在內容上方 */
+  z-index: 50; 
 }
 
 .mobile-nav-trigger {
@@ -132,7 +132,6 @@
 }
 .manage-entry-btn:hover { opacity: 1; }
 
-/* 自訂新增分頁按鈕 */
 .add-custom-section-btn {
   padding: 12px;
   margin-top: 4px;
@@ -368,7 +367,7 @@
   }
   
   .settings-mobile-nav {
-    display: none; /* 電腦版隱藏下拉幕 */
+    display: none;
   }
 
   .settings-sidebar {

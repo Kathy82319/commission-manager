@@ -175,7 +175,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
             </div>
           </div>
 
-          {/* 連動角色卡區塊 */}
+          
           <div className="form-section" style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <label className="section-title" style={{ margin: 0, border: 'none', padding: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <span>📇 連動專屬角色設定卡 (OC) <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>(選填，便於創作者點擊查看完整設定)</span></span>
@@ -250,7 +250,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
           </div>
         </form>
 
-        {/* 內嵌彈窗：選擇 OC 角色卡 */}
+        
         {showOCSelection && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10005, padding: '20px' }}>
             <div style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '460px', borderRadius: '16px', padding: '20px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', position: 'relative' }}>

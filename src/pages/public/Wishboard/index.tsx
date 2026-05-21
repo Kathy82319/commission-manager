@@ -471,7 +471,7 @@ export const Wishboard: React.FC = () => {
         />
       )}
 
-      {/* 新增彈窗：檢視 OC 設定卡內容 Lightbox 彈窗 */}
+      
       {viewingOCSnapshot && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -482,7 +482,7 @@ export const Wishboard: React.FC = () => {
               關閉 <X size={18} />
             </button>
             <div style={{ overflowY: 'auto', borderRadius: '16px', backgroundColor: '#FDFDFB', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-              {/* 直接復用您專案現有的角色設定卡卡片 */}
+              
               <OCDetailCard ocData={viewingOCSnapshot} />
             </div>
           </div>
