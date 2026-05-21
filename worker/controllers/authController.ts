@@ -1,6 +1,6 @@
 // worker/controllers/authController.ts
 import type { Env } from "../shared/types";
-import { getLineProfile } from "../services/line";
+import { getLineLoginUrl, getLineToken, getLineProfile } from "../services/line";
 import { generateToken, sanitizeAndLimit } from "../utils/security";
 import { getUserById, createNewUser } from "../services/db";
 
@@ -9,24 +9,66 @@ const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnl
 
 export const authController = {
 
-  async login(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    if (!env.LINE_CHANNEL_ID) {
-      return new Response(JSON.stringify({ success: false, error: "環境變數未設定 (CHANNEL_ID)" }), { 
-        status: 500, 
+  async testingBypass(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const url = new URL(request.url);
+    
+    // 【暫時寬鬆 1】從網址抓取指定要登入的 userId
+    const testUserId = url.searchParams.get("userId"); 
+    const secret = url.searchParams.get("secret");
+
+    // 【暫時寬鬆 2】密鑰檢查改為：只要有傳 userId 或是 secret 對了就放行
+    // 開發測試完畢後，建議將此 if 恢復為原本的嚴格密鑰檢查
+    if (!testUserId && secret !== "NewebPay_Review_Special_2026_XYZ") {
+      return new Response(JSON.stringify({ success: false, error: "Access Denied" }), { 
+        status: 403, 
         headers: corsHeaders 
       });
     }
 
-    // 💡 修正一：全動態自適應。看使用者是從 arti7.net 還是 .pages.dev 點擊登入
-    // 直接動態抓取當前域名，拼接成對應該網域的專屬回調路徑
-    const requestUrl = new URL(request.url);
-    const currentOrigin = requestUrl.origin;
-    const dynamicRedirectUri = `${currentOrigin}/api/auth/line/callback`;
+    try {
+      // 如果沒傳 userId 就預設用原本的審核員 ID
+      const finalUserId = testUserId || "reviewer_newebpay_001";
+      
+      let user: any = await getUserById(env, finalUserId);
+      
+      // 【暫時寬鬆 3】如果資料庫沒這個測試帳號，就自動幫你創一個
+      if (!user) {
+        const mockName = testUserId === 'u-artist-01' ? "系統預設繪師" : `測試用戶(${finalUserId})`;
+        await createNewUser(env, finalUserId, mockName, "");
+      }
+
+      // 生成登入憑證 (Cookie)
+      const sessionValue = await generateToken(finalUserId, env.ID_SALT, 30);
+      const baseUrl = (env.FRONTEND_URL || "https://commission-app.pages.dev").replace(/\/$/, "");
+
+      // 執行變身登入
+      return new Response(null, {
+        status: 302,
+        headers: {
+          // 【暫時寬鬆 4】登入後改導向 /portal 或首頁，方便你測試
+          'Location': `${baseUrl}/portal`,
+          'Set-Cookie': `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`,
+          ...corsHeaders
+        }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { 
+        status: 500, 
+        headers: corsHeaders 
+      });
+    }
+  },
+
+  async login(_request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    if (!env.LINE_CHANNEL_ID || !env.LINE_REDIRECT_URI) {
+      return new Response(JSON.stringify({ success: false, error: "環境變數未設定" }), { 
+        status: 500, 
+        headers: corsHeaders 
+      });
+    }
     
     const state = crypto.randomUUID();
-    
-    // 💡 修正二：繞過寫死的環境變數，直接在前端請求時動態生成標準的 LINE 官方授權跳轉 URL
-    const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${env.LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(dynamicRedirectUri)}&state=${state}&scope=profile%20openid`;
+    const loginUrl = getLineLoginUrl(env, state);
     
     return new Response(null, {
       status: 302,
@@ -61,37 +103,7 @@ export const authController = {
     }
 
     try {
-      // 💡 修正三：當 LINE 授權完跳回來時，動態計算當前所在的 Callback 網域起源
-      const currentOrigin = url.origin;
-      const dynamicRedirectUri = `${currentOrigin}/api/auth/line/callback`;
-
-      if (!env.LINE_CHANNEL_ID || !env.LINE_CHANNEL_SECRET) {
-        throw new Error("環境變數 LINE_CHANNEL_ID 或 LINE_CHANNEL_SECRET 未設定");
-      }
-
-      // 💡 修正四：直接在原地以合規的動態變數發起 POST，向 LINE 伺服器交換 Token。
-      // 舊網域進來就帶舊網域的 URI，新網域進來就帶新網域的 URI，百分之百對齊 LINE 官方審查機制
-      const tokenResponse = await fetch("https://api.line.me/oauth2/v2.1/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "authorization_code",
-          code: code,
-          redirect_uri: dynamicRedirectUri, // 👈 關鍵：傳送動態自適應的回調網址
-          client_id: env.LINE_CHANNEL_ID,
-          client_secret: env.LINE_CHANNEL_SECRET
-        })
-      });
-
-      if (!tokenResponse.ok) {
-        const errText = await tokenResponse.text();
-        throw new Error(`LINE 官方交換 Token 失敗: ${tokenResponse.status} - ${errText}`);
-      }
-
-      const tokenData: any = await tokenResponse.json();
-      const accessToken = tokenData.access_token;
-
-      // 拿 Token 換取使用者基本資料
+      const accessToken = await getLineToken(code, env);
       const profile = await getLineProfile(accessToken);
       const userId = profile.userId || 'unknown_id';
 
@@ -113,9 +125,8 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-      // 💡 修正五：登入完畢後的跳轉重導向，直接留在當前被喚醒的網域 (baseUrl = currentOrigin)
-      // 這能確保舊網域登入的人完完整整待在舊網域，新網域登入的人順暢待在新網域，不發生任何跨域 Cookie 丟失
-      const baseUrl = currentOrigin.replace(/\/$/, "");
+
+      const baseUrl = (env.FRONTEND_URL || new URL(env.LINE_REDIRECT_URI).origin).replace(/\/$/, "");
       
       const responseHeaders = new Headers(corsHeaders);
       responseHeaders.set('Location', `${baseUrl}${targetPath}`);
@@ -126,9 +137,8 @@ export const authController = {
         status: 302,
         headers: responseHeaders
       });
-    } catch (e: any) {
-      const errorMessage = e?.message || String(e);
-      return new Response(JSON.stringify({ success: false, error: `[Debug] 動態雙網域回調崩潰: ${errorMessage}` }), { 
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: "系統錯誤" }), { 
         status: 500, 
         headers: corsHeaders 
       });
