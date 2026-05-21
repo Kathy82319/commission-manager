@@ -468,6 +468,32 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </span>
               </div>
 
+{/* 👈 關鍵新增：在這裡插入精緻版 OC 按鈕 (佔用整行 grid-column: '1 / -1' 或獨立一個 meta-item) */}
+{bulletin.oc_snapshot && (
+  <div className="meta-item" style={{ gridColumn: '1 / -1', marginTop: '4px' }}>
+    <button 
+      type="button"
+      onClick={handleViewOCClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        background: '#FFFBEB',       // 溫和的淺黃底色，不突兀
+        border: '1px solid #FDE68A', // 微黃邊框
+        color: '#B45309',            // 內斂的棕褐色字體
+        padding: '4px 10px',
+        borderRadius: '6px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'all 0.2s'
+      }}
+    >
+      <BookUser size={14} /> 查看綁定的角色設定卡 (OC)
+    </button>
+  </div>
+)}              
+
               {bulletin.category === 'offer' && paymentTimingLabel && (
                 <div className="meta-item" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', minWidth: 0, gridColumn: '1 / -1' }}>
                   <DollarSign size={16} className="meta-icon text-[#059669]" style={{ flexShrink: 0, marginRight: '4px' }} />
@@ -519,19 +545,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <p className="description-text">{rawDescription}</p>
           </div>
 
-          {/* 動作按鈕區 */}
-          <div className="card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* 新增：如果此徵委託含有 OC 設定卡快照，渲染一個精緻的點擊查看按鈕 */}
-            {bulletin.oc_snapshot && (
-              <button 
-                type="button"
-                className="submit-post-btn full-width" 
-                onClick={handleViewOCClick}
-                style={{ backgroundColor: '#FDF4E6', border: '1px solid #FDE0B5', color: '#A67B3E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <BookUser size={16} /> 查看綁定的角色設定卡 (OC)
-              </button>
-            )}
 
             {isMyOwnPost ? (
               <button 
@@ -540,7 +553,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 disabled={isRevoking}
                 style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
               >
-                {isRevoking ? '撤銷中...' : '撤銷發佈的慢許願'}
+                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
               </button>
             ) : isQuotaFull ? (
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
