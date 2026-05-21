@@ -68,11 +68,25 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       const data = await res.json();
       
       if (data.success) {
+        const now = new Date();
+        
+        // 篩選未結案、未取消的訂單
         let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
+        
+        // 映射資料並加入過期判定
+        const processedList = liveList.map((c: any) => {
+          const targetDate = c.order_date ? new Date(c.order_date.includes('T') ? c.order_date : c.order_date.replace(' ', 'T')) : null;
+          const isExpired = targetDate && targetDate < now;
+          return {
+            ...c,
+            isExpired
+          };
+        });
+
         const customOrder = qs.custom_order || [];
         
         if (customOrder.length > 0) {
-          liveList.sort((a: any, b: any) => {
+          processedList.sort((a: any, b: any) => {
             const idxA = customOrder.indexOf(a.id);
             const idxB = customOrder.indexOf(b.id);
             const timeA = new Date(a.order_date || 0).getTime();
@@ -83,12 +97,12 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             return idxA - idxB;
           });
         } else {
-          liveList.sort((a: any, b: any) => new Date(a.order_date || 0).getTime() - new Date(b.order_date || 0).getTime());
+          processedList.sort((a: any, b: any) => new Date(a.order_date || 0).getTime() - new Date(b.order_date || 0).getTime());
         }
 
-        const previewMasked = liveList.map((order: any) => ({
+        const previewMasked = processedList.map((order: any) => ({
           id: order.id,
-          queue_status: order.queue_status || '處理中',
+          queue_status: order.isExpired ? '已過期' : (order.queue_status || '處理中'),
           end_date: order.end_date, 
           order_date: order.order_date,
           contact_memo: qs.show_client_name ? (order.contact_memo || '匿名委託') : getMaskedName(order.contact_memo),
@@ -160,18 +174,32 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
           </tr>
         </thead>
         <tbody>
-          {data.map((order, idx) => (
-            <tr key={order.id || idx} style={{ borderBottom: '1px solid #E5E0DA' }}>
-              <td style={{ padding: '12px' }}>
-                <div style={{ fontWeight: 'bold' }}>{order.contact_memo || '匿名委託'}</div>
-                {order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
-              </td>
-              <td style={{ padding: '12px' }}>{order.project_name || '私人委託項目'}</td>
-              <td style={{ padding: '12px' }}><span style={{ padding: '4px 8px', background: '#E8F3EB', color: '#4E7A5A', borderRadius: '4px', fontSize: '13px' }}>{order.queue_status || '處理中'}</span></td>
-              <td style={{ padding: '12px', opacity: 0.8 }}>{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</td>
-              {qs.show_artist_note && <td style={{ padding: '12px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
-            </tr>
-          ))}
+          {data.map((order, idx) => {
+            const isOverdue = order.queue_status === '已過期';
+            return (
+              <tr key={order.id || idx} style={{ borderBottom: '1px solid #E5E0DA' }}>
+                <td style={{ padding: '12px' }}>
+                  <div style={{ fontWeight: 'bold' }}>{order.contact_memo || '匿名委託'}</div>
+                  {order.client_public_id && <div style={{ fontSize: '12px', opacity: 0.7 }}>{order.client_public_id}</div>}
+                </td>
+                <td style={{ padding: '12px' }}>{order.project_name || '私人委託項目'}</td>
+                <td style={{ padding: '12px' }}>
+                  <span style={{ 
+                    padding: '4px 8px', 
+                    borderRadius: '4px', 
+                    fontSize: '13px',
+                    background: isOverdue ? '#FEE2E2' : '#E8F3EB',
+                    color: isOverdue ? '#EF4444' : '#4E7A5A',
+                    fontWeight: isOverdue ? 'bold' : 'normal'
+                  }}>
+                    {order.queue_status || '處理中'}
+                  </span>
+                </td>
+                <td style={{ padding: '12px', opacity: 0.8 }}>{order.end_date ? order.end_date.substring(5).replace('-', '/') : '未定'}</td>
+                {qs.show_artist_note && <td style={{ padding: '12px', opacity: 0.8 }}>{order.artist_note || '-'}</td>}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     );
@@ -195,7 +223,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       
       {qs.enabled && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
           
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -222,7 +249,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             )}
           </div>
 
-          
           <div style={{ background: '#F4F0EB', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <h4 style={{ marginTop: 0, color: '#5D4A3E', fontSize: '15px', marginBottom: '16px' }}>顯示範圍控制 (隱私設定)</h4>
 
@@ -261,7 +287,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             </div>
           </div>
 
-          
           <div style={{ background: '#FDF4E6', padding: '20px', borderRadius: '12px', border: '1px solid #DED9D3' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ flex: 1, minWidth: '200px' }}>
@@ -280,14 +305,12 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
               </button>
             </div>
 
-            
             {qs.last_snapshot_at && qs.snapshot_data && (
               <div style={{ marginTop: '24px', borderTop: '1px dashed #DED9D3', paddingTop: '20px' }}>
                 <p style={{ fontSize: '13px', color: '#7A7269', marginBottom: '12px', fontWeight: 'bold' }}>
                   最後發佈時間：{new Date(qs.last_snapshot_at).toLocaleString()}
                 </p>
                 <div style={{ display: 'inline-block' }}>
-                  
                   <div 
                     onClick={handleViewPublishedSnapshot}
                     style={{ position: 'relative', width: '280px', height: '160px', overflow: 'hidden', border: '2px solid #DED9D3', borderRadius: '8px', cursor: 'pointer', background: '#FFF', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}
@@ -307,7 +330,6 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
         </div>
       )}
 
-      
       {isModalOpen && previewData && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto', padding: '5vh 20px' }} onClick={() => !isPublishing && setIsModalOpen(false)}>
           <div style={{ width: '100%', maxWidth: '900px', background: '#FDF4E6', padding: '24px', borderRadius: '12px', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>

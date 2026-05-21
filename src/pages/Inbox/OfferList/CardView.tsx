@@ -25,7 +25,7 @@ const unescapeHtml = (str: string) => {
 export const CardView: React.FC<CardViewProps> = ({
   inquiry,
   snapshot,
-
+  setSelectedInquiry,
   setShowDeclineModal,
   handleDirectInvite,
   isSelected,
@@ -34,9 +34,9 @@ export const CardView: React.FC<CardViewProps> = ({
   handleViewCommission,
   blacklistedIds = [] 
 }) => {
-  // 定義 isPending 狀態
-  const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending';
-  const isDeclined = inquiry.inquiry_status === 'declined' || inquiry.status === 'closed';
+  // 核心判定邏輯：狀態不在這些拒絕名單內，即為進行中/可互動
+  const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending' || inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed';
+  const isDeclined = inquiry.inquiry_status === 'declined' || inquiry.inquiry_status === 'closed' || inquiry.inquiry_status === 'cancelled';
 
   const clientName = inquiry.artist_name || snapshot.client_name || snapshot.artist_name || '匿名用戶';
   const clientId = inquiry.artist_public_id || snapshot.client_public_id || snapshot.artist_public_id || 'unknown';
@@ -175,7 +175,7 @@ export const CardView: React.FC<CardViewProps> = ({
               </div>
             )}
 
-            {(inquiry.inquiry_status === 'submitted' || inquiry.inquiry_status === 'proposed' || !isPending) && (
+            {inquiry.inquiry_status !== 'accepted' && (
               <button 
                 onClick={() => handleEnterInquiryWorkspace(inquiry.inquiry_id)}
                 style={{ flex: '1 1 auto', padding: '10px', backgroundColor: isPending ? '#5D4A3E' : '#EAE6E1', color: isPending ? '#FFFFFF' : '#5D4A3E', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
