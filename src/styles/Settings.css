@@ -470,3 +470,71 @@
     padding: 24px;
   }
 }
+
+/* ==========================================================================
+   新增的設定頁面 UI 樣式
+   ========================================================================== */
+
+/* 1. 預覽個人頁按鈕 */
+.preview-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #F9F7F5;
+  border: 1px solid #EAE6E1;
+  color: #5D4A3E;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-profile-btn:hover {
+  background-color: #EDE8E2;
+  border-color: #DED9D3;
+}
+
+/* 2. 升級卡片區塊 */
+.upgrade-card-container {
+  margin-top: 40px;
+}
+
+.upgrade-card {
+  background: linear-gradient(135deg, #FFF9F2 0%, #FDF4E6 100%);
+  border: 1px solid #EAE6E1;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.upgrade-card-title {
+  margin: 0 0 12px 0;
+  color: #5D4A3E;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.upgrade-card-desc {
+  color: #7A7269;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.upgrade-card-btn {
+  width: 100%;
+  background-color: #5D4A3E;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upgrade-card-btn:hover {
+  background-color: #4A3A30;
+}
