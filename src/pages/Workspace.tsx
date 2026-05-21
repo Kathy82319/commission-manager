@@ -527,6 +527,13 @@ export function Workspace() {
               let ocData: any = null;
               try { ocData = JSON.parse(msg.content); } catch (e) {}
 
+              // 對話泡泡中的圖片渲染邏輯
+              let chatBubbleImgUrl = null;
+              if (ocData && ocData.images && ocData.images.length > 0) {
+                const rawBubbleUrl = ocData.images[0].previewUrl || ocData.images[0].url || '';
+                chatBubbleImgUrl = rawBubbleUrl.startsWith('http') ? rawBubbleUrl : `${R2_PUBLIC_URL}/${rawBubbleUrl.replace(/^\//, '')}`;
+              }
+
               return (
                 <React.Fragment key={msg.id || index}>
                   {isFirstNewMessage && (
@@ -551,8 +558,8 @@ export function Workspace() {
                           
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
-                              {ocData.images && ocData.images.length > 0 ? (
-                                <img src={ocData.images[0].previewUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              {chatBubbleImgUrl ? (
+                                <img src={chatBubbleImgUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               ) : (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
                               )}
@@ -646,74 +653,74 @@ export function Workspace() {
         </footer>
       </div>
 
-      
-{showOCSelection && (
-  <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px' }}>
-    <div style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
-      <h3 style={{ marginTop: 0, color: '#5D4A3E', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        選擇要發送的角色卡
-        <button onClick={() => setShowOCSelection(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#A0978D' }}>✕</button>
-      </h3>
+      {/* 彈窗部分：修正路徑解析，補上對未解析 JSON 字串與相對路徑的處理 */}
+      {showOCSelection && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(26, 20, 18, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10002, padding: '20px' }}>
+          <div style={{ backgroundColor: '#FDFDFB', width: '100%', maxWidth: '500px', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(93, 74, 62, 0.25)', position: 'relative' }}>
+            <h3 style={{ marginTop: 0, color: '#5D4A3E', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              選擇要發送的角色卡
+              <button onClick={() => setShowOCSelection(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#A0978D' }}>✕</button>
+            </h3>
 
-      <div style={{ maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-        {isLoadingOCs ? (
-          <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>讀取您的角色庫中...</div>
-        ) : myOCs.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#A0978D', padding: '30px 20px', backgroundColor: '#F4F0EB', borderRadius: '8px' }}>
-            您還沒有建立任何專屬角色卡喔！<br/>請先前往「我的角色卡 (OC)」介面建立。
-          </div>
-        ) : (
-          myOCs.map(oc => {
-            let imageUrl = null;
-            try {
-              const images = JSON.parse(oc.images || '[]');
-              if (images.length > 0) {
-                const rawUrl = images[0].previewUrl || images[0].url || '';
-                // 若非完整網址則補上 R2_PUBLIC_URL
-                imageUrl = rawUrl.startsWith('http') 
-                  ? rawUrl 
-                  : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
-              }
-            } catch(e) { console.error("圖片解析失敗", e); }
-
-            return (
-              <div key={oc.id} className="oc-selection-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
-                <div className="oc-selection-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
-                    {imageUrl ? (
-                      <img 
-                        src={imageUrl} 
-                        alt="avatar" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-                      />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DED9D3' }}>
-                        <ImageIcon size={20} />
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{oc.name || '未命名角色'}</div>
-                    <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>{oc.gender || '無性別'} {oc.body_type || ''}</div>
-                  </div>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {isLoadingOCs ? (
+                <div style={{ textAlign: 'center', color: '#A0978D', padding: '20px' }}>讀取您的角色庫中...</div>
+              ) : myOCs.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#A0978D', padding: '30px 20px', backgroundColor: '#F4F0EB', borderRadius: '8px' }}>
+                  您還沒有建立任何專屬角色卡喔！<br/>請先前往「我的角色卡 (OC)」介面建立。
                 </div>
-                <button
-                  onClick={() => handleSendOC(oc.id)}
-                  style={{ padding: '8px 16px', backgroundColor: '#8CB369', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  發送快照
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  </div>
-)}
+              ) : (
+                myOCs.map(oc => {
+                  let imageUrl = null;
+                  try {
+                    // 修正核心點：將可能為字串的 oc.images 解析為物件陣列
+                    const images = typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []);
+                    if (images.length > 0) {
+                      const rawUrl = images[0].previewUrl || images[0].url || '';
+                      // 補上雲端 R2 完整網域前綴
+                      imageUrl = rawUrl.startsWith('http') 
+                        ? rawUrl 
+                        : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+                    }
+                  } catch(e) { console.error("圖片解析失敗", e); }
 
-      
+                  return (
+                    <div key={oc.id} className="oc-selection-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
+                      <div className="oc-selection-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
+                          {imageUrl ? (
+                            <img 
+                              src={imageUrl} 
+                              alt="avatar" 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                            />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DED9D3' }}>
+                              <ImageIcon size={20} />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{oc.name || '未命名角色'}</div>
+                          <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>{oc.gender || '無性別'} {oc.body_type || ''}</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleSendOC(oc.id)}
+                        style={{ padding: '8px 16px', backgroundColor: '#8CB369', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0 }}
+                      >
+                        發送快照
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {viewingOCSnapshot && (
         <div className="oc-view-modal-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', zIndex: 10003, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', backgroundColor: 'transparent', position: 'relative', display: 'flex', flexDirection: 'column' }}>
