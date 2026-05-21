@@ -249,7 +249,7 @@ export function WishboardTab() {
                   {/* 轉洽談數 */}
                   <td style={{ ...tdStyle, textAlign: 'center', verticalAlign: 'middle' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '16px', fontWeight: 'bold', color: (item.chat_inquiry_count > 0 ? '#2563EB' : '#6B7280') }}>
-                      <MessageCircle size={16} style={{ color: (item.chat_inquiry_count > 0 ? '#3B82F6' : '#9CA3AF') }} /> {item.chat_inquiry_count || 0} 軌
+                      <MessageCircle size={16} style={{ color: (item.chat_inquiry_count > 0 ? '#3B82F6' : '#9CA3AF') }} /> {item.chat_inquiry_count || 0} 則
                     </div>
                   </td>
 
