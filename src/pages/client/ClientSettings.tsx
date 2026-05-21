@@ -123,7 +123,6 @@ export function ClientSettings() {
       )}
       
       <div className="settings-layout">
-        {/* 手機版導航 */}
         <div className="settings-mobile-nav">
           <button className="mobile-nav-trigger" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <span>目前查看：{menuItems.find(i => i.id === activeTab)?.label}</span>

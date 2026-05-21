@@ -13,7 +13,6 @@
   gap: 20px;
 }
 
-/* 電腦版側邊欄預設隱藏，靠 media query 顯示 */
 .settings-sidebar {
   display: none;
 }
@@ -445,8 +444,8 @@
     padding: 20px 16px;
     min-height: calc(100vh - 200px); 
     border-radius: 12px;
-    min-width: 0; /* 強制 flex 容器不被內容撐開 */
-    word-wrap: break-word; /* 讓長連結斷行 */
+    min-width: 0; 
+    word-wrap: break-word; 
   }
 
   .settings-header {
@@ -472,7 +471,7 @@
     padding: 24px;
   }
 
-  /* 處理社群連結突破邊界的核心樣式 */
+  
   .social-links-container, .tab-body {
     word-break: break-all;
     overflow-wrap: break-word;
@@ -480,13 +479,13 @@
   }
 }
 
-/* 修改這裡，確保側邊欄結構正確 */
+
 .settings-sidebar-wrapper {
   width: 100%;
 }
 
 .sidebar-title {
-  display: none; /* 手機版隱藏 */
+  display: none; 
   font-size: 24px;
   color: #5D4A3E;
   margin-bottom: 40px;
@@ -494,7 +493,7 @@
 }
 
 
-/* 補上這段，解決按鈕在電腦版樣式消失的問題 */
+
 .preview-profile-btn {
   display: flex;
   align-items: center;
@@ -513,7 +512,7 @@
 
 
 
-/* 確保升級按鈕樣式正確 */
+
 .upgrade-card-btn {
   display: block;
   width: 100%;
@@ -532,26 +531,26 @@
   background-color: #4A3A30;
 }
 
-/* 確保側邊欄容器寬度固定 */
+
 .settings-sidebar {
   min-width: 240px;
 }
 
 
-/* 修改這裡，確保側邊欄結構正確 */
+
 .settings-sidebar-wrapper {
   width: 100%;
 }
 
 .sidebar-title {
-  display: none; /* 手機版隱藏 */
+  display: none; 
   font-size: 24px;
   color: #5D4A3E;
   margin-bottom: 40px;
   font-weight: bold;
 }
 
-/* 補上這段，解決按鈕在電腦版樣式消失的問題 */
+
 .preview-profile-btn {
   display: flex;
   align-items: center;
@@ -570,7 +569,7 @@
   background-color: #F9F7F5; 
 }
 
-/* 確保升級按鈕樣式正確 */
+
 .upgrade-card-btn {
   display: block;
   width: 100%;
@@ -589,7 +588,7 @@
   background-color: #4A3A30;
 }
 
-/* 確保側邊欄容器寬度固定 */
+
 .settings-sidebar {
   min-width: 240px;
 }

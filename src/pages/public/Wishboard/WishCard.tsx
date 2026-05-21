@@ -219,7 +219,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
  const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation(); 
-    // 直接判斷 posterId 是否存在，移除 category === 'offer' 的限制
     if (posterId && posterId !== 'unknown') {
       navigate(`/${posterId}`); 
     }
