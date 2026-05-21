@@ -218,7 +218,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation(); 
-    if (bulletin.category === 'offer' && posterId !== 'unknown') {
+    if (posterId !== 'unknown') {
       navigate(`/${posterId}`); 
     }
   };
@@ -308,7 +308,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
           )}
 
           <div className="desktop-author-block">
-            <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: bulletin.category === 'offer' && posterId !== 'unknown' ? 'pointer' : 'default' }}>
+            <div className="desktop-author-avatar" onClick={handleProfileClick} style={{ cursor: posterId !== 'unknown' ? 'pointer' : 'default' }}>
               {posterAvatar ? (
                 <img src={getFullUrl(posterAvatar)} alt={posterName} referrerPolicy="no-referrer" />
               ) : (
@@ -351,7 +351,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               <div className="wish-card-author-wrapper mobile-author-block">
                 <User size={14} className="wish-card-author-icon" />
                 
-                {bulletin.category === 'offer' && posterId !== 'unknown' ? (
+                {posterId !== 'unknown' ? (
                   <div className="wish-card-author-link" onClick={handleProfileClick} title="前往繪師個人頁">
                     <span className="wish-card-author-name">{posterName}</span>
                     <span className="wish-card-author-id">@{posterId}</span>
