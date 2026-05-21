@@ -603,13 +603,21 @@ export const InquiryWorkspace: React.FC = () => {
                           </div>
                           
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            <div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
-                              {ocData.images && ocData.images.length > 0 ? (
-                                <img src={ocData.images[0].previewUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
-                              )}
-                            </div>
+<div style={{ width: '48px', height: '48px', borderRadius: '6px', backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : '#F4F0EB', overflow: 'hidden', flexShrink: 0 }}>
+  {(() => {
+    // 關鍵修正：確保對話歷史中發送的角色卡圖片也能對齊正確網域
+    let bubbleImgUrl = null;
+    if (ocData && ocData.images && ocData.images.length > 0) {
+      const rawUrl = ocData.images[0].previewUrl || ocData.images[0].url || '';
+      bubbleImgUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+    }
+    return bubbleImgUrl ? (
+      <img src={bubbleImgUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+    ) : (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} opacity={0.5} /></div>
+    );
+  })()}
+</div>
                             <div style={{ overflow: 'hidden' }}>
                               <div style={{ fontWeight: 'bold', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ocData.name || '未命名角色'}</div>
                               <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>{ocData.gender} {ocData.body_type}</div>
@@ -811,9 +819,21 @@ export const InquiryWorkspace: React.FC = () => {
                   {draft.oc_snapshot ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '6px', backgroundColor: '#F4F0EB', overflow: 'hidden', border: '1px solid #EAE6E1', flexShrink: 0 }}>
-                        {draft.oc_snapshot.images && draft.oc_snapshot.images.length > 0 ? (
-                          <img src={draft.oc_snapshot.images[0].previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : <ImageIcon size={16} style={{ margin: '12px auto', display: 'block', color: '#A0978D' }} />}
+{(() => {
+  // 關鍵修正：從小快照中取出預覽圖並補上 R2 網域
+  let snapshotImgUrl = null;
+  try {
+    const imgs = draft.oc_snapshot.images;
+    if (imgs && imgs.length > 0) {
+      const rawUrl = imgs[0].previewUrl || imgs[0].url || '';
+      snapshotImgUrl = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+    }
+  } catch(e){}
+
+  return snapshotImgUrl ? (
+    <img src={snapshotImgUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+  ) : <ImageIcon size={16} style={{ margin: '12px auto', display: 'block', color: '#A0978D' }} />;
+})()}
                       </div>
                       <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#332D28', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{draft.oc_snapshot.name}</div>
@@ -1026,7 +1046,14 @@ export const InquiryWorkspace: React.FC = () => {
                  ) : (
                    myOCs.map(oc => {
                      let firstImage = null;
-                     try { firstImage = JSON.parse(oc.images || '[]')[0]?.previewUrl; } catch(e){}
+                     try {
+    // 關鍵修正：將可能為字串的 oc.images 解析，並動態補上 R2 網域
+    const images = typeof oc.images === 'string' ? JSON.parse(oc.images || '[]') : (oc.images || []);
+    if (images.length > 0) {
+      const rawUrl = images[0].previewUrl || images[0].url || '';
+      firstImage = rawUrl.startsWith('http') ? rawUrl : `${R2_PUBLIC_URL}/${rawUrl.replace(/^\//, '')}`;
+    }
+  } catch(e) { console.error(e); }
 
                      return (
                        <div key={oc.id} className="oc-selection-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid #EAE6E1', borderRadius: '8px', backgroundColor: '#FFF' }}>
