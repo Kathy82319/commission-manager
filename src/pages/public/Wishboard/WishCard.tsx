@@ -545,28 +545,30 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <p className="description-text">{rawDescription}</p>
           </div>
 
-
-            {isMyOwnPost ? (
-              <button 
-                className="submit-post-btn full-width" 
-                onClick={handleRevokeClick}
-                disabled={isRevoking}
-                style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
-              >
-                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
-              </button>
-            ) : isQuotaFull ? (
-              <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
-            ) : hasApplied ? (
-              <button disabled className="btn-status-disabled">已投遞過此案件</button>
-            ) : isFull ? (
-              <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
-            ) : (
-              <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
-                {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
-              </button>
-            )}
-          </div>
+          {/* 動作按鈕區 */}
+// ✅ 修改後（還原成只有主功能按鈕）
+<div className="card-actions">
+  {isMyOwnPost ? (
+    <button 
+      className="submit-post-btn full-width" 
+      onClick={handleRevokeClick}
+      disabled={isRevoking}
+      style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
+    >
+      {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
+    </button>
+  ) : isQuotaFull ? (
+    <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
+  ) : hasApplied ? (
+    <button disabled className="btn-status-disabled">已投遞過此案件</button>
+  ) : isFull ? (
+    <button disabled className="btn-status-disabled" style={{ opacity: 0.9, cursor: 'not-allowed', color: '#78716c', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}>名額已滿</button>
+  ) : (
+    <button className="submit-post-btn full-width" onClick={() => onInquire(bulletin)}>
+      {bulletin.category === 'offer' ? '我想委託 (閱讀條款並填寫需求)' : '我有興趣 (發送提案卡)'}
+    </button>
+  )}
+</div>
         </div>
       </div>
 

@@ -109,18 +109,8 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }));
   };
 
-  // 解析目前綁定 OC 的名字
-  const getSelectedOCName = () => {
-    if (!form.oc_snapshot) return null;
-    try {
-      const parsed = JSON.parse(form.oc_snapshot);
-      return parsed?.name || '未命名角色';
-    } catch (e) {
-      return null;
-    }
-  };
 
-  const selectedOCName = getSelectedOCName();
+
 
   return (
     <div className="modal-overlay" style={{ zIndex: 10001 }}>
