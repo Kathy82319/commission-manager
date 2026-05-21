@@ -5,7 +5,7 @@ import { generateToken, sanitizeAndLimit } from "../utils/security";
 import { getUserById, createNewUser } from "../services/db";
 
 const SESSION_COOKIE_OPTIONS = "Path=/; Max-Age=2592000; SameSite=Lax; Secure; HttpOnly";
-const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=None; Secure; HttpOnly";
+const OAUTH_STATE_OPTIONS = "Path=/; Max-Age=300; SameSite=Lax; Secure; HttpOnly";
 
 export const authController = {
 
@@ -16,7 +16,6 @@ export const authController = {
         headers: corsHeaders 
       });
     }
-
 
     const requestUrl = new URL(request.url);
     const currentOrigin = requestUrl.origin;
@@ -72,7 +71,7 @@ export const authController = {
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code: code,
-          redirect_uri: dynamicRedirectUri, // 👈 關鍵：傳送動態自適應的回調網址
+          redirect_uri: dynamicRedirectUri,
           client_id: env.LINE_CHANNEL_ID,
           client_secret: env.LINE_CHANNEL_SECRET
         })
@@ -86,7 +85,6 @@ export const authController = {
       const tokenData: any = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // 拿 Token 換取使用者基本資料
       const profile = await getLineProfile(accessToken);
       const userId = profile.userId || 'unknown_id';
 
@@ -108,13 +106,12 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-
       const baseUrl = currentOrigin.replace(/\/$/, "");
       
       const responseHeaders = new Headers(corsHeaders);
       responseHeaders.set('Location', `${baseUrl}${targetPath}`);
       responseHeaders.append('Set-Cookie', `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`);
-      responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=None; Secure; HttpOnly`);
+      responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly`);
 
       return new Response(null, {
         status: 302,
