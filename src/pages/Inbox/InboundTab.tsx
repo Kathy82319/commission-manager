@@ -1,5 +1,5 @@
 // src/pages/Inbox/InboundTab.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { OfferList } from './OfferList';
 import { calculateDaysLeft, filterOldItems } from './utils/formatters';
 
@@ -31,6 +31,17 @@ export const InboundTab: React.FC<InboundTabProps> = ({
 }) => {
   const bulletin = clientBulletins[0];
 
+  // 管理當前被勾選的提案 ID 集合
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 當貼文切換（或者重新整理）時，清空上一次的勾選狀態，避免跨貼文殘留
+  useEffect(() => {
+    setSelectedIds(new Set());
+    if (setSelectedIdsForBatch) {
+      setSelectedIdsForBatch(new Set());
+    }
+  }, [bulletin?.id, setSelectedIdsForBatch]);
+
   if (!bulletin) {
     return null;
   }
@@ -41,6 +52,22 @@ export const InboundTab: React.FC<InboundTabProps> = ({
 
   // 判斷該許願貼文是否已經關閉/撤銷
   const isClosed = bulletin.status !== 'open';
+
+  // 接接子元件 OfferList 的勾選回調，與頂層狀態保持同步
+  const handleBatchSelectionChange = (newIds: Set<string>) => {
+    setSelectedIds(newIds);
+    if (setSelectedIdsForBatch) {
+      setSelectedIdsForBatch(newIds);
+    }
+  };
+
+  // 觸發批次婉拒的 Modal 彈窗
+  const triggerBatchDecline = () => {
+    if (selectedIds.size === 0) return;
+    // 這裡不需要額外傳入單一應徵單，因為 index.tsx 的 isBatchMode 是靠 batchDeclineIds.size > 0 來判定的
+    setSelectedInquiry(null); 
+    setShowDeclineModal(true);
+  };
 
   return (
     <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.2s ease', boxSizing: 'border-box' }}>
@@ -56,6 +83,29 @@ export const InboundTab: React.FC<InboundTabProps> = ({
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* 動態批次功能按鈕：只有當使用者有勾選卡片時才顯示 */}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={triggerBatchDecline}
+              style={{
+                padding: '8px 16px',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                color: '#FFFFFF',
+                backgroundColor: '#EF4444',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#DC2626')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#EF4444')}
+            >
+              🤝 批次禮貌婉拒 ({selectedIds.size} 筆)
+            </button>
+          )}
+
           <span style={{ 
             fontSize: '13px', 
             fontWeight: 'bold', 
@@ -68,15 +118,33 @@ export const InboundTab: React.FC<InboundTabProps> = ({
             {isClosed ? '🗄️ 已結束' : `⏳ ${calculateDaysLeft(bulletin.expires_at)}`}
           </span>
           
-          {/* 當貼文還在 open 狀態時，才顯示撤銷按鈕 */}
+          {/* 當貼文還在 open 狀態時，才顯示「關閉許願」按鈕 */}
           {!isClosed && (
             <button 
               onClick={() => handleCancelBulletin && handleCancelBulletin(bulletin.id)}
-              style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 'bold', color: '#EF4444', backgroundColor: '#FFFFFF', border: '1px solid #FECACA', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+              style={{ 
+                padding: '8px 16px', 
+                fontSize: '13px', 
+                fontWeight: 'bold', 
+                color: '#7A7269', 
+                backgroundColor: '#FFFFFF', 
+                border: '1px solid #DED9D3', 
+                borderRadius: '8px', 
+                cursor: 'pointer', 
+                transition: 'all 0.2s' 
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#F4F4F1';
+                e.currentTarget.style.color = '#EF4444';
+                e.currentTarget.style.borderColor = '#FECACA';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.color = '#7A7269';
+                e.currentTarget.style.borderColor = '#DED9D3';
+              }}
             >
-              🛑 撤銷許願
+              🔒 關閉許願
             </button>
           )}
         </div>
@@ -98,7 +166,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
           handleDirectInvite={handleDirectInvite}
           handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
           handleViewCommission={handleViewCommission}
-          setSelectedIdsForBatch={setSelectedIdsForBatch}
+          setSelectedIdsForBatch={handleBatchSelectionChange}
           blacklistedIds={blacklistedIds}
         />
       )}

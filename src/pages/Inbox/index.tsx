@@ -106,7 +106,7 @@ export const Inbox: React.FC = () => {
 
   useEffect(() => { fetchInbox(); }, []);
 
-useEffect(() => {
+  useEffect(() => {
     const typeParam = searchParams.get('type');
     const idParam = searchParams.get('id');
     
@@ -229,7 +229,6 @@ useEffect(() => {
   return (
     <div className="inbox-layout">
       
-      
       {showMobileSidebar && (
         <div 
           style={{ 
@@ -240,7 +239,6 @@ useEffect(() => {
         />
       )}
 
-      
       <div 
         className={`inbox-master-sidebar custom-scrollbar ${showMobileSidebar ? 'open' : ''}`}
         style={showMobileSidebar ? { transform: 'translateX(0)', width: '85vw', maxWidth: '320px', zIndex: 999 } : {}}
@@ -261,8 +259,6 @@ useEffect(() => {
           </div>
         </div>
 
-        
-        
         <div className="inbox-filter-container">
           <div className="filter-toggle-box">
             <button className={`filter-tab-btn ${!showArchived ? 'active' : ''}`} onClick={() => setShowArchived(false)}>
@@ -285,11 +281,21 @@ useEffect(() => {
             displayBulletins.length > 0 ? displayBulletins.map(b => {
               const isSelected = selectedItem?.type === 'bulletin' && selectedItem?.id === b.id;
               const inqCount = clientInquiries.filter(i => i.bulletin_id === b.id && i.inquiry_status === 'pending').length;
+              
+              // 修正邏輯：動態交叉比對當前時間，確認是否已過期
+              const isExpired = b.expires_at ? new Date(b.expires_at) < new Date() : false;
+              let statusLabel = b.status === 'open' ? '發布中' : '已關閉';
+              if (b.status === 'open' && isExpired) {
+                statusLabel = '已過期';
+              }
+
               return (
                 <div key={b.id} className={`mini-card ${isSelected ? 'active' : ''}`} onClick={() => handleSelectItem('bulletin', b.id)}>
                   <div className="mini-card-meta">
                     <span>{formatShortTime(b.created_at)}</span>
-                    <span className="mini-badge bulletin">{b.status === 'open' ? '發布中' : '已關閉'}</span>
+                    <span className={`mini-badge bulletin ${statusLabel === '已過期' ? 'expired' : ''}`} style={statusLabel === '已過期' ? { backgroundColor: '#FEE2E2', color: '#EF4444', borderColor: '#FCA5A5' } : {}}>
+                      {statusLabel}
+                    </span>
                   </div>
                   <div className="mini-card-title">📌 {b.title || '未命名貼文'}</div>
                   <div className="mini-card-subtitle" style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -324,7 +330,7 @@ useEffect(() => {
                   <div className="mini-card-subtitle">項目：{inq.showcase_title || '未命名'}</div>
                 </div>
               );
-            }) : <div className="mini-card-empty">目前沒有相關紀錄</div>
+            }) : <div className="mini-card-empty">目​​前沒有相關紀錄</div>
           )}
         </div>
 
@@ -431,7 +437,6 @@ useEffect(() => {
         </div>
       </div>
 
-      
       {showRulesModal && (
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
            <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
