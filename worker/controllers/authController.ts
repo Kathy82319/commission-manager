@@ -17,15 +17,13 @@ export const authController = {
       });
     }
 
-    // 💡 修正一：全動態自適應。看使用者是從 arti7.net 還是 .pages.dev 點擊登入
-    // 直接動態抓取當前域名，拼接成對應該網域的專屬回調路徑
+
     const requestUrl = new URL(request.url);
     const currentOrigin = requestUrl.origin;
     const dynamicRedirectUri = `${currentOrigin}/api/auth/line/callback`;
     
     const state = crypto.randomUUID();
     
-    // 💡 修正二：繞過寫死的環境變數，直接在前端請求時動態生成標準的 LINE 官方授權跳轉 URL
     const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${env.LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(dynamicRedirectUri)}&state=${state}&scope=profile%20openid`;
     
     return new Response(null, {
@@ -61,7 +59,6 @@ export const authController = {
     }
 
     try {
-      // 💡 修正三：當 LINE 授權完跳回來時，動態計算當前所在的 Callback 網域起源
       const currentOrigin = url.origin;
       const dynamicRedirectUri = `${currentOrigin}/api/auth/line/callback`;
 
@@ -69,8 +66,6 @@ export const authController = {
         throw new Error("環境變數 LINE_CHANNEL_ID 或 LINE_CHANNEL_SECRET 未設定");
       }
 
-      // 💡 修正四：直接在原地以合規的動態變數發起 POST，向 LINE 伺服器交換 Token。
-      // 舊網域進來就帶舊網域的 URI，新網域進來就帶新網域的 URI，百分之百對齊 LINE 官方審查機制
       const tokenResponse = await fetch("https://api.line.me/oauth2/v2.1/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -113,8 +108,7 @@ export const authController = {
         targetPath = user.role === 'pending' ? "/onboarding" : "/portal";
       }
 
-      // 💡 修正五：登入完畢後的跳轉重導向，直接留在當前被喚醒的網域 (baseUrl = currentOrigin)
-      // 這能確保舊網域登入的人完完整整待在舊網域，新網域登入的人順暢待在新網域，不發生任何跨域 Cookie 丟失
+
       const baseUrl = currentOrigin.replace(/\/$/, "");
       
       const responseHeaders = new Headers(corsHeaders);
