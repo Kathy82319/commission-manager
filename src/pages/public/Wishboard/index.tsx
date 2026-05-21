@@ -11,6 +11,7 @@ import { FilterBar } from './FilterBar';
 import { RequestModal } from './PostModals/RequestModal';
 import { OfferModal } from './PostModals/OfferModal';
 import { InquireModal } from './InquireModals'; 
+import { OCDetailCard } from '../../../components/OC/OCDetailCard'; // 新增：引入角色卡完整設定組件
 
 export const Wishboard: React.FC = () => {
   const navigate = useNavigate();
@@ -41,10 +42,13 @@ export const Wishboard: React.FC = () => {
     request_inquire_used: number, request_inquire_max: number 
   } | null>(null);
 
+  // 新增：控管檢視 OC 快照彈窗的全局狀態
+  const [viewingOCSnapshot, setViewingOCSnapshot] = useState<any | null>(null);
+
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
     budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', 
-    ref_image: '' 
+    ref_image: '', oc_snapshot: null // 新增：表單初始化變數
   };
   const [requestForm, setRequestForm] = useState(initialRequestForm);
 
@@ -287,6 +291,11 @@ export const Wishboard: React.FC = () => {
     }
   };
 
+  // 新增：提供給 WishCard 呼叫，用來點擊打開特定 OC 快照的處理函式
+  const handleViewOCSnapshot = (snapshotData: any) => {
+    setViewingOCSnapshot(snapshotData);
+  };
+
   return (
     <div className="wishboard-page">
       {toast && (
@@ -343,7 +352,8 @@ export const Wishboard: React.FC = () => {
         ) : (
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
-            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} />)
+            // 新增傳入：onViewOC={handleViewOCSnapshot}
+            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} />)
         )}
       </main>
 
@@ -353,7 +363,7 @@ export const Wishboard: React.FC = () => {
       </button>
 
       {showRulesModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, Slate, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -367,7 +377,7 @@ export const Wishboard: React.FC = () => {
             <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
-                為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿或販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
+                為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿 or 販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
@@ -449,6 +459,7 @@ export const Wishboard: React.FC = () => {
       {showInquireModal && (
         <InquireModal 
           selectedBulletin={selectedBulletin} 
+          withOC={true}
           inquireDraft={inquireDraft} 
           setInquireDraft={setInquireDraft} 
           inquireTagInputs={inquireTagInputs} 
@@ -458,6 +469,24 @@ export const Wishboard: React.FC = () => {
           onSubmit={handleInquireSubmit} 
           onImageUpload={handleInquireImageUpload} 
         />
+      )}
+
+      {/* 新增彈窗：檢視 OC 設定卡內容 Lightbox 彈窗 */}
+      {viewingOCSnapshot && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)', zIndex: 10005, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <button
+              onClick={() => setViewingOCSnapshot(null)}
+              style={{ position: 'absolute', top: '-42px', right: 0, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 'bold', padding: '8px 16px', borderRadius: '20px', zIndex: 10006 }}
+            >
+              關閉 <X size={18} />
+            </button>
+            <div style={{ overflowY: 'auto', borderRadius: '16px', backgroundColor: '#FDFDFB', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+              {/* 直接復用您專案現有的角色設定卡卡片 */}
+              <OCDetailCard ocData={viewingOCSnapshot} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

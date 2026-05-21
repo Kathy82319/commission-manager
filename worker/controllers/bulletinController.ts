@@ -69,7 +69,7 @@ export const bulletinController = {
       ).bind(currentUserId).first() as any;
       
       if (!user) {
-         return new Response(JSON.stringify({ success: false, message: '找不到使用者資訊' }), { status: 404, headers: corsHeaders });
+        return new Response(JSON.stringify({ success: false, message: '找不到使用者資訊' }), { status: 404, headers: corsHeaders });
       }
 
       if (user.wishboard_status === 'banned') {
@@ -97,7 +97,8 @@ export const bulletinController = {
         title, content, tags, payment_methods, budget_min, budget_max, 
         schedule_type, specific_date, ref_image_key, 
         max_slots, selection_type, commission_items, questions, 
-        payment_timing, payment_timing_detail, tos_content
+        payment_timing, payment_timing_detail, tos_content,
+        oc_snapshot // 新增：接收前端傳過來的角色卡快照字串
       } = body;
 
       if (!title || !content) {
@@ -162,14 +163,17 @@ export const bulletinController = {
       const safeContentObj = sanitizeObject(rawContentObj, 5000);
       const finalContentStr = JSON.stringify(safeContentObj);
 
+      // 安全過濾角色設定快照字串
+      const safeOcSnapshot = oc_snapshot ? String(oc_snapshot) : null;
+
       const id = crypto.randomUUID();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
 
       await env.commission_db.prepare(
-        `INSERT INTO Bulletins (id, client_id, title, content, tags, payment_methods, budget_min, budget_max, schedule_type, specific_date, ref_image_key, category, expires_at, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`
-      ).bind(id, currentUserId, safeTitle, finalContentStr, safeTags, safePayments, bMin, bMax, schedule_type || 'flexible', specific_date || null, ref_image_key || null, currentCategory, expiresAt.toISOString()).run();
+        `INSERT INTO Bulletins (id, client_id, title, content, tags, payment_methods, budget_min, budget_max, schedule_type, specific_date, ref_image_key, category, expires_at, status, oc_snapshot)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
+      ).bind(id, currentUserId, safeTitle, finalContentStr, safeTags, safePayments, bMin, bMax, schedule_type || 'flexible', specific_date || null, ref_image_key || null, currentCategory, expiresAt.toISOString(), safeOcSnapshot).run();
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
     } catch (error: any) {
@@ -550,10 +554,9 @@ export const bulletinController = {
         "SELECT id FROM Reports WHERE bulletin_id = ? AND reporter_id = ?"
       ).bind(targetId, currentUserId).all();
 
-      if (existingReport.length > 0) {
-        return new Response(JSON.stringify({ error: "您已經檢舉過此貼文，系統已記錄。" }), { status: 400, headers: corsHeaders });
-      }
-
+if (existingReport.length > 0) {
+  return new Response(JSON.stringify({ error: "您已經檢舉過此貼文，系統已記錄。" }), { status: 400, headers: corsHeaders });
+}
       await env.commission_db.prepare(`
         INSERT INTO Reports (bulletin_id, reporter_id, reporter_role, reason)
         VALUES (?, ?, ?, ?)

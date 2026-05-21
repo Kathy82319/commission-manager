@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, DollarSign, Tag, Clock, Send, User, 
   ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, 
-  Maximize2, X, Users, Heart, Flag 
+  Maximize2, X, Users, Heart, Flag, BookUser 
 } from 'lucide-react';
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL, PAYMENT_TIMING } from './constants';
 
@@ -17,6 +17,7 @@ interface WishCardProps {
     offer_used: number, offer_max: number, 
     request_inquire_used: number, request_inquire_max: number 
   } | null;
+  onViewOC?: (snapshotData: any) => void; // 修正：補上對齊大廳大腦的屬性宣告
 }
 
 const unescapeHtml = (str: string) => {
@@ -24,7 +25,7 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota }) => {
+export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota, onViewOC }) => {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -234,6 +235,17 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       setLightboxIdx(prev => (prev === 0 ? validImages.length - 1 : prev - 1));
     } else {
       setLightboxIdx(prev => (prev === validImages.length - 1 ? 0 : prev + 1));
+    }
+  };
+
+  // 處理點擊檢視角色卡按鈕邏輯
+  const handleViewOCClick = () => {
+    if (!bulletin.oc_snapshot || !onViewOC) return;
+    try {
+      const parsedSnapshot = JSON.parse(bulletin.oc_snapshot);
+      onViewOC(parsedSnapshot);
+    } catch (e) {
+      alert("角色設定卡快照資料解析失敗");
     }
   };
 
@@ -507,7 +519,20 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
             <p className="description-text">{rawDescription}</p>
           </div>
 
-          <div className="card-actions">
+          {/* 動作按鈕區 */}
+          <div className="card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 新增：如果此徵委託含有 OC 設定卡快照，渲染一個精緻的點擊查看按鈕 */}
+            {bulletin.oc_snapshot && (
+              <button 
+                type="button"
+                className="submit-post-btn full-width" 
+                onClick={handleViewOCClick}
+                style={{ backgroundColor: '#FDF4E6', border: '1px solid #FDE0B5', color: '#A67B3E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <BookUser size={16} /> 查看綁定的角色設定卡 (OC)
+              </button>
+            )}
+
             {isMyOwnPost ? (
               <button 
                 className="submit-post-btn full-width" 
@@ -515,7 +540,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 disabled={isRevoking}
                 style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
               >
-                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
+                {isRevoking ? '撤銷中...' : '撤銷發佈的慢許願'}
               </button>
             ) : isQuotaFull ? (
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>

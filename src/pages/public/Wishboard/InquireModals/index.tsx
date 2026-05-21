@@ -1,3 +1,4 @@
+// src/pages/public/Wishboard/InquireModals/index.tsx
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { ImageUploader } from '../../../../components/ImageUploader';
@@ -13,6 +14,7 @@ interface InquireModalProps {
   onClose: () => void;
   onSubmit: () => void;
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
+  withOC?: boolean; // 修正：補上對齊大廳大腦傳入的屬性宣告
 }
 
 const unescapeHtml = (str: string) => {
@@ -28,7 +30,7 @@ const getFullUrl = (url: string) => {
 
 export const InquireModal: React.FC<InquireModalProps> = ({
   selectedBulletin, inquireDraft, setInquireDraft, inquireTagInputs, setInquireTagInputs,
-  inquireUploading, onClose, onSubmit, onImageUpload
+  inquireUploading, onClose, onSubmit, onImageUpload, 
 }) => {
   if (!selectedBulletin) return null;
 
@@ -135,7 +137,6 @@ export const InquireModal: React.FC<InquireModalProps> = ({
               : '與其丟文字履歷，不如直接給委託人看您的作品！'}
           </p>
 
-          
           {isFull && (
             <div style={{ padding: '12px', background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#B91C1C', borderRadius: '8px', marginBottom: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertTriangle size={18} /> 此接委託名額已額滿，您目前無法送出表單。
@@ -213,7 +214,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                 <div className="form-group">
                   <label style={{ color: '#ff8c00' }}>您的舒適圈 / 擅長題材</label>
                   <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                    {inquireDraft.specialties.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
+                    {(inquireDraft.specialties || '').split(' ').filter((t: string) => t).map((tag: string, i: number) => (
                       <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff5eb', color: '#ff8c00', borderColor: '#ffd2a6' }}>
                         {tag} <X size={12} onClick={() => handleTagRemove('specialties', tag)} style={{ cursor: 'pointer' }} />
                       </span>
@@ -239,7 +240,7 @@ export const InquireModal: React.FC<InquireModalProps> = ({
                 <div className="form-group">
                   <label style={{ color: '#e11d48' }}>不擅長 / 雷點</label>
                   <div className="tag-selector" style={{ background: 'white', padding: '8px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                    {inquireDraft.no_gos.split(' ').filter((t: string) => t).map((tag: string, i: number) => (
+                    {(inquireDraft.no_gos || '').split(' ').filter((t: string) => t).map((tag: string, i: number) => (
                       <span key={i} className="selectable-tag custom-tag" style={{ background: '#fff1f2', color: '#e11d48', borderColor: '#fecdd3' }}>
                         {tag} <X size={12} onClick={() => handleTagRemove('no_gos', tag)} style={{ cursor: 'pointer' }} />
                       </span>
