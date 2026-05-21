@@ -37,7 +37,6 @@ export default {
       return env.ASSETS.fetch(request);
     }
     
-    // 💡 關鍵修正：還原明確的商業白名單陣列，確保 OAuth 跳轉時 Cookie 不會被瀏覽器沒收
     const allowedOrigins = [
       env.FRONTEND_URL, 
       "http://localhost:5173", 
@@ -46,9 +45,7 @@ export default {
       "https://arti7.net",
       "https://www.arti7.net"
     ];
-    
-    // 確保當 requestOrigin 為空字串時，穩定退回正確的前端主網域，而不是空字串
-    const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : (env.FRONTEND_URL || "https://arti7.net");
+    const safeOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : env.FRONTEND_URL || "";
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": safeOrigin, 

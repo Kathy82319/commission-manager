@@ -7,7 +7,6 @@
     <title>Arti 繪師委託管理系統</title>
 
     <script>
-      // 保留安全的大掃除功能，確保舊快取被註銷
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           let hasUnregistered = false;
@@ -24,8 +23,11 @@
         });
       }
 
-      // 💡 物理移除 window.addEventListener('error') 的重整監聽器
-      // 這樣可以徹底阻止火狐與蘋果手機陷入無限重整（F5）死循環
+      window.addEventListener('error', function(e) {
+        if (e.message && (e.message.includes('FetchEvent') || e.message.includes('redirect mode'))) {
+          window.location.reload(true);
+        }
+      }, true);
     </script>
   </head>
   <body>
