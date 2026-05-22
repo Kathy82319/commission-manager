@@ -1,706 +1,548 @@
-import React, { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
-import { ImageUploader } from './ImageUploader';
-import DOMPurify from 'dompurify';
+import React, { useState } from 'react';
+import { X, Plus, Trash2, HelpCircle, Download, Save, Image as ImageIcon } from 'lucide-react';
 
-const customQuillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }], 
-    [{ 'size': ['small', false, 'large', 'huge'] }], 
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'], 
-    [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], 
-    ['link', 'clean'] 
-  ]
-};
+// 若專案無 @/ 路徑配置，請將此行改為相對路徑（例如：'../components/ImageUploader'）
+// @ts-ignore
+import ImageUploader from '@/components/ImageUploader';
 
-export interface FormFieldSchema {
-  id: string;
-  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
-  label: string;
-  required: boolean;
-  options?: string[]; 
-}
+// 宣告 process 避免 TypeScript 報錯 (找不到名稱 process)
+declare var process: any;
 
-export interface ShowcaseItem {
-  id?: string;
-  title: string;
-  cover_url: string;
-  price_info: string;
-  tags: string[]; 
-  description: string;
-  is_active: number;
-  form_schema?: string;
-  allow_guest: number;
-  max_orders: number;
-  show_quota: number;
-  tos_content: string;
-  current_orders_count?: number; 
-}
+// 靜態常數定義
+const PAYMENT_TIMING = [
+  { value: 'front_full', label: '全額前付' },
+  { value: 'back_full', label: '完稿後付' },
+  { value: 'deposit', label: '階段式收取訂金/尾款' },
+  { value: 'other', label: '其他 (請於下方說明)' }
+];
+
+const PAY_TAGS = ['銀行轉帳', '匯款', '綠界科技', 'PayPal', 'LINE Pay', '皆可配合'];
+const STYLE_WARNINGS = ['流血/暴力', 'R18/純愛', 'R18G/獵奇', '老人/肌肉/福瑞', '爭議政治話題', '全齡向'];
+const LICENSE_TAGS = ['買斷/商業非獨佔', '僅限非商業用途', '允許二次改作', '禁止二次改作', '需標註原作者出處'];
+const REQ_TAGS = ['純文字通靈', '精細設定圖', '部分草圖即可', '只接大頭貼', '只接立繪', '排單制', '急件可議'];
 
 interface ShowcaseFormBuilderProps {
-  initialItem: ShowcaseItem;
+  form: any;
+  setForm: React.Dispatch<React.SetStateAction<any>>;
+  onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
-  onSaveSuccess: () => void;
-  onRefreshList: () => void;
-  onToast: (msg: string, type: 'ok' | 'err') => void;
-  apiBase: string;
-  isReadOnly?: boolean;
+  userShowcase?: any[];
+  onSaveDraft: () => void;
+  onLoadDraft: () => void;
 }
 
-export function ShowcaseFormBuilder({
-  initialItem,
+export default function ShowcaseFormBuilder({
+  form,
+  setForm,
+  onSubmit,
   onClose,
-  onSaveSuccess,
-  onRefreshList,
-  onToast,
-  apiBase,
-  isReadOnly
+  userShowcase = [],
+  onSaveDraft,
+  onLoadDraft
 }: ShowcaseFormBuilderProps) {
-  const [viewMode, setViewMode] = useState<'basic' | 'form'>('basic');
-  const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
-
-  const [editingItem, setEditingItem] = useState<ShowcaseItem>(initialItem);
-  const [formFields, setFormFields] = useState<FormFieldSchema[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  
+  // 內部 UI 互動狀態
   const [isUploading, setIsUploading] = useState(false);
+  const [showPortfolioPicker, setShowPortfolioPicker] = useState(false);
+  const [showMechanismInfo, setShowMechanismInfo] = useState(false);
+  const [itemInput, setItemInput] = useState({ name: '', price: '' });
+  
+  // 自定義標籤輸入暫存
+  const [customPaymentInput, setCustomPaymentInput] = useState('');
+  const [customWarningInput, setCustomWarningInput] = useState('');
+  const [customLicenseInput, setCustomLicenseInput] = useState('');
+  const [customTagInput, setCustomTagInput] = useState('');
 
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  // 輔助函式：處理圖片網址開頭
+  const getFullUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `${process.env.NEXT_PUBLIC_API_URL || ''}${url}`;
+  };
 
-  useEffect(() => {
-    try {
-      const parsed = initialItem.form_schema ? JSON.parse(initialItem.form_schema) : [];
-      setFormFields(parsed);
-      if (parsed.length > 0) setActiveFieldId(parsed[0].id);
-    } catch (e) { 
-      setFormFields([]); 
-    }
-  }, [initialItem]);
-
-  const handleCoverUpload = async (resultBlobs: { preview: Blob }) => {
-    if (isReadOnly) return; 
+  // 1. 圖片上傳回呼
+  const onImageUpload = (url: string) => {
     setIsUploading(true);
-    try {
-      const fileType = resultBlobs.preview.type || 'image/jpeg';
-      const fileExt = fileType.split('/')[1] || 'jpg';
-      const ticketRes = await fetch(`${apiBase}/api/r2/upload-url`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `cover.${fileExt}`, folder: 'showcase' }) 
-      });
-      const ticketData = await ticketRes.json();
-      if (!ticketData.success) throw new Error(ticketData.error || "無法取得通行證");
-      
-      const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
-
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
-      setEditingItem(prev => ({ ...prev, cover_url: finalUrl }));
-    } catch (err: any) {
-      onToast(err.message || "封面圖上傳失敗", "err");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleAddTag = () => {
-    const trimmed = tagInput.trim();
-    if (!trimmed) return;
-    if (editingItem.tags.includes(trimmed)) { onToast("此標籤已存在", "err"); return; }
-    if (editingItem.tags.length >= 5) { onToast("最多只能設定 5 個標籤", "err"); return; }
-    setEditingItem(prev => ({ ...prev, tags: [...prev.tags, trimmed] }));
-    setTagInput('');
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setEditingItem(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
-  };
-
-  const handleImportGlobalTOS = async () => {
-    try {
-      const res = await fetch(`${apiBase}/api/users/me`, { credentials: 'include' });
-      const data = await res.json();
-      if (data.success && data.data?.profile_settings) {
-        const settings = typeof data.data.profile_settings === 'string' ? JSON.parse(data.data.profile_settings) : data.data.profile_settings;
-        const globalTOS = settings.rules || settings.terms_of_service || '';
-        if (globalTOS) {
-          setEditingItem(prev => ({ ...prev, tos_content: globalTOS }));
-          onToast("✅ 已成功帶入全域協議書", "ok");
-        } else {
-          onToast("您尚未在「內容管理 > 協議書範本」中設定內容", "err");
-        }
+    setForm((prev: any) => {
+      const currentImages = prev.ref_images || [];
+      if (currentImages.length >= 5) {
+        alert("最多只能上傳 5 張作品範例圖片喔！");
+        setIsUploading(false);
+        return prev;
       }
-    } catch (e) {
-      onToast("帶入失敗，請檢查網路連線", "err");
-    }
+      setIsUploading(false);
+      return {
+        ...prev,
+        ref_images: [...currentImages, url]
+      };
+    });
   };
 
-  const handleResetOrdersCount = async () => {
-    if (!editingItem.id) return onToast("請先儲存項目後再重置", "err");
-    if (!window.confirm("確定要重新計算接單數量嗎？(不影響筆記本中的既有訂單)")) return;
-    try {
-      await fetch(`${apiBase}/api/showcase/${editingItem.id}/reset-orders`, { method: 'POST', credentials: 'include' });
-      setEditingItem(prev => ({ ...prev, current_orders_count: 0 }));
-      onToast("已重新計算接單數量", "ok");
-      onRefreshList();
-    } catch (e) {
-      onToast("重置失敗", "err");
-    }
+  // 2. 移除指定圖片
+  const removeImage = (indexToRemove: number) => {
+    setForm((prev: any) => ({
+      ...prev,
+      ref_images: (prev.ref_images || []).filter((_: any, idx: number) => idx !== indexToRemove)
+    }));
   };
 
-  const handleSaveItem = async () => {
-    if (!editingItem.title || !editingItem.cover_url) {
-      onToast("請填寫品名並上傳封面圖", "err"); return;
-    }
-    if (formFields.some(f => !f.label.trim())) {
-      onToast("客製化表單有未命名的問題，請檢查", "err"); 
-      setViewMode('form'); 
+  // 3. 作品集快速切換 勾選/取消
+  const togglePortfolioImage = (url: string) => {
+    setForm((prev: any) => {
+      const currentImages = prev.ref_images || [];
+      if (currentImages.includes(url)) {
+        return {
+          ...prev,
+          ref_images: currentImages.filter((img: string) => img !== url)
+        };
+      } else {
+        if (currentImages.length >= 5) {
+          alert("最多只能選擇 5 張作品範例圖片喔！");
+          return prev;
+        }
+        return {
+          ...prev,
+          ref_images: [...currentImages, url]
+        };
+      }
+    });
+  };
+
+  // 4. 接案項目管理
+  const addCommissionItem = () => {
+    if (!itemInput.name || !itemInput.price) {
+      alert("請輸入項目名稱與底價");
       return;
     }
+    const newItem = { name: itemInput.name, price: Number(itemInput.price) };
+    setForm((prev: any) => ({
+      ...prev,
+      commission_items: [...(prev.commission_items || []), newItem]
+    }));
+    setItemInput({ name: '', price: '' });
+  };
 
-    const url = editingItem.id ? `${apiBase}/api/showcase/${editingItem.id}` : `${apiBase}/api/showcase`;
-    const method = editingItem.id ? 'PATCH' : 'POST';
+  const removeCommissionItem = (indexToRemove: number) => {
+    setForm((prev: any) => ({
+      ...prev,
+      commission_items: (prev.commission_items || []).filter((_: any, idx: number) => idx !== indexToRemove)
+    }));
+  };
 
-    const payload = {
-      ...editingItem,
-      tags: JSON.stringify(editingItem.tags),
-      form_schema: JSON.stringify(formFields)
-    };
+  // 5. 提問模板管理
+  const addQuestion = () => {
+    const currentQs = form.questions || [];
+    if (currentQs.length >= 3) return;
+    setForm((prev: any) => ({
+      ...prev,
+      questions: [...currentQs, '']
+    }));
+  };
 
-    try {
-      const res = await fetch(url, {
-        method, credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
-      });
-      const data = await res.json();
-      if (data.success) {
-        onToast("項目儲存成功", "ok");
-        onSaveSuccess();
+  const updateQuestion = (index: number, val: string) => {
+    setForm((prev: any) => {
+      const updated = [...(prev.questions || [])];
+      updated[index] = val;
+      return { ...prev, questions: updated };
+    });
+  };
+
+  const removeQuestion = (indexToRemove: number) => {
+    setForm((prev: any) => ({
+      ...prev,
+      questions: (prev.questions || []).filter((_: any, idx: number) => idx !== indexToRemove)
+    }));
+  };
+
+  // 6. 標籤多選管理（含自定義群組）
+  const toggleTag = (tag: string, field: 'tags' | 'payment_methods') => {
+    setForm((prev: any) => {
+      const currentArr = prev[field] || [];
+      if (currentArr.includes(tag)) {
+        return { ...prev, [field]: currentArr.filter((t: string) => t !== tag) };
       } else {
-        onToast(data.error || "儲存失敗", "err");
+        return { ...prev, [field]: [...currentArr, tag] };
       }
-    } catch (error) { 
-      onToast("系統連線發生錯誤", "err"); 
-    }
+    });
   };
 
-  const addFormField = (type: FormFieldSchema['type']) => {
-    if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
-    const newField: FormFieldSchema = {
-      id: `field_${Date.now()}`, type, label: '', required: false,
-      options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined
-    };
-    setFormFields([...formFields, newField]);
-    setActiveFieldId(newField.id); 
-  };
-
-  const updateFormField = (id: string, updates: Partial<FormFieldSchema>) => {
-    setFormFields(formFields.map(f => f.id === id ? { ...f, ...updates } : f));
-  };
-
-  const removeFormField = (id: string) => {
-    setFormFields(formFields.filter(f => f.id !== id));
-    if (activeFieldId === id) setActiveFieldId(null);
-  };
-
-  const addOption = (fieldId: string) => {
-    setFormFields(formFields.map(f => {
-      if (f.id === fieldId) {
-        const currentOptions = f.options || [];
-        return { ...f, options: [...currentOptions, `選項 ${currentOptions.length + 1}`] };
-      }
-      return f;
+  const removeTag = (tag: string, field: 'tags' | 'payment_methods') => {
+    setForm((prev: any) => ({
+      ...prev,
+      [field]: (prev[field] || []).filter((t: string) => t !== tag)
     }));
   };
 
-  const updateOption = (fieldId: string, index: number, newValue: string) => {
-    setFormFields(formFields.map(f => {
-      if (f.id === fieldId && f.options) {
-        const newOpts = [...f.options];
-        newOpts[index] = newValue;
-        return { ...f, options: newOpts };
-      }
-      return f;
-    }));
-  };
-
-  const removeOption = (fieldId: string, index: number) => {
-    setFormFields(formFields.map(f => {
-      if (f.id === fieldId && f.options) {
-        const newOpts = f.options.filter((_, i) => i !== index);
-        return { ...f, options: newOpts.length ? newOpts : ['選項 1'] }; 
-      }
-      return f;
-    }));
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIdx(index);
-    e.dataTransfer.effectAllowed = 'move';
-    if (e.dataTransfer.setDragImage) {
-      e.dataTransfer.setDragImage(e.currentTarget as Element, 20, 20);
-    }
-  };
-
-  const handleDragEnter = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (index !== dragOverIdx) {
-      setDragOverIdx(index);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
-    setDragOverIdx(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIdx: number) => {
-    e.preventDefault();
-    if (draggedIdx === null || draggedIdx === dropIdx) return;
+  const handleTagInput = (value: string, setter: (v: string) => void, field: 'tags' | 'payment_methods', prefix = '') => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const finalTag = prefix ? `${prefix}${trimmed}` : trimmed;
     
-    const newFields = [...formFields];
-    const [draggedItem] = newFields.splice(draggedIdx, 1);
-    newFields.splice(dropIdx, 0, draggedItem);
-    
-    setFormFields(newFields);
-    setDraggedIdx(null);
-    setDragOverIdx(null);
+    setForm((prev: any) => {
+      const currentArr = prev[field] || [];
+      if (currentArr.includes(finalTag)) return prev;
+      return { ...prev, [field]: [...currentArr, finalTag] };
+    });
+    setter('');
   };
 
-  const hasContactField = formFields.some(f => /聯絡|信箱|email|ig|line|社群|twitter|x/i.test(f.label));
-  const showGuestWarning = editingItem.allow_guest === 1 && !hasContactField && formFields.length > 0;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, value: string, setter: (v: string) => void, field: 'tags' | 'payment_methods', prefix = '') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTagInput(value, setter, field, prefix);
+    }
+  };
 
   return (
-    <>
-      
-      <style>{`
-        .basic-card { padding: 30px; }
-        .basic-action-group { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 24px; margin-top: 8px; }
-        .btn-cancel { padding: 12px 24px; background: #FAFAFA; color: #7A7269; border: 1px solid #DED9D3; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
-        .btn-submit { padding: 12px 32px; background: #5D4A3E; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 4px 12px rgba(93, 74, 62, 0.2); }
-
-        .fb-header { padding: 16px 24px; background: #FFFFFF; border-bottom: 1px solid #EAE6E1; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
-        .fb-header-left { display: flex; align-items: center; gap: 16px; }
-        .fb-header-left h2 { margin: 0; font-size: 18px; color: #5D4A3E; font-weight: bold; }
-        .fb-btn-back { background: #F4F0EB; border: none; color: #5D4A3E; font-size: 14px; font-weight: bold; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
-        .fb-btn-save { padding: 10px 24px; background: #4E7A5A; color: #FFF; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 2px 8px rgba(78, 122, 90, 0.2); }
+    <div className="modal-overlay">
+      <div className="post-modal split-layout-modal">
         
-        .fb-main { flex: 1; display: flex; overflow: hidden; }
-        .fb-left { flex: 1.2; overflow-y: auto; padding: 40px; background: #F4F0EB; }
-        .fb-right { flex: 1; background: #E6E1DA; padding: 40px; overflow-y: auto; border-left: 1px solid #DED9D3; display: block; }
-
-        @media (max-width: 768px) {
-          .basic-card { padding: 16px !important; }
-          .basic-action-group { gap: 8px; }
-          .btn-cancel, .btn-submit { flex: 1; padding: 12px 8px !important; font-size: 14px !important; text-align: center; }
+        {/* 固定頂部 Header */}
+        <div className="modal-header">
+          <h2>發布接委託</h2>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button type="button" onClick={onLoadDraft} className="save-hint-btn">
+              <Download size={14} /> 載入預設
+            </button>
+            <button type="button" className="close-modal-btn" onClick={onClose}>
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+        
+        {/* 主要表單區域：切分為左右雙欄結構 */}
+        <form onSubmit={onSubmit} className="post-form modal-content-split">
           
-          .fb-header { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
-          .fb-header-left { flex-direction: column; align-items: stretch; gap: 8px; }
-          .fb-btn-back { align-self: flex-start; }
-          .fb-header-left h2 { font-size: 16px !important; }
-          .fb-btn-save { width: 100%; padding: 12px; }
-          
-          .fb-main { flex-direction: column; overflow-y: auto; }
-          .fb-left, .fb-right { flex: none; padding: 16px; height: auto; overflow-y: visible; }
-          .fb-right { border-left: none; border-top: 1px solid #DED9D3; }
-        }
-      `}</style>
+          {/* ================= 左側固定區：圖片與作品集 ================= */}
+          <div className="modal-left-side">
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <label className="section-title" style={{ margin: 0 }}>
+                  作品範例 / 價目表 ({form.ref_images?.length || 0}/5)
+                </label>
+                {userShowcase && userShowcase.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPortfolioPicker(!showPortfolioPicker)} 
+                    className="add-btn-circle" 
+                    style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}
+                  >
+                    <ImageIcon size={14} /> {showPortfolioPicker ? "隱藏作品集" : "自作品集挑選"}
+                  </button>
+                )}
+              </div>
 
-      {viewMode === 'basic' ? (
-        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="basic-card" style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+              {/* 圖片預覽與上傳區：九宮格網格 */}
+              <div className="image-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                {(form.ref_images || []).map((url: string, idx: number) => (
+                  <div key={idx} className="image-preview-box" style={{ width: '100%', aspectRatio: '1', position: 'relative', borderRadius: '8px', overflow: 'visible' }}>
+                    <img src={getFullUrl(url)} alt="預覽" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    {idx === 0 && (
+                      <span className="main-cover-badge" style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                        主封面
+                      </span>
+                    )}
+                    <button 
+                      type="button" 
+                      className="remove-image-btn" 
+                      onClick={() => removeImage(idx)}
+                      style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', padding: '2px', border: '1px solid white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={12}/>
+                    </button>
+                  </div>
+                ))}
+                
+                {(form.ref_images || []).length < 5 && (
+                  <div style={{ width: '100%', aspectRatio: '1', border: '2px dashed #cbd5e1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fff' }}>
+                    <ImageUploader onUpload={onImageUpload} targetWidth={1000} buttonText={isUploading ? "..." : "+ 上傳"} maxSizeMB={3} aspectRatio={1} />
+                  </div>
+                )}
+              </div>
+
+              {/* 作品集快速挑選器 */}
+              {showPortfolioPicker && userShowcase && (
+                <div className="portfolio-picker-section" style={{ flex: 1, overflowY: 'auto', marginTop: '4px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b', display: 'block', marginBottom: '8px' }}>點擊圖片快速加入 / 移除：</span>
+                  <div className="portfolio-picker-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {userShowcase.filter((item: any) => item && item.cover_url).map((item: any) => {
+                      const isSelected = (form.ref_images || []).includes(item.cover_url);
+                      return (
+                        <div 
+                          key={item.id} 
+                          className={`portfolio-item ${isSelected ? 'selected' : ''}`} 
+                          onClick={() => togglePortfolioImage(item.cover_url)} 
+                          style={{ aspectRatio: '1', position: 'relative', cursor: 'pointer', borderRadius: '8px', overflow: 'hidden', border: isSelected ? '2px solid #3b82f6' : '1px solid #e2e8f0' }}
+                        >
+                          <img src={getFullUrl(item.cover_url)} alt={item.title || "Portfolio"} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          {isSelected && (
+                            <div className="check-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(59, 130, 246, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                              <Plus size={20} style={{ transform: 'rotate(45deg)' }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ marginTop: 'auto', paddingTop: '12px', fontSize: '11px', color: '#64748b', lineHeight: '1.4' }}>
+                💡 提示：建議尺寸 1000x1000 (1:1)。排列在第一張的圖片將會自動作為縮圖主封面。
+              </div>
+            </div>
+          </div>
+
+          {/* ================= 右側滾動區：表單填寫欄位 ================= */}
+          <div className="modal-right-side">
             
-            <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>項目封面圖 (必填)</label>
-                <div style={{ backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
-                  {editingItem.cover_url && (
-                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px', border: '1px solid #EAE6E1' }} />
-                  )}
-                  <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
+            {/* 委託基本資訊 */}
+            <div className="form-section">
+              <label className="section-title">委託基本資訊</label>
+              <div className="dynamic-question-row" style={{ alignItems: 'flex-start', gap: '20px' }}>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <label>委託募集標題</label>
+                  <input
+                    type="text"
+                    placeholder="例如：長期接精細立繪、Q版動態頭貼..."
+                    value={form.title || ''}
+                    onChange={e => setForm({...form, title: e.target.value})}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <label>目前排單狀況</label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        checked={form.schedule_type === 'flexible'}
+                        onChange={() => setForm({...form, schedule_type: 'flexible', specific_date: ''})}
+                      /> 目前空閒可排單
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        checked={form.schedule_type === 'fixed'}
+                        onChange={() => setForm({...form, schedule_type: 'fixed'})}
+                      /> 排單至指定日期之後
+                    </label>
+                    {form.schedule_type === 'fixed' && (
+                      <input
+                        type="date"
+                        className="date-input"
+                        value={form.specific_date || ''}
+                        onChange={e => setForm({...form, specific_date: e.target.value})}
+                        required
+                        style={{ width: '100%', marginTop: '8px' }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 接案項目與底價 */}
+            <div className="form-section">
+              <label className="section-title">接案項目與底價 (選填)</label>
+              <div className="dynamic-question-row" style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                <input type="text" placeholder="項目名稱 (如：Q版頭貼...)" value={itemInput.name} onChange={e => setItemInput({...itemInput, name: e.target.value})} style={{ flex: 2 }} />
+                <input type="number" placeholder="底價" value={itemInput.price} onChange={e => setItemInput({...itemInput, price: e.target.value})} style={{ flex: 1 }} />
+                <button type="button" onClick={addCommissionItem} className="add-btn-circle"><Plus size={18}/></button>
+              </div>
+              <div className="item-manage-box" style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                {(form.commission_items || []).length === 0 && <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>尚未新增具體接案項目</p>}
+                {(form.commission_items || []).map((item: any, idx: number) => (
+                  <div key={idx} className="item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: idx !== form.commission_items.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <span style={{ fontWeight: '500', color: '#334155' }}>{item.name} <span style={{ color: '#ff8c00', marginLeft: '8px' }}>${item.price}~</span></span>
+                    <button type="button" onClick={() => removeCommissionItem(idx)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Trash2 size={16}/></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 詳細接案說明 */}
+            <div className="form-section">
+              <label className="section-title">詳細接案說明</label>
+              <textarea rows={4} className="detail-textarea" placeholder="請詳細描述你的風格特點、不擅長或拒接的設定，以及詳細流程..." value={form.content || ''} onChange={e => setForm({...form, content: e.target.value})} required></textarea>
+            </div>              
+
+            {/* 名額與徵集機制 */}
+            <div className="form-section selection-mechanism-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label className="section-title" style={{ borderLeft: 'none', paddingLeft: 0, margin: 0 }}>名額與徵集機制</label>
+                <div title="點擊查看機制說明" style={{ cursor: 'pointer', color: '#d97706', display: 'flex', alignItems: 'center' }} onClick={() => setShowMechanismInfo(!showMechanismInfo)}>
+                  <HelpCircle size={16}/>
                 </div>
               </div>
               
-              <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div>
-                  <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
-                  <input className="form-input" style={{ fontSize: '16px', padding: '14px', width: '100%' }} value={editingItem.title} onChange={e => setEditingItem({...editingItem, title: e.target.value})} placeholder="例如：精緻半身立繪、遊戲UI設計..." />
+              {showMechanismInfo && (
+                <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#92400E', lineHeight: '1.6' }}>
+                  <strong style={{ display: 'block', marginBottom: '4px' }}>如何選擇機制？</strong>
+                  <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '4px' }}><strong>先搶先贏：</strong>適合確認較快的委託，名額一旦收滿將自動停止接收投遞。</li>
+                    <li><strong>繪師選設：</strong>適合需要評估角色設定的委託。不採用秒殺機制，沒有投遞的名額限制，您可以慢慢挑選心儀的設定來洽談。</li>
+                  </ul>
                 </div>
+              )}
 
-                <div>
-                  <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>作品標籤 (最多 5 個)</label>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    {editingItem.tags.map(tag => (
-                      <span key={tag} style={{ padding: '6px 12px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        #{tag} <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0 }}>✕</button>
-                      </span>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input className="form-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())} placeholder="輸入標籤後按 Enter..." disabled={editingItem.tags.length >= 5} style={{ flex: 1 }} />
-                    <button onClick={handleAddTag} disabled={editingItem.tags.length >= 5} style={{ padding: '0 20px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>新增</button>
-                  </div>
+              <div className="mechanism-radio-group" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+                <label className="radio-label">
+                  <input type="radio" checked={form.selection_type === 'fcfs'} onChange={() => setForm({...form, selection_type: 'fcfs'})} /> 先搶先贏
+                </label>
+                <label className="radio-label">
+                  <input type="radio" checked={form.selection_type === 'curated'} onChange={() => setForm({...form, selection_type: 'curated'})} /> 繪師選設
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>預計招收名額：</span>
+                  <input type="number" min="1" value={form.max_slots || 1} onChange={e => setForm({...form, max_slots: e.target.value})} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
                 </div>
+              </div>
+              
+              <p style={{ fontSize: '13px', color: '#b45309', margin: '12px 0 0 0', fontWeight: '500' }}>
+                {form.selection_type === 'curated'
+                  ? '💡 許願池將顯示：繪師會選擇設定來接稿，開放自由投遞，手速不影響機會。'
+                  : '💡 許願池將顯示：當前已投遞人數 / 總名額，滿額時系統將自動關閉投單。'}
+              </p>
+            </div>
 
-                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1 }}>
-                    <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
-                    <input className="form-input" style={{ padding: '12px', width: '100%' }} value={editingItem.price_info} onChange={e => setEditingItem({...editingItem, price_info: e.target.value})} placeholder="例如：NT$ 1500 起" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
-                    <select className="form-input" style={{ padding: '12px', width: '100%' }} value={editingItem.is_active} onChange={e => setEditingItem({...editingItem, is_active: Number(e.target.value)})}>
-                      <option value={1}>🟢 公開顯示</option>
-                      <option value={0}>🔴 隱藏下架</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '8px', padding: '16px', background: '#FAFAFA', border: '1px dashed #C4BDB5', borderRadius: '8px', textAlign: 'center' }}>
-                  <span style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7A7269', fontWeight: 'bold' }}>此項目開放接單嗎？</span>
-                  <button 
-                    onClick={() => setViewMode('form')}
-                    style={{ padding: '8px 16px', background: '#FFFFFF', color: '#4A7294', border: '1px solid #C1D6E8', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
-                  >
-                    ⚙️ 制訂委託表單 ➔
-                  </button>
-                </div>
+            {/* 支付時機說明 */}
+            <div className="form-section">
+              <label className="section-title">支付時機與收款方式</label>
+              <div className="radio-group" style={{ marginBottom: '12px' }}>
+                {PAYMENT_TIMING.map(t => (
+                  <label key={t.value} className="radio-label">
+                    <input type="radio" checked={form.payment_timing === t.value} onChange={() => setForm({...form, payment_timing: t.value})} /> {t.label}
+                  </label>
+                ))}
+              </div>
+              {(form.payment_timing === 'deposit' || form.payment_timing === 'other') && (
+                <input type="text" placeholder="請詳細描述您的收款時機... (例如：草稿確認後收30%訂金，完稿後收尾款)" value={form.payment_timing_detail || ''} onChange={e => setForm({...form, payment_timing_detail: e.target.value})} style={{ marginTop: '12px', width: '100%', marginBottom: '16px' }} required />
+              )}
+              
+              <span className="label-hint" style={{ display: 'block', margin: '16px 0 8px 0', fontWeight: 'bold' }}>收款方式 (可多選)</span>
+              <div className="tag-selector">
+                {PAY_TAGS.map(t => (
+                  <span key={t} className={`selectable-tag ${(form.payment_methods || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'payment_methods')}>{t}</span>
+                ))}
+                {(form.payment_methods || []).filter((t: string) => !PAY_TAGS.includes(t) && t !== '皆可配合').map((t: string) => (
+                  <span key={t} className="selectable-tag selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'payment_methods'); }} /></span>
+                ))}
+                <input
+                  type="text"
+                  className="compact-tag-input"
+                  placeholder="+ 自定義"
+                  value={customPaymentInput}
+                  onChange={e => setCustomPaymentInput(e.target.value)}
+                  onKeyDown={e => handleKeyDown(e, customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+                  onBlur={() => handleTagInput(customPaymentInput, setCustomPaymentInput, 'payment_methods')}
+                />
               </div>
             </div>
 
-            <div>
-              <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹</label>
-              <div className="custom-quill-wrapper">
-                <ReactQuill theme="snow" value={editingItem.description} onChange={v => setEditingItem({...editingItem, description: v})} modules={customQuillModules} />
+            {/* 提問模板 */}
+            <div className="form-section">
+              <label className="section-title">提問模板 (委託人投單時需填寫，最多 3 題)</label>
+              {(form.questions || []).map((q: string, idx: number) => (
+                <div key={idx} className="dynamic-question-row" style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                  <input type="text" placeholder={`請輸入自訂問題 ${idx + 1} (例如：角色性格、是否有指定差分...)`} value={q} onChange={e => updateQuestion(idx, e.target.value)} style={{ flex: 1 }} />
+                  <button type="button" onClick={() => removeQuestion(idx)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '8px' }}><Trash2 size={18}/></button>
+                </div>
+              ))}
+              {(form.questions || []).length < 3 && (
+                <button type="button" onClick={addQuestion} className="add-btn-circle" style={{ width: 'fit-content', marginTop: '4px', padding: '4px 12px', fontSize: '13px' }}>
+                  <Plus size={14} /> 新增題目欄位
+                </button>
+              )}
+            </div>
+
+            {/* 委託服務條款 (TOS) */}
+            <div className="form-section">
+              <label className="section-title">委託服務條款 (TOS)</label>
+              <p className="label-hint" style={{ margin: '0 0 8px 0' }}>💡 委託人在填寫需求單前必須先點擊勾選同意此條款，保障雙方權益。</p>
+              <textarea rows={5} className="detail-textarea" placeholder="請輸入您的版權使用範圍說明（如：禁止商用、禁止非轉交改作）、修改次數規範等..." value={form.tos_content || ''} onChange={e => setForm({...form, tos_content: e.target.value})}></textarea>
+            </div>
+
+            {/* 標籤與規格 */}
+            <div className="form-section">
+              <label className="section-title">標籤與類別規格</label>
+              
+              <div className="tag-selector-group" style={{ marginBottom: '16px' }}>
+                <span className="label-hint" style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>風格預警 / 接案傾向</span>
+                <div className="tag-selector">
+                  {STYLE_WARNINGS.map(t => <span key={t} className={`selectable-tag warning ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                  {(form.tags || []).filter((t: string) => t.startsWith('[預警]')).map((t: string) => (
+                    <span key={t} className="selectable-tag warning selected custom-tag">{t.replace('[預警]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
+                  ))}
+                  <input
+                    type="text"
+                    className="compact-tag-input"
+                    placeholder="+ 自定義"
+                    value={customWarningInput}
+                    onChange={e => setCustomWarningInput(e.target.value)}
+                    onKeyDown={e => handleKeyDown(e, customWarningInput, setCustomWarningInput, 'tags', '[預警]')}
+                    onBlur={() => handleTagInput(customWarningInput, setCustomWarningInput, 'tags', '[預警]')}
+                  />
+                </div>
+              </div>
+
+              <div className="tag-selector-group" style={{ marginBottom: '16px' }}>
+                <span className="label-hint" style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>授權範圍 / 接受程度</span>
+                <div className="tag-selector">
+                  {LICENSE_TAGS.map(t => <span key={t} className={`selectable-tag license ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                  {(form.tags || []).filter((t: string) => t.startsWith('[授權]')).map((t: string) => (
+                    <span key={t} className="selectable-tag license selected custom-tag">{t.replace('[授權]', '')} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
+                  ))}
+                  <input
+                    type="text"
+                    className="compact-tag-input"
+                    placeholder="+ 自定義"
+                    value={customLicenseInput}
+                    onChange={e => setCustomLicenseInput(e.target.value)}
+                    onKeyDown={e => handleKeyDown(e, customLicenseInput, setCustomLicenseInput, 'tags', '[授權]')}
+                    onBlur={() => handleTagInput(customLicenseInput, setCustomLicenseInput, 'tags', '[授權]')}
+                  />
+                </div>
+              </div>
+
+              <div className="tag-selector-group">
+                <span className="label-hint" style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>風格類型與其他自定義標籤</span>
+                <div className="tag-selector">
+                  {REQ_TAGS.map(t => <span key={t} className={`selectable-tag style ${(form.tags || []).includes(t) ? 'selected' : ''}`} onClick={() => toggleTag(t, 'tags')}>{t}</span>)}
+                  {(form.tags || []).filter((t: string) => !REQ_TAGS.includes(t) && !STYLE_WARNINGS.includes(t) && !LICENSE_TAGS.includes(t) && !t.startsWith('[預警]') && !t.startsWith('[授權]')).map((t: string) => (
+                    <span key={t} className="selectable-tag style selected custom-tag">{t} <X size={12} onClick={(e) => { e.stopPropagation(); removeTag(t, 'tags'); }} /></span>
+                  ))}
+                  <input
+                    type="text"
+                    className="compact-tag-input"
+                    placeholder="+ 自定義標籤"
+                    value={customTagInput}
+                    onChange={e => setCustomTagInput(e.target.value)}
+                    onKeyDown={e => handleKeyDown(e, customTagInput, setCustomTagInput, 'tags')}
+                    onBlur={() => handleTagInput(customTagInput, setCustomTagInput, 'tags')}
+                  />
+                </div>
               </div>
             </div>
-
-            
-            <div className="basic-action-group">
-              <button onClick={onClose} className="btn-cancel">
-                返回接委託區
-              </button>
-              <button onClick={handleSaveItem} className="btn-submit">
-                儲存項目
-              </button>
-            </div>
-
           </div>
-        </div>
-      ) : (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
           
-          <div className="fb-header">
-            <div className="fb-header-left">
-              <button onClick={() => setViewMode('basic')} className="fb-btn-back">
-                🔙 返回基本設定
-              </button>
-              <h2>📋 制訂專屬委託表單 - {editingItem.title || '未命名'}</h2>
-            </div>
-            <button onClick={handleSaveItem} className="fb-btn-save">
-              完成並儲存
+          {/* 固定底部 Footer 按鈕區 */}
+          <div className="modal-footer">
+            <button type="button" className="btn-cancel" onClick={onClose} style={{ marginRight: 'auto' }}>
+              關閉
+            </button>
+            <button type="button" className="btn-cancel" onClick={onSaveDraft} style={{ border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Save size={16} /> 儲存為預設
+            </button>
+            <button type="submit" className="submit-post-btn" disabled={isUploading} style={{ marginLeft: '12px' }}>
+              {isUploading ? "圖片上傳中..." : "確認發布接案"}
             </button>
           </div>
 
-          <div className="fb-main">
-            
-            <div className="custom-scrollbar fb-left">
-              <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
-                <div style={{ background: '#FFFFFF', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #EAE6E1', borderTop: '6px solid #5D4A3E' }}>
-                  <div style={{ padding: '24px' }}>
-                    <h3 style={{ margin: '0 0 20px 0', color: '#333', fontSize: '20px' }}>接單規則設定</h3>
-                    
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                      <div style={{ flex: '1 1 100%' }}>
-                        <label className="form-label" style={{ fontWeight: 'bold' }}>接單上限 (0 為無限)</label>
-                        <input type="number" min="0" className="form-input" style={{ width: '100%' }} value={editingItem.max_orders} onChange={e => setEditingItem({...editingItem, max_orders: Number(e.target.value)})} />
-                      </div>
-                      <div style={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold', marginTop: '8px' }}>
-                          <input type="checkbox" checked={editingItem.show_quota === 1} onChange={e => setEditingItem({...editingItem, show_quota: e.target.checked ? 1 : 0})} disabled={editingItem.max_orders === 0} style={{ width: '18px', height: '18px' }} />
-                          公開顯示剩餘名額
-                        </label>
-                      </div>
-                    </div>
-
-                    {editingItem.max_orders > 0 && (
-                      <div style={{ background: '#FDFDFB', padding: '16px', borderRadius: '8px', border: '1px solid #EAE6E1', display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                        <span style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>目前有效單量：{editingItem.current_orders_count || 0} / {editingItem.max_orders}</span>
-                        <button onClick={handleResetOrdersCount} style={{ background: '#FFFFFF', color: '#A05C5C', border: '1px solid #DED9D3', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
-                          ↺ 重新計算收件數
-                        </button>
-                      </div>
-                    )}
-
-                    <div style={{ borderTop: '1px dashed #EAE6E1', paddingTop: '24px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                        <label className="form-label" style={{ fontWeight: 'bold', margin: 0, fontSize: '16px' }}>📜 專屬委託協議書 (TOS)</label>
-                        <button onClick={handleImportGlobalTOS} style={{ background: '#EBF2F7', color: '#4A7294', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}>
-                          ⬇️ 帶入全域協議書
-                        </button>
-                      </div>
-                      <div className="custom-quill-wrapper" style={{ minHeight: '150px' }}>
-                        <ReactQuill theme="snow" value={editingItem.tos_content} onChange={v => setEditingItem({...editingItem, tos_content: v})} modules={customQuillModules} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px', flexWrap: 'wrap', gap: '12px' }}>
-                  <h3 style={{ margin: 0, color: '#5D4A3E', fontSize: '20px' }}>問題建置</h3>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', background: '#FFFFFF', padding: '8px 16px', border: '1px solid #EAE6E1', borderRadius: '24px', fontWeight: 'bold', color: '#4A7294', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-                    <input type="checkbox" checked={editingItem.allow_guest === 1} onChange={e => setEditingItem({...editingItem, allow_guest: e.target.checked ? 1 : 0})} style={{ width: '16px', height: '16px' }} />
-                    開放訪客 (免登入) 填寫
-                  </label>
-                </div>
-
-                {showGuestWarning && (
-                  <div style={{ background: '#FEF9C3', color: '#B45309', padding: '16px', borderRadius: '8px', border: '1px solid #FEF08A', fontSize: '14px', display: 'flex', gap: '8px', fontWeight: 'bold' }}>
-                    <span>⚠️</span>
-                    <span>溫馨提示：您開啟了訪客委託，但表單中似乎沒有詢問「聯絡方式」，這可能會導致您收到單後無法聯繫上對方喔！</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {formFields.map((field, index) => {
-                    const isActive = activeFieldId === field.id;
-                    const isDragging = draggedIdx === index;
-                    const isDragOver = dragOverIdx === index && draggedIdx !== index;
-                    
-                    return (
-                      <div 
-                        key={field.id} 
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragEnter={(e) => handleDragEnter(e, index)}
-                        onDragOver={handleDragOver}
-                        onDragEnd={handleDragEnd}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onClick={() => setActiveFieldId(field.id)}
-                        style={{ 
-                          background: '#FFF', 
-                          borderRadius: '12px', 
-                          position: 'relative', 
-                          boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.08)' : '0 2px 6px rgba(0,0,0,0.03)',
-                          border: '1px solid',
-                          borderColor: isActive ? '#FFFFFF' : '#EAE6E1',
-                          borderLeft: isActive ? '6px solid #4E7A5A' : '1px solid #EAE6E1',
-                          borderTop: isDragOver ? '4px solid #4E7A5A' : '1px solid transparent', 
-                          opacity: isDragging ? 0.5 : 1,
-                          transition: 'box-shadow 0.2s, border 0.2s',
-                          cursor: isActive ? 'default' : 'pointer'
-                        }}
-                      >
-                        <div 
-                          style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
-                          title="按住拖曳可排序"
-                        >
-                          <span style={{ transform: 'rotate(90deg)', letterSpacing: '2px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
-                        </div>
-
-                        <div style={{ padding: '32px 24px 24px 24px' }}>
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                            
-                            <div style={{ flex: '1 1 200px' }}>
-                              {isActive ? (
-                                <input 
-                                  className="form-input" 
-                                  value={field.label} 
-                                  onChange={e => updateFormField(field.id, { label: e.target.value })} 
-                                  placeholder="請輸入問題" 
-                                  style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} 
-                                />
-                              ) : (
-                                <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: '8px' }}>
-                                  {field.label || `未命名問題 ${index + 1}`} {field.required && <span style={{ color: '#EF4444' }}>*</span>}
-                                </div>
-                              )}
-                            </div>
-
-                            {isActive && (
-                              <select 
-                                className="form-input" 
-                                value={field.type} 
-                                onChange={e => updateFormField(field.id, { type: e.target.value as any })} 
-                                style={{ width: '100%', maxWidth: '160px', fontWeight: 'bold', color: '#5D4A3E' }}
-                              >
-                                <option value="text">簡答題</option>
-                                <option value="textarea">詳答題</option>
-                                <option value="radio">單選題</option>
-                                <option value="checkbox">核取方塊</option>
-                                <option value="select">下拉式選單</option>
-                                <option value="date">日期</option>
-                              </select>
-                            )}
-                          </div>
-
-                          <div style={{ marginTop: '20px' }}>
-                            {['text', 'textarea', 'date'].includes(field.type) && (
-                              <div style={{ borderBottom: '1px dotted #C4BDB5', width: '100%', maxWidth: '50%', paddingBottom: '8px', color: '#A0978D', fontSize: '14px' }}>
-                                {field.type === 'text' ? '簡答文字' : field.type === 'textarea' ? '詳答文字' : '年 / 月 / 日'}
-                              </div>
-                            )}
-
-                            {['radio', 'checkbox', 'select'].includes(field.type) && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {field.options?.map((opt, i) => (
-                                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                                    <span style={{ color: '#A0978D', fontSize: '18px' }}>
-                                      {field.type === 'radio' ? '○' : field.type === 'checkbox' ? '□' : `${i+1}.`}
-                                    </span>
-                                    {isActive ? (
-                                      <>
-                                        <input 
-                                          className="form-input" 
-                                          value={opt} 
-                                          onChange={e => updateOption(field.id, i, e.target.value)}
-                                          style={{ border: 'none', borderBottom: '1px solid #EAE6E1', borderRadius: 0, padding: '4px 8px', flex: '1 1 100px', maxWidth: '400px' }}
-                                        />
-                                        {field.options!.length > 1 && (
-                                          <button onClick={() => removeOption(field.id, i)} style={{ background: 'none', border: 'none', color: '#A0978D', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <span style={{ color: '#5D4A3E', fontSize: '14px' }}>{opt || `選項 ${i+1}`}</span>
-                                    )}
-                                  </div>
-                                ))}
-                                {isActive && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                                    <span style={{ color: '#A0978D', fontSize: '18px' }}>
-                                      {field.type === 'radio' ? '○' : field.type === 'checkbox' ? '□' : '*'}
-                                    </span>
-                                    <button onClick={() => addOption(field.id)} style={{ background: 'none', border: 'none', color: '#4A7294', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}>
-                                      新增選項
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {isActive && (
-                          <div style={{ borderTop: '1px solid #EAE6E1', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
-                            <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">
-                              🗑️
-                            </button>
-                            <div style={{ width: '1px', height: '24px', background: '#DED9D3' }}></div>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
-                              必填
-                              <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} style={{ width: '16px', height: '16px' }} />
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {formFields.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '60px', background: '#FFF', borderRadius: '12px', color: '#A0978D', fontSize: '15px', border: '2px dashed #DED9D3' }}>
-                      目前尚未加入任何問題。點擊下方按鈕開始建置專屬表單！
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', background: '#FFFFFF', padding: '16px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                  <button onClick={() => addFormField('text')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 簡答題</button>
-                  <button onClick={() => addFormField('textarea')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 詳答題</button>
-                  <button onClick={() => addFormField('radio')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 單選題</button>
-                  <button onClick={() => addFormField('checkbox')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 多選題</button>
-                  <button onClick={() => addFormField('select')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 下拉選單</button>
-                </div>
-                
-              </div>
-            </div>
-
-            
-            <div className="custom-scrollbar fb-right">
-              <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
-                
-                <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
-                  👁️ 委託人視角預覽
-                </div>
-
-                <div style={{ padding: '30px' }}>
-                  {editingItem.cover_url ? (
-                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '20px' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '180px', background: '#F4F4F1', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>尚未上傳封面</div>
-                  )}
-                  
-                  <h2 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '24px', fontWeight: 'bold', lineHeight: '1.4' }}>{editingItem.title || '未命名項目'}</h2>
-                  <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '18px', marginBottom: '20px' }}>{editingItem.price_info || '價格未定'}</div>
-                  
-                  {editingItem.max_orders > 0 && editingItem.show_quota === 1 && (
-                    <div style={{ background: '#FEF2F2', color: '#EF4444', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', display: 'inline-block', marginBottom: '20px' }}>
-                      🔥 限量接單：目前剩餘 {editingItem.max_orders - (editingItem.current_orders_count || 0)} 個名額
-                    </div>
-                  )}
-
-                  {editingItem.allow_guest === 1 && formFields.length > 0 && (
-                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '8px', marginBottom: '24px', fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
-                      💡 <strong>您目前為訪客身分</strong><br/>填寫表單後，繪師將透過您留下的聯絡方式與您聯繫。
-                    </div>
-                  )}
-
-                  <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {formFields.map((field, idx) => (
-                      <div key={idx} style={{ background: activeFieldId === field.id ? '#FAFAFA' : 'transparent', padding: activeFieldId === field.id ? '12px' : '0', borderRadius: '8px', transition: 'all 0.2s' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '10px' }}>
-                          {field.label || `未命名問題 ${idx+1}`} {field.required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
-                        </div>
-                        {field.type === 'text' && <input className="form-input" disabled placeholder="您的回答" style={{ background: '#FFF' }} />}
-                        {field.type === 'textarea' && <textarea className="form-input" disabled placeholder="您的回答" rows={3} style={{ background: '#FFF' }} />}
-                        {field.type === 'select' && <select className="form-input" disabled style={{ background: '#FFF' }}><option>請選擇</option></select>}
-                        {field.type === 'date' && <input type="date" className="form-input" disabled style={{ background: '#FFF' }} />}
-                        {['radio', 'checkbox'].includes(field.type) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {(field.options?.length ? field.options : ['選項']).map((opt, i) => (
-                              <label key={i} style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type={field.type} disabled style={{ width: '16px', height: '16px' }} /> {opt}
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {formFields.length === 0 && (
-                      <div style={{ color: '#A0978D', fontSize: '14px', textAlign: 'center', fontStyle: 'italic', padding: '30px 0' }}>純展示模式，無客製化表單</div>
-                    )}
-                  </div>
-
-                  {editingItem.tos_content && (
-                    <div style={{ marginTop: '30px', borderTop: '1px solid #EAE6E1', paddingTop: '24px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '12px' }}>📜 委託協議書</div>
-                      <div style={{ height: '100px', overflow: 'hidden', background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#7A7269', position: 'relative' }}>
-                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(editingItem.tos_content) }} />
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(transparent, #FAFAFA)' }} />
-                      </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#5D4A3E', marginTop: '12px', fontWeight: 'bold' }}>
-                        <input type="checkbox" disabled style={{ width: '16px', height: '16px' }} /> 我已閱讀並同意上述協議
-                      </label>
-                    </div>
-                  )}
-
-                  {formFields.length > 0 && (
-                    <button disabled style={{ width: '100%', padding: '14px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: 'bold', marginTop: '30px', fontSize: '15px', opacity: 0.6 }}>
-                      送出委託申請
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        </form>
+      </div>
+    </div>
   );
 }

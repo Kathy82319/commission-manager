@@ -95,7 +95,7 @@ export const authController = {
 
       if (!user) {
         const safeDisplayName = sanitizeAndLimit(profile.displayName || '未命名', 100);
-        await createNewUser(env, userId, safeDisplayName, profile.pictureUrl || "");
+        await createNewUser(env, userId, safeDisplayName, "");
         targetPath = "/onboarding"; 
       } else if (user.role === 'deleted') {
         return new Response(JSON.stringify({ success: false, error: "帳號已被停用" }), { 
