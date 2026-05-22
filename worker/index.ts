@@ -45,10 +45,10 @@ export default {
           
           // 4. 更強健的替換邏輯 (使用全域與忽略大小寫)
           // 替換 <title>
-          html = html.replace(/<title>.*?<\/title>/si, `<title>${name} | Arti 繪師委託管理系統</title>`);
+          html = html.replace(/<title>.*?<\/title>/si, `<title>${name} | Arti 繪師小幫手</title>`);
           
           // 替換 og:title (確保匹配所有 content 屬性引號)
-          html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="${name} | Arti 繪師委託管理系統"`);
+          html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="${name} | Arti 繪師小幫手"`);
           
           console.log(`[SEO Injection] 成功為 ${artistId} 注入標題: ${name}`);
         }
