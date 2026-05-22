@@ -26,6 +26,44 @@ export default {
     const pathParts = sanitizedPath.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
+// --- 攔截邏輯修正 ---
+    if (!sanitizedPath.startsWith("/api") && sanitizedPath.startsWith("/User_")) {
+      const artistId = sanitizedPath.substring(1); // 這是 User_84448
+      
+      // 1. 取得原始 HTML
+      const response = await env.ASSETS.fetch(request);
+      let html = await response.text();
+
+      try {
+        // 2. 呼叫 Controller，注意這裡傳入的 artistId
+        const userRes = await userController.getUser(artistId, null, env, {});
+        const userData = (await userRes.json()) as any;
+
+        // 3. 確保資料確實存在
+        if (userData?.success && userData?.data) {
+          const name = userData.data.display_name || "繪師頁面";
+          
+          // 4. 更強健的替換邏輯 (使用全域與忽略大小寫)
+          // 替換 <title>
+          html = html.replace(/<title>.*?<\/title>/si, `<title>${name} | Arti 繪師委託管理系統</title>`);
+          
+          // 替換 og:title (確保匹配所有 content 屬性引號)
+          html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="${name} | Arti 繪師委託管理系統"`);
+          
+          console.log(`[SEO Injection] 成功為 ${artistId} 注入標題: ${name}`);
+        }
+      } catch (e) {
+        console.error("[SEO Injection Error]", e);
+      }
+      
+      return new Response(html, { 
+        headers: { 
+          "content-type": "text/html;charset=UTF-8",
+          "Cache-Control": "public, max-age=3600" // 加上快取避免資料庫過載
+        } 
+      });
+    }
+
     if (sanitizedPath === "/payment/result" && request.method === "POST") {
       const targetBase = env.FRONTEND_URL || url.origin;
       const redirectUrl = new URL("/artist/settings", targetBase);
@@ -58,6 +96,7 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // ... (後續 API 路由邏輯維持不變)
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
@@ -448,5 +487,5 @@ export default {
     }
 
     return new Response(JSON.stringify({ success: false, error: "Malformed System Routing" }), { status: 400, headers: corsHeaders });
-  } 
+  }
 };
