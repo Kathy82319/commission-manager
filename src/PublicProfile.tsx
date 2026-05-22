@@ -55,6 +55,15 @@ export function PublicProfile() {
     setIsLoggedIn(!!role);
   }, []);
 
+  // 當繪師資料載入後，更新網頁標題
+  useEffect(() => {
+    if (artist?.display_name) {
+      document.title = `${artist.display_name} | Arti 繪師委託管理系統`;
+    } else {
+      document.title = 'Arti 繪師委託管理系統';
+    }
+  }, [artist]);
+
   const handleLogout = async () => {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
     try { await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' }); } catch (e) {}
