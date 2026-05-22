@@ -967,11 +967,9 @@ input:focus, textarea:focus {
 }
 
 .tag-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  min-width: 0;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
 }
 
 .selectable-tag {
@@ -1427,12 +1425,11 @@ input:focus, textarea:focus {
     width: 100%;
   }
 
-  /* 修正原有的屬性選擇器以提高穩定度與相容性 */
-  .form-section > div {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
-  }
+.form-section > .form-row {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
 
   .dynamic-question-row {
     flex-wrap: wrap;
