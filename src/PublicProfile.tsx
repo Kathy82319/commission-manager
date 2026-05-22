@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async'; // 引入 Helmet
+import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify'; 
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
@@ -325,10 +325,11 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      {/* 透過 Helmet 動態設定標題 */}
+      {/* 針對搜尋引擎優化與社群預覽，確保只有在載入完成後才渲染正確的標題 */}
       <Helmet>
-        <title>{artist.display_name} | Arti 繪師小幫手</title>
-        <meta property="og:title" content={`${artist.display_name} | Arti 繪師小幫手`} />
+        <title>{artist?.display_name || '繪師頁面'} | Arti 繪師小幫手</title>
+        <meta property="og:title" content={`${artist?.display_name || '繪師頁面'} | Arti 繪師小幫手`} />
+        <meta property="description" content={artist?.bio || '歡迎來到我的頁面'} />
       </Helmet>
 
       <style>{`
