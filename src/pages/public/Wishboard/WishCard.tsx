@@ -50,6 +50,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
+  // 用來紀錄手機滑動手勢的座標位置
+  let touchStartX = 0;
+  let touchEndX = 0;
+
   let contentObj: any = {};
   let rawDescription = bulletin.content;
   try {
@@ -217,7 +221,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const posterId = bulletin.client_public_id || bulletin.client_id || 'unknown';
   const posterAvatar = bulletin.client_avatar || null;
 
- const handleProfileClick = (e: React.MouseEvent) => {
+  const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation(); 
     if (posterId && posterId !== 'unknown') {
       navigate(`/${posterId}`); 
@@ -230,12 +234,39 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     setIsLightboxOpen(true);
   };
 
-  const navigateLightbox = (dir: 'prev' | 'next', e: React.MouseEvent) => {
-    e.stopPropagation();
+  const navigateLightbox = (dir: 'prev' | 'next', e: React.MouseEvent | React.TouchEvent) => {
+    if (e) e.stopPropagation();
     if (dir === 'prev') {
       setLightboxIdx(prev => (prev === 0 ? validImages.length - 1 : prev - 1));
     } else {
       setLightboxIdx(prev => (prev === validImages.length - 1 ? 0 : prev + 1));
+    }
+  };
+
+  // 燈箱觸控手勢處理常式
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX = e.targetTouches[0].clientX;
+    touchEndX = e.targetTouches[0].clientX; // 初始化，避免滑動沒結束時算錯
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (validImages.length <= 1) return; // 單張圖片不執行滑動切換
+
+    const swipeThreshold = 50; // 定義滑動超過 50px 才觸發
+    const diffX = touchStartX - touchEndX;
+
+    if (Math.abs(diffX) > swipeThreshold) {
+      if (diffX > 0) {
+        // 向左滑動 -> 切換到下一張
+        navigateLightbox('next', e);
+      } else {
+        // 向右滑動 -> 切換到上一張
+        navigateLightbox('prev', e);
+      }
     }
   };
 
@@ -520,8 +551,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   >
                     {selectionType === 'curated' 
                       ? `預計收 ${maxSlots} 名 (💡繪師選設定接稿)` 
-                      : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`
-                    }
+                      : `目前已投遞人數 ${appliedCount} / 預計招收名額 ${maxSlots}`}
                   </span>
                 </div>
               )}
@@ -667,7 +697,13 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
       
       {isLightboxOpen && (
-        <div className="lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
+        <div 
+          className="lightbox-overlay" 
+          onClick={() => setIsLightboxOpen(false)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <button className="lightbox-close" onClick={() => setIsLightboxOpen(false)}>
             <X size={32} />
           </button>
