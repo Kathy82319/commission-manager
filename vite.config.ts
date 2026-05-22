@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['vite.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
 
       manifest: {
-        name: 'Arti 繪師委託管理系統',
+        name: 'Arti 繪師小幫手',
         short_name: 'Arti',
         theme_color: '#5D4A3E',
         background_color: '#FFFFFF',

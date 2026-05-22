@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import '../styles/PublicLayout.css';
 
 interface ThemeSettings {
@@ -50,14 +51,9 @@ export function PublicLayout() {
 
   const handleDashboardClick = () => {
     const lastActiveRole = localStorage.getItem('last_active_role') || localStorage.getItem('user_role');
-
-    if (lastActiveRole === 'artist') {
-      navigate('/artist/queue');
-    } else if (lastActiveRole === 'client') {
-      navigate('/client/orders');
-    } else {
-      navigate('/portal');
-    }
+    if (lastActiveRole === 'artist') navigate('/artist/queue');
+    else if (lastActiveRole === 'client') navigate('/client/orders');
+    else navigate('/portal');
   };
 
   const isLegalPage = 
@@ -80,6 +76,13 @@ export function PublicLayout() {
 
   return (
     <div className="public-layout-container" style={dynamicStyles}>
+      {/* 全域預設 Meta */}
+      <Helmet>
+        <title>Arti 繪師小幫手</title>
+        <meta property="og:title" content="Arti 繪師小幫手" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <header className="public-header">
         <div className="header-actions">
           {isLoggedIn ? (

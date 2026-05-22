@@ -1,6 +1,6 @@
-// src/PublicProfile.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async'; // 引入 Helmet
 import DOMPurify from 'dompurify'; 
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
@@ -54,15 +54,6 @@ export function PublicProfile() {
     const role = localStorage.getItem('user_role'); 
     setIsLoggedIn(!!role);
   }, []);
-
-  // 當繪師資料載入後，更新網頁標題
-  useEffect(() => {
-    if (artist?.display_name) {
-      document.title = `${artist.display_name} | Arti 繪師委託管理系統`;
-    } else {
-      document.title = 'Arti 繪師委託管理系統';
-    }
-  }, [artist]);
 
   const handleLogout = async () => {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -334,6 +325,12 @@ export function PublicProfile() {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
+      {/* 透過 Helmet 動態設定標題 */}
+      <Helmet>
+        <title>{artist.display_name} | Arti 繪師小幫手</title>
+        <meta property="og:title" content={`${artist.display_name} | Arti 繪師小幫手`} />
+      </Helmet>
+
       <style>{`
         @media (max-width: 768px) {
           .desktop-oc-tabs-wrapper { display: none !important; }
