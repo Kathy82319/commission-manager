@@ -173,12 +173,12 @@ export function SplashTab({ settings, setSettings }: Props) {
 
           {/* 目前圖片預覽 */}
           {(settings.splash_image || settings.splash_image_mobile) && (
-            <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '16px', backgroundColor: '#FBFBF9', display: 'flex', gap: '0', alignItems: 'stretch' }}>
-              {/* 左欄：網頁版 */}
-              <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', paddingRight: settings.splash_image_mobile ? '16px' : '0', borderRight: settings.splash_image_mobile ? '1px dashed #DED9D3' : 'none' }}>
+            <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '16px', backgroundColor: '#FBFBF9', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+              {/* 左欄：網頁版，固定 320px → 16:9 → 高 180px */}
+              <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>🖥️ 目前網頁版</div>
                 {settings.splash_image ? (
-                  <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1', flex: 1 }}>
+                  <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
                     <img src={settings.splash_image} alt="桌機版" style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '16/9' }} />
                     <button
                       onClick={() => setSettings(prev => ({ ...prev, splash_image: '' }))}
@@ -188,15 +188,15 @@ export function SplashTab({ settings, setSettings }: Props) {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C0B8B0', fontSize: '13px' }}>尚未設定</div>
+                  <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C0B8B0', fontSize: '13px', border: '1px dashed #DED9D3', borderRadius: '8px' }}>尚未設定</div>
                 )}
               </div>
 
-              {/* 右欄：手機版 */}
-              <div style={{ flex: '0 0 160px', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingLeft: '16px' }}>
+              {/* 右欄：手機版，固定 101px → 9:16 → 高 180px */}
+              <div style={{ flex: '0 0 101px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>📱 手機版</div>
                 {settings.splash_image_mobile ? (
-                  <div style={{ width: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                  <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
                     <img src={settings.splash_image_mobile} alt="手機版" style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '9/16' }} />
                     <button
                       onClick={() => setSettings(prev => ({ ...prev, splash_image_mobile: '' }))}
@@ -206,7 +206,7 @@ export function SplashTab({ settings, setSettings }: Props) {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C0B8B0', fontSize: '13px' }}>尚未設定</div>
+                  <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C0B8B0', fontSize: '13px', border: '1px dashed #DED9D3', borderRadius: '8px', textAlign: 'center', lineHeight: '1.5' }}>尚未<br/>設定</div>
                 )}
               </div>
             </div>
