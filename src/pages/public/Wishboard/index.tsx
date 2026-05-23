@@ -362,54 +362,86 @@ export const Wishboard: React.FC = () => {
         <span>許願規則</span>
       </button>
 
-      {showRulesModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, Slate, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }} onClick={() => setShowRulesModal(false)}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ScrollText size={20} color="#3b82f6" /> 創作許願池 規範與約定
-              </h2>
-              <button onClick={() => setShowRulesModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
-                為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿 or 販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
-                本平台介面為全齡向，嚴禁發布色情、血腥等限制級圖文，違者一律移除。如有需要發布 R18 相關委託，請在私訊中洽談，並在貼文中標明「此為 R18 委託，請在私訊內洽談」，請勿直接將例圖放在許願池上。
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '4px' }}>⚠️ 授權與版權證明</strong>
-                嚴禁盜圖、侵權二創、抄襲等行為。若使用他人作品作為例圖，請在貼文中清楚標明「已獲原作者授權使用此圖」，並建議保留相關授權證明。
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>⚠️ 透明度與實名</strong>
-                為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。本平台僅提供媒合，不涉入雙方爭議，若對方發生除了上述違規行為以外的行為(如跑單、作品不如預期等)，請善用黑單功能屏蔽對方，請勿濫用檢舉功能。
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
-                目前許願池僅限繪圖相關的徵委託與接委託貼文，請先不要發佈與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
-              </div>
-              <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
-                <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>
-                初犯將移除貼文並給予系統警告；再犯者將 <strong>禁止使用許願池 28 天</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
-                <span style={{ color: '#64748b' }}>※ 貼文若檢舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提出證明以利重新上架。</span>
-              </div>
-            </div>
-            
-            <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right', backgroundColor: '#f8fafc' }}>
-              <button onClick={() => setShowRulesModal(false)} style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                我知道了
-              </button>
-            </div>
-          </div>
+{showRulesModal && (
+  <div 
+    style={{ 
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      right: 0, 
+      bottom: 0, 
+      backgroundColor: 'rgba(15, 23, 42, 0.6)', // 順手幫你修正了原本寫錯的 Slate 變數
+      backdropFilter: 'blur(4px)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      zIndex: 10000, 
+      padding: '20px',
+      overflowY: 'auto', // 讓最外層在手機版內容過長時可以滾動
+      WebkitOverflowScrolling: 'touch'
+    }} 
+    onClick={() => setShowRulesModal(false)}
+  >
+    <div 
+      style={{ 
+        backgroundColor: '#ffffff', 
+        borderRadius: '16px', 
+        width: '100%', 
+        maxWidth: '500px', 
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column',
+        margin: 'auto' // 確保在滾動容器中依然能保持置中
+      }} 
+      onClick={e => e.stopPropagation()}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ScrollText size={20} color="#3b82f6" /> 創作許願池 規範與約定
+        </h2>
+        <button onClick={() => setShowRulesModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+          <X size={24} />
+        </button>
+      </div>
+      
+      {/* 這裡把原本限制滾動的區塊釋放，讓它隨外層延伸 */}
+      <div style={{ padding: '20px', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
+          為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿 or 販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
         </div>
-      )}
+        <div style={{ marginBottom: '16px' }}>
+          <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 禁止 R18 限制級內容</strong>
+          本平台介面為全齡向，嚴禁發布色情、血腥等限制級圖文，違者一律移除。如有需要發布 R18 相關委託，請在私訊中洽談，並在貼文中標明「此為 R18 委託，請在私訊內洽談」，請勿直接將例圖放在許願池上。
+        </div>
+        <div style={{ marginBottom: '16px' }}>
+          <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '4px' }}>⚠️ 授權與版權證明</strong>
+          嚴禁盜圖、侵權二創、抄襲等行為。若使用他人作品作為例圖，請在貼文中清楚標明「已獲原作者授權使用此圖」，並建議保留相關授權證明。
+        </div>
+        <div style={{ marginBottom: '16px' }}>
+          <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>⚠️ 透明度與實名</strong>
+          為維護交易誠信，所有貼文與投遞皆會顯示您在這個平台上的唯一 ID ，請大家務必對自己的行為負責。本平台僅提供媒合，不涉入雙方爭議，若對方發生除了上述違規行為以外的行為(如跑單、作品不如預期等)，請善用黑單功能屏蔽對方，請勿濫用檢舉功能。
+        </div>
+        <div style={{ marginBottom: '16px' }}>
+          <strong style={{ color: '#3b82f6', display: 'block', marginBottom: '4px' }}>🌟 僅開放繪圖相關</strong>
+          目前許願池僅限繪圖相關的徵委託與接委託貼文，請先不要發佈與繪圖無關的內容（如手作、圖換物、販售等），請稍待Arti小幫手建置，敬請期待！
+        </div>
+        <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#f1f5f9', borderRadius: '8px', fontSize: '13px' }}>
+          <strong style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>⚖️ 違規處置說明</strong>
+          初犯將移除貼文並給予系統警告；再犯者將 <strong>禁止使用許願池 28 天</strong>；情節嚴重或三犯者，將永久限制許願池使用權限。<br/><br/>
+          <span style={{ color: '#64748b' }}>※ 貼文若檢舉達一定門檻，系統將自動暫時隱藏，發文者需向管理員提出證明以利重新上架。</span>
+        </div>
+      </div>
+      
+      <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right', backgroundColor: '#f8fafc' }}>
+        <button onClick={() => setShowRulesModal(false)} style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {showUpgradeGuide.show && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
