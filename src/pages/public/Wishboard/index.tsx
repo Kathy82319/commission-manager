@@ -207,7 +207,7 @@ export const Wishboard: React.FC = () => {
 
     if (activeTab === 'offer' && wishQuota && !wishQuota.is_pro) {
        if (wishQuota.offer_used >= wishQuota.offer_max) {
-           showToast('免費版每月僅能發佈 1 則接委託，您的額度已用盡。', 'error');
+           showToast('免費版每月僅能發佈 3 則接委託，您的額度已用盡。', 'error');
            return;
        }
     }

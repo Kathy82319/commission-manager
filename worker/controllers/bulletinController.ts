@@ -524,7 +524,7 @@ export const bulletinController = {
         data: {
           is_pro: isPro || isTrial,
           offer_used: offerRes[0]?.count || 0,
-          offer_max: 1,
+          offer_max: 3,
           request_inquire_used: requestRes[0]?.count || 0,
           request_inquire_max: 5
         }
