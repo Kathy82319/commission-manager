@@ -156,7 +156,25 @@ export function PublicProfile() {
                 safeTags = Array.isArray(parsed) ? parsed : [];
               }
             } catch (e) {}
-            return { ...item, tags: safeTags };
+            let parsedImages: string[] = [];
+if (item.cover_url) {
+  try {
+    if (item.cover_url.startsWith('[')) {
+      const imgArr = JSON.parse(item.cover_url);
+      parsedImages = Array.isArray(imgArr) ? imgArr : [item.cover_url];
+    } else {
+      parsedImages = [item.cover_url];
+    }
+  } catch (e) {
+    parsedImages = [item.cover_url];
+  }
+}
+return {
+  ...item,
+  tags: safeTags,
+  images: parsedImages,
+  cover_url: parsedImages[0] || item.cover_url || ''
+};
           });
           setShowcaseItems(formattedItems);
         }

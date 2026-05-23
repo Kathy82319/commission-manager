@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import './styles/ShowcaseModal.css';
 
 const decodeHTML = (html?: string) => {
@@ -10,6 +10,19 @@ const decodeHTML = (html?: string) => {
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
+};
+
+// 安全解析 cover_url：可能是 JSON 陣列字串，也可能是單純 URL
+const parseImages = (coverUrl?: string, imagesArr?: string[]): string[] => {
+  if (imagesArr && imagesArr.length > 0) return imagesArr;
+  if (!coverUrl) return [];
+  try {
+    if (coverUrl.startsWith('[')) {
+      const parsed = JSON.parse(coverUrl);
+      return Array.isArray(parsed) ? parsed : [coverUrl];
+    }
+  } catch (e) {}
+  return [coverUrl];
 };
 
 interface ShowcaseModalProps {
@@ -26,6 +39,14 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
+
+  // 解析多圖陣列
+  const images = useMemo(
+    () => parseImages(selectedShowcase?.cover_url, selectedShowcase?.images),
+    [selectedShowcase]
+  );
+  const hasMultiImg = images.length > 1;
 
   const parsedSchema: any[] = useMemo(() => {
     if (!selectedShowcase || !selectedShowcase.form_schema) return [];
@@ -47,17 +68,15 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
       navigate('/login');
       return;
     }
-    if (isFull) {
-      alert("此項目目前已滿單暫停收件囉！");
-      return;
-    }
+    if (isFull) { alert("此項目目前已滿單暫停收件囉！"); return; }
     setModalMode('form1');
     setFormData({});
     setAgreedToTerms(false);
   };
 
-  const handleInputChange = (fieldId: string, value: any) => setFormData(prev => ({ ...prev, [fieldId]: value }));
-  
+  const handleInputChange = (fieldId: string, value: any) =>
+    setFormData(prev => ({ ...prev, [fieldId]: value }));
+
   const handleCheckboxChange = (fieldId: string, option: string, isChecked: boolean) => {
     setFormData(prev => {
       const currentArr = (prev[fieldId] || []) as string[];
@@ -88,21 +107,17 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
         question: field.label,
         answer: formData[field.id] || (field.type === 'checkbox' ? [] : '')
       }));
-
       const payload = {
         showcase_id: selectedShowcase.id,
         artist_id: artist.id,
         form_answers: JSON.stringify(formattedAnswers),
         tos_snapshot: tosContent
       };
-
       const res = await fetch(`${API_BASE}/api/direct-inquiries`, {
-        method: 'POST',
-        credentials: 'include',
+        method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const data = await res.json();
       if (data.success) {
         if (isLoggedIn) {
@@ -171,13 +186,62 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   return (
     <div className="lightbox-overlay showcase-modal-overlay" onClick={onClose}>
       <button className="lightbox-close" onClick={onClose}><X size={32}/></button>
-      
+
       <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
         {modalMode === 'view' && (
           <>
-            <div className="showcase-cover">
-              <img src={selectedShowcase.cover_url} alt={selectedShowcase.title} />
+            {/* ── 左側：多圖輪播 ── */}
+            <div className="showcase-cover" style={{ position: 'relative', overflow: 'hidden' }}>
+              {images.length > 0 ? (
+                <>
+                  <img
+                    src={images[imgIdx]}
+                    alt={selectedShowcase.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+
+                  {/* 左右箭頭 */}
+                  {hasMultiImg && (
+                    <>
+                      <button
+                        onClick={e => { e.stopPropagation(); setImgIdx(i => (i - 1 + images.length) % images.length); }}
+                        style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#FFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
+                      ><ChevronLeft size={18} /></button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setImgIdx(i => (i + 1) % images.length); }}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#FFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
+                      ><ChevronRight size={18} /></button>
+                    </>
+                  )}
+
+                  {/* 圓點導覽 */}
+                  {hasMultiImg && (
+                    <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 2 }}>
+                      {images.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={e => { e.stopPropagation(); setImgIdx(i); }}
+                          style={{ width: '7px', height: '7px', borderRadius: '50%', border: 'none', padding: 0, cursor: 'pointer', background: i === imgIdx ? '#FFF' : 'rgba(255,255,255,0.45)', transition: 'background 0.15s, transform 0.15s', transform: i === imgIdx ? 'scale(1.3)' : 'scale(1)' }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 張數標示 */}
+                  {hasMultiImg && (
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: '#FFF', fontSize: '12px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px', zIndex: 2 }}>
+                      {imgIdx + 1} / {images.length}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: '#F4F0EB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>
+                  尚無圖片
+                </div>
+              )}
             </div>
+
+            {/* ── 右側：詳細資訊 ── */}
             <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div className="showcase-header">
                 <h2>{selectedShowcase.title}</h2>
@@ -202,7 +266,11 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
 
               {hasForm && (
                 <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #EAE6E1' }}>
-                  <button onClick={handleOpenCommission} disabled={isFull} style={{ width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', color: '#FFF', cursor: isFull ? 'not-allowed' : 'pointer' }}>
+                  <button
+                    onClick={handleOpenCommission}
+                    disabled={isFull}
+                    style={{ width: '100%', padding: '14px', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', backgroundColor: isFull ? '#C4BDB5' : '#4E7A5A', color: '#FFF', cursor: isFull ? 'not-allowed' : 'pointer' }}
+                  >
                     {isFull ? '🛑 已滿單 / 暫停收件' : '我要委託'}
                   </button>
                 </div>
