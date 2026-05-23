@@ -9,7 +9,6 @@ export interface ProfileSettings {
   hidden_sections: string[]; 
   splash_enabled: boolean;
   splash_image: string;
-  splash_image_mobile?: string;
   splash_duration: number;
   splash_text: string;
   layout_type?: 'blog' | 'gallery';

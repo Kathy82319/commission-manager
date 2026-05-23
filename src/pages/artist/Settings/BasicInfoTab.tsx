@@ -42,7 +42,7 @@ export function BasicInfoTab({ formData, setFormData, settings, setSettings }: P
       });
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
       
-      setFormData(prev => ({ ...prev, avatar_url: `https:場背景圖設定pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}` }));
+      setFormData(prev => ({ ...prev, avatar_url: `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}` }));
     } catch (err: any) { 
       alert(err.message || "頭像上傳失敗"); 
     } finally { 

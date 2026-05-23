@@ -37,16 +37,6 @@ export function PublicProfile() {
   
   const [showSplash, setShowSplash] = useState(false);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
-  const [isMobileViewport, setIsMobileViewport] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState<'none' | 'favorite' | 'blacklist'>('none');
@@ -92,14 +82,11 @@ export function PublicProfile() {
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {
-    const image = (isMobileViewport && settings?.splash_image_mobile)
-      ? settings.splash_image_mobile
-      : settings?.splash_image;
-    if (image) {
-      return { backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
+    if (settings?.splash_image) {
+      return { backgroundImage: `url(${settings.splash_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
     }
     return backgroundStyle;
-  }, [settings?.splash_image, settings?.splash_image_mobile, backgroundStyle, isMobileViewport]);
+  }, [settings?.splash_image, backgroundStyle]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
