@@ -130,8 +130,23 @@ export function PublicProfile() {
             try {
               const rawSettings = userData.data.profile_settings;
               parsedSettings = typeof rawSettings === 'string' ? JSON.parse(rawSettings) : rawSettings;
-              if (parsedSettings.splash_enabled === true) setShowSplash(true);
               setSettings(parsedSettings);
+              if (parsedSettings.splash_enabled === true) {
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                const imageUrl = (isMobile && parsedSettings.splash_image_mobile)
+                  ? parsedSettings.splash_image_mobile
+                  : parsedSettings.splash_image;
+                if (imageUrl) {
+                  await new Promise<void>(resolve => {
+                    const img = new window.Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => resolve();
+                    setTimeout(resolve, 2000);
+                    img.src = imageUrl;
+                  });
+                }
+                setShowSplash(true);
+              }
             } catch (e) { setShowSplash(false); }
           } else setShowSplash(false);
 

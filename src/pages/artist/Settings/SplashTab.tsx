@@ -30,8 +30,8 @@ export function SplashTab({ settings, setSettings }: Props) {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    if (file.size > 10 * 1024 * 1024) {
-      alert('檔案太大，最大限制為 10MB');
+    if (file.size > 3 * 1024 * 1024) {
+      alert('檔案太大，最大限制為 3MB。建議先手動壓縮至 1MB 以內，可減少訪客等待時間。');
       e.target.value = '';
       return;
     }
@@ -154,6 +154,8 @@ export function SplashTab({ settings, setSettings }: Props) {
               <span>🖥️ <strong>網頁版</strong>建議規格：1920x1080（比例 16:9）</span>
               <br />
               <span>📱 <strong>手機版</strong>建議規格：1080x1920（比例 9:16）</span>
+              <br />
+              <span style={{ color: '#A67B3E' }}>⚡ 上傳後系統會自動壓縮。建議原圖 1MB 以內，可減少訪客等待時間；最大限制 3MB。</span>
             </div>
 
             <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#FBFBF9', cursor: 'pointer', position: 'relative' }}>
@@ -164,7 +166,7 @@ export function SplashTab({ settings, setSettings }: Props) {
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
               />
               <span style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold' }}>
-                點擊上傳開場圖片（原圖最大 10MB）
+                點擊上傳開場圖片（最大 3MB）
               </span>
             </div>
           </div>
