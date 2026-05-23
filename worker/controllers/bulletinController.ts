@@ -122,11 +122,11 @@ export const bulletinController = {
               `).bind(currentUserId).all();
               
               const usedCount = (countRes[0]?.count as number) || 0;
-              if (usedCount >= 1) {
-                  return new Response(JSON.stringify({ 
-                      success: false, 
-                      error: 'QUOTA_EXCEEDED', 
-                      message: '免費版每月僅能發佈 1 則接委託，您的額度已用盡。升級專業版以解鎖發佈限制！' 
+              if (usedCount >= 3) {
+                  return new Response(JSON.stringify({
+                      success: false,
+                      error: 'QUOTA_EXCEEDED',
+                      message: '免費版每月僅能發佈 3 則接委託，您的額度已用盡。升級專業版以解鎖發佈限制！'
                   }), { status: 403, headers: corsHeaders });
               }
           }
