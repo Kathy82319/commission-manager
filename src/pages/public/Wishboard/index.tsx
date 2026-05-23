@@ -374,7 +374,7 @@ export const Wishboard: React.FC = () => {
               </button>
             </div>
             
-            <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
+            <div className="custom-scrollbar" style={{ padding: '20px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
               <div style={{ marginBottom: '16px' }}>
                 <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>
                 為保護創作者價值，許願池全面禁止發布任何 AI 生成作品之接稿 or 販售貼文。由社群共同監督，若遭檢舉且查證屬實將下架處理。
