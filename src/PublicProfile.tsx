@@ -82,13 +82,11 @@ export function PublicProfile() {
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-    const image = (isMobile && settings?.splash_image_mobile) ? settings.splash_image_mobile : settings?.splash_image;
-    if (image) {
-      return { backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
+    if (settings?.splash_image) {
+      return { backgroundImage: `url(${settings.splash_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
     }
     return backgroundStyle;
-  }, [settings?.splash_image, settings?.splash_image_mobile, backgroundStyle]);
+  }, [settings?.splash_image, backgroundStyle]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -371,11 +369,22 @@ return {
       </div>
 
       {showSplash && (
-        <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
-          <div className="splash-box">
-            <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
+        <>
+          {settings?.splash_image_mobile && (
+            <style>{`
+              @media (max-width: 768px) {
+                .splash-screen {
+                  background-image: url('${settings.splash_image_mobile}') !important;
+                }
+              }
+            `}</style>
+          )}
+          <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
+            <div className="splash-box">
+              <h1 style={{ color: textColor }}>{settings?.splash_text || artist.display_name}</h1>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
