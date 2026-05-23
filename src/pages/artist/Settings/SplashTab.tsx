@@ -175,7 +175,7 @@ export function SplashTab({ settings, setSettings }: Props) {
           {(settings.splash_image || settings.splash_image_mobile) && (
             <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
               {settings.splash_image && (
-                <div style={{ flex: '1 1 240px', minWidth: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                <div style={{ flex: '1 1 200px', maxWidth: '380px', minWidth: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
                   <div style={{ fontSize: '12px', color: '#A0978D', padding: '8px 10px', fontWeight: 'bold', background: '#FAFAFA', borderBottom: '1px solid #EAE6E1' }}>🖥️ 目前網頁版</div>
                   <img src={settings.splash_image} alt="桌機版" style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '16/9' }} />
                   <button
@@ -187,7 +187,7 @@ export function SplashTab({ settings, setSettings }: Props) {
                 </div>
               )}
               {settings.splash_image_mobile && (
-                <div style={{ flex: '0 0 90px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
+                <div style={{ flex: '0 0 120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
                   <div style={{ fontSize: '12px', color: '#A0978D', padding: '8px 10px', fontWeight: 'bold', background: '#FAFAFA', borderBottom: '1px solid #EAE6E1' }}>📱 手機版</div>
                   <img src={settings.splash_image_mobile} alt="手機版" style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '9/16' }} />
                   <button
