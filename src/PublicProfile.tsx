@@ -82,11 +82,13 @@ export function PublicProfile() {
   }, [settings]);
 
   const splashBgStyle = useMemo(() => {
-    if (settings?.splash_image) {
-      return { backgroundImage: `url(${settings.splash_image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const image = (isMobile && settings?.splash_image_mobile) ? settings.splash_image_mobile : settings?.splash_image;
+    if (image) {
+      return { backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' };
     }
     return backgroundStyle;
-  }, [settings?.splash_image, backgroundStyle]);
+  }, [settings?.splash_image, settings?.splash_image_mobile, backgroundStyle]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
