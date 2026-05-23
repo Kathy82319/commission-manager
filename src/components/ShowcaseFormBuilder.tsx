@@ -27,6 +27,7 @@ export interface ShowcaseItem {
   id?: string;
   title: string;
   cover_url: string;
+  images?: string[]; // 已擴充的多圖陣列
   price_info: string;
   tags: string[]; 
   description: string;
@@ -61,13 +62,42 @@ export function ShowcaseFormBuilder({
   const [viewMode, setViewMode] = useState<'basic' | 'form'>('basic');
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
 
-  const [editingItem, setEditingItem] = useState<ShowcaseItem>(initialItem);
   const [formFields, setFormFields] = useState<FormFieldSchema[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
+  // 預覽輪播索引
+  const [previewImgIdx, setPreviewImgIdx] = useState(0);
+
+  const [editingItem, setEditingItem] = useState<ShowcaseItem>(() => {
+    let initialImages: string[] = [];
+    if (initialItem.images && initialItem.images.length > 0) {
+      initialImages = initialItem.images;
+    } else if (initialItem.cover_url) {
+      try {
+        if (initialItem.cover_url.startsWith('[')) {
+          const parsed = JSON.parse(initialItem.cover_url);
+          initialImages = Array.isArray(parsed) ? parsed : [initialItem.cover_url];
+        } else {
+          initialImages = [initialItem.cover_url];
+        }
+      } catch (e) {
+        initialImages = [initialItem.cover_url];
+      }
+    }
+    return {
+      ...initialItem,
+      images: initialImages,
+      cover_url: initialImages[0] || initialItem.cover_url || ''
+    };
+  });
+
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  // 圖片縮圖拖曳排序
+  const [imgDraggedIdx, setImgDraggedIdx] = useState<number | null>(null);
+  const [imgDragOverIdx, setImgDragOverIdx] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -77,17 +107,50 @@ export function ShowcaseFormBuilder({
     } catch (e) { 
       setFormFields([]); 
     }
+
+    if (initialItem) {
+      let parsedImages: string[] = [];
+      if (initialItem.images && initialItem.images.length > 0) {
+        parsedImages = initialItem.images;
+      } else if (initialItem.cover_url) {
+        try {
+          if (initialItem.cover_url.startsWith('[')) {
+            const parsed = JSON.parse(initialItem.cover_url);
+            parsedImages = Array.isArray(parsed) ? parsed : [initialItem.cover_url];
+          } else {
+            parsedImages = [initialItem.cover_url];
+          }
+        } catch (e) {
+          parsedImages = [initialItem.cover_url];
+        }
+      }
+      setEditingItem(prev => ({
+        ...prev,
+        ...initialItem,
+        images: parsedImages,
+        cover_url: parsedImages[0] || initialItem.cover_url || ''
+      }));
+      setPreviewImgIdx(0);
+    }
   }, [initialItem]);
 
-  const handleCoverUpload = async (resultBlobs: { preview: Blob }) => {
-    if (isReadOnly) return; 
+  // ==========================================
+  // 多圖上傳：每次上傳一張，推入 images[]
+  // ==========================================
+  const handleMultiImageUpload = async (resultBlobs: { preview: Blob }) => {
+    if (isReadOnly) return;
+    const currentImages = editingItem.images || [];
+    if (currentImages.length >= 5) {
+      onToast("最多只能上傳 5 張圖片", "err");
+      return;
+    }
     setIsUploading(true);
     try {
       const fileType = resultBlobs.preview.type || 'image/jpeg';
       const fileExt = fileType.split('/')[1] || 'jpg';
       const ticketRes = await fetch(`${apiBase}/api/r2/upload-url`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `cover.${fileExt}`, folder: 'showcase' }) 
+        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `showcase_${Date.now()}.${fileExt}`, folder: 'showcase' }) 
       });
       const ticketData = await ticketRes.json();
       if (!ticketData.success) throw new Error(ticketData.error || "無法取得通行證");
@@ -96,12 +159,66 @@ export function ShowcaseFormBuilder({
       if (!uploadRes.ok) throw new Error("上傳遭拒絕");
 
       const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
-      setEditingItem(prev => ({ ...prev, cover_url: finalUrl }));
+
+      setEditingItem(prev => {
+        const nextImages = [...(prev.images || []), finalUrl];
+        return {
+          ...prev,
+          images: nextImages,
+          cover_url: nextImages[0] || ''
+        };
+      });
+      onToast("✅ 圖片上傳成功", "ok");
     } catch (err: any) {
-      onToast(err.message || "封面圖上傳失敗", "err");
+      onToast(err.message || "圖片上傳失敗", "err");
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // ==========================================
+  // 點擊預覽圖右上角 X 按鈕直接移除特定圖片
+  // ==========================================
+  const removeUploadedImage = (indexToRemove: number) => {
+    if (isReadOnly) return;
+    const currentImages = editingItem.images || [];
+    const nextImages = currentImages.filter((_, idx) => idx !== indexToRemove);
+    setEditingItem(prev => ({
+      ...prev,
+      images: nextImages,
+      cover_url: nextImages[0] || ''
+    }));
+    // 預覽索引保護：若移除後超界就退回最後一張
+    setPreviewImgIdx(prev => Math.min(prev, Math.max(0, nextImages.length - 1)));
+  };
+
+  // ==========================================
+  // 圖片縮圖拖曳排序
+  // ==========================================
+  const handleImgDragStart = (e: React.DragEvent, index: number) => {
+    setImgDraggedIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handleImgDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setImgDragOverIdx(index);
+  };
+  const handleImgDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleImgDragEnd = () => { setImgDraggedIdx(null); setImgDragOverIdx(null); };
+  const handleImgDrop = (e: React.DragEvent, dropIdx: number) => {
+    e.preventDefault();
+    if (imgDraggedIdx === null || imgDraggedIdx === dropIdx) return;
+    const currentImages = [...(editingItem.images || [])];
+    const [moved] = currentImages.splice(imgDraggedIdx, 1);
+    currentImages.splice(dropIdx, 0, moved);
+    setEditingItem(prev => ({
+      ...prev,
+      images: currentImages,
+      cover_url: currentImages[0] || ''
+    }));
+    setImgDraggedIdx(null);
+    setImgDragOverIdx(null);
+    setPreviewImgIdx(0);
   };
 
   const handleAddTag = () => {
@@ -150,8 +267,10 @@ export function ShowcaseFormBuilder({
   };
 
   const handleSaveItem = async () => {
-    if (!editingItem.title || !editingItem.cover_url) {
-      onToast("請填寫品名並上傳封面圖", "err"); return;
+    const currentImages = editingItem.images || [];
+    if (!editingItem.title || currentImages.length === 0) {
+      onToast("請填寫品名並至少上傳一張圖片", "err"); 
+      return;
     }
     if (formFields.some(f => !f.label.trim())) {
       onToast("客製化表單有未命名的問題，請檢查", "err"); 
@@ -162,15 +281,21 @@ export function ShowcaseFormBuilder({
     const url = editingItem.id ? `${apiBase}/api/showcase/${editingItem.id}` : `${apiBase}/api/showcase`;
     const method = editingItem.id ? 'PATCH' : 'POST';
 
+    // 將整個圖片陣列 JSON 化，塞入 cover_url 欄位送後端（做法 A）
+    const finalCoverUrlString = JSON.stringify(currentImages);
+
     const payload = {
       ...editingItem,
+      cover_url: finalCoverUrlString,
       tags: JSON.stringify(editingItem.tags),
       form_schema: JSON.stringify(formFields)
     };
 
     try {
       const res = await fetch(url, {
-        method, credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        method, 
+        credentials: 'include', 
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload) 
       });
       const data = await res.json();
@@ -242,31 +367,18 @@ export function ShowcaseFormBuilder({
       e.dataTransfer.setDragImage(e.currentTarget as Element, 20, 20);
     }
   };
-
   const handleDragEnter = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (index !== dragOverIdx) {
-      setDragOverIdx(index);
-    }
+    if (index !== dragOverIdx) setDragOverIdx(index);
   };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null);
-    setDragOverIdx(null);
-  };
-
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDragEnd = () => { setDraggedIdx(null); setDragOverIdx(null); };
   const handleDrop = (e: React.DragEvent, dropIdx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === dropIdx) return;
-    
     const newFields = [...formFields];
     const [draggedItem] = newFields.splice(draggedIdx, 1);
     newFields.splice(dropIdx, 0, draggedItem);
-    
     setFormFields(newFields);
     setDraggedIdx(null);
     setDragOverIdx(null);
@@ -274,10 +386,10 @@ export function ShowcaseFormBuilder({
 
   const hasContactField = formFields.some(f => /聯絡|信箱|email|ig|line|社群|twitter|x/i.test(f.label));
   const showGuestWarning = editingItem.allow_guest === 1 && !hasContactField && formFields.length > 0;
+  const currentImages = editingItem.images || [];
 
   return (
     <>
-      
       <style>{`
         .basic-card { padding: 30px; }
         .basic-action-group { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #EAE6E1; padding-top: 24px; margin-top: 8px; }
@@ -294,6 +406,125 @@ export function ShowcaseFormBuilder({
         .fb-left { flex: 1.2; overflow-y: auto; padding: 40px; background: #F4F0EB; }
         .fb-right { flex: 1; background: #E6E1DA; padding: 40px; overflow-y: auto; border-left: 1px solid #DED9D3; display: block; }
 
+        /* ── 多圖管理區 ── */
+        .multi-img-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .multi-img-thumb {
+          position: relative;
+          aspect-ratio: 1;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 2px solid #EAE6E1;
+          background: #F4F0EB;
+          cursor: grab;
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        }
+        .multi-img-thumb:first-child {
+          border-color: #A67B3E;
+          box-shadow: 0 0 0 2px rgba(166,123,62,0.25);
+        }
+        .multi-img-thumb.img-drag-over {
+          border-color: #4E7A5A;
+          box-shadow: 0 0 0 2px rgba(78,122,90,0.35);
+          transform: scale(1.04);
+        }
+        .multi-img-thumb.img-dragging {
+          opacity: 0.4;
+        }
+        .multi-img-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          pointer-events: none;
+        }
+        .multi-img-remove {
+          position: absolute;
+          top: 3px;
+          right: 3px;
+          width: 20px;
+          height: 20px;
+          background: rgba(0,0,0,0.55);
+          color: #FFF;
+          border: none;
+          border-radius: 50%;
+          font-size: 11px;
+          line-height: 20px;
+          text-align: center;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.15s;
+          padding: 0;
+        }
+        .multi-img-thumb:hover .multi-img-remove { opacity: 1; }
+        .multi-img-cover-badge {
+          position: absolute;
+          bottom: 3px;
+          left: 3px;
+          background: rgba(166,123,62,0.85);
+          color: #FFF;
+          font-size: 9px;
+          font-weight: bold;
+          padding: 1px 5px;
+          border-radius: 4px;
+          letter-spacing: 0.5px;
+          pointer-events: none;
+        }
+        .multi-img-add-slot {
+          aspect-ratio: 1;
+          border-radius: 8px;
+          border: 2px dashed #C4BDB5;
+          background: #FBFBF9;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          color: #A0978D;
+          font-size: 11px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+          overflow: hidden;
+        }
+        .multi-img-add-slot:hover { border-color: #5D4A3E; background: #F4F0EB; color: #5D4A3E; }
+        .multi-img-add-slot .add-icon { font-size: 22px; line-height: 1; }
+
+        /* 右側預覽輪播 */
+        .preview-carousel { position: relative; width: 100%; }
+        .preview-carousel-main { 
+          width: 100%; height: 180px; object-fit: cover; border-radius: 8px; 
+          margin-bottom: 8px; display: block;
+        }
+        .preview-carousel-dots {
+          display: flex; gap: 5px; justify-content: center; margin-bottom: 16px;
+        }
+        .preview-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #DED9D3; border: none; padding: 0; cursor: pointer;
+          transition: background 0.15s, transform 0.15s;
+        }
+        .preview-dot.active { background: #5D4A3E; transform: scale(1.25); }
+        .preview-dot:hover:not(.active) { background: #A67B3E; }
+        .preview-carousel-arrow {
+          position: absolute; top: 50%; transform: translateY(calc(-50% - 16px));
+          width: 26px; height: 26px; border-radius: 50%;
+          background: rgba(93,74,62,0.65); color: #FFF; border: none;
+          font-size: 14px; cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
+          transition: background 0.15s; padding: 0;
+        }
+        .preview-carousel-arrow:hover { background: rgba(93,74,62,0.9); }
+        .preview-carousel-arrow.left { left: 6px; }
+        .preview-carousel-arrow.right { right: 6px; }
+
         @media (max-width: 768px) {
           .basic-card { padding: 16px !important; }
           .basic-action-group { gap: 8px; }
@@ -308,6 +539,8 @@ export function ShowcaseFormBuilder({
           .fb-main { flex-direction: column; overflow-y: auto; }
           .fb-left, .fb-right { flex: none; padding: 16px; height: auto; overflow-y: visible; }
           .fb-right { border-left: none; border-top: 1px solid #DED9D3; }
+
+          .multi-img-grid { grid-template-columns: repeat(5, 1fr); }
         }
       `}</style>
 
@@ -316,16 +549,92 @@ export function ShowcaseFormBuilder({
           <div className="basic-card" style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             
             <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
-                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>項目封面圖 (必填)</label>
+
+              {/* ── 左欄：多圖管理 ── */}
+              <div style={{ flex: '1 1 300px', maxWidth: '420px' }}>
+                <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>
+                  作品圖片 (必填，最多 5 張)
+                  <span style={{ fontWeight: 'normal', color: '#A0978D', fontSize: '12px', marginLeft: '8px' }}>
+                    第一張為封面 · 可拖曳排序
+                  </span>
+                </label>
+
                 <div style={{ backgroundColor: '#FBFBF9', padding: '12px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
-                  {editingItem.cover_url && (
-                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px', border: '1px solid #EAE6E1' }} />
+                  
+                  {/* 圖片縮圖列 */}
+                  {currentImages.length > 0 && (
+                    <div className="multi-img-grid">
+                      {currentImages.map((url, idx) => (
+                        <div
+                          key={url + idx}
+                          className={[
+                            'multi-img-thumb',
+                            imgDraggedIdx === idx ? 'img-dragging' : '',
+                            imgDragOverIdx === idx && imgDraggedIdx !== idx ? 'img-drag-over' : ''
+                          ].join(' ')}
+                          draggable={!isReadOnly}
+                          onDragStart={e => handleImgDragStart(e, idx)}
+                          onDragEnter={e => handleImgDragEnter(e, idx)}
+                          onDragOver={handleImgDragOver}
+                          onDragEnd={handleImgDragEnd}
+                          onDrop={e => handleImgDrop(e, idx)}
+                          title={idx === 0 ? '封面圖（第一張）' : `第 ${idx + 1} 張`}
+                        >
+                          <img src={url} alt={`圖片 ${idx + 1}`} />
+                          {idx === 0 && <span className="multi-img-cover-badge">封面</span>}
+                          {!isReadOnly && (
+                            <button
+                              className="multi-img-remove"
+                              onClick={e => { e.stopPropagation(); removeUploadedImage(idx); }}
+                              title="移除此圖"
+                            >✕</button>
+                          )}
+                        </div>
+                      ))}
+
+                      {/* 空位：不足 5 張時顯示 + 上傳 slot */}
+                      {currentImages.length < 5 && !isReadOnly && (
+                        <div className="multi-img-add-slot">
+                          <ImageUploader
+                            onUpload={handleMultiImageUpload}
+                            targetWidth={800}
+                            withWatermark={false}
+                            buttonText={isUploading ? '上傳中…' : `＋ 新增 (${currentImages.length}/5)`}
+                            maxSizeMB={3}
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
-                  <ImageUploader onUpload={handleCoverUpload} targetWidth={800} withWatermark={false} buttonText={isUploading ? "上傳中..." : (editingItem.cover_url ? "更換封面圖" : "上傳封面圖")} maxSizeMB={3} />
+
+                  {/* 完全沒有圖片時顯示大型上傳按鈕 */}
+                  {currentImages.length === 0 && !isReadOnly && (
+                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                      <ImageUploader
+                        onUpload={handleMultiImageUpload}
+                        targetWidth={800}
+                        withWatermark={false}
+                        buttonText={isUploading ? "上傳中..." : "上傳第一張圖片"}
+                        maxSizeMB={3}
+                      />
+                    </div>
+                  )}
+
+                  {/* 唯讀且有圖時也顯示縮圖 */}
+                  {currentImages.length === 0 && isReadOnly && (
+                    <div style={{ textAlign: 'center', padding: '32px', color: '#A0978D', fontSize: '14px' }}>尚未上傳圖片</div>
+                  )}
+
+                  {/* 說明文字 */}
+                  {currentImages.length > 0 && (
+                    <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#A0978D', textAlign: 'center' }}>
+                      {isReadOnly ? `共 ${currentImages.length} 張` : '拖曳縮圖可調整順序，第一張自動作為封面'}
+                    </p>
+                  )}
                 </div>
               </div>
               
+              {/* ── 右欄：基本資訊 ── */}
               <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
                   <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 (必填)</label>
@@ -380,35 +689,28 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            
             <div className="basic-action-group">
-              <button onClick={onClose} className="btn-cancel">
-                返回接委託區
-              </button>
-              <button onClick={handleSaveItem} className="btn-submit">
-                儲存項目
-              </button>
+              <button onClick={onClose} className="btn-cancel">返回接委託區</button>
+              <button onClick={handleSaveItem} className="btn-submit">儲存項目</button>
             </div>
-
           </div>
         </div>
+
       ) : (
+
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', backgroundColor: '#F0ECE7' }}>
           
           <div className="fb-header">
             <div className="fb-header-left">
-              <button onClick={() => setViewMode('basic')} className="fb-btn-back">
-                🔙 返回基本設定
-              </button>
+              <button onClick={() => setViewMode('basic')} className="fb-btn-back">🔙 返回基本設定</button>
               <h2>📋 制訂專屬委託表單 - {editingItem.title || '未命名'}</h2>
             </div>
-            <button onClick={handleSaveItem} className="fb-btn-save">
-              完成並儲存
-            </button>
+            <button onClick={handleSaveItem} className="fb-btn-save">完成並儲存</button>
           </div>
 
           <div className="fb-main">
             
+            {/* ── 左側：表單建置 ── */}
             <div className="custom-scrollbar fb-left">
               <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
@@ -484,9 +786,7 @@ export function ShowcaseFormBuilder({
                         onDrop={(e) => handleDrop(e, index)}
                         onClick={() => setActiveFieldId(field.id)}
                         style={{ 
-                          background: '#FFF', 
-                          borderRadius: '12px', 
-                          position: 'relative', 
+                          background: '#FFF', borderRadius: '12px', position: 'relative', 
                           boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.08)' : '0 2px 6px rgba(0,0,0,0.03)',
                           border: '1px solid',
                           borderColor: isActive ? '#FFFFFF' : '#EAE6E1',
@@ -497,39 +797,23 @@ export function ShowcaseFormBuilder({
                           cursor: isActive ? 'default' : 'pointer'
                         }}
                       >
-                        <div 
-                          style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
-                          title="按住拖曳可排序"
-                        >
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }} title="按住拖曳可排序">
                           <span style={{ transform: 'rotate(90deg)', letterSpacing: '2px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
                         </div>
 
                         <div style={{ padding: '32px 24px 24px 24px' }}>
                           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                            
                             <div style={{ flex: '1 1 200px' }}>
                               {isActive ? (
-                                <input 
-                                  className="form-input" 
-                                  value={field.label} 
-                                  onChange={e => updateFormField(field.id, { label: e.target.value })} 
-                                  placeholder="請輸入問題" 
-                                  style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} 
-                                />
+                                <input className="form-input" value={field.label} onChange={e => updateFormField(field.id, { label: e.target.value })} placeholder="請輸入問題" style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} />
                               ) : (
                                 <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: '8px' }}>
                                   {field.label || `未命名問題 ${index + 1}`} {field.required && <span style={{ color: '#EF4444' }}>*</span>}
                                 </div>
                               )}
                             </div>
-
                             {isActive && (
-                              <select 
-                                className="form-input" 
-                                value={field.type} 
-                                onChange={e => updateFormField(field.id, { type: e.target.value as any })} 
-                                style={{ width: '100%', maxWidth: '160px', fontWeight: 'bold', color: '#5D4A3E' }}
-                              >
+                              <select className="form-input" value={field.type} onChange={e => updateFormField(field.id, { type: e.target.value as any })} style={{ width: '100%', maxWidth: '160px', fontWeight: 'bold', color: '#5D4A3E' }}>
                                 <option value="text">簡答題</option>
                                 <option value="textarea">詳答題</option>
                                 <option value="radio">單選題</option>
@@ -546,7 +830,6 @@ export function ShowcaseFormBuilder({
                                 {field.type === 'text' ? '簡答文字' : field.type === 'textarea' ? '詳答文字' : '年 / 月 / 日'}
                               </div>
                             )}
-
                             {['radio', 'checkbox', 'select'].includes(field.type) && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {field.options?.map((opt, i) => (
@@ -556,12 +839,7 @@ export function ShowcaseFormBuilder({
                                     </span>
                                     {isActive ? (
                                       <>
-                                        <input 
-                                          className="form-input" 
-                                          value={opt} 
-                                          onChange={e => updateOption(field.id, i, e.target.value)}
-                                          style={{ border: 'none', borderBottom: '1px solid #EAE6E1', borderRadius: 0, padding: '4px 8px', flex: '1 1 100px', maxWidth: '400px' }}
-                                        />
+                                        <input className="form-input" value={opt} onChange={e => updateOption(field.id, i, e.target.value)} style={{ border: 'none', borderBottom: '1px solid #EAE6E1', borderRadius: 0, padding: '4px 8px', flex: '1 1 100px', maxWidth: '400px' }} />
                                         {field.options!.length > 1 && (
                                           <button onClick={() => removeOption(field.id, i)} style={{ background: 'none', border: 'none', color: '#A0978D', cursor: 'pointer', fontSize: '16px' }}>✕</button>
                                         )}
@@ -576,9 +854,7 @@ export function ShowcaseFormBuilder({
                                     <span style={{ color: '#A0978D', fontSize: '18px' }}>
                                       {field.type === 'radio' ? '○' : field.type === 'checkbox' ? '□' : '*'}
                                     </span>
-                                    <button onClick={() => addOption(field.id)} style={{ background: 'none', border: 'none', color: '#4A7294', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}>
-                                      新增選項
-                                    </button>
+                                    <button onClick={() => addOption(field.id)} style={{ background: 'none', border: 'none', color: '#4A7294', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}>新增選項</button>
                                   </div>
                                 )}
                               </div>
@@ -588,9 +864,7 @@ export function ShowcaseFormBuilder({
 
                         {isActive && (
                           <div style={{ borderTop: '1px solid #EAE6E1', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
-                            <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">
-                              🗑️
-                            </button>
+                            <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">🗑️</button>
                             <div style={{ width: '1px', height: '24px', background: '#DED9D3' }}></div>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
                               必填
@@ -616,11 +890,10 @@ export function ShowcaseFormBuilder({
                   <button onClick={() => addFormField('checkbox')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 多選題</button>
                   <button onClick={() => addFormField('select')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 下拉選單</button>
                 </div>
-                
               </div>
             </div>
 
-            
+            {/* ── 右側：預覽 ── */}
             <div className="custom-scrollbar fb-right">
               <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
                 
@@ -629,10 +902,42 @@ export function ShowcaseFormBuilder({
                 </div>
 
                 <div style={{ padding: '30px' }}>
-                  {editingItem.cover_url ? (
-                    <img src={editingItem.cover_url} alt="Cover" style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '20px' }} />
+                  {/* 多圖輪播預覽 */}
+                  {currentImages.length > 0 ? (
+                    <div className="preview-carousel">
+                      <img
+                        src={currentImages[previewImgIdx] ?? currentImages[0]}
+                        alt="預覽"
+                        className="preview-carousel-main"
+                      />
+                      {currentImages.length > 1 && (
+                        <>
+                          <button
+                            className="preview-carousel-arrow left"
+                            onClick={() => setPreviewImgIdx(i => (i - 1 + currentImages.length) % currentImages.length)}
+                          >‹</button>
+                          <button
+                            className="preview-carousel-arrow right"
+                            onClick={() => setPreviewImgIdx(i => (i + 1) % currentImages.length)}
+                          >›</button>
+                        </>
+                      )}
+                      {currentImages.length > 1 && (
+                        <div className="preview-carousel-dots">
+                          {currentImages.map((_, i) => (
+                            <button
+                              key={i}
+                              className={`preview-dot${previewImgIdx === i ? ' active' : ''}`}
+                              onClick={() => setPreviewImgIdx(i)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div style={{ width: '100%', height: '180px', background: '#F4F4F1', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>尚未上傳封面</div>
+                    <div style={{ width: '100%', height: '180px', background: '#F4F4F1', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A0978D' }}>
+                      尚未上傳封面
+                    </div>
                   )}
                   
                   <h2 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '24px', fontWeight: 'bold', lineHeight: '1.4' }}>{editingItem.title || '未命名項目'}</h2>
@@ -698,6 +1003,7 @@ export function ShowcaseFormBuilder({
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       )}
