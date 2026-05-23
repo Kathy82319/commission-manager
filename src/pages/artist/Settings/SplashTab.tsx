@@ -175,7 +175,7 @@ export function SplashTab({ settings, setSettings }: Props) {
           {(settings.splash_image || settings.splash_image_mobile) && (
             <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '16px', backgroundColor: '#FBFBF9', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
               {/* 左欄：網頁版，固定 320px → 16:9 → 高 180px */}
-              <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column', paddingRight: '16px', borderRight: '1px dashed #DED9D3' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>🖥️ 目前網頁版</div>
                 {settings.splash_image ? (
                   <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
@@ -193,7 +193,7 @@ export function SplashTab({ settings, setSettings }: Props) {
               </div>
 
               {/* 右欄：手機版，固定 101px → 9:16 → 高 180px */}
-              <div style={{ flex: '0 0 101px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: '0 0 101px', display: 'flex', flexDirection: 'column', paddingLeft: '0' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>📱 手機版</div>
                 {settings.splash_image_mobile ? (
                   <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #EAE6E1' }}>
