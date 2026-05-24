@@ -13,18 +13,18 @@ export function PublicLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-  
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [, setUserRole] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
     textColor: 'black',
-    gradientDirection: 'to bottom right' 
+    gradientDirection: 'to bottom right'
   });
 
   useEffect(() => {
-    const role = localStorage.getItem('user_role'); 
+    const role = localStorage.getItem('user_role');
     if (role) {
       setIsLoggedIn(true);
       setUserRole(role);
@@ -36,12 +36,12 @@ export function PublicLayout() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { 
-        method: 'POST', 
-        credentials: 'include' 
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
       });
     } catch (e) {
-      console.error("登出通訊失敗:", e);
+      console.error('登出通訊失敗:', e);
     } finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
@@ -56,9 +56,11 @@ export function PublicLayout() {
     else navigate('/portal');
   };
 
-  const isLegalPage = 
-    location.pathname === '/terms' || 
-    location.pathname === '/privacy' || 
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+
+  const isLegalPage =
+    location.pathname === '/terms' ||
+    location.pathname === '/privacy' ||
     location.pathname === '/refund-policy';
 
   const color = theme.primaryColor || '#ffffff';
@@ -76,7 +78,6 @@ export function PublicLayout() {
 
   return (
     <div className="public-layout-container" style={dynamicStyles}>
-      {/* 全域預設 Meta */}
       <Helmet>
         <title>Arti 繪師小幫手</title>
         <meta property="og:title" content="Arti 繪師小幫手" />
@@ -84,18 +85,33 @@ export function PublicLayout() {
       </Helmet>
 
       <header className="public-header">
-        <div className="header-actions">
+        <div className="header-left">
+          <Link to="/" className="header-logo">✦ Arti</Link>
+          <nav className="header-nav">
+            <Link to="/announcements" className={`header-nav-link${isActive('/announcements') ? ' active' : ''}`}>
+              最新公告
+            </Link>
+            <Link to="/guide" className={`header-nav-link${isActive('/guide') ? ' active' : ''}`}>
+              使用教學 &amp; Q&amp;A
+            </Link>
+            <Link to="/wishboard" className={`header-nav-link${isActive('/wishboard') ? ' active' : ''}`}>
+              許願池
+            </Link>
+          </nav>
+        </div>
+
+        <div className="header-right">
           {isLoggedIn ? (
-            <div className="logged-in-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
-              <button onClick={handleDashboardClick} className="dashboard-btn" style={{ backgroundColor: 'var(--artist-text-color)', color: 'var(--artist-theme-color)', padding: '8px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
-                回到管理後台
+            <div className="header-auth-group">
+              <button onClick={handleDashboardClick} className="header-btn-outline">
+                後台
               </button>
-              <button onClick={handleLogout} className="logout-btn" style={{ backgroundColor: 'transparent', color: 'var(--artist-text-color)', padding: '8px 14px', borderRadius: '6px', border: '1px solid var(--artist-text-color)', cursor: 'pointer', fontSize: '13px', opacity: 0.8 }}>
+              <button onClick={handleLogout} className="header-btn-ghost">
                 登出
               </button>
             </div>
           ) : (
-            <button onClick={() => navigate('/login')} className="login-btn" style={{ backgroundColor: 'var(--artist-text-color)', color: 'var(--artist-theme-color)' }}>
+            <button onClick={() => navigate('/login')} className="header-btn-primary">
               登入 / 註冊
             </button>
           )}

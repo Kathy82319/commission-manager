@@ -27,6 +27,9 @@ import { ArtistManager } from './pages/client/ArtistManager';
 
 // Public & Common Pages
 import { PublicProfile } from './PublicProfile';
+import { Home } from './pages/public/Home';
+import { Announcements } from './pages/public/Announcements';
+import { Guide } from './pages/public/Guide';
 import { Wishboard } from './pages/public/Wishboard';
 import { Workspace } from './pages/Workspace';
 import { InquiryWorkspace } from './pages/InquiryWorkspace';
@@ -77,10 +80,12 @@ export function App() {
 
         <Route element={<PublicLayout />}>
           <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=success" replace />} />
-<Route path="/" element={<Navigate to="/wishboard" replace />} />
-<Route path="/wishboard" element={<Wishboard />}>
-  <Route path=":category" element={<Wishboard />} />
-</Route>
+          <Route path="/" element={<Home />} />
+          <Route path="/announcements" element={<Announcements />} />
+          <Route path="/guide" element={<Guide />} />
+          <Route path="/wishboard" element={<Wishboard />}>
+            <Route path=":category" element={<Wishboard />} />
+          </Route>
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
           
           <Route path="/terms" element={<Terms />} />

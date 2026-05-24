@@ -1,0 +1,157 @@
+/* src/styles/Announcements.css */
+
+.ann-page {
+  background: #FBFBF9;
+  min-height: 100vh;
+  padding: 40px 24px 80px;
+}
+
+.ann-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.ann-back {
+  background: none;
+  border: none;
+  color: #7A6B62;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  display: inline-block;
+  transition: color 0.15s;
+}
+
+.ann-back:hover {
+  color: #5D4A3E;
+}
+
+.ann-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #2A1F1A;
+  margin-bottom: 28px;
+}
+
+/* ── 篩選列 ── */
+.ann-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.ann-filter-btn {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: white;
+  color: #6B5C52;
+  border: 1px solid #DED9D3;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ann-filter-btn:hover {
+  border-color: #5D4A3E;
+  color: #5D4A3E;
+}
+
+.ann-filter-btn.active {
+  background: #5D4A3E;
+  color: white;
+  border-color: #5D4A3E;
+}
+
+/* ── 公告列表 ── */
+.ann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ann-item {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #EAE6E1;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.ann-item:hover {
+  box-shadow: 0 4px 16px rgba(93, 74, 62, 0.08);
+}
+
+.ann-item-header {
+  padding: 20px 24px;
+  cursor: pointer;
+}
+
+.ann-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ann-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-update { background: #E8F0EE; color: #2E6B55; }
+.badge-event  { background: #EDE6DF; color: #5D4A3E; }
+.badge-other  { background: #EEEAF6; color: #5B4A8A; }
+
+.ann-item-date {
+  font-size: 12px;
+  color: #B0A49C;
+}
+
+.ann-item-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2A1F1A;
+  line-height: 1.4;
+}
+
+.ann-item-content {
+  padding: 0 24px 20px;
+  font-size: 14px;
+  color: #6B5C52;
+  line-height: 1.8;
+  border-top: 1px solid #F0ECE7;
+  padding-top: 16px;
+  white-space: pre-wrap;
+}
+
+.ann-empty {
+  text-align: center;
+  color: #B0A49C;
+  font-size: 14px;
+  padding: 60px 0;
+}
+
+@media (max-width: 640px) {
+  .ann-page {
+    padding: 24px 16px 60px;
+  }
+
+  .ann-title {
+    font-size: 22px;
+  }
+
+  .ann-item-header {
+    padding: 16px 18px;
+  }
+
+  .ann-item-content {
+    padding: 0 18px 16px;
+    padding-top: 14px;
+  }
+}

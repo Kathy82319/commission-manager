@@ -1,0 +1,74 @@
+/* src/styles/Guide.css */
+
+.guide-page {
+  background: #FBFBF9;
+  min-height: 100vh;
+  padding: 40px 24px 80px;
+}
+
+.guide-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.guide-back {
+  background: none;
+  border: none;
+  color: #7A6B62;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  display: inline-block;
+  transition: color 0.15s;
+}
+
+.guide-back:hover {
+  color: #5D4A3E;
+}
+
+.guide-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #2A1F1A;
+  margin-bottom: 8px;
+}
+
+.guide-subtitle {
+  font-size: 14px;
+  color: #7A6B62;
+  margin-bottom: 40px;
+}
+
+.guide-coming-soon {
+  background: white;
+  border: 1px solid #EAE6E1;
+  border-radius: 16px;
+  padding: 60px 40px;
+  text-align: center;
+  color: #7A6B62;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.guide-coming-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.guide-back-btn {
+  margin-top: 28px;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #5D4A3E;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.guide-back-btn:hover {
+  background: #4A3830;
+}
