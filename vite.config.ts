@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto', 
+      injectRegister: 'auto',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['vite.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
 
       manifest: {
@@ -25,12 +28,10 @@ export default defineConfig({
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' }
         ]
       },
-      
-      workbox: {
-        navigateFallbackDenylist: [/^\/api/],
 
-        navigateFallback: '/index.html',
-      }
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
     })
   ],
   server: {
