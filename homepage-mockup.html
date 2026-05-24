@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arti 首頁 — 版面草稿</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f7f5f2; color: #1a1a1a; }
+
+    /* ── 頂端導覽列 ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e8e3dd;
+      padding: 0 32px;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .navbar-left { display: flex; align-items: center; gap: 32px; }
+    .navbar-logo { font-weight: 800; font-size: 20px; color: #c47b5a; letter-spacing: 1px; text-decoration: none; }
+    .navbar-links { display: flex; gap: 4px; }
+    .nav-link {
+      padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 500;
+      color: #555; text-decoration: none; transition: all 0.15s;
+    }
+    .nav-link:hover { background: #f0ebe6; color: #1a1a1a; }
+    .nav-link.active { background: #f0ebe6; color: #c47b5a; font-weight: 600; }
+    .navbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-outline {
+      padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      border: 1px solid #ccc; background: white; color: #555; cursor: pointer; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: #c47b5a; color: #c47b5a; }
+    .btn-primary {
+      padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      background: #c47b5a; color: white; border: none; cursor: pointer; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { background: #b0664a; }
+
+    /* ── Hero 區域 ── */
+    .hero {
+      background: linear-gradient(135deg, #fdf6f0 0%, #f5ede3 50%, #ede0d4 100%);
+      padding: 80px 32px 64px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block; background: #fce9d8; color: #c47b5a;
+      font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px;
+      margin-bottom: 20px; letter-spacing: 0.5px;
+    }
+    .hero h1 { font-size: 40px; font-weight: 800; color: #1a1a1a; margin-bottom: 14px; line-height: 1.2; }
+    .hero h1 span { color: #c47b5a; }
+    .hero p { font-size: 17px; color: #666; margin-bottom: 36px; line-height: 1.7; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-btn-main {
+      padding: 12px 28px; border-radius: 24px; font-size: 15px; font-weight: 700;
+      background: #c47b5a; color: white; border: none; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(196,123,90,0.35); transition: all 0.2s;
+    }
+    .hero-btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(196,123,90,0.45); }
+    .hero-btn-secondary {
+      padding: 12px 28px; border-radius: 24px; font-size: 15px; font-weight: 600;
+      background: white; color: #c47b5a; border: 1px solid #c47b5a; cursor: pointer; transition: all 0.2s;
+    }
+    .hero-btn-secondary:hover { background: #fce9d8; }
+
+    /* ── 通用 Section ── */
+    .section { max-width: 900px; margin: 0 auto; padding: 52px 24px; }
+    .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+    .section-title { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+    .section-title span { margin-right: 8px; }
+    .section-link { font-size: 13px; color: #c47b5a; text-decoration: none; font-weight: 500; }
+    .section-link:hover { text-decoration: underline; }
+    .section-divider { border: none; border-top: 1px solid #e8e3dd; margin: 0; }
+
+    /* ── 公告卡片 ── */
+    .announcements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .announcement-card {
+      background: white; border-radius: 14px; padding: 20px;
+      border: 1px solid #ede8e3; transition: all 0.2s; cursor: pointer;
+    }
+    .announcement-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+    }
+    .badge-update { background: #e8f4fd; color: #2980b9; }
+    .badge-event  { background: #fef3e2; color: #e67e22; }
+    .badge-other  { background: #eef2ff; color: #6366f1; }
+    .announcement-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; }
+    .announcement-card p  { font-size: 13px; color: #777; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .announcement-card .card-date { font-size: 11px; color: #aaa; margin-top: 12px; }
+
+    /* ── 許願池預覽 ── */
+    .wishboard-preview { background: white; border-radius: 14px; border: 1px solid #ede8e3; overflow: hidden; }
+    .wishboard-preview-header {
+      padding: 16px 20px; background: linear-gradient(90deg, #fdf6f0, #f5ede3);
+      border-bottom: 1px solid #ede8e3; font-size: 13px; color: #999; display: flex; gap: 12px;
+    }
+    .wb-tab { padding: 4px 14px; border-radius: 20px; font-weight: 500; background: white; border: 1px solid #ddd; font-size: 12px; }
+    .wb-tab.active { background: #c47b5a; color: white; border-color: #c47b5a; }
+    .wish-row {
+      padding: 14px 20px; border-bottom: 1px solid #f0ebe6;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .wish-row:last-child { border-bottom: none; }
+    .wish-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .wish-info p  { font-size: 12px; color: #999; }
+    .wish-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .wish-tag { font-size: 11px; background: #f0ebe6; color: #888; padding: 2px 8px; border-radius: 10px; }
+    .wish-budget { font-size: 13px; font-weight: 600; color: #c47b5a; white-space: nowrap; margin-left: 16px; }
+
+    /* ── 意見回饋列 ── */
+    .feedback-bar {
+      background: #fdf6f0; border-top: 1px solid #ede8e3;
+      text-align: center; padding: 20px 24px;
+      font-size: 13px; color: #888;
+    }
+    .feedback-bar a { color: #c47b5a; text-decoration: none; font-weight: 500; }
+    .feedback-bar a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 28px 24px;
+      border-top: 1px solid #e8e3dd; background: white;
+      font-size: 13px; color: #bbb;
+    }
+    footer a { color: #bbb; text-decoration: none; margin: 0 8px; }
+    footer a:hover { color: #888; }
+
+    /* ── 手機版 ── */
+    @media (max-width: 640px) {
+      .navbar { padding: 0 16px; }
+      .navbar-links .nav-link { padding: 6px 10px; font-size: 13px; }
+      .hero { padding: 56px 20px 48px; }
+      .hero h1 { font-size: 28px; }
+      .section { padding: 40px 16px; }
+    }
+
+    /* ── 標籤提示 ── */
+    .mockup-note {
+      position: fixed; bottom: 16px; right: 16px; background: #333; color: white;
+      font-size: 12px; padding: 10px 16px; border-radius: 10px; opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ① 頂端導覽列 -->
+<nav class="navbar">
+  <div class="navbar-left">
+    <a class="navbar-logo" href="#">✦ Arti</a>
+    <div class="navbar-links">
+      <a class="nav-link active" href="#">最新公告</a>
+      <a class="nav-link" href="#">使用教學 &amp; Q&amp;A</a>
+      <a class="nav-link" href="#">許願池</a>
+    </div>
+  </div>
+  <div class="navbar-right">
+    <!-- 已登入時改成「個人頁」+「後台」按鈕 -->
+    <a class="btn-outline" href="#">登入</a>
+    <a class="btn-primary" href="#">註冊</a>
+  </div>
+</nav>
+
+<!-- ② Hero 介紹區 -->
+<section class="hero">
+  <div class="hero-badge">✨ 繪師 × 委託人的媒合平台</div>
+  <h1>讓創作<span>更容易</span>開始</h1>
+  <p>Arti 幫助繪師管理委託流程、讓委託人找到合適的創作者。<br/>從許願到交稿，全程在這裡。</p>
+  <div class="hero-btns">
+    <button class="hero-btn-main">我想委託繪師 →</button>
+    <button class="hero-btn-secondary">我是繪師，來接委託</button>
+  </div>
+</section>
+
+<hr class="section-divider" />
+
+<!-- ③ 最新公告 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title"><span>📢</span>最新公告</div>
+    <a class="section-link" href="#">查看全部 →</a>
+  </div>
+  <div class="announcements-grid">
+    <div class="announcement-card">
+      <div class="badge badge-update">🔧 版本更新</div>
+      <h3>v2.3 上線：新增 OC 角色卡功能</h3>
+      <p>委託人現在可以直接在許願中附上角色資料卡，讓繪師更快速了解委託需求。</p>
+      <div class="card-date">2026-05-20</div>
+    </div>
+    <div class="announcement-card">
+      <div class="badge badge-event">🎉 活動消息</div>
+      <h3>春季新繪師加入潮</h3>
+      <p>本月新增 12 位繪師加入，快去許願池逛逛有沒有你喜歡的風格！</p>
+      <div class="card-date">2026-05-14</div>
+    </div>
+    <div class="announcement-card">
+      <div class="badge badge-other">📌 其他通知</div>
+      <h3>意見回饋感謝 &amp; 改版方向說明</h3>
+      <p>感謝大家的使用回饋，本次收集整理後，預計 6 月進行介面優化。</p>
+      <div class="card-date">2026-05-08</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider" />
+
+<!-- ④ 許願池預覽 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title"><span>🌊</span>許願池 最新動態</div>
+    <a class="section-link" href="#">前往許願池 →</a>
+  </div>
+  <div class="wishboard-preview">
+    <div class="wishboard-preview-header">
+      <span class="wb-tab active">接委託 offer</span>
+      <span class="wb-tab">發委託 request</span>
+    </div>
+    <div class="wish-row">
+      <div class="wish-info">
+        <h4>Q3 開放接單！半身像 / 全身像</h4>
+        <div class="wish-tags">
+          <span class="wish-tag">厚塗</span><span class="wish-tag">人物</span><span class="wish-tag">原創</span>
+        </div>
+      </div>
+      <div class="wish-budget">$800+</div>
+    </div>
+    <div class="wish-row">
+      <div class="wish-info">
+        <h4>接受 VTUBER 立繪委託</h4>
+        <div class="wish-tags">
+          <span class="wish-tag">立繪</span><span class="wish-tag">VTuber</span>
+        </div>
+      </div>
+      <div class="wish-budget">$3000+</div>
+    </div>
+    <div class="wish-row">
+      <div class="wish-info">
+        <h4>小品插圖 / 頭像 快速接單</h4>
+        <div class="wish-tags">
+          <span class="wish-tag">頭像</span><span class="wish-tag">線稿</span><span class="wish-tag">Q版</span>
+        </div>
+      </div>
+      <div class="wish-budget">$300+</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 意見回饋列（footer 上方小列） -->
+<div class="feedback-bar">
+  遇到問題或有建議？<a href="#">點這裡告訴我們</a> &nbsp;—&nbsp; 你的回饋會讓 Arti 更好 ✦
+</div>
+
+<!-- ⑥ Footer -->
+<footer>
+  <a href="#">服務條款</a>
+  <a href="#">隱私權政策</a>
+  <a href="#">退款政策</a>
+  <br/><br/>
+  © 2026 Arti 繪師小幫手
+</footer>
+
+<div class="mockup-note">📐 版面草稿 — 非正式頁面</div>
+
+</body>
+</html>
