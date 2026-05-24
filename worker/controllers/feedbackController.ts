@@ -16,9 +16,24 @@ async function checkAdmin(currentUserId: string, env: Env, corsHeaders: HeadersI
 
 export const feedbackController = {
 
-  // POST /api/feedback — 公開��不需登入
+  // POST /api/feedback — 公開，不需登入
   async submit(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    const body = await request.json() as { type?: string; message?: string; contact?: string };
+    // CF-Connecting-IP 由 Cloudflare 邊緣網路注入，客戶端無法偽造
+    const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+
+    const { results: recentRows } = await env.commission_db.prepare(
+      `SELECT COUNT(*) as count FROM feedback WHERE submitter_ip = ? AND created_at > datetime('now', '-1 minute')`
+    ).bind(clientIp).all();
+    if (((recentRows[0] as any).count as number) >= 5) {
+      return new Response(JSON.stringify({ success: false, error: "請求過於頻繁，請稍後再試" }), { status: 429, headers: corsHeaders });
+    }
+
+    let body: { type?: string; message?: string; contact?: string };
+    try {
+      body = await request.json() as { type?: string; message?: string; contact?: string };
+    } catch {
+      return new Response(JSON.stringify({ success: false, error: "請求格式錯誤" }), { status: 400, headers: corsHeaders });
+    }
     const { type, message, contact = '' } = body;
 
     if (!type || !VALID_TYPES.includes(type as FeedbackType)) {
@@ -32,8 +47,8 @@ export const feedbackController = {
     }
 
     await env.commission_db.prepare(
-      `INSERT INTO feedback (type, message, contact) VALUES (?, ?, ?)`
-    ).bind(type, message.trim(), (contact || '').trim().slice(0, 200)).run();
+      `INSERT INTO feedback (type, message, contact, submitter_ip) VALUES (?, ?, ?, ?)`
+    ).bind(type, message.trim(), (contact || '').trim().slice(0, 200), clientIp).run();
 
     return new Response(JSON.stringify({ success: true }), { status: 201, headers: corsHeaders });
   },
@@ -59,9 +74,14 @@ export const feedbackController = {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
 
+    const numId = parseInt(feedbackId, 10);
+    if (isNaN(numId) || numId < 1) {
+      return new Response(JSON.stringify({ success: false, error: "無效的 ID" }), { status: 400, headers: corsHeaders });
+    }
+
     await env.commission_db.prepare(
       "UPDATE feedback SET is_read = 1 WHERE id = ?"
-    ).bind(feedbackId).run();
+    ).bind(numId).run();
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },

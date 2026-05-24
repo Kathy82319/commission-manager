@@ -20,7 +20,8 @@ export const announcementController = {
   // GET /api/announcements — 公開，不需登入
   async getList(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
-    const limit = Math.min(50, parseInt(url.searchParams.get('limit') || '50'));
+    const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10);
+    const limit = isNaN(rawLimit) || rawLimit < 1 ? 50 : Math.min(50, rawLimit);
     const type = url.searchParams.get('type') || '';
 
     let query: string;
@@ -74,6 +75,11 @@ export const announcementController = {
   async delete(announcementId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
+
+    const numId = parseInt(announcementId, 10);
+    if (isNaN(numId) || numId < 1) {
+      return new Response(JSON.stringify({ success: false, error: "無效的公告 ID" }), { status: 400, headers: corsHeaders });
+    }
 
     const { results } = await env.commission_db.prepare(
       "SELECT id FROM announcements WHERE id = ?"

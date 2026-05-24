@@ -11,23 +11,45 @@ import { FeedbackTab } from './FeedbackTab';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback'>('overview');
-  
   const [stats, setStats] = useState<any>(null);
+  const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
 
   useEffect(() => {
-    fetchStats();
-  }, [activeTab]);
+    // 驗證是否有管理員權限，失敗則顯示拒絕畫面
+    apiClient.get('/api/admin/stats')
+      .then(res => {
+        setStats((res as any).data);
+        setAuthState('ok');
+      })
+      .catch(() => setAuthState('denied'));
+  }, []);
 
-  const fetchStats = async () => {
-    try {
-      const res = await apiClient.get('/api/admin/stats');
-      setStats(res.data);
-    } catch (e) { 
-      console.error('無法讀取後台狀態', e); 
-    }
-  };
+  useEffect(() => {
+    if (authState !== 'ok') return;
+    apiClient.get('/api/admin/stats')
+      .then(res => setStats((res as any).data))
+      .catch(() => {/* silent after initial auth */});
+  }, [activeTab, authState]);
 
-  const renderContent = () => {
+  if (authState === 'loading') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F3F4F6', fontSize: '16px', color: '#6B7280' }}>
+        驗證中…
+      </div>
+    );
+  }
+
+  if (authState === 'denied') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F3F4F6', gap: '12px' }}>
+        <div style={{ fontSize: '48px' }}>🚫</div>
+        <div style={{ fontSize: '20px', fontWeight: 700, color: '#111827' }}>權限不足</div>
+        <div style={{ fontSize: '14px', color: '#6B7280' }}>此頁面僅限管理員存取。</div>
+      </div>
+    );
+  }
+
+  const renderContent = (): React.ReactNode => {
     switch (activeTab) {
       case 'overview': return <OverviewTab stats={stats} />; 
       case 'users': return <UsersTab />;

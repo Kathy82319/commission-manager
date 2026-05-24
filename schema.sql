@@ -437,6 +437,18 @@ CREATE TABLE announcements (
   published_at TEXT NOT NULL DEFAULT (datetime('now')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ===========================================
+CREATE TABLE feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK (type IN ('bug', 'suggestion', 'other')),
+  message TEXT NOT NULL,
+  contact TEXT DEFAULT '',
+  is_read INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+submitter_ip TEXT DEFAULT ''
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
