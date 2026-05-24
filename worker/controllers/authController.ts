@@ -79,7 +79,13 @@ export const authController = {
 
       if (!tokenResponse.ok) {
         const errText = await tokenResponse.text();
-        throw new Error(`LINE 官方交換 Token 失敗: ${tokenResponse.status} - ${errText}`);
+        throw new Error(`LINE 官方交換 Token 失敗: ${tokenResponse.status} - ${errText.substring(0, 300)}`);
+      }
+
+      const tokenContentType = tokenResponse.headers.get('content-type') || '';
+      if (!tokenContentType.includes('application/json')) {
+        const errText = await tokenResponse.text();
+        throw new Error(`LINE Token 非預期回應 (${tokenContentType}): ${errText.substring(0, 300)}`);
       }
 
       const tokenData: any = await tokenResponse.json();

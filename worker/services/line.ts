@@ -33,14 +33,25 @@ export async function getLineToken(code: string, env: Env): Promise<string> {
 
 
 export async function getLineProfile(accessToken: string): Promise<any> {
-  const profileRes = await fetch("https://api.line.me/v2/profile", { 
-    headers: { Authorization: `Bearer ${accessToken}` } 
+  const profileRes = await fetch("https://api.line.me/v2/profile", {
+    headers: { Authorization: `Bearer ${accessToken}` }
   });
-  
+
+  if (!profileRes.ok) {
+    const errText = await profileRes.text();
+    throw new Error(`LINE Profile 取得失敗: ${profileRes.status} - ${errText.substring(0, 200)}`);
+  }
+
+  const contentType = profileRes.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const errText = await profileRes.text();
+    throw new Error(`LINE Profile 非預期回應 (${contentType}): ${errText.substring(0, 200)}`);
+  }
+
   const profile: any = await profileRes.json();
   if (profile.error) {
-    throw new Error("LINE Profile 取得失敗");
+    throw new Error(`LINE Profile 錯誤: ${profile.error}`);
   }
-  
+
   return profile;
 }
