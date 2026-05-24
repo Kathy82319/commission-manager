@@ -30,6 +30,7 @@ export const authController = {
       headers: {
         'Location': loginUrl,
         'Set-Cookie': `oauth_state=${state}; ${OAUTH_STATE_OPTIONS}`,
+        'Cache-Control': 'no-store',
         ...corsHeaders
       }
     });
@@ -116,6 +117,7 @@ export const authController = {
       
       const responseHeaders = new Headers(corsHeaders);
       responseHeaders.set('Location', `${baseUrl}${targetPath}`);
+      responseHeaders.set('Cache-Control', 'no-store');
       responseHeaders.append('Set-Cookie', `user_session=${sessionValue}; ${SESSION_COOKIE_OPTIONS}`);
       responseHeaders.append('Set-Cookie', `oauth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly`);
 
