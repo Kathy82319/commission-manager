@@ -27,6 +27,12 @@
   color: #5D4A3E;
 }
 
+@media (min-width: 641px) {
+  .guide-back {
+    display: none;
+  }
+}
+
 .guide-title {
   font-size: 26px;
   font-weight: 800;
