@@ -12,29 +12,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 if ('serviceWorker' in navigator) {
+  // 清掉舊的 navigation 快取（會導致 redirect mode 錯誤）
+  if ('caches' in window) {
+    caches.delete('arti-pages-cache').catch(() => {});
+  }
+
+  // 若有跨網域殘留的舊 SW（例如 pages.dev 的 SW 跑在 arti7.net），才 unregister
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (const registration of registrations) {
-
-      if (registration.active?.scriptURL.includes('pages.dev') || window.location.hostname === 'arti7.net') {
-        registration.unregister().then((success) => {
-          if (success) {
-            console.log('[Domain Migration] 成功註銷舊有網域的 Service Worker 快取殘留');
-            
-            if ('caches' in window) {
-              caches.keys().then((names) => {
-                for (const name of names) {
-                  caches.delete(name);
-                }
-                console.log('[Domain Migration] 舊網域靜態快取清除完畢');
-              });
-            }
-          }
-        });
+      const swOrigin = registration.active?.scriptURL
+        ? new URL(registration.active.scriptURL).origin
+        : null;
+      if (swOrigin && swOrigin !== window.location.origin) {
+        registration.unregister();
       }
     }
-  }).catch((err) => {
-    console.error('[Migration Error] 無法取得 Service Worker 清單:', err);
-  });
+  }).catch(() => {});
 
   registerSW({ immediate: true });
 }
