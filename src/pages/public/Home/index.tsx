@@ -87,29 +87,6 @@ export function Home() {
         )}
       </section>
 
-      <hr className="home-divider" />
-
-      {/* 許願池 CTA */}
-      <section className="home-section">
-        <div className="home-section-header">
-          <h2 className="home-section-title">🌊 許願池</h2>
-          <button className="home-section-link" onClick={() => navigate('/wishboard')}>
-            前往許願池 →
-          </button>
-        </div>
-        <div className="home-wishboard-cta">
-          <div className="home-wishboard-cta-content">
-            <p className="home-wishboard-cta-text">
-              繪師在這裡發布接單資訊，委託人在這裡許下委託願望。
-              <br />找到適合你的創作者，或讓委託人找到你。
-            </p>
-            <button className="home-wishboard-cta-btn" onClick={() => navigate('/wishboard')}>
-              進入許願池
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* 意見回饋列 */}
       <div className="home-feedback-bar">
         遇到問題或有建議？
