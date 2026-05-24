@@ -44,9 +44,10 @@ export const authController = {
     const cookieHeader = request.headers.get("Cookie") || "";
 
     // SW 可能造成瀏覽器對同一個 callback URL 打兩次：第一次成功並設好 session，
-    // 第二次 code 已失效。若已有 session，直接導回 portal 即可。
+    // 第二次 code 已失效。若已有合法格式的 session，直接導回 portal 即可。
     const existingSession = cookieHeader.match(/user_session=([^;]+)/)?.[1];
-    if (existingSession) {
+    const isValidSessionFormat = existingSession && existingSession.split('|').length === 3;
+    if (isValidSessionFormat) {
       const baseUrl = url.origin.replace(/\/$/, "");
       return new Response(null, {
         status: 302,
@@ -138,10 +139,10 @@ export const authController = {
         headers: responseHeaders
       });
     } catch (e: any) {
-      const errorMessage = e?.message || String(e);
-      return new Response(JSON.stringify({ success: false, error: `[Debug] 動態雙網域回調崩潰: ${errorMessage}` }), { 
-        status: 500, 
-        headers: corsHeaders 
+      console.error('[Auth Callback Error]', e?.message || String(e));
+      return new Response(JSON.stringify({ success: false, error: "登入失敗，請稍後再試" }), {
+        status: 500,
+        headers: corsHeaders
       });
     }
   },
