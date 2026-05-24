@@ -3,7 +3,7 @@ import React from 'react';
 
 interface AdminLayoutProps {
   activeTab: string;
-  onTabChange: (tab: 'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback') => void;
+  onTabChange: (tab: 'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback' | 'guide') => void;
   pendingReportCount?: number;
   children: React.ReactNode;
 }
@@ -16,6 +16,7 @@ export function AdminLayout({ activeTab, onTabChange, pendingReportCount = 0, ch
     { id: 'wishboard', label: '✨ 許願池審核' },
     { id: 'announcements', label: '📢 公告管理' },
     { id: 'feedback',      label: '💬 意見回饋' },
+    { id: 'guide',         label: '📖 教學管理' },
   ] as const;
 
   return (

@@ -37,13 +37,15 @@
   font-size: 26px;
   font-weight: 800;
   color: #2A1F1A;
-  margin-bottom: 8px;
+  margin-bottom: 28px;
 }
 
-.guide-subtitle {
+/* ── 分類列表 ── */
+.guide-empty {
+  text-align: center;
+  color: #B0A49C;
   font-size: 14px;
-  color: #7A6B62;
-  margin-bottom: 40px;
+  padding: 60px 0;
 }
 
 .guide-coming-soon {
@@ -62,19 +64,203 @@
   margin-bottom: 16px;
 }
 
-.guide-back-btn {
-  margin-top: 28px;
-  padding: 10px 24px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #5D4A3E;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s;
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.guide-back-btn:hover {
-  background: #4A3830;
+.guide-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 18px 24px;
+  background: white;
+  border: 1px solid #EAE6E1;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.guide-item:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(93, 74, 62, 0.08);
+  border-color: #C4B8B0;
+}
+
+.guide-item--empty {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.guide-item-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2A1F1A;
+}
+
+.guide-item-meta {
+  font-size: 13px;
+  color: #7A6B62;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+/* ── 燈箱 ── */
+.guide-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.guide-lightbox {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.guide-lb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #F0ECE7;
+  flex-shrink: 0;
+}
+
+.guide-lb-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2A1F1A;
+}
+
+.guide-lb-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.guide-lb-close:hover {
+  color: #374151;
+}
+
+.guide-lb-image-wrap {
+  flex: 1;
+  overflow: hidden;
+  background: #F5F0EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  max-height: 52vh;
+}
+
+.guide-lb-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.guide-lb-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #F0ECE7;
+  flex-shrink: 0;
+}
+
+.guide-lb-caption {
+  font-size: 14px;
+  color: #4B3F38;
+  line-height: 1.7;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+}
+
+.guide-lb-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guide-lb-arrow {
+  padding: 7px 18px;
+  background: #F0ECE7;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5D4A3E;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.guide-lb-arrow:hover:not(:disabled) {
+  background: #E5DDD7;
+}
+
+.guide-lb-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.guide-lb-counter {
+  font-size: 13px;
+  color: #9CA3AF;
+}
+
+@media (max-width: 640px) {
+  .guide-page {
+    padding: 24px 16px 60px;
+  }
+
+  .guide-title {
+    font-size: 22px;
+  }
+
+  .guide-item {
+    padding: 14px 16px;
+  }
+
+  .guide-item-title {
+    font-size: 14px;
+  }
+
+  .guide-lightbox-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .guide-lightbox {
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+  }
+
+  .guide-lb-image-wrap {
+    min-height: 180px;
+    max-height: 42vh;
+  }
+
+  .guide-lb-arrow {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
 }

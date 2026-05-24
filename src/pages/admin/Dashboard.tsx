@@ -8,9 +8,10 @@ import { CommissionsTab } from './CommissionsTab';
 import { WishboardTab } from './WishboardTab';
 import { AnnouncementsTab } from './AnnouncementsTab';
 import { FeedbackTab } from './FeedbackTab';
+import { GuideTab } from './GuideTab';
 
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback' | 'guide'>('overview');
   const [stats, setStats] = useState<any>(null);
   const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
 
@@ -57,6 +58,7 @@ export function Dashboard() {
       case 'wishboard': return <WishboardTab />;
       case 'announcements': return <AnnouncementsTab />;
       case 'feedback': return <FeedbackTab />;
+      case 'guide': return <GuideTab />;
       default: return <OverviewTab stats={stats} />;
     }
   };

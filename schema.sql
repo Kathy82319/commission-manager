@@ -447,7 +447,22 @@ CREATE TABLE feedback (
   is_read INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+--  ===========================================
 
+CREATE TABLE guide_sections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE guide_steps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  section_id INTEGER NOT NULL,
+  image_url TEXT NOT NULL,
+  caption TEXT DEFAULT '',
+  step_order INTEGER DEFAULT 0
+);
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================

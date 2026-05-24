@@ -20,6 +20,7 @@ import { calendarController } from "./controllers/calendarController";
 import { reviewController } from "./controllers/reviewController";
 import { announcementController } from "./controllers/announcementController";
 import { feedbackController } from "./controllers/feedbackController";
+import { guideController } from "./controllers/guideController";
 
 export default {
   async fetch(request: any, env: Env, ctx: any): Promise<any> {
@@ -148,6 +149,11 @@ export default {
       // 意見回饋 — 投遞不需登入
       if (sanitizedPath === "/api/feedback" && request.method === "POST") {
         return feedbackController.submit(request, env, corsHeaders);
+      }
+
+      // 教學 — 公開讀取不需登入
+      if (sanitizedPath === "/api/guide" && request.method === "GET") {
+        return guideController.getPublic(env, corsHeaders);
       }
 
       if (sanitizedPath.startsWith("/api/bulletins")) {
@@ -438,6 +444,17 @@ export default {
           }
           if (request.method === "DELETE" && pathParts[4]) {
             return announcementController.delete(pathParts[4], currentUserId!, env, corsHeaders);
+          }
+        }
+
+        if (pathParts[3] === "guide") {
+          if (pathParts[4] === "sections") {
+            if (request.method === "POST" && !pathParts[5]) return guideController.createSection(request, currentUserId!, env, corsHeaders);
+            if (request.method === "DELETE" && pathParts[5]) return guideController.deleteSection(pathParts[5], currentUserId!, env, corsHeaders);
+          }
+          if (pathParts[4] === "steps") {
+            if (request.method === "POST" && !pathParts[5]) return guideController.addStep(request, currentUserId!, env, corsHeaders);
+            if (request.method === "DELETE" && pathParts[5]) return guideController.deleteStep(pathParts[5], currentUserId!, env, corsHeaders);
           }
         }
 
