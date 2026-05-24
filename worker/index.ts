@@ -22,6 +22,13 @@ import { reviewController } from "./controllers/reviewController";
 export default {
   async fetch(request: any, env: Env, ctx: any): Promise<any> {
     const url = new URL(request.url);
+
+    // 舊網址永久導向新網址（保留路徑與 query string）
+    if (url.hostname === 'commission-app.pages.dev') {
+      url.hostname = 'arti7.net';
+      return Response.redirect(url.toString(), 301);
+    }
+
     const sanitizedPath = url.pathname.replace(/\/$/, "");
     const pathParts = sanitizedPath.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
