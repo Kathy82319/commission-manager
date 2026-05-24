@@ -28,19 +28,8 @@ export default defineConfig({
       
       workbox: {
         navigateFallbackDenylist: [/^\/api/],
-        
-        navigateFallback: '/index.html',
 
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'arti-pages-cache',
-              networkTimeoutSeconds: 3,
-            }
-          }
-        ]
+        navigateFallback: '/index.html',
       }
     })
   ],
