@@ -1,7 +1,8 @@
 // src/pages/Portal.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Portal.css'; 
+import { User } from 'lucide-react';
+import '../styles/Portal.css';
 
 interface UserProfile {
   display_name: string;
@@ -16,6 +17,7 @@ export function Portal() {
   
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -79,11 +81,18 @@ export function Portal() {
   return (
     <div className="portal-page">
       <div className="portal-header">
-        <img 
-          src={user.avatar_url || 'https://via.placeholder.com/100'} 
-          alt="avatar" 
-          className="portal-avatar"
-        />
+        {user.avatar_url && !avatarError ? (
+          <img
+            src={user.avatar_url}
+            alt="avatar"
+            className="portal-avatar"
+            onError={() => setAvatarError(true)}
+          />
+        ) : (
+          <div className="portal-avatar portal-avatar-default">
+            <User size={40} color="#aaa" />
+          </div>
+        )}
         <h1 className="portal-title">歡迎回來，{user.display_name}</h1>
         <p className="portal-subtitle">請問您今天想進入哪個模式？</p>
       </div>
