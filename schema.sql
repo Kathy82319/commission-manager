@@ -427,6 +427,16 @@ CREATE TABLE Reviews (
 );
 
 ALTER TABLE Messages ADD COLUMN message_type TEXT DEFAULT 'text';
+
+
+CREATE TABLE announcements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK (type IN ('update', 'event', 'other')),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  published_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
