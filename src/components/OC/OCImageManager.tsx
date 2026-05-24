@@ -123,7 +123,7 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
 
             {images.length < 5 && (
               <div style={{ gridColumn: images.length === 0 ? 'span 2' : 'span 1', gridRow: images.length === 0 ? 'span 2' : 'span 1', aspectRatio: '4/3', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                <ImageUploader onUpload={handleUpload} aspectRatio={4/3} maxSizeMB={1} buttonText={images.length === 0 ? "上傳主宣傳圖 (4:3)" : "新增參考圖"} />
+                <ImageUploader onUpload={handleUpload} aspectRatio={4/3} maxSizeMB={3} targetWidth={1200} buttonText={images.length === 0 ? "上傳主宣傳圖 (4:3)" : "新增參考圖"} />
                 {isUploading && (
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, borderRadius: '12px' }}>
                     <Loader2 className="animate-spin" size={24} color="#A67B3E" />
@@ -134,7 +134,7 @@ export function OCImageManager({ images, onChange }: OCImageManagerProps) {
           </div>
         </SortableContext>
       </DndContext>
-      <div style={{ marginTop: '12px', fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>💡 提示：長按圖片可拖曳更改排序。已上傳 {images.length} / 5 張</div>
+      <div style={{ marginTop: '12px', fontSize: '12px', color: '#A0978D', textAlign: 'center' }}>💡 提示：長按圖片可拖曳更改排序。已上傳 {images.length} / 5 張｜每張最大 3MB，上傳前將自動壓縮</div>
     </div>
   );
 }
