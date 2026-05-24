@@ -30,6 +30,7 @@ import { PublicProfile } from './PublicProfile';
 import { Home } from './pages/public/Home';
 import { Announcements } from './pages/public/Announcements';
 import { Guide } from './pages/public/Guide';
+import { Feedback } from './pages/public/Feedback';
 import { Wishboard } from './pages/public/Wishboard';
 import { Workspace } from './pages/Workspace';
 import { InquiryWorkspace } from './pages/InquiryWorkspace';
@@ -83,6 +84,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/guide" element={<Guide />} />
+          <Route path="/feedback" element={<Feedback />} />
           <Route path="/wishboard" element={<Wishboard />}>
             <Route path=":category" element={<Wishboard />} />
           </Route>

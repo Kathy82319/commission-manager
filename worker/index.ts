@@ -18,6 +18,8 @@ import { userRelationController } from "./controllers/userRelationController";
 import { ocController } from "./controllers/ocController"; 
 import { calendarController } from "./controllers/calendarController";
 import { reviewController } from "./controllers/reviewController";
+import { announcementController } from "./controllers/announcementController";
+import { feedbackController } from "./controllers/feedbackController";
 
 export default {
   async fetch(request: any, env: Env, ctx: any): Promise<any> {
@@ -136,6 +138,16 @@ export default {
           const targetId = pathParts[3]; 
           return userRelationController.deleteRelation(currentUserId!, targetId, env, corsHeaders);
         }
+      }
+
+      // 公告 — 公開讀取不需登入
+      if (sanitizedPath === "/api/announcements" && request.method === "GET") {
+        return announcementController.getList(request, env, corsHeaders);
+      }
+
+      // 意見回饋 — 投遞不需登入
+      if (sanitizedPath === "/api/feedback" && request.method === "POST") {
+        return feedbackController.submit(request, env, corsHeaders);
       }
 
       if (sanitizedPath.startsWith("/api/bulletins")) {
@@ -409,6 +421,24 @@ export default {
           if (request.method === "GET" && !pathParts[4]) return adminController.getKeywords(currentUserId!, env, corsHeaders);
           if (request.method === "POST" && !pathParts[4]) return adminController.addKeyword(request, currentUserId!, env, corsHeaders);
           if (request.method === "DELETE" && pathParts[4]) return adminController.deleteKeyword(pathParts[4], currentUserId!, env, corsHeaders);
+        }
+
+        if (pathParts[3] === "feedback") {
+          if (request.method === "GET" && !pathParts[4]) {
+            return feedbackController.getList(request, currentUserId!, env, corsHeaders);
+          }
+          if (request.method === "PATCH" && pathParts[4] && pathParts[5] === "read") {
+            return feedbackController.markRead(pathParts[4], currentUserId!, env, corsHeaders);
+          }
+        }
+
+        if (pathParts[3] === "announcements") {
+          if (request.method === "POST" && !pathParts[4]) {
+            return announcementController.create(request, currentUserId!, env, corsHeaders);
+          }
+          if (request.method === "DELETE" && pathParts[4]) {
+            return announcementController.delete(pathParts[4], currentUserId!, env, corsHeaders);
+          }
         }
 
         if (pathParts[3] === "wishboard") {

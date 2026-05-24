@@ -6,9 +6,11 @@ import { OverviewTab } from './OverviewTab';
 import { UsersTab } from './UsersTab';
 import { CommissionsTab } from './CommissionsTab';
 import { WishboardTab } from './WishboardTab';
+import { AnnouncementsTab } from './AnnouncementsTab';
+import { FeedbackTab } from './FeedbackTab';
 
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback'>('overview');
   
   const [stats, setStats] = useState<any>(null);
 
@@ -31,6 +33,8 @@ export function Dashboard() {
       case 'users': return <UsersTab />;
       case 'commissions': return <CommissionsTab />;
       case 'wishboard': return <WishboardTab />;
+      case 'announcements': return <AnnouncementsTab />;
+      case 'feedback': return <FeedbackTab />;
       default: return <OverviewTab stats={stats} />;
     }
   };

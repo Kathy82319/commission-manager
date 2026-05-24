@@ -1,0 +1,216 @@
+/* src/styles/Feedback.css */
+
+.fb-page {
+  background: #FBFBF9;
+  min-height: 100vh;
+  padding: 40px 24px 80px;
+}
+
+.fb-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.fb-back {
+  background: none;
+  border: none;
+  color: #7A6B62;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+  display: inline-block;
+  transition: color 0.15s;
+}
+
+.fb-back:hover { color: #5D4A3E; }
+
+.fb-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #2A1F1A;
+  margin-bottom: 8px;
+}
+
+.fb-subtitle {
+  font-size: 14px;
+  color: #7A6B62;
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+/* ── 標籤 ── */
+.fb-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4A4A4A;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-char-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: #B0A49C;
+  margin-left: auto;
+}
+
+.fb-optional {
+  font-size: 11px;
+  font-weight: 500;
+  color: #B0A49C;
+  background: #F0ECE7;
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+/* ── 類型按鈕 ── */
+.fb-type-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.fb-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #DED9D3;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.fb-type-btn:hover {
+  border-color: #5D4A3E;
+  background: #F5F0EB;
+}
+
+.fb-type-btn.active {
+  border-color: #5D4A3E;
+  background: #F0ECE7;
+}
+
+.fb-type-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2A1F1A;
+}
+
+.fb-type-desc {
+  font-size: 12px;
+  color: #7A6B62;
+}
+
+/* ── 輸入欄位 ── */
+.fb-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #DED9D3;
+  background: white;
+  font-size: 14px;
+  color: #2A1F1A;
+  line-height: 1.7;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  transition: border-color 0.15s;
+}
+
+.fb-textarea:focus {
+  outline: none;
+  border-color: #5D4A3E;
+}
+
+.fb-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #DED9D3;
+  background: white;
+  font-size: 14px;
+  color: #2A1F1A;
+  font-family: inherit;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  transition: border-color 0.15s;
+}
+
+.fb-input:focus {
+  outline: none;
+  border-color: #5D4A3E;
+}
+
+/* ── 錯誤訊息 ── */
+.fb-error {
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  color: #BE123C;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ── Footer ── */
+.fb-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fb-btn-primary {
+  padding: 12px 28px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #5D4A3E;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.fb-btn-primary:hover:not(:disabled) { background: #4A3830; }
+.fb-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── 成功畫面 ── */
+.fb-success {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #EAE6E1;
+  padding: 60px 40px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.fb-success-icon { font-size: 48px; margin-bottom: 20px; }
+
+.fb-success h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2A1F1A;
+  margin-bottom: 12px;
+}
+
+.fb-success p {
+  font-size: 15px;
+  color: #6B5C52;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* ── 手機版 ── */
+@media (max-width: 640px) {
+  .fb-page { padding: 24px 16px 60px; }
+  .fb-title { font-size: 22px; }
+  .fb-success { padding: 40px 24px; }
+}
