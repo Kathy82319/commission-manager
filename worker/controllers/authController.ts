@@ -40,14 +40,26 @@ export const authController = {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const stateFromUrl = url.searchParams.get("state");
-    
+
     const cookieHeader = request.headers.get("Cookie") || "";
+
+    // SW 可能造成瀏覽器對同一個 callback URL 打兩次：第一次成功並設好 session，
+    // 第二次 code 已失效。若已有 session，直接導回 portal 即可。
+    const existingSession = cookieHeader.match(/user_session=([^;]+)/)?.[1];
+    if (existingSession) {
+      const baseUrl = url.origin.replace(/\/$/, "");
+      return new Response(null, {
+        status: 302,
+        headers: { 'Location': `${baseUrl}/portal`, 'Cache-Control': 'no-store', ...corsHeaders }
+      });
+    }
+
     const stateFromCookie = cookieHeader.match(/oauth_state=([^;]+)/)?.[1];
 
     if (!stateFromUrl || !stateFromCookie || stateFromUrl !== stateFromCookie) {
-      return new Response(JSON.stringify({ success: false, error: "無效的請求來源 (CSRF)" }), { 
-        status: 403, 
-        headers: corsHeaders 
+      return new Response(JSON.stringify({ success: false, error: "無效的請求來源 (CSRF)" }), {
+        status: 403,
+        headers: corsHeaders
       });
     }
 
