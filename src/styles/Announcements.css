@@ -142,6 +142,10 @@
     display: none;
   }
 
+  .ann-page {
+    padding-top: 20px;
+  }
+
   .ann-title {
     font-size: 30px;
   }
