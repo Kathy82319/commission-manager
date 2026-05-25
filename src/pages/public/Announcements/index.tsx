@@ -49,7 +49,11 @@ export function Announcements() {
   useEffect(() => {
     fetch(`${API_BASE}/api/announcements`)
       .then(r => r.ok ? r.json() : [])
-      .then(data => setAnnouncements(Array.isArray(data) ? data : []))
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setAnnouncements(list);
+        if (list.length > 0) setExpanded(list[0].id);
+      })
       .catch(() => setAnnouncements([]))
       .finally(() => setLoading(false));
   }, []);

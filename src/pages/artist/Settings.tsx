@@ -140,13 +140,13 @@ export function Settings() {
         { id: 'theme', label: '背景與版型設定' },
         { id: 'splash', label: '開場動畫設定' }
     ]},
-    { title: '內容管理', items: [
-        { id: 'bulletin_settings', label: '許願池接案設定' },
+    { title: '內容管理', items: [      
         { id: 'queue_settings', label: '排單表顯示設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
         { id: 'showcase', label: '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
+        { id: 'bulletin_settings', label: '許願池投遞履歷管理' },
         { id: 'reviews', label: '精選評價管理' }, 
     ]},
     { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }

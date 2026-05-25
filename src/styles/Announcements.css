@@ -7,7 +7,7 @@
 }
 
 .ann-inner {
-  max-width: 720px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -140,6 +140,38 @@
 @media (min-width: 641px) {
   .ann-back {
     display: none;
+  }
+
+  .ann-title {
+    font-size: 30px;
+  }
+
+  .ann-item-header {
+    padding: 24px 32px;
+  }
+
+  .ann-item-title {
+    font-size: 18px;
+  }
+
+  .ann-item-content {
+    font-size: 15px;
+    padding: 0 32px 24px;
+    padding-top: 20px;
+  }
+
+  .ann-badge {
+    font-size: 12px;
+    padding: 4px 12px;
+  }
+
+  .ann-item-date {
+    font-size: 13px;
+  }
+
+  .ann-filter-btn {
+    font-size: 14px;
+    padding: 7px 20px;
   }
 }
 
