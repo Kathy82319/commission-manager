@@ -124,7 +124,7 @@
   background: white;
   border-radius: 16px;
   width: 100%;
-  max-width: 780px;
+  max-width: 960px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -163,7 +163,7 @@
 }
 
 .guide-lb-image-wrap {
-  height: 420px;
+  height: 520px;
   flex-shrink: 0;
   background: #F5F0EB;
   display: flex;
@@ -244,13 +244,13 @@
   }
 
   .guide-lightbox-overlay {
-    padding: 10px;
-    align-items: flex-end;
+    padding: 16px;
+    align-items: center;
   }
 
   .guide-lightbox {
-    border-radius: 16px 16px 0 0;
-    max-height: 92vh;
+    border-radius: 16px;
+    max-height: 88vh;
   }
 
   .guide-lb-image-wrap {
