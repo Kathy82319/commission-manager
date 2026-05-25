@@ -341,6 +341,13 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
 
   async decline(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      const inquiry = await env.commission_db.prepare(
+        `SELECT artist_id, client_id FROM DirectInquiries WHERE id = ?`
+      ).bind(inquiryId).first() as any;
+      if (!inquiry) return new Response(JSON.stringify({ success: false, error: '找不到此洽談單' }), { status: 404, headers: corsHeaders });
+      if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
+        return new Response(JSON.stringify({ success: false, error: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'declined' WHERE id = ?`).bind(inquiryId).run();
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
@@ -350,6 +357,13 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
 
   async restore(request: Request, inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      const inquiry = await env.commission_db.prepare(
+        `SELECT artist_id, client_id FROM DirectInquiries WHERE id = ?`
+      ).bind(inquiryId).first() as any;
+      if (!inquiry) return new Response(JSON.stringify({ success: false, error: '找不到此洽談單' }), { status: 404, headers: corsHeaders });
+      if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
+        return new Response(JSON.stringify({ success: false, error: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
       await env.commission_db.prepare(`UPDATE DirectInquiries SET status = 'pending' WHERE id = ?`).bind(inquiryId).run();
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     } catch (error: any) {
@@ -357,8 +371,18 @@ async getDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders:
     }
   },
 
-  async getMessages(inquiryId: string, env: Env, corsHeaders: any) {
+  async getMessages(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      const inquiry = await env.commission_db.prepare(`
+        SELECT di.artist_id, COALESCE(c.client_id, di.client_id) as client_id
+        FROM DirectInquiries di
+        LEFT JOIN Commissions c ON json_extract(c.origin_source, '$.inquiry_id') = di.id
+        WHERE di.id = ?
+      `).bind(inquiryId).first() as any;
+      if (!inquiry) return new Response(JSON.stringify({ success: false, error: '找不到此洽談單' }), { status: 404, headers: corsHeaders });
+      if (inquiry.artist_id !== currentUserId && inquiry.client_id !== currentUserId) {
+        return new Response(JSON.stringify({ success: false, error: '權限不足' }), { status: 403, headers: corsHeaders });
+      }
       const { results } = await env.commission_db.prepare(`
         SELECT id, sender_id, content, created_at, 'direct_inquiry' as source
         FROM DirectInquiryMessages 

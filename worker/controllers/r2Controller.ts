@@ -2,11 +2,20 @@
 import type { Env } from "../shared/types";
 import { generateUploadUrl, generateDownloadUrl } from "../services/r2";
 
+const ALLOWED_FOLDERS = new Set([
+  'chat-images', 'oc', 'guide', 'settings', 'showcase',
+  'avatars', 'commissions', 'system', 'portfolio', 'wishboard', 'proposals'
+]);
+
 export const r2Controller = {
 
   async getUploadUrl(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { contentType, bucketType, originalName, folder } = await request.json() as any;
-    
+
+    if (folder && !ALLOWED_FOLDERS.has(folder)) {
+      return new Response(JSON.stringify({ success: false, error: "不合法的上傳路徑" }), { status: 400, headers: corsHeaders });
+    }
+
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
     const rateLimitKey = `req_upload_${currentUserId}`; 
     

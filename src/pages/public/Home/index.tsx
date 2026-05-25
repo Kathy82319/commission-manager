@@ -51,7 +51,7 @@ export function Home() {
           讓創作<span>更容易</span>開始
         </h1>
         <p className="home-hero-desc">
-          Arti 小幫手，幫助繪師管理委託流程、讓委託人找到合適的創作者。<br />
+          Arti 小幫手，幫助繪師管理委託、處理雜事<br />
           從接稿到交稿，全程在這裡。
         </p>
         <button className="home-hero-btn" onClick={() => navigate('/wishboard')}>

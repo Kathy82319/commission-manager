@@ -283,7 +283,7 @@ export default {
           if (subAction === "decline" && request.method === "POST") return directInquiryController.decline(request, targetId, currentUserId!, env, corsHeaders);
           
           if (subAction === "messages") {
-            if (request.method === "GET") return directInquiryController.getMessages(targetId, env, corsHeaders);
+            if (request.method === "GET") return directInquiryController.getMessages(targetId, currentUserId!, env, corsHeaders);
             if (request.method === "POST") return directInquiryController.sendMessage(request, targetId, currentUserId!, env, corsHeaders);
           }
         }
