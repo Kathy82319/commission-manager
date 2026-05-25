@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import '../../../styles/Home.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -79,7 +80,7 @@ export function Home() {
                   {TYPE_LABEL[a.type]}
                 </span>
                 <h3 className="home-card-title">{a.title}</h3>
-                <p className="home-card-desc">{a.content}</p>
+                <p className="home-card-desc" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(a.content) }} />
                 <div className="home-card-date">{formatDate(a.published_at)}</div>
               </div>
             ))}

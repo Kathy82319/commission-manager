@@ -156,9 +156,16 @@
   color: #7A6B62;
   line-height: 1.6;
   display: -webkit-box;
-  -webkit-line-clamp: 2; 
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.home-card-desc p,
+.home-card-desc ul,
+.home-card-desc ol {
+  margin: 0;
+  display: inline;
 }
 
 .home-card-date {
