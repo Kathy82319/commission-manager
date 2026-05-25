@@ -102,13 +102,20 @@ export function ProfileSidebar({
           </p>
           
           {showMoreBtn && (
-            <button 
-              className="bio-toggle-btn" 
+            <button
+              className="bio-toggle-btn"
               onClick={() => setIsExpanded(!isExpanded)}
               style={{ color: textColor, opacity: 0.8 }}
             >
               {isExpanded ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
             </button>
+          )}
+
+          {artist.favorite_count !== undefined && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '10px', fontSize: '13px', opacity: 0.75, color: textColor }}>
+              <Heart size={13} fill="currentColor" />
+              已有 {artist.favorite_count} 人加入收藏
+            </div>
           )}
         </div>
 
