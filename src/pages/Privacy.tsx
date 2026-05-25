@@ -7,7 +7,7 @@ export function Privacy() {
     margin: '0 auto',
     padding: '80px 24px 60px 24px',
     lineHeight: '1.8',
-    color: '#000000', 
+    color: '#000000',
     fontFamily: '"PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif',
   };
 
@@ -21,14 +21,14 @@ export function Privacy() {
     marginBottom: '32px',
     borderBottom: '2px solid rgba(255, 255, 255, 0.2)',
     paddingBottom: '12px',
-    color: '#000018', 
+    color: '#000018',
   };
 
   const subTitleStyle: React.CSSProperties = {
     fontSize: '20px',
     fontWeight: 'bold',
     marginBottom: '16px',
-    color: '#000000', 
+    color: '#000000',
     display: 'flex',
     alignItems: 'center',
   };
@@ -44,7 +44,7 @@ export function Privacy() {
 
   const highlightStyle: React.CSSProperties = {
     fontWeight: 'bold',
-    color: '#000018',  
+    color: '#000018',
     textDecoration: 'underline',
     textDecorationColor: 'rgba(232, 213, 196, 0.5)',
   };
@@ -53,7 +53,7 @@ export function Privacy() {
     <div style={containerStyle}>
       <h1 style={titleStyle}>隱私權政策 (Privacy Policy)</h1>
       <p style={{ marginBottom: '32px', color: '#000018' }}>
-        本平台（以下簡稱「本工具」）致力於保障用戶的隱私與資安。請詳細閱讀以下隱私權保護政策：
+        本平台（以下簡稱「本工具」）請詳細閱讀以下隱私權保護政策：
       </p>
 
       <section style={sectionStyle}>
@@ -69,8 +69,8 @@ export function Privacy() {
       </section>
 
       <section style={sectionStyle}>
-        <h2 style={subTitleStyle}>二、 資料安全與技術保護</h2>
-        <p>本平台將盡力採取當代合理之技術及程序維護資訊安全，以保障您的資料安全，包含但不限於：</p>
+        <h2 style={subTitleStyle}>二、 資料安全與技術措施</h2>
+        <p>本平台目前採取以下技術措施：</p>
         <ul style={listStyle}>
           <li style={itemStyle}>
             <span style={highlightStyle}>檔案保護：</span>所有上傳之預覽圖與草稿均會由系統自動加上<span style={highlightStyle}>數位浮水印</span>。
@@ -79,9 +79,18 @@ export function Privacy() {
             <span style={highlightStyle}>權限控管：</span>嚴格限制閱覽權限，僅有具備對應權限之用戶（如當事繪師與委託人）方可透過系統驗證存取相關檔案。
           </li>
           <li style={itemStyle}>
-            <span style={highlightStyle}>加密機制：</span>全站採用 SSL / HTTPS 加密傳輸，並針對敏感資料執行加密存儲與存取隔離，防止資料被非法竊取。
+            <span style={highlightStyle}>加密傳輸：</span>全站採用 SSL / HTTPS 加密傳輸。
+          </li>
+          <li style={itemStyle}>
+            <span style={highlightStyle}>檔案儲存：</span>圖檔儲存使用 Cloudflare R2，分為公開與私有儲存區，存取依用戶身份驗證控管。
           </li>
         </ul>
+        <p style={{ marginTop: '16px' }}>
+          本平台為個人開發專案，不提供企業級資安稽核保證。建議用戶自行保留上傳圖檔之本地端原始備份，並以加浮水印版本作為平台流通之用。
+        </p>
+        <p style={{ marginTop: '12px' }}>
+          若本平台發現可能影響用戶資料安全之異常事件，將於確認後通知受影響之用戶。
+        </p>
       </section>
 
       <section style={sectionStyle}>
@@ -89,7 +98,7 @@ export function Privacy() {
         <p>
           您可隨時透過聯繫開發者（Email: cath40286@gmail.com）申請刪除帳號。
           <br />
-          <span style={{ ...highlightStyle, color: '#df4949' }}> 帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
+          <span style={{ ...highlightStyle, color: '#df4949' }}>帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
         </p>
       </section>
 
