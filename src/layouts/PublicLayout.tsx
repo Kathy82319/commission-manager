@@ -16,6 +16,7 @@ export function PublicLayout() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [, setUserRole] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
@@ -32,6 +33,7 @@ export function PublicLayout() {
       setIsLoggedIn(false);
       setUserRole(null);
     }
+    setMenuOpen(false);
   }, [location]);
 
   const handleLogout = async () => {
@@ -115,8 +117,32 @@ export function PublicLayout() {
               登入 / 註冊
             </button>
           )}
+          <button
+            className="header-hamburger"
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="選單"
+          >
+            <span className={`hamburger-icon${menuOpen ? ' open' : ''}`} />
+          </button>
         </div>
       </header>
+
+      {menuOpen && (
+        <div className="header-mobile-menu">
+          <Link to="/announcements" className="mobile-menu-link">最新公告</Link>
+          <Link to="/guide" className="mobile-menu-link">使用教學 &amp; Q&amp;A</Link>
+          <Link to="/wishboard" className="mobile-menu-link">許願池</Link>
+          <div className="mobile-menu-divider" />
+          {isLoggedIn ? (
+            <>
+              <button onClick={handleDashboardClick} className="mobile-menu-link">後台</button>
+              <button onClick={handleLogout} className="mobile-menu-link mobile-menu-link--muted">登出</button>
+            </>
+          ) : (
+            <button onClick={() => navigate('/login')} className="mobile-menu-link mobile-menu-link--primary">登入 / 註冊</button>
+          )}
+        </div>
+      )}
 
       <main className="public-main">
         <Outlet context={{ setTheme }} />
