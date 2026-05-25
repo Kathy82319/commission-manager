@@ -114,7 +114,7 @@ export function ProfileSidebar({
           {artist.favorite_count !== undefined && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '10px', fontSize: '13px', opacity: 0.75, color: textColor }}>
               <Heart size={13} fill="currentColor" />
-              已有 {artist.favorite_count} 人加入收藏
+              已有 {artist.favorite_count} 人關注此繪師
             </div>
           )}
         </div>

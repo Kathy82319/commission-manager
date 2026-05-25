@@ -171,7 +171,7 @@ export function ClientLayout() {
         </div>
         
         <nav className="sidebar-nav">
-          <NavLink to="/" className="nav-item" onClick={closeMobileMenu}>
+          <NavLink to="/wishboard" className="nav-item" onClick={closeMobileMenu}>
             <Sparkles size={20} /><span>前往許願池</span>
           </NavLink>
           <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>

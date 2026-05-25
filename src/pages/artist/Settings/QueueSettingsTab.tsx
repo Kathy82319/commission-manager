@@ -73,7 +73,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
         let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
         
         const processedList = liveList.map((c: any) => {
-          const targetDate = c.order_date ? new Date(c.order_date.includes('T') ? c.order_date : c.order_date.replace(' ', 'T')) : null;
+          const targetDate = c.end_date ? new Date(c.end_date.includes('T') ? c.end_date : c.end_date.replace(' ', 'T')) : null;
           const isExpired = targetDate && targetDate < now;
           return {
             ...c,

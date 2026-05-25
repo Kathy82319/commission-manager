@@ -147,7 +147,7 @@ export function ArtistLayout() {
   }
 
   const navItems = [
-    { path: '/', label: '前往許願池' }, 
+    { path: '/wishboard', label: '前往許願池' },
     { path: '/artist/inbox', label: '收件/寄件匣' }, 
     { path: '/artist/queue', label: '排單表' },
     { path: '/artist/notebook', label: '委託單管理' },
