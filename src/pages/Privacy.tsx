@@ -96,9 +96,10 @@ export function Privacy() {
       <section style={sectionStyle}>
         <h2 style={subTitleStyle}>三、 帳號刪除機制</h2>
         <p>
-          您可隨時透過聯繫開發者（Email: cath40286@gmail.com）申請刪除帳號。
-          <br />
-          <span style={{ ...highlightStyle, color: '#df4949' }}>帳號刪除後，本平台將會全部刪除您留存於系統內的個人資料、作品集圖片以及相關委託紀錄，不予保留。</span>
+          您可隨時透過來信（Email: cath40286@gmail.com）申請刪除帳號。收到申請後，本平台將刪除您留存於系統內的個人資料、作品集圖片及相關委託紀錄。
+        </p>
+        <p style={{ marginTop: '12px' }}>
+          <span style={{ ...highlightStyle, color: '#df4949' }}>請注意：</span>為防止惡意用戶重複申請註冊與刪除，本平台將保留識別該帳號所需之<span style={highlightStyle}>最低程度辨識資料</span>（僅供平台內部防濫用之用，不對外揭露），其餘資料均予刪除。
         </p>
       </section>
 
