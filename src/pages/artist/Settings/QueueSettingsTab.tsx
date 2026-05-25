@@ -68,18 +68,9 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
       const data = await res.json();
       
       if (data.success) {
-        const now = new Date();
-        
         let liveList = data.data.filter((c: any) => c.status !== 'completed' && c.status !== 'cancelled');
-        
-        const processedList = liveList.map((c: any) => {
-          const targetDate = c.end_date ? new Date(c.end_date.includes('T') ? c.end_date : c.end_date.replace(' ', 'T')) : null;
-          const isExpired = targetDate && targetDate < now;
-          return {
-            ...c,
-            isExpired
-          };
-        });
+
+        const processedList = [...liveList];
 
         const customOrder = qs.custom_order || [];
         
@@ -100,7 +91,7 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
 
         const previewMasked = processedList.map((order: any) => ({
           id: order.id,
-          queue_status: order.isExpired ? '已過期' : (order.queue_status || '處理中'),
+          queue_status: order.queue_status || '處理中',
           end_date: order.end_date, 
           order_date: order.order_date,
           contact_memo: qs.show_client_name ? (order.contact_memo || '匿名委託') : getMaskedName(order.contact_memo),

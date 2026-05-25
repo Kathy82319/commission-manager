@@ -447,7 +447,7 @@ CREATE TABLE feedback (
   is_read INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
---  ===========================================
+
 
 CREATE TABLE guide_sections (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -463,6 +463,8 @@ CREATE TABLE guide_steps (
   caption TEXT DEFAULT '',
   step_order INTEGER DEFAULT 0
 );
+
+ALTER TABLE announcements ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;
 -- ===========================================
 -- 寫入預設開發資料 (Seed Data)
 -- ==========================================
