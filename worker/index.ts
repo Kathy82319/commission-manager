@@ -443,8 +443,14 @@ export default {
         }
 
         if (pathParts[3] === "announcements") {
+          if (request.method === "GET" && !pathParts[4]) {
+            return announcementController.getAdminList(currentUserId!, env, corsHeaders);
+          }
           if (request.method === "POST" && !pathParts[4]) {
             return announcementController.create(request, currentUserId!, env, corsHeaders);
+          }
+          if (request.method === "PATCH" && pathParts[4]) {
+            return announcementController.update(request, pathParts[4], currentUserId!, env, corsHeaders);
           }
           if (request.method === "DELETE" && pathParts[4]) {
             return announcementController.delete(pathParts[4], currentUserId!, env, corsHeaders);

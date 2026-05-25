@@ -15,9 +15,11 @@ async function checkAdmin(currentUserId: string, env: Env, corsHeaders: HeadersI
   return null;
 }
 
+const isContentEmpty = (html: string) => html.replace(/<[^>]*>/g, '').trim().length === 0;
+
 export const announcementController = {
 
-  // GET /api/announcements — 公開，不需登入
+  // GET /api/announcements — 公開，只顯示已發布（含置頂排序）
   async getList(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
     const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10);
@@ -28,21 +30,35 @@ export const announcementController = {
     let params: any[];
 
     if (type && VALID_TYPES.includes(type as AnnouncementType)) {
-      query = `SELECT id, type, title, content, published_at
+      query = `SELECT id, type, title, content, published_at, is_pinned
                FROM announcements
                WHERE type = ?
-               ORDER BY published_at DESC
+               ORDER BY is_pinned DESC, published_at DESC
                LIMIT ?`;
       params = [type, limit];
     } else {
-      query = `SELECT id, type, title, content, published_at
+      query = `SELECT id, type, title, content, published_at, is_pinned
                FROM announcements
-               ORDER BY published_at DESC
+               ORDER BY is_pinned DESC, published_at DESC
                LIMIT ?`;
       params = [limit];
     }
 
     const { results } = await env.commission_db.prepare(query).bind(...params).all();
+    return new Response(JSON.stringify(results), { status: 200, headers: corsHeaders });
+  },
+
+  // GET /api/admin/announcements — 管理員，所有公告（含置頂資訊）
+  async getAdminList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
+    if (adminCheck) return adminCheck;
+
+    const { results } = await env.commission_db.prepare(`
+      SELECT id, type, title, content, published_at, is_pinned
+      FROM announcements
+      ORDER BY is_pinned DESC, published_at DESC
+      LIMIT 100
+    `).all();
     return new Response(JSON.stringify(results), { status: 200, headers: corsHeaders });
   },
 
@@ -60,7 +76,7 @@ export const announcementController = {
     if (!title || title.trim().length === 0) {
       return new Response(JSON.stringify({ success: false, error: "標題不能為空" }), { status: 400, headers: corsHeaders });
     }
-    if (!content || content.trim().length === 0) {
+    if (!content || isContentEmpty(content)) {
       return new Response(JSON.stringify({ success: false, error: "內文不能為空" }), { status: 400, headers: corsHeaders });
     }
 
@@ -69,6 +85,61 @@ export const announcementController = {
     ).bind(type.trim(), title.trim(), content.trim()).run();
 
     return new Response(JSON.stringify({ success: true, id: result.meta?.last_row_id }), { status: 201, headers: corsHeaders });
+  },
+
+  // PATCH /api/admin/announcements/:id — 管理員更新公告
+  async update(request: Request, announcementId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
+    if (adminCheck) return adminCheck;
+
+    const numId = parseInt(announcementId, 10);
+    if (isNaN(numId) || numId < 1) {
+      return new Response(JSON.stringify({ success: false, error: "無效的公告 ID" }), { status: 400, headers: corsHeaders });
+    }
+
+    const body = await request.json() as { type?: string; title?: string; content?: string; is_pinned?: number };
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (body.type !== undefined) {
+      if (!VALID_TYPES.includes(body.type as AnnouncementType)) {
+        return new Response(JSON.stringify({ success: false, error: "type 無效" }), { status: 400, headers: corsHeaders });
+      }
+      updates.push('type = ?');
+      params.push(body.type);
+    }
+
+    if (body.title !== undefined) {
+      if (!body.title.trim()) {
+        return new Response(JSON.stringify({ success: false, error: "標題不能為空" }), { status: 400, headers: corsHeaders });
+      }
+      updates.push('title = ?');
+      params.push(body.title.trim());
+    }
+
+    if (body.content !== undefined) {
+      if (isContentEmpty(body.content)) {
+        return new Response(JSON.stringify({ success: false, error: "內文不能為空" }), { status: 400, headers: corsHeaders });
+      }
+      updates.push('content = ?');
+      params.push(body.content.trim());
+    }
+
+    if (body.is_pinned !== undefined) {
+      updates.push('is_pinned = ?');
+      params.push(body.is_pinned ? 1 : 0);
+    }
+
+    if (updates.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: "沒有提供需要更新的欄位" }), { status: 400, headers: corsHeaders });
+    }
+
+    params.push(numId);
+    await env.commission_db.prepare(
+      `UPDATE announcements SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...params).run();
+
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
   // DELETE /api/admin/announcements/:id — 管理員刪除公告
@@ -83,13 +154,13 @@ export const announcementController = {
 
     const { results } = await env.commission_db.prepare(
       "SELECT id FROM announcements WHERE id = ?"
-    ).bind(announcementId).all();
+    ).bind(numId).all();
 
     if (results.length === 0) {
       return new Response(JSON.stringify({ success: false, error: "找不到此公告" }), { status: 404, headers: corsHeaders });
     }
 
-    await env.commission_db.prepare("DELETE FROM announcements WHERE id = ?").bind(announcementId).run();
+    await env.commission_db.prepare("DELETE FROM announcements WHERE id = ?").bind(numId).run();
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 };

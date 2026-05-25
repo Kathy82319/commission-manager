@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import '../../../styles/Announcements.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -97,7 +98,10 @@ export function Announcements() {
                 <h3 className="ann-item-title">{a.title}</h3>
               </div>
               {expanded === a.id && (
-                <div className="ann-item-content">{a.content}</div>
+                <div
+                  className="ann-item-content"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(a.content) }}
+                />
               )}
             </div>
           ))}
