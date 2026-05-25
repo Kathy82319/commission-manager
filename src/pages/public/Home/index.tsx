@@ -89,7 +89,7 @@ export function Home() {
       <div className="home-feedback-bar">
         遇到問題或有建議？
         <button className="home-feedback-link" onClick={() => navigate('/feedback')}>
-          點這裡告訴我們
+          點這裡告訴我
         </button>
         &nbsp;— 你的回饋會讓 Arti 更好 ✦
       </div>

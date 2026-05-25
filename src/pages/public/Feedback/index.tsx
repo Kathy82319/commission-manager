@@ -9,7 +9,7 @@ type FeedbackType = 'bug' | 'suggestion' | 'other';
 const TYPE_OPTIONS: { value: FeedbackType; label: string; desc: string }[] = [
   { value: 'bug',        label: '🐛 回報問題',   desc: '操作異常、錯誤、無法使用' },
   { value: 'suggestion', label: '💡 功能建議',   desc: '希望新增或改善的功能' },
-  { value: 'other',      label: '💬 其他意見',   desc: '任何想告訴我們的事' },
+  { value: 'other',      label: '💬 其他意見',   desc: '任何想告訴我的事' },
 ];
 
 export function Feedback() {
@@ -54,7 +54,7 @@ export function Feedback() {
           <div className="fb-success">
             <div className="fb-success-icon">✅</div>
             <h2>感謝你的回饋！</h2>
-            <p>我們已收到你的意見，會認真參考並持續改善 Arti。</p>
+            <p>我已收到你的意見，會認真參考並持續改善 Arti。</p>
             <button className="fb-btn-primary" onClick={() => navigate('/')}>回首頁</button>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function Feedback() {
       <div className="fb-inner">
         <button className="fb-back" onClick={() => navigate(-1)}>← 返回</button>
         <h1 className="fb-title">意見回饋</h1>
-        <p className="fb-subtitle">遇到問題或有建議？讓我們知道，你的回饋讓 Arti 更好。</p>
+        <p className="fb-subtitle">遇到問題或有建議？讓我知道，你的回饋讓 Arti 更好。</p>
 
         
         <div className="fb-section-label">回饋類型</div>
@@ -110,7 +110,7 @@ export function Feedback() {
         </div>
         <input
           className="fb-input"
-          placeholder="Email 或 LINE ID，方便我們回覆你（可不填）"
+          placeholder="Email 或者任何聯絡方式，方便我回覆你（可不填）"
           value={contact}
           onChange={e => setContact(e.target.value)}
           maxLength={200}
