@@ -124,7 +124,7 @@
   background: white;
   border-radius: 16px;
   width: 100%;
-  max-width: 1280px;
+  max-width: 960px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -163,7 +163,7 @@
 }
 
 .guide-lb-image-wrap {
-  height: 700px;
+  height: 520px;
   flex-shrink: 0;
   background: #F5F0EB;
   display: flex;

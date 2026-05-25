@@ -111,7 +111,10 @@ export const InquiryWorkspace: React.FC = () => {
   const formatLocalTime = (dateStr: string) => {
     if (!dateStr) return '';
     const utcStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-    return new Date(utcStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const date = new Date(utcStr);
+    const datePart = date.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+    const timePart = date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${datePart} ${timePart}`;
   };
 
   const getPaymentTimingLabel = (val: string) => {
