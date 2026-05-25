@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import '../../../styles/Guide.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -108,7 +109,10 @@ export function Guide() {
 
             <div className="guide-lb-footer">
               {currentStep.caption && (
-                <div className="guide-lb-caption">{currentStep.caption}</div>
+                <div
+                  className="guide-lb-caption"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentStep.caption) }}
+                />
               )}
               <div className="guide-lb-nav">
                 <button

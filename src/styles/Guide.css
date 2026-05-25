@@ -190,7 +190,24 @@
   color: #4B3F38;
   line-height: 1.7;
   margin-bottom: 14px;
-  white-space: pre-wrap;
+}
+
+.guide-lb-caption p {
+  margin: 0 0 8px;
+}
+
+.guide-lb-caption p:last-child {
+  margin-bottom: 0;
+}
+
+.guide-lb-caption ul,
+.guide-lb-caption ol {
+  padding-left: 20px;
+  margin: 0 0 8px;
+}
+
+.guide-lb-caption li {
+  margin-bottom: 4px;
 }
 
 .guide-lb-nav {

@@ -450,10 +450,13 @@ export default {
         if (pathParts[3] === "guide") {
           if (pathParts[4] === "sections") {
             if (request.method === "POST" && !pathParts[5]) return guideController.createSection(request, currentUserId!, env, corsHeaders);
+            if (request.method === "PATCH" && pathParts[5]) return guideController.updateSection(request, pathParts[5], currentUserId!, env, corsHeaders);
             if (request.method === "DELETE" && pathParts[5]) return guideController.deleteSection(pathParts[5], currentUserId!, env, corsHeaders);
           }
           if (pathParts[4] === "steps") {
             if (request.method === "POST" && !pathParts[5]) return guideController.addStep(request, currentUserId!, env, corsHeaders);
+            if (request.method === "PATCH" && pathParts[5] && pathParts[6] === "order") return guideController.reorderStep(request, pathParts[5], currentUserId!, env, corsHeaders);
+            if (request.method === "PATCH" && pathParts[5] && !pathParts[6]) return guideController.updateStep(request, pathParts[5], currentUserId!, env, corsHeaders);
             if (request.method === "DELETE" && pathParts[5]) return guideController.deleteStep(pathParts[5], currentUserId!, env, corsHeaders);
           }
         }
