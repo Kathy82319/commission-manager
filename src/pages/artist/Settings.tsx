@@ -36,7 +36,8 @@ export interface CompleteSettings {
   bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
   question_template: string;
   queue_settings: QueueSettings;
-  tab_order: string[]; 
+  tab_order: string[];
+  show_favorite_count: boolean;
 }
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
@@ -115,7 +116,8 @@ export function Settings() {
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
-    tab_order: [] 
+    tab_order: [],
+    show_favorite_count: false
   });
 
   const [isSaving, setIsSaving] = useState(false);

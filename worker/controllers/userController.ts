@@ -117,10 +117,17 @@ export const userController = {
         try {
           const settings = JSON.parse(user.profile_settings);
           if (settings.portfolio && settings.portfolio.length > 6) {
-            settings.portfolio = settings.portfolio.slice(0, 6); 
+            settings.portfolio = settings.portfolio.slice(0, 6);
           }
           user.profile_settings = JSON.stringify(settings);
         } catch (e) {}
+      }
+
+      if (parsedSettings.show_favorite_count) {
+        const countResult = await env.commission_db.prepare(
+          `SELECT COUNT(*) as count FROM UserRelations WHERE target_user_id = ? AND relation_type = 'favorite'`
+        ).bind(user.id).first() as any;
+        user.favorite_count = countResult?.count || 0;
       }
     }
 

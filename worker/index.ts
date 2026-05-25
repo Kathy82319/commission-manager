@@ -126,6 +126,10 @@ export default {
         const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
 
+        if (sanitizedPath === "/api/relations/my-count" && request.method === "GET") {
+          return userRelationController.getMyFavoriteCount(currentUserId!, env, corsHeaders);
+        }
+
         if (sanitizedPath === "/api/relations" && request.method === "GET") {
           return userRelationController.getMyRelations(currentUserId!, env, corsHeaders);
         }

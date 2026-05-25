@@ -57,6 +57,17 @@ export const userRelationController = {
     }
   },
 
+  async getMyFavoriteCount(userId: string, env: Env, corsHeaders: any) {
+    try {
+      const result = await env.commission_db.prepare(
+        `SELECT COUNT(*) as count FROM UserRelations WHERE target_user_id = ? AND relation_type = 'favorite'`
+      ).bind(userId).first() as any;
+      return new Response(JSON.stringify({ success: true, count: result?.count || 0 }), { headers: corsHeaders });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
   async deleteRelation(userId: string, targetId: string, env: Env, corsHeaders: any) {
     if (!targetId || targetId.trim() === '') {
       return new Response(JSON.stringify({ success: false, error: "缺少目標 ID" }), { status: 400, headers: corsHeaders });

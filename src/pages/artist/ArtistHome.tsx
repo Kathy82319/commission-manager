@@ -96,6 +96,12 @@ export function ArtistHome() {
             <p style={{ margin: 0, fontSize: '14px', color: '#5D4A3E', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
               {artist.bio || '這位繪師尚未填寫簡介。'}
             </p>
+            {artist.favorite_count !== undefined && (
+              <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #F0ECE7', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#A0978D' }}>
+                <span style={{ color: '#e11d48' }}>♥</span>
+                已有 {artist.favorite_count} 人加入收藏
+              </div>
+            )}
           </div>
         </aside>
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Heart } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
 import type { ProfileSettings, FormDataState } from '../Settings/types';
 
@@ -14,7 +14,15 @@ export function BasicInfoTab({ formData, setFormData, settings, setSettings }: P
   const [isUploading, setIsUploading] = useState(false);
   const [socialPlatform, setSocialPlatform] = useState('Facebook');
   const [socialUrl, setSocialUrl] = useState('');
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || ''; 
+  const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/relations/my-count`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => { if (data.success) setFavoriteCount(data.count); })
+      .catch(() => {});
+  }, [API_BASE]);
 
   const handleAvatarUpload = async (resultBlobs: { preview: Blob }) => {
     setIsUploading(true);
@@ -95,6 +103,24 @@ export function BasicInfoTab({ formData, setFormData, settings, setSettings }: P
           </div>
         </div>
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', backgroundColor: '#FFF5F5', border: '1px solid #FECACA', borderRadius: '10px' }}>
+        <Heart size={18} color="#e11d48" fill="#e11d48" style={{ flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
+            {favoriteCount === null ? '載入中...' : `目前有 ${favoriteCount} 人將你加入收藏`}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer', fontSize: '13px', color: '#7A7269' }}>
+            <input
+              type="checkbox"
+              checked={!!settings.show_favorite_count}
+              onChange={e => setSettings((prev: any) => ({ ...prev, show_favorite_count: e.target.checked }))}
+              style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#e11d48' }}
+            />
+            在個人頁公開顯示此數字（儲存後生效）
+          </label>
+        </div>
+      </div>
+
       <div>
         <label className="form-label">個人簡介</label>
         <textarea 
