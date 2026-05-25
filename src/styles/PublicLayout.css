@@ -5,7 +5,7 @@
   width: 100%;
 }
 
-/* ── 頂端導覽列 ── */
+
 .public-header {
   position: sticky;
   top: 0;
@@ -127,7 +127,7 @@
   color: #5D4A3E;
 }
 
-/* ── 主內容區 ── */
+
 .public-main {
   flex: 1;
   width: 100%;
@@ -161,7 +161,7 @@
   transform: translateY(-2px);
 }
 
-/* ── Footer ── */
+
 .public-footer {
   text-align: center;
   padding: 40px 20px;
@@ -187,7 +187,7 @@
   color: #7A6B62;
 }
 
-/* ── 手機版 ── */
+
 @media (max-width: 768px) {
   .public-header {
     padding: 0 16px;
@@ -210,7 +210,7 @@
   }
 }
 
-/* ── 漢堡按鈕（手機版） ── */
+
 .header-hamburger {
   display: none;
   background: none;
@@ -252,7 +252,7 @@
 .hamburger-icon.open::before { transform: rotate(45deg); top: 0; }
 .hamburger-icon.open::after  { transform: rotate(-45deg); top: 0; }
 
-/* ── 手機下拉選單（右側浮動） ── */
+
 .header-mobile-menu {
   position: fixed;
   top: 64px;

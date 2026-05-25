@@ -14,7 +14,6 @@ function mulberry32(seed: number) {
 
 function dailySeededShuffle<T>(arr: T[]): T[] {
   const result = [...arr];
-  // 用台灣時間 (UTC+8) 的年月日當 seed，確保同一天順序固定
   const taiwanNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const seed = taiwanNow.getUTCFullYear() * 10000 + (taiwanNow.getUTCMonth() + 1) * 100 + taiwanNow.getUTCDate();
   const rand = mulberry32(seed);
@@ -36,7 +35,6 @@ export const bulletinController = {
       const bulletin = await env.commission_db.prepare(`SELECT id, title, category FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足或找不到貼文' }), { status: 403, headers: corsHeaders });
 
-      // 方案 B：僅更新貼文狀態為 closed，絕不修改 BulletinInquiries 的狀態與紀錄
       await env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId).run();
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -120,7 +118,7 @@ export const bulletinController = {
         schedule_type, specific_date, ref_image_key, 
         max_slots, selection_type, commission_items, questions, 
         payment_timing, payment_timing_detail, tos_content,
-        oc_snapshot // 新增：接收前端傳過來的角色卡快照字串
+        oc_snapshot 
       } = body;
 
       if (!title || !content) {
@@ -185,7 +183,6 @@ export const bulletinController = {
       const safeContentObj = sanitizeObject(rawContentObj, 5000);
       const finalContentStr = JSON.stringify(safeContentObj);
 
-      // 安全過濾角色設定快照字串
       const safeOcSnapshot = oc_snapshot ? String(oc_snapshot) : null;
 
       const id = crypto.randomUUID();

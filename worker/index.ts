@@ -26,7 +26,6 @@ export default {
   async fetch(request: any, env: Env, ctx: any): Promise<any> {
     const url = new URL(request.url);
 
-    // 舊網址永久導向新網址（保留路徑與 query string）
     if (url.hostname === 'commission-app.pages.dev') {
       url.hostname = 'arti7.net';
       return Response.redirect(url.toString(), 301);
@@ -36,28 +35,22 @@ export default {
     const pathParts = sanitizedPath.split("/");
     const requestOrigin = request.headers.get("Origin") || "";
     
-// --- 攔截邏輯修正 ---
     if (!sanitizedPath.startsWith("/api") && sanitizedPath.startsWith("/User_")) {
-      const artistId = sanitizedPath.substring(1); // 這是 User_84448
+      const artistId = sanitizedPath.substring(1);
       
-      // 1. 取得原始 HTML
       const response = await env.ASSETS.fetch(request);
       let html = await response.text();
 
       try {
-        // 2. 呼叫 Controller，注意這裡傳入的 artistId
         const userRes = await userController.getUser(artistId, null, env, {});
         const userData = (await userRes.json()) as any;
 
-        // 3. 確保資料確實存在
         if (userData?.success && userData?.data) {
           const name = userData.data.display_name || "繪師頁面";
           
-          // 4. 更強健的替換邏輯 (使用全域與忽略大小寫)
-          // 替換 <title>
+        
           html = html.replace(/<title>.*?<\/title>/si, `<title>${name} | Arti 繪師小幫手</title>`);
           
-          // 替換 og:title (確保匹配所有 content 屬性引號)
           html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="${name} | Arti 繪師小幫手"`);
           
           console.log(`[SEO Injection] 成功為 ${artistId} 注入標題: ${name}`);
@@ -69,7 +62,7 @@ export default {
       return new Response(html, { 
         headers: { 
           "content-type": "text/html;charset=UTF-8",
-          "Cache-Control": "public, max-age=3600" // 加上快取避免資料庫過載
+          "Cache-Control": "public, max-age=3600"
         } 
       });
     }
@@ -106,7 +99,6 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // ... (後續 API 路由邏輯維持不變)
     if (sanitizedPath.startsWith("/api/")) {
       const currentUserId = await getUserIdFromRequest(request, env);
 
@@ -145,17 +137,14 @@ export default {
         }
       }
 
-      // 公告 — 公開讀取不需登入
       if (sanitizedPath === "/api/announcements" && request.method === "GET") {
         return announcementController.getList(request, env, corsHeaders);
       }
 
-      // 意見回饋 — 投遞不需登入
       if (sanitizedPath === "/api/feedback" && request.method === "POST") {
         return feedbackController.submit(request, env, corsHeaders);
       }
 
-      // 教學 — 公開讀取不需登入
       if (sanitizedPath === "/api/guide" && request.method === "GET") {
         return guideController.getPublic(env, corsHeaders);
       }

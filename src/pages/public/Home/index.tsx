@@ -44,7 +44,6 @@ export function Home() {
 
   return (
     <div className="home-page">
-      {/* Hero */}
       <section className="home-hero">
         <div className="home-hero-badge">✨ 繪師 × 委託人的媒合平台</div>
         <h1 className="home-hero-title">
@@ -61,7 +60,6 @@ export function Home() {
 
       <hr className="home-divider" />
 
-      {/* 最新公告 */}
       <section className="home-section">
         <div className="home-section-header">
           <h2 className="home-section-title">📢 最新公告</h2>
@@ -88,7 +86,6 @@ export function Home() {
         )}
       </section>
 
-      {/* 意見回饋列 */}
       <div className="home-feedback-bar">
         遇到問題或有建議？
         <button className="home-feedback-link" onClick={() => navigate('/feedback')}>

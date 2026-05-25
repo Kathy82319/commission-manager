@@ -69,7 +69,7 @@ export function Feedback() {
         <h1 className="fb-title">意見回饋</h1>
         <p className="fb-subtitle">遇到問題或有建議？讓我們知道，你的回饋讓 Arti 更好。</p>
 
-        {/* 類型選擇 */}
+        
         <div className="fb-section-label">回饋類型</div>
         <div className="fb-type-group">
           {TYPE_OPTIONS.map(opt => (
@@ -84,7 +84,7 @@ export function Feedback() {
           ))}
         </div>
 
-        {/* 說明內文 */}
+        
         <div className="fb-section-label">
           詳細說明
           <span className="fb-char-count">{message.length} / 2000</span>
@@ -103,7 +103,7 @@ export function Feedback() {
           rows={6}
         />
 
-        {/* 聯絡方式（選填） */}
+        
         <div className="fb-section-label">
           聯絡方式
           <span className="fb-optional">選填</span>

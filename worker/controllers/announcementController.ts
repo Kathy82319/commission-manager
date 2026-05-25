@@ -19,7 +19,6 @@ const isContentEmpty = (html: string) => html.replace(/<[^>]*>/g, '').trim().len
 
 export const announcementController = {
 
-  // GET /api/announcements — 公開，只顯示已發布（含置頂排序）
   async getList(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const url = new URL(request.url);
     const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10);
@@ -48,7 +47,6 @@ export const announcementController = {
     return new Response(JSON.stringify(results), { status: 200, headers: corsHeaders });
   },
 
-  // GET /api/admin/announcements — 管理員，所有公告（含置頂資訊）
   async getAdminList(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -62,7 +60,6 @@ export const announcementController = {
     return new Response(JSON.stringify(results), { status: 200, headers: corsHeaders });
   },
 
-  // POST /api/admin/announcements — 管理員建立公告
   async create(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -87,7 +84,6 @@ export const announcementController = {
     return new Response(JSON.stringify({ success: true, id: result.meta?.last_row_id }), { status: 201, headers: corsHeaders });
   },
 
-  // PATCH /api/admin/announcements/:id — 管理員更新公告
   async update(request: Request, announcementId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -142,7 +138,6 @@ export const announcementController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // DELETE /api/admin/announcements/:id — 管理員刪除公告
   async delete(announcementId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;

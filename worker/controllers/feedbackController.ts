@@ -16,9 +16,7 @@ async function checkAdmin(currentUserId: string, env: Env, corsHeaders: HeadersI
 
 export const feedbackController = {
 
-  // POST /api/feedback — 公開，不需登入
   async submit(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
-    // CF-Connecting-IP 由 Cloudflare 邊緣網路注入，客戶端無法偽造
     const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
 
     const { results: recentRows } = await env.commission_db.prepare(
@@ -53,7 +51,6 @@ export const feedbackController = {
     return new Response(JSON.stringify({ success: true }), { status: 201, headers: corsHeaders });
   },
 
-  // GET /api/admin/feedback — 管理員查看
   async getList(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -69,7 +66,6 @@ export const feedbackController = {
     return new Response(JSON.stringify(results), { status: 200, headers: corsHeaders });
   },
 
-  // PATCH /api/admin/feedback/:id/read — 標記已讀
   async markRead(feedbackId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;

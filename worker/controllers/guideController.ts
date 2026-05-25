@@ -41,7 +41,6 @@ function buildNested(rows: RawRow[]) {
 
 export const guideController = {
 
-  // GET /api/guide — 公開，不需登入
   async getPublic(env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const { results } = await env.commission_db.prepare(`
       SELECT gs.id as section_id, gs.title, gs.sort_order,
@@ -53,7 +52,6 @@ export const guideController = {
     return new Response(JSON.stringify(buildNested(results as unknown as RawRow[])), { status: 200, headers: corsHeaders });
   },
 
-  // POST /api/admin/guide/sections — 新增分類
   async createSection(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -76,7 +74,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true, id: result.meta?.last_row_id }), { status: 201, headers: corsHeaders });
   },
 
-  // DELETE /api/admin/guide/sections/:id — 刪除分類（含步驟）
   async deleteSection(sectionId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -91,7 +88,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // POST /api/admin/guide/steps — 新增步驟
   async addStep(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -124,7 +120,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true, id: result.meta?.last_row_id }), { status: 201, headers: corsHeaders });
   },
 
-  // DELETE /api/admin/guide/steps/:id — 刪除步驟
   async deleteStep(stepId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -138,7 +133,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // PATCH /api/admin/guide/sections/:id — 更新分類標題
   async updateSection(request: Request, sectionId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -164,7 +158,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // PATCH /api/admin/guide/steps/:id — 更新步驟
   async updateStep(request: Request, stepId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
@@ -192,7 +185,6 @@ export const guideController = {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   },
 
-  // PATCH /api/admin/guide/steps/:id/order — 移動步驟順序
   async reorderStep(request: Request, stepId: string, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;

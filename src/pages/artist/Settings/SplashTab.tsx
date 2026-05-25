@@ -111,7 +111,7 @@ export function SplashTab({ settings, setSettings }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* 啟用開關 */}
+      
       <div style={{ padding: '16px 20px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold', color: '#5D4A3E', cursor: 'pointer' }}>
           <input
@@ -127,7 +127,7 @@ export function SplashTab({ settings, setSettings }: Props) {
       {settings.splash_enabled && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-          {/* 時長 */}
+          
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label className="form-label" style={{ margin: 0 }}>動畫停留時長</label>
@@ -145,7 +145,7 @@ export function SplashTab({ settings, setSettings }: Props) {
             </div>
           </div>
 
-          {/* 圖片上傳區 */}
+          
           <div>
             <label className="form-label" style={{ marginBottom: '8px' }}>開場背景圖設定</label>
             <div style={{ fontSize: '13px', color: '#7A7269', lineHeight: '1.7', marginBottom: '16px' }}>
@@ -171,10 +171,10 @@ export function SplashTab({ settings, setSettings }: Props) {
             </div>
           </div>
 
-          {/* 目前圖片預覽 */}
+          
           {(settings.splash_image || settings.splash_image_mobile) && (
             <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '16px', backgroundColor: '#FBFBF9', display: 'flex', gap: '0', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* 左欄：網頁版，均分 */}
+              
               <div style={{ flex: '1 1 180px', minWidth: 0, display: 'flex', flexDirection: 'column', paddingRight: '16px', borderRight: '1px dashed #DED9D3' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>🖥️ 目前網頁版</div>
                 {settings.splash_image ? (
@@ -192,7 +192,7 @@ export function SplashTab({ settings, setSettings }: Props) {
                 )}
               </div>
 
-              {/* 右欄：手機版，均分，圖片置中 */}
+              
               <div style={{ flex: '1 1 180px', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingLeft: '16px' }}>
                 <div style={{ fontSize: '12px', color: '#A0978D', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>📱 手機版</div>
                 {settings.splash_image_mobile ? (
@@ -214,11 +214,11 @@ export function SplashTab({ settings, setSettings }: Props) {
         </div>
       )}
 
-      {/* 裁切器 Overlay */}
+      
       {imageSrc && cropStep && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
-          {/* 步驟標題 */}
+          
           <div style={{ color: '#FFF', marginBottom: '16px', textAlign: 'center' }}>
             <div style={{ fontSize: '13px', opacity: 0.6, marginBottom: '4px' }}>
               步驟 {cropStep === 'desktop' ? '1' : '2'} / 2
@@ -231,7 +231,7 @@ export function SplashTab({ settings, setSettings }: Props) {
             </div>
           </div>
 
-          {/* 裁切區 */}
+          
           <div style={{
             position: 'relative',
             width: cropStep === 'desktop' ? 'min(85vw, 700px)' : 'min(45vw, 320px)',
@@ -264,7 +264,7 @@ export function SplashTab({ settings, setSettings }: Props) {
             )}
           </div>
 
-          {/* 縮放 + 按鈕 */}
+          
           <div style={{ width: 'min(85vw, 700px)', backgroundColor: '#FFF', padding: '16px', borderRadius: '12px', marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 180px' }}>
               <span style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>縮放</span>

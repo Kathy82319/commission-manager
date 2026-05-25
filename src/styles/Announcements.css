@@ -34,7 +34,6 @@
   margin-bottom: 28px;
 }
 
-/* ── 篩選列 ── */
 .ann-filters {
   display: flex;
   gap: 8px;
@@ -65,7 +64,6 @@
   border-color: #5D4A3E;
 }
 
-/* ── 公告列表 ── */
 .ann-list {
   display: flex;
   flex-direction: column;

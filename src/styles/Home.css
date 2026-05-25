@@ -6,7 +6,7 @@
   color: #4A4A4A;
 }
 
-/* ── Hero ── */
+
 .home-hero {
   background: linear-gradient(135deg, #FBFBF9 0%, #F5F0EB 50%, #EDE6DF 100%);
   padding: 80px 32px 64px;
@@ -66,14 +66,14 @@
   box-shadow: 0 6px 18px rgba(93, 74, 62, 0.40);
 }
 
-/* ── 分隔線 ── */
+
 .home-divider {
   border: none;
   border-top: 1px solid #EAE6E1;
   margin: 0;
 }
 
-/* ── Section 通用 ── */
+
 .home-section {
   max-width: 920px;
   margin: 0 auto;
@@ -109,7 +109,7 @@
   text-decoration: underline;
 }
 
-/* ── 公告卡片 ── */
+
 .home-announcements-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -181,7 +181,7 @@
   padding: 40px 0;
 }
 
-/* ── 許願池 CTA ── */
+
 .home-wishboard-cta {
   background: white;
   border-radius: 14px;
@@ -216,7 +216,7 @@
   background: #4A3830;
 }
 
-/* ── 意見回饋列 ── */
+
 .home-feedback-bar {
   background: #F5F0EB;
   border-top: 1px solid #EAE6E1;
@@ -237,7 +237,7 @@
   text-decoration: underline;
 }
 
-/* ── 手機版 ── */
+
 @media (max-width: 640px) {
   .home-hero {
     padding: 52px 20px 44px;

@@ -233,7 +233,7 @@ export function GuideTab() {
     <div>
       <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', marginBottom: '24px' }}>📖 教學管理</h2>
 
-      {/* 新增分類 */}
+      
       <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '20px 24px', marginBottom: '24px' }}>
         <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '10px' }}>新增教學分類</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -264,7 +264,7 @@ export function GuideTab() {
 
         return (
           <div key={section.id} style={card}>
-            {/* Section Header */}
+            
             <div
               style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', gap: '10px', borderBottom: isOpen ? '1px solid #F3F4F6' : 'none', cursor: isEditingTitle ? 'default' : 'pointer', userSelect: 'none' }}
               onClick={() => !isEditingTitle && toggleSection(section.id)}
@@ -303,7 +303,7 @@ export function GuideTab() {
               </div>
             </div>
 
-            {/* Section Body */}
+            
             {isOpen && (
               <div style={{ padding: '16px 20px' }}>
                 {section.steps.length === 0 && (
@@ -312,7 +312,7 @@ export function GuideTab() {
 
                 {section.steps.map((step, i) => (
                   <div key={step.id}>
-                    {/* Step Row */}
+                    
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '10px 0', borderTop: i === 0 ? 'none' : '1px solid #F3F4F6' }}>
                       <img
                         src={step.image_url}
@@ -341,7 +341,7 @@ export function GuideTab() {
                       </div>
                     </div>
 
-                    {/* Inline Edit Form */}
+                    
                     {editingStep?.id === step.id && (
                       <div style={{ margin: '4px 0 12px', padding: '16px', background: '#F0F9FF', borderRadius: '8px', border: '1px solid #BAE6FD' }}>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#0369A1', marginBottom: '12px' }}>編輯步驟</div>
@@ -400,7 +400,7 @@ export function GuideTab() {
                   </div>
                 ))}
 
-                {/* Add Step Form */}
+                
                 <div style={{ marginTop: '16px', padding: '16px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>+ 新增步驟</div>
 

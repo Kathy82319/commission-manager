@@ -39,7 +39,7 @@
   margin-bottom: 32px;
 }
 
-/* ── 標籤 ── */
+
 .fb-section-label {
   font-size: 13px;
   font-weight: 700;
@@ -66,7 +66,7 @@
   border-radius: 10px;
 }
 
-/* ── 類型按鈕 ── */
+
 .fb-type-group {
   display: flex;
   flex-direction: column;
@@ -109,7 +109,7 @@
   color: #7A6B62;
 }
 
-/* ── 輸入欄位 ── */
+
 .fb-textarea {
   width: 100%;
   padding: 14px 16px;
@@ -150,7 +150,7 @@
   border-color: #5D4A3E;
 }
 
-/* ── 錯誤訊息 ── */
+
 .fb-error {
   background: #FFF1F2;
   border: 1px solid #FECDD3;
@@ -161,7 +161,7 @@
   margin-bottom: 16px;
 }
 
-/* ── Footer ── */
+
 .fb-footer {
   display: flex;
   justify-content: flex-end;
@@ -182,7 +182,7 @@
 .fb-btn-primary:hover:not(:disabled) { background: #4A3830; }
 .fb-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* ── 成功畫面 ── */
+
 .fb-success {
   background: white;
   border-radius: 16px;
@@ -208,7 +208,7 @@
   margin-bottom: 28px;
 }
 
-/* ── 手機版 ── */
+
 @media (max-width: 640px) {
   .fb-page { padding: 24px 16px 60px; }
   .fb-title { font-size: 22px; }

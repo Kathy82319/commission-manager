@@ -21,8 +21,7 @@ export const inquiryController = {
 
   async getInquiryDetail(inquiryId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
-      // 關鍵修改：在 SELECT 中加入了 b.oc_snapshot AS bulletin_oc_snapshot
-      // 這樣前端一進入洽談室，就能合法拿到當初「徵委託」發布當下的那張靜態角色卡死資料
+   
       const inquiry = await env.commission_db.prepare(
         `SELECT i.*, 
                 b.title as bulletin_title, 

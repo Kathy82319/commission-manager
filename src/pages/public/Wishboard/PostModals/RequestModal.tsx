@@ -20,7 +20,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
   const [customPaymentInput, setCustomPaymentInput] = useState('');
   const [customTagInput, setCustomTagInput] = useState('');
 
-  // OC 連動相關狀態
   const [showOCSelection, setShowOCSelection] = useState(false);
   const [myOCs, setMyOCs] = useState<any[]>([]);
   const [isLoadingOCs, setIsLoadingOCs] = useState(false);
@@ -68,7 +67,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }
   };
 
-  // 載入當前使用者角色列表
   const handleOpenOCSelection = async () => {
     setShowOCSelection(true);
     setIsLoadingOCs(true);
@@ -84,9 +82,7 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }
   };
 
-  // 綁定選中的 OC 當下資料作為快照
   const handleSelectOC = (oc: any) => {
-    // 處理圖片路徑相容
     let processedOC = { ...oc };
     try {
       if (typeof oc.images === 'string') {
@@ -101,7 +97,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     setShowOCSelection(false);
   };
 
-  // 移除已綁定的 OC 快照
   const handleRemoveOC = () => {
     setForm((prev: any) => ({
       ...prev,
@@ -109,7 +104,6 @@ export const RequestModal: React.FC<RequestModalProps> = ({
     }));
   };
 
-  // 解析目前綁定 OC 的名字
   const getSelectedOCName = () => {
     if (!form.oc_snapshot) return null;
     try {

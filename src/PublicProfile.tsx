@@ -371,7 +371,7 @@ return {
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
       
-      {/* 針對搜尋引擎優化與社群預覽，確保只有在載入完成後才渲染正確的標題 */}
+      
       <Helmet>
         <title>{artist?.display_name || '繪師頁面'} | Arti 繪師小幫手</title>
         <meta property="og:title" content={`${artist?.display_name || '繪師頁面'} | Arti 繪師小幫手`} />

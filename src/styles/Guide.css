@@ -7,7 +7,7 @@
 }
 
 .guide-inner {
-  max-width: 860px; /* 這裡從 720px 修改為 860px 以對齊公告頁 */
+  max-width: 860px;
   margin: 0 auto;
 }
 
@@ -40,22 +40,22 @@
   margin-bottom: 28px;
 }
 
-/* ── 桌機版 (大於 640px) 框架與標題同步 ── */
+
 @media (min-width: 641px) {
   .guide-back {
     display: none;
   }
 
   .guide-page {
-    padding-top: 20px; /* 新增：同步公告頁的頂部間距 */
+    padding-top: 20px; 
   }
 
   .guide-title {
-    font-size: 30px; /* 新增：同步公告頁的標題大小 */
+    font-size: 30px; 
   }
 }
 
-/* ── 分類列表 (以下維持原本設定) ── */
+
 .guide-empty {
   text-align: center;
   color: #B0A49C;
@@ -123,7 +123,7 @@
   margin-left: 12px;
 }
 
-/* ── 燈箱 ── */
+
 .guide-lightbox-overlay {
   position: fixed;
   inset: 0;

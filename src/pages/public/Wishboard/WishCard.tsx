@@ -50,7 +50,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
-  // 用來紀錄手機滑動手勢的座標位置
   let touchStartX = 0;
   let touchEndX = 0;
 
@@ -243,10 +242,9 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  // 燈箱觸控手勢處理常式
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX = e.targetTouches[0].clientX;
-    touchEndX = e.targetTouches[0].clientX; // 初始化，避免滑動沒結束時算錯
+    touchEndX = e.targetTouches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -254,17 +252,15 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (validImages.length <= 1) return; // 單張圖片不執行滑動切換
+    if (validImages.length <= 1) return; 
 
-    const swipeThreshold = 50; // 定義滑動超過 50px 才觸發
+    const swipeThreshold = 50; 
     const diffX = touchStartX - touchEndX;
 
     if (Math.abs(diffX) > swipeThreshold) {
       if (diffX > 0) {
-        // 向左滑動 -> 切換到下一張
         navigateLightbox('next', e);
       } else {
-        // 向右滑動 -> 切換到上一張
         navigateLightbox('prev', e);
       }
     }

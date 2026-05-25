@@ -11,7 +11,7 @@ import { FilterBar } from './FilterBar';
 import { RequestModal } from './PostModals/RequestModal';
 import { OfferModal } from './PostModals/OfferModal';
 import { InquireModal } from './InquireModals'; 
-import { OCDetailCard } from '../../../components/OC/OCDetailCard'; // 新增：引入角色卡完整設定組件
+import { OCDetailCard } from '../../../components/OC/OCDetailCard';
 
 export const Wishboard: React.FC = () => {
   const navigate = useNavigate();
@@ -42,13 +42,12 @@ export const Wishboard: React.FC = () => {
     request_inquire_used: number, request_inquire_max: number 
   } | null>(null);
 
-  // 新增：控管檢視 OC 快照彈窗的全局狀態
   const [viewingOCSnapshot, setViewingOCSnapshot] = useState<any | null>(null);
 
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
     budget_min: '', budget_max: '', schedule_type: 'flexible', specific_date: '', 
-    ref_image: '', oc_snapshot: null // 新增：表單初始化變數
+    ref_image: '', oc_snapshot: null 
   };
   const [requestForm, setRequestForm] = useState(initialRequestForm);
 
@@ -291,7 +290,6 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  // 新增：提供給 WishCard 呼叫，用來點擊打開特定 OC 快照的處理函式
   const handleViewOCSnapshot = (snapshotData: any) => {
     setViewingOCSnapshot(snapshotData);
   };
@@ -370,14 +368,14 @@ export const Wishboard: React.FC = () => {
       left: 0, 
       right: 0, 
       bottom: 0, 
-      backgroundColor: 'rgba(15, 23, 42, 0.6)', // 順手幫你修正了原本寫錯的 Slate 變數
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
       backdropFilter: 'blur(4px)', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
       zIndex: 10000, 
       padding: '20px',
-      overflowY: 'auto', // 讓最外層在手機版內容過長時可以滾動
+      overflowY: 'auto', 
       WebkitOverflowScrolling: 'touch'
     }} 
     onClick={() => setShowRulesModal(false)}
@@ -392,7 +390,7 @@ export const Wishboard: React.FC = () => {
         overflow: 'hidden', 
         display: 'flex', 
         flexDirection: 'column',
-        margin: 'auto' // 確保在滾動容器中依然能保持置中
+        margin: 'auto' 
       }} 
       onClick={e => e.stopPropagation()}
     >
@@ -405,7 +403,7 @@ export const Wishboard: React.FC = () => {
         </button>
       </div>
       
-      {/* 這裡把原本限制滾動的區塊釋放，讓它隨外層延伸 */}
+      
       <div style={{ padding: '20px', color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>
         <div style={{ marginBottom: '16px' }}>
           <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>🚫 嚴禁 AI 製圖</strong>

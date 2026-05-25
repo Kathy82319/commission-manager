@@ -43,8 +43,7 @@ export const authController = {
 
     const cookieHeader = request.headers.get("Cookie") || "";
 
-    // SW 可能造成瀏覽器對同一個 callback URL 打兩次：第一次成功並設好 session，
-    // 第二次 code 已失效。若已有合法格式的 session，直接導回 portal 即可。
+
     const existingSession = cookieHeader.match(/user_session=([^;]+)/)?.[1];
     const isValidSessionFormat = existingSession && existingSession.split('|').length === 3;
     if (isValidSessionFormat) {

@@ -87,7 +87,6 @@ export function ShowcaseFormBuilder({
     };
   });
 
-  // 表單欄位拖曳
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -141,7 +140,6 @@ export function ShowcaseFormBuilder({
     setEditingItem(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
-  // ── 其他操作 ──────────────────────────────────────────
 
   const handleImportGlobalTOS = async () => {
     try {
@@ -208,7 +206,6 @@ export function ShowcaseFormBuilder({
     }
   };
 
-  // ── 表單欄位操作 ──────────────────────────────────────
 
   const addFormField = (type: FormFieldSchema['type']) => {
     if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
@@ -305,7 +302,6 @@ export function ShowcaseFormBuilder({
         .fb-left { flex: 1.2; overflow-y: auto; padding: 40px; background: #F4F0EB; }
         .fb-right { flex: 1; background: #E6E1DA; padding: 40px; overflow-y: auto; border-left: 1px solid #DED9D3; display: block; }
 
-        /* 右側預覽輪播 */
         .preview-carousel { position: relative; width: 100%; }
         .preview-carousel-main { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; display: block; }
         .preview-carousel-dots { display: flex; gap: 5px; justify-content: center; margin-bottom: 16px; }
@@ -336,7 +332,7 @@ export function ShowcaseFormBuilder({
         <div className="fade-in" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="basic-card" style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
 
-            {/* ── 品名標題 ── */}
+            
             <div>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品名標題 <span style={{ color: '#EF4444' }}>*</span></label>
               <input
@@ -348,10 +344,10 @@ export function ShowcaseFormBuilder({
               />
             </div>
 
-            {/* ── 標籤 + 金額 + 狀態（同一排） ── */}
+            
             <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
 
-              {/* 標籤 */}
+              
               <div style={{ flex: '2 1 280px' }}>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>作品標籤 (最多 5 個)</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap', minHeight: '32px' }}>
@@ -380,7 +376,7 @@ export function ShowcaseFormBuilder({
                 </div>
               </div>
 
-              {/* 金額 */}
+              
               <div style={{ flex: '1 1 140px' }}>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>金額顯示</label>
                 <input
@@ -392,7 +388,7 @@ export function ShowcaseFormBuilder({
                 />
               </div>
 
-              {/* 狀態 */}
+              
               <div style={{ flex: '1 1 140px' }}>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>展示狀態</label>
                 <select
@@ -407,7 +403,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* ── 品項詳細介紹 ── */}
+            
             <div>
               <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>品項詳細介紹</label>
               <div className="custom-quill-wrapper">
@@ -415,7 +411,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* ── 制訂委託表單入口 ── */}
+            
             <div style={{ padding: '16px', background: '#F8F9FA', border: '1px dashed #C4BDB5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '2px' }}>此項目開放接單嗎？</div>
@@ -429,7 +425,7 @@ export function ShowcaseFormBuilder({
               </button>
             </div>
 
-            {/* ── 動作按鈕 ── */}
+            
             <div className="basic-action-group">
               <button onClick={onClose} className="btn-cancel">返回接委託區</button>
               <button onClick={handleSaveItem} className="btn-submit">儲存項目</button>
@@ -451,7 +447,7 @@ export function ShowcaseFormBuilder({
 
           <div className="fb-main">
 
-            {/* ── 左側：表單建置 ── */}
+            
             <div className="custom-scrollbar fb-left">
               <div style={{ maxWidth: '750px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
@@ -626,7 +622,7 @@ export function ShowcaseFormBuilder({
               </div>
             </div>
 
-            {/* ── 右側：預覽 ── */}
+            
             <div className="custom-scrollbar fb-right">
               <div style={{ width: '100%', maxWidth: '450px', background: '#FFF', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.08)', border: '1px solid #EAE6E1', margin: '0 auto' }}>
                 <div style={{ background: '#5D4A3E', color: '#FFF', padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>

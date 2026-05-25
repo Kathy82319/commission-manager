@@ -12,7 +12,6 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
-// 安全解析 cover_url：可能是 JSON 陣列字串，也可能是單純 URL
 const parseImages = (coverUrl?: string, imagesArr?: string[]): string[] => {
   if (imagesArr && imagesArr.length > 0) return imagesArr;
   if (!coverUrl) return [];
@@ -41,7 +40,6 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
 
-  // 解析多圖陣列
   const images = useMemo(
     () => parseImages(selectedShowcase?.cover_url, selectedShowcase?.images),
     [selectedShowcase]
@@ -190,7 +188,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
       <div className="showcase-content-box" onClick={e => e.stopPropagation()}>
         {modalMode === 'view' && (
           <>
-            {/* ── 左側：多圖輪播 ── */}
+            
             <div className="showcase-cover" style={{ position: 'relative', overflow: 'hidden' }}>
               {images.length > 0 ? (
                 <>
@@ -200,7 +198,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
 
-                  {/* 左右箭頭 */}
+                  
                   {hasMultiImg && (
                     <>
                       <button
@@ -214,7 +212,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
                     </>
                   )}
 
-                  {/* 圓點導覽 */}
+                  
                   {hasMultiImg && (
                     <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 2 }}>
                       {images.map((_, i) => (
@@ -227,7 +225,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
                     </div>
                   )}
 
-                  {/* 張數標示 */}
+                  
                   {hasMultiImg && (
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: '#FFF', fontSize: '12px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px', zIndex: 2 }}>
                       {imgIdx + 1} / {images.length}
@@ -241,7 +239,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
               )}
             </div>
 
-            {/* ── 右側：詳細資訊 ── */}
+            
             <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div className="showcase-header">
                 <h2>{selectedShowcase.title}</h2>

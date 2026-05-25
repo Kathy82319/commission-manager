@@ -20,7 +20,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
   const [showPortfolioPicker, setShowPortfolioPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 圖片拖曳排序狀態
   const [imgDraggedIdx, setImgDraggedIdx] = useState<number | null>(null);
   const [imgDragOverIdx, setImgDragOverIdx] = useState<number | null>(null);
 
@@ -111,7 +110,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     } catch (error) { onToast("刪除失敗", "err"); }
   };
 
-  // ── 圖片操作：從作品集勾選/取消 ──────────────────────
   const togglePortfolioImage = (imagePath: string) => {
     if (!imagePath || !editingItem) return;
     const currentImages = editingItem.images || [];
@@ -126,7 +124,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     setEditingItem({ ...editingItem, images: nextImages, cover_url: nextImages[0] || '' });
   };
 
-  // ── 圖片操作：上傳新圖片 ─────────────────────────────
   const handleUploadImage = async (resultBlobs: { preview: Blob }) => {
     if (!editingItem) return;
     const currentImages = editingItem.images || [];
@@ -154,14 +151,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     }
   };
 
-  // ── 圖片操作：移除單張 ───────────────────────────────
   const removeImage = (idx: number) => {
     if (!editingItem) return;
     const nextImages = (editingItem.images || []).filter((_, i) => i !== idx);
     setEditingItem({ ...editingItem, images: nextImages, cover_url: nextImages[0] || '' });
   };
 
-  // ── 圖片操作：拖曳排序 ───────────────────────────────
   const handleImgDragStart = (e: React.DragEvent, index: number) => {
     setImgDraggedIdx(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -188,10 +183,10 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-        {/* ── 圖片管理區 ─────────────────────────────────── */}
+        
         <div style={{ background: '#FFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
 
-          {/* 標題列 */}
+          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <span style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '15px' }}>
@@ -212,7 +207,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             )}
           </div>
 
-          {/* 從作品集挑選展開區 */}
+          
           {showPortfolioPicker && (
             <div style={{ background: '#FAFAFA', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px dashed #DED9D3' }}>
               <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', fontWeight: 'bold' }}>點擊勾選 / 取消，最多 5 張</div>
@@ -246,7 +241,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             </div>
           )}
 
-          {/* 已選圖片縮圖列 + 上傳 slot */}
+          
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {currentImages.map((url, idx) => (
               <div
@@ -272,11 +267,11 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                 title={idx === 0 ? '封面圖（第一張）· 可拖曳調整順序' : `第 ${idx + 1} 張 · 可拖曳調整順序`}
               >
                 <img src={url} alt={`圖片 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
-                {/* 封面徽章 */}
+                
                 {idx === 0 && (
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(166,123,62,0.88)', color: '#FFF', fontSize: '10px', textAlign: 'center', padding: '2px 0', fontWeight: 'bold', letterSpacing: '0.5px' }}>封面</div>
                 )}
-                {/* 移除按鈕 */}
+                
                 {!isReadOnly && (
                   <button
                     type="button"
@@ -291,7 +286,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
               </div>
             ))}
 
-            {/* 上傳新圖 slot（不足 5 張且非唯讀時顯示） */}
+            
             {currentImages.length < 5 && !isReadOnly && (
               <div style={{ width: '90px', height: '90px', borderRadius: '8px', border: '2px dashed #C4BDB5', background: '#FBFBF9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = '#5D4A3E')}
@@ -308,7 +303,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             )}
           </div>
 
-          {/* 底部提示 */}
+          
           {currentImages.length > 0 && !isReadOnly && (
             <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#A0978D' }}>
               💡 拖曳縮圖可調整順序，第一張（金框）自動作為封面
@@ -321,7 +316,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           )}
         </div>
 
-        {/* ── ShowcaseFormBuilder（品名、標籤、介紹等） ── */}
+        
         <ShowcaseFormBuilder
           initialItem={editingItem}
           onClose={() => setIsFormOpen(false)}

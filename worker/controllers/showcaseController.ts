@@ -45,7 +45,6 @@ export const showcaseController = {
     
     const title = sanitizeAndLimit(body.title, 100);
     
-    // 【做法 A 優化】由於 cover_url 可能承載最多 5 張圖片的 JSON 字串 (如 ["url1", "url2"])，將長度限制放寬至 3000 字元以利完整儲存
     const coverUrl = sanitizeAndLimit(body.cover_url || JSON.stringify(body.images || []), 3000);
     
     const priceInfo = sanitizeAndLimit(body.price_info, 100);
@@ -115,7 +114,6 @@ export const showcaseController = {
     
     const title = sanitizeAndLimit(body.title, 100);
     
-    // 【做法 A 優化】更新時同步將 cover_url 放寬至 3000 字元，相容 5 張圖之 JSON 字串格式
     const coverUrl = sanitizeAndLimit(body.cover_url || JSON.stringify(body.images || []), 3000);
     
     const priceInfo = sanitizeAndLimit(body.price_info, 100);

@@ -161,7 +161,7 @@ export function AnnouncementsTab() {
 
       <div style={{ fontSize: '22px', fontWeight: 900, color: '#111827', marginBottom: '24px' }}>📢 公告管理</div>
 
-      {/* ── 發布新公告 ── */}
+      
       <div style={card}>
         <div style={{ fontSize: '16px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>發布新公告</div>
 
@@ -191,7 +191,7 @@ export function AnnouncementsTab() {
           placeholder="公告內容…"
         />
 
-        {/* 預覽 */}
+        
         {!isQuillEmpty(form.content) && (
           <div style={{ marginTop: '12px' }}>
             <button
@@ -227,7 +227,7 @@ export function AnnouncementsTab() {
         </div>
       </div>
 
-      {/* ── 公告列表 ── */}
+      
       <div style={card}>
         <div style={{ fontSize: '16px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>已發布的公告（{list.length} 則）</div>
 
@@ -236,7 +236,7 @@ export function AnnouncementsTab() {
 
         {list.map((a, i) => (
           <div key={a.id} style={{ borderTop: i === 0 ? 'none' : '1px solid #F3F4F6' }}>
-            {/* 一般列 */}
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '16px 0', gap: '16px' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -272,7 +272,7 @@ export function AnnouncementsTab() {
               </div>
             </div>
 
-            {/* 內嵌編輯表單 */}
+            
             {editingId === a.id && editForm && (
               <div style={{ margin: '0 0 16px', padding: '20px', background: '#F0F9FF', borderRadius: '10px', border: '1px solid #BAE6FD' }}>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#0369A1', marginBottom: '14px' }}>編輯公告</div>

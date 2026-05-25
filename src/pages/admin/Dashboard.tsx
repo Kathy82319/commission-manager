@@ -16,7 +16,6 @@ export function Dashboard() {
   const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
 
   useEffect(() => {
-    // 驗證是否有管理員權限，失敗則顯示拒絕畫面
     apiClient.get('/api/admin/stats')
       .then(res => {
         setStats((res as any).data);

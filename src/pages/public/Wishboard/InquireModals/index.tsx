@@ -14,7 +14,7 @@ interface InquireModalProps {
   onClose: () => void;
   onSubmit: () => void;
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
-  withOC?: boolean; // 修正：補上對齊大廳大腦傳入的屬性宣告
+  withOC?: boolean;
 }
 
 const unescapeHtml = (str: string) => {
