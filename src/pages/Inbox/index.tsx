@@ -107,6 +107,11 @@ export const Inbox: React.FC = () => {
   useEffect(() => { fetchInbox(); }, []);
 
   useEffect(() => {
+    document.body.style.overflow = showMobileSidebar ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showMobileSidebar]);
+
+  useEffect(() => {
     const typeParam = searchParams.get('type');
     const idParam = searchParams.get('id');
     

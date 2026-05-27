@@ -259,10 +259,12 @@
     left: 0;
     bottom: 0;
     height: 100%;
-    
     box-shadow: 4px 0 24px rgba(0,0,0,0.15);
     transform: translateX(-100%);
     z-index: 999 !important;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .inbox-master-sidebar.open { transform: translateX(0); }
 }
