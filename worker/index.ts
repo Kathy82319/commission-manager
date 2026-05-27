@@ -367,7 +367,7 @@ export default {
 
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/login") return authController.login(request, env, corsHeaders);
       if (request.method === "GET" && sanitizedPath === "/api/auth/line/callback") return authController.callback(request, env, corsHeaders);
-
+      if (request.method === "GET" && sanitizedPath === "/api/auth/testing-bypass") return authController.testingBypass(request, env, corsHeaders);
       if (request.method === "POST" && sanitizedPath === "/api/auth/logout") {
         return authController.logout(request, env, corsHeaders);
       }
