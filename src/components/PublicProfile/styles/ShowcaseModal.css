@@ -91,7 +91,7 @@
   .showcase-content-box { flex-direction: column; height: 90vh; overflow-y: auto !important; display: block !important; }
   .showcase-cover { height: 240px !important; min-height: 240px; flex: none !important; width: 100%; }
   .showcase-details { padding: 24px !important; display: block !important; min-height: 0 !important; height: auto !important; overflow: visible !important; }
-  .description-scroll-area, .custom-scrollbar { overflow-y: visible !important; height: auto !important; flex: none !important; padding-right: 0 !important; }
+  .showcase-content-box .description-scroll-area, .showcase-content-box .custom-scrollbar { overflow-y: visible !important; height: auto !important; flex: none !important; padding-right: 0 !important; }
 }
 
 @media (max-width: 768px) {
