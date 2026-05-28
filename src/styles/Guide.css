@@ -178,8 +178,8 @@
 }
 
 .guide-lb-image-wrap {
-  flex: 1;
-  min-height: 400px;
+  height: 600px;
+  flex-shrink: 0;
   background: #F5F0EB;
   display: flex;
   align-items: center;
