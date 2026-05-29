@@ -103,7 +103,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
         </div>
       </div>
 
-      {/* 打碼設定 */}
+      {/* 浮水印設定 */}
       <div style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
           <input
@@ -113,8 +113,8 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
             style={{ width: '18px', height: '18px', accentColor: '#4A7294', cursor: 'pointer', flexShrink: 0 }}
           />
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>為作品套用模糊遮罩（打碼）</div>
-            <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>開啟後作品將以模糊方式呈現，防止訪客直接截圖</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>上傳作品時自動加上浮水印</div>
+            <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>開啟後，新上傳的圖片將自動印上您的名字（已上傳的舊圖不受影響）</div>
           </div>
         </label>
       </div>
@@ -127,11 +127,11 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
       </div>
 
       <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
-        <ImageUploader 
-          onUpload={handlePortfolioUpload} 
-          targetWidth={1200} 
-          withWatermark={true} 
-          watermarkText={formData.display_name} 
+        <ImageUploader
+          onUpload={handlePortfolioUpload}
+          targetWidth={1200}
+          withWatermark={blurred}
+          watermarkText={formData.display_name}
           buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔"} 
           maxSizeMB={5} 
         />

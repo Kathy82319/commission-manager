@@ -109,8 +109,6 @@
 .portfolio-masonry-item:hover { transform: translateY(-6px); }
 .portfolio-masonry-item img { width: 100%; display: block; }
 
-.portfolio-blurred img { filter: blur(14px); transform: scale(1.05); transition: filter 0.3s; }
-.portfolio-blurred:hover img { filter: blur(6px); }
 
 
 .public-queue-section { max-width: 1000px; margin: 0 auto; }

@@ -565,12 +565,10 @@ return {
 
               {currentTab === 'portfolio' && (() => {
                 const isMasonry = settings?.portfolio_layout === 'masonry';
-                const isBlurred = settings?.portfolio_blurred === true;
-                const blurClass = isBlurred ? ' portfolio-blurred' : '';
                 return isMasonry ? (
                   <div className="masonry-grid">
                     {settings?.portfolio.map((img: string, idx: number) => (
-                      <div key={idx} className={`portfolio-masonry-item${blurClass}`} onClick={() => setSelectedImgIndex(idx)}>
+                      <div key={idx} className="portfolio-masonry-item" onClick={() => setSelectedImgIndex(idx)}>
                         <img src={img} alt="作品" loading="lazy" />
                       </div>
                     ))}
@@ -578,7 +576,7 @@ return {
                 ) : (
                   <div className="portfolio-grid">
                     {settings?.portfolio.map((img: string, idx: number) => (
-                      <div key={idx} className={`portfolio-item${blurClass}`} onClick={() => setSelectedImgIndex(idx)}>
+                      <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
                         <img src={img} alt="作品" loading="lazy" />
                       </div>
                     ))}
