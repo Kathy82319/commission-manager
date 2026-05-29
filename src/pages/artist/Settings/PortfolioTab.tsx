@@ -114,7 +114,10 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
           />
           <div>
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>上傳作品時自動加上浮水印</div>
-            <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>開啟後，新上傳的圖片將自動印上您的名字（已上傳的舊圖不受影響）</div>
+            <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '4px', lineHeight: 1.6 }}>
+              開啟後，浮水印將在上傳時覆蓋您的作品，若要無浮水印版本需取消勾選後重新上傳。<br />
+              💡 如果您習慣自己在作品上加浮水印，建議關閉此功能，避免出現兩層浮水印。
+            </div>
           </div>
         </label>
       </div>
