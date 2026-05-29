@@ -203,7 +203,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                 onClick={() => setShowPortfolioPicker(!showPortfolioPicker)}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: showPortfolioPicker ? '#5D4A3E' : '#F4F0EB', color: showPortfolioPicker ? '#FFF' : '#5D4A3E', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', transition: 'all 0.15s' }}
               >
-                <ImageIcon size={14} /> {showPortfolioPicker ? "收起現有項目集" : "從現有項目集挑選"}
+                <ImageIcon size={14} /> {showPortfolioPicker ? "收起現有作品集" : "從現有作品集挑選"}
               </button>
             )}
           </div>
@@ -311,7 +311,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           )}
           {currentImages.length === 0 && !isReadOnly && (
             <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#A05C5C', fontWeight: 'bold' }}>
-              ⚠️ 請至少上傳一張圖片或從現有項目集挑選
+              ⚠️ 請至少上傳一張圖片或從現有作品集挑選
             </p>
           )}
         </div>
