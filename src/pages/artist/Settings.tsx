@@ -38,6 +38,8 @@ export interface CompleteSettings {
   queue_settings: QueueSettings;
   tab_order: string[];
   show_favorite_count: boolean;
+  portfolio_layout: 'grid' | 'masonry';
+  portfolio_blurred: boolean;
 }
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
@@ -117,7 +119,9 @@ export function Settings() {
     question_template: '',
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
     tab_order: [],
-    show_favorite_count: false
+    show_favorite_count: false,
+    portfolio_layout: 'grid',
+    portfolio_blurred: false
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -218,14 +222,16 @@ export function Settings() {
             id: sec.id || `custom_legacy_${idx}`
           }));
 
-          setSettings(prev => ({ 
-            ...prev, 
+          setSettings(prev => ({
+            ...prev,
             ...parsed,
             custom_sections: safeCustomSections,
             bulletin_card: parsed.bulletin_card || { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
             question_template: data.data.question_template || parsed.question_template || '',
             queue_settings: parsed.queue_settings || prev.queue_settings,
-            tab_order: parsed.tab_order || []
+            tab_order: parsed.tab_order || [],
+            portfolio_layout: parsed.portfolio_layout ?? 'grid',
+            portfolio_blurred: parsed.portfolio_blurred === true,
           }));
         }
 
