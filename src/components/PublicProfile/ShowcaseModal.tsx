@@ -63,7 +63,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   const handleOpenCommission = () => {
     if (!isLoggedIn && selectedShowcase?.allow_guest !== 1) {
       alert("此項目僅開放給平台會員委託，請先登入或註冊！");
-      navigate('/login');
+      navigate('/portal', { state: { returnTo: window.location.pathname + window.location.search } });
       return;
     }
     if (isFull) { alert("此項目目前已滿單暫停收件囉！"); return; }
@@ -128,7 +128,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
       } else {
         if (data.error === "UNAUTHORIZED" || res.status === 401) {
           alert("登入逾時或權限不足，請重新登入！");
-          navigate('/login');
+          navigate('/portal', { state: { returnTo: window.location.pathname + window.location.search } });
         } else {
           alert(data.error || "送出失敗，請稍後再試");
         }
@@ -289,7 +289,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
                     💡 <strong>您目前為訪客身分</strong><br/>提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
                   </div>
                   <div>
-                    <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>前往登入 / 註冊帳號</button>
+                    <button onClick={() => navigate('/portal', { state: { returnTo: window.location.pathname + window.location.search } })} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>前往登入 / 註冊帳號</button>
                   </div>
                 </div>
               )}
