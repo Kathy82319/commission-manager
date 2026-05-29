@@ -71,7 +71,7 @@ export function PublicProfile() {
     localStorage.removeItem('user_role');
     localStorage.removeItem('is_logged_in');
     localStorage.removeItem('last_active_role');
-    window.location.href = '/'; 
+    window.location.reload();
   };
 
   const handleDashboardClick = () => {

@@ -47,7 +47,7 @@ export function PublicLayout() {
     } finally {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
-      window.location.href = '/';
+      window.location.reload();
     }
   };
 
