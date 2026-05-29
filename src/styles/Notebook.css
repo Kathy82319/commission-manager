@@ -414,12 +414,27 @@
 .form-input {
   color: #5D4A3E;
   border: 1px solid #DED9D3;
+  border-left: 3px solid #C4A882;
   padding: 10px;
   border-radius: 8px;
-  background-color: #FBFBF9;
+  background-color: #FFFFFF;
   outline: none;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.form-input:focus {
+  border-color: #A67B3E;
+  border-left-color: #A67B3E;
+}
+
+.form-input:disabled {
+  background-color: #F0EDE8;
+  border: 1px solid #E0DBD5;
+  color: #A0978D;
+  cursor: not-allowed;
+  resize: none;
 }
 
 .textarea-large {
@@ -430,7 +445,7 @@
 
 .request-field { display: flex; flex-direction: column; min-width: 0; }
 .field-label { color: #7A7269; font-weight: bold; margin-bottom: 6px; font-size: 13px; }
-.field-display { padding: 10px; background-color: #FBFBF9; border: 1px solid #EAE6E1; border-radius: 8px; min-height: 19px; display: flex; align-items: center; word-break: break-word; }
+.field-display { padding: 10px; background-color: #F0EDE8; border: 1px solid #E0DBD5; border-radius: 8px; min-height: 19px; display: flex; align-items: center; word-break: break-word; }
 .field-strikethrough { text-decoration: line-through; color: #C4BDB5; margin-right: 8px; }
 .field-pending { color: #A05C5C; font-weight: bold; }
 .field-value { color: #5D4A3E; }
