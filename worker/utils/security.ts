@@ -31,11 +31,7 @@ export async function verifyToken(token: string | undefined, secret: string): Pr
 
 export function sanitizeAndLimit(str: string | undefined | null, maxLength: number): string {
   if (!str) return '';
-  const limitedStr = str.substring(0, maxLength); 
-  return limitedStr.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')           
-            ;
+  return str.substring(0, maxLength);
 }
 
 export function sanitizeObject(obj: any, maxLength: number = 10000): any {
