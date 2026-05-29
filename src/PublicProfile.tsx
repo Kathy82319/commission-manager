@@ -386,6 +386,7 @@ return {
       `}</style>
 
       <div className="profile-top-right-actions" style={{ position: 'absolute', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
+        <button onClick={() => navigate('/')} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>Arti首頁</button>
         {isLoggedIn ? (
           <>
             <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>回到管理後台</button>
