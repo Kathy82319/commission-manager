@@ -70,21 +70,21 @@
 
 .app-sidebar .sidebar-nav {
   flex: 1;
-  padding: 10px;
+  padding: 6px 10px;
   display: flex;
-  flex-direction: column; 
-  gap: 8px;
+  flex-direction: column;
+  gap: 1px;
   overflow-y: auto;
 }
 
 .app-sidebar .nav-link {
   text-decoration: none;
-  padding: 12px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   color: #7A7269;
   transition: background-color 0.2s, color 0.2s;
-  display: block;  
+  display: block;
 }
 
 .app-sidebar .nav-link:hover { background-color: #FBFBF9; }

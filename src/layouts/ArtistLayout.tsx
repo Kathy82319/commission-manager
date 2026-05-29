@@ -147,7 +147,6 @@ export function ArtistLayout() {
   }
 
   const publicNavItems = [
-    { path: '/', label: '首頁' },
     { path: '/announcements', label: '最新公告' },
     { path: '/wishboard', label: '許願池' },
   ];
@@ -248,16 +247,25 @@ export function ArtistLayout() {
           </div>
             
             <nav className="sidebar-nav">
-              <div style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '8px 14px 4px' }}>主頁</div>
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '8px 14px 4px', display: 'block', textDecoration: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#A0978D')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#C4BDB5')}
+              >主頁 ↗</a>
               {publicNavItems.map(item => (
-                <Link
+                <a
                   key={item.path}
-                  to={item.path}
-                  className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                  href={item.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="nav-link"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
-                </Link>
+                </a>
               ))}
               <a
                 href="/guide"
