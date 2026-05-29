@@ -1,8 +1,8 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
-import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
-import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User, Heart, Contact } from 'lucide-react';
-import '../styles/ClientLayout.css'; 
+import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+import { LogOut, Bell, Menu } from 'lucide-react';
+import '../styles/ClientLayout.css';
 
 export function ClientLayout() {
   const navigate = useNavigate();
@@ -92,6 +92,21 @@ export function ClientLayout() {
     }
   };
 
+  const location = useLocation();
+
+  const publicNavItems = [
+    { path: '/announcements', label: '最新公告' },
+    { path: '/wishboard', label: '許願池' },
+  ];
+
+  const backendNavItems = [
+    { path: '/client/inbox', label: '收件/寄件匣' },
+    { path: '/client/orders', label: '委託單管理' },
+    { path: '/client/my-oc', label: '我的角色卡 (OC)' },
+    { path: '/client/favorites', label: '繪師追蹤名單' },
+    { path: '/client/settings', label: '個人設定' },
+  ];
+
   if (!isAuthorized) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#5a6e85', color: '#FFF' }}>載入中...</div>;
 
   const displayCount = Math.max(unreadCount, 5);
@@ -171,36 +186,50 @@ export function ClientLayout() {
         </div>
         
         <nav className="sidebar-nav">
-          <NavLink to="/wishboard" className="nav-item" onClick={closeMobileMenu}>
-            <Sparkles size={20} /><span>前往許願池</span>
-          </NavLink>
-          <NavLink to="/client/inbox" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-            <Inbox size={20} /><span>收件/寄件匣</span>
-          </NavLink>
-          <NavLink to="/client/orders" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-            <ClipboardList size={20} /><span>委託單管理</span>
-          </NavLink>
-          <NavLink to="/client/my-oc" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-            <Contact size={20} /><span>我的角色卡 (OC)</span>
-          </NavLink>
-          <NavLink to="/client/favorites" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-            <Heart size={20} /><span>繪師追蹤名單</span>
-          </NavLink>          
-          <NavLink to="/client/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'} onClick={closeMobileMenu}>
-            <User size={20} /><span>個人設定</span>
-          </NavLink>
-        </nav>
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '8px 14px 4px', display: 'block', textDecoration: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#A0978D')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#C4BDB5')}
+          >主頁 ↗</a>
+          {publicNavItems.map(item => (
+            <a
+              key={item.path}
+              href={item.path}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link"
+              onClick={closeMobileMenu}
+            >
+              {item.label}
+            </a>
+          ))}
+          <a
+            href="/guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="nav-link"
+            onClick={closeMobileMenu}
+          >
+            使用教學 &amp; Q&amp;A
+          </a>
 
-        <a
-          href="/guide"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 12px 0 12px', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#A0978D', textDecoration: 'none', background: 'transparent', transition: 'background 0.15s' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#F4F0EB')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
-          📖 使用教學 &amp; Q&amp;A
-        </a>
+          <div style={{ height: '1px', background: '#EAE6E1', margin: '8px 14px' }} />
+
+          <div style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '4px 14px' }}>後台</div>
+          {backendNavItems.map(item => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={closeMobileMenu}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="sidebar-footer">
           {(profile?.role === 'artist' || profile?.role === 'admin') && (
