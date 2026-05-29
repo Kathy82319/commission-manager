@@ -191,6 +191,17 @@ export function ClientLayout() {
           </NavLink>
         </nav>
 
+        <a
+          href="/guide"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 12px 0 12px', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#A0978D', textDecoration: 'none', background: 'transparent', transition: 'background 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#F4F0EB')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          📖 使用教學 &amp; Q&amp;A
+        </a>
+
         <div className="sidebar-footer">
           {(profile?.role === 'artist' || profile?.role === 'admin') && (
             <button onClick={() => window.location.href = '/artist/queue'} className="switch-btn">
