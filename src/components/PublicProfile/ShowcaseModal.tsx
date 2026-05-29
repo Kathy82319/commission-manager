@@ -1,6 +1,5 @@
 // src/components/PublicProfile/ShowcaseModal.tsx
 import { useState, useMemo } from 'react';
-import { saveReturnUrl } from '../../utils/authRedirect';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -64,7 +63,6 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   const handleOpenCommission = () => {
     if (!isLoggedIn && selectedShowcase?.allow_guest !== 1) {
       alert("此項目僅開放給平台會員委託，請先登入或註冊！");
-      saveReturnUrl();
       navigate('/login');
       return;
     }
@@ -130,7 +128,6 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
       } else {
         if (data.error === "UNAUTHORIZED" || res.status === 401) {
           alert("登入逾時或權限不足，請重新登入！");
-          saveReturnUrl();
           navigate('/login');
         } else {
           alert(data.error || "送出失敗，請稍後再試");
@@ -292,7 +289,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
                     💡 <strong>您目前為訪客身分</strong><br/>提交表單後，繪師將透過您留下的聯絡方式與您聯繫。<br/>若註冊帳號，可直接在站上與繪師對話並追蹤進度喔！
                   </div>
                   <div>
-                    <button onClick={() => { saveReturnUrl(); navigate('/login'); }} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>前往登入 / 註冊帳號</button>
+                    <button onClick={() => navigate('/login')} style={{ background: '#4A7294', color: '#FFF', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>前往登入 / 註冊帳號</button>
                   </div>
                 </div>
               )}

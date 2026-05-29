@@ -1,5 +1,4 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { saveReturnUrl } from '../utils/authRedirect';
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import '../styles/PublicLayout.css';
@@ -114,7 +113,7 @@ export function PublicLayout() {
               </button>
             </div>
           ) : (
-            <button onClick={() => { saveReturnUrl(); navigate('/login'); }} className="header-btn-primary">
+            <button onClick={() => navigate('/login')} className="header-btn-primary">
               登入 / 註冊
             </button>
           )}
@@ -140,7 +139,7 @@ export function PublicLayout() {
               <button onClick={handleLogout} className="mobile-menu-link mobile-menu-link--muted">登出</button>
             </>
           ) : (
-            <button onClick={() => { saveReturnUrl(); navigate('/login'); }} className="mobile-menu-link mobile-menu-link--primary">登入 / 註冊</button>
+            <button onClick={() => navigate('/login')} className="mobile-menu-link mobile-menu-link--primary">登入 / 註冊</button>
           )}
         </div>
       )}

@@ -1,6 +1,5 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
-import { saveReturnUrl } from '../utils/authRedirect';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
@@ -25,7 +24,6 @@ export function ArtistLayout() {
       try {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
         if (res.status === 401 || res.status === 403) {
-          saveReturnUrl();
           navigate('/login');
           return;
         }
@@ -35,11 +33,9 @@ export function ArtistLayout() {
           else if (data.data.role === 'client') navigate('/client/orders');
           else setArtist(data.data);
         } else {
-          saveReturnUrl();
           navigate('/login');
         }
       } catch (error) {
-        saveReturnUrl();
         navigate('/login');
       } finally {
         setLoading(false);
