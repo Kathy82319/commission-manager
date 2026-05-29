@@ -146,14 +146,19 @@ export function ArtistLayout() {
     }
   }
 
-  const navItems = [
-    { path: '/wishboard', label: '前往許願池' },
-    { path: '/artist/inbox', label: '收件/寄件匣' }, 
+  const publicNavItems = [
+    { path: '/', label: '首頁' },
+    { path: '/announcements', label: '最新公告' },
+    { path: '/wishboard', label: '許願池' },
+  ];
+
+  const backendNavItems = [
+    { path: '/artist/inbox', label: '收件/寄件匣' },
     { path: '/artist/queue', label: '排單表' },
     { path: '/artist/notebook', label: '委託單管理' },
-    { path: '/artist/customers', label: '客戶管理' }, 
+    { path: '/artist/customers', label: '客戶管理' },
     { path: '/artist/records', label: '結案紀錄' },
-    { path: '/artist/settings', label: '個人設定' }
+    { path: '/artist/settings', label: '個人設定' },
   ];
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
@@ -243,10 +248,34 @@ export function ArtistLayout() {
           </div>
             
             <nav className="sidebar-nav">
-              {navItems.map(item => (
-                <Link 
-                  key={item.path} 
-                  to={item.path} 
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '8px 14px 4px' }}>主頁</div>
+              {publicNavItems.map(item => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <a
+                href="/guide"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nav-link"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                使用教學 &amp; Q&amp;A
+              </a>
+
+              <div style={{ height: '1px', background: '#EAE6E1', margin: '8px 14px' }} />
+
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#C4BDB5', letterSpacing: '0.08em', padding: '4px 14px' }}>後台</div>
+              {backendNavItems.map(item => (
+                <Link
+                  key={item.path}
+                  to={item.path}
                   className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -254,17 +283,6 @@ export function ArtistLayout() {
                 </Link>
               ))}
             </nav>
-
-            <a
-              href="/guide"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 12px 0 12px', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#A0978D', textDecoration: 'none', background: 'transparent', transition: 'background 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#F4F0EB')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              📖 使用教學 &amp; Q&amp;A
-            </a>
 
             <div className="sidebar-footer">
               <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
