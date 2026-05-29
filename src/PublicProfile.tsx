@@ -563,15 +563,28 @@ return {
                 </div>
               )}
 
-              {currentTab === 'portfolio' && (
-                <div className="portfolio-grid">
-                  {settings?.portfolio.map((img: string, idx: number) => (
-                    <div key={idx} className="portfolio-item" onClick={() => setSelectedImgIndex(idx)}>
-                      <img src={img} alt="作品" loading="lazy" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {currentTab === 'portfolio' && (() => {
+                const isMasonry = settings?.portfolio_layout === 'masonry';
+                const isBlurred = settings?.portfolio_blurred === true;
+                const blurClass = isBlurred ? ' portfolio-blurred' : '';
+                return isMasonry ? (
+                  <div className="masonry-grid">
+                    {settings?.portfolio.map((img: string, idx: number) => (
+                      <div key={idx} className={`portfolio-masonry-item${blurClass}`} onClick={() => setSelectedImgIndex(idx)}>
+                        <img src={img} alt="作品" loading="lazy" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="portfolio-grid">
+                    {settings?.portfolio.map((img: string, idx: number) => (
+                      <div key={idx} className={`portfolio-item${blurClass}`} onClick={() => setSelectedImgIndex(idx)}>
+                        <img src={img} alt="作品" loading="lazy" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
               
               {currentTab === 'detailed_intro' && settings && (
                 <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />

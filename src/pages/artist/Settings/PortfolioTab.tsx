@@ -70,8 +70,55 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
     setSettings(prev => ({ ...prev, portfolio: newPortfolio }));
   };
 
+  const layout = settings.portfolio_layout ?? 'grid';
+  const blurred = settings.portfolio_blurred ?? false;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+      {/* 版型選擇 */}
+      <div style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '12px' }}>作品展示版型</div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {([
+            { value: 'grid', label: '⊞ 塊狀', desc: '固定正方形格子' },
+            { value: 'masonry', label: '⧉ 瀑布流', desc: '依圖片比例自然排列' },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSettings(prev => ({ ...prev, portfolio_layout: opt.value }))}
+              style={{
+                flex: 1, padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                border: layout === opt.value ? '2px solid #4A7294' : '1px solid #DED9D3',
+                background: layout === opt.value ? '#EBF2F7' : '#FAFAFA',
+                color: layout === opt.value ? '#4A7294' : '#7A7269',
+                fontWeight: layout === opt.value ? 'bold' : 'normal',
+                textAlign: 'center', transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ fontSize: '15px' }}>{opt.label}</div>
+              <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 打碼設定 */}
+      <div style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={blurred}
+            onChange={e => setSettings(prev => ({ ...prev, portfolio_blurred: e.target.checked }))}
+            style={{ width: '18px', height: '18px', accentColor: '#4A7294', cursor: 'pointer', flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E' }}>為作品套用模糊遮罩（打碼）</div>
+            <div style={{ fontSize: '12px', color: '#A0978D', marginTop: '2px' }}>開啟後作品將以模糊方式呈現，防止訪客直接截圖</div>
+          </div>
+        </label>
+      </div>
+
       <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
         {quotaInfo?.plan_type === 'free' 
           ? `📢 目前您的方案僅公開前 6 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`

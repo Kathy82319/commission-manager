@@ -19,6 +19,8 @@ export interface ProfileSettings {
   theme_mode?: 'light' | 'dark';
   gradient_direction?: string;
   show_favorite_count?: boolean;
+  portfolio_layout?: 'grid' | 'masonry';
+  portfolio_blurred?: boolean;
 }
 
 export interface QuotaInfo {
