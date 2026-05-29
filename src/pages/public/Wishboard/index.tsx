@@ -192,7 +192,7 @@ export const Wishboard: React.FC = () => {
   };
 
   const handlePostTrigger = () => {
-    if (!currentUser) return navigate('/login');
+    if (!currentUser) return navigate('/portal', { state: { returnTo: location.pathname + location.search } });
 
     if (activeTab === 'other') {
       showToast("該分類建置中，暫不開放發布。", "error");
@@ -214,7 +214,7 @@ export const Wishboard: React.FC = () => {
   };
 
   const openInquireModal = (bulletin: any) => {
-    if (!currentUser) return navigate('/login');
+    if (!currentUser) return navigate('/portal', { state: { returnTo: location.pathname + location.search } });
 
     if (currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'inquire' });
