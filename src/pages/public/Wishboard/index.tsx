@@ -1,6 +1,7 @@
 // src/pages/public/Wishboard/index.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { saveReturnUrl } from '../../../utils/authRedirect';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
 import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-react';
@@ -192,7 +193,7 @@ export const Wishboard: React.FC = () => {
   };
 
   const handlePostTrigger = () => {
-    if (!currentUser) return navigate('/login');
+    if (!currentUser) { saveReturnUrl(); return navigate('/login'); }
 
     if (activeTab === 'other') {
       showToast("該分類建置中，暫不開放發布。", "error");
@@ -214,7 +215,7 @@ export const Wishboard: React.FC = () => {
   };
 
   const openInquireModal = (bulletin: any) => {
-    if (!currentUser) return navigate('/login');
+    if (!currentUser) { saveReturnUrl(); return navigate('/login'); }
 
     if (currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'inquire' });

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
 import '../styles/Portal.css';
+import { consumeReturnUrl } from '../utils/authRedirect';
 
 interface UserProfile {
   display_name: string;
@@ -25,8 +26,13 @@ export function Portal() {
         const res = await fetch(`${API_BASE}/api/users/me`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) {
-          setUser(data.data);
           localStorage.setItem('is_logged_in', 'true');
+          const returnTo = consumeReturnUrl();
+          if (returnTo) {
+            navigate(returnTo, { replace: true });
+            return;
+          }
+          setUser(data.data);
         } else {
           localStorage.removeItem('is_logged_in');
           localStorage.removeItem('user_role');

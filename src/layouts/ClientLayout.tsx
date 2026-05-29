@@ -1,5 +1,6 @@
 // src/layouts/ClientLayout.tsx
 import { useEffect, useState, useRef } from 'react';
+import { saveReturnUrl } from '../utils/authRedirect';
 import { Outlet, useNavigate, Link, NavLink } from 'react-router-dom';
 import { ClipboardList, Inbox, Sparkles, LogOut, Bell, Menu, User, Heart, Contact } from 'lucide-react';
 import '../styles/ClientLayout.css'; 
@@ -28,9 +29,11 @@ export function ClientLayout() {
           setProfile(data.data);
           setIsAuthorized(true);
         } else {
+          saveReturnUrl();
           navigate('/login');
         }
       } catch (error) {
+        saveReturnUrl();
         navigate('/login');
       }
     };
