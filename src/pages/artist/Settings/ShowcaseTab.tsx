@@ -9,10 +9,11 @@ interface ShowcaseTabProps {
   onToggleGlobalSave: (hide: boolean) => void;
   onToast: (msg: string, type: 'ok' | 'err') => void;
   quotaInfo: QuotaInfo | null;
-  isReadOnly?: boolean; 
+  isReadOnly?: boolean;
+  portfolio?: string[];
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [] }: ShowcaseTabProps) {
   const [items, setItems] = useState<ShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -210,18 +211,17 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           
           {showPortfolioPicker && (
             <div style={{ background: '#FAFAFA', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '1px dashed #DED9D3' }}>
-              <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', fontWeight: 'bold' }}>點擊勾選 / 取消，最多 5 張</div>
+              <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', fontWeight: 'bold' }}>從作品集挑選・點擊勾選 / 取消，最多 5 張</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '10px' }}>
-                {items.filter(item => item && item.id !== editingItem.id && item.cover_url).map(item => {
-                  const isSelected = currentImages.includes(item.cover_url);
+                {portfolio.map((url, idx) => {
+                  const isSelected = currentImages.includes(url);
                   return (
                     <div
-                      key={item.id}
-                      onClick={() => togglePortfolioImage(item.cover_url)}
-                      title={item.title}
+                      key={idx}
+                      onClick={() => togglePortfolioImage(url)}
                       style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: isSelected ? '3px solid #5D4A3E' : '2px solid #EAE6E1', transition: 'border-color 0.15s, transform 0.15s', transform: isSelected ? 'scale(0.96)' : 'scale(1)' }}
                     >
-                      <img src={item.cover_url} alt="portfolio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={url} alt={`作品 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       {isSelected && (
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(93,74,62,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#5D4A3E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -232,9 +232,9 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                     </div>
                   );
                 })}
-                {items.filter(item => item && item.id !== editingItem.id && item.cover_url).length === 0 && (
+                {portfolio.length === 0 && (
                   <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#A0978D', fontSize: '13px', padding: '16px 0' }}>
-                    無其他項目封面可供挑選
+                    作品集尚無圖片，請先至「作品展示區」上傳
                   </div>
                 )}
               </div>
