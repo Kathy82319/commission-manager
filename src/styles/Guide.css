@@ -178,8 +178,8 @@
 }
 
 .guide-lb-image-wrap {
-  flex: 1 1 0;
-  min-height: 180px;
+  height: 600px;
+  flex-shrink: 0;
   background: #F5F0EB;
   display: flex;
   align-items: center;
@@ -198,6 +198,8 @@
   padding: 18px 24px;
   border-top: 1px solid #F0ECE7;
   flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 35vh;
 }
 
 .guide-lb-caption {
@@ -205,8 +207,6 @@
   color: #4B3F38;
   line-height: 1.7;
   margin-bottom: 16px;
-  max-height: 160px;
-  overflow-y: auto;
 }
 
 .guide-lb-caption p {
