@@ -9,7 +9,9 @@
     "build:worker": "npx esbuild worker/index.ts --bundle --format=esm --outfile=dist/_worker.js --external:node:*",
     "preview": "vite preview",
     "deploy:test": "copy /Y wrangler.test.jsonc wrangler.jsonc && npm run build && wrangler pages deploy dist --project-name cath-commission-manager --branch main",
-    "deploy:prod": "copy /Y wrangler.prod.jsonc wrangler.jsonc && npm run build && wrangler pages deploy dist --project-name commission-app --branch main"
+    "deploy:prod": "copy /Y wrangler.prod.jsonc wrangler.jsonc && npm run build && wrangler pages deploy dist --project-name commission-app --branch main",
+    "deploy:test:linux": "cp wrangler.test.jsonc wrangler.jsonc && npm run build && wrangler pages deploy dist --project-name cath-commission-manager --branch main",
+    "deploy:prod:linux": "cp wrangler.prod.jsonc wrangler.jsonc && npm run build && wrangler pages deploy dist --project-name commission-app --branch main"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1030.0",
