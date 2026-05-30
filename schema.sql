@@ -19,7 +19,6 @@ CREATE TABLE Users (
     trial_end_at DATETIME,         -- 試用結束時間
     pro_expires_at DATETIME        -- Pro版到期時間
 );
-
 -- 2. 繪師專屬設定表
 CREATE TABLE ArtistProfiles (
     user_id TEXT PRIMARY KEY,
