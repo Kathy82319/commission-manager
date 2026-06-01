@@ -292,13 +292,13 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               </div>
             )}
 
-            <div className="mechanism-radio-group">
-              <label className="radio-label">
-                <input type="radio" checked={form.selection_type === 'fcfs'} onChange={() => setForm({...form, selection_type: 'fcfs'})} /> 
+            <div className="mechanism-radio-group" style={{ opacity: isEditing ? 0.5 : 1 }}>
+              <label className="radio-label" style={{ cursor: isEditing ? 'not-allowed' : 'pointer' }}>
+                <input type="radio" checked={form.selection_type === 'fcfs'} onChange={() => !isEditing && setForm({...form, selection_type: 'fcfs'})} disabled={isEditing} />
                 先搶先贏
               </label>
-              <label className="radio-label">
-                <input type="radio" checked={form.selection_type === 'curated'} onChange={() => setForm({...form, selection_type: 'curated'})} /> 
+              <label className="radio-label" style={{ cursor: isEditing ? 'not-allowed' : 'pointer' }}>
+                <input type="radio" checked={form.selection_type === 'curated'} onChange={() => !isEditing && setForm({...form, selection_type: 'curated'})} disabled={isEditing} />
                 繪師選設
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px' }}>
