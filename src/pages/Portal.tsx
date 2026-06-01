@@ -36,7 +36,7 @@ export function Portal() {
               const { mode, returnTo } = JSON.parse(stored);
               sessionStorage.removeItem('portal_intent');
               localStorage.setItem('user_role', mode);
-              const defaultPath = mode === 'client' ? '/client/orders' : '/artist/queue';
+              const defaultPath = mode === 'client' ? '/wishboard' : '/artist/queue';
               navigate(returnTo || defaultPath, { replace: true });
               return;
             } catch {
@@ -95,7 +95,7 @@ export function Portal() {
     if (isPreLogin) {
       handlePreLoginSelect('client');
     } else {
-      handleRoleSelection('/client/orders', 'client');
+      handleRoleSelection('/wishboard', 'client');
     }
   };
 
