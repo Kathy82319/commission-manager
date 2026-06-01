@@ -103,7 +103,7 @@ export function ClientLayout() {
     { path: '/client/inbox', label: '收件/寄件匣' },
     { path: '/client/orders', label: '委託單管理' },
     { path: '/client/my-oc', label: '我的角色卡 (OC)' },
-    { path: '/client/favorites', label: '繪師追蹤名單' },
+    { path: '/client/favorites', label: '名單管理' },
     { path: '/client/settings', label: '個人設定' },
   ];
 
