@@ -22,6 +22,7 @@ export function PublicLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [bellVisible, setBellVisible] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const [theme, setTheme] = useState<ThemeSettings>({
@@ -43,19 +44,26 @@ export function PublicLayout() {
   }, [location]);
 
   useEffect(() => {
-    if (!isLoggedIn) { setUnreadCount(0); setNotifications([]); return; }
     const role = localStorage.getItem('last_active_role') || localStorage.getItem('user_role') || 'client';
     const fetchNotifications = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/notifications?role=${role}`, { credentials: 'include' });
         const data = await res.json();
-        if (data.success) { setUnreadCount(data.unreadCount); setNotifications(data.notifications); }
-      } catch {}
+        if (data.success) {
+          setBellVisible(true);
+          setUnreadCount(data.unreadCount);
+          setNotifications(data.notifications);
+        } else {
+          setBellVisible(false);
+        }
+      } catch {
+        setBellVisible(false);
+      }
     };
     fetchNotifications();
     const id = setInterval(fetchNotifications, 15000);
     return () => clearInterval(id);
-  }, [isLoggedIn, API_BASE]);
+  }, [API_BASE]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -121,8 +129,8 @@ export function PublicLayout() {
 
   return (
     <div className="public-layout-container" style={dynamicStyles}>
-      {isLoggedIn && (
-        <div ref={notifRef} style={{ position: 'fixed', top: '68px', right: '24px', zIndex: 9999 }}>
+      {bellVisible && (
+        <div ref={notifRef} style={{ position: 'fixed', top: '68px', right: '44px', zIndex: 9999 }}>
           <div
             onClick={handleOpenNotifMenu}
             style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', position: 'relative' }}
