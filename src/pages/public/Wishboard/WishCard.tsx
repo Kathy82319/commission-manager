@@ -13,12 +13,13 @@ interface WishCardProps {
   bulletin: any;
   currentUser: any;
   onInquire: (bulletin: any) => void;
-  wishQuota?: { 
-    is_pro: boolean, 
-    offer_used: number, offer_max: number, 
-    request_inquire_used: number, request_inquire_max: number 
+  wishQuota?: {
+    is_pro: boolean,
+    offer_used: number, offer_max: number,
+    request_inquire_used: number, request_inquire_max: number
   } | null;
   onViewOC?: (snapshotData: any) => void;
+  onEditTrigger?: (bulletin: any) => void;
 }
 
 const unescapeHtml = (str: string) => {
@@ -26,7 +27,7 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota, onViewOC }) => {
+export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota, onViewOC, onEditTrigger }) => {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -278,7 +279,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   return (
     <>
-      <div className="wish-card-wide">
+      <div className="wish-card-wide" id={`card-${bulletin.id}`}>
         
         <div className="wish-card-image-wrapper">
           
@@ -574,14 +575,23 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
           <div className="card-actions">
             {isMyOwnPost ? (
-              <button 
-                className="submit-post-btn full-width" 
-                onClick={handleRevokeClick}
-                disabled={isRevoking}
-                style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1 }}
-              >
-                {isRevoking ? '撤銷中...' : '撤銷發佈的許願'}
-              </button>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+                <button
+                  className="submit-post-btn"
+                  onClick={handleRevokeClick}
+                  disabled={isRevoking}
+                  style={{ backgroundColor: '#A05C5C', borderColor: '#A05C5C', opacity: isRevoking ? 0.7 : 1, flex: 1, fontSize: '14px', padding: '10px 16px' }}
+                >
+                  {isRevoking ? '撤銷中...' : '撤銷發佈'}
+                </button>
+                <button
+                  className="submit-post-btn"
+                  onClick={(e) => { e.stopPropagation(); onEditTrigger?.(bulletin); }}
+                  style={{ flex: 1, fontSize: '14px', padding: '10px 16px' }}
+                >
+                  編輯發佈
+                </button>
+              </div>
             ) : isQuotaFull ? (
               <button disabled className="btn-status-disabled" style={{ opacity: 0.8, cursor: 'not-allowed', color: '#f1abab', backgroundColor: '#FDF4F4', border: '1px solid #E8C1C1' }}>本月投遞額度已滿，請升級專業版</button>
             ) : hasApplied ? (

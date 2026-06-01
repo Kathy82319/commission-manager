@@ -43,6 +43,7 @@ export const Wishboard: React.FC = () => {
   } | null>(null);
 
   const [viewingOCSnapshot, setViewingOCSnapshot] = useState<any | null>(null);
+  const [editingBulletin, setEditingBulletin] = useState<any | null>(null);
 
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
@@ -258,14 +259,20 @@ export const Wishboard: React.FC = () => {
         };
       }
 
-      const res = await apiClient.post('/api/bulletins', payload);
+      let res;
+      if (editingBulletin) {
+        res = await apiClient.patch(`/api/bulletins/${editingBulletin.id}`, payload);
+      } else {
+        res = await apiClient.post('/api/bulletins', payload);
+      }
       if (res.success) {
-        showToast("發布成功！");
+        showToast(editingBulletin ? "更新成功！" : "發布成功！");
         setShowPostModal(false);
+        setEditingBulletin(null);
         if (activeTab === 'request') setRequestForm(initialRequestForm);
         else setOfferForm(getInitialOfferForm());
         initData();
-      } else showToast(res.message || "發布失敗", "error");
+      } else showToast(res.message || (editingBulletin ? "更新失敗" : "發布失敗"), "error");
     } catch (err: any) { 
       showToast(err.message || "發布發生錯誤", "error"); 
     }
@@ -294,6 +301,55 @@ export const Wishboard: React.FC = () => {
     setViewingOCSnapshot(snapshotData);
   };
 
+  const myActivePost = bulletins.find(b => currentUser && b.client_id === currentUser.id) ?? null;
+
+  const handleScrollToMyPost = () => {
+    if (!myActivePost) return;
+    const el = document.getElementById(`card-${myActivePost.id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleEditTrigger = (bulletin: any) => {
+    setEditingBulletin(bulletin);
+    let contentObj: any = {};
+    try { contentObj = JSON.parse(bulletin.content || '{}'); } catch {}
+
+    if (bulletin.category === 'offer') {
+      let images: string[] = [];
+      try { images = JSON.parse(bulletin.ref_image_key || '[]'); } catch {}
+      setOfferForm({
+        title: bulletin.title || '',
+        content: contentObj.description || '',
+        tags: JSON.parse(bulletin.tags || '[]'),
+        payment_methods: JSON.parse(bulletin.payment_methods || '[]'),
+        schedule_type: bulletin.schedule_type || 'flexible',
+        specific_date: bulletin.specific_date || '',
+        ref_images: images,
+        questions: contentObj.questions?.length ? contentObj.questions : [''],
+        tos_content: contentObj.tos_content || '',
+        commission_items: contentObj.commission_items || [],
+        selection_type: bulletin.selection_type || contentObj.selection_type || 'fcfs',
+        max_slots: String(bulletin.max_slots || contentObj.max_slots || 1),
+        payment_timing: bulletin.payment_timing || contentObj.payment_timing || 'prepaid',
+        payment_timing_detail: bulletin.payment_timing_detail || contentObj.payment_timing_detail || ''
+      });
+    } else {
+      setRequestForm({
+        title: bulletin.title || '',
+        content: contentObj.description || '',
+        tags: JSON.parse(bulletin.tags || '[]'),
+        payment_methods: JSON.parse(bulletin.payment_methods || '[]'),
+        budget_min: bulletin.budget_min || '',
+        budget_max: bulletin.budget_max || '',
+        schedule_type: bulletin.schedule_type || 'flexible',
+        specific_date: bulletin.specific_date || '',
+        ref_image: bulletin.ref_image_key || '',
+        oc_snapshot: null
+      });
+    }
+    setShowPostModal(true);
+  };
+
   return (
     <div className="wishboard-page">
       {toast && (
@@ -313,24 +369,22 @@ export const Wishboard: React.FC = () => {
         </div>
       )}
 
-      <FilterBar 
-        activeTab={activeTab} setActiveTab={setActiveTab} 
-        selectedFilters={selectedFilters} 
+      <FilterBar
+        activeTab={activeTab} setActiveTab={setActiveTab}
+        selectedFilters={selectedFilters}
         toggleTag={(tag) => {
           if (tag === '不限') {
-            setSelectedFilters([]); 
+            setSelectedFilters([]);
           } else {
-            setSelectedFilters(prev => {
-              if (prev.includes(tag)) {
-                return prev.filter(t => t !== tag); 
-              } else {
-                return [...prev, tag]; 
-              }
-            });
+            setSelectedFilters(prev =>
+              prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+            );
           }
-        }} 
-        currentUser={currentUser} 
-        onPostTrigger={handlePostTrigger} 
+        }}
+        currentUser={currentUser}
+        onPostTrigger={handlePostTrigger}
+        myPostId={myActivePost?.id ?? null}
+        onScrollToMyPost={handleScrollToMyPost}
       />
 
       <main className="wish-grid">
@@ -351,7 +405,7 @@ export const Wishboard: React.FC = () => {
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
             // 新增傳入：onViewOC={handleViewOCSnapshot}
-            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} />)
+            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} onEditTrigger={handleEditTrigger} />)
         )}
       </main>
 
@@ -462,27 +516,28 @@ export const Wishboard: React.FC = () => {
       )}
 
       {showPostModal && activeTab === 'request' && (
-        <RequestModal 
-          form={requestForm} 
-          setForm={setRequestForm} 
-          isUploading={isUploading} 
-          onClose={() => setShowPostModal(false)} 
-          onSubmit={handlePostSubmit} 
-          onImageUpload={handleRequestImageUpload} 
+        <RequestModal
+          form={requestForm}
+          setForm={setRequestForm}
+          isUploading={isUploading}
+          onClose={() => { setShowPostModal(false); setEditingBulletin(null); }}
+          onSubmit={handlePostSubmit}
+          onImageUpload={handleRequestImageUpload}
         />
       )}
 
       {showPostModal && activeTab === 'offer' && (
-        <OfferModal 
-          form={offerForm} 
-          setForm={setOfferForm} 
-          isUploading={isUploading} 
-          onClose={() => setShowPostModal(false)} 
-          onSubmit={handlePostSubmit} 
-          onImageUpload={handleOfferImageUpload} 
-          userShowcase={userShowcase} 
-          onSaveDraft={saveDraft} 
-          onLoadDraft={loadSavedDraft} 
+        <OfferModal
+          form={offerForm}
+          setForm={setOfferForm}
+          isUploading={isUploading}
+          onClose={() => { setShowPostModal(false); setEditingBulletin(null); }}
+          onSubmit={handlePostSubmit}
+          onImageUpload={handleOfferImageUpload}
+          userShowcase={userShowcase}
+          onSaveDraft={saveDraft}
+          onLoadDraft={loadSavedDraft}
+          isEditing={!!editingBulletin}
         />
       )}
 

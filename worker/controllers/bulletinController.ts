@@ -201,6 +201,75 @@ export const bulletinController = {
     }
   },
 
+  async update(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json() as any;
+
+      const bulletin = await env.commission_db.prepare(
+        `SELECT id, category, content FROM Bulletins WHERE id = ? AND client_id = ? AND status = 'open'`
+      ).bind(bulletinId, currentUserId).first() as any;
+
+      if (!bulletin) {
+        return new Response(JSON.stringify({ success: false, message: '找不到貼文或無權限編輯' }), { status: 403, headers: corsHeaders });
+      }
+
+      let existingContent: any = {};
+      try { existingContent = JSON.parse(bulletin.content || '{}'); } catch {}
+
+      const {
+        title, content, tags, payment_methods, budget_min, budget_max,
+        schedule_type, specific_date, ref_image_key,
+        selection_type, commission_items, questions,
+        payment_timing, payment_timing_detail, tos_content
+      } = body;
+
+      if (!title || !content) {
+        return new Response(JSON.stringify({ success: false, message: '標題與內容為必填' }), { status: 400, headers: corsHeaders });
+      }
+
+      const bMin = Math.max(0, parseInt(budget_min) || 0);
+      const bMax = Math.max(0, parseInt(budget_max) || 0);
+      if (bMax > 0 && bMin > bMax) {
+        return new Response(JSON.stringify({ success: false, message: '最低預算不得高於最高預算' }), { status: 400, headers: corsHeaders });
+      }
+
+      const safeTitle = sanitizeAndLimit(title, 100);
+      const safeTags = JSON.stringify(sanitizeObject(Array.isArray(tags) ? tags : [], 50));
+      const safePayments = JSON.stringify(sanitizeObject(Array.isArray(payment_methods) ? payment_methods : [], 50));
+
+      const updatedContentObj = {
+        description: content,
+        max_slots: existingContent.max_slots || 1,
+        selection_type: selection_type === 'fcfs' ? 'fcfs' : 'curated',
+        commission_items: Array.isArray(commission_items) ? commission_items : [],
+        questions: Array.isArray(questions) ? questions : [],
+        payment_timing: payment_timing || '',
+        payment_timing_detail: payment_timing_detail || '',
+        tos_content: tos_content || ''
+      };
+
+      const finalContentStr = JSON.stringify(sanitizeObject(updatedContentObj, 5000));
+
+      await env.commission_db.prepare(`
+        UPDATE Bulletins
+        SET title = ?, content = ?, tags = ?, payment_methods = ?,
+            budget_min = ?, budget_max = ?, schedule_type = ?, specific_date = ?,
+            ref_image_key = ?
+        WHERE id = ?
+      `).bind(
+        safeTitle, finalContentStr, safeTags, safePayments,
+        bMin, bMax, schedule_type || 'flexible', specific_date || null,
+        ref_image_key || null,
+        bulletinId
+      ).run();
+
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    } catch (error: any) {
+      console.error("update Bulletin Error:", error.message);
+      return new Response(JSON.stringify({ success: false, error: '更新發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
+    }
+  },
+
   async inquire(request: Request, bulletinId: string, currentUserId: string, env: Env, corsHeaders: any) {
     try {
       const user = await env.commission_db.prepare(

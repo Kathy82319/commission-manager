@@ -10,6 +10,8 @@ interface FilterBarProps {
   toggleTag: (tag: string, field: 'filters') => void;
   currentUser: any;
   onPostTrigger: () => void;
+  myPostId?: string | null;
+  onScrollToMyPost?: () => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -18,7 +20,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   selectedFilters,
   toggleTag,
   currentUser,
-  onPostTrigger
+  onPostTrigger,
+  myPostId,
+  onScrollToMyPost
 }) => {
   return (
     <>
@@ -65,13 +69,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
         
         {currentUser && (
-          <button 
-            className="submit-post-btn" 
-            style={{ padding: '10px 20px', fontSize: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }} 
-            onClick={onPostTrigger}
-          >
-            <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+            <button
+              className="submit-post-btn"
+              style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={onPostTrigger}
+            >
+              <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
+            </button>
+            {myPostId && (
+              <button
+                className="btn-cancel"
+                style={{ padding: '8px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onClick={onScrollToMyPost}
+              >
+                📍 跳到我的貼文
+              </button>
+            )}
+          </div>
         )}
       </div>
     </>

@@ -20,6 +20,7 @@ interface OfferModalProps {
   userShowcase: any[];
   onSaveDraft: () => void;
   onLoadDraft: () => void;
+  isEditing?: boolean;
 }
 
 export const OfferModal: React.FC<OfferModalProps> = ({
@@ -31,7 +32,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   onImageUpload,
   userShowcase,
   onSaveDraft,
-  onLoadDraft
+  onLoadDraft,
+  isEditing = false
 }) => {
   const [customTagInput, setCustomTagInput] = useState('');
   const [customWarningInput, setCustomWarningInput] = useState('');
@@ -301,7 +303,8 @@ export const OfferModal: React.FC<OfferModalProps> = ({
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>預計招收名額：</span>
-                <input type="number" min="1" value={form.max_slots || 1} onChange={e => setForm({...form, max_slots: e.target.value})} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d' }} />
+                <input type="number" min="1" value={form.max_slots || 1} onChange={e => setForm({...form, max_slots: e.target.value})} disabled={isEditing} style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #fcd34d', opacity: isEditing ? 0.5 : 1, cursor: isEditing ? 'not-allowed' : 'auto' }} />
+                {isEditing && <span style={{ fontSize: '12px', color: '#92400e', opacity: 0.7 }}>（已發布後不可更改）</span>}
               </div>
             </div>
             

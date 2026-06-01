@@ -180,7 +180,11 @@ export default {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.inquire(request, targetId, currentUserId!, env, corsHeaders);
-        } else if (targetId && subAction === "close" && request.method === "PATCH") { 
+        } else if (targetId && !subAction && request.method === "PATCH") {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.update(request, targetId, currentUserId!, env, corsHeaders);
+        } else if (targetId && subAction === "close" && request.method === "PATCH") {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
           return bulletinController.closeBulletin(request, targetId, currentUserId!, env, corsHeaders);
