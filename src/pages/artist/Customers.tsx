@@ -1,7 +1,7 @@
 // src/pages/artist/Customers.tsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Heart, ShieldAlert, ExternalLink } from 'lucide-react';
+import { User, Heart, ExternalLink } from 'lucide-react';
 import '../../styles/Customers.css';
 
 interface Customer {
@@ -45,7 +45,6 @@ export function Customers() {
   const [relations, setRelations] = useState<ArtistRelation[]>([]);
   const [relationsLoaded, setRelationsLoaded] = useState(false);
   const [relationsLoading, setRelationsLoading] = useState(false);
-  const [relTab, setRelTab] = useState<'favorite' | 'blacklist'>('favorite');
   const [relSearchTerm, setRelSearchTerm] = useState('');
   const [relModalMode, setRelModalMode] = useState<'none' | 'edit'>('none');
   const [selectedRel, setSelectedRel] = useState<ArtistRelation | null>(null);
@@ -143,7 +142,7 @@ export function Customers() {
   }, [labelOptions]);
 
   const displayRelations = useMemo(() => {
-    let list = relations.filter(r => r.relation_type === relTab);
+    let list = relations.filter(r => r.relation_type === 'favorite');
     if (relSearchTerm.length > 0) {
       const term = relSearchTerm.toLowerCase();
       list = list.filter(r =>
@@ -153,7 +152,7 @@ export function Customers() {
       );
     }
     return list;
-  }, [relations, relTab, relSearchTerm]);
+  }, [relations, relSearchTerm]);
 
   const openRelEditModal = (rel: ArtistRelation) => {
     setSelectedRel(rel);
@@ -376,32 +375,20 @@ export function Customers() {
       <header className="crm-header">
         <h2>名單管理</h2>
         <div className="customers-header-actions">
-          {activeTab !== 'favorites' ? (
-            <>
-              <input
-                type="text"
-                className="crm-form-input local-search-input"
-                style={{ width: '220px' }}
-                placeholder="搜尋 ID、暱稱、標籤、社群..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button className="crm-submit-btn local-search-input" onClick={() => {
-                setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
-                setModalMode('add');
-                setSuggestions([]);
-              }}>+ 新增紀錄</button>
-            </>
-          ) : (
-            <input
-              type="text"
-              className="crm-form-input local-search-input"
-              style={{ width: '220px' }}
-              placeholder="搜尋名稱、ID 或備註..."
-              value={relSearchTerm}
-              onChange={(e) => setRelSearchTerm(e.target.value)}
-            />
-          )}
+          <input
+            type="text"
+            className="crm-form-input local-search-input"
+            style={{ width: '220px' }}
+            placeholder={activeTab !== 'favorites' ? "搜尋 ID、暱稱、標籤、社群..." : "搜尋名稱、ID 或備註..."}
+            value={activeTab !== 'favorites' ? searchTerm : relSearchTerm}
+            onChange={(e) => activeTab !== 'favorites' ? setSearchTerm(e.target.value) : setRelSearchTerm(e.target.value)}
+          />
+          <button className="crm-submit-btn local-search-input" onClick={() => {
+            if (activeTab === 'favorites') setActiveTab('all');
+            setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
+            setModalMode('add');
+            setSuggestions([]);
+          }}>+ 新增紀錄</button>
         </div>
       </header>
 
@@ -489,24 +476,6 @@ export function Customers() {
         </div>
       ) : (
         <div>
-          <div className="crm-tabs-container" style={{ marginTop: '12px' }}>
-            <button
-              className={`crm-tab-btn ${relTab === 'favorite' ? 'crm-active' : ''}`}
-              onClick={() => setRelTab('favorite')}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Heart size={15} fill={relTab === 'favorite' ? '#ef4444' : 'none'} color={relTab === 'favorite' ? '#ef4444' : 'currentColor'} />
-              收藏 ({relations.filter(r => r.relation_type === 'favorite').length})
-            </button>
-            <button
-              className={`crm-tab-btn ${relTab === 'blacklist' ? 'crm-active' : ''}`}
-              onClick={() => setRelTab('blacklist')}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <ShieldAlert size={15} />
-              黑名單 ({relations.filter(r => r.relation_type === 'blacklist').length})
-            </button>
-          </div>
           <div className="crm-table-wrapper">
             <table className="crm-table">
               <thead>
@@ -523,9 +492,7 @@ export function Customers() {
                 ) : displayRelations.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="td-empty-state td-empty-text">
-                      {relTab === 'favorite'
-                        ? '您目前尚未收藏任何繪師。在許願池或繪師個人頁點擊 ❤️ 即可收藏！'
-                        : '目前沒有黑名單紀錄。'}
+                      您目前尚未收藏任何繪師。在許願池或繪師個人頁點擊 ❤️ 即可收藏！
                     </td>
                   </tr>
                 ) : displayRelations.map(rel => (
