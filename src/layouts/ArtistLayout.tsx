@@ -155,7 +155,7 @@ export function ArtistLayout() {
     { path: '/artist/inbox', label: '收件/寄件匣' },
     { path: '/artist/queue', label: '排單表' },
     { path: '/artist/notebook', label: '委託單管理' },
-    { path: '/artist/customers', label: '客戶管理' },
+    { path: '/artist/customers', label: '名單管理' },
     { path: '/artist/records', label: '結案紀錄' },
     { path: '/artist/settings', label: '個人設定' },
   ];

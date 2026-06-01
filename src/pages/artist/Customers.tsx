@@ -1,6 +1,7 @@
 // src/pages/artist/Customers.tsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { User, Heart, ShieldAlert, ExternalLink } from 'lucide-react';
 import '../../styles/Customers.css';
 
 interface Customer {
@@ -14,7 +15,18 @@ interface Customer {
   short_note: string;
   full_note: string;
   platform_name?: string;
-  contact_methods: string;  
+  contact_methods: string;
+}
+
+interface ArtistRelation {
+  id: string;
+  target_user_id: string;
+  relation_type: 'favorite' | 'blacklist';
+  custom_note: string;
+  created_at: string;
+  display_name: string;
+  avatar_url: string;
+  public_id: string;
 }
 
 const DEFAULT_LABELS = ['一般', 'VIP'];
@@ -24,11 +36,21 @@ export function Customers() {
   const location = useLocation();
   const API_BASE = (import.meta as any).env.VITE_API_BASE_URL || '';
   
-  const [activeTab, setActiveTab] = useState<'all' | 'blacklist'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'blacklist' | 'favorites'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [relations, setRelations] = useState<ArtistRelation[]>([]);
+  const [relationsLoaded, setRelationsLoaded] = useState(false);
+  const [relationsLoading, setRelationsLoading] = useState(false);
+  const [relTab, setRelTab] = useState<'favorite' | 'blacklist'>('favorite');
+  const [relSearchTerm, setRelSearchTerm] = useState('');
+  const [relModalMode, setRelModalMode] = useState<'none' | 'edit'>('none');
+  const [selectedRel, setSelectedRel] = useState<ArtistRelation | null>(null);
+  const [editNote, setEditNote] = useState('');
+  const [editType, setEditType] = useState<'favorite' | 'blacklist'>('favorite');
 
   const [modalMode, setModalMode] = useState<'none' | 'add' | 'view' | 'edit'>('none');
   const [modalTab, setModalTab] = useState<'overview' | 'history'>('overview');
@@ -72,6 +94,25 @@ export function Customers() {
     }
   };
 
+  const fetchRelations = async () => {
+    setRelationsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/relations`, { credentials: 'include' });
+      const result = await res.json();
+      if (result.success) setRelations(result.data);
+    } catch (err) {
+      showToast("載入名單失敗");
+    } finally {
+      setRelationsLoading(false);
+      setRelationsLoaded(true);
+    }
+  };
+
+  const handleSwitchToFavorites = () => {
+    setActiveTab('favorites');
+    if (!relationsLoaded) fetchRelations();
+  };
+
   useEffect(() => { fetchCustomers(); }, []);
 
   useEffect(() => {
@@ -100,6 +141,66 @@ export function Customers() {
   useEffect(() => {
     localStorage.setItem('artist_custom_labels', JSON.stringify(labelOptions));
   }, [labelOptions]);
+
+  const displayRelations = useMemo(() => {
+    let list = relations.filter(r => r.relation_type === relTab);
+    if (relSearchTerm.length > 0) {
+      const term = relSearchTerm.toLowerCase();
+      list = list.filter(r =>
+        r.display_name?.toLowerCase().includes(term) ||
+        r.public_id?.toLowerCase().includes(term) ||
+        r.custom_note?.toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [relations, relTab, relSearchTerm]);
+
+  const openRelEditModal = (rel: ArtistRelation) => {
+    setSelectedRel(rel);
+    setEditNote(rel.custom_note || '');
+    setEditType(rel.relation_type);
+    setRelModalMode('edit');
+  };
+
+  const handleRelSave = async () => {
+    if (!selectedRel) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/relations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetId: selectedRel.target_user_id, type: editType, note: editNote }),
+        credentials: 'include'
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast("更新成功");
+        setRelModalMode('none');
+        fetchRelations();
+      } else {
+        showToast(result.error || "儲存失敗");
+      }
+    } catch (err) {
+      showToast("連線異常");
+    }
+  };
+
+  const handleRelDelete = async (targetId: string) => {
+    if (!window.confirm("確定要將此繪師從名單中移除嗎？")) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/relations/${targetId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const result = await res.json();
+      if (result.success) {
+        showToast("已從名單移除");
+        setRelModalMode('none');
+        fetchRelations();
+      }
+    } catch (err) {
+      showToast("移除失敗");
+    }
+  };
 
   const displayCustomers = useMemo(() => {
     let list = customers;
@@ -273,104 +374,201 @@ export function Customers() {
       {toast && <div className="crm-toast-container"><div className="crm-toast">✓ {toast}</div></div>}
 
       <header className="crm-header">
-        <h2>顧客管理</h2>
+        <h2>名單管理</h2>
         <div className="customers-header-actions">
-          <input 
-            type="text" 
-            className="crm-form-input local-search-input" 
-            style={{ width: '220px' }}
-            placeholder="搜尋 ID、暱稱、標籤、社群..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button className="crm-submit-btn local-search-input" onClick={() => {
-            setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
-            setModalMode('add');
-            setSuggestions([]);
-          }}>+ 新增紀錄</button>
+          {activeTab !== 'favorites' ? (
+            <>
+              <input
+                type="text"
+                className="crm-form-input local-search-input"
+                style={{ width: '220px' }}
+                placeholder="搜尋 ID、暱稱、標籤、社群..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button className="crm-submit-btn local-search-input" onClick={() => {
+                setSelectedCust({ alias_name: '', public_id: 'User_', custom_label: '一般', contact_methods: [''], short_note: '', full_note: '', client_user_id: null });
+                setModalMode('add');
+                setSuggestions([]);
+              }}>+ 新增紀錄</button>
+            </>
+          ) : (
+            <input
+              type="text"
+              className="crm-form-input local-search-input"
+              style={{ width: '220px' }}
+              placeholder="搜尋名稱、ID 或備註..."
+              value={relSearchTerm}
+              onChange={(e) => setRelSearchTerm(e.target.value)}
+            />
+          )}
         </div>
       </header>
 
       <div className="crm-tabs-container">
         <button className={`crm-tab-btn ${activeTab === 'all' ? 'crm-active' : ''}`} onClick={() => setActiveTab('all')}>總名單 ({customers.length})</button>
-        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
+        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>客戶黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
+        <button
+          className={`crm-tab-btn ${activeTab === 'favorites' ? 'crm-active' : ''}`}
+          onClick={handleSwitchToFavorites}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Heart size={15} fill={activeTab === 'favorites' ? '#ef4444' : 'none'} color={activeTab === 'favorites' ? '#ef4444' : 'currentColor'} />
+          收藏的繪師 ({relations.filter(r => r.relation_type === 'favorite').length})
+        </button>
       </div>
 
-      <div className="crm-table-wrapper">
-        <table className="crm-table">
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
-              <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
-              <th style={{ textAlign: 'center' }}>標籤</th>
-              <th style={{ textAlign: 'center' }}>合作次數</th>
-              <th style={{ textAlign: 'center' }}>備註</th>
-              <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>            
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
-            ) : displayCustomers.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px 20px', color: '#A0978D' }}>查無相關客戶紀錄</td></tr>
-            ) : displayCustomers.map(c => {
-              const socialArr = parseSocialMethods(c.contact_methods);
-              return (
-                <tr key={c.id} onClick={() => openViewModal(c)} className="crm-clickable-row" style={{ cursor: 'pointer' }}>
-                  
-                  <td className="local-cust-td local-name-cell" style={{ fontWeight: '600', textAlign: 'center' }}>
-                    <span className="local-td-label">暱稱</span>
-                    <div className="local-td-content">{c.alias_name || c.platform_name || '未命名'}</div>
-                  </td>
-
-                  <td className="local-cust-td" style={{ textAlign: 'center'}}>
-                    <span className="local-td-label">識別 ID / 社群</span>
-                    <div className="crm-id-social-wrapper local-td-content" style={{ alignItems: 'center' }}>
-                      <div className="crm-id-box">
-                        <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
-                      </div>
-                      {socialArr.map((method, idx) => (
-                        <div key={idx} className="crm-social-item-text" style={{ fontSize: '11px', whiteSpace: 'normal', wordBreak: 'break-all' }}>
-                          {method}
+      {activeTab !== 'favorites' ? (
+        <div className="crm-table-wrapper">
+          <table className="crm-table">
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'center' }}>暱稱 / 自訂稱呼</th>
+                <th style={{ textAlign: 'center' }}>識別 ID + 社群</th>
+                <th style={{ textAlign: 'center' }}>標籤</th>
+                <th style={{ textAlign: 'center' }}>合作次數</th>
+                <th style={{ textAlign: 'center' }}>備註</th>
+                <th className="crm-th-action" style={{ textAlign: 'center' }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>讀取中...</td></tr>
+              ) : displayCustomers.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '60px 20px', color: '#A0978D' }}>查無相關客戶紀錄</td></tr>
+              ) : displayCustomers.map(c => {
+                const socialArr = parseSocialMethods(c.contact_methods);
+                return (
+                  <tr key={c.id} onClick={() => openViewModal(c)} className="crm-clickable-row" style={{ cursor: 'pointer' }}>
+                    <td className="local-cust-td local-name-cell" style={{ fontWeight: '600', textAlign: 'center' }}>
+                      <span className="local-td-label">暱稱</span>
+                      <div className="local-td-content">{c.alias_name || c.platform_name || '未命名'}</div>
+                    </td>
+                    <td className="local-cust-td" style={{ textAlign: 'center'}}>
+                      <span className="local-td-label">識別 ID / 社群</span>
+                      <div className="crm-id-social-wrapper local-td-content" style={{ alignItems: 'center' }}>
+                        <div className="crm-id-box">
+                          <span className="crm-id-tag" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{c.public_id || '---'}</span>
                         </div>
-                      ))}
-                    </div>
-                  </td>
-
-                  <td className="local-cust-td" style={{ textAlign: 'center' }}>
-                    <span className="local-td-label">標籤分類</span>
-                    <div className="local-td-content">
-                      <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
-                        {c.custom_label}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="local-cust-td" style={{ textAlign: 'center' }}>
-                    <span className="local-td-label">合作次數</span>
-                    <div className="local-td-content">{c.order_count} 次</div>
-                  </td>
-
-                  <td className="local-cust-td crm-td-note" style={{ textAlign: 'center' }}>
-                    <span className="local-td-label">備註</span>
-                    <div className="local-td-content">{c.short_note || '---'}</div>
-                  </td>
-
-                  <td className="local-cust-td crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                    <span className="local-td-label">操作</span>
-                    <div className="local-td-content">
-                      <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
-                        編輯
-                      </button>
-                    </div>
-                  </td>
-
+                        {socialArr.map((method, idx) => (
+                          <div key={idx} className="crm-social-item-text" style={{ fontSize: '11px', whiteSpace: 'normal', wordBreak: 'break-all' }}>
+                            {method}
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="local-cust-td" style={{ textAlign: 'center' }}>
+                      <span className="local-td-label">標籤分類</span>
+                      <div className="local-td-content">
+                        <span className={`crm-tag crm-tag-${c.custom_label === 'VIP' ? 'vip' : c.custom_label === '黑名單' ? 'blacklisted' : 'normal'}`}>
+                          {c.custom_label}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="local-cust-td" style={{ textAlign: 'center' }}>
+                      <span className="local-td-label">合作次數</span>
+                      <div className="local-td-content">{c.order_count} 次</div>
+                    </td>
+                    <td className="local-cust-td crm-td-note" style={{ textAlign: 'center' }}>
+                      <span className="local-td-label">備註</span>
+                      <div className="local-td-content">{c.short_note || '---'}</div>
+                    </td>
+                    <td className="local-cust-td crm-td-action" style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <span className="local-td-label">操作</span>
+                      <div className="local-td-content">
+                        <button className="crm-tab-btn" style={{ margin: '0 auto' }} onClick={(e) => { e.stopPropagation(); openEditModal(c); }}>
+                          編輯
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div>
+          <div className="crm-tabs-container" style={{ marginTop: '12px' }}>
+            <button
+              className={`crm-tab-btn ${relTab === 'favorite' ? 'crm-active' : ''}`}
+              onClick={() => setRelTab('favorite')}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Heart size={15} fill={relTab === 'favorite' ? '#ef4444' : 'none'} color={relTab === 'favorite' ? '#ef4444' : 'currentColor'} />
+              收藏 ({relations.filter(r => r.relation_type === 'favorite').length})
+            </button>
+            <button
+              className={`crm-tab-btn ${relTab === 'blacklist' ? 'crm-active' : ''}`}
+              onClick={() => setRelTab('blacklist')}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <ShieldAlert size={15} />
+              黑名單 ({relations.filter(r => r.relation_type === 'blacklist').length})
+            </button>
+          </div>
+          <div className="crm-table-wrapper">
+            <table className="crm-table">
+              <thead>
+                <tr>
+                  <th className="th-left-align">繪師資訊</th>
+                  <th className="th-center-align">標籤狀態</th>
+                  <th className="th-left-align">私人備註</th>
+                  <th className="crm-th-action th-center-align">操作</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {relationsLoading ? (
+                  <tr><td colSpan={4} className="td-empty-state">讀取中...</td></tr>
+                ) : displayRelations.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="td-empty-state td-empty-text">
+                      {relTab === 'favorite'
+                        ? '您目前尚未收藏任何繪師。在許願池或繪師個人頁點擊 ❤️ 即可收藏！'
+                        : '目前沒有黑名單紀錄。'}
+                    </td>
+                  </tr>
+                ) : displayRelations.map(rel => (
+                  <tr key={rel.id} onClick={() => window.open(`/${rel.public_id}`, '_blank')} className="crm-clickable-row">
+                    <td className="td-artist-info">
+                      <div className="artist-info-wrapper">
+                        <div className="artist-avatar-box">
+                          {rel.avatar_url ? (
+                            <img src={rel.avatar_url} alt="avatar" className="artist-avatar-img" />
+                          ) : (
+                            <User size={20} color="#94a3b8" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="artist-name-text">{rel.display_name || '未命名繪師'}</div>
+                          <div className="artist-id-text">{rel.public_id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="td-center-align td-mobile-tag">
+                      <span className={`crm-tag crm-tag-${rel.relation_type === 'favorite' ? 'vip' : 'blacklisted'}`}>
+                        {rel.relation_type === 'favorite' ? '❤️ 收藏' : '🚫 黑名單'}
+                      </span>
+                    </td>
+                    <td className="crm-td-note td-note-text">
+                      {rel.custom_note ? (
+                        <span className="note-content">{rel.custom_note}</span>
+                      ) : (
+                        <span className="note-placeholder">尚未填寫備註</span>
+                      )}
+                    </td>
+                    <td className="crm-td-action td-center-align" onClick={(e) => e.stopPropagation()}>
+                      <button className="crm-tab-btn crm-action-btn" onClick={(e) => { e.stopPropagation(); openRelEditModal(rel); }}>
+                        編輯備註
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {modalMode !== 'none' && selectedCust && (
         <div className="crm-modal-overlay">
@@ -526,6 +724,53 @@ export function Customers() {
             </div>
           </div>
         </div> 
+      )}
+
+      {relModalMode === 'edit' && selectedRel && (
+        <div className="crm-modal-overlay">
+          <div className="crm-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="crm-edit-mode">
+              <div className="modal-header-wrapper">
+                <h3 className="modal-title">編輯名單標記</h3>
+                <button onClick={() => window.open(`/${selectedRel.public_id}`, '_blank')} className="modal-preview-btn">
+                  查看公開頁 <ExternalLink size={14} />
+                </button>
+              </div>
+
+              <div className="crm-form-section">
+                <label className="crm-form-label">狀態切換</label>
+                <div className="radio-group-wrapper">
+                  <label className="radio-label">
+                    <input type="radio" name="relType" checked={editType === 'favorite'} onChange={() => setEditType('favorite')} />
+                    ❤️ 收藏
+                  </label>
+                  <label className="radio-label radio-label-danger">
+                    <input type="radio" name="relType" checked={editType === 'blacklist'} onChange={() => setEditType('blacklist')} />
+                    🚫 黑名單
+                  </label>
+                </div>
+              </div>
+
+              <div className="crm-form-section">
+                <label className="crm-form-label">私人備註 (僅您自己可見)</label>
+                <textarea
+                  className="crm-form-input textarea-note"
+                  placeholder="例如：跑單過..."
+                  value={editNote}
+                  onChange={e => setEditNote(e.target.value)}
+                />
+              </div>
+
+              <div className="modal-footer-wrapper">
+                <button className="crm-delete-btn" onClick={() => handleRelDelete(selectedRel.target_user_id)}>移除名單</button>
+                <div className="modal-action-buttons">
+                  <button className="crm-tab-btn" onClick={() => setRelModalMode('none')}>取消</button>
+                  <button className="crm-submit-btn" onClick={handleRelSave}>儲存變更</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
