@@ -309,10 +309,15 @@ export const OfferModal: React.FC<OfferModalProps> = ({
             </div>
             
             <p style={{ fontSize: '13px', color: '#b45309', margin: '8px 0 0 0', fontWeight: '500' }}>
-              {form.selection_type === 'curated' 
-                ? '💡 許願池將顯示：繪師會選擇設定來接稿，預計招收' 
+              {form.selection_type === 'curated'
+                ? '💡 許願池將顯示：繪師會選擇設定來接稿，預計招收'
                 : '💡 許願池將顯示：目前已投遞人數 / 預計招收名額，招收名額滿將會自動關閉'}
             </p>
+            {!isEditing && (
+              <p style={{ fontSize: '12px', color: '#92400e', margin: '6px 0 0 0', opacity: 0.75 }}>
+                ⚠️ 徵集機制與名額一經發布後即不可修改，請確認後再送出。
+              </p>
+            )}
           </div>
 
           <div className="form-section">
