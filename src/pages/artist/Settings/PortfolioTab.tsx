@@ -156,7 +156,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
           targetWidth={1200}
           withWatermark={blurred}
           watermarkText={formData.display_name}
-          buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔（可多選）"}
+          buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔（可多選，單次最多 10 張）"}
           maxSizeMB={5}
         />
       </div>

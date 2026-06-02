@@ -53,7 +53,7 @@ export function ImageUploader({
     const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024;
 
     if (multiple && onBatchUpload && e.target.files.length > 1) {
-      const files = Array.from(e.target.files).slice(0, 5);
+      const files = Array.from(e.target.files).slice(0, 10);
       e.target.value = '';
       const oversized = files.filter(f => f.size > MAX_FILE_SIZE);
       const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= MAX_FILE_SIZE);

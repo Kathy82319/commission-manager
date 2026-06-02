@@ -339,12 +339,12 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           
           {currentImages.length > 0 && !isReadOnly && (
             <p style={{ margin: '10px 0 0 0', fontSize: '11px', color: '#A0978D' }}>
-              💡 拖曳縮圖可調整順序，第一張（金框）自動作為封面
+              💡 拖曳縮圖可調整順序，第一張（金框）自動作為封面・可多選，單次最多 5 張
             </p>
           )}
           {currentImages.length === 0 && !isReadOnly && (
             <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#A05C5C', fontWeight: 'bold' }}>
-              ⚠️ 請至少上傳一張圖片或從現有作品集挑選
+              ⚠️ 請至少上傳一張圖片或從現有作品集挑選（可多選，單次最多 5 張）
             </p>
           )}
         </div>
