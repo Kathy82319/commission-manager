@@ -1,13 +1,15 @@
 // src/components/ImageUploader.tsx
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import getCroppedImg from '../utils/imageProcessor';
+import getCroppedImg, { silentProcessImage } from '../utils/imageProcessor';
 import type { PixelCrop } from '../utils/imageProcessor';
 
 interface ImageUploaderProps {
   onUpload: (blobs: { preview: Blob; original?: Blob }, previewUrl: string) => void;
+  onBatchUpload?: (blobs: Array<{ preview: Blob }>) => Promise<void>;
+  multiple?: boolean;
   aspectRatio?: number;
-  targetWidth?: number; 
+  targetWidth?: number;
   withWatermark?: boolean;
   watermarkText?: string;
   shape?: 'rect' | 'round';
@@ -18,13 +20,15 @@ interface ImageUploaderProps {
     version: number;
     date: string;
   };
-  maxSizeMB?: number; 
+  maxSizeMB?: number;
 }
 
 export function ImageUploader({
   onUpload,
+  onBatchUpload,
+  multiple = false,
   aspectRatio = undefined,
-  targetWidth = 0, 
+  targetWidth = 0,
   withWatermark = false,
   watermarkText = "SAMPLE",
   shape = 'rect',
@@ -32,7 +36,7 @@ export function ImageUploader({
   existingUrl,
   isFinal = false,
   metadata,
-  maxSizeMB = 3 
+  maxSizeMB = 3
 }: ImageUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,15 +48,43 @@ export function ImageUploader({
   const [dynamicAspect, setDynamicAspect] = useState<number>(1); 
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024;
+
+    if (multiple && onBatchUpload && e.target.files.length > 1) {
+      const files = Array.from(e.target.files).slice(0, 5);
+      e.target.value = '';
+      const oversized = files.filter(f => f.size > MAX_FILE_SIZE);
+      const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= MAX_FILE_SIZE);
+      if (oversized.length > 0) {
+        alert(`已略過 ${oversized.length} 張超過 ${maxSizeMB}MB 的檔案。`);
+      }
+      if (validFiles.length === 0) return;
+      setIsProcessing(true);
+      try {
+        const processed: Array<{ preview: Blob }> = [];
+        for (const file of validFiles) {
+          const blob = await silentProcessImage(file, { maxWidth: targetWidth, withWatermark, watermarkText, quality: 0.8 });
+          processed.push({ preview: blob });
+        }
+        await onBatchUpload(processed);
+      } catch {
+        alert('部分圖片處理失敗');
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const isImage = file.type.startsWith('image/');
 
-      const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024; 
       if (file.size > MAX_FILE_SIZE) {
         alert(`檔案太大囉！最大限制為 ${maxSizeMB}MB。\n您選擇的檔案為 ${(file.size / 1024 / 1024).toFixed(2)} MB。`);
-        e.target.value = ''; 
-        return; 
+        e.target.value = '';
+        return;
       }
 
       setSelectedFile(file);
@@ -149,7 +181,7 @@ export function ImageUploader({
   return (
     <>
       <div style={{ border: '2px dashed #DED9D3', borderRadius: '12px', padding: '20px', textAlign: 'center', backgroundColor: '#FBFBF9', cursor: 'pointer', position: 'relative' }}>
-        <input type="file" accept={isFinal ? "image/*,.zip,.rar,.7z,.psd,.clip,.pdf" : "image/*"} onChange={onFileChange} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+        <input type="file" accept={isFinal ? "image/*,.zip,.rar,.7z,.psd,.clip,.pdf" : "image/*"} multiple={multiple} onChange={onFileChange} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
         <span style={{ color: '#7A7269', fontSize: '14px', fontWeight: 'bold' }}>{buttonText}</span>
       </div>
 

@@ -24,6 +24,72 @@ interface ProcessOptions {
   maxWidth?: number; 
 }
 
+export async function silentProcessImage(
+  file: File,
+  options: {
+    maxWidth?: number;
+    withWatermark?: boolean;
+    watermarkText?: string;
+    quality?: number;
+  } = {}
+): Promise<Blob> {
+  const { maxWidth = 0, withWatermark = false, watermarkText = 'SAMPLE', quality = 0.8 } = options;
+
+  const url = URL.createObjectURL(file);
+  const image = await createImage(url);
+  URL.revokeObjectURL(url);
+
+  let width = image.naturalWidth;
+  let height = image.naturalHeight;
+
+  if (maxWidth > 0 && width > maxWidth) {
+    height = Math.round(height * maxWidth / width);
+    width = maxWidth;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('無法建立 Canvas 內容');
+
+  ctx.drawImage(image, 0, 0, width, height);
+
+  if (withWatermark) {
+    ctx.save();
+    const fontSize = Math.floor(width / 12);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 8;
+    const stepX = fontSize * 5;
+    const stepY = fontSize * 4;
+    for (let x = 0; x <= width + stepX; x += stepX) {
+      for (let y = 0; y <= height + stepY; y += stepY) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate((-30 * Math.PI) / 180);
+        ctx.fillText(watermarkText, 0, 0);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) reject(new Error('Canvas 空白'));
+        else resolve(blob);
+      },
+      'image/jpeg',
+      quality
+    );
+  });
+}
+
 export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: PixelCrop,

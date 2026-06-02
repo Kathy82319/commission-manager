@@ -20,37 +20,56 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
     return 6;
   }, [quotaInfo]);
 
-  const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
-    if (settings.portfolio.length >= 40) {
-      alert("已達系統儲存上限 (40張)");
-      return;
-    }
-    if (settings.portfolio.length >= portfolioLimit) {
-      alert("免費版本已達上限");
-      return;
-    }
+  const uploadOneToR2 = async (blob: Blob): Promise<string> => {
+    const fileType = blob.type || 'image/jpeg';
+    const fileExt = fileType.split('/')[1] || 'jpg';
+    const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `portfolio.${fileExt}`, folder: 'portfolio' })
+    });
+    const ticketData = await ticketRes.json();
+    if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
+    const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': fileType } });
+    if (!uploadRes.ok) throw new Error("上傳遭拒絕");
+    return `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+  };
 
+  const handlePortfolioUpload = async (resultBlobs: { preview: Blob }) => {
+    if (settings.portfolio.length >= 40) { alert("已達系統儲存上限 (40張)"); return; }
+    if (settings.portfolio.length >= portfolioLimit) { alert("已達方案上限"); return; }
     setIsPortfolioUploading(true);
     try {
-      const fileType = resultBlobs.preview.type || 'image/jpeg';
-      const fileExt = fileType.split('/')[1] || 'jpg';
-      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `portfolio.${fileExt}`, folder: 'portfolio' }) 
-      });
-      
-      const ticketData = await ticketRes.json();
-      if (!ticketData.success) throw new Error(ticketData.error || "無法取得上傳通行證");
-      
-      const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
-
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
-      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, finalUrl] }));
+      const url = await uploadOneToR2(resultBlobs.preview);
+      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, url] }));
     } catch (err: any) {
       alert(err.message || "作品上傳失敗");
     } finally {
       setIsPortfolioUploading(false);
+    }
+  };
+
+  const handleBatchPortfolioUpload = async (blobsArray: Array<{ preview: Blob }>) => {
+    const current = settings.portfolio;
+    const hardLimit = Math.min(portfolioLimit, 40);
+    const remaining = hardLimit - current.length;
+    if (remaining <= 0) { alert("已達上傳上限"); return; }
+    const toUpload = blobsArray.slice(0, remaining);
+    setIsPortfolioUploading(true);
+    const newUrls: string[] = [];
+    for (const blobs of toUpload) {
+      try {
+        const url = await uploadOneToR2(blobs.preview);
+        newUrls.push(url);
+      } catch {
+        // 單張失敗不中斷，繼續下一張
+      }
+    }
+    if (newUrls.length > 0) {
+      setSettings(prev => ({ ...prev, portfolio: [...prev.portfolio, ...newUrls] }));
+    }
+    setIsPortfolioUploading(false);
+    if (blobsArray.length > remaining) {
+      alert(`已上傳 ${newUrls.length} 張，其餘因達上限略過。`);
     }
   };
 
@@ -132,11 +151,13 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
       <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
         <ImageUploader
           onUpload={handlePortfolioUpload}
+          onBatchUpload={handleBatchPortfolioUpload}
+          multiple
           targetWidth={1200}
           withWatermark={blurred}
           watermarkText={formData.display_name}
-          buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔"} 
-          maxSizeMB={5} 
+          buttonText={isPortfolioUploading ? "上傳中..." : "上傳作品圖檔（可多選）"}
+          maxSizeMB={5}
         />
       </div>
 

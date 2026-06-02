@@ -16,18 +16,18 @@ export const r2Controller = {
       return new Response(JSON.stringify({ success: false, error: "不合法的上傳路徑" }), { status: 400, headers: corsHeaders });
     }
 
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-    const rateLimitKey = `req_upload_${currentUserId}`; 
-    
-    const { results: recentReqs } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as count FROM WebhookLogs 
-      WHERE commission_id = ? AND action_type = 'request_upload' AND datetime(created_at) >= datetime(?)
-    `).bind(rateLimitKey, oneMinuteAgo).all();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const rateLimitKey = `req_upload_${currentUserId}`;
 
-    if ((recentReqs[0]?.count as number) >= 10) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: "請求上傳過於頻繁，為保護系統資源，請於 1 分鐘後再試。" 
+    const { results: recentReqs } = await env.commission_db.prepare(`
+      SELECT COUNT(*) as count FROM WebhookLogs
+      WHERE commission_id = ? AND action_type = 'request_upload' AND datetime(created_at) >= datetime(?)
+    `).bind(rateLimitKey, oneHourAgo).all();
+
+    if ((recentReqs[0]?.count as number) >= 60) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "上傳次數已達每小時上限（60 張），請稍後再試。"
       }), { status: 429, headers: corsHeaders });
     }
 

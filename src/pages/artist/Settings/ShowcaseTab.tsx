@@ -125,30 +125,61 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
     setEditingItem({ ...editingItem, images: nextImages, cover_url: nextImages[0] || '' });
   };
 
+  const uploadShowcaseToR2 = async (blob: Blob): Promise<string> => {
+    const fileType = blob.type || 'image/jpeg';
+    const fileExt = fileType.split('/')[1] || 'jpg';
+    const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `showcase_${Date.now()}.${fileExt}`, folder: 'showcase' })
+    });
+    const ticketData = await ticketRes.json();
+    if (!ticketData.success) throw new Error(ticketData.error || "無法取得通行證");
+    const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': fileType } });
+    if (!uploadRes.ok) throw new Error("上傳遭拒絕");
+    return `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
+  };
+
   const handleUploadImage = async (resultBlobs: { preview: Blob }) => {
     if (!editingItem) return;
     const currentImages = editingItem.images || [];
     if (currentImages.length >= 5) { onToast("最多只能上傳 5 張圖片", "err"); return; }
     setIsUploading(true);
     try {
-      const fileType = resultBlobs.preview.type || 'image/jpeg';
-      const fileExt = fileType.split('/')[1] || 'jpg';
-      const ticketRes = await fetch(`${API_BASE}/api/r2/upload-url`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentType: fileType, bucketType: 'public', originalName: `showcase_${Date.now()}.${fileExt}`, folder: 'showcase' })
-      });
-      const ticketData = await ticketRes.json();
-      if (!ticketData.success) throw new Error(ticketData.error || "無法取得通行證");
-      const uploadRes = await fetch(ticketData.uploadUrl, { method: 'PUT', body: resultBlobs.preview, headers: { 'Content-Type': fileType } });
-      if (!uploadRes.ok) throw new Error("上傳遭拒絕");
-      const finalUrl = `https://pub-1d4bcc7f19324c0d95d7bfdfeb1a69e2.r2.dev/${ticketData.fileName}`;
-      const nextImages = [...currentImages, finalUrl];
+      const url = await uploadShowcaseToR2(resultBlobs.preview);
+      const nextImages = [...currentImages, url];
       setEditingItem({ ...editingItem, images: nextImages, cover_url: nextImages[0] || '' });
       onToast("✅ 圖片上傳成功", "ok");
     } catch (err: any) {
       onToast(err.message || "圖片上傳失敗", "err");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleBatchShowcaseUpload = async (blobsArray: Array<{ preview: Blob }>) => {
+    if (!editingItem) return;
+    const currentImages = editingItem.images || [];
+    const remaining = 5 - currentImages.length;
+    if (remaining <= 0) { onToast("已達 5 張上限", "err"); return; }
+    const toUpload = blobsArray.slice(0, remaining);
+    setIsUploading(true);
+    const newUrls: string[] = [];
+    for (const blobs of toUpload) {
+      try {
+        const url = await uploadShowcaseToR2(blobs.preview);
+        newUrls.push(url);
+      } catch {
+        // 單張失敗不中斷
+      }
+    }
+    if (newUrls.length > 0) {
+      const nextImages = [...currentImages, ...newUrls];
+      setEditingItem({ ...editingItem, images: nextImages, cover_url: nextImages[0] || '' });
+      onToast(`✅ 已上傳 ${newUrls.length} 張圖片`, "ok");
+    }
+    setIsUploading(false);
+    if (blobsArray.length > remaining) {
+      onToast(`部分圖片因達 5 張上限略過`, "err");
     }
   };
 
@@ -294,6 +325,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
               >
                 <ImageUploader
                   onUpload={handleUploadImage}
+                  onBatchUpload={handleBatchShowcaseUpload}
+                  multiple
                   targetWidth={800}
                   withWatermark={false}
                   buttonText={isUploading ? '上傳中…' : `＋ 新增`}
