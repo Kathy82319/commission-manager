@@ -126,7 +126,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#A0978D', fontSize: '14px', lineHeight: '2.2', flex: 1 }}>
             <li>💎 活躍工作欄位：同時進行 <strong>20 筆</strong> 委託單</li>
-            <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制</li>
+            <li>💎 <strong>解除</strong> 許願池投遞與發布次數限制(30天自動下架)</li>
             <li>💎 <strong>解鎖</strong> 最高 20 張作品展示</li>
             <li>💎 <strong>解鎖</strong>「接委託區」開放展示 10 個項目</li>
             <li>💎 <strong>解鎖</strong> 所有進階編輯區塊權限</li>

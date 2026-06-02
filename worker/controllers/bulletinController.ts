@@ -72,7 +72,10 @@ export const bulletinController = {
       query += ` ORDER BY b.created_at DESC`;
 
       const { results } = await env.commission_db.prepare(query).bind(...params).all();
-      return new Response(JSON.stringify({ success: true, data: dailySeededShuffle(results) }), { headers: corsHeaders });
+      const pinnedResults = results.filter((r: any) => r.poster_plan_type === 'pro' || r.poster_plan_type === 'trial');
+      const normalResults = results.filter((r: any) => r.poster_plan_type !== 'pro' && r.poster_plan_type !== 'trial');
+      const ordered = [...dailySeededShuffle(pinnedResults), ...dailySeededShuffle(normalResults)];
+      return new Response(JSON.stringify({ success: true, data: ordered }), { headers: corsHeaders });
     } catch (error: any) {
       console.error("getList Error:", error.message);
       return new Response(JSON.stringify({ success: false, error: '讀取列表發生異常，請稍後再試' }), { status: 500, headers: corsHeaders });
