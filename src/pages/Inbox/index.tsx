@@ -50,7 +50,10 @@ export const Inbox: React.FC = () => {
   const [batchDeclineIds, setBatchDeclineIds] = useState<Set<string>>(new Set());
   
   const isBatchMode = batchDeclineIds.size > 0;
-  const isCancelMode = !!cancelTargetId; 
+  const isCancelMode = !!cancelTargetId;
+  const cancelTargetBulletin = cancelTargetId ? clientBulletins.find((b: any) => b.id === cancelTargetId) : null;
+  const cancelApplicantLabel = cancelTargetBulletin?.category === 'offer' ? '委託人' : '繪師';
+  const cancelInquiryCount = cancelTargetBulletin?.inquiry_count || 0;
 
   const [declineReason, setDeclineReason] = useState('');
   const [declineTemplates, setDeclineTemplates] = useState<string[]>([
@@ -474,9 +477,9 @@ export const Inbox: React.FC = () => {
         <div className="inbox-modal-overlay">
           <div className="inbox-modal-content decline-mode">
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#EF4444', marginBottom: '8px', marginTop: 0 }}>
-              {isCancelMode 
-                ? '⚠️ 撤銷許願與婉拒提案' 
-                : isBatchMode 
+              {isCancelMode
+                ? '⚠️ 撤銷許願'
+                : isBatchMode
                   ? `批次婉拒 (${batchDeclineIds.size} 筆)` 
                   : (selectedInquiryToDecline?.status === 'pending' || selectedInquiryToDecline?.inquiry_status === 'pending') && selectedItem?.type === 'outbound' ? '撤回申請' : '禮貌婉拒'
               }
@@ -484,7 +487,9 @@ export const Inbox: React.FC = () => {
             
             <p style={{ color: '#A05C5C', fontSize: '13px', marginBottom: '20px', padding: '12px', backgroundColor: '#FEF2F2', borderRadius: '8px', border: '1px solid #FECACA' }}>
               {isCancelMode
-                ? '您即將撤銷這篇許願貼文。這將會關閉該貼文，並將所有尚未處理的提案一併婉拒。請填寫統一的婉拒理由以示尊重。'
+                ? (cancelInquiryCount > 0
+                    ? `目前已有 ${cancelInquiryCount} 位${cancelApplicantLabel}投遞，撤銷後貼文將直接下架。`
+                    : `因為目前尚無${cancelApplicantLabel}投遞，貼文將直接下架。`)
                 : isBatchMode
                   ? '您即將同時婉拒多筆提案，這項操作無法復原。請填寫統一的婉拒理由以示尊重。'
                   : '這將會終止洽談，建議附上簡單理由以示尊重。'

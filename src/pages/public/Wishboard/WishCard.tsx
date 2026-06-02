@@ -48,8 +48,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [isReporting, setIsReporting] = useState(false);
   
   const [isRevoking, setIsRevoking] = useState(false);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
 
   let touchStartX = 0;
   let touchEndX = 0;
@@ -149,12 +147,12 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   const handleRevokeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (appliedCount > 0) {
-      setIsCancelModalOpen(true);
-    } else {
-      if (window.confirm("確定要撤銷這篇許願發佈嗎？\n\n因為目前尚無繪師投遞，貼文將直接下架。")) {
-        executeCancel('已撤銷許願 / 結束徵件');
-      }
+    const applicantLabel = bulletin.category === 'offer' ? '委託人' : '繪師';
+    const msg = appliedCount > 0
+      ? `確定要撤銷這篇許願發佈嗎？\n\n目前已有 ${appliedCount} 位${applicantLabel}投遞，撤銷後貼文將直接下架。`
+      : `確定要撤銷這篇許願發佈嗎？\n\n因為目前尚無${applicantLabel}投遞，貼文將直接下架。`;
+    if (window.confirm(msg)) {
+      executeCancel('已撤銷許願 / 結束徵件');
     }
   };
 
@@ -179,7 +177,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       alert('系統連線異常，撤銷失敗，請稍後再試。');
     } finally {
       setIsRevoking(false);
-      setIsCancelModalOpen(false);
     }
   };
 
@@ -617,45 +614,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
       </div>
 
       
-      {isCancelModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setIsCancelModalOpen(false)}>
-          <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#EF4444', fontSize: '18px', fontWeight: 'bold' }}>
-              ⚠️ 撤銷許願與婉拒提案
-            </h3>
-            <p style={{ color: '#A05C5C', fontSize: '13px', marginBottom: '20px', padding: '12px', backgroundColor: '#FEF2F2', borderRadius: '8px', border: '1px solid #FECACA' }}>
-              目前已有 {appliedCount} 位繪師投遞！撤銷貼文將一併婉拒這些尚未確認的提案。建議附上簡單理由以示尊重。
-            </p>
-
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#374151' }}>統一婉拒留言 (選填)</label>
-              <textarea 
-                value={cancelReason}
-                onChange={e => setCancelReason(e.target.value)}
-                placeholder="例如：預算不符、已找到合適人選..."
-                maxLength={200}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none', height: '100px', resize: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button 
-                onClick={() => setIsCancelModalOpen(false)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: '#fff', cursor: 'pointer', fontWeight: 'bold', color: '#4b5563' }}
-              >
-                再想想
-              </button>
-              <button 
-                onClick={() => executeCancel(cancelReason || '已撤銷許願 / 結束徵件')}
-                disabled={isRevoking}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#EF4444', color: '#fff', cursor: isRevoking ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: isRevoking ? 0.7 : 1 }}
-              >
-                {isRevoking ? '處理中...' : '確認撤銷並婉拒'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       
       {isReportModalOpen && (

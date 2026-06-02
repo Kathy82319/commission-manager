@@ -32,7 +32,7 @@ export const bulletinController = {
       
       const safeReason = decline_reason.substring(0, 200).replace(/[<>]/g, '');
 
-      const bulletin = await env.commission_db.prepare(`SELECT id, title, category FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
+      const bulletin = await env.commission_db.prepare(`SELECT id FROM Bulletins WHERE id = ? AND client_id = ?`).bind(bulletinId, currentUserId).first() as any;
       if (!bulletin) return new Response(JSON.stringify({ success: false, message: '權限不足或找不到貼文' }), { status: 403, headers: corsHeaders });
 
       await env.commission_db.prepare(`UPDATE Bulletins SET status = 'closed' WHERE id = ?`).bind(bulletinId).run();
