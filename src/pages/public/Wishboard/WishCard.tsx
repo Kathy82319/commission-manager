@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import {useNavigate } from 'react-router-dom';
 
 import { 
-  Calendar, DollarSign, Tag, Clock, Send, User, 
-  ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, 
-  Maximize2, X, Users, Heart, Flag, BookUser 
+  Calendar, DollarSign, Tag, Clock, Send, User,
+  ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2,
+  Maximize2, X, Users, Heart, Flag, BookUser, Link2
 } from 'lucide-react';
 import { STYLE_WARNINGS, LICENSE_TAGS, R2_PUBLIC_URL, PAYMENT_TIMING } from './constants';
 
@@ -20,6 +20,7 @@ interface WishCardProps {
   } | null;
   onViewOC?: (snapshotData: any) => void;
   onEditTrigger?: (bulletin: any) => void;
+  highlightedId?: string | null;
 }
 
 const unescapeHtml = (str: string) => {
@@ -27,7 +28,7 @@ const unescapeHtml = (str: string) => {
   return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
 };
 
-export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota, onViewOC, onEditTrigger }) => {
+export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInquire, wishQuota, onViewOC, onEditTrigger, highlightedId }) => {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -41,6 +42,18 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
   const [lightboxIdx, setLightboxIdx] = useState(0);
 
   const [isFavorited, setIsFavorited] = useState(false);
+
+  const [copiedLink, setCopiedLink] = useState(false);
+  const isHighlighted = highlightedId === bulletin.id;
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/wishboard?tab=${bulletin.category}&id=${bulletin.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
+  };
 
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState('洗版與重複發文');
@@ -279,7 +292,7 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
 
   return (
     <>
-      <div className="wish-card-wide" id={`card-${bulletin.id}`}>
+      <div className="wish-card-wide" id={`card-${bulletin.id}`} style={isHighlighted ? { outline: '3px solid #3b82f6', outlineOffset: '3px', borderRadius: '16px', transition: 'outline 0.3s' } : undefined}>
         
         <div className="wish-card-image-wrapper">
           
@@ -368,6 +381,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </button>
                 )}
 
+                <button className="icon-action-btn" onClick={handleCopyLink} title="複製貼文連結" style={{ color: copiedLink ? '#3b82f6' : undefined }}>
+                  <Link2 size={15} color={copiedLink ? '#3b82f6' : '#94a3b8'} />
+                </button>
+
                 {!isMyOwnPost && currentUser && (
                   <button className="icon-action-btn report-btn" onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }} title="檢舉此貼文">
                     <Flag size={15} color="#94a3b8" />
@@ -417,6 +434,14 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                     <Heart size={16} fill={isFavorited ? '#ef4444' : 'none'} />
                   </button>
                 )}
+
+                <button
+                  onClick={handleCopyLink}
+                  style={{ background: 'none', border: 'none', padding: '0 0 0 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
+                  title="複製貼文連結"
+                >
+                  <Link2 size={15} color={copiedLink ? '#3b82f6' : '#cbd5e1'} />
+                </button>
 
                 {!isMyOwnPost && currentUser && (
                   <button

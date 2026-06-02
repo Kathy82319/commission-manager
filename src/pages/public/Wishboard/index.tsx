@@ -33,6 +33,8 @@ export const Wishboard: React.FC = () => {
   const [showUpgradeGuide, setShowUpgradeGuide] = useState<{ show: boolean, type: 'post' | 'inquire' }>({ show: false, type: 'post' });
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [rulesTab, setRulesTab] = useState<'info' | 'rules'>('info');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [inquireUploading, setInquireUploading] = useState(false); 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -149,6 +151,21 @@ export const Wishboard: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => { initData(); }, [activeTab]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const idParam = params.get('id');
+    if (!idParam || loading) return;
+    setHighlightedId(idParam);
+    const el = document.getElementById(`card-${idParam}`);
+    if (el) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+    const timer = setTimeout(() => setHighlightedId(null), 4000);
+    return () => clearTimeout(timer);
+  }, [location.search, loading]);
 
 
   const uploadToR2 = async (blob: Blob, folder: string) => {
@@ -397,6 +414,35 @@ export const Wishboard: React.FC = () => {
         onScrollToMyPost={handleScrollToMyPost}
       />
 
+      {activeTab !== 'other' && (
+        <div style={{ maxWidth: '520px', margin: '0 auto 20px', padding: '0 16px' }}>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="搜尋標題、標籤或發佈者名稱..."
+              style={{
+                width: '100%', padding: '10px 40px 10px 16px', borderRadius: '24px',
+                border: '1.5px solid #DED9D3', fontSize: '14px', outline: 'none',
+                backgroundColor: '#FAFAFA', boxSizing: 'border-box',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = '#5D4A3E'}
+              onBlur={e => e.currentTarget.style.borderColor = '#DED9D3'}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="wish-grid">
         {activeTab === 'other' ? (
           <div style={{ 
@@ -414,8 +460,15 @@ export const Wishboard: React.FC = () => {
         ) : (
           bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
-            // 新增傳入：onViewOC={handleViewOCSnapshot}
-            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} onEditTrigger={handleEditTrigger} />)
+            .filter(b => {
+              if (!searchQuery.trim()) return true;
+              const q = searchQuery.trim().toLowerCase();
+              const title = (b.title || '').toLowerCase();
+              const tags = (b.tags || '').toLowerCase();
+              const name = (b.client_name || '').toLowerCase();
+              return title.includes(q) || tags.includes(q) || name.includes(q);
+            })
+            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} onEditTrigger={handleEditTrigger} highlightedId={highlightedId} />)
         )}
       </main>
 
