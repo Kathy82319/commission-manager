@@ -135,6 +135,35 @@ body {
   margin-right: 12px;
 }
 
+/* 搜尋框 */
+.wb-search {
+  order: 3;
+  flex-shrink: 0;
+  width: 220px;
+  margin: 0 8px;
+}
+.wb-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #DED9D3;
+  font-size: 13px;
+  outline: none;
+  background: #FAFAFA;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.wb-search-input:focus { border-color: #5D4A3E; }
+
+/* 發佈按鈕群 */
+.wb-post-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  order: 4;
+}
+
 /* ==================================================
    🌟 許願池卡片排版 (WishCard)
    ================================================== */
@@ -1351,6 +1380,24 @@ input:focus, textarea:focus {
     white-space: nowrap !important;
   }
 
+  .wb-search {
+    order: 2 !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .wb-search-input {
+    width: 100% !important;
+  }
+  .wb-post-btns {
+    order: 4 !important;
+    flex-direction: row !important;
+    width: 100% !important;
+  }
+  .wb-post-btns .submit-post-btn,
+  .wb-post-btns .btn-cancel {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
   .filter-section .submit-post-btn {
     width: 100% !important;
     justify-content: center !important;

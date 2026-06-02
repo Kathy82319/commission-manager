@@ -412,36 +412,9 @@ export const Wishboard: React.FC = () => {
         onPostTrigger={handlePostTrigger}
         myPostId={myActivePost?.id ?? null}
         onScrollToMyPost={handleScrollToMyPost}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
-
-      {activeTab !== 'other' && (
-        <div style={{ maxWidth: '520px', margin: '0 auto 20px', padding: '0 16px' }}>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="搜尋標題、標籤或發佈者名稱..."
-              style={{
-                width: '100%', padding: '10px 40px 10px 16px', borderRadius: '24px',
-                border: '1.5px solid #DED9D3', fontSize: '14px', outline: 'none',
-                backgroundColor: '#FAFAFA', boxSizing: 'border-box',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = '#5D4A3E'}
-              onBlur={e => e.currentTarget.style.borderColor = '#DED9D3'}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       <main className="wish-grid">
         {activeTab === 'other' ? (

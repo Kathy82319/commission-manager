@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/FilterBar.tsx
 import React from 'react';
-import { Tag, Plus, Sparkles } from 'lucide-react';
+import { Tag, Plus, Sparkles, X } from 'lucide-react';
 import { REQ_TAGS } from './constants';
 
 interface FilterBarProps {
@@ -12,6 +12,8 @@ interface FilterBarProps {
   onPostTrigger: () => void;
   myPostId?: string | null;
   onScrollToMyPost?: () => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -22,7 +24,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   currentUser,
   onPostTrigger,
   myPostId,
-  onScrollToMyPost
+  onScrollToMyPost,
+  searchQuery,
+  setSearchQuery
 }) => {
   return (
     <>
@@ -49,17 +53,39 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <div className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, fontWeight: 'bold', color: '#475569' }}>
           <Tag size={16} /> 熱門篩選：
         </div>
-        
+
+        {/* 搜尋框：手機版在 label 後（order:2），桌機版在標籤後（order:3） */}
+        {activeTab !== 'other' && (
+          <div className="wb-search">
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="搜尋標題、標籤或發佈者..."
+                className="wb-search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="tag-selector filter-tags-scroll" style={{ flex: 1, margin: 0 }}>
           {REQ_TAGS.map(tag => {
-            const isSelected = tag === '不限' 
-              ? selectedFilters.length === 0 
+            const isSelected = tag === '不限'
+              ? selectedFilters.length === 0
               : selectedFilters.includes(tag);
-
             return (
-              <button 
-                key={tag} 
-                className={`selectable-tag ${isSelected ? 'selected' : ''}`} 
+              <button
+                key={tag}
+                className={`selectable-tag ${isSelected ? 'selected' : ''}`}
                 onClick={() => toggleTag(tag, 'filters')}
               >
                 {tag}
@@ -67,9 +93,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             );
           })}
         </div>
-        
+
         {currentUser && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+          <div className="wb-post-btns">
             <button
               className="submit-post-btn"
               style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
