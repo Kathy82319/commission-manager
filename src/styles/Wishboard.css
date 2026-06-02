@@ -116,6 +116,7 @@ body {
 .filter-section {
   display: flex;
   align-items: center;
+  gap: 12px;
   padding: 16px;
   background: white;
   border-radius: 12px;
@@ -132,7 +133,6 @@ body {
   flex-shrink: 0;
   font-weight: bold;
   color: var(--wish-text-main);
-  margin-right: 12px;
 }
 
 /* 搜尋框（手機版，桌機隱藏） */
@@ -1017,9 +1017,11 @@ input:focus, textarea:focus {
 }
 
 .tag-selector {
+  display: flex !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
-  gap: 10px !important;
+  gap: 8px !important;
+  align-items: center !important;
 }
 
 .selectable-tag {
