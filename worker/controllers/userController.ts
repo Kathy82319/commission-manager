@@ -116,8 +116,8 @@ export const userController = {
       if (user.plan_type === 'free' && user.profile_settings) {
         try {
           const settings = JSON.parse(user.profile_settings);
-          if (settings.portfolio && settings.portfolio.length > 6) {
-            settings.portfolio = settings.portfolio.slice(0, 6);
+          if (settings.portfolio && settings.portfolio.length > 15) {
+            settings.portfolio = settings.portfolio.slice(0, 15);
           }
           user.profile_settings = JSON.stringify(settings);
         } catch (e) {}

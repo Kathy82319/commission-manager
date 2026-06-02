@@ -17,7 +17,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
   const portfolioLimit = useMemo(() => {
     if (quotaInfo?.plan_type === 'pro') return 30;
     if (quotaInfo?.plan_type === 'trial') return 20;
-    return 6;
+    return 15;
   }, [quotaInfo]);
 
   const uploadOneToR2 = async (blob: Blob): Promise<string> => {
@@ -143,7 +143,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
 
       <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
         {quotaInfo?.plan_type === 'free' 
-          ? `📢 目前您的方案僅公開前 6 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
+          ? `📢 目前您的方案僅公開前 15 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
           : `📢 您的作品將在個人頁面完整公開展示。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
         }
       </div>
@@ -163,7 +163,7 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
         {settings.portfolio.map((img, i) => {
-          const isPublic = quotaInfo?.plan_type === 'free' ? i < 6 : i < portfolioLimit;
+          const isPublic = quotaInfo?.plan_type === 'free' ? i < 15 : i < portfolioLimit;
 
           return (
             <div 
