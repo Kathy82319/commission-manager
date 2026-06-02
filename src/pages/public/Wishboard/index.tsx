@@ -490,7 +490,7 @@ export const Wishboard: React.FC = () => {
       {/* 說明頁 */}
       {rulesTab === 'info' && (
         <div style={{ padding: '20px', color: '#334155', fontSize: '14px', lineHeight: '1.8', overflowY: 'auto', maxHeight: '60vh' }}>
-          <p style={{ margin: '0 0 20px 0', color: '#475569' }}>歡迎來到創作許願池！這裡是繪師與委託人交流的媒合空間，分為兩個區塊：</p>
+          <p style={{ margin: '0 0 20px 0', color: '#475569' }}>歡迎來到許願池！這裡是繪師與委託人的媒合空間，分為兩個區塊：</p>
 
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
             <div style={{ flex: 1, padding: '14px', backgroundColor: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
@@ -512,7 +512,7 @@ export const Wishboard: React.FC = () => {
             <strong style={{ color: '#475569', display: 'block', marginBottom: '8px' }}>⏳ 貼文時效</strong>
             <div style={{ marginBottom: '8px' }}>免費版貼文將在發佈後 <strong style={{ color: '#ef4444' }}>30 天自動下架</strong>，確保看板上的貼文都是近期有效的需求。貼文剩餘時間<strong style={{ color: '#ef4444' }}>不足 12 小時</strong>時，會亮起紅燈提示。</div>
             <div style={{ padding: '10px', backgroundColor: '#fef9c3', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '13px' }}>
-              💎 <strong style={{ color: '#92400e' }}>專業版</strong>用戶的貼文<strong>不受 30 天限制</strong>，可長期刊登直到主動下架為止。
+              💎 <strong style={{ color: '#92400e' }}>專業版</strong>用戶貼文<strong>不受 30 天限制</strong>，可長期刊登直到主動下架為止
             </div>
           </div>
 
