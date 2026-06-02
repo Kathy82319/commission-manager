@@ -76,7 +76,7 @@ export const InboundTab: React.FC<InboundTabProps> = ({
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', paddingRight: '60px' }}>
           
           {selectedIds.size > 0 && (
             <button
