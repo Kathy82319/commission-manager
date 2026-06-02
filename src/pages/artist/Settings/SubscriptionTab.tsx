@@ -165,6 +165,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>👑 活躍工作欄位上限 <strong>無限制</strong></li>
             <li>👑 許願池投遞與發布次數<strong>無限制*</strong></li>
             <li>💎 <strong>解除</strong> 許願池30天自動下架限制</li>
+            <li>💎 許願池貼文<strong>優先置頂</strong>顯示（每日亂數輪替）</li>
             <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
             <li>👑 <strong>解鎖</strong>「接委託區」開放展示 30 個項目</li>
             <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>

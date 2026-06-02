@@ -17,7 +17,7 @@ interface OfferModalProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   onImageUpload: (resultBlobs: { preview: Blob }) => void;
-  userShowcase: any[];
+  userPortfolio: string[];
   onSaveDraft: () => void;
   onLoadDraft: () => void;
   isEditing?: boolean;
@@ -30,7 +30,7 @@ export const OfferModal: React.FC<OfferModalProps> = ({
   onClose,
   onSubmit,
   onImageUpload,
-  userShowcase,
+  userPortfolio,
   onSaveDraft,
   onLoadDraft,
   isEditing = false
@@ -161,19 +161,19 @@ export const OfferModal: React.FC<OfferModalProps> = ({
           <div className="form-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label className="section-title">作品範例 / 價目表 (最多 5 張)</label>
-              {userShowcase && userShowcase.length > 0 && (
+              {userPortfolio.length > 0 && (
                 <button type="button" onClick={() => setShowPortfolioPicker(!showPortfolioPicker)} className="add-btn-circle" style={{ background: '#f1f5f9', color: '#475569' }}>
                   <ImageIcon size={14} /> {showPortfolioPicker ? "隱藏作品集" : "從作品集挑選"}
                 </button>
               )}
             </div>
 
-            {showPortfolioPicker && userShowcase && (
+            {showPortfolioPicker && userPortfolio.length > 0 && (
               <div className="portfolio-picker-grid" style={{ marginBottom: '12px' }}>
-                {userShowcase.filter((item: any) => item && item.cover_url).map((item: any) => (
-                  <div key={item.id} className={`portfolio-item ${(form.ref_images || []).includes(item.cover_url) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(item.cover_url)}>
-                    <img src={getFullUrl(item.cover_url)} alt={item.title || "Portfolio"} />
-                    {(form.ref_images || []).includes(item.cover_url) && <div className="check-overlay"><Plus size={24} /></div>}
+                {userPortfolio.map((url: string) => (
+                  <div key={url} className={`portfolio-item ${(form.ref_images || []).includes(url) ? 'selected' : ''}`} onClick={() => togglePortfolioImage(url)}>
+                    <img src={getFullUrl(url)} alt="作品集圖片" />
+                    {(form.ref_images || []).includes(url) && <div className="check-overlay"><Plus size={24} /></div>}
                   </div>
                 ))}
               </div>

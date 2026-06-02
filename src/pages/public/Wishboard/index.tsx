@@ -35,7 +35,7 @@ export const Wishboard: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [inquireUploading, setInquireUploading] = useState(false); 
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-  const [userShowcase, setUserShowcase] = useState<any[]>([]);
+  const [userPortfolio, setUserPortfolio] = useState<string[]>([]);
   const [wishQuota, setWishQuota] = useState<{ 
     is_pro: boolean, 
     offer_used: number, offer_max: number, 
@@ -107,6 +107,7 @@ export const Wishboard: React.FC = () => {
       const resUser = await apiClient.get('/api/users/me');
       if (resUser.success) {
         setCurrentUser(resUser.data);
+        loadUserPortfolio(resUser.data);
         const resQuota = await apiClient.get('/api/bulletins/quota');
         if (resQuota.success) setWishQuota(resQuota.data);
       }
@@ -117,12 +118,11 @@ export const Wishboard: React.FC = () => {
     }
   };
 
-  const fetchUserShowcase = async () => {
-    if (!currentUser) return;
+  const loadUserPortfolio = (userData: any) => {
     try {
-      const res = await apiClient.get('/api/showcase');
-      if (res.success) setUserShowcase(res.data);
-    } catch (e) { console.error("作品集載入失敗"); }
+      const settings = JSON.parse(userData?.profile_settings || '{}');
+      setUserPortfolio(Array.isArray(settings.portfolio) ? settings.portfolio : []);
+    } catch { setUserPortfolio([]); }
   };
 
   useEffect(() => {
@@ -137,9 +137,6 @@ export const Wishboard: React.FC = () => {
 
   useEffect(() => { initData(); }, [activeTab]);
 
-  useEffect(() => {
-    if (showPostModal && activeTab === 'offer' && currentUser) fetchUserShowcase();
-  }, [showPostModal, activeTab, currentUser]);
 
   const uploadToR2 = async (blob: Blob, folder: string) => {
     const fileType = blob.type || 'image/jpeg';
@@ -534,7 +531,7 @@ export const Wishboard: React.FC = () => {
           onClose={() => { setShowPostModal(false); setEditingBulletin(null); }}
           onSubmit={handlePostSubmit}
           onImageUpload={handleOfferImageUpload}
-          userShowcase={userShowcase}
+          userPortfolio={userPortfolio}
           onSaveDraft={saveDraft}
           onLoadDraft={loadSavedDraft}
           isEditing={!!editingBulletin}
