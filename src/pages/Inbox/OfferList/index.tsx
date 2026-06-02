@@ -44,11 +44,11 @@ export const OfferList: React.FC<OfferListProps> = ({
 
     const validPendingIds = Array.from(selectedIds).filter(id => {
       const inq = inquiries.find(i => i.inquiry_id === id);
-      return inq && (inq.inquiry_status === 'pending' || inq.status === 'pending');
+      return inq && isDeclinable(inq);
     });
 
     if (validPendingIds.length === 0) {
-      alert('所選項目已不在待處理狀態，無法批次婉拒！');
+      alert('所選項目已無法婉拒（可能已成單或已結束）！');
       setSelectedIds(new Set()); 
       return;
     }
@@ -60,7 +60,8 @@ export const OfferList: React.FC<OfferListProps> = ({
     }
   };
 
-  const hasPendingInquiries = inquiries.some(i => i.inquiry_status === 'pending' || i.status === 'pending');
+  const isDeclinable = (i: any) => ['pending', 'submitted', 'proposed'].includes(i.inquiry_status || i.status);
+  const hasPendingInquiries = inquiries.some(isDeclinable);
 
   return (
     <div className="offer-list-container">
@@ -86,7 +87,7 @@ export const OfferList: React.FC<OfferListProps> = ({
           let snapshot: any = {};
           try { snapshot = JSON.parse(inquiry.artist_snapshot || '{}'); } catch(e) {}
 
-          const isPending = inquiry.inquiry_status === 'pending' || inquiry.status === 'pending';
+          const canDecline = isDeclinable(inquiry);
 
           return (
               <CardView
@@ -94,14 +95,14 @@ export const OfferList: React.FC<OfferListProps> = ({
               inquiry={inquiry}
               snapshot={snapshot}
               isSelected={selectedIds.has(inquiry.inquiry_id)}
-              
+
               onSelect={() => {
-                if (isPending) toggleSelect(inquiry.inquiry_id);
+                if (canDecline) toggleSelect(inquiry.inquiry_id);
               }}
-              
+
               setSelectedInquiry={setSelectedInquiry}
               setShowDeclineModal={() => {
-                if (isPending) handleSingleDecline(inquiry);
+                if (canDecline) handleSingleDecline(inquiry);
               }}
               handleDirectInvite={isPending ? handleDirectInvite : () => {}}
               handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}

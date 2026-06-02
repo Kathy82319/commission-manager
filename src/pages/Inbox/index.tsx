@@ -457,10 +457,10 @@ export const Inbox: React.FC = () => {
                 <strong style={{ color: '#4A7294' }}>許願池時效限制</strong>：刊登限時 <span style={{ color: '#EF4444' }}>30 天</span>，過期將自動下架，確保提案都是最新需求。
               </li>
               <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>處理期限</strong>：收到提案後請盡速處理。倒數 <span style={{ color: '#EF4444' }}>不足 12 小時</span> 的提案將亮起紅燈警示。
+                <strong style={{ color: '#4A7294' }}>處理方式</strong>：收到提案後可以選擇「接受」或「婉拒」，接受後會開啟聊天室進行細節討論，婉拒則會通知對方並結束洽談。
               </li>
               <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>逾期處理</strong>：超過 <span style={{ color: '#EF4444' }}>7 天</span> 未處理的提案，系統將視為無效並自動標記為「已失效」歸檔。
+                <strong style={{ color: '#4A7294' }}>進入聊天室後</strong>：若成立訂單將會自動轉往委託單管理頁面，若未成單則繼續存在收件匣中，如若雙方已經確定無法成單，建議點選「婉拒」讓該單進入歸檔區。
               </li>
             </ul>
 
