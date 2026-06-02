@@ -88,9 +88,21 @@ export const Wishboard: React.FC = () => {
 
   const saveDraft = () => {
     try {
-      const { tos_content, questions, payment_timing, payment_timing_detail, payment_methods, tags, commission_items } = offerForm;
+      const {
+        title, content,
+        tos_content, questions,
+        payment_timing, payment_timing_detail, payment_methods,
+        tags, commission_items,
+        schedule_type, specific_date,
+        max_slots, selection_type
+      } = offerForm;
       localStorage.setItem('wishboard_offer_draft', JSON.stringify({
-        tos_content, questions, payment_timing, payment_timing_detail, payment_methods, tags, commission_items
+        title, content,
+        tos_content, questions,
+        payment_timing, payment_timing_detail, payment_methods,
+        tags, commission_items,
+        schedule_type, specific_date,
+        max_slots, selection_type
       }));
       showToast('設定已儲存在瀏覽器！');
     } catch (e) { showToast('儲存失敗', 'error'); }
