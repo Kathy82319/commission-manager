@@ -918,6 +918,7 @@ input:focus, textarea:focus {
 .portfolio-picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-auto-rows: 100px;
   gap: 12px;
   background: #f1f5f9;
   padding: 16px;
