@@ -448,7 +448,7 @@ export const Inbox: React.FC = () => {
         <div className="inbox-modal-overlay" onClick={() => setShowRulesModal(false)}>
            <div className="inbox-modal-content rules-modal-content" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #EAE6E1', paddingBottom: '12px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}><span>📋</span> 收件匣規則</h2>
+              <h2 style={{ margin: 0, fontSize: '18px', color: '#5D4A3E' }}><span>📋</span> 收件匣說明</h2>
               <button onClick={() => setShowRulesModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#A0978D' }}>✕</button>
             </div>
             
