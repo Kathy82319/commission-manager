@@ -135,12 +135,11 @@ body {
   margin-right: 12px;
 }
 
-/* 搜尋框 */
+/* 搜尋框（手機版，桌機隱藏） */
 .wb-search {
-  order: 3;
-  flex-shrink: 0;
-  width: 220px;
-  margin: 0 8px;
+  order: 2;
+  display: none;
+  width: 100%;
 }
 .wb-search-input {
   width: 100%;
@@ -154,6 +153,27 @@ body {
   transition: border-color 0.2s;
 }
 .wb-search-input:focus { border-color: #5D4A3E; }
+
+/* 搜尋框（桌機版，內嵌在標籤流裡） */
+.wb-search-inline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.wb-search-inline-input {
+  padding: 8px 30px 8px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #DED9D3;
+  font-size: 13px;
+  outline: none;
+  background: #FAFAFA;
+  width: 160px;
+  transition: border-color 0.2s, width 0.2s;
+}
+.wb-search-inline-input:focus {
+  border-color: #5D4A3E;
+  width: 220px;
+}
 
 /* 發佈按鈕群 */
 .wb-post-btns {
@@ -1381,12 +1401,16 @@ input:focus, textarea:focus {
   }
 
   .wb-search {
+    display: block !important;
     order: 2 !important;
     width: 100% !important;
     margin: 0 !important;
   }
   .wb-search-input {
     width: 100% !important;
+  }
+  .wb-search-inline {
+    display: none !important;
   }
   .wb-post-btns {
     order: 4 !important;

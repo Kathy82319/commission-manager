@@ -381,10 +381,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </button>
                 )}
 
-                <button className="icon-action-btn" onClick={handleCopyLink} title="複製貼文連結" style={{ color: copiedLink ? '#3b82f6' : undefined }}>
-                  <Link2 size={15} color={copiedLink ? '#3b82f6' : '#94a3b8'} />
-                </button>
-
                 {!isMyOwnPost && currentUser && (
                   <button className="icon-action-btn report-btn" onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }} title="檢舉此貼文">
                     <Flag size={15} color="#94a3b8" />
@@ -435,14 +431,6 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                   </button>
                 )}
 
-                <button
-                  onClick={handleCopyLink}
-                  style={{ background: 'none', border: 'none', padding: '0 0 0 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', outline: 'none' }}
-                  title="複製貼文連結"
-                >
-                  <Link2 size={15} color={copiedLink ? '#3b82f6' : '#cbd5e1'} />
-                </button>
-
                 {!isMyOwnPost && currentUser && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setIsReportModalOpen(true); }}
@@ -455,9 +443,26 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
               </div>
             </div>
 
-            <span className={`category-badge ${bulletin.category}`}>
-              {bulletin.category === 'request' ? '徵委託' : bulletin.category === 'offer' ? '接委託' : '其他'}
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+              <span className={`category-badge ${bulletin.category}`}>
+                {bulletin.category === 'request' ? '徵委託' : bulletin.category === 'offer' ? '接委託' : '其他'}
+              </span>
+              <button
+                onClick={handleCopyLink}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
+                  border: `1px solid ${copiedLink ? '#3b82f6' : '#DED9D3'}`,
+                  background: copiedLink ? '#eff6ff' : '#FAFAFA',
+                  color: copiedLink ? '#3b82f6' : '#7A7269',
+                  fontSize: '12px', fontWeight: 'bold', transition: 'all 0.2s',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Link2 size={13} />
+                {copiedLink ? '已複製！' : '分享'}
+              </button>
+            </div>
           </div>
 
           <div className="wish-card-meta-list">

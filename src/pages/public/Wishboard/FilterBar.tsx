@@ -54,7 +54,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <Tag size={16} /> 熱門篩選：
         </div>
 
-        {/* 搜尋框：手機版在 label 後（order:2），桌機版在標籤後（order:3） */}
+        {/* 手機版搜尋框：在 label 後、標籤上方 */}
         {activeTab !== 'other' && (
           <div className="wb-search">
             <div style={{ position: 'relative' }}>
@@ -66,10 +66,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="wb-search-input"
               />
               {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}
-                >
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}>
                   <X size={14} />
                 </button>
               )}
@@ -92,6 +89,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </button>
             );
           })}
+          {/* 桌機版搜尋框：跟在最後一個標籤後面，手機版隱藏 */}
+          {activeTab !== 'other' && (
+            <div className="wb-search-inline">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="搜尋..."
+                className="wb-search-inline-input"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A0978D', padding: 0, display: 'flex' }}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {currentUser && (
