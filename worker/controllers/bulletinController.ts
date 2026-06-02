@@ -51,15 +51,16 @@ export const bulletinController = {
       const categoryFilter = url.searchParams.get("category") || 'request';
 
       let query = `
-        SELECT b.*, 
+        SELECT b.*,
           (SELECT GROUP_CONCAT(artist_id) FROM BulletinInquiries WHERE bulletin_id = b.id AND status NOT IN ('declined', 'closed', 'cancelled')) as applied_artist_ids,
-          u.display_name as client_name, 
+          u.display_name as client_name,
           u.avatar_url as client_avatar,
           u.public_id as client_public_id,
-          u.role as creator_role
-        FROM Bulletins b 
+          u.role as creator_role,
+          u.plan_type as poster_plan_type
+        FROM Bulletins b
         JOIN Users u ON b.client_id = u.id
-        WHERE b.status = 'open' AND b.expires_at > CURRENT_TIMESTAMP 
+        WHERE b.status = 'open' AND (b.expires_at IS NULL OR b.expires_at > CURRENT_TIMESTAMP)
           AND b.category = ?
       `;
       const params: any[] = [categoryFilter];
@@ -153,7 +154,7 @@ export const bulletinController = {
       }
 
       const existingPost = await env.commission_db.prepare(
-        `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND expires_at > CURRENT_TIMESTAMP`
+        `SELECT id FROM Bulletins WHERE client_id = ? AND category = ? AND status = 'open' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`
       ).bind(currentUserId, currentCategory).first();
 
       if (existingPost) {
@@ -186,13 +187,17 @@ export const bulletinController = {
       const safeOcSnapshot = oc_snapshot ? String(oc_snapshot) : null;
 
       const id = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
+      const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+      const expiresAtValue = isPro ? null : (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        return d.toISOString();
+      })();
 
       await env.commission_db.prepare(
         `INSERT INTO Bulletins (id, client_id, title, content, tags, payment_methods, budget_min, budget_max, schedule_type, specific_date, ref_image_key, category, expires_at, status, oc_snapshot)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`
-      ).bind(id, currentUserId, safeTitle, finalContentStr, safeTags, safePayments, bMin, bMax, schedule_type || 'flexible', specific_date || null, ref_image_key || null, currentCategory, expiresAt.toISOString(), safeOcSnapshot).run();
+      ).bind(id, currentUserId, safeTitle, finalContentStr, safeTags, safePayments, bMin, bMax, schedule_type || 'flexible', specific_date || null, ref_image_key || null, currentCategory, expiresAtValue, safeOcSnapshot).run();
 
       return new Response(JSON.stringify({ success: true, id }), { headers: corsHeaders });
     } catch (error: any) {

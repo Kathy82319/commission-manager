@@ -183,7 +183,10 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
     }
   };
 
-  const getTimeRemaining = (expiresAt: string) => {
+  const isPermanent = !bulletin.expires_at;
+
+  const getTimeRemaining = (expiresAt: string | null) => {
+    if (!expiresAt) return '長期刊登';
     const diff = new Date(expiresAt).getTime() - new Date().getTime();
     if (diff <= 0) return '已結束';
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -283,9 +286,11 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
         
         <div className="wish-card-image-wrapper">
           
-          <div className="wish-expiry-standalone">
-            <Clock size={14} style={{ marginRight: '6px' }} /> {getTimeRemaining(bulletin.expires_at)}
-          </div>
+          {!isPermanent && (
+            <div className="wish-expiry-standalone">
+              <Clock size={14} style={{ marginRight: '6px' }} /> {getTimeRemaining(bulletin.expires_at)}
+            </div>
+          )}
 
           {validImages.length > 0 ? (
             <div className="wish-card-img-inner">
@@ -320,9 +325,11 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 </div>
               )}
 
-              <div className="wish-expiry-overlay">
-                <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
-              </div>
+              {!isPermanent && (
+                <div className="wish-expiry-overlay">
+                  <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
+                </div>
+              )}
             </div>
           ) : (
             <div className="wish-card-img-inner">
@@ -330,9 +337,11 @@ export const WishCard: React.FC<WishCardProps> = ({ bulletin, currentUser, onInq
                 <User size={64} opacity={0.3} />
                 <span>無提供範例圖</span>
               </div>
-              <div className="wish-expiry-overlay">
-                <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
-              </div>
+              {!isPermanent && (
+                <div className="wish-expiry-overlay">
+                  <Clock size={12} /> {getTimeRemaining(bulletin.expires_at)}
+                </div>
+              )}
             </div>
           )}
 
