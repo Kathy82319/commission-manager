@@ -254,7 +254,7 @@ export const Inbox: React.FC = () => {
         <div className="inbox-sidebar-header">
           <h1 className="inbox-sidebar-title">收件匣</h1>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 規則</button>
+            <button onClick={() => setShowRulesModal(true)} className="inbox-rules-btn">? 說明</button>
             
             {showMobileSidebar && (
               <button 
@@ -452,15 +452,15 @@ export const Inbox: React.FC = () => {
               <button onClick={() => setShowRulesModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#A0978D' }}>✕</button>
             </div>
             
-            <ul style={{ padding: 0, margin: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '1.6' }}>
-              <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>許願池時效限制</strong>：刊登限時 <span style={{ color: '#EF4444' }}>30 天</span>，過期將自動下架，確保提案都是最新需求。
+            <ul style={{ padding: 0, margin: 0, listStyle: 'none', color: '#7A7269', fontSize: '14px', lineHeight: '1.8' }}>
+              <li style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '3px solid #4A7294' }}>
+                <strong style={{ color: '#4A7294' }}>許願池時效限制</strong>：刊登限時 <strong style={{ color: '#EF4444' }}>30 天</strong>，過期將<strong>自動下架</strong>，確保貼文都是最新需求。貼文剩餘時間<strong style={{ color: '#EF4444' }}>不足 12 小時</strong>時，系統將亮起<span style={{ color: '#EF4444', fontWeight: 'bold' }}>紅燈</span>提示。
               </li>
-              <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>處理方式</strong>：收到提案後可以選擇「接受」或「婉拒」，接受後會開啟聊天室進行細節討論，婉拒則會通知對方並結束洽談。
+              <li style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '3px solid #4A7294' }}>
+                <strong style={{ color: '#4A7294' }}>處理方式</strong>：收到提案後可以選擇 <strong style={{ color: '#4E7A5A' }}>「接受」</strong> 或 <strong style={{ color: '#A05C5C' }}>「婉拒」</strong>。接受後會開啟聊天室進行細節討論；婉拒則會通知對方並結束洽談。
               </li>
-              <li style={{ marginBottom: '12px' }}>
-                <strong style={{ color: '#4A7294' }}>進入聊天室後</strong>：若成立訂單將會自動轉往委託單管理頁面，若未成單則繼續存在收件匣中，如若雙方已經確定無法成單，建議點選「婉拒」讓該單進入歸檔區。
+              <li style={{ marginBottom: '0', paddingLeft: '12px', borderLeft: '3px solid #4A7294' }}>
+                <strong style={{ color: '#4A7294' }}>進入聊天室後</strong>：若成立訂單將自動轉往<strong>委託單管理頁面</strong>；若未成單則繼續存在收件匣中。如雙方已確定無法成單，建議點選 <strong style={{ color: '#A05C5C' }}>「婉拒」</strong> 讓該單進入<strong>歸檔區</strong>。
               </li>
             </ul>
 
