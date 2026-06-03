@@ -192,7 +192,6 @@ export function ShowcaseFormBuilder({
     const payload = {
       ...editingItem,
       cover_url: JSON.stringify(currentImages),
-      tags: JSON.stringify(editingItem.tags),
       form_schema: JSON.stringify(formFields)
     };
     try {
