@@ -159,8 +159,8 @@ export const userController = {
         settings = {};
       }
 
-      const limits: Record<string, number> = { free: 6, trial: 20, pro: 40 };
-      const currentLimit = limits[userPlan as string] || 6;
+      const limits: Record<string, number> = { free: 15, trial: 20, pro: 40 };
+      const currentLimit = limits[userPlan as string] || 15;
 
       if (Array.isArray(settings.portfolio)) {
         if (settings.portfolio.length > currentLimit) {
