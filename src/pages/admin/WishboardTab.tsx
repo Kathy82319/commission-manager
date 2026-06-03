@@ -199,8 +199,10 @@ export function WishboardTab() {
               const postDetails = parsePostData(item);
               const hitKeyword = checkKeywordTrigger(postDetails.description);
               const isHidden = item.status === 'hidden_under_review';
-              const expiresDate = new Date(item.expires_at.includes('Z') ? item.expires_at : item.expires_at.replace(' ', 'T') + 'Z');
-              const isExpired = expiresDate < new Date();
+              const expiresDate = item.expires_at
+                ? new Date(item.expires_at.includes('Z') ? item.expires_at : item.expires_at.replace(' ', 'T') + 'Z')
+                : null;
+              const isExpired = expiresDate ? expiresDate < new Date() : false;
               
               return (
                 <tr key={item.id} style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: isHidden ? '#FEF2F2' : 'transparent' }}>

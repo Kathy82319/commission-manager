@@ -10,8 +10,14 @@ import { AnnouncementsTab } from './AnnouncementsTab';
 import { FeedbackTab } from './FeedbackTab';
 import { GuideTab } from './GuideTab';
 
+const VALID_TABS = ['overview', 'users', 'commissions', 'wishboard', 'announcements', 'feedback', 'guide'] as const;
+type AdminTab = typeof VALID_TABS[number];
+
 export function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'commissions' | 'wishboard' | 'announcements' | 'feedback' | 'guide'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    const saved = localStorage.getItem('admin_active_tab');
+    return (VALID_TABS as readonly string[]).includes(saved || '') ? saved as AdminTab : 'overview';
+  });
   const [stats, setStats] = useState<any>(null);
   const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
 
@@ -62,10 +68,15 @@ export function Dashboard() {
     }
   };
 
+  const handleTabChange = (tab: AdminTab) => {
+    setActiveTab(tab);
+    localStorage.setItem('admin_active_tab', tab);
+  };
+
   return (
-    <AdminLayout 
-      activeTab={activeTab} 
-      onTabChange={setActiveTab}
+    <AdminLayout
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
       pendingReportCount={stats?.pending_reports_count || 0}
     >
       {renderContent()}
