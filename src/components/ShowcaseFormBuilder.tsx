@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -89,14 +89,18 @@ export function ShowcaseFormBuilder({
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    try {
-      const parsed = initialItem.form_schema ? JSON.parse(initialItem.form_schema) : [];
-      setFormFields(parsed);
-      if (parsed.length > 0) setActiveFieldId(parsed[0].id);
-    } catch (e) { 
-      setFormFields([]); 
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      try {
+        const parsed = initialItem.form_schema ? JSON.parse(initialItem.form_schema) : [];
+        setFormFields(parsed);
+        if (parsed.length > 0) setActiveFieldId(parsed[0].id);
+      } catch (e) {
+        setFormFields([]);
+      }
     }
 
     if (initialItem) {
@@ -117,7 +121,6 @@ export function ShowcaseFormBuilder({
       }
       setEditingItem(prev => ({
         ...prev,
-        ...initialItem,
         images: parsedImages,
         cover_url: parsedImages[0] || initialItem.cover_url || ''
       }));
