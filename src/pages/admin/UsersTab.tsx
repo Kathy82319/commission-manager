@@ -101,12 +101,12 @@ export function UsersTab() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827' }}>用戶管理</h1>
-        <input 
-          type="text" 
-          placeholder="搜尋暱稱、ID..." 
-          style={{ padding: '10px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', width: '300px', outline: 'none' }}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', margin: 0 }}>用戶管理</h1>
+        <input
+          type="text"
+          placeholder="搜尋暱稱、ID..."
+          style={{ padding: '10px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', width: '300px', maxWidth: '100%', outline: 'none', boxSizing: 'border-box' }}
           value={search}
           onChange={(e) => {setSearch(e.target.value); setPage(1);}}
         />
@@ -184,8 +184,8 @@ export function UsersTab() {
       </div>
 
       {isModalOpen && selectedUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '450px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: '#FFF', padding: '24px', borderRadius: '12px', width: '450px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', boxSizing: 'border-box' }}>
             <h2 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px' }}>設定用戶：{selectedUser.display_name}</h2>
             
             <div style={formGroupStyle}>
