@@ -8,7 +8,7 @@ import '../../styles/Inbox.css';
 import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
 import { DirectInboundTab } from './DirectInboundTab'; 
-
+ 
 const getMiniBadge = (status: string) => {
   if (status === 'pending') return <span className="mini-badge pending">待處理</span>;
   if (status === 'accepted') return <span className="mini-badge accepted">已成單</span>;
