@@ -30,7 +30,7 @@ export const Inbox: React.FC = () => {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
-  
+   
   const [showArchived, setShowArchived] = useState(false);
 
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
