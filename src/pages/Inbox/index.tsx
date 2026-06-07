@@ -16,7 +16,7 @@ const getMiniBadge = (status: string) => {
   if (status === 'proposed') return <span className="mini-badge pending" style={{ background: '#EBF2F7', color: '#4A7294', borderColor: '#C1D6E8' }}>已提案</span>;
   return null;
 };
-
+ 
 const formatShortTime = (dateStr: string) => {
   if (!dateStr) return '';
   const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
