@@ -104,7 +104,7 @@ export const OfferList: React.FC<OfferListProps> = ({
               setShowDeclineModal={() => {
                 if (canDecline) handleSingleDecline(inquiry);
               }}
-              handleDirectInvite={isPending ? handleDirectInvite : () => {}}
+              handleDirectInvite={inquiry.inquiry_status === 'pending' ? handleDirectInvite : () => {}}
               handleEnterInquiryWorkspace={handleEnterInquiryWorkspace}
               handleViewCommission={handleViewCommission}
               blacklistedIds={blacklistedIds} 

@@ -8,7 +8,7 @@ import '../../styles/Inbox.css';
 import { InboundTab } from './InboundTab';
 import { OutboundTab } from './OutboundTab';
 import { DirectInboundTab } from './DirectInboundTab'; 
-
+ 
 const getMiniBadge = (status: string) => {
   if (status === 'pending') return <span className="mini-badge pending">待處理</span>;
   if (status === 'accepted') return <span className="mini-badge accepted">已成單</span>;
@@ -16,7 +16,7 @@ const getMiniBadge = (status: string) => {
   if (status === 'proposed') return <span className="mini-badge pending" style={{ background: '#EBF2F7', color: '#4A7294', borderColor: '#C1D6E8' }}>已提案</span>;
   return null;
 };
-
+ 
 const formatShortTime = (dateStr: string) => {
   if (!dateStr) return '';
   const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
@@ -30,7 +30,7 @@ export const Inbox: React.FC = () => {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['wishes', 'inbound', 'outbound']));
-  
+   
   const [showArchived, setShowArchived] = useState(false);
 
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string } | null>(null);
