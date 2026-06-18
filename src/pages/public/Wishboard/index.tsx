@@ -24,7 +24,7 @@ export const Wishboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | 'other'>(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    return (tabParam === 'request' || tabParam === 'other') ? tabParam : 'offer';
+    return tabParam === 'request' ? 'request' : 'offer';
   });
   
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -117,11 +117,9 @@ export const Wishboard: React.FC = () => {
   const initData = async () => {
     setLoading(true);
     try {
-      if (activeTab !== 'other') {
-        const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
-        if (resBulletins.success) setBulletins(resBulletins.data);
-      }
-      
+      const resBulletins = await apiClient.get(`/api/bulletins?category=${activeTab}`);
+      if (resBulletins.success) setBulletins(resBulletins.data);
+
       const resUser = await apiClient.get('/api/users/me');
       if (resUser.success) {
         setCurrentUser(resUser.data);
@@ -146,7 +144,7 @@ export const Wishboard: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam === 'offer' || tabParam === 'request' || tabParam === 'other') {
+    if (tabParam === 'offer' || tabParam === 'request') {
       setActiveTab(tabParam);
     } else {
       setActiveTab('offer');
@@ -224,11 +222,6 @@ export const Wishboard: React.FC = () => {
 
   const handlePostTrigger = () => {
     if (!currentUser) return navigate('/portal', { state: { returnTo: location.pathname + location.search } });
-
-    if (activeTab === 'other') {
-      showToast("該分類建置中，暫不開放發布。", "error");
-      return;
-    }
 
     if (activeTab === 'offer' && currentUser.role === 'client') {
       setShowUpgradeGuide({ show: true, type: 'post' });
@@ -422,18 +415,7 @@ export const Wishboard: React.FC = () => {
       />
 
       <main className={layoutMode === 'masonry' ? 'wish-masonry-grid' : 'wish-grid'}>
-        {activeTab === 'other' ? (
-          <div style={{
-            gridColumn: '1 / -1', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', minHeight: '40vh',
-            padding: '40px 20px', textAlign: 'center', backgroundColor: '#FBFBF9',
-            borderRadius: '16px', border: '2px dashed #EAE6E1', marginTop: '20px'
-          }}>
-            <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🚧</span>
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px' }}>其他許願種類</h3>
-            <p style={{ color: '#A0978D', fontSize: '15px', margin: 0 }}>建置中，敬請期待！小幫手正在努力趕工中 🛠️</p>
-          </div>
-        ) : loading ? (
+        {loading ? (
           <div className="loading">載入中...</div>
         ) : (() => {
           const filtered = bulletins

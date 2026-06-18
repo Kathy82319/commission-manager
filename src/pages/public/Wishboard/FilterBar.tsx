@@ -47,9 +47,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <button className={activeTab === 'offer' ? 'active' : ''} onClick={() => setActiveTab('offer')}>
             # 接委託
           </button>
-          <button className={activeTab === 'other' ? 'active' : ''} onClick={() => setActiveTab('other')}>
-            # 其他
-          </button>
         </div>
 
         <div className="hero-layout-toggle">

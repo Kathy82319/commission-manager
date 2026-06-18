@@ -96,6 +96,14 @@ body {
   gap: 4px;
 }
 
+@media (max-width: 768px) {
+  .hero-layout-toggle {
+    position: static;
+    justify-content: center;
+    margin-top: 12px;
+  }
+}
+
 .tab-group {
   display: flex;
   justify-content: center;
