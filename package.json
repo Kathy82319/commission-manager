@@ -23,6 +23,7 @@
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@types/dompurify": "^3.0.5",
     "dompurify": "^3.3.3",
+    "html2canvas": "^1.4.1",
     "install": "^0.13.0",
     "lucide-react": "^1.8.0",
     "moment": "^2.30.1",

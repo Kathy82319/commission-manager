@@ -1,11 +1,12 @@
 // src/pages/client/OCCardPage.tsx
 import { useState, useEffect, useRef } from 'react';
-import { Plus, ChevronLeft, Trash2, X } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, X, ImageDown } from 'lucide-react';
 import { OCDashedInput } from '../../components/OC/OCDashedInput';
 import { OCTagInput } from '../../components/OC/OCTagInput';
 import { OCImageManager } from '../../components/OC/OCImageManager';
 import type { OCImageItem } from '../../components/OC/OCImageManager';
-import '../../styles/Notebook.css'; 
+import { OCExportCard } from '../../components/OC/OCExportCard';
+import '../../styles/Notebook.css';
 import '../../styles/OCCardPage.css';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
@@ -23,6 +24,7 @@ export function OCCardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [isLoading, setIsLoading] = useState(true);
+  const [showExport, setShowExport] = useState(false);
 
   const latestOcList = useRef<OCCardData[]>([]);
   const saveAbortController = useRef<AbortController | null>(null);
@@ -190,7 +192,30 @@ export function OCCardPage() {
   };
 
   return (
-    <div className="notebook-page">
+    <div className="notebook-page" style={{ position: 'relative' }}>
+      {showExport && selectedOC && (
+        <OCExportCard ocData={selectedOC} onClose={() => setShowExport(false)} />
+      )}
+
+      {selectedOC && (
+        <button
+          onClick={() => setShowExport(true)}
+          style={{
+            position: 'fixed', bottom: '32px', right: '32px',
+            background: '#A67B3E', color: 'white', border: 'none',
+            padding: '12px 20px', borderRadius: '99px', fontWeight: 'bold',
+            fontSize: '14px', cursor: 'pointer', zIndex: 500,
+            display: 'flex', alignItems: 'center', gap: '8px',
+            boxShadow: '0 6px 20px rgba(166,123,62,0.4)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+          onMouseLeave={e => (e.currentTarget.style.transform = '')}
+        >
+          <ImageDown size={18} /> 產出OC卡
+        </button>
+      )}
+
       <div className="notebook-container">
         
         <div className={`notebook-sidebar ${selectedId ? 'mobile-hide' : ''}`}>
@@ -307,8 +332,7 @@ export function OCCardPage() {
                     </div>
 
                     <div className="oc-short-intro">
-                      <div className="oc-short-intro-title">其他簡述：</div>
-                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ short_intro: val })} placeholder="請在此簡單敘述角色的外部描寫（最多200字）..." isTextArea={true} />
+                      <OCDashedInput value={selectedOC.short_intro} onSave={(val: string) => handleSaveOC({ short_intro: val })} placeholder="其他簡述（最多200字）..." isTextArea={true} />
                     </div>
                   </div>
                 )}
