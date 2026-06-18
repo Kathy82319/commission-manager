@@ -85,6 +85,15 @@ body {
   border-radius: 20px;
   margin-bottom: 20px;
   box-shadow: 0 4px 20px rgba(93, 74, 62, 0.05);
+  position: relative;
+}
+
+.hero-layout-toggle {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  gap: 4px;
 }
 
 .tab-group {

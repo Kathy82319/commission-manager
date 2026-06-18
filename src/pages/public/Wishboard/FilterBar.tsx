@@ -39,7 +39,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <Sparkles color="#ff8c00" size={28} /> 創作許願池
         </h1>
         <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>在這裡遇見你的命定畫師，或為委託人實現願望</p>
-        
+
         <div className="tab-group">
           <button className={activeTab === 'request' ? 'active' : ''} onClick={() => setActiveTab('request')}>
             # 徵委託
@@ -49,6 +49,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </button>
           <button className={activeTab === 'other' ? 'active' : ''} onClick={() => setActiveTab('other')}>
             # 其他
+          </button>
+        </div>
+
+        <div className="hero-layout-toggle">
+          <button
+            className={`layout-toggle-btn${layoutMode === 'list' ? ' active' : ''}`}
+            onClick={() => setLayoutMode('list')}
+            title="列表模式"
+          >
+            <LayoutList size={16} />
+          </button>
+          <button
+            className={`layout-toggle-btn${layoutMode === 'masonry' ? ' active' : ''}`}
+            onClick={() => setLayoutMode('masonry')}
+            title="瀑布流模式"
+          >
+            <LayoutGrid size={16} />
           </button>
         </div>
       </header>
@@ -113,23 +130,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
 
         <div className="wb-post-btns">
-          <div className="layout-toggle-btns">
-            <button
-              className={`layout-toggle-btn${layoutMode === 'list' ? ' active' : ''}`}
-              onClick={() => setLayoutMode('list')}
-              title="列表模式"
-            >
-              <LayoutList size={17} />
-            </button>
-            <button
-              className={`layout-toggle-btn${layoutMode === 'masonry' ? ' active' : ''}`}
-              onClick={() => setLayoutMode('masonry')}
-              title="瀑布流模式"
-            >
-              <LayoutGrid size={17} />
-            </button>
-          </div>
-
           {currentUser && (
             <>
               <button
