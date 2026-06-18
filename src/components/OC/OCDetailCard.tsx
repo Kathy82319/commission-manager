@@ -170,29 +170,29 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
       
       <div className="oc-card-content-wrapper" style={{ padding: isFlat ? '32px' : '24px' }}>
         
-        <div className="oc-intro-grid local-responsive-grid">
-          
-          
-          <div className="oc-images-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div 
-              onClick={() => mainImage && setZoomedImage(mainImage)}
-              style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#EFECE7', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-in', position: 'relative' }}
-            >
-              {mainImage ? <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={32} opacity={0.3} color="#5D4A3E" />}
-            </div>
-            
-            {ocData.images && ocData.images.length > 1 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                {ocData.images.map((img) => (
-                  <div key={img.id} onClick={() => setMainImage(img.previewUrl)} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: mainImage === img.previewUrl ? '2px solid #5D4A3E' : '1px solid rgba(0,0,0,0.05)', cursor: 'pointer', opacity: mainImage === img.previewUrl ? 1 : 0.6, transition: 'all 0.2s' }}>
-                    <img src={img.previewUrl} alt="縮圖" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className={activeTab === 'intro' ? 'oc-intro-grid local-responsive-grid' : ''}>
 
-          
+          {activeTab === 'intro' && (
+            <div className="oc-images-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div
+                onClick={() => mainImage && setZoomedImage(mainImage)}
+                style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#EFECE7', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-in', position: 'relative' }}
+              >
+                {mainImage ? <img src={mainImage} alt="主圖" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={32} opacity={0.3} color="#5D4A3E" />}
+              </div>
+
+              {ocData.images && ocData.images.length > 1 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  {ocData.images.map((img) => (
+                    <div key={img.id} onClick={() => setMainImage(img.previewUrl)} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: mainImage === img.previewUrl ? '2px solid #5D4A3E' : '1px solid rgba(0,0,0,0.05)', cursor: 'pointer', opacity: mainImage === img.previewUrl ? 1 : 0.6, transition: 'all 0.2s' }}>
+                      <img src={img.previewUrl} alt="縮圖" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="oc-form-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
             
