@@ -352,21 +352,21 @@ export function OCCardPage() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px', paddingBottom: '16px', paddingRight: '8px' }}>
-                <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: 'none', border: '1px solid #FECACA', borderRadius: '10px', color: '#EF4444', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2' }}>
-                  <Trash2 size={15} /> 刪除角色
+              <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'nowrap', gap: '8px', marginTop: '24px', paddingBottom: '16px', paddingRight: '8px' }}>
+                <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '10px', color: '#EF4444', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2', whiteSpace: 'nowrap' }}>
+                  <Trash2 size={14} /> 刪除角色
                 </button>
                 <button
                   onClick={() => {
                     const url = `${window.location.origin}/oc/share/${selectedOC?.id}`;
                     navigator.clipboard.writeText(url).then(() => alert('分享連結已複製！'));
                   }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'none', border: '1px solid #DED9D3', borderRadius: '10px', color: '#5D4A3E', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#F9F6F2' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 12px', background: 'none', border: '1px solid #DED9D3', borderRadius: '10px', color: '#5D4A3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#F9F6F2', whiteSpace: 'nowrap' }}
                 >
-                  <Link2 size={15} /> 分享連結
+                  <Link2 size={14} /> 分享連結
                 </button>
-                <button onClick={() => setShowExport(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#A67B3E', border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(166,123,62,0.3)' }}>
-                  <ImageDown size={16} /> 產出OC卡
+                <button onClick={() => setShowExport(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 14px', background: '#A67B3E', border: 'none', borderRadius: '10px', color: 'white', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(166,123,62,0.3)', whiteSpace: 'nowrap' }}>
+                  <ImageDown size={15} /> 產出OC卡
                 </button>
               </div>
             </div>
