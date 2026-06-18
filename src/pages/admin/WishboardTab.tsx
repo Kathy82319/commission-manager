@@ -64,7 +64,7 @@ export function WishboardTab() {
       setIsUpdating(false);
     }
   };
-
+ 
   const openReportModal = async (bulletinId: string) => {
     setSelectedBulletinId(bulletinId);
     setIsModalOpen(true);
