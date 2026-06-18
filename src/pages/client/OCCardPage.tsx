@@ -1,6 +1,7 @@
 // src/pages/client/OCCardPage.tsx
 import { useState, useEffect, useRef } from 'react';
-import { Plus, ChevronLeft, Trash2, X, ImageDown, Link2 } from 'lucide-react';
+import { Plus, ChevronLeft, Trash2, ImageDown, Link2 } from 'lucide-react';
+import { OCColorSwatch } from '../../components/OC/OCColorSwatch';
 import { OCDashedInput } from '../../components/OC/OCDashedInput';
 import { OCTagInput } from '../../components/OC/OCTagInput';
 import { OCImageManager } from '../../components/OC/OCImageManager';
@@ -132,57 +133,22 @@ export function OCCardPage() {
             {Array.from({ length: maxColors }).map((_, i) => {
               const color = colors[i] || '';
               return (
-                <div key={i} style={{ position: 'relative', width: '32px', height: '32px' }}>
-                  
-                  <input 
-                    type="color" 
-                    value={color || '#FFFFFF'}
-                    onChange={(e) => {
-                      const newColors = [...colors]; 
-                      while (newColors.length <= i) newColors.push('');
-                      newColors[i] = e.target.value;
-                      handleSaveOC({ [colorFieldName]: newColors });
-                    }}
-                    className="oc-color-picker" 
-                    style={{ 
-                      width: '100%', height: '100%', border: 'none', padding: 0, 
-                      cursor: 'pointer', borderRadius: '6px', overflow: 'hidden',
-                      opacity: color ? 1 : 0.4, transition: 'all 0.2s',
-                      backgroundColor: color || '#FFF'
-                    }} 
-                    title={color ? '點擊更改顏色' : '點擊新增顏色'}
-                  />
-                  
-                  
-                  {!color && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', color: '#A0978D', fontSize: '18px', fontWeight: 'bold' }}>+</div>}
-                  
-                  
-                  {color && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newColors = [...colors];
-                        newColors[i] = ''; 
-                        
-                        while(newColors.length > 0 && newColors[newColors.length - 1] === '') {
-                          newColors.pop();
-                        }
-                        
-                        handleSaveOC({ [colorFieldName]: newColors });
-                      }}
-                      style={{
-                        position: 'absolute', top: '-6px', right: '-6px', 
-                        width: '16px', height: '16px', borderRadius: '50%', 
-                        backgroundColor: '#EF4444', color: '#FFF', border: 'none', 
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                        cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', padding: 0
-                      }}
-                      title="移除此色票"
-                    >
-                      <X size={10} strokeWidth={3} />
-                    </button>
-                  )}
-                </div>
+                <OCColorSwatch
+                  key={i}
+                  color={color}
+                  onChange={(newColor) => {
+                    const newColors = [...colors];
+                    while (newColors.length <= i) newColors.push('');
+                    newColors[i] = newColor;
+                    handleSaveOC({ [colorFieldName]: newColors });
+                  }}
+                  onRemove={() => {
+                    const newColors = [...colors];
+                    newColors[i] = '';
+                    while (newColors.length > 0 && newColors[newColors.length - 1] === '') newColors.pop();
+                    handleSaveOC({ [colorFieldName]: newColors });
+                  }}
+                />
               );
             })}
           </div>
