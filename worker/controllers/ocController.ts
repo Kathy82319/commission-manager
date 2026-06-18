@@ -153,6 +153,30 @@ export const ocController = {
     }
   },
 
+  async getShareById(ocId: string, env: Env, corsHeaders: any): Promise<any> {
+    try {
+      const row: any = await env.commission_db.prepare(
+        `SELECT * FROM oc_cards WHERE id = ?`
+      ).bind(ocId).first();
+
+      if (!row) return new Response(JSON.stringify({ success: false, error: 'Not Found' }), { status: 404, headers: corsHeaders });
+
+      const data = {
+        ...row,
+        is_public: Boolean(row.is_public),
+        hair_colors: JSON.parse(row.hair_colors || '[]'),
+        eyes_colors: JSON.parse(row.eyes_colors || '[]'),
+        clothing_colors: JSON.parse(row.clothing_colors || '[]'),
+        keywords: JSON.parse(row.keywords || '[]'),
+        images: JSON.parse(row.images || '[]'),
+      };
+
+      return new Response(JSON.stringify({ success: true, data }), { headers: corsHeaders });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: corsHeaders });
+    }
+  },
+
   async getDetail(ocId: string, userId: string, env: Env, corsHeaders: any): Promise<any> {
     try {
       const data = await env.commission_db.prepare(`SELECT * FROM oc_cards WHERE id = ? AND user_id = ?`).bind(ocId, userId).first();

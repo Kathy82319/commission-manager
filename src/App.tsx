@@ -44,6 +44,7 @@ import { RefundPolicy } from './pages/RefundPolicy';
 import { Dashboard } from './pages/admin/Dashboard';
 
 import { OCCardPage } from './pages/client/OCCardPage';
+import { OCSharePage } from './pages/public/OCSharePage';
 
 export function App() {
   return (
@@ -89,6 +90,7 @@ export function App() {
             <Route path=":category" element={<Wishboard />} />
           </Route>
           <Route path="/inquiry/workspace/:id" element={<InquiryWorkspace />} />
+          <Route path="/oc/share/:id" element={<OCSharePage />} />
           
           <Route path="/terms" element={<Terms />} />
           <Route path="/portal" element={<Portal />} />

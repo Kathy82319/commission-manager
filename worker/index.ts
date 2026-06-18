@@ -282,8 +282,13 @@ export default {
         }
       }
 
+      if (sanitizedPath.startsWith("/api/oc/share/")) {
+        const ocId = pathParts[4];
+        if (request.method === "GET" && ocId) return ocController.getShareById(ocId, env, corsHeaders);
+      }
+
       if (sanitizedPath.startsWith("/api/oc")) {
-        const authErr = requireAuth(currentUserId, corsHeaders); 
+        const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
         
         const targetId = pathParts[3]; 
