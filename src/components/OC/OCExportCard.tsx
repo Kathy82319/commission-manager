@@ -28,15 +28,54 @@ const Section = ({ title, children, accent }: { title: string; children: React.R
   </div>
 );
 
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return '';
+  }
+}
+
 export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // key: original URL → value: base64 data URL
+  const [imgMap, setImgMap] = useState<Record<string, string>>({});
+  const [imagesReady, setImagesReady] = useState(false);
 
-  const mainImage = ocData.images?.[0]?.previewUrl ?? null;
   const validHairColors = (ocData.hair_colors || []).filter(Boolean);
   const validEyesColors = (ocData.eyes_colors || []).filter(Boolean);
   const validClothingColors = (ocData.clothing_colors || []).filter(Boolean);
+
+  // Step 1: pre-fetch all images → base64 on mount
+  useEffect(() => {
+    const urls: string[] = (ocData.images || [])
+      .map((img: any) => img.previewUrl)
+      .filter(Boolean);
+
+    if (urls.length === 0) { setImagesReady(true); return; }
+
+    Promise.all(urls.map(async (url) => ({ url, data: await toDataUrl(url) })))
+      .then(results => {
+        const map: Record<string, string> = {};
+        results.forEach(({ url, data }) => { if (data) map[url] = data; });
+        setImgMap(map);
+        setImagesReady(true);
+      });
+  }, []);
+
+  // Step 2: auto-generate once images are ready
+  useEffect(() => {
+    if (imagesReady) handleGenerate();
+  }, [imagesReady]);
 
   const handleGenerate = async () => {
     if (!cardRef.current) return;
@@ -53,7 +92,7 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
       setPreviewUrl(canvas.toDataURL('image/png'));
     } catch (e) {
       console.error('匯出失敗', e);
-      alert('圖片匯出失敗，請確認圖片來源允許跨域存取。');
+      alert('圖片匯出失敗，請稍後再試。');
     } finally {
       setIsGenerating(false);
     }
@@ -67,8 +106,11 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
     a.click();
   };
 
-  // Auto-generate on open
-  useEffect(() => { handleGenerate(); }, []);
+  const getImg = (url: string) => imgMap[url] || url;
+
+  const mainImageSrc = ocData.images?.[0]?.previewUrl
+    ? getImg(ocData.images[0].previewUrl)
+    : null;
 
   return (
     <div style={{
@@ -103,11 +145,13 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
                 <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> 產出中...
               </span>
             )}
-            <button onClick={handleGenerate} disabled={isGenerating} style={{
-              background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)',
-              padding: '9px 14px', borderRadius: '10px', fontSize: '13px', cursor: isGenerating ? 'not-allowed' : 'pointer',
-              opacity: isGenerating ? 0.6 : 1
-            }}>重新產出</button>
+            {!isGenerating && imagesReady && (
+              <button onClick={handleGenerate} style={{
+                background: 'rgba(255,255,255,0.15)', color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '9px 14px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer'
+              }}>重新產出</button>
+            )}
             <button onClick={onClose} style={{
               background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
               width: '36px', height: '36px', borderRadius: '8px', cursor: 'pointer',
@@ -116,18 +160,17 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
           </div>
         </div>
 
-        {/* 若已產出圖片，顯示圖片預覽 */}
+        {/* 預覽區 */}
         {previewUrl && !isGenerating ? (
           <img src={previewUrl} alt="OC卡預覽" style={{ width: '100%', borderRadius: '14px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }} />
         ) : (
-          /* 產出中 skeleton */
           <div style={{
-            width: '100%', minHeight: '300px', borderRadius: '14px',
+            width: '100%', minHeight: '260px', borderRadius: '14px',
             background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '14px',
-            gap: '8px'
+            justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '14px', gap: '8px'
           }}>
-            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> 正在產出卡片...
+            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+            {imagesReady ? '正在產出卡片...' : '載入圖片中...'}
           </div>
         )}
 
@@ -136,8 +179,7 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
           <div ref={cardRef} style={{
             width: '720px', backgroundColor: '#FDFDFB',
             fontFamily: '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
-            padding: '28px', boxSizing: 'border-box',
-            borderRadius: '16px'
+            padding: '28px', boxSizing: 'border-box', borderRadius: '16px'
           }}>
             {/* 頂部標題列 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #EAE6E1', paddingBottom: '14px' }}>
@@ -161,11 +203,10 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
             <div style={{ display: 'flex', gap: '20px', marginBottom: '16px' }}>
               {/* 左側圖片 */}
               <div style={{ width: '220px', flexShrink: 0 }}>
-                {mainImage ? (
+                {mainImageSrc ? (
                   <img
-                    src={mainImage}
+                    src={mainImageSrc}
                     alt="角色圖"
-                    crossOrigin="anonymous"
                     style={{ width: '220px', height: '220px', objectFit: 'cover', borderRadius: '12px', border: '2px solid #EAE6E1', display: 'block' }}
                   />
                 ) : (
@@ -174,26 +215,28 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
                     <span>尚無圖片</span>
                   </div>
                 )}
-                {/* 其他圖片縮圖 */}
+                {/* 其他縮圖 */}
                 {ocData.images?.length > 1 && (
                   <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    {ocData.images.slice(1, 4).map((img: any, i: number) => (
-                      <img key={i} src={img.previewUrl} crossOrigin="anonymous" alt=""
-                        style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1.5px solid #EAE6E1' }}
-                      />
-                    ))}
+                    {ocData.images.slice(1, 4).map((img: any, i: number) => {
+                      const src = getImg(img.previewUrl);
+                      return src ? (
+                        <img key={i} src={src} alt=""
+                          style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1.5px solid #EAE6E1' }}
+                        />
+                      ) : null;
+                    })}
                   </div>
                 )}
               </div>
 
               {/* 右側屬性 */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {/* 色彩屬性 */}
                 {[
                   { label: '髮色／髮型', desc: ocData.hair_desc, colors: validHairColors },
                   { label: '瞳色／瞳型', desc: ocData.eyes_desc, colors: validEyesColors },
                   { label: '服裝', desc: ocData.clothing_desc, colors: validClothingColors },
-                ].map(({ label, desc, colors }) => (desc || colors.length > 0) && (
+                ].filter(({ desc, colors }) => desc || colors.length > 0).map(({ label, desc, colors }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', background: '#F9F6F2', borderRadius: '8px', border: '1px solid #EAE6E1' }}>
                     <span style={{ fontSize: '11px', fontWeight: 800, color: '#A67B3E', width: '64px', flexShrink: 0 }}>{label}</span>
                     <span style={{ flex: 1, fontSize: '13px', color: '#4A3D35' }}>{desc || '—'}</span>
@@ -220,28 +263,24 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
               </div>
             </div>
 
-            {/* 必帶元素 */}
             {ocData.must_have && (
               <Section title="✅ 必帶元素" accent="#f0fdf4">
                 <div style={{ fontSize: '13px', color: '#166534', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ocData.must_have}</div>
               </Section>
             )}
 
-            {/* 雷點 */}
             {ocData.donts && (
               <Section title="🚫 絕對雷點" accent="#fff1f2">
                 <div style={{ fontSize: '13px', color: '#9f1239', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{ocData.donts}</div>
               </Section>
             )}
 
-            {/* 其他簡述 */}
             {ocData.short_intro && (
               <Section title="📝 其他簡述" accent="#FFFCE8">
                 <div style={{ fontSize: '13px', color: '#4A3D35', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{ocData.short_intro}</div>
               </Section>
             )}
 
-            {/* 底部 */}
             <div style={{ borderTop: '1px solid #EAE6E1', marginTop: '16px', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
               <span style={{ fontSize: '11px', color: '#C0B8B0' }}>
                 更新於 {new Date(ocData.updated_at || Date.now()).toLocaleDateString('zh-TW')} ‧ Arti 繪師小幫手
@@ -250,7 +289,6 @@ export function OCExportCard({ ocData, onClose }: OCExportCardProps) {
           </div>
         </div>
 
-        {/* spin keyframe */}
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
       </div>
     </div>
