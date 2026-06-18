@@ -48,6 +48,17 @@ export const feedbackController = {
       `INSERT INTO feedback (type, message, contact, submitter_ip) VALUES (?, ?, ?, ?)`
     ).bind(type, message.trim(), (contact || '').trim().slice(0, 200), clientIp).run();
 
+    if (env.LINE_BOT_TOKEN && env.LINE_ADMIN_USER_ID) {
+      const typeLabels: Record<string, string> = { bug: '🐛 回報問題', suggestion: '💡 功能建議', other: '💬 其他意見' };
+      const preview = message.trim().slice(0, 120) + (message.trim().length > 120 ? '…' : '');
+      const notifText = `📬 Arti 收到新意見回饋\n類型：${typeLabels[type] ?? type}\n內容：${preview}${contact ? `\n聯絡：${contact.trim()}` : ''}`;
+      fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
+        body: JSON.stringify({ to: env.LINE_ADMIN_USER_ID, messages: [{ type: 'text', text: notifText }] }),
+      }).catch(() => {});
+    }
+
     return new Response(JSON.stringify({ success: true }), { status: 201, headers: corsHeaders });
   },
 

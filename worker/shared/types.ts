@@ -21,6 +21,8 @@ export interface Env {
   NEWEBPAY_HASH_IV: string;
   RESEND_API_KEY: string;
   RESEND_FROM_EMAIL: string;
+  LINE_BOT_TOKEN?: string;
+  LINE_ADMIN_USER_ID?: string;
 }
 
 export interface CreateCommissionBody {
