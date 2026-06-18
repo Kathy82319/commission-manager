@@ -12,6 +12,52 @@ import '../../styles/OCCardPage.css';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
+interface ColorFieldProps {
+  label: string;
+  descFieldName: string;
+  colorFieldName: string;
+  value: string;
+  colors: string[];
+  maxColors?: number;
+  onSave: (data: Record<string, any>) => void;
+}
+
+function ColorField({ label, descFieldName, colorFieldName, value, colors, maxColors = 3, onSave }: ColorFieldProps) {
+  return (
+    <div>
+      <div className="oc-field-label">{label}</div>
+      <div className="oc-color-group">
+        <div style={{ flex: 1, minWidth: '160px' }}>
+          <OCDashedInput value={value} onSave={(val: string) => onSave({ [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {Array.from({ length: maxColors }).map((_, i) => {
+            const color = colors[i] || '';
+            return (
+              <OCColorSwatch
+                key={i}
+                color={color}
+                onChange={(newColor) => {
+                  const newColors = [...colors];
+                  while (newColors.length <= i) newColors.push('');
+                  newColors[i] = newColor;
+                  onSave({ [colorFieldName]: newColors });
+                }}
+                onRemove={() => {
+                  const newColors = [...colors];
+                  newColors[i] = '';
+                  while (newColors.length > 0 && newColors[newColors.length - 1] === '') newColors.pop();
+                  onSave({ [colorFieldName]: newColors });
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface OCCardData {
   id: string; name: string; gender: string; body_type: string;
   hair_desc: string; hair_colors: string[]; eyes_desc: string; eyes_colors: string[];
@@ -121,42 +167,6 @@ export function OCCardPage() {
 
   const selectedOC = ocList.find(oc => oc.id === selectedId);
 
-  const ColorField = ({ label, descFieldName, colorFieldName, value, colors, maxColors = 3 }: any) => {
-    return (
-      <div>
-        <div className="oc-field-label">{label}</div>
-        <div className="oc-color-group">
-          <div style={{ flex: 1, minWidth: '160px' }}>
-            <OCDashedInput value={value} onSave={(val: string) => handleSaveOC({ [descFieldName]: val })} placeholder={`輸入${label.replace('：', '')}的描述...`} />
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {Array.from({ length: maxColors }).map((_, i) => {
-              const color = colors[i] || '';
-              return (
-                <OCColorSwatch
-                  key={i}
-                  color={color}
-                  onChange={(newColor) => {
-                    const newColors = [...colors];
-                    while (newColors.length <= i) newColors.push('');
-                    newColors[i] = newColor;
-                    handleSaveOC({ [colorFieldName]: newColors });
-                  }}
-                  onRemove={() => {
-                    const newColors = [...colors];
-                    newColors[i] = '';
-                    while (newColors.length > 0 && newColors[newColors.length - 1] === '') newColors.pop();
-                    handleSaveOC({ [colorFieldName]: newColors });
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="notebook-page">
       {showExport && selectedOC && (
@@ -249,9 +259,9 @@ export function OCCardPage() {
                           </div>
                         </div>
 
-                        <ColorField label="髮色／髮型：" descFieldName="hair_desc" colorFieldName="hair_colors" value={selectedOC.hair_desc} colors={selectedOC.hair_colors} />
-                        <ColorField label="瞳色／瞳型：" descFieldName="eyes_desc" colorFieldName="eyes_colors" value={selectedOC.eyes_desc} colors={selectedOC.eyes_colors} />
-                        <ColorField label="服裝：" descFieldName="clothing_desc" colorFieldName="clothing_colors" value={selectedOC.clothing_desc} colors={selectedOC.clothing_colors} />
+                        <ColorField label="髮色／髮型：" descFieldName="hair_desc" colorFieldName="hair_colors" value={selectedOC.hair_desc} colors={selectedOC.hair_colors} onSave={handleSaveOC} />
+                        <ColorField label="瞳色／瞳型：" descFieldName="eyes_desc" colorFieldName="eyes_colors" value={selectedOC.eyes_desc} colors={selectedOC.eyes_colors} onSave={handleSaveOC} />
+                        <ColorField label="服裝：" descFieldName="clothing_desc" colorFieldName="clothing_colors" value={selectedOC.clothing_desc} colors={selectedOC.clothing_colors} onSave={handleSaveOC} />
 
                         <div>
                           <div className="oc-field-label">特點／配件：</div>
