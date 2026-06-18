@@ -383,11 +383,12 @@ export const Wishboard: React.FC = () => {
       )}
 
       {currentUser && wishQuota && !wishQuota.is_pro && (
-        <div style={{ position: 'relative', zIndex: 20, padding: '10px 20px', backgroundColor: '#FDF4E6', borderBottom: '1px solid #FDE0B5', color: '#A67B3E', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="wishboard-quota-banner">
           <span>
             ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
           </span>
-            <button onClick={() => navigate('/artist/settings?tab=subscription')} style={{ background: '#A67B3E', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>            升級專業版解鎖限制
+          <button onClick={() => navigate('/artist/settings?tab=subscription')} className="wishboard-quota-btn">
+            升級專業版解鎖限制
           </button>
         </div>
       )}

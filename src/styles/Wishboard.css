@@ -1,5 +1,46 @@
 /* src/styles/Wishboard.css */
 
+.wishboard-quota-banner {
+  position: relative;
+  z-index: 20;
+  padding: 10px 20px;
+  background-color: #FDF4E6;
+  border-bottom: 1px solid #FDE0B5;
+  color: #A67B3E;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.wishboard-quota-btn {
+  background: #A67B3E;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .wishboard-quota-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .wishboard-quota-btn {
+    align-self: flex-start;
+  }
+}
+
 :root {
   --wish-primary: var(--artist-theme-color, #5D4A3E);
   --wish-primary-hover: #4A3830;
@@ -97,10 +138,22 @@ body {
 }
 
 @media (max-width: 768px) {
+  .wishboard-hero {
+    padding: 14px 16px 48px;
+  }
+
+  .wishboard-hero h1 {
+    font-size: 18px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .wishboard-hero p {
+    font-size: 12px !important;
+  }
+
   .hero-layout-toggle {
-    position: static;
-    justify-content: center;
-    margin-top: 12px;
+    bottom: 10px;
+    right: 10px;
   }
 }
 

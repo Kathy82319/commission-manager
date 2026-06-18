@@ -208,6 +208,10 @@
     padding: 5px 10px;
     font-size: 13px;
   }
+
+  .notif-bell-float {
+    right: 10px !important;
+  }
 }
 
 
