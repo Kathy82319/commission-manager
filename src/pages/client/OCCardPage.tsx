@@ -319,7 +319,7 @@ export function OCCardPage() {
                 {activeTab === 'background' && (
                   <div className="fade-in oc-form-column">
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性</h4>
+                      <h4 className="oc-field-label" style={{ fontSize: '15px', fontWeight: 700, color: '#4A3B32', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>角色個性</h4>
                       <OCDashedInput 
                         value={selectedOC.personality} 
                         onSave={(val: string) => handleSaveOC({ personality: val })} 
@@ -329,7 +329,7 @@ export function OCCardPage() {
                       />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明</h4>
+                      <h4 className="oc-field-label" style={{ fontSize: '15px', fontWeight: 700, color: '#4A3B32', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>人物背景說明</h4>
                       <OCDashedInput 
                         value={selectedOC.background} 
                         onSave={(val: string) => handleSaveOC({ background: val })} 
@@ -339,7 +339,7 @@ export function OCCardPage() {
                       />
                     </div>
                     <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
-                      <h4 className="oc-field-label" style={{ borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明</h4>
+                      <h4 className="oc-field-label" style={{ fontSize: '15px', fontWeight: 700, color: '#4A3B32', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>其他說明</h4>
                       <OCDashedInput 
                         value={selectedOC.other_notes} 
                         onSave={(val: string) => handleSaveOC({ other_notes: val })} 
