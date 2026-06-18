@@ -1,6 +1,6 @@
 // src/pages/public/Wishboard/FilterBar.tsx
 import React from 'react';
-import { Tag, Plus, Sparkles, X } from 'lucide-react';
+import { Tag, Plus, Sparkles, X, LayoutList, LayoutGrid } from 'lucide-react';
 import { REQ_TAGS } from './constants';
 
 interface FilterBarProps {
@@ -14,6 +14,8 @@ interface FilterBarProps {
   onScrollToMyPost?: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  layoutMode: 'list' | 'masonry';
+  setLayoutMode: (mode: 'list' | 'masonry') => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -26,7 +28,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   myPostId,
   onScrollToMyPost,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  layoutMode,
+  setLayoutMode,
 }) => {
   return (
     <>
@@ -108,26 +112,45 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           )}
         </div>
 
-        {currentUser && (
-          <div className="wb-post-btns">
+        <div className="wb-post-btns">
+          <div className="layout-toggle-btns">
             <button
-              className="submit-post-btn"
-              style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              onClick={onPostTrigger}
+              className={`layout-toggle-btn${layoutMode === 'list' ? ' active' : ''}`}
+              onClick={() => setLayoutMode('list')}
+              title="列表模式"
             >
-              <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
+              <LayoutList size={17} />
             </button>
-            {myPostId && (
-              <button
-                className="btn-cancel"
-                style={{ padding: '8px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                onClick={onScrollToMyPost}
-              >
-                📍 跳到我的貼文
-              </button>
-            )}
+            <button
+              className={`layout-toggle-btn${layoutMode === 'masonry' ? ' active' : ''}`}
+              onClick={() => setLayoutMode('masonry')}
+              title="瀑布流模式"
+            >
+              <LayoutGrid size={17} />
+            </button>
           </div>
-        )}
+
+          {currentUser && (
+            <>
+              <button
+                className="submit-post-btn"
+                style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={onPostTrigger}
+              >
+                <Plus size={18} /> {activeTab === 'request' ? '發布需求' : activeTab === 'offer' ? '發布接案' : '發布其他'}
+              </button>
+              {myPostId && (
+                <button
+                  className="btn-cancel"
+                  style={{ padding: '8px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  onClick={onScrollToMyPost}
+                >
+                  📍 跳到我的貼文
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </>
   );

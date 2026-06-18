@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, ShieldAlert, ScrollText, X } from 'lucide-re
 
 import { API_BASE } from './constants';
 import { WishCard } from './WishCard';
+import { MasonryCard } from './MasonryCard';
 import { FilterBar } from './FilterBar';
 import { RequestModal } from './PostModals/RequestModal';
 import { OfferModal } from './PostModals/OfferModal';
@@ -47,6 +48,8 @@ export const Wishboard: React.FC = () => {
 
   const [viewingOCSnapshot, setViewingOCSnapshot] = useState<any | null>(null);
   const [editingBulletin, setEditingBulletin] = useState<any | null>(null);
+  const [layoutMode, setLayoutMode] = useState<'list' | 'masonry'>('list');
+  const [masonryDetailBulletin, setMasonryDetailBulletin] = useState<any | null>(null);
 
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
@@ -414,15 +417,17 @@ export const Wishboard: React.FC = () => {
         onScrollToMyPost={handleScrollToMyPost}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        layoutMode={layoutMode}
+        setLayoutMode={setLayoutMode}
       />
 
-      <main className="wish-grid">
+      <main className={layoutMode === 'masonry' ? 'wish-masonry-grid' : 'wish-grid'}>
         {activeTab === 'other' ? (
-          <div style={{ 
-            gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', 
-            alignItems: 'center', justifyContent: 'center', minHeight: '40vh', 
-            padding: '40px 20px', textAlign: 'center', backgroundColor: '#FBFBF9', 
-            borderRadius: '16px', border: '2px dashed #EAE6E1', marginTop: '20px' 
+          <div style={{
+            gridColumn: '1 / -1', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', minHeight: '40vh',
+            padding: '40px 20px', textAlign: 'center', backgroundColor: '#FBFBF9',
+            borderRadius: '16px', border: '2px dashed #EAE6E1', marginTop: '20px'
           }}>
             <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>🚧</span>
             <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#7A7269', marginBottom: '12px' }}>其他許願種類</h3>
@@ -430,8 +435,8 @@ export const Wishboard: React.FC = () => {
           </div>
         ) : loading ? (
           <div className="loading">載入中...</div>
-        ) : (
-          bulletins
+        ) : (() => {
+          const filtered = bulletins
             .filter(b => selectedFilters.length === 0 || selectedFilters.every(f => JSON.parse(b.tags || '[]').includes(f)))
             .filter(b => {
               if (!searchQuery.trim()) return true;
@@ -440,10 +445,44 @@ export const Wishboard: React.FC = () => {
               const tags = (b.tags || '').toLowerCase();
               const name = (b.client_name || '').toLowerCase();
               return title.includes(q) || tags.includes(q) || name.includes(q);
-            })
-            .map(b => <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} onEditTrigger={handleEditTrigger} highlightedId={highlightedId} />)
-        )}
+            });
+
+          if (layoutMode === 'masonry') {
+            return filtered.map(b => (
+              <MasonryCard
+                key={b.id}
+                bulletin={b}
+                onClick={() => setMasonryDetailBulletin(b)}
+                highlightedId={highlightedId}
+              />
+            ));
+          }
+          return filtered.map(b => (
+            <WishCard key={b.id} bulletin={b} currentUser={currentUser} onInquire={openInquireModal} wishQuota={wishQuota} onViewOC={handleViewOCSnapshot} onEditTrigger={handleEditTrigger} highlightedId={highlightedId} />
+          ));
+        })()}
       </main>
+
+      {masonryDetailBulletin && (
+        <div className="masonry-detail-overlay" onClick={() => setMasonryDetailBulletin(null)}>
+          <div className="masonry-detail-content" onClick={e => e.stopPropagation()}>
+            <button className="masonry-detail-close" onClick={() => setMasonryDetailBulletin(null)}>
+              關閉 <X size={16} />
+            </button>
+            <div style={{ borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
+              <WishCard
+                bulletin={masonryDetailBulletin}
+                currentUser={currentUser}
+                onInquire={(b) => { setMasonryDetailBulletin(null); openInquireModal(b); }}
+                wishQuota={wishQuota}
+                onViewOC={handleViewOCSnapshot}
+                onEditTrigger={(b) => { setMasonryDetailBulletin(null); handleEditTrigger(b); }}
+                highlightedId={highlightedId}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <button className="rules-floating-btn" onClick={() => setShowRulesModal(true)} title="查看許願池規則">
         <ScrollText size={20} />
