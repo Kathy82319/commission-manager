@@ -251,14 +251,9 @@ export function OCCardPage() {
               </div>
 
               <div className="oc-tabs-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '6px', color: '#EF4444', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2' }}>
-                    <Trash2 size={14} /> 刪除角色
-                  </button>
-                  <button onClick={() => setShowExport(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'none', border: '1px solid #DED9D3', borderRadius: '6px', color: '#A67B3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FDF8F2' }}>
-                    <ImageDown size={14} /> 產出OC卡
-                  </button>
-                </div>
+                <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '6px', color: '#EF4444', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2' }}>
+                  <Trash2 size={14} /> 刪除角色
+                </button>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button className={`oc-tab-btn ${activeTab === 'intro' ? 'active' : 'inactive'}`} onClick={() => setActiveTab('intro')}>簡介</button>
                   <button className={`oc-tab-btn ${activeTab === 'background' ? 'active' : 'inactive'}`} onClick={() => setActiveTab('background')}>背景詳細設定</button>
@@ -358,6 +353,12 @@ export function OCCardPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <button onClick={() => setShowExport(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#A67B3E', border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(166,123,62,0.3)' }}>
+                  <ImageDown size={16} /> 產出OC卡
+                </button>
               </div>
             </div>
           )}
