@@ -28,11 +28,12 @@ export function OCColorSwatch({ color, onChange, onRemove }: OCColorSwatchProps)
         setOpen(false);
       }
     };
+    // 用 touchend 而非 touchstart，避免干擾 picker 的拖曳手勢
     document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
+    document.addEventListener('touchend', handler);
     return () => {
       document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('touchend', handler);
     };
   }, [open]);
 
@@ -90,11 +91,14 @@ export function OCColorSwatch({ color, onChange, onRemove }: OCColorSwatchProps)
           // 用 useLayoutEffect 動態定位
         >
           <PopupPositioned anchor={containerRef} onClose={() => setOpen(false)}>
-            <HexColorPicker
-              color={draft}
-              onChange={handleChange}
-              style={{ width: '200px' }}
-            />
+            {/* touch-action: none 讓瀏覽器不把拖曳當成捲動 */}
+            <div style={{ touchAction: 'none' }}>
+              <HexColorPicker
+                color={draft}
+                onChange={handleChange}
+                style={{ width: '200px' }}
+              />
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', padding: '0 2px' }}>
               <span style={{ fontSize: '13px', color: '#7A6B62', fontWeight: 600 }}>#</span>
               <HexColorInput
