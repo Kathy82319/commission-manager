@@ -261,25 +261,19 @@ export function OCDetailCard({ ocData, variant = 'default' }: OCDetailCardProps)
                 )}
               </div>
             ) : (
-              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div>
-                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>角色個性：</div>
-                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
-                    {ocData.personality || '無詳細說明'}
+              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {[
+                  { label: '角色個性', value: ocData.personality },
+                  { label: '人物背景說明', value: ocData.background },
+                  { label: '其他說明', value: ocData.other_notes },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '10px', border: '1px solid #EAE6E1' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#4A3B32', borderBottom: '1px solid #F4F0EB', paddingBottom: '8px', marginBottom: '12px' }}>{label}</div>
+                    <div style={{ fontSize: '14px', lineHeight: '1.7', color: value ? '#444' : '#A0978D', whiteSpace: 'pre-wrap' }}>
+                      {value || '無詳細說明'}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>人物背景：</div>
-                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
-                    {ocData.background || '無詳細說明'}
-                  </div>
-                </div>
-                <div>
-                  <div className="oc-field-label" style={{ fontSize: '13px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>其他說明：</div>
-                  <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>
-                    {ocData.other_notes || '無詳細說明'}
-                  </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
