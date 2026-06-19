@@ -72,6 +72,7 @@ export function OCCardPage() {
   const [activeTab, setActiveTab] = useState<'intro' | 'background'>('intro');
   const [isLoading, setIsLoading] = useState(true);
   const [showExport, setShowExport] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const latestOcList = useRef<OCCardData[]>([]);
   const saveAbortController = useRef<AbortController | null>(null);
@@ -332,15 +333,38 @@ export function OCCardPage() {
                 <button onClick={handleDeleteOC} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 12px', background: 'none', border: '1px solid #FECACA', borderRadius: '10px', color: '#EF4444', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#FEF2F2', whiteSpace: 'nowrap' }}>
                   <Trash2 size={14} /> 刪除角色
                 </button>
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/oc/share/${selectedOC?.id}`;
-                    navigator.clipboard.writeText(url).then(() => alert('分享連結已複製！'));
-                  }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 12px', background: 'none', border: '1px solid #DED9D3', borderRadius: '10px', color: '#5D4A3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#F9F6F2', whiteSpace: 'nowrap' }}
-                >
-                  <Link2 size={14} /> 分享連結
-                </button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/oc/share/${selectedOC?.id}`;
+                      navigator.clipboard.writeText(url).then(() => {
+                        setShareCopied(true);
+                        setTimeout(() => setShareCopied(false), 3500);
+                      });
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 12px', background: 'none', border: '1px solid #DED9D3', borderRadius: '10px', color: '#5D4A3E', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#F9F6F2', whiteSpace: 'nowrap' }}
+                  >
+                    <Link2 size={14} /> 分享連結
+                  </button>
+                  {shareCopied && (
+                    <div style={{
+                      position: 'absolute', bottom: 'calc(100% + 10px)', right: 0,
+                      background: '#3D2B1F', color: 'white', borderRadius: '10px',
+                      padding: '10px 14px', fontSize: '12px', lineHeight: '1.6',
+                      whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                      zIndex: 100,
+                    }}>
+                      <div style={{ fontWeight: 700, marginBottom: '3px' }}>🔗 連結已複製！</div>
+                      <div style={{ color: 'rgba(255,255,255,0.65)' }}>此連結為即時同步OC卡內容</div>
+                      <div style={{ color: 'rgba(255,255,255,0.65)' }}>更新後對方重整就會看到新版本</div>
+                      <div style={{
+                        position: 'absolute', bottom: '-5px', right: '18px',
+                        width: '10px', height: '10px', background: '#3D2B1F',
+                        transform: 'rotate(45deg)', borderRadius: '2px',
+                      }} />
+                    </div>
+                  )}
+                </div>
                 <button onClick={() => setShowExport(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 14px', background: '#A67B3E', border: 'none', borderRadius: '10px', color: 'white', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(166,123,62,0.3)', whiteSpace: 'nowrap' }}>
                   <ImageDown size={15} /> 產出OC卡
                 </button>
