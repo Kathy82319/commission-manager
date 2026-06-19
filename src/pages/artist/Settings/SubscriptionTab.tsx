@@ -157,7 +157,17 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
         }}>
           {quotaInfo?.plan_type === 'pro' && <div style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: '#4A7294', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>目前方案</div>}
           <h4 style={{ margin: 0, fontSize: '18px', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>專業版</h4>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+          {new Date() < new Date('2026-09-01') ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ fontSize: '15px', color: '#B0B0B0', textDecoration: 'line-through' }}>NT$ 150 / 月</div>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>
+                NT$ 99 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#E07B54', fontWeight: 'bold' }}>🎉 限時優惠，促銷至 2026/08/31</div>
+            </div>
+          ) : (
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+          )}
           
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           

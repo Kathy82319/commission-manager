@@ -33,7 +33,7 @@ export const paymentController = {
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
       
-      const amount = 150; // 都已經很便宜了就別玩我了QAQ
+      const amount = new Date() < new Date('2026-09-01') ? 99 : 150;
       const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
       
       const absoluteFrontendUrl = (env.FRONTEND_URL || "https://arti7.net").replace(/\/$/, "");
