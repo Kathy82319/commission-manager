@@ -101,10 +101,12 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
     setIsSubmitting(true);
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-      const formattedAnswers = parsedSchema.map(field => ({
-        question: field.label,
-        answer: formData[field.id] || (field.type === 'checkbox' ? [] : '')
-      }));
+      const formattedAnswers = parsedSchema
+        .filter((field: any) => field.type !== 'section')
+        .map((field: any) => ({
+          question: field.label,
+          answer: formData[field.id] || (field.type === 'checkbox' ? [] : '')
+        }));
       const payload = {
         showcase_id: selectedShowcase.id,
         artist_id: artist.id,
@@ -141,12 +143,23 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
   };
 
   const renderDynamicField = (field: any) => {
+    if (field.type === 'section') {
+      return (
+        <div key={field.id} style={{ margin: '8px 0 16px 0', padding: '12px 16px', background: '#F8F6F3', borderLeft: '3px solid #C4BDB5', borderRadius: '0 6px 6px 0' }}>
+          {field.label && <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: field.section_text ? '6px' : '0' }}>{field.label}</div>}
+          {field.section_text && <div style={{ fontSize: '13px', color: '#7A7269', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{field.section_text}</div>}
+        </div>
+      );
+    }
     const value = formData[field.id] || '';
     return (
       <div key={field.id} style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '8px', fontSize: '14px' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', color: '#5D4A3E', marginBottom: field.hint ? '4px' : '8px', fontSize: '14px' }}>
           {field.label} {field.required && <span style={{ color: '#A05C5C' }}>*</span>}
         </label>
+        {field.hint && (
+          <div style={{ fontSize: '12px', color: '#9E9589', marginBottom: '8px', lineHeight: '1.5' }}>{field.hint}</div>
+        )}
         {field.type === 'text' && <input type="text" className="form-input" style={{ width: '100%' }} value={value} onChange={e => handleInputChange(field.id, e.target.value)} placeholder="請輸入..." />}
         {field.type === 'textarea' && <textarea className="form-input" style={{ width: '100%', minHeight: '80px', resize: 'vertical' }} value={value} onChange={e => handleInputChange(field.id, e.target.value)} placeholder="請詳細描述..." />}
         {field.type === 'date' && <input type="date" className="form-input" value={value} onChange={e => handleInputChange(field.id, e.target.value)} />}

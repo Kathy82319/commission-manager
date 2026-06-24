@@ -17,10 +17,12 @@ const customQuillModules = {
 
 export interface FormFieldSchema {
   id: string;
-  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date';
+  type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'section';
   label: string;
   required: boolean;
-  options?: string[]; 
+  options?: string[];
+  section_text?: string;
+  hint?: string;
 }
 
 export interface ShowcaseItem {
@@ -182,9 +184,9 @@ export function ShowcaseFormBuilder({
       onToast("請填寫品名並至少上傳一張圖片", "err"); 
       return;
     }
-    if (formFields.some(f => !f.label.trim())) {
-      onToast("客製化表單有未命名的問題，請檢查", "err"); 
-      setViewMode('form'); 
+    if (formFields.some(f => f.type !== 'section' && !f.label.trim())) {
+      onToast("客製化表單有未命名的問題，請檢查", "err");
+      setViewMode('form');
       return;
     }
     const url = editingItem.id ? `${apiBase}/api/showcase/${editingItem.id}` : `${apiBase}/api/showcase`;
@@ -213,7 +215,8 @@ export function ShowcaseFormBuilder({
     if (formFields.length >= 15) return onToast("最多只能新增 15 個問題", "err");
     const newField: FormFieldSchema = {
       id: `field_${Date.now()}`, type, label: '', required: false,
-      options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined
+      options: ['select', 'radio', 'checkbox'].includes(type) ? ['選項 1'] : undefined,
+      section_text: type === 'section' ? '' : undefined
     };
     setFormFields([...formFields, newField]);
     setActiveFieldId(newField.id); 
@@ -262,7 +265,10 @@ export function ShowcaseFormBuilder({
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIdx(index);
     e.dataTransfer.effectAllowed = 'move';
-    if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(e.currentTarget as Element, 20, 20);
+    const cardEl = (e.currentTarget as HTMLElement).closest('[data-drag-card]') as Element;
+    if (e.dataTransfer.setDragImage && cardEl) {
+      e.dataTransfer.setDragImage(cardEl, 20, 20);
+    }
   };
   const handleDragEnter = (e: React.DragEvent, index: number) => {
     e.preventDefault();
@@ -512,11 +518,9 @@ export function ShowcaseFormBuilder({
                     return (
                       <div
                         key={field.id}
-                        draggable
-                        onDragStart={e => handleDragStart(e, index)}
+                        data-drag-card
                         onDragEnter={e => handleDragEnter(e, index)}
                         onDragOver={handleDragOver}
-                        onDragEnd={handleDragEnd}
                         onDrop={e => handleDrop(e, index)}
                         onClick={() => setActiveFieldId(field.id)}
                         style={{
@@ -531,21 +535,37 @@ export function ShowcaseFormBuilder({
                           cursor: isActive ? 'default' : 'pointer'
                         }}
                       >
-                        <div style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }} title="按住拖曳可排序">
+                        <div
+                          draggable
+                          onDragStart={e => handleDragStart(e, index)}
+                          onDragEnd={handleDragEnd}
+                          style={{ position: 'absolute', top: '12px', right: '12px', padding: '4px 8px', cursor: 'grab', color: '#C4BDB5', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+                          title="按住拖曳可排序"
+                        >
                           <span style={{ transform: 'rotate(90deg)', letterSpacing: '2px', fontWeight: 'bold', fontSize: '16px', userSelect: 'none' }}>|||</span>
                         </div>
                         <div style={{ padding: '32px 24px 24px 24px' }}>
                           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                             <div style={{ flex: '1 1 200px' }}>
                               {isActive ? (
-                                <input className="form-input" value={field.label} onChange={e => updateFormField(field.id, { label: e.target.value })} placeholder="請輸入問題" style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} />
+                                <>
+                                  <input className="form-input" value={field.label} onChange={e => updateFormField(field.id, { label: e.target.value })} placeholder={field.type === 'section' ? '標題（選填）' : '請輸入問題'} style={{ fontSize: '16px', fontWeight: 'bold', padding: '12px', width: '100%', background: '#F9F9F9', border: 'none', borderBottom: '2px solid #5D4A3E', borderRadius: '4px 4px 0 0' }} />
+                                  {field.type !== 'section' && (
+                                    <input className="form-input" value={field.hint || ''} onChange={e => updateFormField(field.id, { hint: e.target.value })} placeholder="問題說明（選填）" style={{ fontSize: '13px', color: '#7A7269', padding: '6px 12px', width: '100%', background: 'transparent', border: 'none', borderBottom: '1px dashed #DED9D3', borderRadius: 0, marginTop: '2px', fontWeight: 'normal' }} />
+                                  )}
+                                </>
                               ) : (
-                                <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: '8px' }}>
-                                  {field.label || `未命名問題 ${index + 1}`} {field.required && <span style={{ color: '#EF4444' }}>*</span>}
-                                </div>
+                                <>
+                                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: field.label ? '#333' : '#A0978D', marginBottom: field.hint ? '4px' : '8px' }}>
+                                    {field.type === 'section' ? '📝 ' : ''}{field.label || (field.type === 'section' ? '說明欄' : `未命名問題 ${index + 1}`)} {field.required && field.type !== 'section' && <span style={{ color: '#EF4444' }}>*</span>}
+                                  </div>
+                                  {field.hint && field.type !== 'section' && (
+                                    <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '8px', lineHeight: '1.5' }}>{field.hint}</div>
+                                  )}
+                                </>
                               )}
                             </div>
-                            {isActive && (
+                            {isActive && field.type !== 'section' && (
                               <select className="form-input" value={field.type} onChange={e => updateFormField(field.id, { type: e.target.value as any })} style={{ width: '100%', maxWidth: '160px', fontWeight: 'bold', color: '#5D4A3E' }}>
                                 <option value="text">簡答題</option>
                                 <option value="textarea">詳答題</option>
@@ -557,6 +577,22 @@ export function ShowcaseFormBuilder({
                             )}
                           </div>
                           <div style={{ marginTop: '20px' }}>
+                            {field.type === 'section' && (
+                              isActive ? (
+                                <textarea
+                                  className="form-input"
+                                  value={field.section_text || ''}
+                                  onChange={e => updateFormField(field.id, { section_text: e.target.value })}
+                                  placeholder="在這裡輸入說明文字..."
+                                  rows={4}
+                                  style={{ width: '100%', resize: 'vertical', fontSize: '14px', color: '#5D4A3E', background: '#FAFAFA' }}
+                                />
+                              ) : (
+                                <div style={{ fontSize: '14px', color: '#7A7269', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                  {field.section_text || <span style={{ fontStyle: 'italic', color: '#C4BDB5' }}>（尚未填寫說明文字）</span>}
+                                </div>
+                              )
+                            )}
                             {['text', 'textarea', 'date'].includes(field.type) && (
                               <div style={{ borderBottom: '1px dotted #C4BDB5', width: '100%', maxWidth: '50%', paddingBottom: '8px', color: '#A0978D', fontSize: '14px' }}>
                                 {field.type === 'text' ? '簡答文字' : field.type === 'textarea' ? '詳答文字' : '年 / 月 / 日'}
@@ -595,12 +631,16 @@ export function ShowcaseFormBuilder({
                         </div>
                         {isActive && (
                           <div style={{ borderTop: '1px solid #EAE6E1', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '20px', background: '#FAFAFA', borderRadius: '0 0 12px 12px' }}>
-                            <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除問題">🗑️</button>
-                            <div style={{ width: '1px', height: '24px', background: '#DED9D3' }}></div>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
-                              必填
-                              <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} style={{ width: '16px', height: '16px' }} />
-                            </label>
+                            <button onClick={() => removeFormField(field.id)} style={{ background: 'none', border: 'none', color: '#7A7269', cursor: 'pointer', fontSize: '18px' }} title="刪除">🗑️</button>
+                            {field.type !== 'section' && (
+                              <>
+                                <div style={{ width: '1px', height: '24px', background: '#DED9D3' }}></div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#5D4A3E', fontWeight: 'bold' }}>
+                                  必填
+                                  <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, { required: e.target.checked })} style={{ width: '16px', height: '16px' }} />
+                                </label>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -620,6 +660,7 @@ export function ShowcaseFormBuilder({
                   <button onClick={() => addFormField('radio')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 單選題</button>
                   <button onClick={() => addFormField('checkbox')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 多選題</button>
                   <button onClick={() => addFormField('select')} style={{ padding: '8px 16px', background: '#F4F0EB', border: 'none', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#5D4A3E', fontWeight: 'bold' }}>+ 下拉選單</button>
+                  <button onClick={() => addFormField('section')} style={{ padding: '8px 16px', background: '#EBF2F7', border: '1px dashed #B0C8DC', borderRadius: '20px', fontSize: '14px', cursor: 'pointer', color: '#4A7294', fontWeight: 'bold' }}>📝 說明欄</button>
                 </div>
               </div>
             </div>
@@ -670,21 +711,34 @@ export function ShowcaseFormBuilder({
                   <div style={{ borderTop: '1px solid #EAE6E1', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {formFields.map((field, idx) => (
                       <div key={idx} style={{ background: activeFieldId === field.id ? '#FAFAFA' : 'transparent', padding: activeFieldId === field.id ? '12px' : '0', borderRadius: '8px', transition: 'all 0.2s' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '10px' }}>
-                          {field.label || `未命名問題 ${idx+1}`} {field.required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
-                        </div>
-                        {field.type === 'text' && <input className="form-input" disabled placeholder="您的回答" style={{ background: '#FFF' }} />}
-                        {field.type === 'textarea' && <textarea className="form-input" disabled placeholder="您的回答" rows={3} style={{ background: '#FFF' }} />}
-                        {field.type === 'select' && <select className="form-input" disabled style={{ background: '#FFF' }}><option>請選擇</option></select>}
-                        {field.type === 'date' && <input type="date" className="form-input" disabled style={{ background: '#FFF' }} />}
-                        {['radio', 'checkbox'].includes(field.type) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {(field.options?.length ? field.options : ['選項']).map((opt, i) => (
-                              <label key={i} style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type={field.type} disabled style={{ width: '16px', height: '16px' }} /> {opt}
-                              </label>
-                            ))}
+                        {field.type === 'section' ? (
+                          <div style={{ borderTop: idx > 0 ? '1px solid #EAE6E1' : 'none', paddingTop: idx > 0 ? '16px' : '0', marginBottom: '4px' }}>
+                            {field.label && <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '6px' }}>{field.label}</div>}
+                            {field.section_text && <div style={{ fontSize: '13px', color: '#7A7269', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{field.section_text}</div>}
+                            {!field.label && !field.section_text && <div style={{ fontSize: '13px', color: '#C4BDB5', fontStyle: 'italic' }}>（說明欄內容預覽）</div>}
                           </div>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: field.hint ? '4px' : '10px' }}>
+                              {field.label || `未命名問題 ${idx+1}`} {field.required && <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>}
+                            </div>
+                            {field.hint && (
+                              <div style={{ fontSize: '12px', color: '#A0978D', marginBottom: '10px', lineHeight: '1.5' }}>{field.hint}</div>
+                            )}
+                            {field.type === 'text' && <input className="form-input" disabled placeholder="您的回答" style={{ background: '#FFF' }} />}
+                            {field.type === 'textarea' && <textarea className="form-input" disabled placeholder="您的回答" rows={3} style={{ background: '#FFF' }} />}
+                            {field.type === 'select' && <select className="form-input" disabled style={{ background: '#FFF' }}><option>請選擇</option></select>}
+                            {field.type === 'date' && <input type="date" className="form-input" disabled style={{ background: '#FFF' }} />}
+                            {['radio', 'checkbox'].includes(field.type) && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {(field.options?.length ? field.options : ['選項']).map((opt, i) => (
+                                  <label key={i} style={{ fontSize: '14px', color: '#5D4A3E', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input type={field.type} disabled style={{ width: '16px', height: '16px' }} /> {opt}
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}
