@@ -346,7 +346,7 @@ export function Settings() {
                     >
                       {item.label}
                       {item.id === 'notification_settings' && !notifyConfig.notification_email && (
-                        <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                        <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }}>★ 記得填寫email</span>
                       )}
                       {isLocked && '[鎖定]'}
                     </button>
