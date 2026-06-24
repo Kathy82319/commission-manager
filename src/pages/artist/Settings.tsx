@@ -339,12 +339,16 @@ export function Settings() {
                 {group.items.map((item: MenuItem) => {
                   const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
                   return (
-                    <button 
-                      key={item.id} 
-                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`} 
+                    <button
+                      key={item.id}
+                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
                       onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
                     >
-                      {item.label} {isLocked && '[鎖定]'}
+                      {item.label}
+                      {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                        <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                      )}
+                      {isLocked && '[鎖定]'}
                     </button>
                   );
                 })}
@@ -389,12 +393,16 @@ export function Settings() {
               {group.items.map((item: MenuItem) => {
                 const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
                 return (
-                  <button 
-                    key={item.id} 
-                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`} 
+                  <button
+                    key={item.id}
+                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
                     onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
                   >
-                    {item.label} {isLocked && '[鎖定]'}
+                    {item.label}
+                    {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                      <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                    )}
+                    {isLocked && '[鎖定]'}
                   </button>
                 );
               })}

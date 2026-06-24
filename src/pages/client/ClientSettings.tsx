@@ -130,7 +130,12 @@ export function ClientSettings() {
           </button>
           <div className={`mobile-nav-dropdown ${isMobileMenuOpen ? 'open' : ''}`}>
             {menuItems.map(item => (
-              <button key={item.id} className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}>{item.label}</button>
+              <button key={item.id} className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}>
+                {item.label}
+                {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                  <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                )}
+              </button>
             ))}
           </div>
         </div>
@@ -139,7 +144,12 @@ export function ClientSettings() {
           <div className="sidebar-title">帳號設定</div>
           <div className="sidebar-group">
             {menuItems.map(item => (
-              <button key={item.id} className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} onClick={() => setActiveTab(item.id)}>{item.label}</button>
+              <button key={item.id} className={`tab-btn ${activeTab === item.id ? 'active' : ''}`} onClick={() => setActiveTab(item.id)}>
+                {item.label}
+                {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                  <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                )}
+              </button>
             ))}
           </div>
           <div className="upgrade-card-container">
