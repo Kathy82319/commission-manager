@@ -15,6 +15,9 @@ export function BasicInfoTab({ formData, setFormData, settings, setSettings }: P
   const [socialPlatform, setSocialPlatform] = useState('Facebook');
   const [socialUrl, setSocialUrl] = useState('');
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingPlatform, setEditingPlatform] = useState('');
+  const [editingUrl, setEditingUrl] = useState('');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   useEffect(() => {
@@ -164,37 +167,89 @@ export function BasicInfoTab({ formData, setFormData, settings, setSettings }: P
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {settings.social_links.map((link, i) => (
-            <div 
-              key={i} 
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                padding: '12px 16px', 
-                background: '#FAFAFA', 
-                borderRadius: '8px', 
-                border: '1px solid #EAE6E1' 
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 16px',
+                background: '#FAFAFA',
+                borderRadius: '8px',
+                border: editingIndex === i ? '1px solid #5D4A3E' : '1px solid #EAE6E1',
+                gap: '8px',
+                flexWrap: 'wrap'
               }}
             >
-              <span style={{ fontSize: '14px' }}>
-                <strong style={{ color: '#5D4A3E' }}>{link.platform}:</strong> 
-                <span style={{ color: '#7A7269', marginLeft: '8px' }}>{link.url}</span>
-              </span>
-              <button 
-                onClick={() => setSettings(prev => ({ 
-                  ...prev, 
-                  social_links: prev.social_links.filter((_, idx) => idx !== i) 
-                }))} 
-                style={{ 
-                  color: '#A05C5C', 
-                  border: 'none', 
-                  background: 'none', 
-                  cursor: 'pointer', 
-                  fontWeight: 'bold' 
-                }}
-              >
-                移除
-              </button>
+              {editingIndex === i ? (
+                <>
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, flexWrap: 'wrap' }}>
+                    <select
+                      className="form-input"
+                      value={editingPlatform}
+                      onChange={e => setEditingPlatform(e.target.value)}
+                      style={{ width: 'auto', minWidth: '140px' }}
+                    >
+                      {['Facebook', 'Plurk', 'Twitter / X', 'Threads', 'Instagram', '個人網站'].map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    <input
+                      className="form-input"
+                      value={editingUrl}
+                      onChange={e => setEditingUrl(e.target.value)}
+                      placeholder="網址..."
+                      style={{ flex: 1, minWidth: '180px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <button
+                      onClick={() => {
+                        if (!editingUrl.trim()) return;
+                        setSettings(prev => {
+                          const updated = [...prev.social_links];
+                          updated[i] = { platform: editingPlatform, url: editingUrl };
+                          return { ...prev, social_links: updated };
+                        });
+                        setEditingIndex(null);
+                      }}
+                      style={{ padding: '6px 14px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                    >
+                      儲存
+                    </button>
+                    <button
+                      onClick={() => setEditingIndex(null)}
+                      style={{ padding: '6px 14px', background: 'none', color: '#7A7269', border: '1px solid #D1C9C2', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '14px', flex: 1 }}>
+                    <strong style={{ color: '#5D4A3E' }}>{link.platform}:</strong>
+                    <span style={{ color: '#7A7269', marginLeft: '8px' }}>{link.url}</span>
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <button
+                      onClick={() => { setEditingIndex(i); setEditingPlatform(link.platform); setEditingUrl(link.url); }}
+                      style={{ color: '#5D4A3E', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      編輯
+                    </button>
+                    <button
+                      onClick={() => setSettings(prev => ({
+                        ...prev,
+                        social_links: prev.social_links.filter((_, idx) => idx !== i)
+                      }))}
+                      style={{ color: '#A05C5C', border: 'none', background: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      移除
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
