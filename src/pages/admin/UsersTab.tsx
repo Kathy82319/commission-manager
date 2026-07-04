@@ -299,10 +299,24 @@ export function UsersTab() {
       {/* ── 分頁 ── */}
       <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#6B7280', fontSize: '14px', padding: '0 8px' }}>
         <span>📊 共 <b style={{ color: '#111827' }}>{total}</b> 筆　{selectedIds.size > 0 && <span style={{ color: '#2563EB', fontWeight: 'bold' }}>已選 {selectedIds.size} 人</span>}</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ ...btnStyle, opacity: page === 1 ? 0.5 : 1 }}>上一頁</button>
-          <div style={{ padding: '8px 16px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', fontWeight: 'bold', color: '#2563EB' }}>{page}</div>
-          <button disabled={dataList.length < 20} onClick={() => setPage(p => p + 1)} style={{ ...btnStyle, opacity: dataList.length < 20 ? 0.5 : 1 }}>下一頁</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              style={{
+                ...btnStyle,
+                minWidth: '40px',
+                backgroundColor: p === page ? '#2563EB' : '#FFF',
+                color: p === page ? '#FFF' : '#374151',
+                cursor: p === page ? 'default' : 'pointer',
+              }}
+            >
+              {p}
+            </button>
+          ))}
+          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={{ ...btnStyle, opacity: page >= totalPages ? 0.5 : 1 }}>下一頁</button>
         </div>
       </div>
 
