@@ -12,9 +12,19 @@ export const adminController = {
     return null;
   },
 
+  async expireStalePlans(env: Env): Promise<void> {
+    await env.commission_db.prepare(`
+      UPDATE Users SET plan_type = 'free'
+      WHERE (plan_type = 'pro' AND pro_expires_at IS NOT NULL AND pro_expires_at < datetime('now'))
+         OR (plan_type = 'trial' AND trial_end_at IS NOT NULL AND trial_end_at < datetime('now'))
+    `).run();
+  },
+
   async getDashboardStats(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
+
+    await this.expireStalePlans(env);
 
     const { results: userStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, plan_type FROM Users GROUP BY plan_type").all();
     const { results: newUsers } = await env.commission_db.prepare("SELECT COUNT(*) as total FROM Users WHERE created_at >= date('now', 'start of month')").all();
@@ -39,6 +49,8 @@ export const adminController = {
   async getUsers(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
     const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
     if (adminCheck) return adminCheck;
+
+    await this.expireStalePlans(env);
 
     const url = new URL(request.url);
     const search = url.searchParams.get('search') || '';
