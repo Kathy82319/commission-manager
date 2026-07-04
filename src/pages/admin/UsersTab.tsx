@@ -6,6 +6,7 @@ export function UsersTab() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(20);
   const [myId, setMyId] = useState('');
 
   // 單筆管理 modal
@@ -37,7 +38,10 @@ export function UsersTab() {
     try {
       const res = await apiClient.get(`/api/admin/users?search=${search}&page=${page}`);
       setDataList(res.data);
-      if (res.pagination) setTotal(res.pagination.total);
+      if (res.pagination) {
+        setTotal(res.pagination.total);
+        setLimit(res.pagination.limit || 20);
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -158,6 +162,7 @@ export function UsersTab() {
 
   const allSelected = dataList.length > 0 && selectedIds.size === dataList.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
     <div style={{ paddingBottom: selectedIds.size > 0 ? '90px' : '0' }}>
