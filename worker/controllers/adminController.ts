@@ -31,18 +31,44 @@ export const adminController = {
     const { results: commStats } = await env.commission_db.prepare("SELECT COUNT(*) as total, status FROM Commissions GROUP BY status").all();
     
     const { results: pendingReports } = await env.commission_db.prepare(`
-      SELECT COUNT(*) as total FROM Bulletins b 
+      SELECT COUNT(*) as total FROM Bulletins b
       WHERE b.status = 'hidden_under_review' OR (SELECT COUNT(*) FROM Reports r WHERE r.bulletin_id = b.id) > 0
     `).all();
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      data: { 
-        users: userStats, 
-        new_users_this_month: newUsers[0]?.total || 0, 
+    const { results: paymentTotal } = await env.commission_db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) as total_amount, COUNT(*) as total_count
+      FROM PaymentOrders WHERE status = 'paid'
+    `).all();
+
+    const { results: paymentThisMonth } = await env.commission_db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) as total_amount, COUNT(*) as total_count
+      FROM PaymentOrders WHERE status = 'paid' AND pay_time >= date('now', 'start of month')
+    `).all();
+
+    const { results: recentPayments } = await env.commission_db.prepare(`
+      SELECT p.amount, p.plan_type, p.pay_time, p.trade_no, u.display_name, u.public_id
+      FROM PaymentOrders p
+      LEFT JOIN Users u ON p.user_id = u.id
+      WHERE p.status = 'paid'
+      ORDER BY p.pay_time DESC
+      LIMIT 10
+    `).all();
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        users: userStats,
+        new_users_this_month: newUsers[0]?.total || 0,
         commissions: commStats,
-        pending_reports_count: pendingReports[0]?.total || 0
-      } 
+        pending_reports_count: pendingReports[0]?.total || 0,
+        payments: {
+          total_amount: paymentTotal[0]?.total_amount || 0,
+          total_count: paymentTotal[0]?.total_count || 0,
+          month_amount: paymentThisMonth[0]?.total_amount || 0,
+          month_count: paymentThisMonth[0]?.total_count || 0,
+          recent: recentPayments
+        }
+      }
     }), { status: 200, headers: corsHeaders });
   },
 
