@@ -18,6 +18,7 @@ export interface ProfileSettings {
   secondary_color?: string;
   theme_mode?: 'light' | 'dark';
   gradient_direction?: string;
+  showcase_label?: string;
   show_favorite_count?: boolean;
   portfolio_layout?: 'grid' | 'masonry';
   portfolio_blurred?: boolean;

@@ -1,6 +1,6 @@
 // src/pages/artist/Settings/ShowcaseTab.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { QuotaInfo } from '../Settings/types';
+import type { QuotaInfo, ProfileSettings } from '../Settings/types';
 import { ShowcaseFormBuilder, type ShowcaseItem } from '../../../components/ShowcaseFormBuilder';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
@@ -11,9 +11,12 @@ interface ShowcaseTabProps {
   quotaInfo: QuotaInfo | null;
   isReadOnly?: boolean;
   portfolio?: string[];
+  settings: ProfileSettings;
+  setSettings: React.Dispatch<React.SetStateAction<ProfileSettings>>;
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [] }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings }: ShowcaseTabProps) {
+  const showcaseLabel = settings.showcase_label || '接委託區';
   const [items, setItems] = useState<ShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -370,9 +373,21 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
         }
       </div>
 
+      <div style={{ background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <label style={{ fontWeight: 'bold', color: '#5D4A3E', fontSize: '14px' }}>分頁名稱</label>
+        <input
+          className="form-input"
+          value={settings.showcase_label || ''}
+          onChange={e => setSettings(prev => ({ ...prev, showcase_label: e.target.value }))}
+          placeholder="接委託區"
+          style={{ width: '200px' }}
+        />
+        <span style={{ fontSize: '12px', color: '#A0978D' }}>此名稱會同步顯示在設定選單、分頁排序與個人公開頁面的分頁標籤上</span>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0 }}>
-          接委託區管理 
+          {showcaseLabel}管理
           <span style={{ fontSize: '13px', color: '#A0978D', marginLeft: '12px', fontWeight: 'normal' }}>
             ({items.length} / {limit})
           </span>

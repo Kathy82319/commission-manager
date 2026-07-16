@@ -292,7 +292,7 @@ return {
       if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
       if (!isHidden('queue') && settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: '排單狀況' });
     }
-    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: '接委託展示區' });
+    if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: settings?.showcase_label || '接委託展示區' });
     if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
     if (!isHidden('reviews') && publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
@@ -673,7 +673,7 @@ return {
           className="mobile-showcase-fab"
           onClick={() => { handleTabChange('showcase'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         >
-          <PenTool size={16} /> 接委託
+          <PenTool size={16} /> {settings?.showcase_label || '接委託'}
         </button>
       )}
 

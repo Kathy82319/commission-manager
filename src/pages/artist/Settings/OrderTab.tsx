@@ -32,7 +32,7 @@ export function OrderTab({ settings, setSettings }: Props) {
   const allPossibleTabs = [
     { id: 'portfolio', label: '作品展示' },
     { id: 'detailed_intro', label: '詳細介紹' },
-    { id: 'showcase', label: '接委託區' },
+    { id: 'showcase', label: settings.showcase_label || '接委託區' },
     { id: 'queue', label: '排單狀況' },
     { id: 'reviews', label: '精選評價' } 
   ];

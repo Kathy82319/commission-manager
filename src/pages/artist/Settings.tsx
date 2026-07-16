@@ -32,6 +32,7 @@ export interface CompleteSettings {
   background_color: string;
   gradient_direction: string;
   theme_mode: string;
+  showcase_label: string;
   bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
   question_template: string;
   queue_settings: QueueSettings;
@@ -112,9 +113,10 @@ export function Settings() {
     splash_duration: 2, 
     splash_text: '',
     layout_type: 'blog', 
-    background_color: '', 
+    background_color: '',
     gradient_direction: '',
     theme_mode: '',
+    showcase_label: '',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
@@ -148,7 +150,7 @@ export function Settings() {
         { id: 'queue_settings', label: '排單表顯示設定' },
         { id: 'detailed_intro', label: '詳細介紹' },
         { id: 'portfolio', label: '作品展示區' },
-        { id: 'showcase', label: '接委託區' },
+        { id: 'showcase', label: settings.showcase_label || '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
         { id: 'bulletin_settings', label: '許願池投遞履歷管理' },
         { id: 'reviews', label: '精選評價管理' },
@@ -479,7 +481,7 @@ export function Settings() {
               />
             )}
 
-            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} />}
+            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
           </div>
 
