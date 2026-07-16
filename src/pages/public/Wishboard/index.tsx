@@ -387,7 +387,7 @@ export const Wishboard: React.FC = () => {
           <span>
             ⭐ <strong>免費版額度提醒：</strong>本月發佈接委託 ({wishQuota.offer_used}/{wishQuota.offer_max}) | 投遞徵委託 ({wishQuota.request_inquire_used}/{wishQuota.request_inquire_max})
           </span>
-          <button onClick={() => navigate('/artist/settings?tab=subscription')} className="wishboard-quota-btn">
+          <button onClick={() => navigate('/artist/subscription')} className="wishboard-quota-btn">
             升級專業版解鎖限制
           </button>
         </div>

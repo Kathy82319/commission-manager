@@ -158,6 +158,7 @@ export function ArtistLayout() {
     { path: '/artist/customers', label: '名單管理' },
     { path: '/artist/records', label: '結案紀錄' },
     { path: '/artist/settings', label: '個人設定' },
+    { path: '/artist/subscription', label: '訂閱方案' },
   ];
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#A0978D' }}>驗證身分中...</div>;
@@ -318,7 +319,7 @@ export function ArtistLayout() {
                     <div style={{ fontSize: '14px', fontWeight: 'bold' }}>⚠️ 您的 {artist.plan_type === 'trial' ? '專業版試用期' : '專業版 Pro 訂閱'} 即將到期！</div>
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>截止日：{formatDate(artist.plan_type === 'trial' ? artist.trial_end_at : artist.pro_expires_at)} (剩餘 {daysRemaining} 天)</div>
                   </div>
-                  <button onClick={() => navigate('/artist/settings')} className="renew-plan-btn">立即查看續費方案</button>
+                  <button onClick={() => navigate('/artist/subscription')} className="renew-plan-btn">立即查看續費方案</button>
                 </div>
               )}
               <Outlet />

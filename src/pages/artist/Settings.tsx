@@ -5,7 +5,6 @@ import { BasicInfoTab } from './Settings/BasicInfoTab';
 import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
 import { SplashTab } from './Settings/SplashTab';
-import { SubscriptionTab } from './Settings/SubscriptionTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
@@ -16,7 +15,7 @@ import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import '../../styles/Settings.css';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export interface CompleteSettings {
   portfolio: string[];
@@ -69,7 +68,8 @@ interface MenuCategory {
 
 export function Settings() {
   const location = useLocation();
-  
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
     return params.get('tab') || 'profile_basic';
@@ -151,9 +151,8 @@ export function Settings() {
         { id: 'showcase', label: '接委託區' },
         { id: 'rules', label: '委託協議書範本' },
         { id: 'bulletin_settings', label: '許願池投遞履歷管理' },
-        { id: 'reviews', label: '精選評價管理' }, 
+        { id: 'reviews', label: '精選評價管理' },
     ]},
-    { title: '訂閱方案', items: [{ id: 'subscription', label: '方案查看與升級' }] }
   ];
 
   const menuGroups = useMemo(() => {
@@ -301,7 +300,7 @@ export function Settings() {
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
   const freeAllowedTabs = [
-    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'rules', 'subscription', 
+    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'rules',
     'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
   ];
   
@@ -445,7 +444,7 @@ export function Settings() {
               <div className="lock-card">
                 <div className="lock-icon">[鎖定]</div>
                 <h4>此功能僅限專業版</h4>
-                <button onClick={() => setActiveTab('subscription')}>查看方案</button>
+                <button onClick={() => navigate('/artist/subscription')}>查看方案</button>
               </div>
             </div>
           )}
@@ -482,7 +481,6 @@ export function Settings() {
 
             {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
-            {activeTab === 'subscription' && <SubscriptionTab quotaInfo={quotaInfo} fetchUserData={fetchUserData} onToast={showToast} />}
           </div>
 
           {!shouldHideGlobalSave && (

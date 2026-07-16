@@ -15,6 +15,7 @@ import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
+import { Subscription } from './pages/artist/Subscription';
 import { Customers } from './pages/artist/Customers'; 
 import { CustomerDetail } from './pages/artist/CustomerDetail'; 
 
@@ -62,7 +63,8 @@ export function App() {
           <Route path="records" element={<Records />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="settings" element={<Settings />} />
-          
+          <Route path="subscription" element={<Subscription />} />
+
         </Route>
 
         <Route path="/client" element={<ClientLayout />}>
@@ -81,7 +83,7 @@ export function App() {
         <Route path="/workspace/:id" element={<Workspace />} />
 
         <Route element={<PublicLayout />}>
-          <Route path="/payment/result" element={<Navigate to="/artist/settings?payment=success" replace />} />
+          <Route path="/payment/result" element={<Navigate to="/artist/subscription?payment=success" replace />} />
           <Route path="/" element={<Home />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/guide" element={<Guide />} />
