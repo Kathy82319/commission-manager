@@ -42,7 +42,9 @@ export function ThemeTab({ settings, setSettings }: Props) {
         </div>
 
         <div style={{ flex: 1, minWidth: '260px', backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
-          <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>第二個漸層色</label>
+          <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>
+            第二個漸層色 <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#999' }}>（不勾選則維持原本的預設漸層效果）</span>
+          </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: hasCustomSecondary ? '16px' : '0' }}>
             <input
               type="checkbox"
@@ -51,7 +53,7 @@ export function ThemeTab({ settings, setSettings }: Props) {
               onChange={e => updateTheme({ secondary_color: e.target.checked ? (settings.background_color || '#F4F0EB') : undefined })}
               style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
-            <label htmlFor="custom-secondary-color" style={{ cursor: 'pointer' }}>自訂雙色漸層（不勾選則維持原本的預設漸層效果）</label>
+            <label htmlFor="custom-secondary-color" style={{ cursor: 'pointer' }}>自訂雙色漸層</label>
           </div>
           {hasCustomSecondary && (
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
