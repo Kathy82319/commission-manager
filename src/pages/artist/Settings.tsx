@@ -95,6 +95,7 @@ export function Settings() {
   });
 
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
+  const [showcaseCount, setShowcaseCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
@@ -299,6 +300,23 @@ export function Settings() {
     });
   };
 
+  const quotaBannerText = useMemo(() => {
+    if (activeTab === 'portfolio') {
+      const limit = quotaInfo?.plan_type === 'pro' ? 30 : quotaInfo?.plan_type === 'trial' ? 20 : 15;
+      return quotaInfo?.plan_type === 'free'
+        ? `📢 目前您的方案僅公開前 15 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${limit})`
+        : `📢 您的作品將在個人頁面完整公開展示。 (目前已上傳: ${settings.portfolio.length} / 配額: ${limit})`;
+    }
+    if (activeTab === 'showcase') {
+      const limit = quotaInfo?.plan_type === 'pro' ? 30 : quotaInfo?.plan_type === 'trial' ? 20 : 3;
+      const label = settings.showcase_label || '接委託';
+      return quotaInfo?.plan_type === 'free'
+        ? `📢 目前您的方案可建立最多 ${limit} 項${label}項目。 (目前數量: ${showcaseCount} / 配額: ${limit})`
+        : `📢 您的項目將在個人分頁完整公開展示。 (目前數量: ${showcaseCount} / 配額: ${limit})`;
+    }
+    return null;
+  }, [activeTab, quotaInfo, settings.portfolio.length, settings.showcase_label, showcaseCount]);
+
   const isFreePlan = quotaInfo?.plan_type === 'free';
   
   const freeAllowedTabs = [
@@ -432,10 +450,12 @@ export function Settings() {
         </aside>
 
         <div className="settings-content-area">
-          <div className="settings-header">
-            
+          <div className="settings-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
+            {quotaBannerText && (
+              <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
+            )}
             {['showcase', 'portfolio', 'detailed_intro', 'rules', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
-              <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle">
+              <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle" style={{ marginLeft: 'auto' }}>
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
             )}
@@ -481,7 +501,7 @@ export function Settings() {
               />
             )}
 
-            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} />}
+            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} onItemCountChange={setShowcaseCount} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
           </div>
 

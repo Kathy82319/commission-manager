@@ -141,13 +141,6 @@ export function PortfolioTab({ formData, settings, setSettings, quotaInfo }: Pro
         </label>
       </div>
 
-      <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
-        {quotaInfo?.plan_type === 'free' 
-          ? `📢 目前您的方案僅公開前 15 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
-          : `📢 您的作品將在個人頁面完整公開展示。 (目前已上傳: ${settings.portfolio.length} / 配額: ${portfolioLimit})`
-        }
-      </div>
-
       <div style={{ backgroundColor: '#FAFAFA', padding: '20px', borderRadius: '12px', border: '1px dashed #DED9D3' }}>
         <ImageUploader
           onUpload={handlePortfolioUpload}

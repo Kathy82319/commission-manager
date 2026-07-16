@@ -13,9 +13,10 @@ interface ShowcaseTabProps {
   portfolio?: string[];
   settings: ProfileSettings;
   setSettings: React.Dispatch<React.SetStateAction<ProfileSettings>>;
+  onItemCountChange?: (count: number) => void;
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings, onItemCountChange }: ShowcaseTabProps) {
   const showcaseLabel = settings.showcase_label || '接委託區';
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [items, setItems] = useState<ShowcaseItem[]>([]);
@@ -84,6 +85,8 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
   }, [API_BASE, onToast]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
+
+  useEffect(() => { onItemCountChange?.(items.length); }, [items.length, onItemCountChange]);
 
   useEffect(() => {
     onToggleGlobalSave(isFormOpen);
@@ -367,13 +370,6 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ padding: '16px', background: '#FDF4E6', border: '1px solid #F5E6D3', borderRadius: '12px', color: '#A67B3E', fontSize: '14px', fontWeight: 'bold' }}>
-        {quotaInfo?.plan_type === 'free' 
-          ? `📢 目前您的方案可建立最多 ${limit} 項接委託項目。 (目前數量: ${items.length} / 配額: ${limit})`
-          : `📢 您的項目將在個人分頁完整公開展示。 (目前數量: ${items.length} / 配額: ${limit})`
-        }
-      </div>
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isEditingLabel ? (
