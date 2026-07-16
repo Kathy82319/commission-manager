@@ -267,23 +267,10 @@
     cursor: pointer;
   }
 
+  /* 手機版：這排改在 .profile-main-content 頂部用 .mobile-sticky-nav 呈現(見 PublicProfile.css),
+     這裡的原始版本隱藏,避免手機上重複出現兩排分頁按鈕。 */
   .sidebar-nav {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 10px 24px;
-    gap: 10px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin: 0 -24px 0px -24px !important;
-    position: sticky;
-    top: 0;
-    z-index: 500;
-    background: var(--sticky-nav-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--sticky-nav-border);
+    display: none;
   }
 
   .sidebar-nav::-webkit-scrollbar { display: none; }
@@ -303,5 +290,4 @@
   .profile-name { font-size: 18px; }
   .social-icon { width: 28px; height: 28px; }
   .sidebar-bottom { padding: 12px 16px 0px 16px !important; }
-  .sidebar-nav { margin: 0 -16px 0px -16px !important; padding: 10px 16px; }
 }

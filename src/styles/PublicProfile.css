@@ -63,6 +63,29 @@
 }
 
 /* ==========================================================================
+   手機版：分頁按鈕列吸頂(放在 .profile-main-content 頂部,
+   容器夠高才能在滑動所有分頁內容時持續吸頂;背景沿用繪師自訂的 background_color)
+   ========================================================================== */
+.mobile-sticky-nav { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-sticky-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    margin: 0 -16px;
+    padding: 10px 16px;
+  }
+  .mobile-sticky-nav::-webkit-scrollbar { display: none; }
+}
+
+/* ==========================================================================
    手機版：捷徑跳轉到「接單中」分頁的懸浮按鈕
    ========================================================================== */
 .mobile-showcase-fab {

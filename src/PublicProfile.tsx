@@ -443,10 +443,18 @@ return {
           artist={artist} settings={settings} textColor={textColor} borderColor={borderColor}
           availableTabs={availableTabs} currentTab={currentTab} onTabChange={handleTabChange}
           viewerId={viewerId} relationStatus={relationStatus} isViewerLoading={isViewerLoading}
-          onToggleRelation={handleToggleRelation} isDarkText={isDarkText}
+          onToggleRelation={handleToggleRelation}
         />
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
+          <nav className="mobile-sticky-nav" style={{ background: settings?.background_color || '#041b35', borderBottom: `1px solid ${borderColor}` }}>
+            {availableTabs.map((tab: any) => (
+              <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
             <div className="tab-content-area">
               
