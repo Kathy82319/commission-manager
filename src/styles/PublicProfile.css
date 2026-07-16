@@ -87,8 +87,6 @@
     z-index: 500;
     margin: 0 -16px;
     padding: 10px 16px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
   }
   .mobile-sticky-nav::-webkit-scrollbar { display: none; }
 }
