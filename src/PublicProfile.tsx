@@ -10,10 +10,20 @@ import './styles/PublicProfile.css';
 import './components/PublicProfile/styles/ShowcaseGrid.css'; 
 
 const decodeHTML = (html?: string) => {
-  if (!html || typeof html !== 'string') return ''; 
+  if (!html || typeof html !== 'string') return '';
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
+};
+
+const hexToRgba = (hex?: string, alpha = 1) => {
+  const clean = (hex || '#041b35').replace('#', '');
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const bigint = parseInt(full, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 export function PublicProfile() {
@@ -447,7 +457,7 @@ return {
         />
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
-          <nav className="mobile-sticky-nav">
+          <nav className="mobile-sticky-nav" style={{ background: hexToRgba(settings?.background_color, 0.6), borderBottom: `1px solid ${borderColor}` }}>
             {availableTabs.map((tab: any) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
                 {tab.label}
