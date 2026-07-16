@@ -7,7 +7,8 @@ interface Props {
 }
 
 export function ThemeTab({ settings, setSettings }: Props) {
-  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, #b5d4f84b)`;
+  const previewBackground = `linear-gradient(${settings.gradient_direction || 'to bottom right'}, ${settings.background_color || '#F4F0EB'}, ${settings.secondary_color || '#00000015'})`;
+  const hasCustomSecondary = !!settings.secondary_color;
 
   const updateTheme = (updates: Partial<ProfileSettings>) => {
     setSettings(prev => ({
@@ -37,6 +38,37 @@ export function ThemeTab({ settings, setSettings }: Props) {
             style={{ width: '120px' }}
           />
         </div>
+      </div>
+
+      <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>
+        <label className="form-label" style={{ display: 'block', marginBottom: '12px', fontWeight: 'bold' }}>第二個漸層色</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: hasCustomSecondary ? '16px' : '0' }}>
+          <input
+            type="checkbox"
+            id="custom-secondary-color"
+            checked={hasCustomSecondary}
+            onChange={e => updateTheme({ secondary_color: e.target.checked ? (settings.background_color || '#F4F0EB') : undefined })}
+            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+          />
+          <label htmlFor="custom-secondary-color" style={{ cursor: 'pointer' }}>自訂雙色漸層（不勾選則維持原本的預設漸層效果）</label>
+        </div>
+        {hasCustomSecondary && (
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <input
+              type="color"
+              value={settings.secondary_color || '#F4F0EB'}
+              onChange={e => updateTheme({ secondary_color: e.target.value })}
+              style={{ width: '50px', height: '50px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+            />
+            <input
+              className="form-input"
+              value={settings.secondary_color || ''}
+              onChange={e => updateTheme({ secondary_color: e.target.value })}
+              placeholder="#HEXCODE"
+              style={{ width: '120px' }}
+            />
+          </div>
+        )}
       </div>
 
       <div style={{ backgroundColor: '#FAFAFA', padding: '24px', borderRadius: '12px', border: '1px solid #EAE6E1' }}>

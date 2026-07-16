@@ -93,11 +93,12 @@ export function PublicProfile() {
   };
 
   const backgroundStyle = useMemo(() => {
-    const baseColor = settings?.background_color || '#041b35';    
-    const isGradient = settings?.gradient_enabled !== false;    
+    const baseColor = settings?.background_color || '#041b35';
+    const isGradient = settings?.gradient_enabled !== false;
     if (isGradient) {
       const direction = settings?.gradient_direction || 'to top';
-      return { background: `linear-gradient(${direction}, ${baseColor}, #00000015)`, backgroundAttachment: 'fixed' };
+      const secondaryColor = settings?.secondary_color || '#00000015';
+      return { background: `linear-gradient(${direction}, ${baseColor}, ${secondaryColor})`, backgroundAttachment: 'fixed' };
     }
     return { background: baseColor, backgroundAttachment: 'fixed' };
   }, [settings]);
