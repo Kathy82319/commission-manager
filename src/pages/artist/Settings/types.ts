@@ -19,6 +19,10 @@ export interface ProfileSettings {
   theme_mode?: 'light' | 'dark';
   gradient_direction?: string;
   showcase_label?: string;
+  portfolio_label?: string;
+  detailed_intro_label?: string;
+  queue_label?: string;
+  reviews_label?: string;
   show_favorite_count?: boolean;
   portfolio_layout?: 'grid' | 'masonry';
   portfolio_blurred?: boolean;

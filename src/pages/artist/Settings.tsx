@@ -16,6 +16,15 @@ import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
+
+const RENAMABLE_TABS: Record<string, { field: keyof CompleteSettings; label: string }> = {
+  portfolio: { field: 'portfolio_label', label: '作品展示區' },
+  detailed_intro: { field: 'detailed_intro_label', label: '詳細介紹' },
+  queue_settings: { field: 'queue_label', label: '排單表顯示設定' },
+  showcase: { field: 'showcase_label', label: '接委託區' },
+  reviews: { field: 'reviews_label', label: '精選評價管理' },
+};
 
 export interface CompleteSettings {
   portfolio: string[];
@@ -33,6 +42,10 @@ export interface CompleteSettings {
   gradient_direction: string;
   theme_mode: string;
   showcase_label: string;
+  portfolio_label: string;
+  detailed_intro_label: string;
+  queue_label: string;
+  reviews_label: string;
   bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
   question_template: string;
   queue_settings: QueueSettings;
@@ -101,6 +114,8 @@ export function Settings() {
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
   const [hasOC, setHasOC] = useState<boolean>(false);
+  const [isEditingTabLabel, setIsEditingTabLabel] = useState(false);
+  useEffect(() => { setIsEditingTabLabel(false); }, [activeTab]);
 
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [], 
@@ -118,6 +133,10 @@ export function Settings() {
     gradient_direction: '',
     theme_mode: '',
     showcase_label: '',
+    portfolio_label: '',
+    detailed_intro_label: '',
+    queue_label: '',
+    reviews_label: '',
     bulletin_card: { specialties: '', no_gos: '', payment_methods: '', price_list: '' },
     question_template: '',
     queue_settings: { enabled: false, show_client_name: true, show_client_id: false, show_project_name: true, show_artist_note: false },
@@ -147,14 +166,16 @@ export function Settings() {
         { id: 'theme', label: '背景與版型設定' },
         { id: 'splash', label: '開場動畫設定' }
     ]},
-    { title: '內容管理', items: [      
-        { id: 'queue_settings', label: '排單表顯示設定' },
-        { id: 'detailed_intro', label: '詳細介紹' },
-        { id: 'portfolio', label: '作品展示區' },
+    { title: '內容管理', items: [
+        { id: 'queue_settings', label: settings.queue_label || '排單表顯示設定' },
+        { id: 'detailed_intro', label: settings.detailed_intro_label || '詳細介紹' },
+        { id: 'portfolio', label: settings.portfolio_label || '作品展示區' },
         { id: 'showcase', label: settings.showcase_label || '接委託區' },
+        { id: 'reviews', label: settings.reviews_label || '精選評價管理' },
+    ]},
+    { title: '其他管理', items: [
         { id: 'rules', label: '委託協議書範本' },
         { id: 'bulletin_settings', label: '許願池投遞履歷管理' },
-        { id: 'reviews', label: '精選評價管理' },
     ]},
   ];
 
@@ -451,9 +472,37 @@ export function Settings() {
 
         <div className="settings-content-area">
           <div className="settings-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
-            {quotaBannerText && (
-              <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              {RENAMABLE_TABS[activeTab] && (
+                isEditingTabLabel ? (
+                  <input
+                    autoFocus
+                    className="form-input"
+                    value={(settings[RENAMABLE_TABS[activeTab].field] as string) || ''}
+                    onChange={e => setSettings(prev => ({ ...prev, [RENAMABLE_TABS[activeTab].field]: e.target.value }))}
+                    onBlur={() => setIsEditingTabLabel(false)}
+                    onKeyDown={e => { if (e.key === 'Enter') setIsEditingTabLabel(false); }}
+                    placeholder={RENAMABLE_TABS[activeTab].label}
+                    style={{ fontSize: '16px', fontWeight: 'bold', padding: '4px 8px', width: '180px' }}
+                  />
+                ) : (
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', color: '#5D4A3E' }}>
+                    {(settings[RENAMABLE_TABS[activeTab].field] as string) || RENAMABLE_TABS[activeTab].label}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTabLabel(true)}
+                      title="重新命名"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', color: '#A0978D' }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </h3>
+                )
+              )}
+              {quotaBannerText && (
+                <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
+              )}
+            </div>
             {['showcase', 'portfolio', 'detailed_intro', 'rules', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle" style={{ marginLeft: 'auto' }}>
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
@@ -501,7 +550,7 @@ export function Settings() {
               />
             )}
 
-            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} onItemCountChange={setShowcaseCount} />}
+            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} onItemCountChange={setShowcaseCount} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
           </div>
 

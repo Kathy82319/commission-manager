@@ -288,14 +288,14 @@ return {
     const isFreePlan = artist?.plan_type === 'free' || !artist?.plan_type;
 
     if (settings) {
-      if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: '作品展示' });
-      if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: '詳細介紹' });
-      if (!isHidden('queue') && settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: '排單狀況' });
+      if (!isHidden('portfolio') && settings.portfolio?.length > 0) tabs.push({ id: 'portfolio', label: settings.portfolio_label || '作品展示' });
+      if (!isHidden('detailed_intro') && settings.detailed_intro) tabs.push({ id: 'detailed_intro', label: settings.detailed_intro_label || '詳細介紹' });
+      if (!isHidden('queue') && settings.queue_settings?.enabled) tabs.push({ id: 'queue', label: settings.queue_label || '排單狀況' });
     }
     if (!isHidden('showcase') && showcaseItems.length > 0) tabs.push({ id: 'showcase', label: settings?.showcase_label || '接委託展示區' });
     if (!isHidden('oc') && publicOCs.length > 0) tabs.push({ id: 'oc', label: '角色設定' });
 
-    if (!isHidden('reviews') && publicReviews.length > 0) tabs.push({ id: 'reviews', label: '精選評價' });
+    if (!isHidden('reviews') && publicReviews.length > 0) tabs.push({ id: 'reviews', label: settings?.reviews_label || '精選評價' });
 
     if (settings && !isFreePlan) {
       if (Array.isArray(settings.custom_sections)) {

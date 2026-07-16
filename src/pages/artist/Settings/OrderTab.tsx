@@ -30,11 +30,11 @@ export function OrderTab({ settings, setSettings }: Props) {
   }, []);
 
   const allPossibleTabs = [
-    { id: 'portfolio', label: '作品展示' },
-    { id: 'detailed_intro', label: '詳細介紹' },
+    { id: 'portfolio', label: settings.portfolio_label || '作品展示' },
+    { id: 'detailed_intro', label: settings.detailed_intro_label || '詳細介紹' },
     { id: 'showcase', label: settings.showcase_label || '接委託區' },
-    { id: 'queue', label: '排單狀況' },
-    { id: 'reviews', label: '精選評價' } 
+    { id: 'queue', label: settings.queue_label || '排單狀況' },
+    { id: 'reviews', label: settings.reviews_label || '精選評價' }
   ];
 
   if (hasOC) {
