@@ -63,6 +63,32 @@
 }
 
 /* ==========================================================================
+   手機版：捷徑跳轉到「接單中」分頁的懸浮按鈕
+   ========================================================================== */
+.mobile-showcase-fab {
+  position: fixed;
+  right: 18px;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 50px;
+  background: #8CB369;
+  color: #12210F;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -6px rgba(140, 179, 105, 0.65), 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 769px) {
+  .mobile-showcase-fab { display: none !important; }
+}
+
+/* ==========================================================================
    2. 開場動畫 (Splash Screen)
    ========================================================================== */
 .splash-screen {

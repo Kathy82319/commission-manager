@@ -27,12 +27,13 @@ interface ProfileSidebarProps {
   relationStatus: 'none' | 'favorite' | 'blacklist';
   isViewerLoading: boolean;
   onToggleRelation: (type: 'favorite' | 'blacklist') => void;
+  isDarkText: boolean;
 }
 
 export function ProfileSidebar({
-  artist, settings, textColor, borderColor, availableTabs, 
-  currentTab, onTabChange, viewerId, relationStatus, 
-  isViewerLoading, onToggleRelation
+  artist, settings, textColor, borderColor, availableTabs,
+  currentTab, onTabChange, viewerId, relationStatus,
+  isViewerLoading, onToggleRelation, isDarkText
 }: ProfileSidebarProps) {
   
   const [isExpanded, setIsExpanded] = useState(false);
@@ -46,8 +47,15 @@ export function ProfileSidebar({
     }
   }, [artist.bio]);
 
+  const stickyNavStyle = {
+    color: textColor,
+    background: 'transparent',
+    '--sticky-nav-bg': isDarkText ? 'rgba(255,255,255,0.72)' : 'rgba(15,15,15,0.55)',
+    '--sticky-nav-border': isDarkText ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)',
+  } as React.CSSProperties;
+
   return (
-    <aside className="profile-sidebar" style={{ color: textColor, background: 'transparent' }}>
+    <aside className="profile-sidebar" style={stickyNavStyle}>
       <div className="sidebar-top">
         <div className="avatar-section">
           {artist.avatar_url ? (

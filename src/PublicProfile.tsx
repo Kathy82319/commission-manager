@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import DOMPurify from 'dompurify'; 
-import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info, Menu, PenTool } from 'lucide-react';
 import { OCDetailCard } from './components/OC/OCDetailCard';
 import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
@@ -59,6 +59,7 @@ export function PublicProfile() {
   const [activeOCId, setActiveOCId] = useState<string | null>(null);
 
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('user_role'); 
@@ -367,6 +368,7 @@ return {
   const borderColor = isDarkText ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
   const sectionBg = isDarkText ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)';
   const badgeBg = isDarkText ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)';
+  const menuItemStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', color: 'inherit', width: '100%' };
 
   return (
     <div className={`public-profile-container theme-${settings?.theme_mode || 'light'}`} style={{ ...backgroundStyle, minHeight: '100vh', position: 'relative' }}>
@@ -385,17 +387,48 @@ return {
         }
       `}</style>
 
-      <div className="profile-top-right-actions" style={{ position: 'absolute', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
-        <button onClick={() => navigate('/')} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>Arti首頁</button>
-        {isLoggedIn ? (
-          <>
-            <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>回到管理後台</button>
-            <button onClick={handleLogout} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>登出</button>
-          </>
-        ) : (
-          <button onClick={() => navigate('/login')} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 18px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>登入 / 註冊</button>
-        )}
-      </div>
+      {!isMobileViewport && (
+        <div className="profile-top-right-actions" style={{ position: 'absolute', top: '20px', right: '24px', zIndex: 9000, display: 'flex', gap: '10px' }}>
+          <button onClick={() => navigate('/')} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>Arti首頁</button>
+          {isLoggedIn ? (
+            <>
+              <button onClick={handleDashboardClick} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 16px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>回到管理後台</button>
+              <button onClick={handleLogout} style={{ backgroundColor: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, padding: '8px 16px', borderRadius: '50px', border: `1px solid ${borderColor}`, cursor: 'pointer', fontSize: '13px', backdropFilter: 'blur(8px)', fontWeight: 'bold' }}>登出</button>
+            </>
+          ) : (
+            <button onClick={() => navigate('/login')} style={{ backgroundColor: isDarkText ? '#1a1a1a' : '#ffffff', color: isDarkText ? '#ffffff' : '#1a1a1a', padding: '8px 18px', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>登入 / 註冊</button>
+          )}
+        </div>
+      )}
+
+      {isMobileViewport && (
+        <div className="profile-top-right-actions" style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 9000 }}>
+          <button
+            onClick={() => setShowMobileMenu(v => !v)}
+            aria-label="選單"
+            style={{ width: '36px', height: '36px', borderRadius: '50%', border: `1px solid ${borderColor}`, background: isDarkText ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.15)', color: textColor, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', cursor: 'pointer' }}
+          >
+            <Menu size={18} />
+          </button>
+
+          {showMobileMenu && (
+            <>
+              <div onClick={() => setShowMobileMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 8999 }} />
+              <div style={{ position: 'absolute', top: '44px', right: 0, minWidth: '168px', background: isDarkText ? '#FFFFFF' : '#1A1A1A', color: textColor, borderRadius: '14px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)', border: `1px solid ${borderColor}`, padding: '6px', display: 'flex', flexDirection: 'column', gap: '2px', zIndex: 9001 }}>
+                <button onClick={() => { setShowMobileMenu(false); navigate('/'); }} style={menuItemStyle}>Arti首頁</button>
+                {isLoggedIn ? (
+                  <>
+                    <button onClick={() => { setShowMobileMenu(false); handleDashboardClick(); }} style={menuItemStyle}>回到管理後台</button>
+                    <button onClick={() => { setShowMobileMenu(false); handleLogout(); }} style={menuItemStyle}>登出</button>
+                  </>
+                ) : (
+                  <button onClick={() => { setShowMobileMenu(false); navigate('/login'); }} style={menuItemStyle}>登入 / 註冊</button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {showSplash && (
         <div className={`splash-screen ${isSplashClosing ? 'hide' : ''}`} style={splashBgStyle}>
@@ -406,11 +439,11 @@ return {
       )}
 
       <div className="profile-layout-root" style={{ opacity: (showSplash && !isSplashClosing) ? 0 : 1 }}>
-        <ProfileSidebar 
-          artist={artist} settings={settings} textColor={textColor} borderColor={borderColor} 
-          availableTabs={availableTabs} currentTab={currentTab} onTabChange={handleTabChange} 
-          viewerId={viewerId} relationStatus={relationStatus} isViewerLoading={isViewerLoading} 
-          onToggleRelation={handleToggleRelation} 
+        <ProfileSidebar
+          artist={artist} settings={settings} textColor={textColor} borderColor={borderColor}
+          availableTabs={availableTabs} currentTab={currentTab} onTabChange={handleTabChange}
+          viewerId={viewerId} relationStatus={relationStatus} isViewerLoading={isViewerLoading}
+          onToggleRelation={handleToggleRelation} isDarkText={isDarkText}
         />
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
@@ -615,6 +648,15 @@ return {
           </div>
         </main>
       </div>
+
+      {isMobileViewport && currentTab !== 'showcase' && availableTabs.some(t => t.id === 'showcase') && (
+        <button
+          className="mobile-showcase-fab"
+          onClick={() => { handleTabChange('showcase'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          <PenTool size={16} /> 接委託
+        </button>
+      )}
 
       {showRulesModal && (
         <div className="lightbox-overlay" onClick={() => setShowRulesModal(false)} style={{ zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
