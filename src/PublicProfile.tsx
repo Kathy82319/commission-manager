@@ -447,7 +447,7 @@ return {
         />
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
-          <nav className="mobile-sticky-nav" style={{ background: settings?.background_color || '#041b35', borderBottom: `1px solid ${borderColor}` }}>
+          <nav className="mobile-sticky-nav">
             {availableTabs.map((tab: any) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
                 {tab.label}

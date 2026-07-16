@@ -39,6 +39,12 @@
   .profile-layout-root {
     flex-direction: column !important;
   }
+  /* 疊在一起後,整頁改由 window 捲動;.profile-main-content 的 overflow-y:auto
+     會讓它自己變成一個(不可視的)捲動容器,導致裡面的 .mobile-sticky-nav
+     抓不到 window 的捲動而吸頂失效,這裡解除它。 */
+  .profile-main-content {
+    overflow-y: visible !important;
+  }
 }
 
 .profile-top-right-actions {
