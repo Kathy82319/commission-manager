@@ -501,7 +501,7 @@ export function Settings() {
                 <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
               )}
             </div>
-            {['showcase', 'portfolio', 'detailed_intro', 'rules', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
+            {['showcase', 'portfolio', 'detailed_intro', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
               <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle" style={{ marginLeft: 'auto' }}>
                 {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
               </button>
