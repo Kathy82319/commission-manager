@@ -179,20 +179,18 @@ export function Settings() {
     ]},
   ];
 
-  const menuGroups = useMemo(() => {
-    return categories.map(group => {
-      if (group.title.includes('內容管理')) {
-        const sections = settings.custom_sections || [];
-        const dynamicItems: MenuItem[] = sections.map((section) => ({
-          id: section.id,
-          label: section.title || `未命名分頁`,
-          isCustom: true
-        }));
-        return { ...group, items: [...group.items, ...dynamicItems] };
-      }
-      return group;
-    });
-  }, [settings.custom_sections, hasOC]); 
+  const menuGroups = categories.map(group => {
+    if (group.title.includes('內容管理')) {
+      const sections = settings.custom_sections || [];
+      const dynamicItems: MenuItem[] = sections.map((section) => ({
+        id: section.id,
+        label: section.title || `未命名分頁`,
+        isCustom: true
+      }));
+      return { ...group, items: [...group.items, ...dynamicItems] };
+    }
+    return group;
+  });
 
   const currentActiveLabel = useMemo(() => {
     for (const group of menuGroups) {
@@ -480,8 +478,8 @@ export function Settings() {
                     className="form-input"
                     value={(settings[RENAMABLE_TABS[activeTab].field] as string) || ''}
                     onChange={e => setSettings(prev => ({ ...prev, [RENAMABLE_TABS[activeTab].field]: e.target.value }))}
-                    onBlur={() => setIsEditingTabLabel(false)}
-                    onKeyDown={e => { if (e.key === 'Enter') setIsEditingTabLabel(false); }}
+                    onBlur={() => { setIsEditingTabLabel(false); handleSave(); }}
+                    onKeyDown={e => { if (e.key === 'Enter') { setIsEditingTabLabel(false); handleSave(); } }}
                     placeholder={RENAMABLE_TABS[activeTab].label}
                     style={{ fontSize: '16px', fontWeight: 'bold', padding: '4px 8px', width: '180px' }}
                   />
@@ -538,11 +536,12 @@ export function Settings() {
             )}
             
             {activeTab.startsWith('custom_') && (
-              <SingleCustomSectionTab 
+              <SingleCustomSectionTab
                 key={activeTab}
-                sectionId={activeTab} 
-                settings={settings} 
-                setSettings={setSettings} 
+                sectionId={activeTab}
+                settings={settings}
+                setSettings={setSettings}
+                onSaveNow={handleSave}
                 onDelete={() => {
                   setSettings(prev => ({ ...prev, custom_sections: prev.custom_sections.filter(s => s.id !== activeTab) }));
                   setActiveTab('profile_basic');
