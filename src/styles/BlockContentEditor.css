@@ -103,16 +103,7 @@
   zoom: 0.7;
 }
 
-/* ---------- 編輯區塊的富文本輸入框：打字區背景跟著實際公開頁面的底色走 ----------
-   只改 .ql-editor（實際打字/顯示文字的地方），工具列維持原本淺色，圖示才看得清楚。
-   這樣使用者把文字選成白色時，在編輯器裡也還是看得到，不會因為編輯器背景固定是白的而消失。 */
+/* ---------- 編輯區塊的富文本輸入框：淡米色打字區 ---------- */
 .custom-quill-wrapper .ql-editor {
-  background: var(--quill-editor-bg, #FFFFFF);
-  color: var(--quill-editor-color, inherit);
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.custom-quill-wrapper .ql-editor.ql-blank::before {
-  color: var(--quill-editor-color, rgba(0, 0, 0, 0.6));
-  opacity: 0.6;
+  background: #FAF6EF;
 }
