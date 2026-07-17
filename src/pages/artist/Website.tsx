@@ -594,6 +594,13 @@ export function Website() {
                 key={activeTab}
                 value={settings.detailed_intro}
                 onChange={v => setSettings(prev => ({ ...prev, detailed_intro: v }))}
+                previewTheme={{
+                  background_color: settings.background_color,
+                  gradient_enabled: settings.gradient_enabled,
+                  gradient_direction: settings.gradient_direction,
+                  secondary_color: settings.secondary_color,
+                  theme_mode: settings.theme_mode as 'light' | 'dark',
+                }}
               />
             )}
 

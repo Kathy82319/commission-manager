@@ -54,6 +54,8 @@ export interface CompleteSettings {
   splash_text: string;
   layout_type: string;
   background_color: string;
+  gradient_enabled?: boolean;
+  secondary_color?: string;
   gradient_direction: string;
   theme_mode: string;
   showcase_label: string;
@@ -68,6 +70,15 @@ export interface CompleteSettings {
   show_favorite_count: boolean;
   portfolio_layout: 'grid' | 'masonry';
   portfolio_blurred: boolean;
+}
+
+// 個人公開頁面背景相關設定，讓區塊編輯器的「公開頁面預覽」可以套用跟實際頁面一致的底色
+export interface PreviewTheme {
+  background_color?: string;
+  gradient_enabled?: boolean;
+  gradient_direction?: string;
+  secondary_color?: string;
+  theme_mode?: 'light' | 'dark';
 }
 
 export interface QuotaInfo {

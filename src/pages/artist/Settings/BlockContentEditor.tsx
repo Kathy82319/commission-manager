@@ -1,11 +1,11 @@
 // src/pages/artist/Settings/BlockContentEditor.tsx
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Undo2, Redo2 } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { BlockContentView } from '../../../components/BlockContentView';
-import type { ContentBlock } from './types';
+import type { ContentBlock, PreviewTheme } from './types';
 import { BLOCK_TYPE_META, createEmptyBlock, parseBlocks, serializeBlocks } from './blockContent';
 import { QUILL_MODULES } from './quillConfig';
 import '../../../styles/BlockContentEditor.css';
@@ -42,15 +42,29 @@ function layoutGlyph(type: ContentBlock['type']) {
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  previewTheme?: PreviewTheme;
 }
 
-export function BlockContentEditor({ value, onChange }: Props) {
+export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
   const [blocks, setBlocks] = useState<ContentBlock[]>(() => parseBlocks(value));
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const quillRefs = useRef<Record<string, ReactQuill | null>>({});
+
+  const previewBackgroundStyle = useMemo(() => {
+    const t = previewTheme || {};
+    const baseColor = t.background_color || '#041b35';
+    const isGradient = t.gradient_enabled !== false;
+    if (isGradient) {
+      const direction = t.gradient_direction || 'to top';
+      const secondaryColor = t.secondary_color || '#00000015';
+      return { background: `linear-gradient(${direction}, ${baseColor}, ${secondaryColor})` };
+    }
+    return { background: baseColor };
+  }, [previewTheme]);
 
   const commit = (next: ContentBlock[]) => {
     setBlocks(next);
@@ -241,9 +255,28 @@ export function BlockContentEditor({ value, onChange }: Props) {
                           placeholder="段落標題（可留空）"
                           style={{ fontWeight: 'bold', fontSize: '15px' }}
                         />
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            type="button"
+                            title="復原 (Ctrl+Z)"
+                            onClick={() => quillRefs.current[block.id]?.getEditor().history.undo()}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            <Undo2 size={12} /> 復原
+                          </button>
+                          <button
+                            type="button"
+                            title="重做 (Ctrl+Shift+Z)"
+                            onClick={() => quillRefs.current[block.id]?.getEditor().history.redo()}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            <Redo2 size={12} /> 重做
+                          </button>
+                        </div>
                         <div className="custom-quill-wrapper">
                           <ReactQuill
                             key={block.id}
+                            ref={el => { quillRefs.current[block.id] = el; }}
                             theme="snow"
                             defaultValue={block.body || ''}
                             onChange={(html, _delta, source) => {
@@ -293,7 +326,7 @@ export function BlockContentEditor({ value, onChange }: Props) {
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#A0978D', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <ImageIcon size={13} /> 公開頁面預覽
           </div>
-          <div className="bce-preview-frame">
+          <div className="bce-preview-frame" style={previewBackgroundStyle}>
             <div className="bce-preview-browser-bar"><span /><span /><span /></div>
             <div className="bce-preview-card">
               {blocks.length > 0 ? (

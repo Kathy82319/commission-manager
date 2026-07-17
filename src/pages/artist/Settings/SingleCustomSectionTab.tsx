@@ -68,6 +68,13 @@ export function SingleCustomSectionTab({ sectionId, settings, setSettings, onDel
         key={sectionId}
         value={section.content}
         onChange={v => updateSection('content', v)}
+        previewTheme={{
+          background_color: settings.background_color,
+          gradient_enabled: settings.gradient_enabled,
+          gradient_direction: settings.gradient_direction,
+          secondary_color: settings.secondary_color,
+          theme_mode: settings.theme_mode as 'light' | 'dark',
+        }}
       />
     </div>
   );

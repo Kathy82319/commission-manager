@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { Undo2, Redo2 } from 'lucide-react';
 import type { ProfileSettings } from '../Settings/types';
 import { QUILL_MODULES } from './quillConfig';
 
@@ -13,7 +15,8 @@ interface Props {
 }
 
 export function RichTextTab({ field, isCustom, customIndex, settings, setSettings }: Props) {
-  
+  const quillRef = useRef<ReactQuill | null>(null);
+
   const getValue = () => {
     if (isCustom && customIndex !== undefined) {
       return settings.custom_sections?.[customIndex]?.content || '';
@@ -41,13 +44,34 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
   };
 
   return (
-    <div className="custom-quill-wrapper">
-      <ReactQuill
-        theme="snow"
-        defaultValue={getValue()}
-        onChange={handleChange}
-        modules={QUILL_MODULES}
-      />
+    <div>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+        <button
+          type="button"
+          title="復原 (Ctrl+Z)"
+          onClick={() => quillRef.current?.getEditor().history.undo()}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+        >
+          <Undo2 size={12} /> 復原
+        </button>
+        <button
+          type="button"
+          title="重做 (Ctrl+Shift+Z)"
+          onClick={() => quillRef.current?.getEditor().history.redo()}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+        >
+          <Redo2 size={12} /> 重做
+        </button>
+      </div>
+      <div className="custom-quill-wrapper">
+        <ReactQuill
+          ref={quillRef}
+          theme="snow"
+          defaultValue={getValue()}
+          onChange={handleChange}
+          modules={QUILL_MODULES}
+        />
+      </div>
     </div>
   );
 }

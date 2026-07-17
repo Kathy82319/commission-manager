@@ -1,8 +1,8 @@
 // src/pages/artist/Settings/QueueSettingsTab.tsx
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { X } from 'lucide-react';
+import { X, Undo2, Redo2 } from 'lucide-react';
 import { QUILL_MODULES } from './quillConfig';
 
 export interface QueueSettings {
@@ -28,6 +28,7 @@ const getMaskedName = (name: string) => {
 };
 
 export function QueueSettingsTab({ settings, setSettings }: any) {
+  const quillRef = useRef<ReactQuill | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
@@ -217,14 +218,35 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             </div>
             
             {qs.show_rules && (
-              <div className="custom-quill-wrapper" style={{ backgroundColor: '#FFF', borderRadius: '8px' }}>
-                <ReactQuill
-                  theme="snow"
-                  defaultValue={qs.rules_content || ''}
-                  onChange={(val, _delta, source) => { if (source === 'user') update('rules_content', val); }}
-                  modules={QUILL_MODULES}
-                />
-              </div>
+              <>
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                  <button
+                    type="button"
+                    title="復原 (Ctrl+Z)"
+                    onClick={() => quillRef.current?.getEditor().history.undo()}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+                  >
+                    <Undo2 size={12} /> 復原
+                  </button>
+                  <button
+                    type="button"
+                    title="重做 (Ctrl+Shift+Z)"
+                    onClick={() => quillRef.current?.getEditor().history.redo()}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
+                  >
+                    <Redo2 size={12} /> 重做
+                  </button>
+                </div>
+                <div className="custom-quill-wrapper" style={{ backgroundColor: '#FFF', borderRadius: '8px' }}>
+                  <ReactQuill
+                    ref={quillRef}
+                    theme="snow"
+                    defaultValue={qs.rules_content || ''}
+                    onChange={(val, _delta, source) => { if (source === 'user') update('rules_content', val); }}
+                    modules={QUILL_MODULES}
+                  />
+                </div>
+              </>
             )}
           </div>
 
