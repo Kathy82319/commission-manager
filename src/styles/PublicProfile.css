@@ -75,20 +75,30 @@
 .mobile-sticky-nav { display: none; }
 
 @media (max-width: 768px) {
+  /* 這裡刻意拆成兩層：外層只負責「吸頂」(position: sticky)，
+     內層才負責「自己橫向捲動看更多分頁」(overflow-x: auto)。
+     兩個責任疊在同一個元素上，在部分手機版瀏覽器會讓該元素的版面寬度算錯，
+     連帶讓整份文件多出一段看不見的寬度，把 position: fixed 的販售區按鈕也一起拖出畫面。 */
   .mobile-sticky-nav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    margin: 0 -16px;
+    padding: 0 16px;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+  .mobile-sticky-nav-scroll {
     display: flex;
     flex-direction: row;
     gap: 10px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    position: sticky;
-    top: 0;
-    z-index: 500;
-    margin: 0 -16px;
-    padding: 10px 16px;
+    padding: 10px 0;
   }
-  .mobile-sticky-nav::-webkit-scrollbar { display: none; }
+  .mobile-sticky-nav-scroll::-webkit-scrollbar { display: none; }
 }
 
 /* ==========================================================================

@@ -462,11 +462,13 @@ return {
 
         <main className="profile-main-content" style={{ background: 'transparent' }}>
           <nav className="mobile-sticky-nav" style={{ background: hexToRgba(settings?.background_color, 1), borderBottom: `1px solid ${borderColor}` }}>
-            {availableTabs.map((tab: any) => (
-              <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
-                {tab.label}
-              </button>
-            ))}
+            <div className="mobile-sticky-nav-scroll">
+              {availableTabs.map((tab: any) => (
+                <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={`nav-item ${currentTab === tab.id ? 'active' : ''}`} style={{ color: textColor }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </nav>
 
           <div className={`tab-inner-wrapper ${isWideTab ? 'layout-wide' : 'layout-narrow'}`}>
