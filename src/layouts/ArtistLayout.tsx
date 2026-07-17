@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronLeft, ChevronRight } from 'lucide-react';
-import '../styles/ArtistLayout.css'; 
+import { confirmLeaveIfDirty, setUnsavedChanges } from '../utils/unsavedChanges';
+import '../styles/ArtistLayout.css';
 
 export function ArtistLayout() {
   const location = useLocation();
@@ -295,7 +296,11 @@ export function ArtistLayout() {
                   key={item.path}
                   to={item.path}
                   className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    if (!confirmLeaveIfDirty()) { e.preventDefault(); return; }
+                    setUnsavedChanges(false);
+                    setIsMobileMenuOpen(false);
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -303,14 +308,23 @@ export function ArtistLayout() {
             </nav>
 
             <div className="sidebar-footer">
-              <button onClick={() => navigate('/client/orders')} className="sidebar-action-btn btn-switch-client">切換為委託方模式</button>
+              <button
+                onClick={() => {
+                  if (!confirmLeaveIfDirty()) return;
+                  setUnsavedChanges(false);
+                  navigate('/client/orders');
+                }}
+                className="sidebar-action-btn btn-switch-client"
+              >
+                切換為委託方模式
+              </button>
               <button onClick={handlePreviewAndCopy} className="sidebar-action-btn btn-preview-profile">預覽/複製個人首頁</button>
               <div style={{ marginTop: '10px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center', lineHeight: '1.6' }}>
-                <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>服務條款</Link>
+                <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }} onClick={(e) => { if (!confirmLeaveIfDirty()) { e.preventDefault(); return; } setUnsavedChanges(false); }}>服務條款</Link>
                 <span style={{ margin: '0 4px' }}>|</span>
-                <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>隱私權政策</Link>
+                <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }} onClick={(e) => { if (!confirmLeaveIfDirty()) { e.preventDefault(); return; } setUnsavedChanges(false); }}>隱私權政策</Link>
                 <span style={{ margin: '0 4px' }}>|</span>
-                <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>退款政策</Link>
+                <Link to="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }} onClick={(e) => { if (!confirmLeaveIfDirty()) { e.preventDefault(); return; } setUnsavedChanges(false); }}>退款政策</Link>
                 <div style={{ marginTop: '8px' }}>
                   <button onClick={handleLogout} style={{ background: 'none', border: '1px solid #D1D5DB', color: '#9CA3AF', cursor: 'pointer', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>登出系統</button>
                 </div>

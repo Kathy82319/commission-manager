@@ -6,6 +6,7 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
+import { setUnsavedChanges } from '../../utils/unsavedChanges';
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -49,9 +50,9 @@ export function Settings() {
     }
   }, [location.search]);
 
-  const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  const [formData, setFormDataRaw] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
 
-  const [notifyConfig, setNotifyConfig] = useState<any>({
+  const [notifyConfig, setNotifyConfigRaw] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
     email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
@@ -60,7 +61,7 @@ export function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  const [settings, setSettings] = useState<CompleteSettings>({
+  const [settings, setSettingsRaw] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
     rules: '',
@@ -96,6 +97,19 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
+  // 進頁面時重置為「沒有未儲存變更」，避免殘留上一個頁面的髒狀態
+  useEffect(() => { setUnsavedChanges(false); }, []);
+
+  const setSettings: typeof setSettingsRaw = useCallback((update) => {
+    setUnsavedChanges(true);
+    setSettingsRaw(update);
+  }, []);
+
+  const setNotifyConfig: typeof setNotifyConfigRaw = useCallback((update) => {
+    setUnsavedChanges(true);
+    setNotifyConfigRaw(update);
+  }, []);
+
   const menuGroups: MenuCategory[] = [
     {
       title: '個人資訊',
@@ -127,13 +141,13 @@ export function Settings() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        setFormData({
+        setFormDataRaw({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
         });
 
-        setNotifyConfig({
+        setNotifyConfigRaw({
           notification_email: data.data.notification_email || '',
           email_art_chat: data.data.email_art_chat ?? 1,
           email_art_progress: data.data.email_art_progress ?? 1,
@@ -153,7 +167,7 @@ export function Settings() {
             id: sec.id || `custom_legacy_${idx}`
           }));
 
-          setSettings(prev => ({
+          setSettingsRaw(prev => ({
             ...prev,
             ...parsed,
             custom_sections: safeCustomSections,
@@ -194,6 +208,7 @@ export function Settings() {
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
+        setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');
       }

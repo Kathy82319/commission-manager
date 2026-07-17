@@ -14,6 +14,7 @@ import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { setUnsavedChanges } from '../../utils/unsavedChanges';
 
 // 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
 const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
@@ -71,7 +72,7 @@ export function Website() {
     }
   }, [location.search]);
 
-  const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  const [formData, setFormDataRaw] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
 
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [showcaseCount, setShowcaseCount] = useState(0);
@@ -84,7 +85,7 @@ export function Website() {
 
   const [hasOC, setHasOC] = useState<boolean>(false);
 
-  const [settings, setSettings] = useState<CompleteSettings>({
+  const [settings, setSettingsRaw] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
     rules: '',
@@ -118,6 +119,19 @@ export function Website() {
 
   const showToast = useCallback((msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
+  }, []);
+
+  // 進頁面時重置為「沒有未儲存變更」，避免殘留上一個頁面的髒狀態
+  useEffect(() => { setUnsavedChanges(false); }, []);
+
+  const setSettings: typeof setSettingsRaw = useCallback((update) => {
+    setUnsavedChanges(true);
+    setSettingsRaw(update);
+  }, []);
+
+  const setFormData: typeof setFormDataRaw = useCallback((update) => {
+    setUnsavedChanges(true);
+    setFormDataRaw(update);
   }, []);
 
   const categories: MenuCategory[] = [
@@ -199,7 +213,7 @@ export function Website() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        setFormData({
+        setFormDataRaw({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
@@ -221,7 +235,7 @@ export function Website() {
             id: sec.id || `custom_legacy_${idx}`
           }));
 
-          setSettings(prev => ({
+          setSettingsRaw(prev => ({
             ...prev,
             ...parsed,
             custom_sections: safeCustomSections,
@@ -274,6 +288,7 @@ export function Website() {
       const data = await res.json();
       if (data.success) {
         showToast(successMessage, 'ok');
+        setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');
       }
