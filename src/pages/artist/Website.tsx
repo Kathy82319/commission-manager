@@ -8,12 +8,16 @@ import { SplashTab } from './Settings/SplashTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
 import { QueueSettingsTab } from './Settings/QueueSettingsTab';
-import { OrderTab } from './Settings/OrderTab';
 import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab';
 import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
+import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
+import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
+
+// 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
+const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
+const toPublicId = (id: string) => CONTENT_TAB_TO_PUBLIC_ID[id] || id;
 
 const RENAMABLE_TABS: Record<string, { field: keyof CompleteSettings; label: string }> = {
   portfolio: { field: 'portfolio_label', label: '作品展示區' },
@@ -78,6 +82,8 @@ export function Website() {
   const [isEditingTabLabel, setIsEditingTabLabel] = useState(false);
   useEffect(() => { setIsEditingTabLabel(false); }, [activeTab]);
 
+  const [hasOC, setHasOC] = useState<boolean>(false);
+
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
@@ -128,6 +134,7 @@ export function Website() {
         { id: 'portfolio', label: settings.portfolio_label || '作品展示區' },
         { id: 'showcase', label: settings.showcase_label || '接委託區' },
         { id: 'reviews', label: settings.reviews_label || '精選評價管理' },
+        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []),
     ]},
   ];
 
@@ -149,9 +156,38 @@ export function Website() {
       const found = group.items.find(item => item.id === activeTab);
       if (found) return found.label;
     }
-    if (activeTab === 'tab_order') return '變更排序';
     return '設定';
   }, [activeTab, menuGroups]);
+
+  const contentMenuGroup = menuGroups.find(group => group.title === '內容管理');
+  const contentGroupItems: MenuItem[] = contentMenuGroup
+    ? [...contentMenuGroup.items].sort((a, b) => {
+        const order = settings.tab_order || [];
+        const idxA = order.indexOf(toPublicId(a.id));
+        const idxB = order.indexOf(toPublicId(b.id));
+        return (idxA === -1 ? Infinity : idxA) - (idxB === -1 ? Infinity : idxB);
+      })
+    : [];
+
+  const [draggedContentIdx, setDraggedContentIdx] = useState<number | null>(null);
+
+  const handleContentDragStart = (idx: number) => setDraggedContentIdx(idx);
+
+  const handleContentDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (draggedContentIdx === null || draggedContentIdx === idx) return;
+    const reordered = [...contentGroupItems];
+    const [moved] = reordered.splice(draggedContentIdx, 1);
+    reordered.splice(idx, 0, moved);
+    setDraggedContentIdx(idx);
+    const newContentIds = reordered.map(it => toPublicId(it.id));
+    setSettings(prev => {
+      const leftover = (prev.tab_order || []).filter(
+        id => !newContentIds.includes(id) && !contentGroupItems.some(it => toPublicId(it.id) === id)
+      );
+      return { ...prev, tab_order: [...newContentIds, ...leftover] };
+    });
+  };
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -196,6 +232,18 @@ export function Website() {
             portfolio_layout: parsed.portfolio_layout ?? 'grid',
             portfolio_blurred: parsed.portfolio_blurred === true,
           }));
+        }
+
+        try {
+          const ocRes = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
+          if (ocRes.ok) {
+            const ocData = await ocRes.json();
+            if (ocData.success && ocData.data && ocData.data.length > 0) {
+              setHasOC(true);
+            }
+          }
+        } catch (e) {
+          console.error("背景檢查 OC 列表失敗", e);
         }
       }
     } catch (error) {
@@ -267,14 +315,14 @@ export function Website() {
   const isFreePlan = quotaInfo?.plan_type === 'free';
 
   const freeAllowedTabs = [
-    'profile_basic', 'portfolio', 'detailed_intro', 'queue_settings', 'showcase'
+    'profile_basic', 'portfolio', 'detailed_intro', 'queue_settings', 'showcase', 'oc_display'
   ];
 
-  const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
+  const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_'));
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
-  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'reviews';
+  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'reviews' || activeTab === 'oc_display';
 
   return (
     <div className="settings-page">
@@ -295,22 +343,55 @@ export function Website() {
               <div key={group.title} className="sidebar-group">
                 <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   {group.title}
-                  {group.title.includes('內容管理') && (
-                    <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}>變更排序</button>
-                  )}
                 </div>
 
-                {group.items.map((item: MenuItem) => {
+                {(group.title === '內容管理' ? contentGroupItems : group.items).map((item: MenuItem, idx: number) => {
                   const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
+                  const isContentGroup = group.title === '內容管理';
+                  const publicId = toPublicId(item.id);
+                  const isHidden = settings.hidden_sections.includes(publicId);
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                      onDragOver={isContentGroup ? (e) => handleContentDragOver(e, idx) : undefined}
                     >
-                      {item.label}
-                      {isLocked && '[鎖定]'}
-                    </button>
+                      {isContentGroup && (
+                        <span
+                          draggable
+                          onDragStart={() => handleContentDragStart(idx)}
+                          onDragEnd={() => setDraggedContentIdx(null)}
+                          title="拖曳調整此分頁在個人頁的顯示順序"
+                          style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
+                        >
+                          <GripVertical size={16} />
+                        </span>
+                      )}
+                      <button
+                        className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
+                        onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
+                        style={{ flex: 1 }}
+                      >
+                        {item.label}
+                        {isLocked && '[鎖定]'}
+                      </button>
+                      {isContentGroup && (
+                        isLocked ? (
+                          <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                            此分頁限專業版用戶
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleVisibility(publicId)}
+                            title={isHidden ? '目前隱藏，點擊顯示於個人頁' : '目前公開顯示，點擊隱藏'}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: isHidden ? '#C4BDB5' : '#5D4A3E', flexShrink: 0 }}
+                          >
+                            {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        )
+                      )}
+                    </div>
                   );
                 })}
 
@@ -345,22 +426,55 @@ export function Website() {
             <div key={group.title} className="sidebar-group">
               <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 {group.title}
-                {group.title.includes('內容管理') && (
-                  <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); }}>變更排序</button>
-                )}
               </div>
 
-              {group.items.map((item: MenuItem) => {
+              {(group.title === '內容管理' ? contentGroupItems : group.items).map((item: MenuItem, idx: number) => {
                 const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
+                const isContentGroup = group.title === '內容管理';
+                const publicId = toPublicId(item.id);
+                const isHidden = settings.hidden_sections.includes(publicId);
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                    onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onDragOver={isContentGroup ? (e) => handleContentDragOver(e, idx) : undefined}
                   >
-                    {item.label}
-                    {isLocked && '[鎖定]'}
-                  </button>
+                    {isContentGroup && (
+                      <span
+                        draggable
+                        onDragStart={() => handleContentDragStart(idx)}
+                        onDragEnd={() => setDraggedContentIdx(null)}
+                        title="拖曳調整此分頁在個人頁的顯示順序"
+                        style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
+                      >
+                        <GripVertical size={16} />
+                      </span>
+                    )}
+                    <button
+                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
+                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
+                      style={{ flex: 1 }}
+                    >
+                      {item.label}
+                      {isLocked && '[鎖定]'}
+                    </button>
+                    {isContentGroup && (
+                      isLocked ? (
+                        <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          此分頁限專業版用戶
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleVisibility(publicId)}
+                          title={isHidden ? '目前隱藏，點擊顯示於個人頁' : '目前公開顯示，點擊隱藏'}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', color: isHidden ? '#C4BDB5' : '#5D4A3E', flexShrink: 0 }}
+                        >
+                          {isHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      )
+                    )}
+                  </div>
                 );
               })}
 
@@ -420,11 +534,6 @@ export function Website() {
                 <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
               )}
             </div>
-            {['showcase', 'portfolio', 'detailed_intro', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
-              <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle" style={{ marginLeft: 'auto' }}>
-                {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
-              </button>
-            )}
           </div>
 
           {isCurrentTabLocked && (
@@ -442,9 +551,9 @@ export function Website() {
             {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
             {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
-            {activeTab === 'tab_order' && <OrderTab settings={settings} setSettings={setSettings} />}
 
             {activeTab === 'reviews' && <ReviewSettingsTab onToast={showToast} />}
+            {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
 
             {activeTab === 'detailed_intro' && (
               <BlockContentEditor

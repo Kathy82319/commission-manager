@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { FormDataState, CompleteSettings } from './Settings/types';
 import { RichTextTab } from './Settings/RichTextTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
-import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
@@ -61,8 +60,6 @@ export function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  const [hasOC, setHasOC] = useState<boolean>(false);
-
   const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
@@ -104,7 +101,6 @@ export function Settings() {
       title: '個人資訊',
       items: [
         { id: 'notification_settings', label: '通知與信箱設定' },
-        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : [])
       ]
     },
     { title: '其他管理', items: [
@@ -169,19 +165,6 @@ export function Settings() {
             portfolio_blurred: parsed.portfolio_blurred === true,
           }));
         }
-
-        try {
-          const ocRes = await fetch(`${API_BASE}/api/oc`, { credentials: 'include' });
-          if (ocRes.ok) {
-            const ocData = await ocRes.json();
-            if (ocData.success && ocData.data && ocData.data.length > 0) {
-              setHasOC(true);
-            }
-          }
-        } catch (e) {
-          console.error("背景檢查 OC 列表失敗", e);
-        }
-
       }
     } catch (error) {
       console.error("讀取設定失敗", error);
@@ -222,8 +205,6 @@ export function Settings() {
   };
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
-
-  const shouldHideGlobalSave = activeTab === 'oc_display';
 
   return (
     <div className="settings-page">
@@ -286,7 +267,6 @@ export function Settings() {
         <div className="settings-content-area">
           <div className="tab-body">
             {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />}
-            {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
 
             {activeTab === 'rules' && (
@@ -294,13 +274,11 @@ export function Settings() {
             )}
           </div>
 
-          {!shouldHideGlobalSave && (
-            <div className="save-action-bar">
-              <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
-                {isSaving ? '儲存中...' : '儲存所有變更'}
-              </button>
-            </div>
-          )}
+          <div className="save-action-bar">
+            <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
+              {isSaving ? '儲存中...' : '儲存所有變更'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
