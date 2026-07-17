@@ -2,7 +2,7 @@
 import { useMemo, useRef, useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { Image as ImageIcon, Undo2, Redo2 } from 'lucide-react';
+import { Image as ImageIcon, Undo2, Redo2, Monitor, Smartphone } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { BlockContentView } from '../../../components/BlockContentView';
 import type { ContentBlock, PreviewTheme } from './types';
@@ -48,6 +48,7 @@ interface Props {
 export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
   const [blocks, setBlocks] = useState<ContentBlock[]>(() => parseBlocks(value));
   const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const draggedId = useRef<string | null>(null);
@@ -323,10 +324,48 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
         </div>
 
         <div className={`bce-preview-col ${mobileView === 'preview' ? 'is-active' : ''}`}>
-          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#A0978D', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ImageIcon size={13} /> 公開頁面預覽
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#A0978D', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ImageIcon size={13} /> 公開頁面預覽
+            </span>
+            <span style={{ display: 'flex', gap: '2px' }}>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('desktop')}
+                title="電腦畫面預覽"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer',
+                  border: '1px solid #DED9D3',
+                  background: previewDevice === 'desktop' ? '#5D4A3E' : '#FFFFFF',
+                  color: previewDevice === 'desktop' ? '#FFFFFF' : '#A0978D',
+                }}
+              >
+                <Monitor size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice('mobile')}
+                title="手機畫面預覽"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '26px', height: '26px', borderRadius: '6px', cursor: 'pointer',
+                  border: '1px solid #DED9D3',
+                  background: previewDevice === 'mobile' ? '#5D4A3E' : '#FFFFFF',
+                  color: previewDevice === 'mobile' ? '#FFFFFF' : '#A0978D',
+                }}
+              >
+                <Smartphone size={13} />
+              </button>
+            </span>
           </div>
-          <div className="bce-preview-frame" style={previewBackgroundStyle}>
+          <div
+            className="bce-preview-frame"
+            style={{
+              ...previewBackgroundStyle,
+              ...(previewDevice === 'mobile' ? { maxWidth: '360px', margin: '0 auto' } : {}),
+            }}
+          >
             <div className="bce-preview-browser-bar"><span /><span /><span /></div>
             <div className="bce-preview-card">
               {blocks.length > 0 ? (

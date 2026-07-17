@@ -7,6 +7,11 @@
   flex-direction: column;
   gap: 28px;
   width: 100%;
+  /* 讓下面的 @container 規則可以偵測「這個區塊本身容器的寬度」，
+     這樣編輯器裡的手機預覽模式（縮窄容器寬度）才能跟公開頁面在真實手機上
+     的效果（用 @media 偵測瀏覽器視窗寬度）一致，兩邊都會觸發同一套堆疊排版。 */
+  container-type: inline-size;
+  container-name: bcv;
 }
 
 /* ShowcaseGrid.css 裡也有一份 .rich-text-content（給接委託區項目描述用），
@@ -67,6 +72,15 @@
 }
 
 @media (max-width: 640px) {
+  .bcv-split {
+    flex-direction: column;
+  }
+  .bcv-split .bcv-media {
+    max-width: 100%;
+  }
+}
+
+@container bcv (max-width: 480px) {
   .bcv-split {
     flex-direction: column;
   }
