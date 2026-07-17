@@ -4,6 +4,7 @@ import type { QuotaInfo, FormDataState } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
 import { PortfolioTab } from './Settings/PortfolioTab';
 import { RichTextTab } from './Settings/RichTextTab';
+import { BlockContentEditor } from './Settings/BlockContentEditor';
 import { SplashTab } from './Settings/SplashTab';
 import { ThemeTab } from './Settings/ThemeTab';
 import { ShowcaseTab } from './Settings/ShowcaseTab';
@@ -531,8 +532,16 @@ export function Settings() {
             
             {activeTab === 'reviews' && <ReviewSettingsTab onToast={showToast} />}
             
-            {['detailed_intro', 'rules'].includes(activeTab) && (
+            {activeTab === 'rules' && (
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
+            )}
+
+            {activeTab === 'detailed_intro' && (
+              <BlockContentEditor
+                key={activeTab}
+                value={settings.detailed_intro}
+                onChange={v => setSettings(prev => ({ ...prev, detailed_intro: v }))}
+              />
             )}
             
             {activeTab.startsWith('custom_') && (

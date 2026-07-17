@@ -1,3 +1,12 @@
+export interface ContentBlock {
+  id: string;
+  type: 'text' | 'image-left' | 'image-right' | 'image';
+  title?: string;
+  body?: string;
+  image_url?: string;
+  caption?: string;
+}
+
 export interface ProfileSettings {
   portfolio: string[];
   detailed_intro: string; 

@@ -4,7 +4,7 @@ import { generateUploadUrl, generateDownloadUrl } from "../services/r2";
 
 const ALLOWED_FOLDERS = new Set([
   'chat-images', 'oc', 'guide', 'settings', 'showcase',
-  'avatars', 'commissions', 'system', 'portfolio', 'wishboard', 'proposals'
+  'avatars', 'commissions', 'system', 'portfolio', 'wishboard', 'proposals', 'content_blocks'
 ]);
 
 export const r2Controller = {

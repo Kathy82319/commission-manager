@@ -1,20 +1,8 @@
 // src/pages/artist/Settings/SingleCustomSectionTab.tsx
 import { useState } from 'react';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
 import { Pencil } from 'lucide-react';
+import { BlockContentEditor } from './BlockContentEditor';
 import type { CompleteSettings } from '../Settings';
-
-const customQuillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }], 
-    [{ 'size': ['small', false, 'large', 'huge'] }], 
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'], 
-    [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], 
-    ['link', 'clean'] 
-  ]
-};
 
 interface Props {
   sectionId: string;
@@ -76,14 +64,11 @@ export function SingleCustomSectionTab({ sectionId, settings, setSettings, onDel
         </button>
       </div>
 
-      <div className="custom-quill-wrapper">
-        <ReactQuill 
-          theme="snow" 
-          value={section.content} 
-          onChange={v => updateSection('content', v)} 
-          modules={customQuillModules} 
-        />
-      </div>
+      <BlockContentEditor
+        key={sectionId}
+        value={section.content}
+        onChange={v => updateSection('content', v)}
+      />
     </div>
   );
 }

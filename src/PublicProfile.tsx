@@ -6,8 +6,10 @@ import { ChevronLeft, ChevronRight, X, Image as ImageIcon, Info, Menu, PenTool }
 import { OCDetailCard } from './components/OC/OCDetailCard';
 import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
-import './styles/PublicProfile.css'; 
-import './components/PublicProfile/styles/ShowcaseGrid.css'; 
+import { BlockContentView } from './components/BlockContentView';
+import { parseBlocks } from './pages/artist/Settings/blockContent';
+import './styles/PublicProfile.css';
+import './components/PublicProfile/styles/ShowcaseGrid.css';
 
 const decodeHTML = (html?: string) => {
   if (!html || typeof html !== 'string') return '';
@@ -44,6 +46,7 @@ export function PublicProfile() {
   const [selectedTags, setSelectedTags] = useState<string[]>(['全部']);
   const [selectedShowcase, setSelectedShowcase] = useState<any | null>(null);
   const [selectedImgIndex, setSelectedImgIndex] = useState<number | null>(null);
+  const [blockLightboxSrc, setBlockLightboxSrc] = useState<string | null>(null);
   
   const [showSplash, setShowSplash] = useState(false);
   const [isSplashClosing, setIsSplashClosing] = useState(false);
@@ -646,12 +649,12 @@ return {
               })()}
               
               {currentTab === 'detailed_intro' && settings && (
-                <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(settings.detailed_intro)) }} />
+                <BlockContentView blocks={parseBlocks(settings.detailed_intro)} onImageClick={setBlockLightboxSrc} />
               )}
 
               {Array.isArray(settings?.custom_sections) && settings.custom_sections.map((sec: any) => {
                 return currentTab === sec.id && (
-                  <div key={sec.id} className="rich-text-content" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(decodeHTML(sec.content || '')) }} />
+                  <BlockContentView key={sec.id} blocks={parseBlocks(sec.content || '')} onImageClick={setBlockLightboxSrc} />
                 );
               })}
             </div>
@@ -716,6 +719,15 @@ return {
             <img src={settings.portfolio[selectedImgIndex]} alt="大圖預覽" />
           </div>
           <button className="lightbox-nav next" onClick={(e) => { e.stopPropagation(); setSelectedImgIndex((selectedImgIndex + 1) % settings.portfolio.length); }}><ChevronRight size={48}/></button>
+        </div>
+      )}
+
+      {blockLightboxSrc && (
+        <div className="lightbox-overlay" onClick={() => setBlockLightboxSrc(null)}>
+          <button className="lightbox-close" onClick={() => setBlockLightboxSrc(null)}><X size={32}/></button>
+          <div className="lightbox-content" onClick={e => e.stopPropagation()}>
+            <img src={blockLightboxSrc} alt="大圖預覽" />
+          </div>
         </div>
       )}
     </div>

@@ -1,0 +1,64 @@
+/* ==========================================================================
+   BlockContentView：詳細介紹 / 自訂分頁 的區塊式內容顯示
+   ========================================================================== */
+
+.block-content-view {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+}
+
+.bcv-text h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.bcv-split {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.bcv-split.is-reverse {
+  flex-direction: row-reverse;
+}
+.bcv-split .bcv-media {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+.bcv-split .bcv-text {
+  flex: 2 1 320px;
+  min-width: 0;
+}
+
+.bcv-image-full img,
+.bcv-media img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  object-fit: cover;
+}
+.bcv-image-full img.is-clickable,
+.bcv-media img.is-clickable {
+  cursor: zoom-in;
+}
+
+.bcv-caption {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.65;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .bcv-split {
+    flex-direction: column;
+  }
+  .bcv-split .bcv-media {
+    max-width: 100%;
+  }
+}
