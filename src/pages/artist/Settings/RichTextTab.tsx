@@ -56,11 +56,11 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
         </button>
         <button
           type="button"
-          title="重做 (Ctrl+Shift+Z)"
+          title="下一步 (Ctrl+Shift+Z)"
           onClick={() => quillRef.current?.getEditor().history.redo()}
           style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
         >
-          <Redo2 size={12} /> 重做
+          <Redo2 size={12} /> 下一步
         </button>
       </div>
       <div className="custom-quill-wrapper">
