@@ -96,7 +96,7 @@
 }
 
 .bce-preview-card {
-  background: #FBFBF9;
+  /* 不設背景色：實際公開頁面的內容是直接疊在底色/漸層上，不是放在一張白卡片裡 */
   padding: 22px;
   min-height: 240px;
   /* 縮小顯示比例，讓預覽看起來像縮圖總覽，而不是 1:1 的實際頁面大小 */
