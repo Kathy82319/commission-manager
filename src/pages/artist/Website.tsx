@@ -13,7 +13,7 @@ import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Pencil, GripVertical, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
 const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
@@ -81,6 +81,8 @@ export function Website() {
 
   const [isEditingTabLabel, setIsEditingTabLabel] = useState(false);
   useEffect(() => { setIsEditingTabLabel(false); }, [activeTab]);
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [hasOC, setHasOC] = useState<boolean>(false);
 
@@ -255,7 +257,8 @@ export function Website() {
 
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
-  const handleSave = async () => {
+  const handleSave = async (overrideSettings?: CompleteSettings, successMessage: string = '所有變更已成功儲存') => {
+    const settingsToSave = overrideSettings || settings;
     setIsSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, {
@@ -266,13 +269,13 @@ export function Website() {
           display_name: formData.display_name,
           avatar_url: formData.avatar_url,
           bio: formData.bio,
-          profile_settings: JSON.stringify(settings),
-          question_template: settings.question_template,
+          profile_settings: JSON.stringify(settingsToSave),
+          question_template: settingsToSave.question_template,
         })
       });
       const data = await res.json();
       if (data.success) {
-        showToast('所有變更已成功儲存', 'ok');
+        showToast(successMessage, 'ok');
       } else {
         showToast(data.error || '儲存失敗', 'err');
       }
@@ -284,15 +287,20 @@ export function Website() {
   };
 
   const toggleVisibility = (sectionId: string) => {
-    setSettings(prev => {
-      const isHidden = prev.hidden_sections.includes(sectionId);
-      return {
-        ...prev,
-        hidden_sections: isHidden
-          ? prev.hidden_sections.filter(id => id !== sectionId)
-          : [...prev.hidden_sections, sectionId]
-      };
-    });
+    const isHidden = settings.hidden_sections.includes(sectionId);
+    const next: CompleteSettings = {
+      ...settings,
+      hidden_sections: isHidden
+        ? settings.hidden_sections.filter(id => id !== sectionId)
+        : [...settings.hidden_sections, sectionId]
+    };
+    setSettings(next);
+    handleSave(next, '✓ 已自動儲存顯示狀態');
+  };
+
+  const handleContentDragEnd = () => {
+    setDraggedContentIdx(null);
+    handleSave(undefined, '✓ 排序已自動儲存');
   };
 
   const quotaBannerText = useMemo(() => {
@@ -360,7 +368,7 @@ export function Website() {
                         <span
                           draggable
                           onDragStart={() => handleContentDragStart(idx)}
-                          onDragEnd={() => setDraggedContentIdx(null)}
+                          onDragEnd={handleContentDragEnd}
                           title="拖曳調整此分頁在個人頁的顯示順序"
                           style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
                         >
@@ -420,7 +428,35 @@ export function Website() {
           </div>
         </div>
 
-        <aside className="settings-sidebar">
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(v => !v)}
+            title={isSidebarCollapsed ? '展開選單' : '收合選單'}
+            style={{
+              position: 'absolute', top: '4px',
+              left: isSidebarCollapsed ? '4px' : '226px',
+              width: '28px', height: '28px', borderRadius: '50%',
+              border: '1px solid #EAE6E1', background: '#FFFFFF', color: '#5D4A3E',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.08)', zIndex: 5,
+              transition: 'left 0.25s ease',
+            }}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+
+          <aside
+            className="settings-sidebar"
+            style={{
+              width: isSidebarCollapsed ? '0px' : undefined,
+              minWidth: isSidebarCollapsed ? '0px' : undefined,
+              opacity: isSidebarCollapsed ? 0 : 1,
+              overflow: 'hidden',
+              transition: 'width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease',
+              pointerEvents: isSidebarCollapsed ? 'none' : 'auto',
+            }}
+          >
           <div className="sidebar-title">個人頁編輯</div>
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
@@ -443,7 +479,7 @@ export function Website() {
                       <span
                         draggable
                         onDragStart={() => handleContentDragStart(idx)}
-                        onDragEnd={() => setDraggedContentIdx(null)}
+                        onDragEnd={handleContentDragEnd}
                         title="拖曳調整此分頁在個人頁的顯示順序"
                         style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
                       >
@@ -499,7 +535,8 @@ export function Website() {
               )}
             </div>
           ))}
-        </aside>
+          </aside>
+        </div>
 
         <div className="settings-content-area">
           <div className="settings-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
@@ -583,7 +620,7 @@ export function Website() {
 
           {!shouldHideGlobalSave && (
             <div className="save-action-bar">
-              <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
+              <button onClick={() => handleSave()} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
                 {isSaving ? '儲存中...' : '儲存所有變更'}
               </button>
             </div>

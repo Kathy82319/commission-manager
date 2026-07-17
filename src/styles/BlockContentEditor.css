@@ -1,0 +1,73 @@
+/* ==========================================================================
+   BlockContentEditor：編輯區 / 預覽區 版面
+   寬度足夠時（用 container query 偵測，會隨側邊欄收合即時反應）並排顯示；
+   不夠寬時（手機、或側邊欄展開佔掉空間）改成「編輯 / 預覽」切換頁籤。
+   ========================================================================== */
+
+.bce-root {
+  container-type: inline-size;
+  container-name: bce;
+}
+
+.bce-mobile-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bce-mobile-toggle button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #DED9D3;
+  background: #FFFFFF;
+  color: #7A7269;
+  font-weight: bold;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.bce-mobile-toggle button.active {
+  background: #5D4A3E;
+  color: #FFFFFF;
+  border-color: #5D4A3E;
+}
+
+.bce-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.bce-editor-col,
+.bce-preview-col {
+  display: none;
+  min-width: 0;
+}
+
+.bce-editor-col.is-active,
+.bce-preview-col.is-active {
+  display: block;
+}
+
+@container bce (min-width: 760px) {
+  .bce-mobile-toggle {
+    display: none;
+  }
+
+  .bce-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .bce-editor-col,
+  .bce-preview-col {
+    display: block;
+    flex: 1 1 0;
+  }
+
+  .bce-preview-col {
+    position: sticky;
+    top: 20px;
+  }
+}
