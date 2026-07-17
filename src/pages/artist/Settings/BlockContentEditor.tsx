@@ -67,6 +67,16 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
     return { background: baseColor };
   }, [previewTheme]);
 
+  // 編輯器的打字區塊背景/預設文字色，比照公開頁面實際的底色跟深色/淺色文字設定，
+  // 這樣使用者把字選成白色時，在編輯器裡也還是看得到（不會因為編輯器背景是白的而「消失」）。
+  const editorSurfaceVars = useMemo(() => {
+    const t = previewTheme || {};
+    const bg = t.background_color || '#041b35';
+    const isDarkText = (t.theme_mode || 'light') === 'dark';
+    const textColor = isDarkText ? '#333333' : '#FFFFFF';
+    return { '--quill-editor-bg': bg, '--quill-editor-color': textColor } as React.CSSProperties;
+  }, [previewTheme]);
+
   const commit = (next: ContentBlock[]) => {
     setBlocks(next);
     onChange(serializeBlocks(next));
@@ -274,7 +284,7 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
                             <Redo2 size={12} /> 下一步
                           </button>
                         </div>
-                        <div className="custom-quill-wrapper">
+                        <div className="custom-quill-wrapper" style={editorSurfaceVars}>
                           <ReactQuill
                             key={block.id}
                             ref={el => { quillRefs.current[block.id] = el; }}
