@@ -219,7 +219,10 @@ export function BlockContentEditor({ value, onChange }: Props) {
                           <ReactQuill
                             theme="snow"
                             value={block.body || ''}
-                            onChange={html => updateBlock(block.id, { body: html })}
+                            onChange={(html, _delta, source) => {
+                              if (source !== 'user') return;
+                              updateBlock(block.id, { body: html });
+                            }}
                             modules={customQuillModules}
                           />
                         </div>

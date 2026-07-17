@@ -228,11 +228,11 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
             
             {qs.show_rules && (
               <div className="custom-quill-wrapper" style={{ backgroundColor: '#FFF', borderRadius: '8px' }}>
-                <ReactQuill 
-                  theme="snow" 
-                  value={qs.rules_content || ''} 
-                  onChange={val => update('rules_content', val)} 
-                  modules={customQuillModules} 
+                <ReactQuill
+                  theme="snow"
+                  value={qs.rules_content || ''}
+                  onChange={(val, _delta, source) => { if (source === 'user') update('rules_content', val); }}
+                  modules={customQuillModules}
                 />
               </div>
             )}

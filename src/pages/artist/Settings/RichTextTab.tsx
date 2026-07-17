@@ -34,7 +34,8 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
     return '';
   };
 
-  const handleChange = (value: string) => {
+  const handleChange = (value: string, _delta: unknown, source: string) => {
+    if (source !== 'user') return;
     setSettings(prev => {
       if (isCustom && customIndex !== undefined) {
         const newSections = [...(prev.custom_sections || [])];
