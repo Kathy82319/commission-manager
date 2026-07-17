@@ -187,25 +187,39 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
 
                   <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '12px', color: '#7A7269' }}>區塊背景色</span>
-                      <input
-                        type="color"
-                        value={block.background_color || '#FFFFFF'}
-                        onChange={e => updateBlock(block.id, { background_color: e.target.value })}
-                        style={{ width: '32px', height: '26px', padding: 0, border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer' }}
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={block.background_opacity ?? 1}
-                        onChange={e => updateBlock(block.id, { background_opacity: Number(e.target.value) })}
-                        style={{ width: '90px' }}
-                      />
-                      <span style={{ fontSize: '11px', color: '#A0978D', fontVariantNumeric: 'tabular-nums' }}>
-                        透明度 {Math.round((block.background_opacity ?? 1) * 100)}%
-                      </span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#7A7269', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!!block.background_color}
+                          onChange={e => updateBlock(block.id, {
+                            background_color: e.target.checked ? (block.background_color || '#FDF4E6') : undefined,
+                            background_opacity: e.target.checked ? (block.background_opacity ?? 1) : undefined,
+                          })}
+                        />
+                        區塊背景色
+                      </label>
+                      {block.background_color && (
+                        <>
+                          <input
+                            type="color"
+                            value={block.background_color}
+                            onChange={e => updateBlock(block.id, { background_color: e.target.value })}
+                            style={{ width: '32px', height: '26px', padding: 0, border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={block.background_opacity ?? 1}
+                            onChange={e => updateBlock(block.id, { background_opacity: Number(e.target.value) })}
+                            style={{ width: '90px' }}
+                          />
+                          <span style={{ fontSize: '11px', color: '#A0978D', fontVariantNumeric: 'tabular-nums' }}>
+                            透明度 {Math.round((block.background_opacity ?? 1) * 100)}%
+                          </span>
+                        </>
+                      )}
                     </div>
 
                     {block.type !== 'text' && (

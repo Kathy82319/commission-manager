@@ -21,13 +21,10 @@ function hexToRgba(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-// 沒有另外設定過的區塊，預設一律是「白底、不透明」，維持跟改版前一樣的樣子；
-// 使用者要調整顏色/透明度時才會跟預設值不一樣。
-function blockBackgroundStyle(block: ContentBlock): CSSProperties {
-  const color = block.background_color || '#FFFFFF';
-  const opacity = block.background_opacity ?? 1;
+function blockBackgroundStyle(block: ContentBlock): CSSProperties | undefined {
+  if (!block.background_color) return undefined;
   return {
-    background: hexToRgba(color, opacity),
+    background: hexToRgba(block.background_color, block.background_opacity ?? 1),
     borderRadius: '12px',
     padding: '20px',
   };
