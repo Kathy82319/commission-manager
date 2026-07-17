@@ -1,7 +1,7 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../styles/ArtistLayout.css'; 
 
 export function ArtistLayout() {
@@ -324,7 +324,9 @@ export function ArtistLayout() {
             className="sidebar-collapse-toggle"
             title={isNavCollapsed ? '展開選單' : '收合選單'}
             aria-label={isNavCollapsed ? '展開選單' : '收合選單'}
-          />
+          >
+            {isNavCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
 
           <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
 
