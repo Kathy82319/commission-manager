@@ -12,6 +12,14 @@ export function ArtistLayout() {
   const [artist, setArtist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(() => localStorage.getItem('artist_nav_collapsed') === '1');
+
+  const toggleNavCollapsed = () => {
+    setIsNavCollapsed(prev => {
+      localStorage.setItem('artist_nav_collapsed', prev ? '0' : '1');
+      return !prev;
+    });
+  };
 
   const [unreadCount, setUnreadCount] = useState(0); 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -223,7 +231,7 @@ export function ArtistLayout() {
           </div>
         </header>
 
-        <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+        <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''} ${isNavCollapsed ? 'collapsed' : ''}`}>
           <div className="sidebar-header">
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
             
@@ -309,6 +317,14 @@ export function ArtistLayout() {
               </div>
             </div>
           </aside>
+
+          <button
+            type="button"
+            onClick={toggleNavCollapsed}
+            className="sidebar-collapse-toggle"
+            title={isNavCollapsed ? '展開選單' : '收合選單'}
+            aria-label={isNavCollapsed ? '展開選單' : '收合選單'}
+          />
 
           <div className={`sidebar-overlay ${isMobileMenuOpen ? 'visible' : ''}`} onClick={() => setIsMobileMenuOpen(false)} />
 

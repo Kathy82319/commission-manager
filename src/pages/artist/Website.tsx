@@ -13,7 +13,7 @@ import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Pencil, GripVertical, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
 
 // 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
 const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
@@ -81,8 +81,6 @@ export function Website() {
 
   const [isEditingTabLabel, setIsEditingTabLabel] = useState(false);
   useEffect(() => { setIsEditingTabLabel(false); }, [activeTab]);
-
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [hasOC, setHasOC] = useState<boolean>(false);
 
@@ -428,35 +426,7 @@ export function Website() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => setIsSidebarCollapsed(v => !v)}
-            title={isSidebarCollapsed ? '展開選單' : '收合選單'}
-            style={{
-              position: 'absolute', top: '4px',
-              left: isSidebarCollapsed ? '4px' : '226px',
-              width: '28px', height: '28px', borderRadius: '50%',
-              border: '1px solid #EAE6E1', background: '#FFFFFF', color: '#5D4A3E',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.08)', zIndex: 5,
-              transition: 'left 0.25s ease',
-            }}
-          >
-            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
-
-          <aside
-            className="settings-sidebar"
-            style={{
-              width: isSidebarCollapsed ? '0px' : undefined,
-              minWidth: isSidebarCollapsed ? '0px' : undefined,
-              opacity: isSidebarCollapsed ? 0 : 1,
-              overflow: 'hidden',
-              transition: 'width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease',
-              pointerEvents: isSidebarCollapsed ? 'none' : 'auto',
-            }}
-          >
+        <aside className="settings-sidebar">
           <div className="sidebar-title">個人頁編輯</div>
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
@@ -535,8 +505,7 @@ export function Website() {
               )}
             </div>
           ))}
-          </aside>
-        </div>
+        </aside>
 
         <div className="settings-content-area">
           <div className="settings-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
