@@ -66,9 +66,6 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
     return { background: baseColor };
   }, [previewTheme]);
 
-  // 公開頁面的內容是直接疊在底色/漸層上，文字顏色要跟著淺色/深色模式切換才看得清楚
-  const previewTextColor = (previewTheme?.theme_mode || 'light') === 'dark' ? '#333333' : '#FFFFFF';
-
   const commit = (next: ContentBlock[]) => {
     setBlocks(next);
     onChange(serializeBlocks(next));
@@ -331,7 +328,7 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
           </div>
           <div className="bce-preview-frame" style={previewBackgroundStyle}>
             <div className="bce-preview-browser-bar"><span /><span /><span /></div>
-            <div className="bce-preview-card" style={{ color: previewTextColor }}>
+            <div className="bce-preview-card">
               {blocks.length > 0 ? (
                 <BlockContentView blocks={blocks} />
               ) : (
