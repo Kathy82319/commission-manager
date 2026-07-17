@@ -1,60 +1,12 @@
 // src/pages/artist/Settings.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { QuotaInfo, FormDataState } from './Settings/types';
-import { BasicInfoTab } from './Settings/BasicInfoTab';
-import { PortfolioTab } from './Settings/PortfolioTab';
+import type { FormDataState, CompleteSettings } from './Settings/types';
 import { RichTextTab } from './Settings/RichTextTab';
-import { BlockContentEditor } from './Settings/BlockContentEditor';
-import { SplashTab } from './Settings/SplashTab';
-import { ThemeTab } from './Settings/ThemeTab';
-import { ShowcaseTab } from './Settings/ShowcaseTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
-import { QueueSettingsTab, type QueueSettings } from './Settings/QueueSettingsTab';
-import { OrderTab } from './Settings/OrderTab'; 
-import { SingleCustomSectionTab } from './Settings/SingleCustomSectionTab'; 
-import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab'; 
+import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
-import { ReviewSettingsTab } from './Settings/ReviewSettingsTab';
 import '../../styles/Settings.css';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
-
-const RENAMABLE_TABS: Record<string, { field: keyof CompleteSettings; label: string }> = {
-  portfolio: { field: 'portfolio_label', label: '作品展示區' },
-  detailed_intro: { field: 'detailed_intro_label', label: '詳細介紹' },
-  queue_settings: { field: 'queue_label', label: '排單表顯示設定' },
-  showcase: { field: 'showcase_label', label: '接委託區' },
-  reviews: { field: 'reviews_label', label: '精選評價管理' },
-};
-
-export interface CompleteSettings {
-  portfolio: string[];
-  detailed_intro: string;
-  rules: string;
-  custom_sections: any[];
-  social_links: any[];
-  hidden_sections: string[];
-  splash_enabled: boolean;
-  splash_image: string;
-  splash_duration: number;
-  splash_text: string;
-  layout_type: string;
-  background_color: string;
-  gradient_direction: string;
-  theme_mode: string;
-  showcase_label: string;
-  portfolio_label: string;
-  detailed_intro_label: string;
-  queue_label: string;
-  reviews_label: string;
-  bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
-  question_template: string;
-  queue_settings: QueueSettings;
-  tab_order: string[];
-  show_favorite_count: boolean;
-  portfolio_layout: 'grid' | 'masonry';
-  portfolio_blurred: boolean;
-}
+import { useLocation } from 'react-router-dom';
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -73,7 +25,6 @@ function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err'
 interface MenuItem {
   id: string;
   label: string;
-  isCustom?: boolean;
 }
 
 interface MenuCategory {
@@ -83,11 +34,10 @@ interface MenuCategory {
 
 export function Settings() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
-    return params.get('tab') || 'profile_basic';
+    return params.get('tab') || 'notification_settings';
   });
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -101,35 +51,30 @@ export function Settings() {
   }, [location.search]);
 
   const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
-  
+
   const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
     email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
   });
 
-  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
-  const [showcaseCount, setShowcaseCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [hideGlobalSave, setHideGlobalSave] = useState(false);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
   const [hasOC, setHasOC] = useState<boolean>(false);
-  const [isEditingTabLabel, setIsEditingTabLabel] = useState(false);
-  useEffect(() => { setIsEditingTabLabel(false); }, [activeTab]);
 
   const [settings, setSettings] = useState<CompleteSettings>({
-    portfolio: [], 
-    detailed_intro: '', 
-    rules: '', 
-    custom_sections: [], 
-    social_links: [], 
+    portfolio: [],
+    detailed_intro: '',
+    rules: '',
+    custom_sections: [],
+    social_links: [],
     hidden_sections: [],
-    splash_enabled: true, 
-    splash_image: '', 
-    splash_duration: 2, 
+    splash_enabled: true,
+    splash_image: '',
+    splash_duration: 2,
     splash_text: '',
-    layout_type: 'blog', 
+    layout_type: 'blog',
     background_color: '',
     gradient_direction: '',
     theme_mode: '',
@@ -154,51 +99,25 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
-  const categories: MenuCategory[] = [
-    { 
-      title: '個人資訊', 
+  const menuGroups: MenuCategory[] = [
+    {
+      title: '個人資訊',
       items: [
-        { id: 'profile_basic', label: '頭像與簡介' },
         { id: 'notification_settings', label: '通知與信箱設定' },
-        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : []) 
-      ] 
+        ...(hasOC ? [{ id: 'oc_display', label: '角色設定卡展示' }] : [])
+      ]
     },
-    { title: '頁面外觀', items: [
-        { id: 'theme', label: '背景與版型設定' },
-        { id: 'splash', label: '開場動畫設定' }
-    ]},
-    { title: '內容管理', items: [
-        { id: 'queue_settings', label: settings.queue_label || '排單表顯示設定' },
-        { id: 'detailed_intro', label: settings.detailed_intro_label || '詳細介紹' },
-        { id: 'portfolio', label: settings.portfolio_label || '作品展示區' },
-        { id: 'showcase', label: settings.showcase_label || '接委託區' },
-        { id: 'reviews', label: settings.reviews_label || '精選評價管理' },
-    ]},
     { title: '其他管理', items: [
         { id: 'rules', label: '委託協議書範本' },
         { id: 'bulletin_settings', label: '許願池投遞履歷管理' },
     ]},
   ];
 
-  const menuGroups = categories.map(group => {
-    if (group.title.includes('內容管理')) {
-      const sections = settings.custom_sections || [];
-      const dynamicItems: MenuItem[] = sections.map((section) => ({
-        id: section.id,
-        label: section.title || `未命名分頁`,
-        isCustom: true
-      }));
-      return { ...group, items: [...group.items, ...dynamicItems] };
-    }
-    return group;
-  });
-
   const currentActiveLabel = useMemo(() => {
     for (const group of menuGroups) {
       const found = group.items.find(item => item.id === activeTab);
       if (found) return found.label;
     }
-    if (activeTab === 'tab_order') return '變更排序';
     return '設定';
   }, [activeTab, menuGroups]);
 
@@ -227,18 +146,12 @@ export function Settings() {
           email_cli_progress: data.data.email_cli_progress ?? 1,
           email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
         });
-        
-        setQuotaInfo({
-          plan_type: data.data.plan_type || 'free',
-          used_quota: data.data.used_quota || 0,
-          max_quota: 3,
-        });
 
         if (data.data.profile_settings) {
-          const parsed = typeof data.data.profile_settings === 'string' 
-            ? JSON.parse(data.data.profile_settings) 
+          const parsed = typeof data.data.profile_settings === 'string'
+            ? JSON.parse(data.data.profile_settings)
             : data.data.profile_settings;
-          
+
           const safeCustomSections = (parsed.custom_sections || []).map((sec: any, idx: number) => ({
             ...sec,
             id: sec.id || `custom_legacy_${idx}`
@@ -262,7 +175,7 @@ export function Settings() {
           if (ocRes.ok) {
             const ocData = await ocRes.json();
             if (ocData.success && ocData.data && ocData.data.length > 0) {
-              setHasOC(true); 
+              setHasOC(true);
             }
           }
         } catch (e) {
@@ -280,11 +193,11 @@ export function Settings() {
   useEffect(() => { fetchUserData(); }, [fetchUserData]);
 
   const handleSave = async () => {
-    setIsSaving(true); 
+    setIsSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PATCH', 
-        credentials: 'include', 
+        method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: formData.display_name,
@@ -292,7 +205,7 @@ export function Settings() {
           bio: formData.bio,
           profile_settings: JSON.stringify(settings),
           question_template: settings.question_template,
-          ...notifyConfig 
+          ...notifyConfig
         })
       });
       const data = await res.json();
@@ -304,61 +217,22 @@ export function Settings() {
     } catch (error) {
       showToast('系統發生錯誤', 'err');
     } finally {
-      setIsSaving(false); 
+      setIsSaving(false);
     }
   };
-
-  const toggleVisibility = (sectionId: string) => {
-    setSettings(prev => {
-      const isHidden = prev.hidden_sections.includes(sectionId);
-      return { 
-        ...prev, 
-        hidden_sections: isHidden 
-          ? prev.hidden_sections.filter(id => id !== sectionId) 
-          : [...prev.hidden_sections, sectionId] 
-      };
-    });
-  };
-
-  const quotaBannerText = useMemo(() => {
-    if (activeTab === 'portfolio') {
-      const limit = quotaInfo?.plan_type === 'pro' ? 30 : quotaInfo?.plan_type === 'trial' ? 20 : 15;
-      return quotaInfo?.plan_type === 'free'
-        ? `📢 目前您的方案僅公開前 15 張作品。 (目前已上傳: ${settings.portfolio.length} / 配額: ${limit})`
-        : `📢 您的作品將在個人頁面完整公開展示。 (目前已上傳: ${settings.portfolio.length} / 配額: ${limit})`;
-    }
-    if (activeTab === 'showcase') {
-      const limit = quotaInfo?.plan_type === 'pro' ? 30 : quotaInfo?.plan_type === 'trial' ? 20 : 3;
-      const label = settings.showcase_label || '接委託';
-      return quotaInfo?.plan_type === 'free'
-        ? `📢 目前您的方案可建立最多 ${limit} 項${label}項目。 (目前數量: ${showcaseCount} / 配額: ${limit})`
-        : `📢 您的項目將在個人分頁完整公開展示。 (目前數量: ${showcaseCount} / 配額: ${limit})`;
-    }
-    return null;
-  }, [activeTab, quotaInfo, settings.portfolio.length, settings.showcase_label, showcaseCount]);
-
-  const isFreePlan = quotaInfo?.plan_type === 'free';
-  
-  const freeAllowedTabs = [
-    'profile_basic', 'notification_settings', 'portfolio', 'detailed_intro', 'rules',
-    'bulletin_settings', 'queue_settings', 'showcase', 'oc_display'
-  ];
-  
-  const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_') || activeTab === 'tab_order');
 
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
-  const shouldHideGlobalSave = hideGlobalSave || activeTab === 'oc_display' || activeTab === 'reviews'; 
+  const shouldHideGlobalSave = activeTab === 'oc_display';
 
   return (
     <div className="settings-page">
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="settings-layout">
-        
-        
+
         <div className="settings-mobile-nav">
-          <button 
-            className="mobile-nav-trigger" 
+          <button
+            className="mobile-nav-trigger"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <span>目前查看：{currentActiveLabel}</span>
@@ -368,203 +242,61 @@ export function Settings() {
           <div className={`mobile-nav-dropdown ${isMobileMenuOpen ? 'open' : ''}`}>
             {menuGroups.map(group => (
               <div key={group.title} className="sidebar-group">
-                <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {group.title}
-                  {group.title.includes('內容管理') && (
-                    <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}>變更排序</button>
-                  )}
-                </div>
-                
-                {group.items.map((item: MenuItem) => {
-                  const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
-                  return (
-                    <button
-                      key={item.id}
-                      className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
-                    >
-                      {item.label}
-                      {item.id === 'notification_settings' && !notifyConfig.notification_email && (
-                        <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }}>★ 記得填寫email</span>
-                      )}
-                      {isLocked && '[鎖定]'}
-                    </button>
-                  );
-                })}
+                <div className="group-label">{group.title}</div>
 
-                {group.title.includes('內容管理') && (
-                  <button 
-                    className="add-custom-section-btn"
-                    onClick={() => {
-                      if (isFreePlan) { setActiveTab('custom_locked_placeholder'); setIsMobileMenuOpen(false); return; }
-                      if (settings.custom_sections.length >= 5) return;
-                      const newId = `custom_${Date.now()}`;
-                      setSettings(prev => ({
-                        ...prev,
-                        custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
-                      }));
-                      setActiveTab(newId);
-                      setHideGlobalSave(false);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    style={{ opacity: settings.custom_sections.length >= 5 ? 0.5 : 1 }}
+                {group.items.map((item: MenuItem) => (
+                  <button
+                    key={item.id}
+                    className={`tab-btn ${activeTab === item.id ? 'active' : ''}`}
+                    onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
                   >
-                    + 新增分頁
+                    {item.label}
+                    {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                      <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }}>★ 記得填寫email</span>
+                    )}
                   </button>
-                )}
+                ))}
               </div>
             ))}
           </div>
         </div>
 
-        
         <aside className="settings-sidebar">
-          <div className="sidebar-title">個人頁編輯</div>
+          <div className="sidebar-title">個人設定</div>
           {menuGroups.map(group => (
             <div key={group.title} className="sidebar-group">
-              <div className="group-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {group.title}
-                {group.title.includes('內容管理') && (
-                  <button className="add-page-btn" onClick={() => { setActiveTab('tab_order'); setHideGlobalSave(false); }}>變更排序</button>
-                )}
-              </div>
-              
-              {group.items.map((item: MenuItem) => {
-                const isLocked = isFreePlan && (!freeAllowedTabs.includes(item.id) || item.isCustom);
-                return (
-                  <button
-                    key={item.id}
-                    className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                    onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
-                  >
-                    {item.label}
-                    {item.id === 'notification_settings' && !notifyConfig.notification_email && (
-                      <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
-                    )}
-                    {isLocked && '[鎖定]'}
-                  </button>
-                );
-              })}
+              <div className="group-label">{group.title}</div>
 
-              {group.title.includes('內容管理') && (
-                <button 
-                  className="add-custom-section-btn"
-                  onClick={() => {
-                    if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
-                    if (settings.custom_sections.length >= 5) return;
-                    const newId = `custom_${Date.now()}`;
-                    setSettings(prev => ({
-                      ...prev,
-                      custom_sections: [...prev.custom_sections, { id: newId, title: '未命名分頁', content: '' }]
-                    }));
-                    setActiveTab(newId);
-                    setHideGlobalSave(false);
-                  }}
-                  style={{ opacity: settings.custom_sections.length >= 5 ? 0.5 : 1 }}
+              {group.items.map((item: MenuItem) => (
+                <button
+                  key={item.id}
+                  className={`tab-btn ${activeTab === item.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(item.id)}
                 >
-                  + 新增分頁
+                  {item.label}
+                  {item.id === 'notification_settings' && !notifyConfig.notification_email && (
+                    <span style={{ color: '#E8A000', marginLeft: '4px', fontSize: '13px' }} title="尚未設定通知信箱">★</span>
+                  )}
                 </button>
-              )}
+              ))}
             </div>
           ))}
         </aside>
 
         <div className="settings-content-area">
-          <div className="settings-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              {RENAMABLE_TABS[activeTab] && (
-                isEditingTabLabel ? (
-                  <input
-                    autoFocus
-                    className="form-input"
-                    value={(settings[RENAMABLE_TABS[activeTab].field] as string) || ''}
-                    onChange={e => setSettings(prev => ({ ...prev, [RENAMABLE_TABS[activeTab].field]: e.target.value }))}
-                    onBlur={() => { setIsEditingTabLabel(false); handleSave(); }}
-                    onKeyDown={e => { if (e.key === 'Enter') { setIsEditingTabLabel(false); handleSave(); } }}
-                    placeholder={RENAMABLE_TABS[activeTab].label}
-                    style={{ fontSize: '16px', fontWeight: 'bold', padding: '4px 8px', width: '180px' }}
-                  />
-                ) : (
-                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', color: '#5D4A3E' }}>
-                    {(settings[RENAMABLE_TABS[activeTab].field] as string) || RENAMABLE_TABS[activeTab].label}
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingTabLabel(true)}
-                      title="重新命名"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', color: '#A0978D' }}
-                    >
-                      <Pencil size={14} />
-                    </button>
-                  </h3>
-                )
-              )}
-              {quotaBannerText && (
-                <div style={{ fontSize: '13px', color: '#A67B3E', fontWeight: 'bold' }}>{quotaBannerText}</div>
-              )}
-            </div>
-            {['showcase', 'portfolio', 'detailed_intro', 'reviews', ...settings.custom_sections.map(s => s.id)].includes(activeTab) && (
-              <button onClick={()=>toggleVisibility(activeTab)} className="visibility-toggle" style={{ marginLeft: 'auto' }}>
-                {settings.hidden_sections.includes(activeTab) ? '[目前已隱藏]' : '[公開顯示中]'}
-              </button>
-            )}
-          </div>
-
-          {isCurrentTabLocked && (
-            <div className="lock-overlay">
-              <div className="lock-card">
-                <div className="lock-icon">[鎖定]</div>
-                <h4>此功能僅限專業版</h4>
-                <button onClick={() => navigate('/artist/subscription')}>查看方案</button>
-              </div>
-            </div>
-          )}
-
-          <div className="tab-body" style={{ filter: isCurrentTabLocked ? 'blur(8px)' : 'none', pointerEvents: isCurrentTabLocked ? 'none' : 'auto' }}>
-            {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings as any} setSettings={setSettings as any} />}
+          <div className="tab-body">
             {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />}
             {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
-            {activeTab === 'queue_settings' && <QueueSettingsTab settings={settings as any} setSettings={setSettings as any} />}
-            {activeTab === 'theme' && <ThemeTab settings={settings as any} setSettings={setSettings as any} />}
-            {activeTab === 'splash' && <SplashTab settings={settings as any} setSettings={setSettings as any} />}
-            {activeTab === 'tab_order' && <OrderTab settings={settings} setSettings={setSettings} />}
-            
-            
-            {activeTab === 'reviews' && <ReviewSettingsTab onToast={showToast} />}
-            
+
             {activeTab === 'rules' && (
               <RichTextTab key={activeTab} field={activeTab as any} settings={settings as any} setSettings={setSettings as any} />
             )}
-
-            {activeTab === 'detailed_intro' && (
-              <BlockContentEditor
-                key={activeTab}
-                value={settings.detailed_intro}
-                onChange={v => setSettings(prev => ({ ...prev, detailed_intro: v }))}
-              />
-            )}
-            
-            {activeTab.startsWith('custom_') && (
-              <SingleCustomSectionTab
-                key={activeTab}
-                sectionId={activeTab}
-                settings={settings}
-                setSettings={setSettings}
-                onSaveNow={handleSave}
-                onDelete={() => {
-                  setSettings(prev => ({ ...prev, custom_sections: prev.custom_sections.filter(s => s.id !== activeTab) }));
-                  setActiveTab('profile_basic');
-                }}
-              />
-            )}
-
-            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} onItemCountChange={setShowcaseCount} />}
-            {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
           </div>
 
           {!shouldHideGlobalSave && (
             <div className="save-action-bar">
-              <button onClick={handleSave} disabled={isSaving || isCurrentTabLocked} className="main-save-btn">
+              <button onClick={handleSave} disabled={isSaving} className="main-save-btn">
                 {isSaving ? '儲存中...' : '儲存所有變更'}
               </button>
             </div>
@@ -572,5 +304,5 @@ export function Settings() {
         </div>
       </div>
     </div>
-  ); 
+  );
 }

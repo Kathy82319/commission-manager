@@ -15,6 +15,7 @@ import { Queue } from './pages/artist/Queue';
 import { Notebook } from './pages/artist/Notebook';
 import { Records } from './pages/artist/Records';
 import { Settings } from './pages/artist/Settings';
+import { Website } from './pages/artist/Website';
 import { Subscription } from './pages/artist/Subscription';
 import { Customers } from './pages/artist/Customers'; 
 import { CustomerDetail } from './pages/artist/CustomerDetail'; 
@@ -62,6 +63,7 @@ export function App() {
           <Route path="notebook" element={<Notebook />} />
           <Route path="records" element={<Records />} />
           <Route path="inbox" element={<Inbox />} />
+          <Route path="website" element={<Website />} />
           <Route path="settings" element={<Settings />} />
           <Route path="subscription" element={<Subscription />} />
 

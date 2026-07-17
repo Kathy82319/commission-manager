@@ -1,7 +1,7 @@
 // src/pages/artist/Settings/OrderTab.tsx
 import { useState, useEffect } from 'react'; 
 import { GripVertical } from 'lucide-react';
-import type { CompleteSettings } from '../Settings';
+import type { CompleteSettings } from './types';
 
 interface Props {
   settings: CompleteSettings;

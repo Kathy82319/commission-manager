@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { BlockContentEditor } from './BlockContentEditor';
-import type { CompleteSettings } from '../Settings';
+import type { CompleteSettings } from './types';
 
 interface Props {
   sectionId: string;

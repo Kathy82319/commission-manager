@@ -577,7 +577,7 @@ export function Notebook() {
                                <span style={{ color: '#94A3B8' }}>未公開</span>
                              )}
                              <button 
-                               onClick={() => navigate('/artist/settings?tab=reviews')} 
+                               onClick={() => navigate('/artist/website?tab=reviews')}
                                className="action-btn btn-outline-default" 
                                style={{ padding: '6px 12px', fontSize: '12px' }}
                              >

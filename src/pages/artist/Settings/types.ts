@@ -1,3 +1,5 @@
+import type { QueueSettings } from './QueueSettingsTab';
+
 export interface ContentBlock {
   id: string;
   type: 'text' | 'image-left' | 'image-right' | 'image';
@@ -35,6 +37,35 @@ export interface ProfileSettings {
   show_favorite_count?: boolean;
   portfolio_layout?: 'grid' | 'masonry';
   portfolio_blurred?: boolean;
+}
+
+export interface CompleteSettings {
+  portfolio: string[];
+  detailed_intro: string;
+  rules: string;
+  custom_sections: any[];
+  social_links: any[];
+  hidden_sections: string[];
+  splash_enabled: boolean;
+  splash_image: string;
+  splash_duration: number;
+  splash_text: string;
+  layout_type: string;
+  background_color: string;
+  gradient_direction: string;
+  theme_mode: string;
+  showcase_label: string;
+  portfolio_label: string;
+  detailed_intro_label: string;
+  queue_label: string;
+  reviews_label: string;
+  bulletin_card: { specialties: string; no_gos: string; payment_methods: string; price_list: string };
+  question_template: string;
+  queue_settings: QueueSettings;
+  tab_order: string[];
+  show_favorite_count: boolean;
+  portfolio_layout: 'grid' | 'masonry';
+  portfolio_blurred: boolean;
 }
 
 export interface QuotaInfo {
