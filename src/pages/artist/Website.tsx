@@ -329,9 +329,10 @@ export function Website() {
   if (isLoading) return <div className="loading-screen" style={{ padding: '40px', textAlign: 'center' }}>載入設定中...</div>;
 
   const shouldHideGlobalSave = hideGlobalSave || activeTab === 'reviews' || activeTab === 'oc_display';
+  const isBlockEditorTab = activeTab === 'detailed_intro' || activeTab.startsWith('custom_');
 
   return (
-    <div className="settings-page">
+    <div className={`settings-page ${isBlockEditorTab ? 'settings-page--wide' : ''}`}>
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="settings-layout">
 

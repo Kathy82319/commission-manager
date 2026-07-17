@@ -2,9 +2,15 @@
 
 .settings-page {
   width: 100%;
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px 0;
+}
+
+/* 只有內容需要放區塊編輯器（詳細介紹／自訂分頁）的分頁才加寬，
+   避免頭像簡介、背景版型這類單欄表單被拉得過寬、不好看 */
+.settings-page.settings-page--wide {
+  max-width: 1600px;
 }
 
 .settings-layout {

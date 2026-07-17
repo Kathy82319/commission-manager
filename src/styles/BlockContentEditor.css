@@ -99,4 +99,6 @@
   background: #FBFBF9;
   padding: 22px;
   min-height: 240px;
+  /* 縮小顯示比例，讓預覽看起來像縮圖總覽，而不是 1:1 的實際頁面大小 */
+  zoom: 0.7;
 }
