@@ -222,11 +222,11 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
                 <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
                   <button
                     type="button"
-                    title="復原 (Ctrl+Z)"
+                    title="上一步 (Ctrl+Z)"
                     onClick={() => quillRef.current?.getEditor().history.undo()}
                     style={{ display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #DED9D3', background: '#FFFFFF', color: '#7A7269', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}
                   >
-                    <Undo2 size={12} /> 復原
+                    <Undo2 size={12} /> 上一步
                   </button>
                   <button
                     type="button"

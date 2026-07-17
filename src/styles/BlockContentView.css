@@ -9,6 +9,18 @@
   width: 100%;
 }
 
+/* ShowcaseGrid.css 裡也有一份 .rich-text-content（給接委託區項目描述用），
+   剛好跟這裡借用的 class 名稱撞在一起，會夾帶白底/大內距/圓角進來。
+   這裡用「兩個 class 疊加」讓優先度比對方的單一 class 高，藉此重設回乾淨的樣子；
+   注意不能加 !important，否則會連同 blockBackgroundStyle 給的 inline 背景色一起蓋掉。 */
+.bcv-text.rich-text-content {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  width: auto;
+}
+
 .bcv-text h3 {
   margin: 0 0 8px;
   font-size: 17px;

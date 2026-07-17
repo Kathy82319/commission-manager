@@ -11,6 +11,17 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
+// 從別處貼上文字時，常會夾帶來源網頁/文件的白色（或接近白色）底色，
+// 而且會直接寫在文字內容的 style 裡，跟區塊本身的背景色設定是兩回事，
+// 使用者自己選的「有顏色」的背景不會被這裡動到，只清掉貼上帶來的白/近白底色。
+const WHITE_BACKGROUND_PATTERN = /background(-color)?\s*:\s*(#fff(?:fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\b[^)]*\))\s*;?/gi;
+
+DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
+  if (data.attrName === 'style' && data.attrValue) {
+    data.attrValue = data.attrValue.replace(WHITE_BACKGROUND_PATTERN, '');
+  }
+});
+
 function hexToRgba(hex: string, opacity: number) {
   const clean = hex.replace('#', '');
   const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
@@ -71,7 +82,7 @@ export function BlockContentView({ blocks, onImageClick }: Props) {
 
         const reverse = block.type === 'image-right';
         return (
-          <div key={block.id} className={`bcv-split${reverse ? ' is-reverse' : ''}`} style={blockBackgroundStyle(block)}>
+          <div key={block.id} className={`bcv-split${reverse ? ' is-reverse' : ''}`}>
             {block.image_url && (
               <div className="bcv-media">
                 <img
@@ -83,7 +94,7 @@ export function BlockContentView({ blocks, onImageClick }: Props) {
                 {block.caption && <span className="bcv-caption">{block.caption}</span>}
               </div>
             )}
-            <div className="bcv-text rich-text-content">
+            <div className="bcv-text rich-text-content" style={blockBackgroundStyle(block)}>
               {block.title && <h3>{block.title}</h3>}
               <RichBody html={block.body} />
             </div>
