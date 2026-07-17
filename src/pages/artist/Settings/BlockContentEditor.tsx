@@ -7,18 +7,8 @@ import { ImageUploader } from '../../../components/ImageUploader';
 import { BlockContentView } from '../../../components/BlockContentView';
 import type { ContentBlock } from './types';
 import { BLOCK_TYPE_META, createEmptyBlock, parseBlocks, serializeBlocks } from './blockContent';
+import { QUILL_MODULES } from './quillConfig';
 import '../../../styles/BlockContentEditor.css';
-
-const customQuillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    [{ 'size': ['small', false, 'large', 'huge'] }],
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'align': [] }],
-    ['link', 'clean']
-  ]
-};
 
 async function uploadBlockImage(blob: Blob): Promise<string> {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -182,6 +172,42 @@ export function BlockContentEditor({ value, onChange }: Props) {
                   </div>
 
                   <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#7A7269', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!!block.background_color}
+                          onChange={e => updateBlock(block.id, {
+                            background_color: e.target.checked ? (block.background_color || '#FDF4E6') : undefined,
+                            background_opacity: e.target.checked ? (block.background_opacity ?? 1) : undefined,
+                          })}
+                        />
+                        區塊背景色
+                      </label>
+                      {block.background_color && (
+                        <>
+                          <input
+                            type="color"
+                            value={block.background_color}
+                            onChange={e => updateBlock(block.id, { background_color: e.target.value })}
+                            style={{ width: '32px', height: '26px', padding: 0, border: '1px solid #DED9D3', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={block.background_opacity ?? 1}
+                            onChange={e => updateBlock(block.id, { background_opacity: Number(e.target.value) })}
+                            style={{ width: '90px' }}
+                          />
+                          <span style={{ fontSize: '11px', color: '#A0978D', fontVariantNumeric: 'tabular-nums' }}>
+                            透明度 {Math.round((block.background_opacity ?? 1) * 100)}%
+                          </span>
+                        </>
+                      )}
+                    </div>
+
                     {block.type !== 'text' && (
                       <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                         <div style={{ width: '140px', flexShrink: 0 }}>
@@ -217,13 +243,14 @@ export function BlockContentEditor({ value, onChange }: Props) {
                         />
                         <div className="custom-quill-wrapper">
                           <ReactQuill
+                            key={block.id}
                             theme="snow"
-                            value={block.body || ''}
+                            defaultValue={block.body || ''}
                             onChange={(html, _delta, source) => {
                               if (source !== 'user') return;
                               updateBlock(block.id, { body: html });
                             }}
-                            modules={customQuillModules}
+                            modules={QUILL_MODULES}
                           />
                         </div>
                       </>

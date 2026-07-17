@@ -7,6 +7,8 @@ export interface ContentBlock {
   body?: string;
   image_url?: string;
   caption?: string;
+  background_color?: string;
+  background_opacity?: number;
 }
 
 export interface ProfileSettings {

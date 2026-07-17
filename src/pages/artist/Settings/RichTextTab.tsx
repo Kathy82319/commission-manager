@@ -1,17 +1,7 @@
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import type { ProfileSettings } from '../Settings/types';
-
-const customQuillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }], 
-    [{ 'size': ['small', false, 'large', 'huge'] }], 
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'], 
-    [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], 
-    ['link', 'clean'] 
-  ]
-};
+import { QUILL_MODULES } from './quillConfig';
 
 interface Props {
   field?: string; 
@@ -52,11 +42,11 @@ export function RichTextTab({ field, isCustom, customIndex, settings, setSetting
 
   return (
     <div className="custom-quill-wrapper">
-      <ReactQuill 
-        theme="snow" 
-        value={getValue()} 
-        onChange={handleChange} 
-        modules={customQuillModules} 
+      <ReactQuill
+        theme="snow"
+        defaultValue={getValue()}
+        onChange={handleChange}
+        modules={QUILL_MODULES}
       />
     </div>
   );

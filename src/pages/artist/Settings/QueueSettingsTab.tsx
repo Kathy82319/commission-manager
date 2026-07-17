@@ -3,17 +3,7 @@ import { useState } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { X } from 'lucide-react';
-
-const customQuillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }], 
-    [{ 'size': ['small', false, 'large', 'huge'] }], 
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'], 
-    [{ 'color': [] }, { 'background': [] }], 
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }], 
-    ['link', 'clean'] 
-  ]
-};
+import { QUILL_MODULES } from './quillConfig';
 
 export interface QueueSettings {
   enabled: boolean;
@@ -230,9 +220,9 @@ export function QueueSettingsTab({ settings, setSettings }: any) {
               <div className="custom-quill-wrapper" style={{ backgroundColor: '#FFF', borderRadius: '8px' }}>
                 <ReactQuill
                   theme="snow"
-                  value={qs.rules_content || ''}
+                  defaultValue={qs.rules_content || ''}
                   onChange={(val, _delta, source) => { if (source === 'user') update('rules_content', val); }}
-                  modules={customQuillModules}
+                  modules={QUILL_MODULES}
                 />
               </div>
             )}
