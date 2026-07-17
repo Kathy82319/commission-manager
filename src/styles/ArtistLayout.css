@@ -104,6 +104,10 @@
 
 .mobile-close-btn { display: none; }
 
+.sidebar-collapse-toggle {
+  display: none;
+}
+
 /* ==========================================================================
    遮罩 (Overlay)
    ========================================================================== */
@@ -203,30 +207,27 @@
     position: fixed;
     top: 50%;
     left: 260px;
-    width: 14px;
-    height: 40px;
+    width: 16px;
+    height: 48px;
     transform: translateY(-50%);
-    background: #DED9D3;
+    background: #5D4A3E;
     border: none;
     padding: 0;
     cursor: pointer;
     z-index: 1001;
     clip-path: polygon(100% 0, 0 50%, 100% 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: left 0.25s ease, background-color 0.2s ease;
   }
 
   .sidebar-collapse-toggle:hover {
-    background: #A0978D;
+    background: #A67B3E;
   }
 
   .app-sidebar.collapsed ~ .sidebar-collapse-toggle {
     left: 0;
     clip-path: polygon(0 0, 100% 50%, 0 100%);
   }
-}
-
-.sidebar-collapse-toggle {
-  display: none;
 }
 
 .sidebar-action-btn {
