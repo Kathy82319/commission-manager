@@ -1,5 +1,5 @@
 // src/pages/artist/Settings.tsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { FormDataState, CompleteSettings } from './Settings/types';
 import { RichTextTab } from './Settings/RichTextTab';
 import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
@@ -50,9 +50,9 @@ export function Settings() {
     }
   }, [location.search]);
 
-  const [formData, setFormDataRaw] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
 
-  const [notifyConfig, setNotifyConfigRaw] = useState<any>({
+  const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
     email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
@@ -61,7 +61,7 @@ export function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
 
-  const [settings, setSettingsRaw] = useState<CompleteSettings>({
+  const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
     rules: '',
@@ -97,18 +97,20 @@ export function Settings() {
     setToast({ msg, type });
   }, []);
 
-  // 進頁面時重置為「沒有未儲存變更」，避免殘留上一個頁面的髒狀態
-  useEffect(() => { setUnsavedChanges(false); }, []);
+  // 用「跟最後一次載入/儲存時的內容做比對」來判斷是否真的有未儲存變更，
+  // 而不是「呼叫過 setSettings 就當作有變更」——後者太容易被無關的重新渲染誤判。
+  const savedSnapshotRef = useRef('');
 
-  const setSettings: typeof setSettingsRaw = useCallback((update) => {
-    setUnsavedChanges(true);
-    setSettingsRaw(update);
-  }, []);
+  useEffect(() => {
+    if (isLoading) return;
+    savedSnapshotRef.current = JSON.stringify({ settings, formData, notifyConfig });
+    setUnsavedChanges(false);
+  }, [isLoading]);
 
-  const setNotifyConfig: typeof setNotifyConfigRaw = useCallback((update) => {
-    setUnsavedChanges(true);
-    setNotifyConfigRaw(update);
-  }, []);
+  useEffect(() => {
+    if (isLoading) return;
+    setUnsavedChanges(JSON.stringify({ settings, formData, notifyConfig }) !== savedSnapshotRef.current);
+  }, [settings, formData, notifyConfig, isLoading]);
 
   // 切換分頁不會清掉目前編輯到一半的內容，但還是要提醒使用者尚未儲存
   const switchTab = (tabId: string) => {
@@ -147,13 +149,13 @@ export function Settings() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        setFormDataRaw({
+        setFormData({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
         });
 
-        setNotifyConfigRaw({
+        setNotifyConfig({
           notification_email: data.data.notification_email || '',
           email_art_chat: data.data.email_art_chat ?? 1,
           email_art_progress: data.data.email_art_progress ?? 1,
@@ -173,7 +175,7 @@ export function Settings() {
             id: sec.id || `custom_legacy_${idx}`
           }));
 
-          setSettingsRaw(prev => ({
+          setSettings(prev => ({
             ...prev,
             ...parsed,
             custom_sections: safeCustomSections,
@@ -214,6 +216,7 @@ export function Settings() {
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
+        savedSnapshotRef.current = JSON.stringify({ settings, formData, notifyConfig });
         setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');

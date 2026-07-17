@@ -1,5 +1,5 @@
 // src/pages/artist/Website.tsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { QuotaInfo, FormDataState, CompleteSettings } from './Settings/types';
 import { BasicInfoTab } from './Settings/BasicInfoTab';
 import { PortfolioTab } from './Settings/PortfolioTab';
@@ -72,7 +72,7 @@ export function Website() {
     }
   }, [location.search]);
 
-  const [formData, setFormDataRaw] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
+  const [formData, setFormData] = useState<FormDataState>({ display_name: '', avatar_url: '', bio: '' });
 
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [showcaseCount, setShowcaseCount] = useState(0);
@@ -85,7 +85,7 @@ export function Website() {
 
   const [hasOC, setHasOC] = useState<boolean>(false);
 
-  const [settings, setSettingsRaw] = useState<CompleteSettings>({
+  const [settings, setSettings] = useState<CompleteSettings>({
     portfolio: [],
     detailed_intro: '',
     rules: '',
@@ -121,18 +121,20 @@ export function Website() {
     setToast({ msg, type });
   }, []);
 
-  // 進頁面時重置為「沒有未儲存變更」，避免殘留上一個頁面的髒狀態
-  useEffect(() => { setUnsavedChanges(false); }, []);
+  // 用「跟最後一次載入/儲存時的內容做比對」來判斷是否真的有未儲存變更，
+  // 而不是「呼叫過 setSettings 就當作有變更」——後者太容易被無關的重新渲染誤判。
+  const savedSnapshotRef = useRef('');
 
-  const setSettings: typeof setSettingsRaw = useCallback((update) => {
-    setUnsavedChanges(true);
-    setSettingsRaw(update);
-  }, []);
+  useEffect(() => {
+    if (isLoading) return;
+    savedSnapshotRef.current = JSON.stringify({ settings, formData });
+    setUnsavedChanges(false);
+  }, [isLoading]);
 
-  const setFormData: typeof setFormDataRaw = useCallback((update) => {
-    setUnsavedChanges(true);
-    setFormDataRaw(update);
-  }, []);
+  useEffect(() => {
+    if (isLoading) return;
+    setUnsavedChanges(JSON.stringify({ settings, formData }) !== savedSnapshotRef.current);
+  }, [settings, formData, isLoading]);
 
   // 切換分頁不會清掉目前編輯到一半的內容（settings 狀態還在），
   // 但還是要提醒使用者尚未儲存，避免忘記按「儲存所有變更」
@@ -220,7 +222,7 @@ export function Website() {
       }
       const data = await res.json();
       if (data.success && data.data) {
-        setFormDataRaw({
+        setFormData({
           display_name: data.data.display_name || '',
           avatar_url: data.data.avatar_url || '',
           bio: data.data.bio || '',
@@ -242,7 +244,7 @@ export function Website() {
             id: sec.id || `custom_legacy_${idx}`
           }));
 
-          setSettingsRaw(prev => ({
+          setSettings(prev => ({
             ...prev,
             ...parsed,
             custom_sections: safeCustomSections,
@@ -295,6 +297,7 @@ export function Website() {
       const data = await res.json();
       if (data.success) {
         showToast(successMessage, 'ok');
+        savedSnapshotRef.current = JSON.stringify({ settings: settingsToSave, formData });
         setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');
