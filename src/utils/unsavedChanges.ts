@@ -25,3 +25,19 @@ if (typeof window !== 'undefined') {
     e.returnValue = '';
   });
 }
+
+// 用來比對「目前內容」跟「最後儲存的內容」是否真的不同。
+// 一般的 JSON.stringify 會依照物件屬性被塞進去的順序排列，
+// 同樣的資料如果是用不同順序組出來的（例如不同分頁元件各自用不同順序的 {...prev, ...} 合併），
+// 字串就會不一樣，導致明明內容相同卻被誤判成「有異動」。
+// 這裡先把所有物件的 key 排序過再序列化，讓比較結果只跟實際內容有關、不受組裝順序影響。
+export function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  if (value !== null && typeof value === 'object') {
+    const keys = Object.keys(value as Record<string, unknown>).sort();
+    return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}

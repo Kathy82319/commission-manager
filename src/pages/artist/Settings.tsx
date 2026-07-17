@@ -6,7 +6,7 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
-import { confirmLeaveIfDirty, setUnsavedChanges } from '../../utils/unsavedChanges';
+import { confirmLeaveIfDirty, setUnsavedChanges, stableStringify } from '../../utils/unsavedChanges';
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -103,13 +103,13 @@ export function Settings() {
 
   useEffect(() => {
     if (isLoading) return;
-    savedSnapshotRef.current = JSON.stringify({ settings, formData, notifyConfig });
+    savedSnapshotRef.current = stableStringify({ settings, formData, notifyConfig });
     setUnsavedChanges(false);
   }, [isLoading]);
 
   useEffect(() => {
     if (isLoading) return;
-    setUnsavedChanges(JSON.stringify({ settings, formData, notifyConfig }) !== savedSnapshotRef.current);
+    setUnsavedChanges(stableStringify({ settings, formData, notifyConfig }) !== savedSnapshotRef.current);
   }, [settings, formData, notifyConfig, isLoading]);
 
   // 切換分頁不會清掉目前編輯到一半的內容，但還是要提醒使用者尚未儲存
@@ -216,7 +216,7 @@ export function Settings() {
       const data = await res.json();
       if (data.success) {
         showToast('所有變更已成功儲存', 'ok');
-        savedSnapshotRef.current = JSON.stringify({ settings, formData, notifyConfig });
+        savedSnapshotRef.current = stableStringify({ settings, formData, notifyConfig });
         setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');

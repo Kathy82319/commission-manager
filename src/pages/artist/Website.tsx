@@ -14,7 +14,7 @@ import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { confirmLeaveIfDirty, setUnsavedChanges } from '../../utils/unsavedChanges';
+import { confirmLeaveIfDirty, setUnsavedChanges, stableStringify } from '../../utils/unsavedChanges';
 
 // 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
 const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
@@ -127,13 +127,13 @@ export function Website() {
 
   useEffect(() => {
     if (isLoading) return;
-    savedSnapshotRef.current = JSON.stringify({ settings, formData });
+    savedSnapshotRef.current = stableStringify({ settings, formData });
     setUnsavedChanges(false);
   }, [isLoading]);
 
   useEffect(() => {
     if (isLoading) return;
-    setUnsavedChanges(JSON.stringify({ settings, formData }) !== savedSnapshotRef.current);
+    setUnsavedChanges(stableStringify({ settings, formData }) !== savedSnapshotRef.current);
   }, [settings, formData, isLoading]);
 
   // 切換分頁不會清掉目前編輯到一半的內容（settings 狀態還在），
@@ -297,7 +297,7 @@ export function Website() {
       const data = await res.json();
       if (data.success) {
         showToast(successMessage, 'ok');
-        savedSnapshotRef.current = JSON.stringify({ settings: settingsToSave, formData });
+        savedSnapshotRef.current = stableStringify({ settings: settingsToSave, formData });
         setUnsavedChanges(false);
       } else {
         showToast(data.error || '儲存失敗', 'err');
