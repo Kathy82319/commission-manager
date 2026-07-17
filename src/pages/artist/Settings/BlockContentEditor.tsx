@@ -263,12 +263,15 @@ export function BlockContentEditor({ value, onChange }: Props) {
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#A0978D', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <ImageIcon size={13} /> 公開頁面預覽
           </div>
-          <div style={{ background: '#FBFBF9', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
-            {blocks.length > 0 ? (
-              <BlockContentView blocks={blocks} />
-            ) : (
-              <div style={{ color: '#A0978D', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>尚無內容可預覽</div>
-            )}
+          <div className="bce-preview-frame">
+            <div className="bce-preview-browser-bar"><span /><span /><span /></div>
+            <div className="bce-preview-card">
+              {blocks.length > 0 ? (
+                <BlockContentView blocks={blocks} />
+              ) : (
+                <div style={{ color: '#A0978D', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>尚無內容可預覽</div>
+              )}
+            </div>
           </div>
         </div>
       </div>

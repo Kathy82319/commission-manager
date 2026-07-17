@@ -58,16 +58,45 @@
   .bce-layout {
     flex-direction: row;
     align-items: flex-start;
+    gap: 32px;
   }
 
   .bce-editor-col,
   .bce-preview-col {
     display: block;
     flex: 1 1 0;
+    min-width: 320px;
   }
 
   .bce-preview-col {
     position: sticky;
     top: 20px;
   }
+}
+
+/* ---------- 預覽區：模擬公開頁面的瀏覽器外框 ---------- */
+.bce-preview-frame {
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0F2136, #16324A);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+}
+
+.bce-preview-browser-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+.bce-preview-browser-bar span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.bce-preview-card {
+  background: #FBFBF9;
+  padding: 22px;
+  min-height: 240px;
 }
