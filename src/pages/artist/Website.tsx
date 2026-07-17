@@ -14,7 +14,7 @@ import { OCDisplaySettingsTab } from './Settings/OCDisplaySettingsTab';
 import '../../styles/Settings.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Pencil, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { setUnsavedChanges } from '../../utils/unsavedChanges';
+import { confirmLeaveIfDirty, setUnsavedChanges } from '../../utils/unsavedChanges';
 
 // 內容管理清單裡的分頁 id 跟公開個人頁排序/顯示用的 id 並非全部一致（例如排單表顯示設定 -> queue、角色設定卡展示 -> oc）
 const CONTENT_TAB_TO_PUBLIC_ID: Record<string, string> = { queue_settings: 'queue', oc_display: 'oc' };
@@ -133,6 +133,13 @@ export function Website() {
     setUnsavedChanges(true);
     setFormDataRaw(update);
   }, []);
+
+  // 切換分頁不會清掉目前編輯到一半的內容（settings 狀態還在），
+  // 但還是要提醒使用者尚未儲存，避免忘記按「儲存所有變更」
+  const switchTab = (tabId: string) => {
+    if (!confirmLeaveIfDirty()) return;
+    setActiveTab(tabId);
+  };
 
   const categories: MenuCategory[] = [
     { title: '個人資訊', items: [
@@ -391,7 +398,7 @@ export function Website() {
                       )}
                       <button
                         className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                        onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
+                        onClick={() => { switchTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
                         style={{ flex: 1 }}
                       >
                         {item.label}
@@ -421,6 +428,7 @@ export function Website() {
                   <button
                     className="add-custom-section-btn"
                     onClick={() => {
+                      if (!confirmLeaveIfDirty()) return;
                       if (isFreePlan) { setActiveTab('custom_locked_placeholder'); setIsMobileMenuOpen(false); return; }
                       if (settings.custom_sections.length >= 5) return;
                       const newId = `custom_${Date.now()}`;
@@ -474,7 +482,7 @@ export function Website() {
                     )}
                     <button
                       className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
-                      onClick={() => { setActiveTab(item.id); setHideGlobalSave(false); }}
+                      onClick={() => { switchTab(item.id); setHideGlobalSave(false); }}
                       style={{ flex: 1 }}
                     >
                       {item.label}
@@ -504,6 +512,7 @@ export function Website() {
                 <button
                   className="add-custom-section-btn"
                   onClick={() => {
+                    if (!confirmLeaveIfDirty()) return;
                     if (isFreePlan) { setActiveTab('custom_locked_placeholder'); return; }
                     if (settings.custom_sections.length >= 5) return;
                     const newId = `custom_${Date.now()}`;

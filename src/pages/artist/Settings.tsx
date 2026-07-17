@@ -6,7 +6,7 @@ import { BulletinSettingsTab } from './Settings/BulletinSettingsTab';
 import { NotificationSettingsTab } from './Settings/NotificationSettingsTab';
 import '../../styles/Settings.css';
 import { useLocation } from 'react-router-dom';
-import { setUnsavedChanges } from '../../utils/unsavedChanges';
+import { confirmLeaveIfDirty, setUnsavedChanges } from '../../utils/unsavedChanges';
 
 function Toast({ message, type, onClose }: { message: string, type: 'ok' | 'err', onClose: () => void }) {
   useEffect(() => {
@@ -109,6 +109,12 @@ export function Settings() {
     setUnsavedChanges(true);
     setNotifyConfigRaw(update);
   }, []);
+
+  // 切換分頁不會清掉目前編輯到一半的內容，但還是要提醒使用者尚未儲存
+  const switchTab = (tabId: string) => {
+    if (!confirmLeaveIfDirty()) return;
+    setActiveTab(tabId);
+  };
 
   const menuGroups: MenuCategory[] = [
     {
@@ -244,7 +250,7 @@ export function Settings() {
                   <button
                     key={item.id}
                     className={`tab-btn ${activeTab === item.id ? 'active' : ''}`}
-                    onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                    onClick={() => { switchTab(item.id); setIsMobileMenuOpen(false); }}
                   >
                     {item.label}
                     {item.id === 'notification_settings' && !notifyConfig.notification_email && (
@@ -267,7 +273,7 @@ export function Settings() {
                 <button
                   key={item.id}
                   className={`tab-btn ${activeTab === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => switchTab(item.id)}
                 >
                   {item.label}
                   {item.id === 'notification_settings' && !notifyConfig.notification_email && (
