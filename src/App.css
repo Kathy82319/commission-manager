@@ -2,16 +2,22 @@ html, body {
     margin: 0;
     padding: 0;
     width: 100%;
-    overflow-x: hidden;
 }
 
 #root {
-
     min-height: 100vh;
     width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    /* 這裡改放在 #root 而不是 html/body 上：
+       在真實手機的 WebKit（iOS Safari、iOS 上的 Chrome 底層也是 WebKit）上，
+       在 html/body 設定 overflow-x 會讓瀏覽器把 body 變成一個獨立的捲動容器，
+       跟畫面實際捲動的 viewport 兜不起來，導致裡面所有 position: sticky 失效
+       （桌機 Chrome 的手機模擬只是縮放畫面、底層還是跑 Blink，不會重現這個問題）。
+       #root 沒有限制高度（只有 min-height），內容多高就長多高，不會真的產生
+       自己的捲軸，所以放在這裡一樣能擋住整頁的水平溢出，又不會擋到 sticky。 */
+    overflow-x: hidden;
 }
 
 
