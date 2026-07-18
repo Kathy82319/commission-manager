@@ -1,8 +1,9 @@
 // src/layouts/ArtistLayout.tsx
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import { confirmLeaveIfDirty, setUnsavedChanges } from '../utils/unsavedChanges';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import '../styles/ArtistLayout.css';
 
 export function ArtistLayout() {
@@ -22,10 +23,21 @@ export function ArtistLayout() {
     });
   };
 
-  const [unreadCount, setUnreadCount] = useState(0); 
+  const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const { canShowInstallHint, canPromptInstall, isIOS, promptInstall } = useInstallPrompt();
+  const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
+
+  const handleInstallClick = () => {
+    if (canPromptInstall) {
+      promptInstall();
+    } else if (isIOS) {
+      setShowIOSInstallTip(prev => !prev);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('last_active_role', 'artist');
@@ -66,9 +78,18 @@ export function ArtistLayout() {
       } catch (error) {}
     };
     fetchUnread();
-    const intervalId = setInterval(fetchUnread, 10000); 
+    const intervalId = setInterval(fetchUnread, 10000);
     return () => clearInterval(intervalId);
   }, [artist, API_BASE]);
+
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return;
+    if (unreadCount > 0) {
+      (navigator as any).setAppBadge(unreadCount).catch(() => {});
+    } else {
+      (navigator as any).clearAppBadge().catch(() => {});
+    }
+  }, [unreadCount]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,7 +110,8 @@ export function ArtistLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
-      window.location.href = '/'; 
+      if ('clearAppBadge' in navigator) (navigator as any).clearAppBadge().catch(() => {});
+      window.location.href = '/';
     }
   };
 
@@ -234,9 +256,35 @@ export function ArtistLayout() {
 
         <aside className={`app-sidebar ${isMobileMenuOpen ? 'open' : ''} ${isNavCollapsed ? 'collapsed' : ''}`}>
           <div className="sidebar-header">
+            {canShowInstallHint && (
+              <div style={{ position: 'absolute', top: '22px', right: '20px' }}>
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  title="加到手機主畫面"
+                  style={{ width: '30px', height: '30px', borderRadius: '8px', border: '1px solid #EAE6E1', background: '#FBFBF9', color: '#7A7269', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Download size={15} />
+                </button>
+                {showIOSInstallTip && (
+                  <div style={{ position: 'absolute', top: '38px', right: '0', width: '220px', background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '10px', boxShadow: '0 8px 24px rgba(74,60,51,0.15)', padding: '14px', zIndex: 20 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowIOSInstallTip(false)}
+                      style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: 'none', color: '#A0978D', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <X size={13} />
+                    </button>
+                    <div style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.7', paddingRight: '10px' }}>
+                      在 Safari 底部點選「分享」<span style={{ fontWeight: 'bold' }}>⬆️</span>，再選擇「加入主畫面」，即可把 Arti 加到手機桌面。
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
-            
-            
+
+
             <div style={{ fontSize: '13px', color: '#A0978D', marginBottom: '16px', lineHeight: '1.6' }}>
               <div>繪師管理後台</div>
               {artist && (
