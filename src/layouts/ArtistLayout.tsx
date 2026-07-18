@@ -31,12 +31,16 @@ export function ArtistLayout() {
   const { canShowInstallHint, canPromptInstall, isIOS, isAndroid, promptInstall } = useInstallPrompt();
   const [showInstallTip, setShowInstallTip] = useState(false);
 
-  const handleInstallClick = () => {
+  const handleInstallClick = async () => {
     if (canPromptInstall) {
-      promptInstall();
-    } else {
-      setShowInstallTip(prev => !prev);
+      try {
+        await promptInstall();
+        return;
+      } catch (e) {
+        // 瀏覽器原生安裝失敗（例如事件已被消耗），改顯示手動安裝步驟
+      }
     }
+    setShowInstallTip(true);
   };
 
   const installTipText = isIOS
@@ -251,6 +255,30 @@ export function ArtistLayout() {
         )}
       </div>
 
+      {showInstallTip && (
+        <div
+          onClick={() => setShowInstallTip(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '300px', background: '#FFFFFF', borderRadius: '14px', boxShadow: '0 16px 40px rgba(0,0,0,0.25)', padding: '20px', position: 'relative' }}
+          >
+            <button
+              type="button"
+              onClick={() => setShowInstallTip(false)}
+              style={{ position: 'absolute', top: '10px', right: '10px', border: 'none', background: 'none', color: '#A0978D', cursor: 'pointer', padding: '4px' }}
+            >
+              <X size={16} />
+            </button>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#5D4A3E', marginBottom: '10px' }}>加到手機主畫面</div>
+            <div style={{ fontSize: '13px', color: '#5D4A3E', lineHeight: '1.8' }}>
+              {installTipText}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="artist-layout-wrapper">
         <header className="mobile-app-bar">
           <button onClick={() => setIsMobileMenuOpen(true)} className="menu-toggle-btn">☰</button>
@@ -272,20 +300,6 @@ export function ArtistLayout() {
                 >
                   <Download size={15} />
                 </button>
-                {showInstallTip && (
-                  <div style={{ position: 'absolute', top: '38px', right: '0', width: '220px', background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '10px', boxShadow: '0 8px 24px rgba(74,60,51,0.15)', padding: '14px', zIndex: 20 }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowInstallTip(false)}
-                      style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: 'none', color: '#A0978D', cursor: 'pointer', padding: '2px' }}
-                    >
-                      <X size={13} />
-                    </button>
-                    <div style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.7', paddingRight: '10px' }}>
-                      {installTipText}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#5D4A3E' }}>Arti繪師小幫手</div>
