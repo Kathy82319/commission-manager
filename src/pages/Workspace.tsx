@@ -339,8 +339,9 @@ export function Workspace() {
   const allMessages = [...historyMessages, ...messages];
 
   return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
+    <div className="workspace-shell" style={{ height: '100vh', display: 'flex', justifyContent: 'center', backgroundColor: '#FBFBF9', overflow: 'hidden' }}>
       <style>{`
+        .workspace-shell { height: 100vh; height: 100dvh; }
         @media (max-width: 600px) {
           .chat-main-area { padding: 15px 10px !important; }
           .message-wrapper { max-width: 92% !important; }
