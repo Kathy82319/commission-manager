@@ -92,6 +92,22 @@
   flex-direction: column;
   gap: 1px;
   overflow-y: auto;
+  /* 細細的捲軸提示，讓使用者知道選單還能往下滑 */
+  scrollbar-width: thin;
+  scrollbar-color: #DED9D3 transparent;
+}
+
+.app-sidebar .sidebar-nav::-webkit-scrollbar {
+  width: 3px;
+}
+
+.app-sidebar .sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-sidebar .sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: #DED9D3;
+  border-radius: 3px;
 }
 
 .app-sidebar .nav-link {
