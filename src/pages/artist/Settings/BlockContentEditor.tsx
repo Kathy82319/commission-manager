@@ -126,7 +126,7 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
       </div>
 
       <div className="bce-layout">
-        <div className={`bce-editor-col ${mobileView === 'edit' ? 'is-active' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className={`bce-editor-col ${mobileView === 'edit' ? 'is-active' : ''}`}>
           {blocks.length === 0 && (
             <div style={{ padding: '32px', textAlign: 'center', background: '#FAFAFA', border: '2px dashed #DED9D3', borderRadius: '12px', color: '#A0978D', fontSize: '14px' }}>
               尚未新增任何內容，點下方「＋ 新增區塊」開始編輯。
