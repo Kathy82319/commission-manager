@@ -125,9 +125,10 @@
   max-width: calc(100vw - 32px);
 }
 
-/* 觸控裝置無法使用瀏覽器原生拖曳排序，隱藏拖曳把手，
-   改用區塊標題列的 ▲▼ 按鈕上下移動 */
-@media (pointer: coarse) {
+/* 手機版瀏覽器無法使用原生拖曳排序，隱藏拖曳把手，
+   改用區塊標題列的 ▲▼ 按鈕上下移動。跟版面切換相同的 1024px 斷點，
+   比 pointer:coarse 更可靠（部分手機瀏覽器對該媒體特性支援不一致） */
+@media (max-width: 1023px) {
   .bce-drag-handle {
     display: none;
   }

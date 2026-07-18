@@ -113,15 +113,16 @@
   padding: 4px 8px;
 }
 
-/* 內容管理清單排序：滑鼠裝置用拖曳把手，觸控裝置原生拖曳無效，
-   改顯示 ▲▼ 按鈕上下移動 */
+/* 內容管理清單排序：電腦版用拖曳把手，手機版瀏覽器原生拖曳無效，
+   改顯示 ▲▼ 按鈕上下移動。用跟版面切換相同的 1024px 斷點判斷，
+   比 pointer:coarse 更可靠（部分手機瀏覽器對該媒體特性支援不一致） */
 .wt-order-buttons {
   display: none;
   flex-direction: column;
   flex-shrink: 0;
 }
 
-@media (pointer: coarse) {
+@media (max-width: 1023px) {
   .wt-drag-handle {
     display: none !important;
   }
