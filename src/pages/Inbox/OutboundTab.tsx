@@ -51,7 +51,7 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
   const handleWithdrawClick = (item: any) => {
     const confirmMsg = item.is_direct 
       ? '確定要撤回這筆委託申請嗎？'
-      : '⚠️ 注意：撤回後將消耗投遞機會。\n\n確定要撤回嗎？';
+      : '⚠️ 注意：同一篇貼文最多只能投遞 2 次，撤回不會退還這次的額度（撤回或被婉拒都算在內）。\n\n確定要撤回嗎？';
     if (window.confirm(confirmMsg)) {
       setSelectedInquiry(item);
       setShowDeclineModal(true);
@@ -223,8 +223,8 @@ export const OutboundTab: React.FC<OutboundTabProps> = ({
       
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
         {canWithdraw && (
-          <button className="action-btn" style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '12px 24px' }} onClick={() => handleWithdrawClick(selectedInq)}>
-            撤回申請 / 終止洽談
+          <button className="action-btn" style={{ backgroundColor: '#FFFFFF', color: '#EF4444', border: '1px solid #FECACA', padding: '8px 24px', lineHeight: '1.5', textAlign: 'center' }} onClick={() => handleWithdrawClick(selectedInq)}>
+            撤回申請<br />終止洽談
           </button>
         )}
         {(selectedInq.inquiry_status === 'submitted' || selectedInq.inquiry_status === 'proposed' || (selectedInq.is_direct && selectedInq.inquiry_status === 'pending')) && (
