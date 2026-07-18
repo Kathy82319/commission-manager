@@ -124,3 +124,11 @@
   right: 0;
   max-width: calc(100vw - 32px);
 }
+
+/* 觸控裝置無法使用瀏覽器原生拖曳排序，隱藏拖曳把手，
+   改用區塊標題列的 ▲▼ 按鈕上下移動 */
+@media (pointer: coarse) {
+  .bce-drag-handle {
+    display: none;
+  }
+}

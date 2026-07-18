@@ -159,6 +159,7 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
                       type="button"
                       data-drag-handle
                       title="拖曳排序"
+                      className="bce-drag-handle"
                       style={{ border: 'none', background: 'none', cursor: 'grab', color: '#A0978D', fontSize: '14px', letterSpacing: '-2px', padding: '2px 4px' }}
                     >
                       ⠿⠿
