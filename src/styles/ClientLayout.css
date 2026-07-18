@@ -5,7 +5,21 @@
   min-height: 100vh;
   background-color: #f9fafb;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
+}
+
+.notif-bell-wrapper {
+  position: fixed;
+  top: 68px;
+  right: 44px;
+  z-index: 9999;
+}
+
+@media (max-width: 1023px) {
+  .notif-bell-wrapper {
+    top: 10px;
+    right: 16px;
+  }
 }
 
 .mobile-app-bar {

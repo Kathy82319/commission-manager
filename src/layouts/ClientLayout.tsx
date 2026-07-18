@@ -115,7 +115,7 @@ export function ClientLayout() {
   return (
     <div className="client-layout-wrapper">
       
-      <div ref={menuRef} style={{ position: 'fixed', top: '68px', right: '44px', zIndex: 9999 }}>
+      <div ref={menuRef} className="notif-bell-wrapper">
         <div 
           onClick={handleOpenNotifMenu}
           style={{ width: '45px', height: '45px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e5e7eb', transition: 'all 0.2s' }}
