@@ -2,6 +2,20 @@
 import type { Env } from "../shared/types";
 import { newebpay } from "../utils/crypto";
 
+// 唯一計價依據：金額與天數一律由後端這裡決定，絕不採信前端傳來的數字
+const PLAN_PRICING: Record<string, () => { amount: number; durationDays: number; itemDesc: string }> = {
+  monthly: () => ({
+    amount: new Date() < new Date('2026-09-01') ? 99 : 150,
+    durationDays: 30,
+    itemDesc: "繪師管理系統 - 專業版訂閱 (月繳)",
+  }),
+  quarterly: () => ({
+    amount: 299,
+    durationDays: 90,
+    itemDesc: "繪師管理系統 - 專業版訂閱 (季繳)",
+  }),
+};
+
 export const paymentController = {
 
   async createOrder(request: Request, currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
@@ -32,16 +46,17 @@ export const paymentController = {
  
       const body = await request.json().catch(() => ({}));
       const plan_type = (body as any).plan_type || 'pro';
-      
-      const amount = new Date() < new Date('2026-09-01') ? 99 : 150;
-      const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`; 
-      
+      const billingCycle = (body as any).billing_cycle === 'quarterly' ? 'quarterly' : 'monthly';
+
+      const { amount, durationDays, itemDesc } = PLAN_PRICING[billingCycle]();
+      const orderId = `ORD${Date.now()}${Math.floor(Math.random() * 100)}`;
+
       const absoluteFrontendUrl = (env.FRONTEND_URL || "https://arti7.net").replace(/\/$/, "");
       const backendUrl = env.BACKEND_URL;
-      
+
       await env.commission_db.prepare(
-        "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, status) VALUES (?, ?, ?, ?, ?)"
-      ).bind(orderId, currentUserId, amount, plan_type, 'pending').run();
+        "INSERT INTO PaymentOrders (id, user_id, amount, plan_type, duration_days, status) VALUES (?, ?, ?, ?, ?, ?)"
+      ).bind(orderId, currentUserId, amount, plan_type, durationDays, 'pending').run();
 
       const tradeInfoObj: any = {
         MerchantID: env.NEWEBPAY_MERCHANT_ID,
@@ -50,8 +65,8 @@ export const paymentController = {
         Version: "2.0",
         MerchantOrderNo: orderId,
         Amt: amount.toString(),
-        ItemDesc: "繪師管理系統 - 專業版訂閱 (30天)",
-        Email: "cath40286@gmail.com", 
+        ItemDesc: itemDesc,
+        Email: "cath40286@gmail.com",
         LoginType: "0",
         ReturnURL: `${absoluteFrontendUrl}/payment/result`,
         NotifyURL: `${backendUrl}/api/payment/notify`,
@@ -130,7 +145,7 @@ export const paymentController = {
       const orderId = data.Result.MerchantOrderNo;
       const tradeNo = data.Result.TradeNo;
 
-      const order = await env.commission_db.prepare("SELECT status, user_id, amount FROM PaymentOrders WHERE id = ?").bind(orderId).first();
+      const order = await env.commission_db.prepare("SELECT status, user_id, amount, duration_days FROM PaymentOrders WHERE id = ?").bind(orderId).first();
       if (!order) return new Response("OK");
 
       if (order.status === 'paid' || order.status === 'fraud') {
@@ -138,27 +153,31 @@ export const paymentController = {
       }
 
       const userId = order.user_id;
-      
+
       const actualAmt = parseInt(data.Result.Amt, 10);
       const expectedAmt = order.amount;
 
       if (actualAmt !== expectedAmt) {
         await env.commission_db.prepare("INSERT INTO WebhookLogs (message) VALUES (?)")
-          .bind(`🚨【異常監測 - 結帳金額不符】User: ${userId}, Order: ${orderId}, Expected: ${expectedAmt}, Actual: ${actualAmt}`)
+          .bind(`🚨【異常監測 - 結帳金額不符，已擋下不予核發方案】User: ${userId}, Order: ${orderId}, Expected: ${expectedAmt}, Actual: ${actualAmt}`)
           .run();
         console.warn(`Amount mismatch for user ${userId} on order ${orderId}`);
+        await env.commission_db.prepare("UPDATE PaymentOrders SET status = 'fraud' WHERE id = ? AND status = 'pending'")
+          .bind(orderId).run();
+        return new Response("OK");
       }
 
       const userRecord = await env.commission_db.prepare("SELECT plan_type, pro_expires_at FROM Users WHERE id = ?").bind(userId).first();
-      
+
       let newExpiry = new Date();
       if (userRecord && userRecord.plan_type === 'pro' && userRecord.pro_expires_at) {
         const currentExpiry = new Date(userRecord.pro_expires_at as string);
         if (currentExpiry > new Date()) {
-          newExpiry = currentExpiry; 
+          newExpiry = currentExpiry;
         }
       }
-      newExpiry.setDate(newExpiry.getDate() + 30); 
+      const durationDays = (order.duration_days as number) || 30;
+      newExpiry.setDate(newExpiry.getDate() + durationDays);
 
       const updateUserStmt = env.commission_db.prepare(`
         UPDATE Users 

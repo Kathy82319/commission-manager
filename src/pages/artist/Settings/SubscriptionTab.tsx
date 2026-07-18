@@ -11,7 +11,13 @@ interface Props {
 export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly'>('monthly');
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
+  const isPromo = new Date() < new Date('2026-09-01');
+  const monthlyPrice = isPromo ? 99 : 150;
+  const quarterlyPrice = 299;
+  const quarterlySavingPct = Math.max(0, Math.round((1 - quarterlyPrice / (monthlyPrice * 3)) * 100));
 
   const handleStartTrial = async () => {
     if (isStartingTrial) return;
@@ -43,7 +49,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan_type: "pro" })
+        body: JSON.stringify({ plan_type: "pro", billing_cycle: billingCycle })
       });
       
       const result = await response.json();
@@ -157,18 +163,57 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
         }}>
           {quotaInfo?.plan_type === 'pro' && <div style={{ position: 'absolute', top: '-12px', left: '20px', backgroundColor: '#4A7294', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>目前方案</div>}
           <h4 style={{ margin: 0, fontSize: '18px', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>專業版</h4>
-          {new Date() < new Date('2026-09-01') ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ fontSize: '15px', color: '#B0B0B0', textDecoration: 'line-through' }}>NT$ 150 / 月</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>
-                NT$ 99 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span>
+
+          <div style={{ display: 'flex', gap: '6px', backgroundColor: '#EFF3F6', padding: '4px', borderRadius: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setBillingCycle('monthly')}
+              style={{
+                flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                fontSize: '13px', fontWeight: 'bold',
+                backgroundColor: billingCycle === 'monthly' ? '#FFFFFF' : 'transparent',
+                color: billingCycle === 'monthly' ? '#4A7294' : '#9CA3AF',
+                boxShadow: billingCycle === 'monthly' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              月繳
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingCycle('quarterly')}
+              style={{
+                flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                fontSize: '13px', fontWeight: 'bold', position: 'relative',
+                backgroundColor: billingCycle === 'quarterly' ? '#FFFFFF' : 'transparent',
+                color: billingCycle === 'quarterly' ? '#4A7294' : '#9CA3AF',
+                boxShadow: billingCycle === 'quarterly' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              季繳{quarterlySavingPct > 0 ? `（省 ${quarterlySavingPct}%）` : ''}
+            </button>
+          </div>
+
+          {billingCycle === 'monthly' ? (
+            isPromo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '15px', color: '#B0B0B0', textDecoration: 'line-through' }}>NT$ 150 / 月</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>
+                  NT$ 99 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#E07B54', fontWeight: 'bold' }}>🎉 限時優惠，促銷至 2026/08/31</div>
               </div>
-              <div style={{ fontSize: '12px', color: '#E07B54', fontWeight: 'bold' }}>🎉 限時優惠，促銷至 2026/08/31</div>
-            </div>
+            ) : (
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+            )
           ) : (
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>NT$ 150 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 月</span></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>
+                NT$ 299 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 季（3個月）</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#A0978D' }}>平均每月 NT$ {Math.round(quarterlyPrice / 3)}</div>
+            </div>
           )}
-          
+
           <div style={{ height: '1px', backgroundColor: '#EAE6E1', margin: '8px 0' }} />
           
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: '#A0978D', fontSize: '14px', lineHeight: '1.8', flex: 1 }}>
@@ -194,6 +239,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             }} 
           >
             {isUpgrading ? '正在建立支付單...' : (quotaInfo?.plan_type === 'pro' ? '立即續約專業版' : '立即升級專業版')}
+            {!isUpgrading && (billingCycle === 'quarterly' ? '（季繳）' : '（月繳）')}
           </button>
         </div>
 
