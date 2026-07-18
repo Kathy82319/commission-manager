@@ -28,16 +28,22 @@ export function ArtistLayout() {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { canShowInstallHint, canPromptInstall, isIOS, promptInstall } = useInstallPrompt();
-  const [showIOSInstallTip, setShowIOSInstallTip] = useState(false);
+  const { canShowInstallHint, canPromptInstall, isIOS, isAndroid, promptInstall } = useInstallPrompt();
+  const [showInstallTip, setShowInstallTip] = useState(false);
 
   const handleInstallClick = () => {
     if (canPromptInstall) {
       promptInstall();
-    } else if (isIOS) {
-      setShowIOSInstallTip(prev => !prev);
+    } else {
+      setShowInstallTip(prev => !prev);
     }
   };
+
+  const installTipText = isIOS
+    ? <>在 Safari 底部點選「分享」<span style={{ fontWeight: 'bold' }}>⬆️</span>，再選擇「加入主畫面」，即可把 Arti 加到手機桌面。</>
+    : isAndroid
+      ? <>點瀏覽器右上角的選單「⋮」，選擇「安裝應用程式」或「新增至主畫面」，即可把 Arti 加到手機桌面。</>
+      : <>點瀏覽器選單裡的「安裝」或「新增至主畫面」，即可把 Arti 加到桌面。</>;
 
   useEffect(() => {
     localStorage.setItem('last_active_role', 'artist');
@@ -266,17 +272,17 @@ export function ArtistLayout() {
                 >
                   <Download size={15} />
                 </button>
-                {showIOSInstallTip && (
+                {showInstallTip && (
                   <div style={{ position: 'absolute', top: '38px', right: '0', width: '220px', background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '10px', boxShadow: '0 8px 24px rgba(74,60,51,0.15)', padding: '14px', zIndex: 20 }}>
                     <button
                       type="button"
-                      onClick={() => setShowIOSInstallTip(false)}
+                      onClick={() => setShowInstallTip(false)}
                       style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: 'none', color: '#A0978D', cursor: 'pointer', padding: '2px' }}
                     >
                       <X size={13} />
                     </button>
                     <div style={{ fontSize: '12px', color: '#5D4A3E', lineHeight: '1.7', paddingRight: '10px' }}>
-                      在 Safari 底部點選「分享」<span style={{ fontWeight: 'bold' }}>⬆️</span>，再選擇「加入主畫面」，即可把 Arti 加到手機桌面。
+                      {installTipText}
                     </div>
                   </div>
                 )}

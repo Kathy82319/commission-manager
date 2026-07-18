@@ -17,6 +17,7 @@ export function useInstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(isStandaloneDisplay);
 
   const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  const isAndroid = /android/i.test(window.navigator.userAgent);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -36,7 +37,10 @@ export function useInstallPrompt() {
   }, []);
 
   const canPromptInstall = !!deferredPrompt;
-  const canShowInstallHint = !isStandalone && (canPromptInstall || isIOS);
+  // 一律顯示（除非已安裝）：Chrome 的 beforeinstallprompt 何時觸發有不透明的
+  // 互動門檻，不能只靠它來決定圖示是否出現，否則圖示可能一直不出現。
+  // 沒有拿到瀏覽器原生安裝事件時，改用文字步驟引導使用者手動安裝。
+  const canShowInstallHint = !isStandalone;
 
   const promptInstall = async () => {
     if (!deferredPrompt) return;
@@ -45,5 +49,5 @@ export function useInstallPrompt() {
     if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
-  return { canShowInstallHint, canPromptInstall, isIOS, promptInstall };
+  return { canShowInstallHint, canPromptInstall, isIOS, isAndroid, promptInstall };
 }
