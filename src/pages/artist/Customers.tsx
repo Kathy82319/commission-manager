@@ -401,7 +401,7 @@ export function Customers() {
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Heart size={15} fill={activeTab === 'favorites' ? '#ef4444' : 'none'} color={activeTab === 'favorites' ? '#ef4444' : 'currentColor'} />
-          收藏的繪師 ({relations.filter(r => r.relation_type === 'favorite').length})
+          收藏繪師 ({relations.filter(r => r.relation_type === 'favorite').length})
         </button>
       </div>
 

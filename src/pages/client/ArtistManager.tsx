@@ -144,7 +144,7 @@ export function ArtistManager() {
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Heart size={16} fill={activeTab === 'favorite' ? '#ef4444' : 'none'} color={activeTab === 'favorite' ? '#ef4444' : 'currentColor'} /> 
-          收藏的繪師 ({relations.filter(r => r.relation_type === 'favorite').length})
+          收藏繪師 ({relations.filter(r => r.relation_type === 'favorite').length})
         </button>
         <button 
           className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} 
