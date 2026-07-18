@@ -93,15 +93,6 @@ export function ArtistLayout() {
   }, [artist, API_BASE]);
 
   useEffect(() => {
-    if (!('setAppBadge' in navigator)) return;
-    if (unreadCount > 0) {
-      (navigator as any).setAppBadge(unreadCount).catch(() => {});
-    } else {
-      (navigator as any).clearAppBadge().catch(() => {});
-    }
-  }, [unreadCount]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowNotifMenu(false);
@@ -120,7 +111,6 @@ export function ArtistLayout() {
       localStorage.removeItem('user_role');
       localStorage.removeItem('is_logged_in');
       localStorage.removeItem('last_active_role');
-      if ('clearAppBadge' in navigator) (navigator as any).clearAppBadge().catch(() => {});
       window.location.href = '/';
     }
   };

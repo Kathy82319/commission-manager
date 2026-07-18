@@ -394,7 +394,7 @@ export function Customers() {
 
       <div className="crm-tabs-container">
         <button className={`crm-tab-btn ${activeTab === 'all' ? 'crm-active' : ''}`} onClick={() => setActiveTab('all')}>總名單 ({customers.length})</button>
-        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>客戶黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
+        <button className={`crm-tab-btn ${activeTab === 'blacklist' ? 'crm-active' : ''}`} onClick={() => setActiveTab('blacklist')}>黑名單 ({customers.filter(c => c.custom_label === '黑名單').length})</button>
         <button
           className={`crm-tab-btn ${activeTab === 'favorites' ? 'crm-active' : ''}`}
           onClick={handleSwitchToFavorites}
