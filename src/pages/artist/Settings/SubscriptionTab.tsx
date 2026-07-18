@@ -15,9 +15,10 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const isPromo = new Date() < new Date('2026-09-01');
-  const monthlyPrice = isPromo ? 99 : 150;
+  const originalMonthlyPrice = 150;
   const quarterlyPrice = 299;
-  const quarterlySavingPct = Math.max(0, Math.round((1 - quarterlyPrice / (monthlyPrice * 3)) * 100));
+  const quarterlyOriginalPrice = originalMonthlyPrice * 3;
+  const quarterlySavingPct = Math.round((1 - quarterlyPrice / quarterlyOriginalPrice) * 100);
 
   const handleStartTrial = async () => {
     if (isStartingTrial) return;
@@ -207,10 +208,11 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             )
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ fontSize: '15px', color: '#B0B0B0', textDecoration: 'line-through' }}>NT$ {quarterlyOriginalPrice} / 季</div>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: quotaInfo?.plan_type === 'pro' ? '#4A7294' : '#9CA3AF' }}>
-                NT$ 299 <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 季（3個月）</span>
+                NT$ {quarterlyPrice} <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#A0978D' }}>/ 季（3個月）</span>
               </div>
-              <div style={{ fontSize: '12px', color: '#A0978D' }}>平均每月 NT$ {Math.round(quarterlyPrice / 3)}</div>
+              <div style={{ fontSize: '12px', color: '#A0978D' }}>平均每月 NT$ {Math.round(quarterlyPrice / 3)}（原價每月 NT$ {originalMonthlyPrice}）</div>
             </div>
           )}
 
