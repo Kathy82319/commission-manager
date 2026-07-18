@@ -116,3 +116,11 @@
 .custom-quill-wrapper .ql-editor {
   background: #FAF6EF;
 }
+
+/* 文字/背景色的色票選單預設從左邊展開，手機版寬度不夠時會超出畫面右側，
+   改成貼齊按鈕右緣、往左展開，並限制最大寬度避免溢出 */
+.custom-quill-wrapper .ql-color-picker .ql-picker-options {
+  left: auto;
+  right: 0;
+  max-width: calc(100vw - 32px);
+}
