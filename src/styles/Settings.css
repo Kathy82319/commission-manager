@@ -113,6 +113,23 @@
   padding: 4px 8px;
 }
 
+/* 內容管理清單排序：滑鼠裝置用拖曳把手，觸控裝置原生拖曳無效，
+   改顯示 ▲▼ 按鈕上下移動 */
+.wt-order-buttons {
+  display: none;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+@media (pointer: coarse) {
+  .wt-drag-handle {
+    display: none !important;
+  }
+  .wt-order-buttons {
+    display: flex;
+  }
+}
+
 /* ==========================================================================
    共用組件與內容區塊
    ========================================================================== */

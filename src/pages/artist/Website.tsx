@@ -326,6 +326,20 @@ export function Website() {
     handleSave(undefined, '✓ 排序已自動儲存');
   };
 
+  const moveContentItem = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= contentGroupItems.length) return;
+    const reordered = [...contentGroupItems];
+    [reordered[idx], reordered[target]] = [reordered[target], reordered[idx]];
+    const newContentIds = reordered.map(it => toPublicId(it.id));
+    const leftover = (settings.tab_order || []).filter(
+      id => !newContentIds.includes(id) && !contentGroupItems.some(it => toPublicId(it.id) === id)
+    );
+    const next: CompleteSettings = { ...settings, tab_order: [...newContentIds, ...leftover] };
+    setSettings(next);
+    handleSave(next, '✓ 排序已自動儲存');
+  };
+
   const quotaBannerText = useMemo(() => {
     if (activeTab === 'portfolio') {
       const limit = quotaInfo?.plan_type === 'pro' ? 30 : quotaInfo?.plan_type === 'trial' ? 20 : 15;
@@ -394,9 +408,28 @@ export function Website() {
                           onDragStart={() => handleContentDragStart(idx)}
                           onDragEnd={handleContentDragEnd}
                           title="拖曳調整此分頁在個人頁的顯示順序"
+                          className="wt-drag-handle"
                           style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
                         >
                           <GripVertical size={16} />
+                        </span>
+                      )}
+                      {isContentGroup && (
+                        <span className="wt-order-buttons">
+                          <button
+                            type="button"
+                            onClick={() => moveContentItem(idx, -1)}
+                            disabled={idx === 0}
+                            title="上移"
+                            style={{ border: 'none', background: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? '#DED9D3' : '#A0978D', fontSize: '9px', padding: '1px 4px' }}
+                          >▲</button>
+                          <button
+                            type="button"
+                            onClick={() => moveContentItem(idx, 1)}
+                            disabled={idx === contentGroupItems.length - 1}
+                            title="下移"
+                            style={{ border: 'none', background: 'none', cursor: idx === contentGroupItems.length - 1 ? 'default' : 'pointer', color: idx === contentGroupItems.length - 1 ? '#DED9D3' : '#A0978D', fontSize: '9px', padding: '1px 4px' }}
+                          >▼</button>
                         </span>
                       )}
                       <button
@@ -482,9 +515,28 @@ export function Website() {
                         onDragStart={() => handleContentDragStart(idx)}
                         onDragEnd={handleContentDragEnd}
                         title="拖曳調整此分頁在個人頁的顯示順序"
+                        className="wt-drag-handle"
                         style={{ cursor: 'grab', display: 'flex', color: '#A0978D', flexShrink: 0 }}
                       >
                         <GripVertical size={16} />
+                      </span>
+                    )}
+                    {isContentGroup && (
+                      <span className="wt-order-buttons">
+                        <button
+                          type="button"
+                          onClick={() => moveContentItem(idx, -1)}
+                          disabled={idx === 0}
+                          title="上移"
+                          style={{ border: 'none', background: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? '#DED9D3' : '#A0978D', fontSize: '9px', padding: '1px 4px' }}
+                        >▲</button>
+                        <button
+                          type="button"
+                          onClick={() => moveContentItem(idx, 1)}
+                          disabled={idx === contentGroupItems.length - 1}
+                          title="下移"
+                          style={{ border: 'none', background: 'none', cursor: idx === contentGroupItems.length - 1 ? 'default' : 'pointer', color: idx === contentGroupItems.length - 1 ? '#DED9D3' : '#A0978D', fontSize: '9px', padding: '1px 4px' }}
+                        >▼</button>
                       </span>
                     )}
                     <button
