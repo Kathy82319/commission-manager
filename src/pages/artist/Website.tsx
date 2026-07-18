@@ -402,15 +402,19 @@ export function Website() {
                       <button
                         className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
                         onClick={() => { switchTab(item.id); setHideGlobalSave(false); setIsMobileMenuOpen(false); }}
-                        style={{ flex: 1 }}
+                        title={item.label}
+                        style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                       >
                         {item.label}
-                        {isLocked && '[鎖定]'}
+                        {isLocked && !isContentGroup && '[鎖定]'}
                       </button>
                       {isContentGroup && (
                         isLocked ? (
-                          <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                            此分頁限專業版用戶
+                          <span
+                            title="此分頁限專業版用戶"
+                            style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
+                          >
+                            專業版
                           </span>
                         ) : (
                           <button
@@ -486,15 +490,19 @@ export function Website() {
                     <button
                       className={`tab-btn ${activeTab === item.id ? 'active' : ''} ${item.isCustom ? 'custom-tab' : ''}`}
                       onClick={() => { switchTab(item.id); setHideGlobalSave(false); }}
-                      style={{ flex: 1 }}
+                      title={item.label}
+                      style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {item.label}
-                      {isLocked && '[鎖定]'}
+                      {isLocked && !isContentGroup && '[鎖定]'}
                     </button>
                     {isContentGroup && (
                       isLocked ? (
-                        <span style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                          此分頁限專業版用戶
+                        <span
+                          title="此分頁限專業版用戶"
+                          style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
+                        >
+                          專業版
                         </span>
                       ) : (
                         <button
