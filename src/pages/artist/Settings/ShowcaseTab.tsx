@@ -13,10 +13,11 @@ interface ShowcaseTabProps {
   portfolio?: string[];
   settings: ProfileSettings;
   setSettings?: React.Dispatch<React.SetStateAction<ProfileSettings>>;
+  onAutoSaveLayout?: (nextSettings: ProfileSettings) => void;
   onItemCountChange?: (count: number) => void;
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings, onItemCountChange }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings, onAutoSaveLayout, onItemCountChange }: ShowcaseTabProps) {
   const showcaseLabel = settings.showcase_label || '接委託區';
   const showcaseLayout = settings.showcase_layout ?? 'card';
   const [items, setItems] = useState<ShowcaseItem[]>([]);
@@ -88,10 +89,11 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   useEffect(() => { onItemCountChange?.(items.length); }, [items.length, onItemCountChange]);
 
+  // 這個分頁裡的每一項操作（項目 CRUD、版型切換）都是即時儲存，不需要全域「儲存所有變更」按鈕
   useEffect(() => {
-    onToggleGlobalSave(isFormOpen);
+    onToggleGlobalSave(true);
     return () => onToggleGlobalSave(false);
-  }, [isFormOpen, onToggleGlobalSave]);
+  }, [onToggleGlobalSave]);
 
   const openNewForm = () => {
     if (items.length >= limit) { onToast("已達此版本上限", "err"); return; }
@@ -380,7 +382,11 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             ] as const).map(opt => (
               <button
                 key={opt.value}
-                onClick={() => setSettings(prev => ({ ...prev, showcase_layout: opt.value }))}
+                onClick={() => {
+                  const next = { ...settings, showcase_layout: opt.value };
+                  setSettings(next);
+                  onAutoSaveLayout?.(next);
+                }}
                 style={{
                   flex: 1, padding: '12px', borderRadius: '10px', cursor: 'pointer',
                   border: showcaseLayout === opt.value ? '2px solid #4A7294' : '1px solid #DED9D3',

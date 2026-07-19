@@ -678,7 +678,7 @@ export function Website() {
               />
             )}
 
-            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} onItemCountChange={setShowcaseCount} />}
+            {activeTab === 'showcase' && <ShowcaseTab onToggleGlobalSave={setHideGlobalSave} onToast={showToast} quotaInfo={quotaInfo} isReadOnly={false} portfolio={settings.portfolio} settings={settings as any} setSettings={setSettings as any} onAutoSaveLayout={(next) => handleSave(next as CompleteSettings, '✓ 版型已自動儲存')} onItemCountChange={setShowcaseCount} />}
             {activeTab === 'portfolio' && <PortfolioTab formData={formData} settings={settings as any} setSettings={setSettings as any} quotaInfo={quotaInfo} />}
           </div>
 
