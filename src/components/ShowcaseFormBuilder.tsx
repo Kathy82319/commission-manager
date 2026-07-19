@@ -358,14 +358,6 @@ export function ShowcaseFormBuilder({
               
               <div style={{ flex: '2 1 280px' }}>
                 <label className="form-label" style={{ fontWeight: 'bold', color: '#5D4A3E' }}>作品標籤 (最多 5 個)</label>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap', minHeight: '32px' }}>
-                  {editingItem.tags.map(tag => (
-                    <span key={tag} style={{ padding: '5px 10px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      #{tag}
-                      <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
-                    </span>
-                  ))}
-                </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     className="form-input"
@@ -382,6 +374,16 @@ export function ShowcaseFormBuilder({
                     style={{ padding: '0 16px', background: '#5D4A3E', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}
                   >新增</button>
                 </div>
+                {editingItem.tags.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                    {editingItem.tags.map(tag => (
+                      <span key={tag} style={{ padding: '5px 10px', background: '#F4F0EB', color: '#A67B3E', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        #{tag}
+                        <button onClick={() => handleRemoveTag(tag)} style={{ background: 'none', border: 'none', color: '#A05C5C', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               
