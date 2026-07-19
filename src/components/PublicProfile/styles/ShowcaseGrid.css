@@ -114,7 +114,7 @@
   position: relative;
 }
 .showcase-card-item:hover { transform: translateY(-6px); }
-.showcase-card-item .thumb-wrap { aspect-ratio: 8 / 15; overflow: hidden; }
+.showcase-card-item .thumb-wrap { aspect-ratio: 3 / 4; overflow: hidden; }
 .showcase-card-item .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ---- 接委託區：清單式（圖文並排，價格/狀態常駐）---- */
