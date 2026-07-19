@@ -217,13 +217,16 @@
   .showcase-card-item .status-pill { font-size: 10px !important; padding: 2px 8px !important; }
 
 
-  .showcase-list { gap: 10px !important; max-width: none !important; }
-  .showcase-list-item { gap: 12px !important; padding: 9px !important; border-radius: 14px !important; }
-  .showcase-list-item .thumb-wrap { width: 68px !important; height: 68px !important; border-radius: 10px !important; }
-  .showcase-list-item .card-body { gap: 3px !important; }
-  .showcase-list-item .item-title { font-size: 13.5px !important; }
-  .showcase-list-item .item-price { font-size: 12px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
-  .showcase-list-item .item-desc { display: none !important; }
+  .showcase-list { gap: 12px !important; max-width: none !important; }
+  .showcase-list-item { gap: 12px !important; padding: 10px !important; border-radius: 16px !important; align-items: flex-start !important; }
+  .showcase-list-item .thumb-wrap { width: 108px !important; height: 108px !important; border-radius: 12px !important; flex-shrink: 0 !important; }
+  .showcase-list-item .card-body { gap: 4px !important; }
+  .showcase-list-item .item-title { font-size: 14px !important; }
+  .showcase-list-item .item-price { font-size: 12.5px !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.6 !important; }
+  .showcase-list-item .item-desc {
+    display: -webkit-box !important; font-size: 12px !important; line-height: 1.55 !important;
+    -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; overflow: hidden !important;
+  }
   .showcase-list-item .status-pill { font-size: 10px !important; padding: 2px 8px !important; }
 
 
