@@ -632,7 +632,7 @@ return {
                                 <div className="item-title">{item.title}</div>
                                 {openForOrders && (
                                   full
-                                    ? <span className="status-pill closed">目前已關閉接單</span>
+                                    ? <span className="status-pill closed">關閉接單中</span>
                                     : <span className="status-pill open">開放接單中</span>
                                 )}
                               </div>
@@ -655,15 +655,13 @@ return {
                             <div className="thumb-wrap">
                               <img src={item.cover_url} alt={item.title} loading="lazy" />
                             </div>
-                            <div className="card-body">
-                              <div className="card-top-row">
-                                <div className="item-title">{item.title}</div>
-                                {openForOrders && (
-                                  full
-                                    ? <span className="status-pill closed">目前已關閉接單</span>
-                                    : <span className="status-pill open">開放接單中</span>
-                                )}
-                              </div>
+                            <div className="floating-info-box">
+                              {openForOrders && (
+                                full
+                                  ? <div className="item-closed-badge">● 目前已關閉接單</div>
+                                  : <div className="item-open-badge">● 開放接單中</div>
+                              )}
+                              <div className="item-title">{item.title}</div>
                               <div className="item-price">{item.price_info}</div>
                             </div>
                           </div>
