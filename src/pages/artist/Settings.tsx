@@ -87,7 +87,8 @@ export function Settings() {
     tab_order: [],
     show_favorite_count: false,
     portfolio_layout: 'grid',
-    portfolio_blurred: false
+    portfolio_blurred: false,
+    showcase_layout: 'card'
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -185,6 +186,7 @@ export function Settings() {
             tab_order: parsed.tab_order || [],
             portfolio_layout: parsed.portfolio_layout ?? 'grid',
             portfolio_blurred: parsed.portfolio_blurred === true,
+            showcase_layout: parsed.showcase_layout ?? 'card',
           }));
         }
       }

@@ -96,9 +96,44 @@
 .item-open-badge { font-size: 11px; font-weight: 800; color: #4E7A5A; margin-bottom: 4px; letter-spacing: 0.02em; }
 .item-closed-badge { font-size: 11px; font-weight: 800; color: #A05C5C; margin-bottom: 4px; letter-spacing: 0.02em; }
 .item-title { font-size: 15px; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
-.item-price { font-size: 14px; font-weight: 900; color: #A67B3E; }
+.item-price { font-size: 14px; font-weight: 900; color: #A67B3E; white-space: pre-wrap; }
 .item-tags { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
 .item-tags span { font-size: 10px; font-weight: bold; color: #666; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px; }
+
+.status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.status-pill::before { content: "●"; font-size: 7px; }
+.status-pill.open { color: #4E7A5A; background: rgba(78, 122, 90, 0.12); }
+.status-pill.closed { color: #A05C5C; background: rgba(160, 92, 92, 0.12); }
+
+/* ---- 接委託區：固定卡片式（取代原本瀑布流，高度統一）---- */
+.showcase-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; width: 100%; }
+.showcase-card-item {
+  background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px; overflow: hidden;
+  cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex; flex-direction: column;
+}
+.showcase-card-item:hover { transform: translateY(-6px); }
+.showcase-card-item .thumb-wrap { aspect-ratio: 4 / 3; overflow: hidden; }
+.showcase-card-item .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.showcase-card-item .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.showcase-card-item .card-top-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---- 接委託區：清單式（圖文並排，價格/狀態常駐）---- */
+.showcase-list { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 760px; margin: 0 auto; }
+.showcase-list-item {
+  display: flex; gap: 18px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px;
+  padding: 16px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.06); transition: transform 0.25s ease;
+}
+.showcase-list-item:hover { transform: translateY(-4px); }
+.showcase-list-item .thumb-wrap { width: 148px; height: 148px; border-radius: 14px; overflow: hidden; flex-shrink: 0; }
+.showcase-list-item .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.showcase-list-item .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+.showcase-list-item .card-top-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.showcase-list-item .item-desc {
+  font-size: 13px; color: #7A7269; line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 
 
 .rich-text-content { background: #FFFFFF; padding: 50px; border-radius: 28px; box-shadow: 0 4px 30px rgba(0,0,0,0.03); width: 100%; line-height: 2; }
@@ -173,7 +208,25 @@
   .item-title { font-size: 14px !important; color: #333333 !important; }
   .item-price { font-size: 14px !important; color: #A67B3E !important; }
 
-  
+
+  .showcase-card-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  .showcase-card-item { border-radius: 14px !important; }
+  .showcase-card-item .card-body { padding: 10px 10px 12px !important; gap: 4px !important; }
+  .showcase-card-item .item-title { font-size: 12.5px !important; }
+  .showcase-card-item .item-price { font-size: 11px !important; }
+  .showcase-card-item .status-pill { font-size: 10px !important; padding: 2px 8px !important; }
+
+
+  .showcase-list { gap: 10px !important; max-width: none !important; }
+  .showcase-list-item { gap: 12px !important; padding: 9px !important; border-radius: 14px !important; }
+  .showcase-list-item .thumb-wrap { width: 68px !important; height: 68px !important; border-radius: 10px !important; }
+  .showcase-list-item .card-body { gap: 3px !important; }
+  .showcase-list-item .item-title { font-size: 13.5px !important; }
+  .showcase-list-item .item-price { font-size: 12px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+  .showcase-list-item .item-desc { display: none !important; }
+  .showcase-list-item .status-pill { font-size: 10px !important; padding: 2px 8px !important; }
+
+
   .mobile-oc-avatars-wrapper { gap: 12px !important; padding: 0 16px 4px 16px !important; margin: 0 -16px !important; justify-content: flex-start !important; }
   .oc-detail-container.is-flat .oc-card-content-wrapper { padding: 24px 20px !important; width: 100% !important; box-sizing: border-box !important; }
   .oc-detail-container.is-flat .oc-intro-grid { display: flex !important; flex-direction: column !important; gap: 20px !important; width: 100% !important; }

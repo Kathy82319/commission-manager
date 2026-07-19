@@ -256,7 +256,7 @@ export function ShowcaseModal({ selectedShowcase, artist, settings, isLoggedIn, 
             <div className="showcase-details" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div className="showcase-header">
                 <h2>{selectedShowcase.title}</h2>
-                {selectedShowcase.price_info && <div className="modal-price">${selectedShowcase.price_info}</div>}
+                {selectedShowcase.price_info && <div className="modal-price">{selectedShowcase.price_info}</div>}
               </div>
 
               {(selectedShowcase.max_orders || 0) > 0 && selectedShowcase.show_quota === 1 && (

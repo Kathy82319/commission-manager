@@ -12,11 +12,13 @@ interface ShowcaseTabProps {
   isReadOnly?: boolean;
   portfolio?: string[];
   settings: ProfileSettings;
+  setSettings?: React.Dispatch<React.SetStateAction<ProfileSettings>>;
   onItemCountChange?: (count: number) => void;
 }
 
-export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, onItemCountChange }: ShowcaseTabProps) {
+export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly, portfolio = [], settings, setSettings, onItemCountChange }: ShowcaseTabProps) {
   const showcaseLabel = settings.showcase_label || '接委託區';
+  const showcaseLayout = settings.showcase_layout ?? 'card';
   const [items, setItems] = useState<ShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -368,6 +370,34 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {!isReadOnly && setSettings && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #EAE6E1', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '12px' }}>{showcaseLabel}版型</div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {([
+              { value: 'card', label: '⊞ 固定卡片式', desc: '整齊排列・資訊常駐於圖片下方' },
+              { value: 'list', label: '☰ 清單式', desc: '圖文並排・適合項目較多時瀏覽' },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setSettings(prev => ({ ...prev, showcase_layout: opt.value }))}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                  border: showcaseLayout === opt.value ? '2px solid #4A7294' : '1px solid #DED9D3',
+                  background: showcaseLayout === opt.value ? '#EBF2F7' : '#FAFAFA',
+                  color: showcaseLayout === opt.value ? '#4A7294' : '#7A7269',
+                  fontWeight: showcaseLayout === opt.value ? 'bold' : 'normal',
+                  textAlign: 'center', transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ fontSize: '15px' }}>{opt.label}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0 }}>
           {showcaseLabel}管理

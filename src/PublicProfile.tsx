@@ -18,6 +18,15 @@ const decodeHTML = (html?: string) => {
   return txt.value;
 };
 
+const stripToPreviewText = (html?: string, maxLen = 60) => {
+  if (!html || typeof html !== 'string') return '';
+  const text = decodeHTML(html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+};
+
+const isShowcaseOpenForOrders = (item: any) => !!(item.form_schema && item.form_schema !== '[]' && item.form_schema !== '');
+const isShowcaseFull = (item: any) => (item.max_orders || 0) > 0 && (item.current_orders_count || 0) >= (item.max_orders || 0);
+
 const hexToRgba = (hex?: string, alpha = 1) => {
   const clean = (hex || '#041b35').replace('#', '');
   const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
@@ -605,27 +614,63 @@ return {
                       ))}
                     </div>
                   )}
-                  <div className="masonry-grid">
-                    {filteredShowcaseItems.map(item => (
-                      <div key={item.id} className="masonry-item" onClick={() => { 
-                        setSearchParams(prev => { prev.set('tab', 'showcase'); prev.set('showcaseId', item.id); return prev; });
-                      }}>
-                        <img src={item.cover_url} alt={item.title} loading="lazy" />
-                        <div className="floating-info-box">
-                          {item.form_schema && item.form_schema !== '[]' && item.form_schema !== '' && (
-                            (() => {
-                              const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
-                              return isFull
-                                ? <div className="item-closed-badge">● 目前已關閉接單</div>
-                                : <div className="item-open-badge">● 開放接單中</div>;
-                            })()
-                          )}
-                          <div className="item-title">{item.title}</div>
-                          <div className="item-price">${item.price_info}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {settings?.showcase_layout === 'list' ? (
+                    <div className="showcase-list">
+                      {filteredShowcaseItems.map(item => {
+                        const openForOrders = isShowcaseOpenForOrders(item);
+                        const full = isShowcaseFull(item);
+                        const preview = stripToPreviewText(item.description);
+                        return (
+                          <div key={item.id} className="showcase-list-item" onClick={() => {
+                            setSearchParams(prev => { prev.set('tab', 'showcase'); prev.set('showcaseId', item.id); return prev; });
+                          }}>
+                            <div className="thumb-wrap">
+                              <img src={item.cover_url} alt={item.title} loading="lazy" />
+                            </div>
+                            <div className="card-body">
+                              <div className="card-top-row">
+                                <div className="item-title">{item.title}</div>
+                                {openForOrders && (
+                                  full
+                                    ? <span className="status-pill closed">目前已關閉接單</span>
+                                    : <span className="status-pill open">開放接單中</span>
+                                )}
+                              </div>
+                              {preview && <div className="item-desc">{preview}</div>}
+                              <div className="item-price">{item.price_info}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="showcase-card-grid">
+                      {filteredShowcaseItems.map(item => {
+                        const openForOrders = isShowcaseOpenForOrders(item);
+                        const full = isShowcaseFull(item);
+                        return (
+                          <div key={item.id} className="showcase-card-item" onClick={() => {
+                            setSearchParams(prev => { prev.set('tab', 'showcase'); prev.set('showcaseId', item.id); return prev; });
+                          }}>
+                            <div className="thumb-wrap">
+                              <img src={item.cover_url} alt={item.title} loading="lazy" />
+                            </div>
+                            <div className="card-body">
+                              <div className="card-top-row">
+                                <div className="item-title">{item.title}</div>
+                                {openForOrders && (
+                                  full
+                                    ? <span className="status-pill closed">目前已關閉接單</span>
+                                    : <span className="status-pill open">開放接單中</span>
+                                )}
+                              </div>
+                              <div className="item-price">{item.price_info}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -39,6 +39,7 @@ export interface ProfileSettings {
   show_favorite_count?: boolean;
   portfolio_layout?: 'grid' | 'masonry';
   portfolio_blurred?: boolean;
+  showcase_layout?: 'card' | 'list';
 }
 
 export interface CompleteSettings {
@@ -70,6 +71,7 @@ export interface CompleteSettings {
   show_favorite_count: boolean;
   portfolio_layout: 'grid' | 'masonry';
   portfolio_blurred: boolean;
+  showcase_layout: 'card' | 'list';
 }
 
 // 個人公開頁面背景相關設定，讓區塊編輯器的「公開頁面預覽」可以套用跟實際頁面一致的底色
