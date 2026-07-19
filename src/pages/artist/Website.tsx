@@ -439,17 +439,16 @@ export function Website() {
                         style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                       >
                         {item.label}
-                        {isLocked && !isContentGroup && '[鎖定]'}
                       </button>
-                      {isContentGroup && (
-                        isLocked ? (
-                          <span
-                            title="此分頁限專業版用戶"
-                            style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
-                          >
-                            專業版
-                          </span>
-                        ) : (
+                      {isLocked ? (
+                        <span
+                          title="此分頁限專業版用戶"
+                          style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
+                        >
+                          專業版
+                        </span>
+                      ) : (
+                        isContentGroup && (
                           <button
                             type="button"
                             onClick={() => toggleVisibility(publicId)}
@@ -546,17 +545,16 @@ export function Website() {
                       style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {item.label}
-                      {isLocked && !isContentGroup && '[鎖定]'}
                     </button>
-                    {isContentGroup && (
-                      isLocked ? (
-                        <span
-                          title="此分頁限專業版用戶"
-                          style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
-                        >
-                          專業版
-                        </span>
-                      ) : (
+                    {isLocked ? (
+                      <span
+                        title="此分頁限專業版用戶"
+                        style={{ fontSize: '11px', color: '#A67B3E', fontWeight: 'bold', flexShrink: 0, whiteSpace: 'nowrap', background: '#FDF4E6', padding: '3px 8px', borderRadius: '999px', border: '1px solid #F0DDB8' }}
+                      >
+                        專業版
+                      </span>
+                    ) : (
+                      isContentGroup && (
                         <button
                           type="button"
                           onClick={() => toggleVisibility(publicId)}
