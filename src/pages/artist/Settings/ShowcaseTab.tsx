@@ -4,6 +4,7 @@ import type { QuotaInfo, ProfileSettings } from '../Settings/types';
 import { ShowcaseFormBuilder, type ShowcaseItem } from '../../../components/ShowcaseFormBuilder';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
+import '../../../components/PublicProfile/styles/ShowcaseGrid.css';
 
 interface ShowcaseTabProps {
   onToggleGlobalSave: (hide: boolean) => void;
@@ -427,45 +428,109 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           目前尚未新增任何項目。
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        showcaseLayout === 'list' ? (
+        <div className="showcase-list">
           {items.map((item, index) => {
             const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
-            const imgCount = item.images?.length || 0;
+            const hasForm = !!(item.form_schema && item.form_schema !== '[]' && item.form_schema !== '');
             return (
-              <div key={item.id} style={{ border: '1px solid #EAE6E1', borderRadius: '12px', overflow: 'hidden', background: '#FFF', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                {index < limit && (
-                  <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>公開展示中</div>
-                )}
-                {isFull && (
-                  <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#EF4444', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, display: 'flex', alignItems: 'center', gap: '4px' }}>🛑 已滿單</div>
-                )}
-                {imgCount > 1 && (
-                  <div style={{ position: 'absolute', bottom: '130px', right: '10px', background: 'rgba(0,0,0,0.6)', color: '#FFF', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', zIndex: 2 }}>1 / {imgCount} 張</div>
-                )}
-                <div style={{ height: '180px', background: '#F4F0EB', position: 'relative' }}>
-                  <img src={item.cover_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isFull ? 0.7 : 1 }} />
+              <div key={item.id} className="showcase-list-item" style={{ cursor: 'default' }}>
+                <div className="thumb-wrap" style={{ position: 'relative' }}>
+                  <img src={item.cover_url} alt={item.title} style={{ opacity: isFull ? 0.7 : 1 }} />
                   {!item.is_active && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', zIndex: 1 }}>已手動隱藏</div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', textAlign: 'center', zIndex: 1 }}>已手動隱藏</div>
                   )}
                 </div>
-                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#333' }}>{item.title}</div>
-                  <div style={{ color: '#A67B3E', fontWeight: 'bold', fontSize: '14px' }}>{item.price_info || '未定價'}</div>
+                <div className="card-body">
+                  <div className="card-top-row">
+                    <div className="item-title">{item.title}</div>
+                    {index < limit && <span style={{ background: '#4E7A5A', color: '#FFF', padding: '2px 9px', borderRadius: '20px', fontSize: '10.5px', fontWeight: 'bold' }}>公開展示中</span>}
+                    {isFull && <span style={{ background: '#EF4444', color: '#FFF', padding: '2px 9px', borderRadius: '20px', fontSize: '10.5px', fontWeight: 'bold' }}>🛑 已滿單</span>}
+                    {hasForm && (
+                      isFull
+                        ? <span className="status-pill closed">目前已關閉接單</span>
+                        : <span className="status-pill open">開放接單中</span>
+                    )}
+                  </div>
+                  <div className="item-price">{item.price_info || '未定價'}</div>
                   {item.max_orders > 0 && (
-                    <div style={{ fontSize: '12px', color: '#7A7269', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ flex: 1, height: '6px', background: '#EAE6E1', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ fontSize: '12px', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ flex: 1, maxWidth: '160px', height: '6px', background: '#EAE6E1', borderRadius: '3px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', background: isFull ? '#EF4444' : '#4E7A5A', width: `${Math.min(100, ((item.current_orders_count||0) / item.max_orders) * 100)}%` }} />
                       </div>
                       <span>{item.current_orders_count || 0} / {item.max_orders}</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                    {Array.isArray(item.tags) && item.tags.slice(0, 3).map((tag, idx) => (
-                      <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
-                    ))}
+                  {Array.isArray(item.tags) && item.tags.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {item.tags.slice(0, 3).map((tag, idx) => (
+                        <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', flexShrink: 0 }}>
+                  <button onClick={() => openEditForm(item)} style={{ padding: '10px 14px', background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E', fontSize: '13px', whiteSpace: 'nowrap' }}>編輯 / 設定表單</button>
+                  <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ padding: '10px 14px', background: '#FAFAFA', border: '1px solid #EAE6E1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C', fontSize: '13px' }}>刪除</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        ) : (
+        <div className="showcase-card-grid">
+          {items.map((item, index) => {
+            const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
+            const imgCount = item.images?.length || 0;
+            const hasForm = !!(item.form_schema && item.form_schema !== '[]' && item.form_schema !== '');
+            return (
+              <div key={item.id} className="showcase-card-item" style={{ cursor: 'default' }}>
+                <div className="thumb-wrap">
+                  <img src={item.cover_url} alt={item.title} style={{ opacity: isFull ? 0.7 : 1 }} />
+                  {!item.is_active && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', zIndex: 1 }}>已手動隱藏</div>
+                  )}
+                  {index < limit && (
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#4E7A5A', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>公開展示中</div>
+                  )}
+                  <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    {isFull && (
+                      <div style={{ background: '#EF4444', color: '#FFF', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>🛑 已滿單</div>
+                    )}
+                    {imgCount > 1 && (
+                      <div style={{ background: 'rgba(0,0,0,0.6)', color: '#FFF', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>1 / {imgCount} 張</div>
+                    )}
+                  </div>
+                  <div className="floating-info-box">
+                    {hasForm && (
+                      isFull
+                        ? <div className="item-closed-badge">● 目前已關閉接單</div>
+                        : <div className="item-open-badge">● 開放接單中</div>
+                    )}
+                    <div className="item-title">{item.title}</div>
+                    <div className="item-price">{item.price_info || '未定價'}</div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1' }}>
+                {(item.max_orders > 0 || (Array.isArray(item.tags) && item.tags.length > 0)) && (
+                  <div style={{ padding: '12px 16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {item.max_orders > 0 && (
+                      <div style={{ fontSize: '12px', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ flex: 1, height: '6px', background: '#EAE6E1', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: isFull ? '#EF4444' : '#4E7A5A', width: `${Math.min(100, ((item.current_orders_count||0) / item.max_orders) * 100)}%` }} />
+                        </div>
+                        <span>{item.current_orders_count || 0} / {item.max_orders}</span>
+                      </div>
+                    )}
+                    {Array.isArray(item.tags) && item.tags.length > 0 && (
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {item.tags.slice(0, 3).map((tag, idx) => (
+                          <span key={idx} style={{ padding: '2px 8px', background: '#F0ECE7', color: '#7A7269', borderRadius: '12px', fontSize: '12px' }}>#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div style={{ display: 'flex', borderTop: '1px solid #EAE6E1', marginTop: '12px' }}>
                   <button onClick={() => openEditForm(item)} style={{ flex: 1, padding: '12px', background: '#FAFAFA', border: 'none', borderRight: '1px solid #EAE6E1', cursor: 'pointer', fontWeight: 'bold', color: '#5D4A3E' }}>編輯 / 設定表單</button>
                   <button onClick={() => item.id && handleDeleteItem(item.id.toString())} style={{ flex: 1, padding: '12px', background: '#FAFAFA', border: 'none', cursor: 'pointer', fontWeight: 'bold', color: '#A05C5C' }}>刪除</button>
                 </div>
@@ -473,6 +538,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
             );
           })}
         </div>
+        )
       )}
     </div>
   );

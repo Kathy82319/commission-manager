@@ -654,15 +654,15 @@ return {
                           }}>
                             <div className="thumb-wrap">
                               <img src={item.cover_url} alt={item.title} loading="lazy" />
-                            </div>
-                            <div className="floating-info-box">
-                              {openForOrders && (
-                                full
-                                  ? <div className="item-closed-badge">● 目前已關閉接單</div>
-                                  : <div className="item-open-badge">● 開放接單中</div>
-                              )}
-                              <div className="item-title">{item.title}</div>
-                              <div className="item-price">{item.price_info}</div>
+                              <div className="floating-info-box">
+                                {openForOrders && (
+                                  full
+                                    ? <div className="item-closed-badge">● 目前已關閉接單</div>
+                                    : <div className="item-open-badge">● 開放接單中</div>
+                                )}
+                                <div className="item-title">{item.title}</div>
+                                <div className="item-price">{item.price_info}</div>
+                              </div>
                             </div>
                           </div>
                         );

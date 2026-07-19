@@ -111,10 +111,9 @@
   background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px; overflow: hidden;
   cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
 }
 .showcase-card-item:hover { transform: translateY(-6px); }
-.showcase-card-item .thumb-wrap { aspect-ratio: 3 / 4; overflow: hidden; }
+.showcase-card-item .thumb-wrap { position: relative; aspect-ratio: 3 / 4; overflow: hidden; }
 .showcase-card-item .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ---- 接委託區：清單式（圖文並排，價格/狀態常駐）---- */
