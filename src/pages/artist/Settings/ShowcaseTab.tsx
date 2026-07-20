@@ -4,6 +4,7 @@ import type { QuotaInfo, ProfileSettings } from '../Settings/types';
 import { ShowcaseFormBuilder, type ShowcaseItem } from '../../../components/ShowcaseFormBuilder';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import { ImageUploader } from '../../../components/ImageUploader';
+import { stripToPreviewText } from '../../../utils/textPreview';
 import '../../../components/PublicProfile/styles/ShowcaseGrid.css';
 
 interface ShowcaseTabProps {
@@ -378,7 +379,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#5D4A3E', marginBottom: '12px' }}>{showcaseLabel}版型</div>
           <div style={{ display: 'flex', gap: '12px' }}>
             {([
-              { value: 'card', label: '⊞ 固定卡片式', desc: '整齊排列・資訊常駐於圖片下方' },
+              { value: 'card', label: '⊞ 固定卡片式', desc: '主要強調圖片呈現' },
               { value: 'list', label: '☰ 清單式', desc: '圖文並排・適合項目較多時瀏覽' },
             ] as const).map(opt => (
               <button
@@ -433,6 +434,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
           {items.map((item, index) => {
             const isFull = item.max_orders > 0 && (item.current_orders_count || 0) >= item.max_orders;
             const hasForm = !!(item.form_schema && item.form_schema !== '[]' && item.form_schema !== '');
+            const preview = stripToPreviewText(item.description);
             return (
               <div key={item.id} className="showcase-list-item" style={{ cursor: 'default' }}>
                 <div className="thumb-wrap" style={{ position: 'relative' }}>
@@ -452,6 +454,7 @@ export function ShowcaseTab({ onToggleGlobalSave, onToast, quotaInfo, isReadOnly
                         : <span className="status-pill open">開放接單中</span>
                     )}
                   </div>
+                  {preview && <div className="item-desc">{preview}</div>}
                   <div className="item-price">{item.price_info || '未定價'}</div>
                   {item.max_orders > 0 && (
                     <div style={{ fontSize: '12px', color: '#7A7269', display: 'flex', alignItems: 'center', gap: '6px' }}>

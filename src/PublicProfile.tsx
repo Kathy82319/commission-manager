@@ -8,6 +8,7 @@ import { ProfileSidebar } from './components/PublicProfile/ProfileSidebar';
 import { ShowcaseModal } from './components/PublicProfile/ShowcaseModal';
 import { BlockContentView } from './components/BlockContentView';
 import { parseBlocks } from './pages/artist/Settings/blockContent';
+import { stripToPreviewText } from './utils/textPreview';
 import './styles/PublicProfile.css';
 import './components/PublicProfile/styles/ShowcaseGrid.css';
 
@@ -16,12 +17,6 @@ const decodeHTML = (html?: string) => {
   const txt = document.createElement("textarea");
   txt.innerHTML = html;
   return txt.value;
-};
-
-const stripToPreviewText = (html?: string, maxLen = 60) => {
-  if (!html || typeof html !== 'string') return '';
-  const text = decodeHTML(html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
 };
 
 const isShowcaseOpenForOrders = (item: any) => !!(item.form_schema && item.form_schema !== '[]' && item.form_schema !== '');
