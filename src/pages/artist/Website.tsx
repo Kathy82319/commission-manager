@@ -362,7 +362,7 @@ export function Website() {
   const isFreePlan = quotaInfo?.plan_type === 'free';
 
   const freeAllowedTabs = [
-    'profile_basic', 'portfolio', 'detailed_intro', 'queue_settings', 'showcase', 'oc_display'
+    'profile_basic', 'portfolio', 'detailed_intro', 'queue_settings', 'showcase', 'oc_display', 'theme', 'splash'
   ];
 
   const isCurrentTabLocked = isFreePlan && (!freeAllowedTabs.includes(activeTab) || activeTab.startsWith('custom_'));
