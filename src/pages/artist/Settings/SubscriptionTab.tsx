@@ -225,7 +225,6 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>💎 許願池貼文<strong>優先置頂</strong>顯示（每日亂數輪替）</li>
             <li>👑 <strong>解鎖</strong> 最高 <strong>30 張</strong> 作品展示</li>
             <li>👑 <strong>解鎖</strong>「接委託區」開放展示 30 個項目</li>
-            <li>👑 <strong>個人頁自訂：</strong>背景、開場動畫、展示分頁順序</li>
           </ul>
           
           <button 
