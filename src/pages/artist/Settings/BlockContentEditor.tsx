@@ -151,10 +151,9 @@ export function BlockContentEditor({ value, onChange, previewTheme }: Props) {
                     background: '#FFFFFF',
                     border: dragOverId === block.id ? '2px dashed #8C5A3C' : '1px solid #EAE6E1',
                     borderRadius: '12px',
-                    overflow: 'hidden',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#FAFAFA', borderBottom: '1px solid #F0ECE7' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#FAFAFA', borderBottom: '1px solid #F0ECE7', borderRadius: '11px 11px 0 0' }}>
                     <button
                       type="button"
                       data-drag-handle

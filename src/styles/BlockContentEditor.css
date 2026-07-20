@@ -125,6 +125,14 @@
   max-width: calc(100vw - 32px);
 }
 
+/* 色票/底色選單第一個是「清除顏色」選項（Quill 用沒有 value 的 option 表示），
+   預設會被畫成純黑/純白色塊、跟真正的顏色分不出來，改成對角線圖示標示 */
+.custom-quill-wrapper .ql-color .ql-picker-item:first-child,
+.custom-quill-wrapper .ql-background .ql-picker-item:first-child {
+  background-color: #FFFFFF !important;
+  background-image: linear-gradient(to top right, transparent calc(50% - 1px), #E0524A calc(50% - 1px), #E0524A calc(50% + 1px), transparent calc(50% + 1px)) !important;
+}
+
 /* 手機版瀏覽器無法使用原生拖曳排序，隱藏拖曳把手，
    改用區塊標題列的 ▲▼ 按鈕上下移動。跟版面切換相同的 1024px 斷點，
    比 pointer:coarse 更可靠（部分手機瀏覽器對該媒體特性支援不一致） */

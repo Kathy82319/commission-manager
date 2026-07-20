@@ -19,7 +19,7 @@ export const QUILL_MODULES = {
     [{ header: [1, 2, 3, false] }],
     [{ size: ['small', false, 'large', 'huge'] }],
     ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-    [{ color: QUILL_COLOR_PALETTE }, { background: QUILL_COLOR_PALETTE }],
+    [{ color: [false, ...QUILL_COLOR_PALETTE] }, { background: [false, ...QUILL_COLOR_PALETTE] }],
     [{ list: 'ordered' }, { list: 'bullet' }, { align: [] }],
     ['link', 'clean'],
   ],
