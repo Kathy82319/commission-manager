@@ -133,6 +133,14 @@
   background-image: linear-gradient(to top right, transparent calc(50% - 1px), #E0524A calc(50% - 1px), #E0524A calc(50% + 1px), transparent calc(50% + 1px)) !important;
 }
 
+/* Quill 的置中/置右/左右對齊是用 class 標記（ql-align-center 等），
+   但 Quill 內建的 CSS 只在 .ql-editor 底下才會生效（.ql-editor .ql-align-center{...}）。
+   儲存後的內容是用 dangerouslySetInnerHTML 直接輸出到預覽區/公開頁面，
+   不在 .ql-editor 裡面，所以對齊樣式原本完全沒作用，這裡補上不需要 .ql-editor 也能生效的版本 */
+.ql-align-center { text-align: center; }
+.ql-align-right { text-align: right; }
+.ql-align-justify { text-align: justify; }
+
 /* 手機版瀏覽器無法使用原生拖曳排序，隱藏拖曳把手，
    改用區塊標題列的 ▲▼ 按鈕上下移動。跟版面切換相同的 1024px 斷點，
    比 pointer:coarse 更可靠（部分手機瀏覽器對該媒體特性支援不一致） */
