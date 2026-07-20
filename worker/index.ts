@@ -49,9 +49,9 @@ export default {
           const name = userData.data.display_name || "繪師頁面";
           
         
-          html = html.replace(/<title>.*?<\/title>/si, `<title>${name} | Arti 繪師小幫手</title>`);
-          
-          html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="${name} | Arti 繪師小幫手"`);
+          html = html.replace(/<title>.*?<\/title>/si, `<title>Arti｜${name}</title>`);
+
+          html = html.replace(/<meta property="og:title" content="[^"]*"/si, `<meta property="og:title" content="Arti｜${name}"`);
           
           console.log(`[SEO Injection] 成功為 ${artistId} 注入標題: ${name}`);
         }

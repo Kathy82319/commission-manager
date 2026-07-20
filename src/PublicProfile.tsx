@@ -393,8 +393,8 @@ return {
       
       
       <Helmet>
-        <title>{artist?.display_name || '繪師頁面'} | Arti 繪師小幫手</title>
-        <meta property="og:title" content={`${artist?.display_name || '繪師頁面'} | Arti 繪師小幫手`} />
+        <title>Arti｜{artist?.display_name || '繪師頁面'}</title>
+        <meta property="og:title" content={`Arti｜${artist?.display_name || '繪師頁面'}`} />
         <meta property="description" content={artist?.bio || '歡迎來到我的頁面'} />
       </Helmet>
 
