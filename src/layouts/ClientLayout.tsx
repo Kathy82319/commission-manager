@@ -161,20 +161,8 @@ export function ClientLayout() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
           <div style={{ background: 'white', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937', marginBottom: '10px' }}>年末許願池曝光延長活動</div>
-            <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6, marginBottom: '14px' }}>
-              您有 {campaignOffers.length} 篇許願池貼文已到期下架。我們想邀請您重新上架，曝光延長至 <strong>2026/12/31</strong>，協助您觸及更多可能的合作對象。
-            </div>
-            <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#f9fafb', borderRadius: '8px', padding: '10px 14px', marginBottom: '18px' }}>
-              {campaignOffers.map((o: any) => (
-                <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                  <span>・{o.title || '（未命名貼文）'}</span>
-                  {o.offer_status && o.offer_status !== 'pending' && (
-                    <span style={{ fontSize: '11px', color: o.offer_status === 'accepted' ? '#059669' : '#9ca3af', whiteSpace: 'nowrap' }}>
-                      {o.offer_status === 'accepted' ? '目前：已上架' : '目前：已婉拒'}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6, marginBottom: '20px' }}>
+              您有許願池貼文已到期下架。我們想邀請您重新上架，曝光延長至 <strong>2026/12/31</strong>，協助您觸及更多可能的合作對象。
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button

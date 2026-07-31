@@ -51,6 +51,7 @@ export const Wishboard: React.FC = () => {
   const [layoutMode, setLayoutMode] = useState<'list' | 'masonry'>('list');
   const [masonryDetailBulletin, setMasonryDetailBulletin] = useState<any | null>(null);
   const isReactivatingRef = useRef(false);
+  const reactivationHandledRef = useRef(false);
 
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
@@ -172,7 +173,8 @@ export const Wishboard: React.FC = () => {
   // 從許願池活動的彈窗點「前往編輯並重新上架」進來：抓回上次貼文內容、直接開編輯表單預填
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('reactivate') !== '1' || !currentUser) return;
+    if (params.get('reactivate') !== '1' || !currentUser || reactivationHandledRef.current) return;
+    reactivationHandledRef.current = true;
 
     const openReactivationEdit = async () => {
       try {
@@ -181,7 +183,8 @@ export const Wishboard: React.FC = () => {
         if (offer) {
           isReactivatingRef.current = true;
           handleEditTrigger(offer);
-          navigate(`/wishboard?tab=${offer.category === 'offer' ? 'offer' : 'request'}`, { replace: true });
+          // 保留 reactivate=1，避免 Layout 那邊「有待確認邀約就跳提示」的檢查在使用者送出/取消前又跳出來
+          navigate(`/wishboard?reactivate=1&tab=${offer.category === 'offer' ? 'offer' : 'request'}`, { replace: true });
           return;
         }
       } catch {}
@@ -317,6 +320,7 @@ export const Wishboard: React.FC = () => {
             await apiClient.post('/api/users/me/wishboard-campaign/respond', { accept: true });
           } catch {}
           showToast("重新上架成功！曝光將延長至 2026/12/31");
+          navigate(`/wishboard?tab=${activeTab}`, { replace: true });
         } else {
           showToast(editingBulletin ? "更新成功！" : "發布成功！");
         }
@@ -328,6 +332,15 @@ export const Wishboard: React.FC = () => {
       } else showToast(res.message || (editingBulletin ? "更新失敗" : "發布失敗"), "error");
     } catch (err: any) {
       showToast(err.message || "發布發生錯誤", "error");
+    }
+  };
+
+  const handleCancelPostModal = () => {
+    setShowPostModal(false);
+    setEditingBulletin(null);
+    if (isReactivatingRef.current) {
+      isReactivatingRef.current = false;
+      navigate(`/wishboard?tab=${activeTab}`, { replace: true });
     }
   };
 
@@ -669,7 +682,7 @@ export const Wishboard: React.FC = () => {
           form={requestForm}
           setForm={setRequestForm}
           isUploading={isUploading}
-          onClose={() => { setShowPostModal(false); setEditingBulletin(null); isReactivatingRef.current = false; }}
+          onClose={handleCancelPostModal}
           onSubmit={handlePostSubmit}
           onImageUpload={handleRequestImageUpload}
         />
@@ -680,7 +693,7 @@ export const Wishboard: React.FC = () => {
           form={offerForm}
           setForm={setOfferForm}
           isUploading={isUploading}
-          onClose={() => { setShowPostModal(false); setEditingBulletin(null); isReactivatingRef.current = false; }}
+          onClose={handleCancelPostModal}
           onSubmit={handlePostSubmit}
           onImageUpload={handleOfferImageUpload}
           userPortfolio={userPortfolio}
