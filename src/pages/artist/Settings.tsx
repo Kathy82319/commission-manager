@@ -56,7 +56,9 @@ export function Settings() {
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
     email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1,
-    notification_line: 0
+    notification_line: 0,
+    line_art_chat: 1, line_art_progress: 1, line_art_inbound: 1,
+    line_cli_chat: 1, line_cli_progress: 1, line_cli_bulletin: 1
   });
   const [userPlan, setUserPlan] = useState<string>('free');
 
@@ -167,6 +169,12 @@ export function Settings() {
           email_cli_progress: data.data.email_cli_progress ?? 1,
           email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
           notification_line: data.data.notification_line ?? 0,
+          line_art_chat: data.data.line_art_chat ?? 1,
+          line_art_progress: data.data.line_art_progress ?? 1,
+          line_art_inbound: data.data.line_art_inbound ?? 1,
+          line_cli_chat: data.data.line_cli_chat ?? 1,
+          line_cli_progress: data.data.line_cli_progress ?? 1,
+          line_cli_bulletin: data.data.line_cli_bulletin ?? 1,
         });
         setUserPlan(data.data.plan_type || 'free');
 

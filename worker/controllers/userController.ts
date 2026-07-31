@@ -113,6 +113,12 @@ export const userController = {
       delete user.email_cli_progress;
       delete user.email_cli_bulletin;
       delete user.notification_line;
+      delete user.line_art_chat;
+      delete user.line_art_progress;
+      delete user.line_art_inbound;
+      delete user.line_cli_chat;
+      delete user.line_cli_progress;
+      delete user.line_cli_bulletin;
 
       if (user.plan_type === 'free' && user.profile_settings) {
         try {
@@ -201,10 +207,22 @@ export const userController = {
       }
     }
 
+    const allowLine = userPlan === 'pro'; // LINE 通知僅開放專業版，避免前端被繞過
+
     if (body.notification_line !== undefined) {
-      const allowLine = userPlan === 'pro'; // LINE 通知僅開放專業版，避免前端被繞過
       userUpdates.push("notification_line = ?");
       userParams.push(allowLine && body.notification_line ? 1 : 0);
+    }
+
+    const lineFlags = [
+      'line_art_chat', 'line_art_progress', 'line_art_inbound',
+      'line_cli_chat', 'line_cli_progress', 'line_cli_bulletin'
+    ];
+    for (const flag of lineFlags) {
+      if (body[flag] !== undefined) {
+        userUpdates.push(`${flag} = ?`);
+        userParams.push(allowLine && body[flag] ? 1 : 0);
+      }
     }
 
     if (hasSettingsUpdate) {

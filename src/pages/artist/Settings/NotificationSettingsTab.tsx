@@ -10,6 +10,12 @@ export interface NotificationConfig {
   email_cli_progress: number;
   email_cli_bulletin: number;
   notification_line: number;
+  line_art_chat: number;
+  line_art_progress: number;
+  line_art_inbound: number;
+  line_cli_chat: number;
+  line_cli_progress: number;
+  line_cli_bulletin: number;
 }
 
 interface NotificationSettingsTabProps {
@@ -57,6 +63,46 @@ export function NotificationSettingsTab({ config, setConfig, role, isPro }: Noti
           }} />
         </span>
       </label>
+    </div>
+  );
+
+  const MiniToggle = ({ label, field, disabled }: { label: string, field: keyof NotificationConfig, disabled?: boolean }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', opacity: disabled ? 0.4 : 1 }}>
+      <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'bold' }}>{label}</span>
+      <label style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px', cursor: disabled ? 'not-allowed' : 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={config[field] === 1}
+          onChange={() => !disabled && handleToggle(field)}
+          disabled={disabled}
+          style={{ opacity: 0, width: 0, height: 0 }}
+        />
+        <span style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: config[field] === 1 ? '#4E7A5A' : '#D1D5DB',
+          transition: '.2s', borderRadius: '20px'
+        }}>
+          <span style={{
+            position: 'absolute', height: '14px', width: '14px',
+            left: config[field] === 1 ? '19px' : '3px', bottom: '3px',
+            backgroundColor: 'white', transition: '.2s', borderRadius: '50%',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }} />
+        </span>
+      </label>
+    </div>
+  );
+
+  const DualToggleRow = ({ label, description, emailField, lineField }: { label: string, description: string, emailField: keyof NotificationConfig, lineField: keyof NotificationConfig }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #F3F4F6', gap: '16px' }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 'bold', color: '#374151', fontSize: '15px', marginBottom: '4px' }}>{label}</div>
+        <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.4' }}>{description}</div>
+      </div>
+      <div style={{ display: 'flex', gap: '20px', flexShrink: 0 }}>
+        <MiniToggle label="Email" field={emailField} />
+        {role === 'artist' && <MiniToggle label="LINE" field={lineField} disabled={!isPro} />}
+      </div>
     </div>
   );
 
@@ -136,20 +182,23 @@ export function NotificationSettingsTab({ config, setConfig, role, isPro }: Noti
           </p>
 
           <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '0 16px' }}>
-            <ToggleRow
+            <DualToggleRow
               label="新委託與招募應徵"
-              description="當個人頁收到新委託申請，或是許願池貼文收到新的應徵/提案時通知您（Email／LINE）。"
-              field="email_art_inbound"
+              description="當個人頁收到新委託申請，或是許願池貼文收到新的應徵/提案時通知您。"
+              emailField="email_art_inbound"
+              lineField="line_art_inbound"
             />
-            <ToggleRow
+            <DualToggleRow
               label="委託單與合約進度"
-              description="當委託人同意合約、確認稿件、提出修改請求，或是退回提案時通知您（Email／LINE）。"
-              field="email_art_progress"
+              description="當委託人同意合約、確認稿件、提出修改請求，或是退回提案時通知您。"
+              emailField="email_art_progress"
+              lineField="line_art_progress"
             />
-            <ToggleRow
+            <DualToggleRow
               label="洽談室新訊息"
-              description="當委託人在洽談室或正式委託單中傳送新聊天訊息時通知您（Email／LINE）。"
-              field="email_art_chat"
+              description="當委託人在洽談室或正式委託單中傳送新聊天訊息時通知您。"
+              emailField="email_art_chat"
+              lineField="line_art_chat"
             />
           </div>
         </div>
@@ -187,20 +236,23 @@ export function NotificationSettingsTab({ config, setConfig, role, isPro }: Noti
         )}
 
         <div style={{ backgroundColor: '#FFF', borderRadius: '12px', padding: '0 16px' }}>
-          <ToggleRow
+          <DualToggleRow
             label="許願池投遞狀態"
-            description="當您投遞的許願池被婉拒、滿額關閉，或收到繪師的詳談邀請時通知您（Email／LINE）。"
-            field="email_cli_bulletin"
+            description="當您投遞的許願池被婉拒、滿額關閉，或收到繪師的詳談邀請時通知您。"
+            emailField="email_cli_bulletin"
+            lineField="line_cli_bulletin"
           />
-          <ToggleRow
+          <DualToggleRow
             label="繪師交稿與開單進度"
-            description="當繪師主動為您開立專屬委託單、提出合約異動，或上傳最新階段稿件時通知您（Email／LINE）。"
-            field="email_cli_progress"
+            description="當繪師主動為您開立專屬委託單、提出合約異動，或上傳最新階段稿件時通知您。"
+            emailField="email_cli_progress"
+            lineField="line_cli_progress"
           />
-          <ToggleRow
+          <DualToggleRow
             label="洽談室新回覆"
-            description="當繪師在洽談室或正式委託單中回覆您的聊天訊息時通知您（Email／LINE）。"
-            field="email_cli_chat"
+            description="當繪師在洽談室或正式委託單中回覆您的聊天訊息時通知您。"
+            emailField="email_cli_chat"
+            lineField="line_cli_chat"
           />
         </div>
       </div>

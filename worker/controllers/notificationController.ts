@@ -40,7 +40,9 @@ export const notificationController = {
       const userSettings = await env.commission_db.prepare(`
         SELECT notification_email, notification_line, plan_type, pro_expires_at,
                email_art_chat, email_art_progress, email_art_inbound,
-               email_cli_chat, email_cli_progress, email_cli_bulletin
+               email_cli_chat, email_cli_progress, email_cli_bulletin,
+               line_art_chat, line_art_progress, line_art_inbound,
+               line_cli_chat, line_cli_progress, line_cli_bulletin
         FROM Users WHERE id = ?
       `).bind(safeUserId).first<any>();
 
@@ -61,58 +63,63 @@ export const notificationController = {
           safeText.includes('邀請您') ||
           (!safeLinkUrl.includes('role=artist') && safeLinkUrl.includes('/workspace/') && (safeText.includes('上傳') || safeText.includes('提交')));
 
-        const artChat = Number(userSettings.email_art_chat ?? 1);
-        const artProgress = Number(userSettings.email_art_progress ?? 1);
-        const artInbound = Number(userSettings.email_art_inbound ?? 1);
-        const cliChat = Number(userSettings.email_cli_chat ?? 1);
-        const cliProgress = Number(userSettings.email_cli_progress ?? 1);
-        const cliBulletin = Number(userSettings.email_cli_bulletin ?? 1);
-
-        // 這三個分類開關同時決定 Email 跟 LINE 通知是否發送，兩個管道共用同一套分類設定
-        let categoryAllowed = false;
+        let category: 'chat' | 'inbound' | 'progress' = 'progress';
         if (safeText.includes('聊天') || safeText.includes('💬') || safeType === 'chat') {
-          if (isArtistContext) categoryAllowed = artChat === 1;
-          else if (isClientContext) categoryAllowed = cliChat === 1;
-          else categoryAllowed = artChat === 1 && cliChat === 1;
-        }
-        else if (safeText.includes('投遞') || safeText.includes('應徵') || safeText.includes('送出了新的委託申請') || safeText.includes('婉拒') || safeText.includes('詳談') || safeText.includes('額滿')) {
-          if (isArtistContext) categoryAllowed = artInbound === 1;
-          else if (isClientContext) categoryAllowed = cliBulletin === 1;
-          else categoryAllowed = artInbound === 1 && cliBulletin === 1;
-        }
-        else {
-          if (isArtistContext) categoryAllowed = artProgress === 1;
-          else if (isClientContext) categoryAllowed = cliProgress === 1;
-          else categoryAllowed = artProgress === 1 && cliProgress === 1;
+          category = 'chat';
+        } else if (safeText.includes('投遞') || safeText.includes('應徵') || safeText.includes('送出了新的委託申請') || safeText.includes('婉拒') || safeText.includes('詳談') || safeText.includes('額滿')) {
+          category = 'inbound';
         }
 
-        if (categoryAllowed) {
-          if (userSettings.notification_email) {
-            try {
-              await emailService.sendNotificationEmail(
-                env,
-                userSettings.notification_email,
-                "【Arti 繪師小幫手】您有一則新通知",
-                safeText,
-                fullLink
-              );
-            } catch (emailErr) {
-              console.error("Email API 呼叫失敗，但不影響主流程:", emailErr);
-            }
+        const isCategoryAllowed = (flags: { chat: number; inbound: number; progress: number }, cliFlags: { chat: number; bulletin: number; progress: number }): boolean => {
+          if (category === 'chat') {
+            if (isArtistContext) return flags.chat === 1;
+            if (isClientContext) return cliFlags.chat === 1;
+            return flags.chat === 1 && cliFlags.chat === 1;
           }
+          if (category === 'inbound') {
+            if (isArtistContext) return flags.inbound === 1;
+            if (isClientContext) return cliFlags.bulletin === 1;
+            return flags.inbound === 1 && cliFlags.bulletin === 1;
+          }
+          if (isArtistContext) return flags.progress === 1;
+          if (isClientContext) return cliFlags.progress === 1;
+          return flags.progress === 1 && cliFlags.progress === 1;
+        };
 
-          if (userSettings.notification_line === 1 && env.LINE_BOT_TOKEN) {
-            const isPro = userSettings.plan_type === 'pro' && (!userSettings.pro_expires_at || new Date(userSettings.pro_expires_at) > new Date());
-            if (isPro) {
-              try {
-                await fetch('https://api.line.me/v2/bot/message/push', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
-                  body: JSON.stringify({ to: safeUserId, messages: [{ type: 'text', text: `${safeText}\n${fullLink}` }] }),
-                });
-              } catch (lineErr) {
-                console.error("LINE 推播失敗，但不影響主流程:", lineErr);
-              }
+        const emailAllowed = isCategoryAllowed(
+          { chat: Number(userSettings.email_art_chat ?? 1), inbound: Number(userSettings.email_art_inbound ?? 1), progress: Number(userSettings.email_art_progress ?? 1) },
+          { chat: Number(userSettings.email_cli_chat ?? 1), bulletin: Number(userSettings.email_cli_bulletin ?? 1), progress: Number(userSettings.email_cli_progress ?? 1) }
+        );
+        const lineAllowed = isCategoryAllowed(
+          { chat: Number(userSettings.line_art_chat ?? 1), inbound: Number(userSettings.line_art_inbound ?? 1), progress: Number(userSettings.line_art_progress ?? 1) },
+          { chat: Number(userSettings.line_cli_chat ?? 1), bulletin: Number(userSettings.line_cli_bulletin ?? 1), progress: Number(userSettings.line_cli_progress ?? 1) }
+        );
+
+        if (emailAllowed && userSettings.notification_email) {
+          try {
+            await emailService.sendNotificationEmail(
+              env,
+              userSettings.notification_email,
+              "【Arti 繪師小幫手】您有一則新通知",
+              safeText,
+              fullLink
+            );
+          } catch (emailErr) {
+            console.error("Email API 呼叫失敗，但不影響主流程:", emailErr);
+          }
+        }
+
+        if (lineAllowed && userSettings.notification_line === 1 && env.LINE_BOT_TOKEN) {
+          const isPro = userSettings.plan_type === 'pro' && (!userSettings.pro_expires_at || new Date(userSettings.pro_expires_at) > new Date());
+          if (isPro) {
+            try {
+              await fetch('https://api.line.me/v2/bot/message/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
+                body: JSON.stringify({ to: safeUserId, messages: [{ type: 'text', text: `${safeText}\n${fullLink}` }] }),
+              });
+            } catch (lineErr) {
+              console.error("LINE 推播失敗，但不影響主流程:", lineErr);
             }
           }
         }
