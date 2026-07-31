@@ -60,9 +60,12 @@ export function ClientLayout() {
 
   useEffect(() => {
     if (!profile) return;
+    // 有 campaign=1 表示使用者是從鈴鐺/email 連結點進來，主動要求查看，不管之前回應過什麼都要顯示
+    const forceOpen = new URLSearchParams(window.location.search).get('campaign') === '1';
     const fetchCampaignOffers = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/users/me/wishboard-campaign`, { credentials: 'include' });
+        const query = forceOpen ? '?all=1' : '';
+        const res = await fetch(`${API_BASE}/api/users/me/wishboard-campaign${query}`, { credentials: 'include' });
         const data = await res.json();
         if (data.success && data.offers?.length > 0) {
           setCampaignOffers(data.offers);
@@ -158,7 +161,14 @@ export function ClientLayout() {
             </div>
             <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#f9fafb', borderRadius: '8px', padding: '10px 14px', marginBottom: '18px' }}>
               {campaignOffers.map((o: any) => (
-                <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0' }}>・{o.title || '（未命名貼文）'}</div>
+                <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                  <span>・{o.title || '（未命名貼文）'}</span>
+                  {o.status && o.status !== 'pending' && (
+                    <span style={{ fontSize: '11px', color: o.status === 'accepted' ? '#059669' : '#9ca3af', whiteSpace: 'nowrap' }}>
+                      {o.status === 'accepted' ? '目前：已上架' : '目前：已婉拒'}
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
