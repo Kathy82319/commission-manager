@@ -25,6 +25,10 @@ export function PublicLayout() {
   const [bellVisible, setBellVisible] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  const [campaignOffers, setCampaignOffers] = useState<any[]>([]);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [isRespondingCampaign, setIsRespondingCampaign] = useState(false);
+
   const [theme, setTheme] = useState<ThemeSettings>({
     primaryColor: '#ffffff',
     textColor: 'black',
@@ -72,6 +76,36 @@ export function PublicLayout() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const fetchCampaignOffers = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me/wishboard-campaign`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.offers?.length > 0) {
+          setCampaignOffers(data.offers);
+          setShowCampaignModal(true);
+        }
+      } catch {}
+    };
+    fetchCampaignOffers();
+  }, [isLoggedIn, API_BASE]);
+
+  const handleCampaignRespond = async (accept: boolean) => {
+    setIsRespondingCampaign(true);
+    try {
+      await fetch(`${API_BASE}/api/users/me/wishboard-campaign/respond`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accept }),
+      });
+    } catch {} finally {
+      setIsRespondingCampaign(false);
+      setShowCampaignModal(false);
+    }
+  };
 
   const handleOpenNotifMenu = async () => {
     const next = !showNotifMenu;
@@ -129,6 +163,37 @@ export function PublicLayout() {
 
   return (
     <div className="public-layout-container" style={dynamicStyles}>
+      {showCampaignModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937', marginBottom: '10px' }}>年末許願池曝光延長活動</div>
+            <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6, marginBottom: '14px' }}>
+              您有 {campaignOffers.length} 篇許願池貼文已到期下架。我們想邀請您重新上架，曝光延長至 <strong>2026/12/31</strong>，協助您觸及更多可能的合作對象。
+            </div>
+            <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#f9fafb', borderRadius: '8px', padding: '10px 14px', marginBottom: '18px' }}>
+              {campaignOffers.map((o: any) => (
+                <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0' }}>・{o.title || '（未命名貼文）'}</div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => handleCampaignRespond(false)}
+                disabled={isRespondingCampaign}
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#4b5563', cursor: 'pointer', fontSize: '14px' }}
+              >
+                不用了，謝謝
+              </button>
+              <button
+                onClick={() => handleCampaignRespond(true)}
+                disabled={isRespondingCampaign}
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+              >
+                全部重新上架
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {bellVisible && (
         <div ref={notifRef} className="notif-bell-float" style={{ position: 'fixed', top: '68px', right: '44px', zIndex: 9999 }}>
           <div
