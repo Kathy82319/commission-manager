@@ -483,16 +483,22 @@ export default {
 
       if (sanitizedPath.startsWith("/api/users/")) {
         const targetId = pathParts[3];
+
+        if (request.method === "GET" && sanitizedPath.endsWith("/wishboard-campaign")) {
+          const authErr = requireAuth(currentUserId, corsHeaders);
+          if (authErr) return authErr;
+          return bulletinController.getWishboardCampaignOffers(currentUserId!, env, corsHeaders);
+        }
+
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);
-        
-        const authErr = requireAuth(currentUserId, corsHeaders); 
+
+        const authErr = requireAuth(currentUserId, corsHeaders);
         if (authErr) return authErr;
-        
+
         if (request.method === "PATCH") return userController.updateUser(request, targetId, currentUserId!, env, corsHeaders);
         if (request.method === "DELETE" && targetId === "me") return userController.deleteUser(currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/complete-onboarding")) return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/upgrade")) return userController.upgradeToArtist(currentUserId!, env, corsHeaders);
-        if (request.method === "GET" && sanitizedPath.endsWith("/wishboard-campaign")) return bulletinController.getWishboardCampaignOffers(currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/wishboard-campaign/respond")) return bulletinController.respondWishboardCampaign(request, currentUserId!, env, corsHeaders);
       }
 
