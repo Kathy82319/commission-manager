@@ -417,6 +417,8 @@ export default {
         if (authErr) return authErr;
         
         if (request.method === "GET" && sanitizedPath === "/api/admin/stats") return adminController.getDashboardStats(currentUserId!, env, corsHeaders);
+        // 一次性維護端點：跑完可移除
+        if (request.method === "POST" && sanitizedPath === "/api/admin/campaign/wishboard-reactivation") return adminController.createWishboardReactivationCampaign(currentUserId!, env, corsHeaders);
         if (request.method === "GET" && sanitizedPath === "/api/admin/users") return adminController.getUsers(request, currentUserId!, env, corsHeaders);
         if (request.method === "GET" && sanitizedPath === "/api/admin/commissions") return adminController.getCommissions(request, currentUserId!, env, corsHeaders);
         
@@ -490,6 +492,8 @@ export default {
         if (request.method === "DELETE" && targetId === "me") return userController.deleteUser(currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/complete-onboarding")) return userController.completeOnboarding(request, currentUserId!, env, corsHeaders);
         if (request.method === "POST" && sanitizedPath.endsWith("/upgrade")) return userController.upgradeToArtist(currentUserId!, env, corsHeaders);
+        if (request.method === "GET" && sanitizedPath.endsWith("/wishboard-campaign")) return bulletinController.getWishboardCampaignOffers(currentUserId!, env, corsHeaders);
+        if (request.method === "POST" && sanitizedPath.endsWith("/wishboard-campaign/respond")) return bulletinController.respondWishboardCampaign(request, currentUserId!, env, corsHeaders);
       }
 
       if (sanitizedPath.startsWith("/api/commissions")) {

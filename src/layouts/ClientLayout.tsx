@@ -18,6 +18,10 @@ export function ClientLayout() {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const [campaignOffers, setCampaignOffers] = useState<any[]>([]);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [isRespondingCampaign, setIsRespondingCampaign] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('last_active_role', 'client');
     const checkClientAuth = async () => {
@@ -50,9 +54,39 @@ export function ClientLayout() {
       } catch (error) {}
     };
     fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, 15000); 
+    const intervalId = setInterval(fetchNotifications, 15000);
     return () => clearInterval(intervalId);
   }, [profile, API_BASE]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const fetchCampaignOffers = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me/wishboard-campaign`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.offers?.length > 0) {
+          setCampaignOffers(data.offers);
+          setShowCampaignModal(true);
+        }
+      } catch (error) {}
+    };
+    fetchCampaignOffers();
+  }, [profile, API_BASE]);
+
+  const handleCampaignRespond = async (accept: boolean) => {
+    setIsRespondingCampaign(true);
+    try {
+      await fetch(`${API_BASE}/api/users/me/wishboard-campaign/respond`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accept }),
+      });
+    } catch (error) {} finally {
+      setIsRespondingCampaign(false);
+      setShowCampaignModal(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -114,7 +148,39 @@ export function ClientLayout() {
 
   return (
     <div className="client-layout-wrapper">
-      
+
+      {showCampaignModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1f2937', marginBottom: '10px' }}>年末許願池曝光延長活動</div>
+            <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6, marginBottom: '14px' }}>
+              您有 {campaignOffers.length} 篇許願池貼文已到期下架。我們想邀請您重新上架，曝光延長至 <strong>2026/12/31</strong>，協助您觸及更多可能的合作對象。
+            </div>
+            <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#f9fafb', borderRadius: '8px', padding: '10px 14px', marginBottom: '18px' }}>
+              {campaignOffers.map((o: any) => (
+                <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0' }}>・{o.title || '（未命名貼文）'}</div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => handleCampaignRespond(false)}
+                disabled={isRespondingCampaign}
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#4b5563', cursor: 'pointer', fontSize: '14px' }}
+              >
+                不用了，謝謝
+              </button>
+              <button
+                onClick={() => handleCampaignRespond(true)}
+                disabled={isRespondingCampaign}
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+              >
+                全部重新上架
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div ref={menuRef} className="notif-bell-wrapper">
         <div 
           onClick={handleOpenNotifMenu}

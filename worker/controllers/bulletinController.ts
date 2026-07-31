@@ -695,6 +695,61 @@ if (existingReport.length > 0) {
       console.error(`[Report Error] ID: ${targetId}`, error.message);
       return new Response(JSON.stringify({ error: "檢舉處理失敗，請稍後再試" }), { status: 500, headers: corsHeaders });
     }
+  },
+
+  async getWishboardCampaignOffers(currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const { results } = await env.commission_db.prepare(`
+        SELECT o.id as offer_id, b.id as bulletin_id, b.title
+        FROM WishboardReactivationOffers o
+        JOIN Bulletins b ON b.id = o.bulletin_id
+        WHERE o.client_id = ? AND o.status = 'pending'
+        ORDER BY o.created_at ASC
+      `).bind(currentUserId).all();
+
+      return new Response(JSON.stringify({ success: true, offers: results }), { status: 200, headers: corsHeaders });
+    } catch (error: any) {
+      console.error("[Wishboard Campaign] 讀取邀約失敗:", error.message);
+      return new Response(JSON.stringify({ success: false, error: "讀取邀約失敗" }), { status: 500, headers: corsHeaders });
+    }
+  },
+
+  async respondWishboardCampaign(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
+    try {
+      const body = await request.json().catch(() => ({})) as { accept?: boolean };
+      const accept = body.accept === true;
+
+      const { results: offers } = await env.commission_db.prepare(`
+        SELECT id, bulletin_id FROM WishboardReactivationOffers WHERE client_id = ? AND status = 'pending'
+      `).bind(currentUserId).all();
+
+      if (offers.length === 0) {
+        return new Response(JSON.stringify({ success: true, message: "沒有待確認的邀約" }), { status: 200, headers: corsHeaders });
+      }
+
+      const batchStatements = (offers as any[]).flatMap(offer => {
+        const statements = [
+          env.commission_db.prepare(
+            `UPDATE WishboardReactivationOffers SET status = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ?`
+          ).bind(accept ? 'accepted' : 'declined', offer.id)
+        ];
+        if (accept) {
+          statements.push(
+            env.commission_db.prepare(
+              `UPDATE Bulletins SET expires_at = '2026-12-31 23:59:59' WHERE id = ?`
+            ).bind(offer.bulletin_id)
+          );
+        }
+        return statements;
+      });
+
+      await env.commission_db.batch(batchStatements);
+
+      return new Response(JSON.stringify({ success: true, accepted: accept, count: offers.length }), { status: 200, headers: corsHeaders });
+    } catch (error: any) {
+      console.error("[Wishboard Campaign] 回應邀約失敗:", error.message);
+      return new Response(JSON.stringify({ success: false, error: "回應邀約失敗" }), { status: 500, headers: corsHeaders });
+    }
   }
 
 };

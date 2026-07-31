@@ -326,6 +326,10 @@ export const userController = {
         return new Response(JSON.stringify({ success: false, error: "帳號已停用，無法升級" }), { status: 403, headers: corsHeaders });
       }
 
+      if (user.role !== 'client') {
+        return new Response(JSON.stringify({ success: false, error: "此帳號類型無法執行升級" }), { status: 403, headers: corsHeaders });
+      }
+
       const upgradeUserQuery = env.commission_db.prepare(`
         UPDATE Users SET role = 'artist' WHERE id = ?
       `).bind(currentUserId);

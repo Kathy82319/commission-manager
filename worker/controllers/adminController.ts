@@ -1,6 +1,7 @@
 // worker/controllers/adminController.ts
 import type { Env } from "../shared/types";
 import { sanitizeAndLimit } from "../utils/security";
+import { notificationController } from "./notificationController";
 
 export const adminController = {
 
@@ -10,6 +11,65 @@ export const adminController = {
       return new Response(JSON.stringify({ success: false, error: "權限不足，僅限管理員存取" }), { status: 403, headers: corsHeaders });
     }
     return null;
+  },
+
+  // 一次性維護端點：建立年末許願池重新上架邀約（跑完可移除）
+  async createWishboardReactivationCampaign(currentUserId: string, env: Env, corsHeaders: HeadersInit): Promise<Response> {
+    const adminCheck = await this.checkAdmin(currentUserId, env, corsHeaders);
+    if (adminCheck) return adminCheck;
+
+    try {
+      const { results: targets } = await env.commission_db.prepare(`
+        SELECT b.id as bulletin_id, b.title, b.client_id
+        FROM Bulletins b
+        JOIN Users u ON u.id = b.client_id
+        WHERE b.status = 'open'
+          AND b.expires_at IS NOT NULL
+          AND b.expires_at < CURRENT_TIMESTAMP
+          AND b.expires_at >= datetime('now', '-3 months')
+          AND u.plan_type = 'free'
+          AND NOT EXISTS (SELECT 1 FROM WishboardReactivationOffers o WHERE o.bulletin_id = b.id)
+      `).all();
+
+      if (targets.length === 0) {
+        return new Response(JSON.stringify({ success: true, message: "沒有符合資格的貼文", offer_count: 0 }), { status: 200, headers: corsHeaders });
+      }
+
+      const insertBatch = (targets as any[]).map(t =>
+        env.commission_db.prepare(
+          `INSERT INTO WishboardReactivationOffers (bulletin_id, client_id) VALUES (?, ?)`
+        ).bind(t.bulletin_id, t.client_id)
+      );
+      await env.commission_db.batch(insertBatch);
+
+      const uniqueClientIds = [...new Set((targets as any[]).map(t => t.client_id))];
+      for (const clientId of uniqueClientIds) {
+        await notificationController.createNotification(
+          env,
+          clientId,
+          'event',
+          '您在許願池的貼文已到期下架，我們推出年末曝光活動，想邀請您重新上架至 2026/12/31，點此查看詳情並選擇是否參加。',
+          '/wishboard'
+        );
+      }
+
+      await env.commission_db.prepare(
+        `INSERT INTO announcements (type, title, content, is_pinned) VALUES (?, ?, ?, 1)`
+      ).bind(
+        'event',
+        '年末許願池曝光延長活動',
+        '<p>即日起到 2026/12/31，許願池推出曝光延長活動。如果您過去有貼文因 30 天到期而下架，我們已經寄送個人通知詢問是否要重新上架，請留意鈴鐺通知或登入後的提示視窗，自行選擇是否參加。</p>'
+      ).run();
+
+      return new Response(JSON.stringify({
+        success: true,
+        offer_count: targets.length,
+        notified_clients: uniqueClientIds.length
+      }), { status: 200, headers: corsHeaders });
+    } catch (error: any) {
+      console.error("[Wishboard Campaign] 建立邀約失敗:", error.message);
+      return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: corsHeaders });
+    }
   },
 
   async expireStalePlans(env: Env): Promise<void> {
