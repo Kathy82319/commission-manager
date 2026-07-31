@@ -191,10 +191,13 @@ export const bulletinController = {
 
       const id = crypto.randomUUID();
       const isPro = user.plan_type === 'pro' && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
+      // 年末許願池曝光延長活動（暫時邏輯，活動結束後應移除）：
+      // 免費方案的新貼文曝光至少到 2026/12/31；若發文當下離年底不到 1 個月，改成保底至少曝光 1 個月
       const expiresAtValue = isPro ? null : (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 30);
-        return d.toISOString();
+        const oneMonthLater = new Date();
+        oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+        const campaignFloor = new Date('2026-12-31T23:59:59');
+        return (oneMonthLater > campaignFloor ? oneMonthLater : campaignFloor).toISOString();
       })();
 
       await env.commission_db.prepare(

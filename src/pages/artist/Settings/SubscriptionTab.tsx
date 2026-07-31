@@ -110,6 +110,7 @@ export function SubscriptionTab({ quotaInfo, fetchUserData, onToast }: Props) {
             <li>📋 活躍工作欄位：同時進行 <strong>3 筆</strong> (結案即釋放)</li>
             <li>✨ 許願池：投遞徵委託區 <strong>5 次</strong> / 月</li>
             <li>✨ 許願池：接委託區發佈 <strong>3 則</strong> / 月(30天自動下架)</li>
+            <li style={{ color: '#B45309', fontWeight: 'bold' }}>🎉 年末活動：許願池曝光延長至 2026/12/31</li>
             <li>🖼️ 作品集展示上限 <strong>15 張</strong></li>
             <li>🖼️ 接稿區展示上限 <strong>3 張</strong></li>
             <li>📤 單檔上傳最高 3MB 限制</li>
