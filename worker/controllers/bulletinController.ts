@@ -697,13 +697,17 @@ if (existingReport.length > 0) {
     }
   },
 
-  async getWishboardCampaignOffers(currentUserId: string, env: Env, corsHeaders: any) {
+  async getWishboardCampaignOffers(request: Request, currentUserId: string, env: Env, corsHeaders: any) {
     try {
+      const url = new URL(request.url);
+      const includeAll = url.searchParams.get('all') === '1';
+      const statusFilter = includeAll ? '' : "AND o.status = 'pending'";
+
       const { results } = await env.commission_db.prepare(`
-        SELECT o.id as offer_id, b.id as bulletin_id, b.title
+        SELECT o.id as offer_id, b.id as bulletin_id, b.title, o.status
         FROM WishboardReactivationOffers o
         JOIN Bulletins b ON b.id = o.bulletin_id
-        WHERE o.client_id = ? AND o.status = 'pending'
+        WHERE o.client_id = ? ${statusFilter}
         ORDER BY o.created_at ASC
       `).bind(currentUserId).all();
 
@@ -719,8 +723,9 @@ if (existingReport.length > 0) {
       const body = await request.json().catch(() => ({})) as { accept?: boolean };
       const accept = body.accept === true;
 
+      // 不限 pending：允許使用者透過鈴鐺/email 的連結隨時回來改變主意
       const { results: offers } = await env.commission_db.prepare(`
-        SELECT id, bulletin_id FROM WishboardReactivationOffers WHERE client_id = ? AND status = 'pending'
+        SELECT id, bulletin_id FROM WishboardReactivationOffers WHERE client_id = ?
       `).bind(currentUserId).all();
 
       if (offers.length === 0) {

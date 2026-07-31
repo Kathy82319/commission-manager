@@ -487,7 +487,7 @@ export default {
         if (request.method === "GET" && sanitizedPath.endsWith("/wishboard-campaign")) {
           const authErr = requireAuth(currentUserId, corsHeaders);
           if (authErr) return authErr;
-          return bulletinController.getWishboardCampaignOffers(currentUserId!, env, corsHeaders);
+          return bulletinController.getWishboardCampaignOffers(request, currentUserId!, env, corsHeaders);
         }
 
         if (request.method === "GET") return userController.getUser(targetId, currentUserId, env, corsHeaders);

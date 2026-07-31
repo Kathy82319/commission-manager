@@ -49,7 +49,7 @@ export const adminController = {
           clientId,
           'event',
           '您在許願池的貼文已到期下架，我們推出年末曝光活動，想邀請您重新上架至 2026/12/31，點此查看詳情並選擇是否參加。',
-          '/wishboard'
+          '/wishboard?campaign=1'
         );
       }
 
