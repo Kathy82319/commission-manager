@@ -112,6 +112,7 @@ export const userController = {
       delete user.email_cli_chat;
       delete user.email_cli_progress;
       delete user.email_cli_bulletin;
+      delete user.notification_line;
 
       if (user.plan_type === 'free' && user.profile_settings) {
         try {
@@ -196,8 +197,14 @@ export const userController = {
     for (const flag of emailFlags) {
       if (body[flag] !== undefined) {
         userUpdates.push(`${flag} = ?`);
-        userParams.push(body[flag] ? 1 : 0); 
+        userParams.push(body[flag] ? 1 : 0);
       }
+    }
+
+    if (body.notification_line !== undefined) {
+      const allowLine = userPlan === 'pro'; // LINE 通知僅開放專業版，避免前端被繞過
+      userUpdates.push("notification_line = ?");
+      userParams.push(allowLine && body.notification_line ? 1 : 0);
     }
 
     if (hasSettingsUpdate) {

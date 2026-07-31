@@ -55,8 +55,10 @@ export function Settings() {
   const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
-    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
+    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1,
+    notification_line: 0
   });
+  const [userPlan, setUserPlan] = useState<string>('free');
 
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string, type: 'ok' | 'err' } | null>(null);
@@ -164,7 +166,9 @@ export function Settings() {
           email_cli_chat: data.data.email_cli_chat ?? 1,
           email_cli_progress: data.data.email_cli_progress ?? 1,
           email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
+          notification_line: data.data.notification_line ?? 0,
         });
+        setUserPlan(data.data.plan_type || 'free');
 
         if (data.data.profile_settings) {
           const parsed = typeof data.data.profile_settings === 'string'
@@ -292,7 +296,7 @@ export function Settings() {
 
         <div className="settings-content-area">
           <div className="tab-body">
-            {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" />}
+            {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="artist" isPro={userPlan === 'pro'} />}
             {activeTab === 'bulletin_settings' && <BulletinSettingsTab settings={settings as any} setSettings={setSettings as any} />}
 
             {activeTab === 'rules' && (

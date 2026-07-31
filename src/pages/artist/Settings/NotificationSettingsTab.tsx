@@ -9,15 +9,19 @@ export interface NotificationConfig {
   email_cli_chat: number;
   email_cli_progress: number;
   email_cli_bulletin: number;
+  notification_line: number;
 }
 
 interface NotificationSettingsTabProps {
   config: NotificationConfig;
   setConfig: React.Dispatch<React.SetStateAction<NotificationConfig>>;
   role: 'artist' | 'client';
+  isPro: boolean;
 }
 
-export function NotificationSettingsTab({ config, setConfig, role }: NotificationSettingsTabProps) {
+const LINE_ADD_FRIEND_URL = 'https://lin.ee/teRXElB';
+
+export function NotificationSettingsTab({ config, setConfig, role, isPro }: NotificationSettingsTabProps) {
   
   const handleToggle = (field: keyof NotificationConfig) => {
     setConfig(prev => ({
@@ -69,12 +73,34 @@ export function NotificationSettingsTab({ config, setConfig, role }: Notificatio
           placeholder="若留空，則只有站內小鈴鐺會收到通知"
           value={config.notification_email || ''}
           onChange={(e) => setConfig(prev => ({ ...prev, notification_email: e.target.value }))}
-          style={{ 
-            width: '100%', padding: '10px 14px', borderRadius: '8px', 
+          style={{
+            width: '100%', padding: '10px 14px', borderRadius: '8px',
             border: '1px solid #D1D5DB', fontSize: '14px', outline: 'none'
           }}
         />
       </div>
+
+      {isPro && role === 'artist' && (
+        <div style={{ marginBottom: '32px', backgroundColor: '#F0FDF4', padding: '20px', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: '#1F2937', fontSize: '16px' }}>💚 LINE 通知（專業版專屬）</h4>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#6B7280' }}>
+            開啟後，站內通知會同步用官方 LINE 推播給您。
+          </p>
+          <a
+            href={LINE_ADD_FRIEND_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-block', marginBottom: '14px', fontSize: '13px', color: '#06C755', fontWeight: 'bold', textDecoration: 'none' }}
+          >
+            ➕ 尚未加入官方 LINE 好友？點此加入（開啟通知前請先加好友，否則收不到推播）
+          </a>
+          <ToggleRow
+            label="開啟 LINE 通知"
+            description="與 Email 通知獨立設定，開啟後不需要一直開著網站也能即時收到提醒。"
+            field="notification_line"
+          />
+        </div>
+      )}
 
       
       {role === 'artist' && (

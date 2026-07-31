@@ -18,8 +18,10 @@ export function ClientSettings() {
   const [notifyConfig, setNotifyConfig] = useState<any>({
     notification_email: '',
     email_art_chat: 1, email_art_progress: 1, email_art_inbound: 1,
-    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1
+    email_cli_chat: 1, email_cli_progress: 1, email_cli_bulletin: 1,
+    notification_line: 0
   });
+  const [userPlan, setUserPlan] = useState<string>('free');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -78,7 +80,9 @@ export function ClientSettings() {
           email_cli_chat: data.data.email_cli_chat ?? 1,
           email_cli_progress: data.data.email_cli_progress ?? 1,
           email_cli_bulletin: data.data.email_cli_bulletin ?? 1,
+          notification_line: data.data.notification_line ?? 0,
         });
+        setUserPlan(data.data.plan_type || 'free');
         if (data.data.profile_settings) {
           const parsed = typeof data.data.profile_settings === 'string' ? JSON.parse(data.data.profile_settings) : data.data.profile_settings;
           setSettings((prev: any) => ({ ...prev, ...parsed, social_links: parsed.social_links || [], detailed_intro: parsed.detailed_intro || '' }));
@@ -173,7 +177,7 @@ export function ClientSettings() {
 
           <div className="tab-body">
             {activeTab === 'profile_basic' && <BasicInfoTab formData={formData} setFormData={setFormData} settings={settings} setSettings={setSettings} />}
-            {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="client" />}
+            {activeTab === 'notification_settings' && <NotificationSettingsTab config={notifyConfig} setConfig={setNotifyConfig} role="client" isPro={userPlan === 'pro'} />}
             {activeTab === 'oc_display' && <OCDisplaySettingsTab onToast={showToast} />}
             {activeTab === 'detailed_intro' && (
               <>

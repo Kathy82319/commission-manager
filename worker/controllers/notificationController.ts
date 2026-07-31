@@ -38,11 +38,29 @@ export const notificationController = {
       }
 
       const userSettings = await env.commission_db.prepare(`
-        SELECT notification_email, 
+        SELECT notification_email, notification_line, plan_type, pro_expires_at,
                email_art_chat, email_art_progress, email_art_inbound,
                email_cli_chat, email_cli_progress, email_cli_bulletin
         FROM Users WHERE id = ?
       `).bind(safeUserId).first<any>();
+
+      const frontendUrl = env.FRONTEND_URL || 'https://arti7.net';
+      const fullLink = safeLinkUrl.startsWith('http') ? safeLinkUrl : `${frontendUrl}${safeLinkUrl}`;
+
+      if (userSettings?.notification_line === 1 && env.LINE_BOT_TOKEN) {
+        const isPro = userSettings.plan_type === 'pro' && (!userSettings.pro_expires_at || new Date(userSettings.pro_expires_at) > new Date());
+        if (isPro) {
+          try {
+            await fetch('https://api.line.me/v2/bot/message/push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
+              body: JSON.stringify({ to: safeUserId, messages: [{ type: 'text', text: `${safeText}\n${fullLink}` }] }),
+            });
+          } catch (lineErr) {
+            console.error("LINE 推播失敗，但不影響主流程:", lineErr);
+          }
+        }
+      }
 
       if (userSettings && userSettings.notification_email) {
         let shouldSendEmail = false;
@@ -97,9 +115,6 @@ export const notificationController = {
 
         if (shouldSendEmail) {
           try {
-            const frontendUrl = env.FRONTEND_URL || 'https://arti7.net';
-            const fullLink = safeLinkUrl.startsWith('http') ? safeLinkUrl : `${frontendUrl}${safeLinkUrl}`;
-            
             await emailService.sendNotificationEmail(
               env,
               userSettings.notification_email,
