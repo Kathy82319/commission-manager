@@ -1,13 +1,47 @@
 // src/pages/admin/OverviewTab.tsx
+import { useState } from 'react';
+import { apiClient } from '../../api/client';
 
 export function OverviewTab({ stats }: { stats: any }) {
-  
+  const [isTriggeringCampaign, setIsTriggeringCampaign] = useState(false);
+
+  const handleTriggerWishboardCampaign = async () => {
+    if (!window.confirm('確定要建立「年末許願池重新上架邀約」嗎？這會對符合資格的使用者發送通知，此操作是一次性的維護功能。')) return;
+    setIsTriggeringCampaign(true);
+    try {
+      const res: any = await apiClient.post('/api/admin/campaign/wishboard-reactivation', {});
+      if (res.offer_count === 0) {
+        alert('沒有符合資格的貼文，未建立任何邀約。');
+      } else {
+        alert(`建立完成！共 ${res.offer_count} 篇貼文、通知了 ${res.notified_clients} 位使用者。`);
+      }
+    } catch (error: any) {
+      alert(error.message || '建立邀約失敗，請稍後再試。');
+    } finally {
+      setIsTriggeringCampaign(false);
+    }
+  };
+
   if (!stats) return <div style={{ padding: '50px', textAlign: 'center', color: '#666' }}>⚙️ 正在讀取最高權限資料...</div>;
 
   return (
     <div>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '24px' }}>全站營運儀表板</h1>
-      
+
+      <div style={{ marginBottom: '24px', padding: '16px 20px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontWeight: 'bold', color: '#92400E' }}>⚠️ 一次性維護功能：年末許願池重新上架邀約</div>
+          <div style={{ fontSize: '13px', color: '#92400E', marginTop: '4px' }}>點擊後會建立邀約並通知使用者，跑過一次後記得請開發移除這個按鈕。</div>
+        </div>
+        <button
+          onClick={handleTriggerWishboardCampaign}
+          disabled={isTriggeringCampaign}
+          style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: '#D97706', color: 'white', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          {isTriggeringCampaign ? '建立中...' : '建立邀約'}
+        </button>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
         <StatCard title="總註冊用戶" value={stats.users?.reduce((a:any, b:any) => a + (b.total || 0), 0)} icon="👥" />
         <StatCard title="本月新增用戶" value={stats.new_users_this_month} icon="📈" color="#2563EB" />
