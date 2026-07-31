@@ -78,7 +78,6 @@ export function PublicLayout() {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
     const fetchCampaignOffers = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/users/me/wishboard-campaign`, { credentials: 'include' });
@@ -90,7 +89,7 @@ export function PublicLayout() {
       } catch {}
     };
     fetchCampaignOffers();
-  }, [isLoggedIn, API_BASE]);
+  }, [API_BASE]);
 
   const handleCampaignRespond = async (accept: boolean) => {
     setIsRespondingCampaign(true);
