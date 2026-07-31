@@ -44,37 +44,20 @@ export const notificationController = {
         FROM Users WHERE id = ?
       `).bind(safeUserId).first<any>();
 
-      const frontendUrl = env.FRONTEND_URL || 'https://arti7.net';
-      const fullLink = safeLinkUrl.startsWith('http') ? safeLinkUrl : `${frontendUrl}${safeLinkUrl}`;
+      if (userSettings) {
+        const frontendUrl = env.FRONTEND_URL || 'https://arti7.net';
+        const fullLink = safeLinkUrl.startsWith('http') ? safeLinkUrl : `${frontendUrl}${safeLinkUrl}`;
 
-      if (userSettings?.notification_line === 1 && env.LINE_BOT_TOKEN) {
-        const isPro = userSettings.plan_type === 'pro' && (!userSettings.pro_expires_at || new Date(userSettings.pro_expires_at) > new Date());
-        if (isPro) {
-          try {
-            await fetch('https://api.line.me/v2/bot/message/push', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
-              body: JSON.stringify({ to: safeUserId, messages: [{ type: 'text', text: `${safeText}\n${fullLink}` }] }),
-            });
-          } catch (lineErr) {
-            console.error("LINE 推播失敗，但不影響主流程:", lineErr);
-          }
-        }
-      }
-
-      if (userSettings && userSettings.notification_email) {
-        let shouldSendEmail = false;
-
-        const isArtistContext = 
-          safeLinkUrl.includes('/artist/') || 
-          safeLinkUrl.includes('role=artist') || 
-          safeText.includes('您的接委託') || 
+        const isArtistContext =
+          safeLinkUrl.includes('/artist/') ||
+          safeLinkUrl.includes('role=artist') ||
+          safeText.includes('您的接委託') ||
           safeText.includes('您的徵委託') ||
-          (safeLinkUrl.includes('/inquiry/workspace/') && safeText.includes('送出了新的委託申請')); 
+          (safeLinkUrl.includes('/inquiry/workspace/') && safeText.includes('送出了新的委託申請'));
 
-        const isClientContext = 
-          safeLinkUrl.includes('/client/') || 
-          safeText.includes('為您建立') || 
+        const isClientContext =
+          safeLinkUrl.includes('/client/') ||
+          safeText.includes('為您建立') ||
           safeText.includes('邀請您') ||
           (!safeLinkUrl.includes('role=artist') && safeLinkUrl.includes('/workspace/') && (safeText.includes('上傳') || safeText.includes('提交')));
 
@@ -85,45 +68,52 @@ export const notificationController = {
         const cliProgress = Number(userSettings.email_cli_progress ?? 1);
         const cliBulletin = Number(userSettings.email_cli_bulletin ?? 1);
 
+        // 這三個分類開關同時決定 Email 跟 LINE 通知是否發送，兩個管道共用同一套分類設定
+        let categoryAllowed = false;
         if (safeText.includes('聊天') || safeText.includes('💬') || safeType === 'chat') {
-          if (isArtistContext) {
-            if (artChat === 1) shouldSendEmail = true;
-          } else if (isClientContext) {
-            if (cliChat === 1) shouldSendEmail = true;
-          } else {
-            if (artChat === 1 && cliChat === 1) shouldSendEmail = true;
-          }
+          if (isArtistContext) categoryAllowed = artChat === 1;
+          else if (isClientContext) categoryAllowed = cliChat === 1;
+          else categoryAllowed = artChat === 1 && cliChat === 1;
         }
         else if (safeText.includes('投遞') || safeText.includes('應徵') || safeText.includes('送出了新的委託申請') || safeText.includes('婉拒') || safeText.includes('詳談') || safeText.includes('額滿')) {
-          if (isArtistContext) {
-            if (artInbound === 1) shouldSendEmail = true;
-          } else if (isClientContext) {
-            if (cliBulletin === 1) shouldSendEmail = true;
-          } else {
-            if (artInbound === 1 && cliBulletin === 1) shouldSendEmail = true;
-          }
+          if (isArtistContext) categoryAllowed = artInbound === 1;
+          else if (isClientContext) categoryAllowed = cliBulletin === 1;
+          else categoryAllowed = artInbound === 1 && cliBulletin === 1;
         }
         else {
-          if (isArtistContext) {
-            if (artProgress === 1) shouldSendEmail = true;
-          } else if (isClientContext) {
-            if (cliProgress === 1) shouldSendEmail = true;
-          } else {
-            if (artProgress === 1 && cliProgress === 1) shouldSendEmail = true;
-          }
+          if (isArtistContext) categoryAllowed = artProgress === 1;
+          else if (isClientContext) categoryAllowed = cliProgress === 1;
+          else categoryAllowed = artProgress === 1 && cliProgress === 1;
         }
 
-        if (shouldSendEmail) {
-          try {
-            await emailService.sendNotificationEmail(
-              env,
-              userSettings.notification_email,
-              "【Arti 繪師小幫手】您有一則新通知", 
-              safeText, 
-              fullLink 
-            );
-          } catch (emailErr) {
-            console.error("Email API 呼叫失敗，但不影響主流程:", emailErr);
+        if (categoryAllowed) {
+          if (userSettings.notification_email) {
+            try {
+              await emailService.sendNotificationEmail(
+                env,
+                userSettings.notification_email,
+                "【Arti 繪師小幫手】您有一則新通知",
+                safeText,
+                fullLink
+              );
+            } catch (emailErr) {
+              console.error("Email API 呼叫失敗，但不影響主流程:", emailErr);
+            }
+          }
+
+          if (userSettings.notification_line === 1 && env.LINE_BOT_TOKEN) {
+            const isPro = userSettings.plan_type === 'pro' && (!userSettings.pro_expires_at || new Date(userSettings.pro_expires_at) > new Date());
+            if (isPro) {
+              try {
+                await fetch('https://api.line.me/v2/bot/message/push', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_BOT_TOKEN}` },
+                  body: JSON.stringify({ to: safeUserId, messages: [{ type: 'text', text: `${safeText}\n${fullLink}` }] }),
+                });
+              } catch (lineErr) {
+                console.error("LINE 推播失敗，但不影響主流程:", lineErr);
+              }
+            }
           }
         }
       }
