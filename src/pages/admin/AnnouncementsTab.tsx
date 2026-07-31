@@ -156,6 +156,7 @@ export function AnnouncementsTab() {
 
   return (
     <div style={{ paddingBottom: '40px' }}>
+      <style>{`.admin-ann-preview p:empty { min-height: 1.8em; } .admin-ann-preview p:has(> br:only-child) { min-height: 1.8em; }`}</style>
       {toast && (
         <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', background: toast.ok ? '#4E7A5A' : '#EF4444', color: 'white', padding: '10px 24px', borderRadius: '30px', fontWeight: 700, fontSize: '14px', zIndex: 9999 }}>
           {toast.msg}
@@ -211,6 +212,7 @@ export function AnnouncementsTab() {
                 </span>
                 <div style={{ fontSize: '16px', fontWeight: 600, color: '#2A1F1A', marginBottom: '10px' }}>{form.title || '（無標題）'}</div>
                 <div
+                  className="admin-ann-preview"
                   style={{ fontSize: '14px', color: '#6B5C52', lineHeight: 1.8 }}
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.content) }}
                 />

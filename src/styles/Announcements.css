@@ -134,6 +134,16 @@
   margin-bottom: 0;
 }
 
+/* 空白段落（純換行）預設沒有內容高度，margin 會被瀏覽器「自我塌陷」吃掉而完全看不到空行，
+   這裡強制給予高度，讓使用者按 Enter 留白的段落間距能實際顯示出來 */
+.ann-item-content p:empty {
+  min-height: 1.8em;
+}
+
+.ann-item-content p:has(> br:only-child) {
+  min-height: 1.8em;
+}
+
 .ann-item-content ul,
 .ann-item-content ol {
   padding-left: 22px;
