@@ -36,13 +36,16 @@ const TYPE_BG: Record<AnnouncementType, string> = {
 
 const QUILL_MODULES = {
   toolbar: [
-    ['bold', 'italic', 'underline'],
+    [{ header: [2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
     [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link'],
+    [{ align: [] }],
+    ['blockquote', 'link', 'image'],
     ['clean'],
   ],
 };
-const QUILL_FORMATS = ['bold', 'italic', 'underline', 'list', 'link'];
+const QUILL_FORMATS = ['header', 'bold', 'italic', 'underline', 'strike', 'color', 'background', 'list', 'align', 'blockquote', 'link', 'image'];
 
 const EMPTY_FORM = { type: 'update' as AnnouncementType, title: '', content: '' };
 const isQuillEmpty = (v: string) => !v || v === '<p><br></p>';
