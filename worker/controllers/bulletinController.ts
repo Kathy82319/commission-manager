@@ -703,8 +703,9 @@ if (existingReport.length > 0) {
       const includeAll = url.searchParams.get('all') === '1';
       const statusFilter = includeAll ? '' : "AND o.status = 'pending'";
 
+      // b.* 帶出完整貼文欄位，讓前端可以直接把這篇貼文丟進現有的編輯表單預填
       const { results } = await env.commission_db.prepare(`
-        SELECT o.id as offer_id, b.id as bulletin_id, b.title, o.status
+        SELECT o.id as offer_id, o.status as offer_status, b.*
         FROM WishboardReactivationOffers o
         JOIN Bulletins b ON b.id = o.bulletin_id
         WHERE o.client_id = ? ${statusFilter}

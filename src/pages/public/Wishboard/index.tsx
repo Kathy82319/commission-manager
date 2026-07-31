@@ -1,5 +1,5 @@
 // src/pages/public/Wishboard/index.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '../../../api/client';
 import '../../../styles/Wishboard.css'; 
@@ -50,6 +50,7 @@ export const Wishboard: React.FC = () => {
   const [editingBulletin, setEditingBulletin] = useState<any | null>(null);
   const [layoutMode, setLayoutMode] = useState<'list' | 'masonry'>('list');
   const [masonryDetailBulletin, setMasonryDetailBulletin] = useState<any | null>(null);
+  const isReactivatingRef = useRef(false);
 
   const initialRequestForm = {
     title: '', content: '', tags: [] as string[], payment_methods: [] as string[],
@@ -167,6 +168,27 @@ export const Wishboard: React.FC = () => {
     const timer = setTimeout(() => setHighlightedId(null), 4000);
     return () => clearTimeout(timer);
   }, [location.search, loading]);
+
+  // 從許願池活動的彈窗點「前往編輯並重新上架」進來：抓回上次貼文內容、直接開編輯表單預填
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reactivate') !== '1' || !currentUser) return;
+
+    const openReactivationEdit = async () => {
+      try {
+        const res = await apiClient.get('/api/users/me/wishboard-campaign?all=1');
+        const offer = res.offers?.[0];
+        if (offer) {
+          isReactivatingRef.current = true;
+          handleEditTrigger(offer);
+          navigate(`/wishboard?tab=${offer.category === 'offer' ? 'offer' : 'request'}`, { replace: true });
+          return;
+        }
+      } catch {}
+      navigate('/wishboard', { replace: true });
+    };
+    openReactivationEdit();
+  }, [location.search, currentUser]);
 
 
   const uploadToR2 = async (blob: Blob, folder: string) => {
@@ -289,15 +311,23 @@ export const Wishboard: React.FC = () => {
         res = await apiClient.post('/api/bulletins', payload);
       }
       if (res.success) {
-        showToast(editingBulletin ? "更新成功！" : "發布成功！");
+        if (isReactivatingRef.current) {
+          isReactivatingRef.current = false;
+          try {
+            await apiClient.post('/api/users/me/wishboard-campaign/respond', { accept: true });
+          } catch {}
+          showToast("重新上架成功！曝光將延長至 2026/12/31");
+        } else {
+          showToast(editingBulletin ? "更新成功！" : "發布成功！");
+        }
         setShowPostModal(false);
         setEditingBulletin(null);
         if (activeTab === 'request') setRequestForm(initialRequestForm);
         else setOfferForm(getInitialOfferForm());
         initData();
       } else showToast(res.message || (editingBulletin ? "更新失敗" : "發布失敗"), "error");
-    } catch (err: any) { 
-      showToast(err.message || "發布發生錯誤", "error"); 
+    } catch (err: any) {
+      showToast(err.message || "發布發生錯誤", "error");
     }
   };
 
@@ -639,7 +669,7 @@ export const Wishboard: React.FC = () => {
           form={requestForm}
           setForm={setRequestForm}
           isUploading={isUploading}
-          onClose={() => { setShowPostModal(false); setEditingBulletin(null); }}
+          onClose={() => { setShowPostModal(false); setEditingBulletin(null); isReactivatingRef.current = false; }}
           onSubmit={handlePostSubmit}
           onImageUpload={handleRequestImageUpload}
         />
@@ -650,7 +680,7 @@ export const Wishboard: React.FC = () => {
           form={offerForm}
           setForm={setOfferForm}
           isUploading={isUploading}
-          onClose={() => { setShowPostModal(false); setEditingBulletin(null); }}
+          onClose={() => { setShowPostModal(false); setEditingBulletin(null); isReactivatingRef.current = false; }}
           onSubmit={handlePostSubmit}
           onImageUpload={handleOfferImageUpload}
           userPortfolio={userPortfolio}

@@ -78,6 +78,8 @@ export function PublicLayout() {
   }, []);
 
   useEffect(() => {
+    // reactivate=1 是「前往編輯並重新上架」的專用流程，交給 Wishboard 頁面自己處理，這裡不跳提示彈窗
+    if (new URLSearchParams(location.search).get('reactivate') === '1') return;
     // 有 campaign=1 表示使用者是從鈴鐺/email 連結點進來，主動要求查看，不管之前回應過什麼都要顯示
     const forceOpen = new URLSearchParams(location.search).get('campaign') === '1';
     const fetchCampaignOffers = async () => {
@@ -94,19 +96,24 @@ export function PublicLayout() {
     fetchCampaignOffers();
   }, [API_BASE, location.search]);
 
-  const handleCampaignRespond = async (accept: boolean) => {
+  const handleCampaignDecline = async () => {
     setIsRespondingCampaign(true);
     try {
       await fetch(`${API_BASE}/api/users/me/wishboard-campaign/respond`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accept }),
+        body: JSON.stringify({ accept: false }),
       });
     } catch {} finally {
       setIsRespondingCampaign(false);
       setShowCampaignModal(false);
     }
+  };
+
+  const handleCampaignGoEdit = () => {
+    setShowCampaignModal(false);
+    navigate('/wishboard?reactivate=1');
   };
 
   const handleOpenNotifMenu = async () => {
@@ -176,9 +183,9 @@ export function PublicLayout() {
               {campaignOffers.map((o: any) => (
                 <div key={o.offer_id} style={{ fontSize: '13px', color: '#374151', padding: '4px 0', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
                   <span>・{o.title || '（未命名貼文）'}</span>
-                  {o.status && o.status !== 'pending' && (
-                    <span style={{ fontSize: '11px', color: o.status === 'accepted' ? '#059669' : '#9ca3af', whiteSpace: 'nowrap' }}>
-                      {o.status === 'accepted' ? '目前：已上架' : '目前：已婉拒'}
+                  {o.offer_status && o.offer_status !== 'pending' && (
+                    <span style={{ fontSize: '11px', color: o.offer_status === 'accepted' ? '#059669' : '#9ca3af', whiteSpace: 'nowrap' }}>
+                      {o.offer_status === 'accepted' ? '目前：已上架' : '目前：已婉拒'}
                     </span>
                   )}
                 </div>
@@ -186,18 +193,18 @@ export function PublicLayout() {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
-                onClick={() => handleCampaignRespond(false)}
+                onClick={handleCampaignDecline}
                 disabled={isRespondingCampaign}
                 style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#4b5563', cursor: 'pointer', fontSize: '14px' }}
               >
                 不用了，謝謝
               </button>
               <button
-                onClick={() => handleCampaignRespond(true)}
+                onClick={handleCampaignGoEdit}
                 disabled={isRespondingCampaign}
                 style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
               >
-                全部重新上架
+                前往編輯並重新上架
               </button>
             </div>
           </div>
