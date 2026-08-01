@@ -16,6 +16,7 @@ export function UsersTab() {
   const [formData, setFormData] = useState({
     plan_type: 'free',
     pro_expires_at: '',
+    trial_end_at: '',
     custom_quota: '',
     role: 'client',
     wishboard_status: 'active',
@@ -51,6 +52,7 @@ export function UsersTab() {
     setFormData({
       plan_type: user.plan_type || 'free',
       pro_expires_at: user.pro_expires_at ? user.pro_expires_at.split('T')[0] : '',
+      trial_end_at: user.trial_end_at ? user.trial_end_at.split('T')[0] : '',
       custom_quota: user.custom_quota?.toString() || '',
       role: user.role || 'client',
       wishboard_status: user.wishboard_status || 'active',
@@ -71,6 +73,7 @@ export function UsersTab() {
         ...formData,
         custom_quota: formData.custom_quota ? parseInt(formData.custom_quota) : null,
         pro_expires_at: formData.pro_expires_at ? new Date(formData.pro_expires_at).toISOString() : null,
+        trial_end_at: formData.trial_end_at ? new Date(formData.trial_end_at).toISOString() : null,
         mute_expires_at: formData.mute_expires_at ? new Date(formData.mute_expires_at).toISOString() : null,
       };
       await apiClient.patch(`/api/admin/users/${selectedUser.id}`, payload);
@@ -118,7 +121,7 @@ export function UsersTab() {
         await Promise.all(ids.map(id =>
           apiClient.patch(`/api/admin/users/${id}`, {
             plan_type: 'trial',
-            pro_expires_at: expiry.toISOString(),
+            trial_end_at: expiry.toISOString(),
           })
         ));
       }
@@ -393,8 +396,19 @@ export function UsersTab() {
 
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>方案到期日</label>
-                <input type="date" value={formData.pro_expires_at} onChange={e => setFormData({ ...formData, pro_expires_at: e.target.value })} style={inputStyle} />
+                <label style={labelStyle}>
+                  {formData.plan_type === 'trial' ? '試用到期日' : formData.plan_type === 'pro' ? '專業版到期日' : '方案到期日（免費版無到期日）'}
+                </label>
+                <input
+                  type="date"
+                  disabled={formData.plan_type === 'free'}
+                  value={formData.plan_type === 'trial' ? formData.trial_end_at : formData.pro_expires_at}
+                  onChange={e => setFormData(prev => ({
+                    ...prev,
+                    ...(prev.plan_type === 'trial' ? { trial_end_at: e.target.value } : { pro_expires_at: e.target.value })
+                  }))}
+                  style={{ ...inputStyle, ...(formData.plan_type === 'free' ? { backgroundColor: '#F3F4F6', cursor: 'not-allowed' } : {}) }}
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>接單配額上限</label>

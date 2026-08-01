@@ -214,10 +214,16 @@ export const adminController = {
     if (body.plan_type && !allowedPlans.includes(body.plan_type)) return new Response(JSON.stringify({ error: "無效的方案" }), { status: 400, headers: corsHeaders });
     if (body.wishboard_status && !allowedWishboardStatus.includes(body.wishboard_status)) return new Response(JSON.stringify({ error: "無效的許願池狀態" }), { status: 400, headers: corsHeaders });
 
+    // 避免 plan_type 跟到期日欄位存出不一致的狀態（例如 plan_type 改成 free，pro_expires_at 卻留著舊的未來日期）
+    if (body.plan_type !== undefined) {
+      if (body.plan_type !== 'pro') body.pro_expires_at = null;
+      if (body.plan_type !== 'trial') body.trial_end_at = null;
+    }
+
     const updates = [];
     const params = [];
-    const fields = ['role', 'plan_type', 'pro_expires_at', 'custom_quota', 'wishboard_status', 'mute_expires_at'];
-    
+    const fields = ['role', 'plan_type', 'pro_expires_at', 'trial_end_at', 'custom_quota', 'wishboard_status', 'mute_expires_at'];
+
     for (const field of fields) {
       if (body[field] !== undefined) {
         updates.push(`${field} = ?`);
